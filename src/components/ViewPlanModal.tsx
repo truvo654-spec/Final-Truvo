@@ -7,12 +7,14 @@ interface ViewPlanModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: UserProfile;
+  onNavigateToFullPlan?: () => void;
 }
 
 export const ViewPlanModal: React.FC<ViewPlanModalProps> = ({
   isOpen,
   onClose,
   user,
+  onNavigateToFullPlan,
 }) => {
   if (!isOpen) return null;
 
@@ -185,10 +187,21 @@ export const ViewPlanModal: React.FC<ViewPlanModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#e2e8f0] bg-[#f8fafc] flex justify-end">
+        <div className="p-4 border-t border-[#e2e8f0] bg-[#f8fafc] flex items-center justify-between">
+          {onNavigateToFullPlan ? (
+            <button
+              onClick={() => {
+                onClose();
+                onNavigateToFullPlan();
+              }}
+              className="text-xs font-bold text-[#5338ec] hover:underline flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>View Full Membership Roadmap Page →</span>
+            </button>
+          ) : <div />}
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-lg bg-[#5338ec] hover:bg-[#4338ca] text-white text-xs font-bold transition-all"
+            className="px-5 py-2 rounded-lg bg-[#5338ec] hover:bg-[#4338ca] text-white text-xs font-bold transition-all cursor-pointer"
           >
             Done
           </button>

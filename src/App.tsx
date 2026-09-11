@@ -29,6 +29,8 @@ import { DashboardBentoGrid } from './components/DashboardBentoGrid';
 import { BrokerDirectory } from './components/BrokerDirectory';
 import { BrokerListPage } from './components/brokers/BrokerListPage';
 import { BrokerDetailPage } from './components/brokers/BrokerDetailPage';
+import { BrokerComparisonPage } from './components/brokers/BrokerComparisonPage';
+import { MembershipPlanPage } from './components/membership/MembershipPlanPage';
 import { SignalsList } from './components/SignalsList';
 import { CommunityHub } from './components/CommunityHub';
 import { CommunityPage } from './components/community/CommunityPage';
@@ -160,6 +162,7 @@ export default function App() {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [selectedBrokerForConnect, setSelectedBrokerForConnect] = useState<Broker | null>(null);
   const [selectedBrokerForDetail, setSelectedBrokerForDetail] = useState<Broker>(brokers[0] || INITIAL_BROKERS[0]);
+  const [comparisonInitialBroker, setComparisonInitialBroker] = useState<Broker | null>(null);
   const [isViewPlanOpen, setIsViewPlanOpen] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState<MarketSignal | null>(null);
   const [isSignalModalOpen, setIsSignalModalOpen] = useState(false);
@@ -355,9 +358,9 @@ export default function App() {
           setSelectedBrokerForConnect(brokers.find((b) => !b.connected) || brokers[0]);
           setIsConnectModalOpen(true);
         }}
-        onOpenViewPlan={() => setIsViewPlanOpen(true)}
+        onOpenViewPlan={() => setActiveTab('member-plan')}
         onOpenLedger={() => setIsLedgerOpen(true)}
-        onOpenBrokerComparison={() => setIsBrokerComparisonOpen(true)}
+        onOpenBrokerComparison={() => setActiveTab('broker-comparison')}
         onOpenCalculator={(calcType) => {
           if (calcType === 'forex') {
             setActiveTab('leverage-calculator');
@@ -395,7 +398,7 @@ export default function App() {
       {/* Main App Container */}
       <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-[56px] py-6 space-y-6">
         {/* Welcome Bar / Subheader for other tabs */}
-        {activeTab !== 'dashboard' && activeTab !== 'brokers' && activeTab !== 'broker-detail' && activeTab !== 'connect-to-truvo' && activeTab !== 'points-credits' && activeTab !== 'cashback-overview' && activeTab !== 'signals' && activeTab !== 'signal-detail' && activeTab !== 'level-points-guide' && activeTab !== 'credit-earning-guide' && activeTab !== 'activity-logs' && activeTab !== 'leverage-calculator' && activeTab !== 'volatility-calculator' && activeTab !== 'spread-calculator' && activeTab !== 'pip-calculator' && activeTab !== 'pips-calculator' && activeTab !== 'margin-calculator' && activeTab !== 'rebate-calculator' && activeTab !== 'calculators' && (
+        {activeTab !== 'dashboard' && activeTab !== 'brokers' && activeTab !== 'broker-comparison' && activeTab !== 'broker-detail' && activeTab !== 'connect-to-truvo' && activeTab !== 'points-credits' && activeTab !== 'cashback-overview' && activeTab !== 'signals' && activeTab !== 'signal-detail' && activeTab !== 'level-points-guide' && activeTab !== 'credit-earning-guide' && activeTab !== 'activity-logs' && activeTab !== 'leverage-calculator' && activeTab !== 'volatility-calculator' && activeTab !== 'spread-calculator' && activeTab !== 'pip-calculator' && activeTab !== 'pips-calculator' && activeTab !== 'margin-calculator' && activeTab !== 'rebate-calculator' && activeTab !== 'calculators' && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
             <div>
               <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
@@ -540,8 +543,63 @@ export default function App() {
               setSelectedBrokerForConnect(b);
               setActiveTab('connect-to-truvo');
             }}
-            onOpenComparison={() => setIsBrokerComparisonOpen(true)}
+            onOpenComparison={(b) => {
+              if (b) {
+                setComparisonInitialBroker(b);
+              }
+              setActiveTab('broker-comparison');
+            }}
             onOpenViewPlan={() => setIsViewPlanOpen(true)}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: Broker Comparison Page (Exact match to D02-D08: Compare CFD Brokers) ─── */}
+        {activeTab === 'broker-comparison' && (
+          <BrokerComparisonPage
+            brokers={brokers}
+            user={user}
+            signals={signals}
+            isLoggedIn={isLoggedIn}
+            initialBroker={comparisonInitialBroker}
+            onToggleAuthState={(loggedIn) => {
+              setIsLoggedIn(loggedIn);
+              try {
+                localStorage.setItem('marketsyde_is_logged_in', String(loggedIn));
+              } catch {}
+              showToast(
+                loggedIn
+                  ? 'Switched to Signed-In state (Hi, Josh · Rookie rank)'
+                  : 'Switched to Not Signed-In state (Guest)'
+              );
+            }}
+            onConnectBroker={(b) => {
+              setSelectedBrokerForConnect(b);
+              setActiveTab('connect-to-truvo');
+            }}
+            onSelectBrokerDetail={(b) => {
+              setSelectedBrokerForDetail(b);
+              setActiveTab('broker-detail');
+            }}
+            onOpenViewPlan={() => setIsViewPlanOpen(true)}
+            onOpenSignUp={() => {
+              setAuthModalMode('signup');
+              setIsAuthModalOpen(true);
+            }}
+            onOpenSignIn={() => {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+            }}
+            onNavigateToSignals={() => setActiveTab('signals')}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: Member Plan Page (Exact match to Membership plan - Member Lv.1.png) ─── */}
+        {activeTab === 'member-plan' && (
+          <MembershipPlanPage
+            user={user}
+            onNavigateToTrade={() => setActiveTab('brokers')}
             onShowToast={showToast}
           />
         )}
@@ -582,7 +640,7 @@ export default function App() {
               setSelectedBrokerForConnect(broker || brokers[0]);
               setIsConnectModalOpen(true);
             }}
-            onOpenBrokerComparison={() => setIsBrokerComparisonOpen(true)}
+            onOpenBrokerComparison={() => setActiveTab('broker-comparison')}
             onNavigateToBrokers={() => setActiveTab('brokers')}
             onSimulateTradeCashback={(brokerName, lotSize, rebateAmount) => {
               setUser((prev) => ({
@@ -610,7 +668,7 @@ export default function App() {
               setIsConnectModalOpen(true);
             }}
             onNavigateToBrokers={() => setActiveTab('brokers')}
-            onNavigateToComparison={() => setIsBrokerComparisonOpen(true)}
+            onNavigateToComparison={() => setActiveTab('broker-comparison')}
             onShowToast={showToast}
           />
         )}
@@ -845,6 +903,10 @@ export default function App() {
         isOpen={isViewPlanOpen}
         onClose={() => setIsViewPlanOpen(false)}
         user={user}
+        onNavigateToFullPlan={() => {
+          setIsViewPlanOpen(false);
+          setActiveTab('member-plan');
+        }}
       />
 
       <SignalDetailModal
@@ -888,6 +950,10 @@ export default function App() {
           setSelectedBrokerForDetail(b);
           setActiveTab('broker-detail');
         }}
+        onOpenFullComparison={() => {
+          setIsBrokerComparisonOpen(false);
+          setActiveTab('broker-comparison');
+        }}
       />
 
       <TradingCalculatorsModal
@@ -919,7 +985,7 @@ export default function App() {
           setSelectedBrokerForConnect(broker || brokers.find((b) => !b.connected) || brokers[0]);
           setIsConnectModalOpen(true);
         }}
-        onOpenViewPlan={() => setIsViewPlanOpen(true)}
+        onOpenViewPlan={() => setActiveTab('member-plan')}
         onNavigateToTab={(tab) => setActiveTab(tab)}
         onSelectBrokerDetail={(b) => {
           setSelectedBrokerForDetail(b);

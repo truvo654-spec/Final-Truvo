@@ -2,6 +2,70 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.23.0] - 2026-09-11
+### Added
+- **Pixel-Perfect Membership Plan Page (`Membership plan - Member Lv.1.png`)**:
+  - Implemented the complete standalone **Member Plan** page with exact visual fidelity to the uploaded design:
+    - **Header Navigation Active State**: Wired the top navigation bar `Member Plan` link directly to this full page (`activeTab === 'member-plan'`) with high-contrast active state styling.
+    - **Hero Section**:
+      - Display headline: `You're a Rookie. For now.` with dynamic tier name adaptation.
+      - Giant stylized brand statement: `Get More.` in vibrant indigo `#5945F1` with an authentic hot pink period (`.`) in `#FE01B1`.
+      - Right-side subtitle: *"The higher your level, the better the cashback, perks, and rewards. Simple as that."*
+    - **4 Connected Tier Cards Row**:
+      - **Cute Cartoon Ghost & Callout**: Positioned directly atop Card 1 (Rookie), featuring the custom vector ghost with two vertical oval eyes, curved directional arrow, and lime green oval badge (`#CAEB0E`) with `You're here`.
+      - **Card 1 (ROOKIE)**: Styled with a dual-gradient border (`#5945F1` to `#FE01B1`), black `● ROOKIE` tag, Cashback Standard rate, *"What you have now"* feature list, *"Don't stop now! The good stuff is waiting."*, and a progress bar showing `50/150 to Next Level` with gem icon.
+      - **Card 2 (CLIMBER)**: Hot pink `● CLIMBER` tag, large `+5%` cashback boost rate, trading signal 75%-79% confidence, and *"How to get it? Just 100 points."*.
+      - **Card 3 (PLAYER)**: Lime green `● PLAYER` tag, `+10%` cashback boost rate, trading signal 80%-89% confidence, and *"Earn 250 Points ."*.
+      - **Card 4 (BOSS)**: Purple `● BOSS` tag, `+15%` cashback boost rate, 90%+ confidence signals, exclusive benefits, and *"500 Points"*.
+      - **Horizontal Dotted Connectors**: Clean dotted arrow dividers (`········>`) linking each successive tier card across the progression flow.
+    - **Bottom Call-to-Action Bar**:
+      - Styled footer statement: *"Because staying at the same level is boring. A few more trades today. Better perks tomorrow."* with branded purple highlights and hot pink accent dot.
+      - Direct **`Trade Now!`** button leading straight to broker/trading execution.
+    - **Interactive Tier Level Switcher**: Top subtle controller allowing testing between `Rookie (Lv.1)`, `Climber (Lv.2)`, `Player (Lv.3)`, and `Boss (Lv.4)` with reactive placement of the ghost character and gradient border.
+    - **Modal Synchronization**: Updated `ViewPlanModal` with direct navigation link to the full Membership Plan page.
+
+## [0.22.1] - 2026-09-11
+### Added
+- **Card-Level "Compare" Action to Comparison Page Flow (Exact match to uploaded broker card asset)**:
+  - Updated broker card in `BrokerListPage` to accurately match the uploaded reference card (`image.png`):
+    - **Compare button**: Placed on the bottom-left of the broker card (`Compare`). Clicking it immediately navigates to the **Compare CFD Brokers** page (`broker-comparison`) and pre-selects that specific broker (e.g., XM) into Slot 1 of the comparison matrix.
+    - **Trade Now button**: Updated label to `"Trade Now"` with authentic purple branding (`#5945F1`), rounded styling, and smooth click interactions.
+    - **External Details button**: Styled `↗` link icon button for viewing the full broker profile.
+    - **Refined XM Brand Logo**: Added stylized red/white diagonal logo matching official XM brand assets.
+  - **State Synchronization & Auto-Loading**:
+    - Connected `comparisonInitialBroker` state in `App.tsx` between `BrokerListPage` and `BrokerComparisonPage`.
+    - Added automatic slot assignment logic so clicking "Compare" on any broker card (XM, HFM, Exness, IC Markets, Pepperstone, etc.) immediately injects that broker into the comparison matrix and displays a confirmation toast (`"Loaded [Broker] into Comparison"`).
+
+## [0.22.0] - 2026-09-11
+### Added
+- **Compare CFD Brokers Full Page (`D02_Broker Comparison_Empty State.png` to `D08_3 Brokers Selected_Maximum.png`)**:
+  - Implemented the complete 3-slot head-to-head comparison page with full support for both **Signed-In** and **Not Signed-In (Guest)** states.
+  - **State Switcher Demo Controller**: Quick-switch bar on top of the page allowing reviewers and users to toggle between `[Signed In (Josh / Rookie rank)]` and `[Not Signed In (Guest)]` with immediate reactive UI changes.
+  - **3 Comparison Slots**:
+    - Supports empty state with `"Select a Broker"` prompt and dropdown.
+    - Searchable floating broker selection popup with all 19 CFD brokers (HFM, XM, Exness, IC Markets, Pepperstone, FxPro, Tickmill, FP Markets, Vantage, Eightcap, Axi, AvaTrade, IG, OANDA, Capital.com, Deriv, Octa, JustMarkets, ATFX).
+    - Selected broker card header with score, verified badge, remove (`✕`) action, and **`Connect Now`** CTA button:
+      - **Not Signed-In State**: Prompted with the registration/sign-in modal (`AuthModal`).
+      - **Signed-In State**: Navigates directly to the broker connection flow.
+    - Popular broker chips below slots (XM, IC Markets, Pepperstone, FxPro, Tickmill, Eightcap) with 1-click slot insertion.
+  - **Full Comparison Spec Matrix**:
+    - **Cashback & Income**: Highest cashback per lot with `"Top Pick"` badge, estimated monthly earnings, rebate payment schedule, and eligible pairs.
+    - **Costs & Spreads**: Spread types, lowest average spread, standard spread, raw commission, total cost per lot, slippage, and pip value.
+    - **Account Details**: Account type variety, minimum deposit, maximum leverage, minimum lot size, instruments count, and supported platforms (`MT4`, `MT5`, `cTrader`, `App`).
+    - **Currency & Execution**: Account currency, execution speed, decimal price levels, entry precision, minimum SL distance, and SL fill accuracy.
+    - **Risk Management**: Margin call level, stop-out level, and margin buffer indicator.
+    - **Trading Conditions**: Scalping, hedging, EA/algorithmic trading, swap-free Islamic accounts, copy trading, sessions, and negative balance protection with custom styled status pills.
+    - **Direct Broker Profiles**: `"View [Broker] Profile"` buttons navigating to the Broker Detail page.
+  - **Right Sidebar Widgets**:
+    - **Move up. Earn More.**: Branded tier progression bar with `"You"` marker on Rookie climbing to Climber, with `"View Plan"` button and guest sign-up prompt.
+    - **Most Recent Signals.**: Live signals widget for EUR/USD, GOOGL, BTC/USD (Premium Signal), S&P 500, and XAU/USD with sparklines and Buy/Sell/Upgrade actions.
+  - **Most Viewed Broker Matchups**:
+    - Gradient banner featuring top matchups (HFM, Exness, FxPro) with 1-click `"View full comparison"` auto-load preset.
+  - **Navigation Integration**:
+    - Added dedicated routing for tab `'broker-comparison'`.
+    - Updated `Header.tsx` desktop hover menu and mobile menu with dynamic active indicators.
+    - Connected comparison triggers in `BrokerListPage`, `BrokerDirectory`, and `TradingSignalsPage`.
+
 ## [0.21.4] - 2026-09-11
 ### Added
 - **Connect to MarketSyde / Account Connection Flow (Exact match to `D12_Connect to MarketSyde.png`)**:

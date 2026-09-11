@@ -8,6 +8,7 @@ interface BrokerComparisonModalProps {
   brokers: Broker[];
   onConnectBroker: (broker: Broker) => void;
   onSelectBrokerDetail?: (broker: Broker) => void;
+  onOpenFullComparison?: () => void;
 }
 
 export const BrokerComparisonModal: React.FC<BrokerComparisonModalProps> = ({
@@ -16,6 +17,7 @@ export const BrokerComparisonModal: React.FC<BrokerComparisonModalProps> = ({
   brokers,
   onConnectBroker,
   onSelectBrokerDetail,
+  onOpenFullComparison,
 }) => {
   const [brokerAId, setBrokerAId] = useState<string>(brokers[0]?.id || 'exness');
   const [brokerBId, setBrokerBId] = useState<string>(brokers[3]?.id || brokers[1]?.id || 'xm-ultra');
@@ -101,12 +103,23 @@ export const BrokerComparisonModal: React.FC<BrokerComparisonModalProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-slate-200/80 flex items-center justify-center text-slate-500 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onOpenFullComparison && (
+              <button
+                onClick={onOpenFullComparison}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#5945F1] text-white text-xs font-semibold hover:bg-[#4834e0] transition-colors shadow-2xs cursor-pointer"
+              >
+                <span>Full Comparison Page</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full hover:bg-slate-200/80 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Content */}

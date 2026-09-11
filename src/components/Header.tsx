@@ -195,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
                   handleCloseImmediately();
                 }}
                 className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
-                  activeHoverMenu === 'brokers' || activeTab === 'brokers'
+                  activeHoverMenu === 'brokers' || activeTab === 'brokers' || activeTab === 'broker-detail' || activeTab === 'broker-comparison'
                     ? 'text-[#5945F1] font-semibold'
                     : 'text-slate-800 hover:text-[#5945F1]'
                 }`}
@@ -209,13 +209,17 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
-            {/* Member Plan Link (Direct text link, NO chevron, matching Total Nav Bar.png) */}
+            {/* Member Plan Link (Direct text link, NO chevron, matching Total Nav Bar.png & Membership plan - Member Lv.1.png) */}
             <button
               onClick={() => {
-                onOpenViewPlan();
+                setActiveTab('member-plan');
                 handleCloseImmediately();
               }}
-              className="text-slate-800 hover:text-[#5945F1] transition-colors py-1 cursor-pointer"
+              className={`transition-colors py-1 cursor-pointer font-medium text-sm ${
+                activeTab === 'member-plan'
+                  ? 'text-[#0b1c30] font-bold'
+                  : 'text-slate-800 hover:text-[#5945F1]'
+              }`}
             >
               Member Plan
             </button>
@@ -647,20 +651,34 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Right Menu Options */}
               <div className="w-full md:w-[44%] pl-7 pr-6 py-6 flex flex-col justify-center space-y-7">
-                {/* 1. Broker List (with solid purple bullet) */}
+                {/* 1. Broker List */}
                 <button
                   onClick={() => {
                     setActiveTab('brokers');
                     handleCloseImmediately();
                   }}
-                  className="group flex items-start gap-3.5 text-left transition-all"
+                  className="group flex items-start gap-3.5 text-left transition-all cursor-pointer"
                 >
-                  {/* Purple solid circular bullet */}
-                  <div className="w-5 h-5 rounded-full bg-[#5338ec] flex items-center justify-center shrink-0 mt-0.5 shadow-xs group-hover:scale-110 transition-transform">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                  {/* Circular bullet */}
+                  <div
+                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-xs transition-transform ${
+                      activeTab === 'brokers'
+                        ? 'bg-[#5338ec] scale-105'
+                        : 'border-2 border-slate-300 group-hover:border-[#5338ec] group-hover:bg-[#5338ec]/10'
+                    }`}
+                  >
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        activeTab === 'brokers' ? 'bg-white' : 'bg-transparent group-hover:bg-[#5338ec]'
+                      } transition-colors`}
+                    />
                   </div>
                   <div>
-                    <div className="font-bold text-[15px] text-[#0b1c30] group-hover:text-[#5338ec] transition-colors leading-tight">
+                    <div
+                      className={`font-bold text-[15px] transition-colors leading-tight ${
+                        activeTab === 'brokers' ? 'text-[#5338ec]' : 'text-[#0b1c30] group-hover:text-[#5338ec]'
+                      }`}
+                    >
                       Broker List
                     </div>
                     <div className="text-xs text-slate-500 mt-1 leading-relaxed">
@@ -675,17 +693,35 @@ export const Header: React.FC<HeaderProps> = ({
                     if (onOpenBrokerComparison) {
                       onOpenBrokerComparison();
                     } else {
-                      setActiveTab('brokers');
+                      setActiveTab('broker-comparison');
                     }
                     handleCloseImmediately();
                   }}
-                  className="group flex items-start gap-3.5 text-left transition-all"
+                  className="group flex items-start gap-3.5 text-left transition-all cursor-pointer"
                 >
-                  <div className="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-[#5338ec] group-hover:bg-[#5338ec]/10 flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                    <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-[#5338ec] transition-colors" />
+                  <div
+                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-transform ${
+                      activeTab === 'broker-comparison'
+                        ? 'bg-[#5338ec] scale-105'
+                        : 'border-2 border-slate-300 group-hover:border-[#5338ec] group-hover:bg-[#5338ec]/10'
+                    }`}
+                  >
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        activeTab === 'broker-comparison'
+                          ? 'bg-white'
+                          : 'bg-transparent group-hover:bg-[#5338ec]'
+                      } transition-colors`}
+                    />
                   </div>
                   <div>
-                    <div className="font-bold text-[15px] text-[#0b1c30] group-hover:text-[#5338ec] transition-colors leading-tight">
+                    <div
+                      className={`font-bold text-[15px] transition-colors leading-tight ${
+                        activeTab === 'broker-comparison'
+                          ? 'text-[#5338ec]'
+                          : 'text-[#0b1c30] group-hover:text-[#5338ec]'
+                      }`}
+                    >
                       Broker Comparison
                     </div>
                     <div className="text-xs text-slate-500 mt-1 leading-relaxed">
@@ -1300,10 +1336,12 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => {
-              onOpenViewPlan();
+              setActiveTab('member-plan');
               setMobileMenuOpen(false);
             }}
-            className="w-full py-2 text-left text-sm font-semibold text-[#5338ec]"
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'member-plan' ? 'text-[#0b1c30] font-bold' : 'text-[#5338ec]'
+            }`}
           >
             Member Plan
           </button>

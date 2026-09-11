@@ -18,7 +18,7 @@ interface BrokerListPageProps {
   user: UserProfile;
   onSelectBrokerDetail: (broker: Broker) => void;
   onConnectBroker: (broker: Broker) => void;
-  onOpenComparison?: () => void;
+  onOpenComparison?: (broker?: Broker) => void;
   onOpenViewPlan?: () => void;
   onShowToast?: (msg: string) => void;
 }
@@ -101,9 +101,11 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
     }
     if (name.includes('xm')) {
       return (
-        <div className="w-14 h-14 rounded-xl bg-black flex items-center justify-center text-white shrink-0 shadow-xs relative overflow-hidden">
-          <div className="absolute w-2 h-2 rounded-full bg-red-600 top-2 right-2" />
-          <span className="font-black text-xl tracking-tight">XM</span>
+        <div className="w-14 h-14 rounded-2xl bg-black flex items-center justify-center text-white shrink-0 shadow-xs relative overflow-hidden p-1">
+          <span className="font-black text-2xl tracking-tighter flex items-center">
+            <span className="text-[#E60000] font-black">X</span>
+            <span className="text-white font-black">M</span>
+          </span>
         </div>
       );
     }
@@ -341,33 +343,33 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Bottom Actions Row: Compare | Connect | External Link Button */}
+                  {/* Bottom Actions Row: Compare | Trade Now | External Link Button (Exact match to image.png) */}
                   <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (onOpenComparison) {
-                          onOpenComparison();
+                          onOpenComparison(broker);
                         } else {
                           onShowToast?.(`Comparing ${broker.name}...`);
                         }
                       }}
-                      className="text-xs font-semibold text-slate-700 hover:text-[#5945F1] transition-colors cursor-pointer py-1.5"
+                      className="text-xs font-semibold text-slate-800 hover:text-[#5945F1] transition-colors cursor-pointer py-1.5 px-1 flex items-center gap-1 active:scale-95"
                     >
                       Compare
                     </button>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           onConnectBroker(broker);
                         }}
-                        className="px-4 py-1.5 rounded-lg bg-[#5945F1] hover:bg-[#4834df] text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
+                        className="px-5 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4834df] text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
                       >
-                        Connect
+                        Trade Now
                       </button>
 
                       <button
@@ -376,10 +378,10 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
                           e.stopPropagation();
                           onSelectBrokerDetail(broker);
                         }}
-                        className="p-1.5 rounded-lg border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-[#5945F1] hover:bg-slate-50 transition-colors cursor-pointer"
+                        className="p-2 rounded-xl border border-slate-200 hover:border-[#5945F1]/40 text-[#5945F1] hover:bg-slate-50 transition-colors cursor-pointer"
                         title="View Details"
                       >
-                        <ArrowUpRight className="w-4 h-4" />
+                        <ArrowUpRight className="w-4 h-4 text-[#5945F1]" />
                       </button>
                     </div>
                   </div>
