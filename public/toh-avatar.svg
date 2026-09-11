@@ -1,0 +1,302 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <!-- Background architectural soft gradient -->
+    <linearGradient id="bgWallGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="65%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+
+    <!-- Monochrome soft vignette -->
+    <radialGradient id="softVignette" cx="50%" cy="45%" r="65%">
+      <stop offset="65%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.18"/>
+    </radialGradient>
+
+    <!-- Face skin tone gradient (Crisp, clean, bright lighting) -->
+    <linearGradient id="faceTone" x1="25%" y1="15%" x2="75%" y2="85%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#f5f5f5"/>
+      <stop offset="80%" stop-color="#d9d9d9"/>
+      <stop offset="100%" stop-color="#b8b8b8"/>
+    </linearGradient>
+
+    <!-- Neck shade -->
+    <linearGradient id="neckShade" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#9e9e9e"/>
+      <stop offset="50%" stop-color="#cccccc"/>
+      <stop offset="100%" stop-color="#e8e8e8"/>
+    </linearGradient>
+
+    <!-- Cap dark gradient -->
+    <linearGradient id="capDark" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#2d3139"/>
+      <stop offset="45%" stop-color="#191c22"/>
+      <stop offset="100%" stop-color="#090a0d"/>
+    </linearGradient>
+
+    <!-- Sunglasses gradient with sleek specular streak -->
+    <linearGradient id="glassShine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141518"/>
+      <stop offset="35%" stop-color="#262930"/>
+      <stop offset="48%" stop-color="#ffffff" stop-opacity="0.75"/>
+      <stop offset="55%" stop-color="#1f2228"/>
+      <stop offset="100%" stop-color="#0b0c0e"/>
+    </linearGradient>
+
+    <!-- Blonde bleached hair highlight -->
+    <linearGradient id="platinumHair" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#e2e8f0"/>
+      <stop offset="85%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+
+    <!-- Metallic Earring shine -->
+    <linearGradient id="silverGleam" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Architectural Neoclassical Background (Tai Kwun / Central Hong Kong) -->
+  <rect width="400" height="400" fill="url(#bgWallGrad)"/>
+
+  <!-- Neoclassical Columns, Windows & Moldings -->
+  <g opacity="0.32" stroke="#475569" stroke-width="1.2" fill="#f1f5f9">
+    <!-- Horizontal cornice moldings -->
+    <path d="M0 45 H400 V56 H0 Z" fill="#e2e8f0"/>
+    <path d="M0 80 H400 V90 H0 Z" fill="#cbd5e1"/>
+
+    <!-- Left Column & Arch -->
+    <rect x="25" y="56" width="38" height="150" fill="#f8fafc"/>
+    <path d="M25 56 Q44 42 63 56 Z" fill="#94a3b8"/>
+    <rect x="75" y="90" width="30" height="85" rx="4" fill="#64748b" opacity="0.4"/>
+
+    <!-- Right Large Central Arch (Hong Kong Police architectural arch) -->
+    <path d="M285 65 H375 V180 H285 Z" fill="#e2e8f0"/>
+    <path d="M295 105 A40 40 0 0 1 365 105 V175 H295 Z" fill="#334155" opacity="0.5"/>
+    <rect x="295" y="102" width="70" height="4" fill="#cbd5e1"/>
+  </g>
+
+  <!-- Distant street railing in soft background -->
+  <g opacity="0.25" stroke="#1e293b" stroke-width="2.5">
+    <line x1="0" y1="360" x2="400" y2="360" stroke-width="6"/>
+    <line x1="50" y1="360" x2="50" y2="400"/>
+    <line x1="120" y1="360" x2="120" y2="400"/>
+    <line x1="330" y1="360" x2="330" y2="400"/>
+  </g>
+
+  <!-- 2. Person (Toh) — Close-Up Portrait, Fully Visible, Unobstructed -->
+  <g id="user-portrait" transform="translate(0, 5)">
+    <!-- White T-Shirt Body & Shoulders -->
+    <path
+      d="M50 375 C85 285 130 260 205 260 C280 260 325 285 365 375 L380 410 H20 Z"
+      fill="#ffffff"
+      stroke="#cbd5e1"
+      stroke-width="2"
+    />
+    <!-- T-Shirt Crew Neck Ribbed Collar -->
+    <path
+      d="M165 262 C178 284 232 284 245 262"
+      fill="none"
+      stroke="#94a3b8"
+      stroke-width="4.5"
+      stroke-linecap="round"
+    />
+    <path
+      d="M170 266 C180 282 230 282 240 266"
+      fill="none"
+      stroke="#e2e8f0"
+      stroke-width="2"
+    />
+
+    <!-- NY Yankees Interlocking Pocket Monogram on Chest -->
+    <g transform="translate(255, 305)">
+      <!-- Pocket outline -->
+      <rect x="0" y="0" width="46" height="52" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+      <!-- Interlocking NY Monogram (crisp black) -->
+      <path
+        d="M14 12 V38 M14 12 L30 38 M30 12 V38"
+        stroke="#0f172a"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M10 25 H34"
+        stroke="#0f172a"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+    </g>
+
+    <!-- Strong Neck & Collarbone -->
+    <path d="M172 215 L172 268 C185 278 225 278 238 268 L238 215 Z" fill="url(#neckShade)"/>
+    <path d="M185 240 Q205 260 225 240" fill="none" stroke="#888" stroke-width="1.5" opacity="0.6"/>
+
+    <!-- Complete, Clear Head & Jawline Profile (Angled candid smile) -->
+    <!-- Head Base / Skin -->
+    <path
+      d="M148 145 C140 185 142 228 178 252 C205 270 238 258 255 228 C268 200 264 165 258 140 C242 122 175 120 148 145 Z"
+      fill="url(#faceTone)"
+      stroke="#94a3b8"
+      stroke-width="1"
+    />
+
+    <!-- Ear & Platinum Hair on Left -->
+    <!-- Bleached Blonde / Platinum Hair Tufts under cap -->
+    <g id="platinum-hair">
+      <path d="M138 152 C132 178 136 215 152 232 C143 218 142 188 145 165 Z" fill="url(#platinumHair)"/>
+      <path d="M144 190 C138 210 145 228 155 236 C149 222 147 202 150 190 Z" fill="#ffffff"/>
+      <path d="M146 160 C140 175 142 192 148 200" stroke="#64748b" stroke-width="1" fill="none"/>
+    </g>
+
+    <!-- Ear with Silver Hoop Earring -->
+    <g id="ear-and-earring">
+      <path
+        d="M145 168 C137 170 134 190 142 202 C146 208 152 206 154 196 Z"
+        fill="#e2e8f0"
+        stroke="#94a3b8"
+        stroke-width="1.2"
+      />
+      <path d="M140 178 Q144 186 142 194" fill="none" stroke="#94a3b8" stroke-width="1"/>
+      <!-- Silver Metallic Hoop Earring -->
+      <circle
+        cx="139"
+        cy="202"
+        r="4.5"
+        fill="none"
+        stroke="url(#silverGleam)"
+        stroke-width="2.5"
+        filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+      />
+      <!-- Specular twinkle on earring -->
+      <circle cx="138" cy="199" r="1.2" fill="#ffffff"/>
+    </g>
+
+    <!-- Dark Baseball Cap (Worn forward, sleek crown & curved brim) -->
+    <!-- Crown -->
+    <path
+      d="M144 135 C140 70 248 55 268 120 C242 110 170 110 144 135 Z"
+      fill="url(#capDark)"
+    />
+    <!-- Crown seam / panel stitch lines -->
+    <path d="M200 64 Q204 105 206 122" fill="none" stroke="#334155" stroke-width="1.2" stroke-dasharray="3 2"/>
+    <!-- Subtle NY Tone-on-tone embroidery on cap front -->
+    <path
+      d="M192 84 V102 M192 84 L208 102 M208 84 V102"
+      stroke="#334155"
+      stroke-width="2"
+      stroke-linecap="round"
+      opacity="0.85"
+    />
+
+    <!-- Cap Visor / Curved Brim (Casting soft cool shadow) -->
+    <path
+      d="M142 135 C185 130 255 138 296 160 C264 172 195 160 142 135 Z"
+      fill="#090a0d"
+      stroke="#1e293b"
+      stroke-width="1"
+    />
+    <!-- Visor edge highlight -->
+    <path d="M170 136 C215 140 262 152 295 160" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.4"/>
+    <!-- Visor shadow under brow -->
+    <path d="M148 140 C190 145 255 155 285 166 C260 176 195 166 148 140 Z" fill="#000000" opacity="0.25"/>
+
+    <!-- High-Fashion Dark Sunglasses (Rectangular Wrap with white temple text) -->
+    <g id="designer-sunglasses">
+      <!-- Main frames -->
+      <path
+        d="M160 148 L248 162 L250 188 C232 194 168 184 160 172 Z"
+        fill="url(#glassShine)"
+        stroke="#090a0d"
+        stroke-width="2.5"
+        rx="4"
+      />
+      <!-- Lens separator / nose bridge -->
+      <rect x="202" y="153" width="7" height="10" rx="1.5" fill="#090a0d"/>
+
+      <!-- Specular reflection slashes across lenses -->
+      <path d="M178 152 L168 174" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+      <path d="M185 153 L177 171" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+      <path d="M228 160 L218 182" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+      <path d="M235 161 L227 179" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+
+      <!-- Side Temple Arm with Chrome/White Gothic Lettering (like in user photo) -->
+      <path d="M160 156 L144 162 L146 170 L160 166 Z" fill="#090a0d" stroke="#1e293b" stroke-width="1"/>
+      <path d="M147 165 H157" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 1.5"/>
+    </g>
+
+    <!-- 3. FULLY CLEAR, UNOBSTRUCTED FACE, NOSE, SMILE & JAWLINE -->
+    <!-- Clean Nose Contour & Shading -->
+    <g id="nose-definition">
+      <path d="M208 172 L212 196 Q214 204 220 203" fill="none" stroke="#71717a" stroke-width="1.8" stroke-linecap="round"/>
+      <ellipse cx="221" cy="202" rx="3.5" ry="2" fill="#52525b" opacity="0.5"/>
+      <path d="M211 202 Q216 206 222 202" fill="none" stroke="#3f3f46" stroke-width="1.2"/>
+    </g>
+
+    <!-- Handsome, Open, Confident Smile & Laugh (COMPLETELY UNOBSTRUCTED!) -->
+    <g id="smile-and-teeth">
+      <!-- Upper lip definition -->
+      <path
+        d="M194 212 C205 210 216 211 228 214 C234 216 238 220 240 222"
+        fill="none"
+        stroke="#3f3f46"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <!-- Laughing mouth opening showing bright white teeth -->
+      <path
+        d="M196 215 Q218 213 238 221 C232 238 208 238 196 215 Z"
+        fill="#1e1e24"
+      />
+      <!-- Bright white teeth row -->
+      <path
+        d="M198 216 Q218 215 236 222 C232 228 208 228 198 216 Z"
+        fill="#ffffff"
+        stroke="#e4e4e7"
+        stroke-width="0.5"
+      />
+      <!-- Subtle tooth separation lines -->
+      <line x1="211" y1="216" x2="211" y2="223" stroke="#cbd5e1" stroke-width="0.8"/>
+      <line x1="218" y1="216" x2="218" y2="224" stroke="#cbd5e1" stroke-width="0.8"/>
+      <line x1="225" y1="218" x2="225" y2="225" stroke="#cbd5e1" stroke-width="0.8"/>
+
+      <!-- Lower lip shadow -->
+      <path
+        d="M202 235 Q218 240 232 233"
+        fill="none"
+        stroke="#52525b"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+
+      <!-- Cheerful smile crease / dimple lines -->
+      <path d="M188 212 Q192 222 195 230" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M242 216 Q240 226 236 234" fill="none" stroke="#a1a1aa" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- Clean Chin & Stylish Goatee / Stubble Shadow -->
+    <g id="chin-and-goatee">
+      <!-- Chin highlight and structure -->
+      <path d="M204 246 Q218 252 230 245" fill="none" stroke="#a1a1aa" stroke-width="1.5"/>
+      <!-- Soft goatee & chin stubble (just like in photo) -->
+      <ellipse cx="218" cy="245" rx="9" ry="5" fill="#3f3f46" opacity="0.45"/>
+      <!-- Subtle jawline stubble -->
+      <path
+        d="M170 236 Q190 252 218 253 Q240 248 252 228"
+        fill="none"
+        stroke="#52525b"
+        stroke-width="2.5"
+        stroke-dasharray="2 2"
+        opacity="0.4"
+      />
+    </g>
+  </g>
+
+  <!-- 4. Aesthetic Circular Border & Ambient Vignette -->
+  <rect width="400" height="400" fill="url(#softVignette)"/>
+  <rect width="400" height="400" fill="none" stroke="#e2e8f0" stroke-width="3"/>
+</svg>
