@@ -48,6 +48,10 @@ interface HeaderProps {
   onOpenSearchModal?: () => void;
   onShowToast?: (msg: string) => void;
   onUpdateAvatar?: (avatarUrl: string) => void;
+  isLoggedIn?: boolean;
+  onOpenSignIn?: () => void;
+  onOpenSignUp?: () => void;
+  onSignOut?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -67,6 +71,10 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSearchModal,
   onShowToast,
   onUpdateAvatar,
+  isLoggedIn = true,
+  onOpenSignIn,
+  onOpenSignUp,
+  onSignOut,
 }) => {
   const [activeHoverMenu, setActiveHoverMenu] = useState<'trade' | 'brokers' | 'community' | 'company' | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -283,60 +291,61 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* User Profile Pill & Dropdown Menu */}
-          <div className="relative" ref={profileMenuRef}>
-            <button
-              onClick={() => {
-                setIsProfileMenuOpen((prev) => !prev);
-                handleCloseImmediately();
-              }}
-              className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border bg-white shadow-2xs hover:shadow-xs transition-all text-left group cursor-pointer ${
-                isProfileMenuOpen
-                  ? 'border-[#5945F1] ring-2 ring-[#5945F1]/15'
-                  : 'border-indigo-200/90 hover:border-indigo-300'
-              }`}
-              title="Click to view profile & account options"
-            >
-              {/* Rounded Icon Box with User Photo / Silhouette + Purple Notification Dot */}
-              <div className="relative">
-                <div className="w-8 h-8 rounded-lg border border-indigo-100 bg-white flex items-center justify-center text-slate-700 group-hover:text-[#5945F1] group-hover:border-indigo-200 transition-colors shrink-0 overflow-hidden shadow-2xs">
-                  {user.avatar && (user.avatar.startsWith('/') || user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.username}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <User className="w-4 h-4 stroke-[1.75]" />
-                  )}
+          {/* User Profile Pill & Dropdown Menu (if logged in) OR Guest Buttons (if not logged in) */}
+          {isLoggedIn ? (
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                onClick={() => {
+                  setIsProfileMenuOpen((prev) => !prev);
+                  handleCloseImmediately();
+                }}
+                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border bg-white shadow-2xs hover:shadow-xs transition-all text-left group cursor-pointer ${
+                  isProfileMenuOpen
+                    ? 'border-[#5945F1] ring-2 ring-[#5945F1]/15'
+                    : 'border-indigo-200/90 hover:border-indigo-300'
+                }`}
+                title="Click to view profile & account options"
+              >
+                {/* Rounded Icon Box with User Photo / Silhouette + Purple Notification Dot */}
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-lg border border-indigo-100 bg-white flex items-center justify-center text-slate-700 group-hover:text-[#5945F1] group-hover:border-indigo-200 transition-colors shrink-0 overflow-hidden shadow-2xs">
+                    {user.avatar && (user.avatar.startsWith('/') || user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.username}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <User className="w-4 h-4 stroke-[1.75]" />
+                    )}
+                  </div>
+                  {/* Purple notification dot floating on top-right corner */}
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#5945F1] absolute -top-1 -right-1 ring-2 ring-white" />
                 </div>
-                {/* Purple notification dot floating on top-right corner */}
-                <span className="w-2.5 h-2.5 rounded-full bg-[#5945F1] absolute -top-1 -right-1 ring-2 ring-white" />
-              </div>
 
-              {/* Name + Rank with Purple Ghost Icon */}
-              <div className="leading-tight pr-1">
-                <div className="text-xs sm:text-[13px] font-semibold text-[#0b1c30]">
-                  Hi, {user.username}
+                {/* Name + Rank with Purple Ghost Icon */}
+                <div className="leading-tight pr-1">
+                  <div className="text-xs sm:text-[13px] font-semibold text-[#0b1c30]">
+                    Hi, {user.username}
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-0.5">
+                    {/* Custom Purple Ghost Icon matching Total Nav Bar.png */}
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="w-3.5 h-3.5 text-[#5945F1] fill-none stroke-current shrink-0"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 4a7 7 0 0 0-7 7v8l3-1.5 3 1.5 3-1.5 3 1.5 3-1.5V11a7 7 0 0 0-7-7z" />
+                      <circle cx="9.5" cy="10" r="1.1" fill="currentColor" />
+                      <circle cx="14.5" cy="10" r="1.1" fill="currentColor" />
+                    </svg>
+                    <span>{user.rankTitle}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-0.5">
-                  {/* Custom Purple Ghost Icon matching Total Nav Bar.png */}
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="w-3.5 h-3.5 text-[#5945F1] fill-none stroke-current shrink-0"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 4a7 7 0 0 0-7 7v8l3-1.5 3 1.5 3-1.5 3 1.5 3-1.5V11a7 7 0 0 0-7-7z" />
-                    <circle cx="9.5" cy="10" r="1.1" fill="currentColor" />
-                    <circle cx="14.5" cy="10" r="1.1" fill="currentColor" />
-                  </svg>
-                  <span>{user.rankTitle}</span>
-                </div>
-              </div>
-            </button>
+              </button>
 
             {/* Profile Dropdown Menu - Exact match to image.png */}
             {isProfileMenuOpen && (
@@ -551,7 +560,9 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex justify-center pb-0.5">
                   <button
                     onClick={() => {
-                      if (onShowToast) {
+                      if (onSignOut) {
+                        onSignOut();
+                      } else if (onShowToast) {
                         onShowToast("You've been signed out. Welcome back anytime!");
                       }
                       setIsProfileMenuOpen(false);
@@ -564,6 +575,25 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
           </div>
+        ) : (
+          /* Guest Actions (Sign In & Open free account) matching D12_Sign-Up.png */
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={onOpenSignIn}
+              className="px-3.5 sm:px-4 py-2 rounded-xl border border-indigo-200/90 text-xs sm:text-sm font-semibold text-slate-700 hover:text-[#5945F1] hover:border-[#5945F1] bg-white transition-all shadow-2xs cursor-pointer whitespace-nowrap"
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={onOpenSignUp}
+              className="px-3.5 sm:px-5 py-2 rounded-xl bg-[#CAEB0E] hover:bg-[#b8d60d] text-black font-extrabold text-xs sm:text-sm transition-all shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              Open free account
+            </button>
+          </div>
+        )}
 
           {/* Mobile Search button */}
           <button

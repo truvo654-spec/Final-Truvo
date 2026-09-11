@@ -5,10 +5,8 @@ import {
   Check,
   Copy,
   ExternalLink,
-  ShieldCheck,
-  CheckCircle2,
   ChevronRight,
-  Info,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface ConnectToTruvoPageProps {
@@ -30,13 +28,13 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
   onOpenConnectModal,
   onShowToast,
 }) => {
-  // Default to HFM or selected broker matching screenshot
+  // Default to selected broker or HFM to match D12_Connect to MarketSyde.png
   const currentBroker = broker || brokers.find((b) => b.name === 'HFM') || brokers[0];
   const [activeMode, setActiveMode] = useState<'open_new' | 'already_have'>('open_new');
   const [copiedCode, setCopiedCode] = useState(false);
   const [partnerCode] = useState('xyz123');
-  const [tradingAccountId, setTradingAccountId] = useState('');
-  const [isLinked, setIsLinked] = useState(false);
+  const [existingAccountId, setExistingAccountId] = useState('');
+  const [isExistingSubmitted, setIsExistingSubmitted] = useState(false);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(partnerCode);
@@ -47,69 +45,73 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
 
   const handleLinkExisting = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tradingAccountId.trim()) {
+    if (!existingAccountId.trim()) {
       onShowToast?.('Please enter your trading account number');
       return;
     }
-    setIsLinked(true);
-    onShowToast?.(`Request submitted for ${currentBroker.name} account #${tradingAccountId}!`);
+    setIsExistingSubmitted(true);
+    onShowToast?.(`Request submitted for ${currentBroker.name} account #${existingAccountId}!`);
   };
 
   return (
-    <div className="w-full space-y-6 pb-16 animate-in fade-in duration-200">
+    <div className="w-full max-w-[1080px] mx-auto space-y-6 pb-20 animate-in fade-in duration-200">
       {/* Back button */}
-      <div>
+      <div className="pt-1">
         <button
           onClick={onBackToDashboard}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-[#5945F1] transition-colors shadow-2xs cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-indigo-200/80 bg-white dark:bg-[#120d2b] dark:border-indigo-950 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-[#5945F1] hover:border-[#5945F1] transition-all shadow-2xs cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Dashboard</span>
+          <span>Back to Brokers</span>
         </button>
       </div>
 
-      {/* ─── 1. TOP TITLE HEADER ─── */}
-      <div className="space-y-2 pt-1">
-        <h1 className="font-display text-2xl sm:text-3xl lg:text-[34px] font-extrabold tracking-tight leading-tight">
-          <span className="text-[#5945F1]">Let us help you get starte</span>
-          <span className="text-[#FD02B0]">d.</span>
+      {/* ─── 1. TOP TITLE HEADER (Exact match to D12_Connect to MarketSyde.png) ─── */}
+      <div className="space-y-2.5">
+        <h1 className="font-display text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-tight">
+          <span className="text-[#5945F1]">Let's Get Your Account Connecte</span>
+          <span className="text-[#FE01B1]">d</span>
+          <span className="text-[#CAEB0E]">.</span>
         </h1>
-        <p className="text-xs sm:text-sm text-slate-600 max-w-3xl leading-relaxed">
-          Getting set up is easy with provided options, follow these steps to set up. Once the account is ready, start trading and earning cashback
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-3xl leading-relaxed">
+          Follow the steps below to connect your broker and trading account. Once approved, you'll be ready to earn cashback, track your trading activity, and access rewards.
         </p>
       </div>
 
       {/* ─── 2. APPROVAL NOTICE BANNER ─── */}
-      <div className="p-4 rounded-2xl bg-[#f4f6fb] border border-slate-200/80 text-xs sm:text-sm text-slate-600 leading-relaxed shadow-2xs">
-        <span>Approval may take 2 to 3 business days, depending on the broker's processing time for account approval or IB transfer. Please check your approval status in the </span>
+      <div className="p-4 sm:p-4.5 rounded-2xl bg-[#F5F4FE] dark:bg-[#181238] border border-indigo-100/90 dark:border-indigo-950/60 text-xs sm:text-[13px] text-slate-600 dark:text-slate-300 leading-relaxed shadow-2xs">
+        <span>Approval may take 2–3 business days, depending on the broker's review process. You can track your application status anytime from your </span>
         <button
+          type="button"
           onClick={onNavigateToCashback}
-          className="font-bold underline text-slate-900 hover:text-[#5945F1] transition-colors cursor-pointer"
+          className="font-bold underline text-[#5945F1] hover:text-[#4533db] transition-colors cursor-pointer"
         >
-          Cashback
+          Cashback dashboard
         </button>
-        <span> menu</span>
+        <span>.</span>
       </div>
 
       {/* ─── 3. TAB SWITCHER (Open New Account vs Already Have An Account) ─── */}
       <div className="flex justify-center pt-2">
-        <div className="inline-flex items-center p-1 rounded-2xl bg-slate-100/90 border border-slate-200/70 shadow-inner">
+        <div className="inline-flex items-center p-1 rounded-full bg-[#f1f3f9] dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 shadow-inner">
           <button
+            type="button"
             onClick={() => setActiveMode('open_new')}
-            className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            className={`px-6 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeMode === 'open_new'
-                ? 'bg-white text-[#5945F1] shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-slate-900 text-[#5945F1] shadow-2xs'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             Open New Account
           </button>
           <button
+            type="button"
             onClick={() => setActiveMode('already_have')}
-            className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            className={`px-6 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeMode === 'already_have'
-                ? 'bg-white text-[#5945F1] shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white dark:bg-slate-900 text-[#5945F1] shadow-2xs'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             Already Have An Account
@@ -117,110 +119,125 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
         </div>
       </div>
 
-      {/* ─── 4. BROKER SHOWCASE CARD ─── */}
-      <div className="rounded-3xl bg-white border-2 border-transparent bg-origin-border p-6 shadow-xs relative overflow-hidden"
-           style={{
-             backgroundImage: 'linear-gradient(white, white), linear-gradient(135deg, #5945F1 0%, #FD02B0 100%)',
-             backgroundOrigin: 'border-box',
-             backgroundClip: 'padding-box, border-box',
-           }}>
+      {/* ─── 4. BROKER SHOWCASE CARD (Purple-Pink Gradient Border) ─── */}
+      <div
+        className="rounded-3xl bg-white dark:bg-[#120d2b] border-2 border-transparent bg-origin-border p-6 sm:p-7 shadow-xs relative overflow-hidden"
+        style={{
+          backgroundImage: 'linear-gradient(white, white), linear-gradient(135deg, #5945F1 0%, #FE01B1 100%)',
+          backgroundOrigin: 'border-box',
+          backgroundClip: 'padding-box, border-box',
+        }}
+      >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          {/* Left device graphic preview */}
+          {/* Left device graphic preview (Desktop & tilted Phone mockup) */}
           <div className="lg:col-span-5 flex justify-center items-center">
-            <div className="relative w-full max-w-[320px] h-[190px] rounded-2xl bg-gradient-to-br from-slate-900 to-black p-3.5 text-white shadow-xl flex flex-col justify-between overflow-hidden border border-slate-800">
-              {/* Mockup UI Header */}
+            <div className="relative w-full max-w-[340px] h-[195px] rounded-2xl bg-[#0d121f] p-3 text-white shadow-xl flex flex-col justify-between overflow-hidden border border-slate-700">
+              {/* Desktop Mockup Header */}
               <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-black text-white flex items-center justify-center font-black text-[9px] border border-slate-700">
-                    {currentBroker.name.substring(0, 3)}
+                  <div className="px-1.5 py-0.5 rounded bg-red-600 font-black text-[10px] text-white tracking-tighter">
+                    HFM
                   </div>
-                  <span className="text-[11px] font-bold text-slate-200">TRADE THE MARKETS</span>
+                  <span className="text-[10px] font-bold text-slate-300 tracking-wider">
+                    HF MARKETS
+                  </span>
                 </div>
                 <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
                 </div>
               </div>
 
               {/* Graphic Body */}
-              <div className="py-2 space-y-1">
-                <div className="text-xs font-black text-white leading-tight uppercase tracking-tight">
-                  WITH THE <span className="text-amber-400">BEST TRADING</span> CONDITIONS
+              <div className="py-2 space-y-1.5 z-10 max-w-[190px]">
+                <div className="text-[11px] font-black text-white leading-tight uppercase tracking-tight">
+                  TRADE THE MARKETS WITH THE <span className="text-red-500">BEST TRADING</span> CONDITIONS
                 </div>
-                <div className="text-[10px] text-slate-400 leading-snug">
-                  Ultra-fast execution, raw spreads & zero swap accounts available.
+                <div className="text-[9px] text-slate-400 leading-snug">
+                  CFDs on Forex, Commodities, Bonds, Metals, Energies, Shares, Indices and more with 1:2000 leverage.
+                </div>
+                <div className="pt-1">
+                  <span className="px-3 py-1 rounded bg-[#CAEB0E] text-black font-black text-[9px] uppercase tracking-wider inline-block shadow-2xs">
+                    Register
+                  </span>
                 </div>
               </div>
 
-              {/* Mockup Floating Phone Card */}
-              <div className="absolute -right-3 -bottom-2 w-28 h-36 bg-slate-900/95 rounded-xl border-2 border-slate-700 p-2 shadow-2xl rotate-3 flex flex-col justify-between">
-                <div className="text-[8px] font-bold text-amber-400">AWARDED BEST TRADING</div>
-                <div className="space-y-1 text-[7px] text-slate-300">
-                  <div className="flex justify-between"><span>EUR/USD</span><span className="text-emerald-400">1.0845</span></div>
-                  <div className="flex justify-between"><span>XAU/USD</span><span className="text-amber-400">2,340.5</span></div>
-                  <div className="flex justify-between"><span>BTC/USD</span><span className="text-purple-400">68,200</span></div>
+              {/* Mockup Floating Phone Card Overlay */}
+              <div className="absolute -right-2 -bottom-2 w-32 h-44 bg-[#0a0f1d] rounded-xl border-2 border-slate-600 p-2.5 shadow-2xl rotate-3 flex flex-col justify-between z-20">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-1">
+                  <span className="text-[9px] font-black text-red-500">HFM</span>
+                  <span className="text-[7px] text-slate-400">LOGIN</span>
                 </div>
-                <div className="py-0.5 rounded-md bg-[#5945F1] text-[8px] font-bold text-center text-white">
-                  REGISTER
+                <div className="space-y-1 text-center py-1">
+                  <div className="text-[8px] font-black text-white leading-tight uppercase">
+                    TRADE THE MARKETS WITH THE <span className="text-red-500">BEST TRADING</span> CONDITIONS
+                  </div>
+                  <div className="px-2 py-0.5 rounded bg-[#CAEB0E] text-black font-extrabold text-[7px] uppercase inline-block">
+                    Register
+                  </div>
+                </div>
+                <div className="p-1 rounded bg-slate-900 border border-slate-800 text-[6.5px] text-amber-300 text-center font-bold">
+                  ★ AWARDED BEST TRADING ACCOUNTS
                 </div>
               </div>
             </div>
           </div>
 
           {/* Middle Broker Specs */}
-          <div className="lg:col-span-4 space-y-3">
-            <div className="flex items-center gap-2.5">
-              <h2 className="font-display text-2xl font-black text-[#0b1c30]">
+          <div className="lg:col-span-4 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <h2 className="font-display text-2xl sm:text-3xl font-black text-[#0b1c30] dark:text-white">
                 {currentBroker.name}
               </h2>
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-900 bg-[#a3e635] px-2.5 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[11px] font-black text-black bg-[#CAEB0E] px-2.5 py-0.5 rounded-full shadow-2xs">
                 ✔ Verified
               </span>
             </div>
 
             <a
-              href="#risk"
+              href="#risk-warning"
               onClick={(e) => e.preventDefault()}
-              className="text-xs text-[#2563eb] hover:underline font-medium block"
+              className="text-xs text-[#5945F1] hover:underline font-semibold block"
             >
               70% of retail CFD accounts lose money
             </a>
 
-            {/* Spec key-values */}
-            <div className="text-xs text-slate-600 space-y-1 font-mono pt-1">
+            {/* Spec key-values with bullet points exactly as in screenshot */}
+            <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1 pt-1">
               <div className="flex items-center">
-                <span className="w-36 text-slate-500 font-sans">Settlement Period</span>
-                <span className="font-semibold text-slate-800">: Weekly</span>
+                <span className="w-40 text-slate-500 dark:text-slate-400">• Settlement Period</span>
+                <span className="font-semibold text-slate-900 dark:text-white">: Weekly</span>
               </div>
               <div className="flex items-center">
-                <span className="w-36 text-slate-500 font-sans">Platform</span>
-                <span className="font-semibold text-slate-800">: MT4, MT5</span>
+                <span className="w-40 text-slate-500 dark:text-slate-400">• Platform</span>
+                <span className="font-semibold text-slate-900 dark:text-white">: MT4, MT5</span>
               </div>
               <div className="flex items-center">
-                <span className="w-36 text-slate-500 font-sans">Leverage</span>
-                <span className="font-semibold text-slate-800">: 1000</span>
+                <span className="w-40 text-slate-500 dark:text-slate-400">• Leverage</span>
+                <span className="font-semibold text-slate-900 dark:text-white">: 1000</span>
               </div>
               <div className="flex items-center">
-                <span className="w-36 text-slate-500 font-sans">Min. Deposit Amount</span>
-                <span className="font-semibold text-slate-800">: 5</span>
+                <span className="w-40 text-slate-500 dark:text-slate-400">• Min. Deposit Amount</span>
+                <span className="font-semibold text-slate-900 dark:text-white">: 5</span>
               </div>
               <div className="flex items-center">
-                <span className="w-36 text-slate-500 font-sans">Margin call/Stop out</span>
-                <span className="font-semibold text-slate-800">: 50% / 20%</span>
+                <span className="w-40 text-slate-500 dark:text-slate-400">• Margin call/Stop out</span>
+                <span className="font-semibold text-slate-900 dark:text-white">: 50% / 20%</span>
               </div>
               <div className="flex items-center">
-                <span className="w-36 text-slate-500 font-sans">Supported Currencies</span>
-                <span className="font-semibold text-slate-800">: EUR, JPY, THB, USD, IDR, NGN</span>
+                <span className="w-40 text-slate-500 dark:text-slate-400">• Supported Currencies</span>
+                <span className="font-semibold text-slate-900 dark:text-white">: EUR, JPY, THB, USD, IDR, NGN</span>
               </div>
             </div>
           </div>
 
-          {/* Right Highest Cashback Badge */}
+          {/* Right Highest Cashback Solid Purple Box */}
           <div className="lg:col-span-3 flex justify-center lg:justify-end">
-            <div className="w-full sm:w-auto min-w-[170px] rounded-2xl bg-[#5945F1] text-white p-5 shadow-md flex flex-col items-center justify-center text-center">
+            <div className="w-full sm:w-auto min-w-[185px] rounded-2xl bg-[#5945F1] text-white p-5 sm:p-6 shadow-md flex flex-col items-center justify-center text-center">
               <span className="text-xs font-semibold text-white/90">Highest Cashback</span>
-              <span className="text-xl sm:text-2xl font-black font-display tracking-tight mt-0.5">
+              <span className="text-2xl sm:text-[26px] font-black font-display tracking-tight mt-1 text-white">
                 $8.00 / lot
               </span>
             </div>
@@ -228,87 +245,71 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
         </div>
       </div>
 
-      {/* ─── 5. STEP BY STEP GUIDE ─── */}
+      {/* ─── 5. STEP BY STEP GUIDE (D12_Connect to MarketSyde.png) ─── */}
       {activeMode === 'open_new' ? (
-        <div className="rounded-2xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-8">
-          {/* STEP 1 */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="w-9 h-9 rounded-xl bg-[#5945F1] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
-                1
-              </div>
-              <div>
-                <h3 className="font-display text-base sm:text-lg font-extrabold text-[#0b1c30]">
-                  Sign-up to Truvo
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                  Create an account to start earning cashback on every trade.
-                </p>
-              </div>
-            </div>
-
-            <div className="self-end sm:self-center">
-              <button
-                disabled
-                className="px-6 py-2 rounded-xl border border-slate-300 bg-white text-slate-400 font-semibold text-xs shadow-2xs cursor-default"
-              >
-                Signed Up
-              </button>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-slate-100" />
-
-          {/* STEP 2 */}
-          <div className="flex items-start gap-4">
-            <div className="w-9 h-9 rounded-xl bg-[#5945F1] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">
-              2
-            </div>
-
-            <div className="flex-1 space-y-6 min-w-0">
-              <div>
-                <h3 className="font-display text-base sm:text-lg font-extrabold text-[#0b1c30]">
-                  Create Account with &lt;&lt;{currentBroker.name}&gt;&gt;
-                </h3>
-              </div>
-
-              {/* 2.1 Open Account */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
-                <div className="space-y-1">
-                  <h4 className="font-bold text-sm text-[#0b1c30]">2.1 Open Account</h4>
-                  <p className="text-xs text-slate-500 max-w-lg leading-relaxed">
-                    Create a new Broker account via the link below, and once that's done, don't forget to move on to 2.2!
-                  </p>
+        <div className="space-y-4">
+          {/* ──────────────── STEP 1 CARD ──────────────── */}
+          <div className="rounded-2xl bg-white dark:bg-[#120d2b] border border-slate-200/90 dark:border-slate-800 p-6 sm:p-7 shadow-2xs">
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+              {/* Step 1 Left Details */}
+              <div className="flex items-start gap-4">
+                <div className="w-9 h-9 rounded-xl bg-[#5945F1] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-2xs">
+                  1
                 </div>
 
+                <div className="space-y-3">
+                  <h3 className="font-display text-base sm:text-lg font-black text-[#0b1c30] dark:text-white">
+                    Create Account with &lt;&lt;{currentBroker.name}&gt;&gt;
+                  </h3>
+
+                  {/* 1.1 Open Broker Account */}
+                  <div className="space-y-0.5">
+                    <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
+                      1.1 Open Broker Account
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg leading-relaxed">
+                      Create a new broker account via the link below. Once completed, simply move on to 1.2!
+                    </p>
+                  </div>
+
+                  {/* 1.2 Open New Trading Account */}
+                  <div className="space-y-0.5 pt-1">
+                    <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
+                      1.2 Open New Trading Account
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg leading-relaxed">
+                      Enter the partner code while creating the new trading account
+                    </p>
+                  </div>
+
+                  {/* Footnote note */}
+                  <div className="pt-2 text-xs text-slate-400 italic">
+                    *To receive cashback, don't forget to enter the partner code every time you open a new account.
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 1 Right Action Button & Partner Code */}
+              <div className="flex flex-col sm:items-end gap-3 shrink-0 pt-2 lg:pt-0">
                 <a
                   href={`https://${currentBroker.name.toLowerCase()}.com`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4734dc] text-white font-bold text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                  className="w-full sm:w-56 py-2.5 px-4 rounded-xl bg-[#5945F1] hover:bg-[#4533db] text-white font-bold text-xs sm:text-sm shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap active:scale-95 text-center"
                 >
-                  <span>Go to &lt;&lt;{currentBroker.name}&gt;&gt;</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  <span>Go to &lt;&lt;{currentBroker.name}'s Name&gt;&gt;</span>
                 </a>
-              </div>
 
-              {/* 2.2 Enter Partner Code */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-3">
-                <div className="space-y-1">
-                  <h4 className="font-bold text-sm text-[#0b1c30]">2.2 Enter Partner Code</h4>
-                  <p className="text-xs text-slate-500 max-w-lg leading-relaxed">
-                    Open a trading account and enter the code in the Partner Code field.
-                  </p>
-                </div>
-
-                <div className="space-y-1 w-full sm:w-56">
-                  <label className="text-xs font-semibold text-slate-700 block">Partner Code</label>
-                  <div className="flex items-center justify-between px-3 py-2 rounded-xl border border-slate-300 bg-white shadow-2xs">
-                    <span className="font-mono font-bold text-slate-800 text-sm tracking-wide">
+                <div className="w-full sm:w-56 space-y-1">
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
+                    Partner Code
+                  </span>
+                  <div className="flex items-center justify-between px-3.5 py-2 rounded-xl border border-indigo-200/90 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xs">
+                    <span className="font-mono font-bold text-slate-800 dark:text-white text-sm">
                       {partnerCode}
                     </span>
                     <button
+                      type="button"
                       onClick={handleCopyCode}
                       className="p-1 text-slate-400 hover:text-[#5945F1] transition-colors cursor-pointer"
                       title="Copy Partner Code"
@@ -322,45 +323,122 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Footer Note */}
-              <div className="pt-2 text-xs text-slate-400 leading-relaxed">
-                * Every time you open a new trading account, you must enter the partner code to receive up to 100% rebate.
+          {/* ──────────────── STEP 2 CARD ──────────────── */}
+          <div className="rounded-2xl bg-white dark:bg-[#120d2b] border border-slate-200/90 dark:border-slate-800 p-6 sm:p-7 shadow-2xs">
+            <div className="flex items-start gap-4">
+              <div className="w-9 h-9 rounded-xl bg-[#5945F1] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-2xs">
+                2
+              </div>
+              <div className="space-y-0.5">
+                <h3 className="font-display text-base sm:text-lg font-black text-[#0b1c30] dark:text-white">
+                  Pending Approval
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
+                  Final registration may take 2 to 3 business days, depending on the Broker's processing time for account approval/IB creation.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ──────────────── PINK/PURPLE OUTLINE BANNER ──────────────── */}
+          <div className="rounded-2xl border border-[#FE01B1] p-4 bg-white dark:bg-[#120d2b] shadow-2xs text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 text-center">
+            Once your trading account is approved, return to our platform and complete the final steps to start earning cashback.
+          </div>
+
+          {/* ──────────────── STEPS 3, 4, 5 CONNECTED CARD ──────────────── */}
+          <div className="rounded-2xl bg-white dark:bg-[#120d2b] border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-2xs relative">
+            {/* Timeline Vertical Track */}
+            <div className="absolute left-[38px] sm:left-[46px] top-12 bottom-12 w-0.5 bg-indigo-100 dark:bg-slate-800 -z-0" />
+
+            <div className="space-y-7 relative z-10">
+              {/* STEP 3 */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-9 h-9 rounded-xl bg-[#5945F1] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-2xs">
+                    3
+                  </div>
+                  <div>
+                    <h3 className="font-display text-base font-black text-[#0b1c30] dark:text-white">
+                      Register Trading Account
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                      Register your trading account details to receive cashback.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onOpenConnectModal(currentBroker)}
+                  className="px-6 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4533db] text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95 sm:self-center"
+                >
+                  Register to Marketsyde
+                </button>
               </div>
 
-              {/* Step 2.3 Ready to Link */}
-              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <span className="text-xs text-slate-600">
-                  Already created your account on {currentBroker.name}? Connect your account number now:
-                </span>
+              {/* STEP 4 */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                <div className="flex items-start gap-4">
+                  <div className="w-9 h-9 rounded-xl bg-[#5945F1] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-2xs">
+                    4
+                  </div>
+                  <div>
+                    <h3 className="font-display text-base font-black text-[#0b1c30] dark:text-white">
+                      Approval Status
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 max-w-xl">
+                      Check if your trading account is approved in the 'My Cashback' menu. Process takes 1-2 business days depending on the broker.
+                    </p>
+                  </div>
+                </div>
+
                 <button
-                  onClick={() => onOpenConnectModal(currentBroker)}
-                  className="px-5 py-2 rounded-xl border border-[#5945F1] text-[#5945F1] hover:bg-indigo-50 font-bold text-xs transition-colors cursor-pointer whitespace-nowrap shadow-2xs"
+                  type="button"
+                  onClick={onNavigateToCashback}
+                  className="px-6 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4533db] text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95 sm:self-center"
                 >
-                  Link Account Number
+                  Go to 'My Cashback'
                 </button>
+              </div>
+
+              {/* STEP 5 */}
+              <div className="flex items-start gap-4 pt-2">
+                <div className="w-9 h-9 rounded-xl bg-[#5945F1] text-white flex items-center justify-center font-bold text-base shrink-0 shadow-2xs">
+                  5
+                </div>
+                <div>
+                  <h3 className="font-display text-base font-black text-[#0b1c30] dark:text-white">
+                    Start Earning
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                    Start trading for unlimited cashback when your account status is linked.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       ) : (
-        /* ALREADY HAVE AN ACCOUNT (IB TRANSFER GUIDE) */
-        <div className="rounded-2xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+        /* ──────────────── ALREADY HAVE AN ACCOUNT (IB TRANSFER FLOW) ──────────────── */
+        <div className="rounded-2xl bg-white dark:bg-[#120d2b] border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-2xs space-y-6">
           <div className="space-y-2">
-            <h3 className="font-display text-lg font-black text-[#0b1c30]">
-              Transfer your existing {currentBroker.name} account to Truvo IB
+            <h3 className="font-display text-lg font-black text-[#0b1c30] dark:text-white">
+              Transfer your existing {currentBroker.name} account to MarketSyde IB
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-              If you already trade with {currentBroker.name}, you do not need to open a new profile. Simply request an IB transfer through your broker's cabinet or support.
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
+              If you already have an account with {currentBroker.name}, you do not need to open a new profile. Simply transfer your account under MarketSyde IB to unlock cashback.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
-              <span className="text-xs font-bold text-[#5945F1] uppercase tracking-wider">Method 1: Partner Transfer</span>
-              <div className="text-xs text-slate-700 leading-relaxed">
-                Log into {currentBroker.name} Client Portal &gt; Go to <strong>Partners / IB</strong> &gt; Enter Partner Code:
-                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-300 rounded-lg font-mono font-bold text-slate-900 text-xs">
+            <div className="p-4 rounded-xl border border-indigo-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 space-y-2">
+              <span className="text-xs font-bold text-[#5945F1] uppercase tracking-wider">Method 1: Broker Client Portal</span>
+              <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                Log into {currentBroker.name} Portal &gt; Partners / IB Transfer &gt; Enter Partner Code:
+                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg font-mono font-bold text-slate-900 dark:text-white text-xs">
                   <span>{partnerCode}</span>
                   <button onClick={handleCopyCode} className="text-[#5945F1] hover:underline cursor-pointer">
                     Copy
@@ -369,35 +447,35 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
               </div>
             </div>
 
-            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
+            <div className="p-4 rounded-xl border border-indigo-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 space-y-2">
               <span className="text-xs font-bold text-[#5945F1] uppercase tracking-wider">Method 2: Support Ticket</span>
-              <div className="text-xs text-slate-700 leading-relaxed">
-                Email {currentBroker.name} Support from your registered email:
-                <div className="mt-2 p-2 bg-white border border-slate-200 rounded-lg font-mono text-[11px] text-slate-600">
-                  "Please transfer my account #{tradingAccountId || 'XXXXXX'} under Partner ID: {partnerCode}"
+              <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                Send an email to {currentBroker.name} Support from your registered address:
+                <div className="mt-2 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-mono text-[11px] text-slate-600 dark:text-slate-400">
+                  "Please transfer my account #{existingAccountId || 'XXXXXX'} under MarketSyde Partner ID: {partnerCode}"
                 </div>
               </div>
             </div>
           </div>
 
           {/* Quick Submit Form */}
-          <form onSubmit={handleLinkExisting} className="pt-4 border-t border-slate-100 space-y-3">
-            <label className="block text-xs font-bold text-slate-800">
+          <form onSubmit={handleLinkExisting} className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
               Submit your existing {currentBroker.name} Trading Account for Verification:
             </label>
             <div className="flex flex-col sm:flex-row gap-2.5 max-w-md">
               <input
                 type="text"
-                value={tradingAccountId}
-                onChange={(e) => setTradingAccountId(e.target.value)}
+                value={existingAccountId}
+                onChange={(e) => setExistingAccountId(e.target.value)}
                 placeholder="e.g. 1100087642"
-                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:outline-hidden focus:border-[#5945F1]"
+                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono focus:outline-hidden focus:border-[#5945F1]"
               />
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4734dc] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4533db] text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
               >
-                {isLinked ? 'Submitted ✓' : 'Submit Account'}
+                {isExistingSubmitted ? 'Submitted ✓' : 'Submit Account'}
               </button>
             </div>
           </form>

@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21.4] - 2026-09-11
+### Added
+- **Connect to MarketSyde / Account Connection Flow (Exact match to `D12_Connect to MarketSyde.png`)**:
+  - Implemented the full post-signup / registered user flow when clicking **"Get Cashback"**:
+    - **Header Title**: `"Let's Get Your Account Connected."` with branded accents (`#5945F1` title, `#FE01B1` 'd', and `#CAEB0E` dot).
+    - **Subtitle & Info Box**: Explanatory text and 2-3 business days approval notice with direct link to the Cashback dashboard.
+    - **Tab Switcher**: Seamless toggle between `"Open New Account"` and `"Already Have An Account"`.
+    - **Broker Showcase Card**:
+      - Gradient border (`#5945F1` to `#FE01B1`).
+      - Detailed HFM desktop and mobile trading conditions screen preview mockup.
+      - Broker specs list (`Settlement Period: Weekly`, `Platform: MT4, MT5`, `Leverage: 1000`, `Min. Deposit: 5`, `Margin call/Stop out: 50% / 20%`, `Supported Currencies: EUR, JPY, THB, USD, IDR, NGN`).
+      - Solid purple Highest Cashback box (`$8.00 / lot`).
+    - **Numbered Flow Cards (Step 1 to Step 5)**:
+      - **Step 1**: `"Create Account with <<Broker>>"`, sub-steps 1.1 (Open Broker Account) & 1.2 (Open New Trading Account), `"Go to <<Broker's Name>>"` action button, and Partner Code box with 1-click copy (`xyz123`).
+      - **Step 2**: `"Pending Approval"` notice card.
+      - **Return Platform Notification**: Pink/purple outlined banner highlighting the next steps after broker account approval.
+      - **Steps 3, 4, 5 Connected Timeline Card**:
+        - **Step 3**: `"Register Trading Account"` with `"Register to Marketsyde"` action button.
+        - **Step 4**: `"Approval Status"` with `"Go to 'My Cashback'"` action button.
+        - **Step 5**: `"Start Earning"` milestone.
+    - **Already Have An Account Flow**: Instructions and account number submission form for existing broker account IB transfers.
+  - **Routing Integration**:
+    - When an authenticated/signed-up user (`isLoggedIn === true`) clicks **"Get Cashback"** on the Broker Detail Page, they are immediately brought to this page.
+    - Newly registered users completing the `AuthModal` flow are also automatically routed directly to this page.
+
+## [0.21.3] - 2026-09-11
+### Added
+- **Unregistered Guest Sign-Up Flow for "Get Cashback" (Exact match to `D12_Sign-Up.png`)**:
+  - Implemented `AuthModal` component matching the reference design:
+    - **Header**: MarketSyde logo (`#5945F1` + `#CAEB0E` dot), title `Sign up with MarketSyde`, subtitle `Explore the power of FX intelligence, copy-trade, and broker cashbacks.`
+    - **Sign In / Sign Up Mode Switcher**: Seamless toggle between registration and existing account login.
+    - **Interactive Password Validation Checklist**: Real-time validation criteria with green checkmarks:
+      - At least 8 characters
+      - At least one uppercase letter
+      - At least one lowercase letter
+      - At least one number
+      - At least one special character
+    - **Password Visibility Toggle**: Eye icon to inspect entered password.
+    - **Terms & Privacy Agreement Checkbox**: Custom styled checkbox.
+    - **Sign Up Button**: High-visibility `#CAEB0E` button with active state.
+    - **Social Auth Providers**: One-click registration options for Google, Apple, and Facebook with SVG logos.
+    - **Login Prompt**: "Already have an account? Log In" link at the bottom.
+  - **Integration in Broker Detail Page**:
+    - When clicking the **"Get Cashback"** button or any registration prompts while not signed up (`isLoggedIn === false`), the `AuthModal` is automatically opened.
+    - Upon successful sign-up or sign-in, the user state is updated, authentication is persisted, and the connection flow smoothly proceeds.
+  - **Header Authentication State Sync**:
+    - When logged out, the navigation bar displays `Sign In` and `Open free account` (`#CAEB0E`) buttons matching the design.
+    - Users can also sign out from their profile menu to test guest flows at any time.
+
 ## [0.21.2] - 2026-09-11
 ### Changed
 - **Broker Detail Page Header Layout Alignment**:

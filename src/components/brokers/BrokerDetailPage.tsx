@@ -8,6 +8,7 @@ import {
   User,
   Building2,
 } from 'lucide-react';
+import { AuthModal } from '../AuthModal';
 import { Tier1CashbackTab } from './tabs/Tier1CashbackTab';
 import { Tier1AccountTab } from './tabs/Tier1AccountTab';
 import { Tier1CompanyTab } from './tabs/Tier1CompanyTab';
@@ -21,22 +22,31 @@ import { OffshoreCompanyTab } from './tabs/OffshoreCompanyTab';
 interface BrokerDetailPageProps {
   broker: Broker;
   user: UserProfile;
+  isLoggedIn?: boolean;
   onBackToBrokers: () => void;
   onNavigateToConnectBroker: (broker: Broker) => void;
   onOpenViewPlan?: () => void;
   onShowToast?: (msg: string) => void;
+  onOpenSignUp?: () => void;
+  onLoginSuccess?: (email?: string, name?: string) => void;
 }
 
 export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
   broker,
   user,
+  isLoggedIn = false,
   onBackToBrokers,
   onNavigateToConnectBroker,
   onOpenViewPlan,
   onShowToast,
+  onOpenSignUp,
+  onLoginSuccess,
 }) => {
   // Current user tier for the 3 tab scenarios
   const [userTier, setUserTier] = useState<UserTierType>('tier-2');
+
+  // Fallback internal sign up modal state
+  const [isLocalSignUpModalOpen, setIsLocalSignUpModalOpen] = useState(false);
 
   // Active Tab Scenario (Cashback, Account, Company)
   const [activeTab, setActiveTab] = useState<'cashback' | 'account' | 'company'>('cashback');
@@ -48,6 +58,33 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
   // Rate: $8.00/lot, 25 lots -> $120/mth. ($4.80/lot net reward), $1,440/yr.
   const calculatedMonthly = Math.round(lotsPerMonth * 4.8);
   const calculatedAnnual = calculatedMonthly * 12;
+
+  // Handler for Get Cashback button:
+  // If not signed up / logged in: show AuthModal (D12_Sign-Up.png)
+  // If already signed up: show Connect to MarketSyde (D12_Connect to MarketSyde.png)
+  const handleGetCashbackClick = () => {
+    if (!isLoggedIn) {
+      if (onOpenSignUp) {
+        onOpenSignUp();
+      } else {
+        setIsLocalSignUpModalOpen(true);
+      }
+    } else {
+      onNavigateToConnectBroker(broker);
+    }
+  };
+
+  const handleRegisterPrompt = () => {
+    if (!isLoggedIn) {
+      if (onOpenSignUp) {
+        onOpenSignUp();
+      } else {
+        setIsLocalSignUpModalOpen(true);
+      }
+    } else {
+      onNavigateToConnectBroker(broker);
+    }
+  };
 
   // Render stylized HFM logo or broker logo
   const renderBrokerLogo = () => {
@@ -228,7 +265,7 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
           {/* Action Button: Get Cashback */}
           <button
             type="button"
-            onClick={() => onNavigateToConnectBroker(broker)}
+            onClick={handleGetCashbackClick}
             className="w-full mt-6 py-3.5 rounded-xl bg-[#CAEB0E] hover:bg-[#b8d60d] text-black font-extrabold text-sm transition-all shadow-md active:scale-95 cursor-pointer text-center"
           >
             Get Cashback
@@ -361,7 +398,7 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
                 broker={broker}
                 user={user}
                 onOpenViewPlan={onOpenViewPlan}
-                onRegisterPrompt={() => onNavigateToConnectBroker(broker)}
+                onRegisterPrompt={handleRegisterPrompt}
               />
             )}
             {userTier === 'tier-2' && (
@@ -391,7 +428,7 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
               <Tier1AccountTab
                 broker={broker}
                 user={user}
-                onRegisterPrompt={() => onNavigateToConnectBroker(broker)}
+                onRegisterPrompt={handleRegisterPrompt}
               />
             )}
             {userTier === 'tier-2' && (
@@ -419,7 +456,7 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
             {userTier === 'tier-1' && (
               <Tier1CompanyTab
                 broker={broker}
-                onRegisterPrompt={() => onNavigateToConnectBroker(broker)}
+                onRegisterPrompt={handleRegisterPrompt}
               />
             )}
             {userTier === 'tier-2' && (
@@ -435,6 +472,19 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
           </>
         )}
       </div>
+
+      {/* Fallback Local Sign Up Modal */}
+      <AuthModal
+        isOpen={isLocalSignUpModalOpen}
+        initialMode="signup"
+        onClose={() => setIsLocalSignUpModalOpen(false)}
+        onSuccess={(email, name) => {
+          setUserTier('tier-2');
+          onLoginSuccess?.(email, name);
+          onNavigateToConnectBroker(broker);
+        }}
+        onShowToast={onShowToast}
+      />
     </div>
   );
 };

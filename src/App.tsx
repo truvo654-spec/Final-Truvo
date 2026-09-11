@@ -54,6 +54,7 @@ import { SignalDetailModal } from './components/SignalDetailModal';
 import { CashbackLedgerModal } from './components/CashbackLedgerModal';
 import { BrokerComparisonModal } from './components/BrokerComparisonModal';
 import { SearchModal } from './components/SearchModal';
+import { AuthModal } from './components/AuthModal';
 import { Sparkles, Trophy, Zap, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -169,6 +170,49 @@ export default function App() {
   const [selectedCalculatorType, setSelectedCalculatorType] = useState<CalculatorType>('forex');
   const [earningRewardModal, setEarningRewardModal] = useState<EarningRewardData | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+
+  // Auth State: default to false (or stored preference) so user can test "ยังไม่ได้ sign up" flow
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('marketsyde_is_logged_in');
+      return stored !== null ? stored === 'true' : false;
+    } catch {
+      return false;
+    }
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'signup' | 'signin'>('signup');
+
+  const handleAuthSuccess = (email?: string, name?: string) => {
+    setIsLoggedIn(true);
+    try {
+      localStorage.setItem('marketsyde_is_logged_in', 'true');
+    } catch {}
+
+    if (email) {
+      setUser((prev) => ({
+        ...prev,
+        email: email,
+        username: name || (email.split('@')[0]) || prev.username,
+        fullName: name || prev.fullName,
+      }));
+    }
+    showToast('🎉 Welcome to MarketSyde! You are now signed in.');
+
+    // If currently on broker-detail, immediately navigate to Connect to MarketSyde (D12_Connect to MarketSyde.png)
+    if (activeTab === 'broker-detail') {
+      setSelectedBrokerForConnect(selectedBrokerForDetail);
+      setActiveTab('connect-to-truvo');
+    }
+  };
+
+  const handleSignOut = () => {
+    setIsLoggedIn(false);
+    try {
+      localStorage.setItem('marketsyde_is_logged_in', 'false');
+    } catch {}
+    showToast("You've been signed out. Welcome back anytime!");
+  };
 
   // Global Keyboard Shortcut: Cmd+K / Ctrl+K opens Search Modal
   useEffect(() => {
@@ -328,6 +372,16 @@ export default function App() {
         onOpenSearchModal={() => setIsSearchModalOpen(true)}
         onShowToast={showToast}
         onUpdateAvatar={handleUpdateAvatar}
+        isLoggedIn={isLoggedIn}
+        onOpenSignIn={() => {
+          setAuthModalMode('signin');
+          setIsAuthModalOpen(true);
+        }}
+        onOpenSignUp={() => {
+          setAuthModalMode('signup');
+          setIsAuthModalOpen(true);
+        }}
+        onSignOut={handleSignOut}
       />
 
       {/* Floating Toast Notification */}
@@ -497,6 +551,7 @@ export default function App() {
           <BrokerDetailPage
             broker={selectedBrokerForDetail}
             user={user}
+            isLoggedIn={isLoggedIn}
             onBackToBrokers={() => setActiveTab('brokers')}
             onNavigateToConnectBroker={(b) => {
               setSelectedBrokerForConnect(b);
@@ -504,6 +559,11 @@ export default function App() {
             }}
             onOpenViewPlan={() => setIsViewPlanOpen(true)}
             onShowToast={showToast}
+            onOpenSignUp={() => {
+              setAuthModalMode('signup');
+              setIsAuthModalOpen(true);
+            }}
+            onLoginSuccess={handleAuthSuccess}
           />
         )}
 
@@ -635,13 +695,13 @@ export default function App() {
           />
         )}
 
-        {/* ─── TAB: Connect to Truvo Page (Broker Partnership & Verification) ─── */}
+        {/* ─── TAB: Connect to MarketSyde / Broker Onboarding (Exact Match to D12_Connect to MarketSyde.png) ─── */}
         {activeTab === 'connect-to-truvo' && (
           <ConnectToTruvoPage
-            broker={selectedBrokerForConnect || brokers[0]}
+            broker={selectedBrokerForConnect || selectedBrokerForDetail || brokers[0]}
             brokers={brokers}
             onSelectBroker={(b) => setSelectedBrokerForConnect(b)}
-            onBackToDashboard={() => setActiveTab('dashboard')}
+            onBackToDashboard={() => setActiveTab('broker-detail')}
             onNavigateToCashback={() => setActiveTab('cashback-overview')}
             onOpenConnectModal={(b) => {
               setSelectedBrokerForConnect(b);
@@ -865,6 +925,15 @@ export default function App() {
           setSelectedBrokerForDetail(b);
           setActiveTab('broker-detail');
         }}
+        onShowToast={showToast}
+      />
+
+      {/* ─── AUTH MODAL (SIGN UP / SIGN IN - EXACT MATCH TO D12_Sign-Up.png) ─── */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        initialMode={authModalMode}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={handleAuthSuccess}
         onShowToast={showToast}
       />
     </div>
