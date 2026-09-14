@@ -679,7 +679,8 @@ export const CommunityHub: React.FC<CommunityHubProps> = ({
         </div>
 
         {/* Right 4 Cols: Top Contributors & Lot Challenges */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4">
+          <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Top Alpha Contributors Card */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
@@ -817,6 +818,7 @@ export const CommunityHub: React.FC<CommunityHubProps> = ({
             <p className="text-[11px] text-slate-600 leading-relaxed">
               Every alpha setup and rebate discussion is benchmarked against real broker execution. No unverified trading claims or promotional affiliate spam tolerated.
             </p>
+          </div>
           </div>
         </div>
       </div>

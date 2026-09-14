@@ -52,7 +52,7 @@ export const CommunityRightSidebar: React.FC<CommunityRightSidebarProps> = ({
   };
 
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-4 w-full xl:sticky xl:top-[84px] xl:max-h-[calc(100vh-96px)] xl:overflow-y-auto xl:overscroll-contain sidebar-scrollbar">
       {/* ─── 1. HOT TOPIC WIDGET ─── */}
       <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 text-[#0b1c30] shadow-xs hover:border-[#cbd5e1] hover:shadow-sm transition-all relative overflow-hidden">
         <div className="flex items-center justify-between mb-2">

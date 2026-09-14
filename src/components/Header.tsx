@@ -80,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [activeHoverMenu, setActiveHoverMenu] = useState<'trade' | 'brokers' | 'community' | 'company' | null>(null);
   const [hoveredBrokerOption, setHoveredBrokerOption] = useState<'brokers' | 'broker-comparison' | null>(null);
-  const [hoveredTradeOption, setHoveredTradeOption] = useState<'signals' | 'calculators' | 'converters' | null>(null);
+  const [hoveredTradeOption, setHoveredTradeOption] = useState<'signals' | 'analysis' | 'calculators' | 'converters' | null>(null);
   const [hoveredCommunityOption, setHoveredCommunityOption] = useState<string | null>(null);
   const [hoveredCompanyOption, setHoveredCompanyOption] = useState<'about' | 'contact' | null>(null);
   const [companyModal, setCompanyModal] = useState<{ isOpen: boolean; type: 'about' | 'contact' }>({
@@ -93,10 +93,12 @@ export const Header: React.FC<HeaderProps> = ({
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  const activeTradeFeature: 'signals' | 'calculators' | 'converters' =
+  const activeTradeFeature: 'signals' | 'analysis' | 'calculators' | 'converters' =
     hoveredTradeOption ||
     (activeTab === 'signals' || activeTab === 'signal-detail'
       ? 'signals'
+      : activeTab === 'instrument-analysis'
+      ? 'analysis'
       : [
           'timezone-converter',
           'trading-timezone-converter',
@@ -220,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({
                   handleCloseImmediately();
                 }}
                 className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
-                  activeHoverMenu === 'trade' || activeTab === 'dashboard' || activeTab === 'signals' || activeTab === 'signal-detail'
+                  activeHoverMenu === 'trade' || activeTab === 'dashboard' || activeTab === 'signals' || activeTab === 'signal-detail' || activeTab === 'instrument-analysis'
                     ? 'text-[#5945F1] font-semibold'
                     : 'text-slate-800 hover:text-[#5945F1]'
                 }`}
@@ -342,7 +344,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <Search className="w-4 h-4 shrink-0 stroke-[1.75]" />
                 <input
                   type="text"
-                  placeholder="Signal"
+                  placeholder="Search..."
                   value={searchQuery}
                   onFocus={() => onOpenSearchModal?.()}
                   onChange={(e) => {
@@ -358,20 +360,6 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Quick Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            className="w-10 h-10 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#170345] hover:border-[#5945F1] text-slate-600 dark:text-[#CCC6FB] hover:text-[#5945F1] dark:hover:text-[#ABA1F8] flex items-center justify-center transition-all shadow-2xs cursor-pointer shrink-0"
-            title={theme === 'light' ? 'Switch to Dark Theme (Figma Tokens)' : 'Switch to Light Theme'}
-            aria-label="Toggle theme"
-          >
-            {theme === 'light' ? (
-              <Moon className="w-4 h-4 stroke-[1.8]" />
-            ) : (
-              <Sun className="w-4 h-4 stroke-[1.8] text-[#DCF73B]" />
-            )}
-          </button>
-
           {/* User Profile Pill & Dropdown Menu (if logged in) OR Guest Buttons (if not logged in) */}
           {isLoggedIn ? (
             <div className="relative" ref={profileMenuRef}>
@@ -380,10 +368,10 @@ export const Header: React.FC<HeaderProps> = ({
                   setIsProfileMenuOpen((prev) => !prev);
                   handleCloseImmediately();
                 }}
-                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border bg-white shadow-2xs hover:shadow-xs transition-all text-left group cursor-pointer ${
+                className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl transition-all text-left group cursor-pointer ${
                   isProfileMenuOpen
-                    ? 'border-[#5945F1] ring-2 ring-[#5945F1]/15'
-                    : 'border-indigo-200/90 hover:border-indigo-300'
+                    ? 'bg-slate-100'
+                    : 'hover:bg-slate-50'
                 }`}
                 title="Click to view profile & account options"
               >
@@ -843,7 +831,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </span>
                 </div>
 
-                {/* Interactive Dynamic Graphic (Variants: signals, calculators, converters) */}
+                {/* Interactive Dynamic Graphic (Variants: signals, analysis, calculators, converters) */}
                 <InteractiveTradeGraphic
                   variant={activeTradeFeature}
                   onSelectCalculator={(calcType) => {
@@ -852,6 +840,10 @@ export const Header: React.FC<HeaderProps> = ({
                   }}
                   onSelectSignals={() => {
                     setActiveTab('signals');
+                    handleCloseImmediately();
+                  }}
+                  onSelectAnalysis={() => {
+                    setActiveTab('instrument-analysis');
                     handleCloseImmediately();
                   }}
                   onSelectCashback={() => {
@@ -873,7 +865,8 @@ export const Header: React.FC<HeaderProps> = ({
                     <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-sans">
                       Products
                     </div>
-                    <div>
+                    <div className="space-y-5">
+                      {/* 1. Trading Signals */}
                       <button
                         onClick={() => {
                           setActiveTab('signals');
@@ -888,11 +881,44 @@ export const Header: React.FC<HeaderProps> = ({
                             <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-0.5 shadow-xs" />
                           ) : null}
                           <div>
-                            <div className="font-bold text-base text-[#0b1c30] group-hover:text-[#5945F1] transition-colors leading-tight">
+                            <div className={`font-bold text-base transition-colors leading-tight ${
+                              activeTradeFeature === 'signals'
+                                ? 'text-[#5945F1]'
+                                : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                            }`}>
                               Trading Signals
                             </div>
                             <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
                               Skip the charts. Get instant buy/sell cues.
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* 2. Instrument Analysis (หัวข้อใหญ่เหมือน trading signal พร้อมคำอธิบาย อยู่ลำดับต่อจาก Trading signal ด้านล่าง) */}
+                      <button
+                        onClick={() => {
+                          setActiveTab('instrument-analysis');
+                          handleCloseImmediately();
+                        }}
+                        onMouseEnter={() => setHoveredTradeOption('analysis')}
+                        className="group flex items-start text-left transition-all cursor-pointer w-full"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          {/* Purple Circle Dot: Active when instrument analysis is hovered/active */}
+                          {activeTradeFeature === 'analysis' ? (
+                            <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-0.5 shadow-xs" />
+                          ) : null}
+                          <div>
+                            <div className={`font-bold text-base transition-colors leading-tight ${
+                              activeTradeFeature === 'analysis'
+                                ? 'text-[#5945F1]'
+                                : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                            }`}>
+                              Instrument Analysis
+                            </div>
+                            <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                              Deep technical breakdown, key levels, and asset telemetry.
                             </div>
                           </div>
                         </div>
@@ -1186,7 +1212,7 @@ export const Header: React.FC<HeaderProps> = ({
                     handleCloseImmediately();
                   }}
                   onOpenContact={() => {
-                    setCompanyModal({ isOpen: true, type: 'contact' });
+                    setActiveTab('contact-us');
                     handleCloseImmediately();
                   }}
                 />
@@ -1225,7 +1251,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* 2. Contact Us */}
                 <button
                   onClick={() => {
-                    setCompanyModal({ isOpen: true, type: 'contact' });
+                    setActiveTab('contact-us');
                     handleCloseImmediately();
                   }}
                   onMouseEnter={() => setHoveredCompanyOption('contact')}
@@ -1328,6 +1354,17 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             Market Signals
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('instrument-analysis');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'instrument-analysis' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            Instrument Analysis
           </button>
           <button
             onClick={() => {
@@ -1499,36 +1536,13 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => {
-                setCompanyModal({ isOpen: true, type: 'contact' });
+                setActiveTab('contact-us');
                 setMobileMenuOpen(false);
               }}
               className="w-full py-1.5 text-left text-sm font-semibold text-slate-700 hover:text-[#5338ec]"
             >
               Contact Us
             </button>
-          </div>
-
-          {/* Theme switcher for mobile */}
-          <div className="pt-3 mt-2 border-t border-slate-100 dark:border-[#230674] flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-[#CCC6FB]">Theme</span>
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-[#230674] rounded-lg">
-              <button
-                onClick={() => setTheme('light')}
-                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
-                  theme === 'light' ? 'bg-white text-slate-800 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                Light
-              </button>
-              <button
-                onClick={() => setTheme('dark')}
-                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all ${
-                  theme === 'dark' ? 'bg-[#5945F1] text-white shadow-2xs' : 'text-slate-500 dark:text-[#8A7AF6] hover:text-white'
-                }`}
-              >
-                Dark
-              </button>
-            </div>
           </div>
         </div>
       )}

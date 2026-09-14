@@ -82,7 +82,7 @@ const SLTP_FAQS = [
 // ─────────────────────────────────────────────────────────────
 // 1. POSITION SIZE CALCULATOR VIEW
 // ─────────────────────────────────────────────────────────────
-export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onReset }) => {
+export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onReset, onSave }) => {
   const [accountBalance, setAccountBalance] = useState('1,000');
   const [accountCurrency, setAccountCurrency] = useState('USD');
   const [currencyPair, setCurrencyPair] = useState('EUR/USD');
@@ -233,13 +233,21 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
           </div>
         </div>
 
-        {/* Reset Button (Centered) */}
-        <div className="flex justify-center pt-2">
+        {/* Action Buttons: Reset & Save */}
+        <div className="flex items-center justify-center gap-3 pt-3">
           <button
+            type="button"
             onClick={handleReset}
-            className="px-7 py-2 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
+            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
           >
             Reset
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
+          >
+            Save
           </button>
         </div>
       </div>
@@ -401,7 +409,7 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
 // ─────────────────────────────────────────────────────────────
 // 2. STOP-OUT CALCULATOR VIEW
 // ─────────────────────────────────────────────────────────────
-export const StopOutCalculatorView: React.FC<SharedPlanningProps> = ({ onReset }) => {
+export const StopOutCalculatorView: React.FC<SharedPlanningProps> = ({ onReset, onSave }) => {
   const [accountBalance, setAccountBalance] = useState('1,000');
   const [accountCurrency, setAccountCurrency] = useState('USD');
   const [currencyPair, setCurrencyPair] = useState('EUR/USD');
@@ -590,13 +598,21 @@ export const StopOutCalculatorView: React.FC<SharedPlanningProps> = ({ onReset }
           </div>
         </div>
 
-        {/* Reset Button (Centered) */}
-        <div className="flex justify-center pt-2">
+        {/* Action Buttons: Reset & Save */}
+        <div className="flex items-center justify-center gap-3 pt-3">
           <button
+            type="button"
             onClick={handleReset}
-            className="px-7 py-2 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
+            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
           >
             Reset
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
+          >
+            Save
           </button>
         </div>
       </div>
@@ -776,7 +792,7 @@ export const StopOutCalculatorView: React.FC<SharedPlanningProps> = ({ onReset }
 // ─────────────────────────────────────────────────────────────
 // 3. STOP LOSS TAKE PROFIT CALCULATOR VIEW
 // ─────────────────────────────────────────────────────────────
-export const StopLossTakeProfitCalculatorView: React.FC<SharedPlanningProps> = ({ onReset }) => {
+export const StopLossTakeProfitCalculatorView: React.FC<SharedPlanningProps> = ({ onReset, onSave }) => {
   const [accountCurrency, setAccountCurrency] = useState('USD');
   const [currencyPair, setCurrencyPair] = useState('EUR/USD');
   const [direction, setDirection] = useState<'buy' | 'sell'>('buy');
@@ -982,13 +998,21 @@ export const StopLossTakeProfitCalculatorView: React.FC<SharedPlanningProps> = (
           </div>
         </div>
 
-        {/* Reset Button (Centered) */}
-        <div className="flex justify-center pt-2">
+        {/* Action Buttons: Reset & Save */}
+        <div className="flex items-center justify-center gap-3 pt-3">
           <button
+            type="button"
             onClick={handleReset}
-            className="px-7 py-2 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
+            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
           >
             Reset
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
+          >
+            Save
           </button>
         </div>
       </div>

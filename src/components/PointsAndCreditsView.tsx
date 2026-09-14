@@ -731,7 +731,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
       )}
 
       {/* ─── Main 2-Column Layout (Left: Top Cards + Missions | Right: Sidebar Widgets) ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* ═══ LEFT COLUMN: TOP CARDS & MISSIONS (8 COLS) ═══ */}
         <div className="lg:col-span-8 space-y-6">
           {/* ── Top 3 Cards Row (Your Tier | Syde Credits | Unlock Conversion) ── */}
@@ -1346,8 +1346,9 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
           </div>
         </div>
 
-        {/* ═══ RIGHT COLUMN: SIDEBAR WIDGETS (4 COLS) ═══ */}
-        <div className="lg:col-span-4 space-y-5">
+        {/* ═══ RIGHT COLUMN: SIDEBAR WIDGETS (4 COLS) (Sticky during scroll) ═══ */}
+        <div className="lg:col-span-4">
+          <div className="space-y-5 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* ── Widget 1: Track every point and credit earned (Glowing Gradient Border) ── */}
           <div
             onClick={onOpenActivityLog}
@@ -1612,6 +1613,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>

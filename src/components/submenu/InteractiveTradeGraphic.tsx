@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, Calculator, DollarSign, TrendingUp, ArrowLeftRight, Clock, BarChart2 } from 'lucide-react';
+import { Target, Calculator, DollarSign, TrendingUp, ArrowLeftRight, Clock, BarChart2, Activity, Compass, LineChart } from 'lucide-react';
 import { CalculatorType } from '../calculators/TradingCalculatorsModal';
 
-export type TradeFeatureVariant = 'signals' | 'calculators' | 'converters';
+export type TradeFeatureVariant = 'signals' | 'analysis' | 'calculators' | 'converters';
 
 interface InteractiveTradeGraphicProps {
   variant?: TradeFeatureVariant;
   onSelectCalculator?: (type: CalculatorType) => void;
   onSelectSignals?: () => void;
+  onSelectAnalysis?: () => void;
   onSelectCashback?: () => void;
 }
 
@@ -16,6 +17,7 @@ export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = (
   variant = 'signals',
   onSelectCalculator,
   onSelectSignals,
+  onSelectAnalysis,
   onSelectCashback,
 }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
@@ -107,6 +109,97 @@ export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = (
               {/* Green "BUY" pill badge poking out at bottom right */}
               <div className="absolute -bottom-2 -right-2 bg-[#10b981] group-hover:bg-[#059669] text-white text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg flex items-center justify-center transition-transform group-hover:scale-105">
                 BUY
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────────
+            VARIANT 1.5: INSTRUMENT ANALYSIS (Deep Technical Telemetry)
+           ───────────────────────────────────────────────────────────── */}
+        {variant === 'analysis' && (
+          <motion.div
+            key="analysis"
+            initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              rotateX: tilt.y,
+              rotateY: tilt.x - 4,
+            }}
+            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="relative cursor-pointer"
+            onClick={onSelectAnalysis}
+          >
+            {/* Tilted Dark Card */}
+            <div className="w-48 sm:w-52 rounded-3xl bg-[#0b1c30] border border-white/15 p-4 sm:p-5 shadow-2xl relative overflow-visible transform -rotate-3 transition-transform duration-300 hover:rotate-0 group">
+              {/* Top Row: Green Dot & INSTRUMENT ANALYSIS */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#bef226] shadow-xs animate-pulse" />
+                  <span className="text-[10px] font-bold tracking-widest text-[#bef226] uppercase font-mono">
+                    ANALYSIS
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-slate-300 font-mono">
+                  1H
+                </span>
+              </div>
+
+              {/* Middle Row: Asset & Mini Technical Candlestick Bars */}
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-base sm:text-lg font-black text-white leading-tight tracking-tight">
+                    EUR/USD
+                  </div>
+                  <div className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3 stroke-[2.5]" />
+                    <span>RSI 62.4 • Bullish</span>
+                  </div>
+                </div>
+
+                {/* Technical Radar / Indicator Icon Box */}
+                <div className="w-9 h-9 rounded-xl bg-[#5945F1] flex items-center justify-center text-white shadow-md shrink-0">
+                  <Activity className="w-5 h-5 text-[#bef226] stroke-[2.5]" />
+                </div>
+              </div>
+
+              {/* SVG Micro Candlestick Chart */}
+              <div className="w-full h-9 bg-black/30 rounded-xl p-1.5 flex items-end justify-between gap-1 border border-white/5">
+                {[
+                  { h: 14, green: true },
+                  { h: 20, green: true },
+                  { h: 16, green: false },
+                  { h: 24, green: true },
+                  { h: 28, green: true },
+                  { h: 22, green: false },
+                  { h: 30, green: true },
+                ].map((bar, idx) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center justify-end h-full">
+                    <div
+                      className={`w-full rounded-xs transition-all ${
+                        bar.green ? 'bg-emerald-400' : 'bg-rose-400'
+                      }`}
+                      style={{ height: `${bar.h}px` }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Row: Confluence status */}
+              <div className="flex items-baseline justify-between pt-2.5">
+                <span className="text-xs font-mono font-bold text-slate-300">
+                  EMA 20 &gt; 50 &gt; 200
+                </span>
+                <span className="text-[11px] text-[#bef226] font-extrabold">
+                  STRONG
+                </span>
+              </div>
+
+              {/* Lime "METRICS" pill badge */}
+              <div className="absolute -bottom-2 -right-2 bg-[#bef226] group-hover:bg-[#aee019] text-black text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg flex items-center justify-center transition-transform group-hover:scale-105">
+                ANALYZE
               </div>
             </div>
           </motion.div>

@@ -414,7 +414,7 @@ function CustomizeRightSidebar({
   onNavigateToTab: (tab: string) => void;
 }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
       {/* 1. 😎 Just This Spot */}
       <div className="rounded-2xl bg-white/80 backdrop-blur-md border border-indigo-100 p-6 shadow-2xs text-center space-y-2 relative overflow-hidden">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FD02B0] text-white text-xs font-bold shadow-xs">

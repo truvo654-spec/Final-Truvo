@@ -40,14 +40,17 @@ import { LevelPointsGuideView } from './components/LevelPointsGuideView';
 import { CreditEarningGuideView } from './components/CreditEarningGuideView';
 import { ActivityLogsView } from './components/ActivityLogsView';
 import { AboutUsPage } from './components/AboutUsPage';
+import { ContactUsPage } from './components/ContactUsPage';
 import { PublicLandingPage } from './components/PublicLandingPage';
 import { CashbackOverviewPage } from './components/CashbackOverviewPage';
 import { ConnectToTruvoPage } from './components/ConnectToTruvoPage';
 import { TradingSignalsPage } from './components/TradingSignalsPage';
 import { TradingSignalDetailPage } from './components/signals/TradingSignalDetailPage';
+import { InstrumentAnalysisPage } from './components/InstrumentAnalysisPage';
 import { ProfilePage } from './components/ProfilePage';
 import { AccountSecurityPage } from './components/AccountSecurityPage';
 import { LeverageCalculatorPage } from './components/calculators/LeverageCalculatorPage';
+import { SavedCalculation, INITIAL_SAVED_CALCULATIONS } from './components/calculators/savedCalculationsTypes';
 import { TradingCalculatorsModal, CalculatorType } from './components/calculators/TradingCalculatorsModal';
 import { ActivityLogModal } from './components/ActivityLogModal';
 import { EarningRewardModal, EarningRewardData } from './components/EarningRewardModal';
@@ -59,7 +62,7 @@ import { CashbackLedgerModal } from './components/CashbackLedgerModal';
 import { BrokerComparisonModal } from './components/BrokerComparisonModal';
 import { SearchModal } from './components/SearchModal';
 import { AuthModal } from './components/AuthModal';
-import { Sparkles, Trophy, Zap, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Trophy, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   const [user, setUser] = useState<UserProfile>(() => {
@@ -235,6 +238,26 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Saved Calculations State lifted to App level for real-time synchronization between Calculator & Profile
+  const [savedCalculations, setSavedCalculations] = useState<SavedCalculation[]>(() => {
+    try {
+      const stored = localStorage.getItem('marketsyde_saved_calculations');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_SAVED_CALCULATIONS;
+  });
+  const [pendingLoadedCalculation, setPendingLoadedCalculation] = useState<SavedCalculation | null>(null);
+
+  const handleUpdateSavedCalculations = (calcs: SavedCalculation[]) => {
+    setSavedCalculations(calcs);
+    try {
+      localStorage.setItem('marketsyde_saved_calculations', JSON.stringify(calcs));
+    } catch {}
+  };
 
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -460,52 +483,10 @@ export default function App() {
 
       {/* Main App Container */}
       <main className={`flex-1 w-full ${
-        activeTab === 'about' || activeTab === 'landing' || activeTab === 'home' || (!isLoggedIn && activeTab === 'dashboard')
+        activeTab === 'about' || activeTab === 'contact-us' || activeTab === 'contact' || activeTab === 'landing' || activeTab === 'home' || (!isLoggedIn && activeTab === 'dashboard')
           ? 'p-0 space-y-0'
           : 'px-4 sm:px-8 md:px-[56px] py-6 space-y-6'
       }`}>
-        {/* Welcome Bar / Subheader for other tabs */}
-        {activeTab !== 'about' && activeTab !== 'landing' && activeTab !== 'home' && activeTab !== 'dashboard' && activeTab !== 'brokers' && activeTab !== 'broker-comparison' && activeTab !== 'broker-detail' && activeTab !== 'connect-to-truvo' && activeTab !== 'points-credits' && activeTab !== 'cashback-overview' && activeTab !== 'signals' && activeTab !== 'signal-detail' && activeTab !== 'level-points-guide' && activeTab !== 'credit-earning-guide' && activeTab !== 'activity-logs' && activeTab !== 'leverage-calculator' && activeTab !== 'volatility-calculator' && activeTab !== 'spread-calculator' && activeTab !== 'pip-calculator' && activeTab !== 'pips-calculator' && activeTab !== 'margin-calculator' && activeTab !== 'rebate-calculator' && activeTab !== 'trade-planning-calculator' && activeTab !== 'position-size-calculator' && activeTab !== 'sltp-calculator' && activeTab !== 'stop-out-calculator' && activeTab !== 'fibonacci-calculator' && activeTab !== 'pivot-point-calculator' && activeTab !== 'loss-calculator' && activeTab !== 'profit-loss-calculator' && activeTab !== 'drawdown-calculator' && activeTab !== 'compound-calculator' && activeTab !== 'performance-calculator' && activeTab !== 'timezone-converter' && activeTab !== 'trading-timezone-converter' && activeTab !== 'currency-converter' && activeTab !== 'conversion-calculator' && activeTab !== 'calculators' && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
-            <div>
-              <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
-                {activeTab === 'community' && (
-                  <>
-                    <span className="bg-gradient-to-r from-[#5945F1] to-[#FE01B1] bg-clip-text text-transparent inline-block pb-0.5">
-                      Community Trading Floor
-                    </span>
-                    <span className="text-[#c6f831] font-extrabold">.</span>
-                  </>
-                )}
-                {activeTab === 'leaderboard' && (
-                  <>
-                    <span className="bg-gradient-to-r from-[#5945F1] to-[#FE01B1] bg-clip-text text-transparent inline-block pb-0.5">
-                      Trader Leaderboard & Rankings
-                    </span>
-                    <span className="text-[#c6f831] font-extrabold">.</span>
-                  </>
-                )}
-              </h1>
-              <p className="text-xs sm:text-sm text-[#474556] mt-0.5">
-                {activeTab === 'community' &&
-                  'Real-time trader feeds, verified institutional research, active market debates, and creator profiles.'}
-                {activeTab === 'leaderboard' &&
-                  'Compete for weekly $1,750 prize pools funded by institutional broker rebates.'}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2.5 self-start sm:self-auto">
-              <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-                Cashback Rate:
-              </span>
-              <span className="px-3 py-1 rounded-full bg-[#eef2ff] border border-[#d6d0ff] text-[#5338ec] text-xs font-bold flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-[#5338ec]" />
-                <span>+{user.boostPercentage}% Multiplier Active</span>
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* ─── TAB 0: Mission, Points & Credits (User Reference Focus) ─── */}
         {activeTab === 'points-credits' && (
           <PointsAndCreditsView
@@ -775,11 +756,42 @@ export default function App() {
           />
         )}
 
-        {/* ─── TAB: User Profile Page (Exact match to Profile - Click Edit Photo.png) ─── */}
+        {/* ─── TAB: Instrument Analysis (Deep Technical Telemetry, Key Levels & Multi-Asset Structure) ─── */}
+        {activeTab === 'instrument-analysis' && (
+          <InstrumentAnalysisPage
+            user={user}
+            signals={signals}
+            brokers={brokers}
+            onSelectSignal={(sig) => {
+              setSelectedSignal(sig);
+              setIsSignalModalOpen(true);
+            }}
+            onOpenConnectModal={(broker) => {
+              setSelectedBrokerForConnect(broker || brokers[0]);
+              setIsConnectModalOpen(true);
+            }}
+            onOpenCalculator={(type) => {
+              if (type === 'forex') setActiveTab('pip-calculator');
+              else if (type === 'planning') setActiveTab('position-size-calculator');
+              else setActiveTab('leverage-calculator');
+            }}
+            onNavigateToTab={setActiveTab}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: User Profile Page (Exact match to Profile - Click Edit Photo.png & Member Profile - Saved Calculations.png) ─── */}
         {activeTab === 'profile' && (
           <ProfilePage
             user={user}
             brokers={brokers}
+            savedCalculations={savedCalculations}
+            onUpdateSavedCalculations={handleUpdateSavedCalculations}
+            onLoadCalculationAndNavigate={(calc) => {
+              setPendingLoadedCalculation(calc);
+              setActiveTab('leverage-calculator');
+            }}
+            onNavigateToCalculators={() => setActiveTab('leverage-calculator')}
             onUpdateUserProfile={handleUpdateUserProfile}
             onOpenViewPlan={() => setActiveTab('member-plan')}
             onShowToast={showToast}
@@ -899,6 +911,10 @@ export default function App() {
             user={user}
             brokers={brokers}
             signals={signals}
+            savedCalculations={savedCalculations}
+            onUpdateSavedCalculations={handleUpdateSavedCalculations}
+            loadedCalculation={pendingLoadedCalculation}
+            onClearLoadedCalculation={() => setPendingLoadedCalculation(null)}
             initialTool={
               activeTab === 'volatility-calculator'
                 ? 'volatility'
@@ -1000,6 +1016,14 @@ export default function App() {
             onNavigateToBrokers={() => setActiveTab('brokers')}
             onNavigateToSignals={() => setActiveTab('signals')}
             onNavigateToPlan={() => setActiveTab('member-plan')}
+            onNavigateToTab={setActiveTab}
+          />
+        )}
+
+        {/* ─── TAB: Contact Us Page (Exact replica of Reference Design) ─── */}
+        {(activeTab === 'contact-us' || activeTab === 'contact') && (
+          <ContactUsPage
+            onShowToast={showToast}
             onNavigateToTab={setActiveTab}
           />
         )}
@@ -1125,13 +1149,14 @@ export default function App() {
         onShowToast={showToast}
       />
 
-      {/* ─── AUTH MODAL (SIGN UP / SIGN IN - EXACT MATCH TO D12_Sign-Up.png) ─── */}
+      {/* ─── AUTH MODAL (SIGN UP / SIGN IN / VERIFY / ONBOARDING FLOWS) ─── */}
       <AuthModal
         isOpen={isAuthModalOpen}
         initialMode={authModalMode}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={handleAuthSuccess}
         onShowToast={showToast}
+        onNavigateToTab={setActiveTab}
       />
     </div>
   );

@@ -250,7 +250,7 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
       {/* ─────────────────────────────────────────────────────────────
           2. MAIN CONTENT: 2-COLUMN LAYOUT (BROKER CARDS & RIGHT SIDEBAR)
          ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: BROKER CARDS GRID (8 COLS ON LG) */}
         <div className="lg:col-span-8 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
@@ -407,9 +407,10 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
-            RIGHT SIDEBAR (4 COLS ON LG) (Exact match to Landing Page design)
+            RIGHT SIDEBAR (4 COLS ON LG) (Sticky during scroll)
            ───────────────────────────────────────────────────────────── */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4">
+          <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* 1. LEVEL PROMOTION CARD (Move up. Earn More. - Exact match to image.png) */}
           <div className="bg-white rounded-3xl border-2 border-[#FE01B1] p-6 shadow-xs space-y-4">
             <div>
@@ -532,6 +533,7 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
                 </div>
               )}
             </div>
+          </div>
           </div>
         </div>
       </div>

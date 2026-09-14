@@ -18,6 +18,7 @@ import { Tier2CompanyTab } from './tabs/Tier2CompanyTab';
 import { OffshoreCashbackTab } from './tabs/OffshoreCashbackTab';
 import { OffshoreAccountTab } from './tabs/OffshoreAccountTab';
 import { OffshoreCompanyTab } from './tabs/OffshoreCompanyTab';
+import { FolderTabs } from '../common/FolderTabs';
 
 interface BrokerDetailPageProps {
   broker: Broker;
@@ -281,67 +282,17 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
           + Subtle Tier Scenario Switcher aligned to the right
          ───────────────────────────────────────────────────────────── */}
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-0">
-          <div className="flex items-center gap-8">
-            {/* TAB 1: Cashback */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('cashback')}
-              className={`flex items-center gap-2 pb-3 font-bold text-sm transition-colors relative cursor-pointer ${
-                activeTab === 'cashback'
-                  ? 'text-[#5945F1]'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-xs border ${
-                  activeTab === 'cashback'
-                    ? 'border-[#5945F1] text-[#5945F1]'
-                    : 'border-slate-400 text-slate-500'
-                }`}
-              >
-                $
-              </div>
-              <span>Cashback</span>
-              {activeTab === 'cashback' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#5945F1]" />
-              )}
-            </button>
-
-            {/* TAB 2: Account */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('account')}
-              className={`flex items-center gap-2 pb-3 font-bold text-sm transition-colors relative cursor-pointer ${
-                activeTab === 'account'
-                  ? 'text-[#5945F1]'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              <span>Account</span>
-              {activeTab === 'account' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#5945F1]" />
-              )}
-            </button>
-
-            {/* TAB 3: Company */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('company')}
-              className={`flex items-center gap-2 pb-3 font-bold text-sm transition-colors relative cursor-pointer ${
-                activeTab === 'company'
-                  ? 'text-[#5945F1]'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Building2 className="w-4 h-4" />
-              <span>Company</span>
-              {activeTab === 'company' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#5945F1]" />
-              )}
-            </button>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <FolderTabs<'cashback' | 'account' | 'company'>
+            className="flex-1"
+            tabs={[
+              { id: 'cashback', label: 'Cashback' },
+              { id: 'account', label: 'Account' },
+              { id: 'company', label: 'Company' },
+            ]}
+            activeTab={activeTab}
+            onChange={(tabId) => setActiveTab(tabId)}
+          />
 
           {/* Clean, compact Tier scenario picker for tab scenarios */}
           <div className="flex items-center gap-1.5 pb-2 text-xs">

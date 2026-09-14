@@ -1265,8 +1265,9 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
           </div>
         </div>
 
-        {/* ─── RIGHT SIDEBAR (4 Cols): EXACT MATCH TO SCREENSHOT ─── */}
-        <div className="lg:col-span-4 space-y-5">
+        {/* ─── RIGHT SIDEBAR (4 Cols): EXACT MATCH TO SCREENSHOT (Sticky during scroll) ─── */}
+        <div className="lg:col-span-4">
+          <div className="space-y-5 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Card 1: Next Milestone / You're Connected. Nice! (Magenta Border) */}
           <div className="bg-white rounded-2xl border-2 border-[#FD02B0] p-5 shadow-xs relative">
             {/* Floating Pill on top right border */}
@@ -1399,6 +1400,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>

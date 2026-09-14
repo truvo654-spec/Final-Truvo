@@ -725,7 +725,7 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
       </div>
 
       {/* ─── Main Comparison Arena + Right Sidebar Grid ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* ─── LEFT: 3-Slot Comparison Matrix (lg:col-span-9) ─── */}
         <div className="lg:col-span-9 bg-white dark:bg-[#120233] border border-slate-200/80 dark:border-[#2f1073] rounded-3xl p-4 sm:p-6 shadow-2xs">
           {/* Top 3 Columns: Dropdown Slots */}
@@ -1015,7 +1015,8 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
         </div>
 
         {/* ─── RIGHT: Sidebar Widgets (Move up. Earn More. & Most Recent Signals) ─── */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3">
+          <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Widget 1: Move up. Earn More. (Exact match to image.png) */}
           <div className="p-6 rounded-3xl bg-white dark:bg-[#15023a] border-2 border-[#FE01B1] shadow-xs relative overflow-hidden">
             <div className="flex items-start justify-between gap-2 mb-1">
@@ -1209,6 +1210,7 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>

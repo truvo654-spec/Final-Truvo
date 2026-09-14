@@ -189,8 +189,9 @@ export const AccountSecurityPage: React.FC<AccountSecurityPageProps> = ({
           </div>
         </div>
 
-        {/* ─── RIGHT SIDEBAR ─── */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* ─── RIGHT SIDEBAR (Sticky during scroll) ─── */}
+        <div className="lg:col-span-4">
+          <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Card 1: Gamification Rank / Level Tracker (Exact match to 02. Account Security Landing.png) */}
           <div className="rounded-2xl p-5 border-2 border-transparent bg-gradient-to-br from-white via-indigo-50/30 to-pink-50/20 shadow-xs relative overflow-hidden ring-1 ring-slate-200/80">
             {/* Gradient Outline Accent */}
@@ -329,6 +330,7 @@ export const AccountSecurityPage: React.FC<AccountSecurityPageProps> = ({
                 </div>
               )}
             </div>
+          </div>
           </div>
         </div>
       </div>

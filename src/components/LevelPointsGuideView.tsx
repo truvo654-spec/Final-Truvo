@@ -232,8 +232,8 @@ export const LevelPointsGuideView: React.FC<LevelPointsGuideViewProps> = ({
 
       {/* ─── Main Content 2-Column Grid ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative z-10">
-        {/* ─── LEFT COLUMN: How Do Points Work + Manifest Your Points ─── */}
-        <div className="lg:col-span-5 space-y-8">
+        {/* ─── LEFT COLUMN: How Do Points Work + Manifest Your Points (Sticky during scroll) ─── */}
+        <div className="lg:col-span-5 space-y-8 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Section: How Do Points Work? */}
           <div className="space-y-4">
             <h2 className="text-2xl font-bold font-display text-[#0b1c30] tracking-tight">

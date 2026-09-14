@@ -56,7 +56,7 @@ const PIVOT_POINT_FAQS = [
 // ─────────────────────────────────────────────────────────────
 // 1. FIBONACCI CALCULATOR VIEW
 // ─────────────────────────────────────────────────────────────
-export const FibonacciCalculatorView: React.FC<SharedTechnicalProps> = ({ onReset }) => {
+export const FibonacciCalculatorView: React.FC<SharedTechnicalProps> = ({ onReset, onSave }) => {
   const [trend, setTrend] = useState<'uptrend' | 'downtrend'>('uptrend');
   const [highPrice, setHighPrice] = useState('1.1100');
   const [lowPrice, setLowPrice] = useState('1.1000');
@@ -225,14 +225,21 @@ export const FibonacciCalculatorView: React.FC<SharedTechnicalProps> = ({ onRese
           </div>
         </div>
 
-        {/* Centered Reset Button (Matching Image D03) */}
-        <div className="flex items-center justify-center pt-2">
+        {/* Action Buttons: Reset & Save */}
+        <div className="flex items-center justify-center gap-3 pt-3">
           <button
             type="button"
             onClick={handleReset}
-            className="px-6 py-2 rounded-xl border border-slate-300 dark:border-[#3410D5] bg-white dark:bg-[#170345] hover:bg-slate-50 dark:hover:bg-[#230674] text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-medium transition-all cursor-pointer shadow-2xs"
+            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
           >
             Reset
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
+          >
+            Save
           </button>
         </div>
       </div>
@@ -409,7 +416,7 @@ export const FibonacciCalculatorView: React.FC<SharedTechnicalProps> = ({ onRese
 // ─────────────────────────────────────────────────────────────
 // 2. PIVOT POINT CALCULATOR VIEW
 // ─────────────────────────────────────────────────────────────
-export const PivotPointCalculatorView: React.FC<SharedTechnicalProps> = ({ onReset }) => {
+export const PivotPointCalculatorView: React.FC<SharedTechnicalProps> = ({ onReset, onSave }) => {
   const [timeInterval, setTimeInterval] = useState('1D');
   const [currencyPair, setCurrencyPair] = useState('EUR/USD');
   const [autoFill, setAutoFill] = useState(true);
@@ -660,14 +667,21 @@ export const PivotPointCalculatorView: React.FC<SharedTechnicalProps> = ({ onRes
           </div>
         </div>
 
-        {/* Centered Reset Button (Matching Image D04) */}
-        <div className="flex items-center justify-center pt-2">
+        {/* Action Buttons: Reset & Save */}
+        <div className="flex items-center justify-center gap-3 pt-3">
           <button
             type="button"
             onClick={handleReset}
-            className="px-6 py-2 rounded-xl border border-slate-300 dark:border-[#3410D5] bg-white dark:bg-[#170345] hover:bg-slate-50 dark:hover:bg-[#230674] text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-medium transition-all cursor-pointer shadow-2xs"
+            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
           >
             Reset
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
+          >
+            Save
           </button>
         </div>
       </div>

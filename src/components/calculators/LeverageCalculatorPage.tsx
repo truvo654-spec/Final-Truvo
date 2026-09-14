@@ -53,6 +53,10 @@ import {
   GlobalMarketStatusSidebar,
   CurrencyConverterView,
 } from './ConversionViews';
+import { SaveScenarioModal } from './SaveScenarioModal';
+import { SaveToast } from './SaveToast';
+import { SavedCalculationsSidebar } from './SavedCalculationsSidebar';
+import { SavedCalculation, INITIAL_SAVED_CALCULATIONS } from './savedCalculationsTypes';
 
 export type CalculatorTool =
   | 'leverage'
@@ -77,6 +81,10 @@ interface LeverageCalculatorPageProps {
   brokers: Broker[];
   signals: MarketSignal[];
   initialTool?: CalculatorTool;
+  savedCalculations?: SavedCalculation[];
+  onUpdateSavedCalculations?: (calcs: SavedCalculation[]) => void;
+  loadedCalculation?: SavedCalculation | null;
+  onClearLoadedCalculation?: () => void;
   onToolChange?: (tool: CalculatorTool) => void;
   onOpenConnectModal: (broker?: Broker) => void;
   onOpenBrokerComparison: () => void;
@@ -101,6 +109,10 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
   brokers,
   signals,
   initialTool = 'leverage',
+  savedCalculations: propSavedCalculations,
+  onUpdateSavedCalculations,
+  loadedCalculation,
+  onClearLoadedCalculation,
   onToolChange,
   onOpenConnectModal,
   onOpenBrokerComparison,
@@ -149,6 +161,42 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
   // Volatility Form State
   const [volatilityHigh, setVolatilityHigh] = useState('1.0920');
   const [volatilityLow, setVolatilityLow] = useState('1.0815');
+
+  // Saved Calculations State (Matches reference screenshots & syncs with Profile)
+  const [localSavedCalculations, setLocalSavedCalculations] = useState<SavedCalculation[]>(() => {
+    try {
+      const stored = localStorage.getItem('marketsyde_saved_calculations');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_SAVED_CALCULATIONS;
+  });
+
+  const savedCalculations = propSavedCalculations || localSavedCalculations;
+
+  const updateSavedCalculations = (updated: SavedCalculation[]) => {
+    setLocalSavedCalculations(updated);
+    onUpdateSavedCalculations?.(updated);
+    try {
+      localStorage.setItem('marketsyde_saved_calculations', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isSaveToastOpen, setIsSaveToastOpen] = useState(false);
+  const [isSavedSidebarOpen, setIsSavedSidebarOpen] = useState(false);
+  const [editingCalculation, setEditingCalculation] = useState<SavedCalculation | null>(null);
+  const [pendingToolToSave, setPendingToolToSave] = useState<CalculatorTool | null>(null);
+
+  // Watch for external calculation load from Profile page
+  React.useEffect(() => {
+    if (loadedCalculation) {
+      handleLoadCalculation(loadedCalculation);
+      onClearLoadedCalculation?.();
+    }
+  }, [loadedCalculation]);
 
   // Pair Price References
   const pairPrices: Record<string, number> = {
@@ -338,20 +386,135 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
     }
   };
 
-  const handleSave = () => {
-    if (activeTool === 'spread') {
-      onShowToast?.(`Saved: ${currencyPair} | Spread: ${spreadCalculations.spreadInPip} Pips`);
-    } else if (activeTool === 'pips') {
-      onShowToast?.(`Saved: ${currencyPair} | Pip Value: ${pipCalculations.pipValue}`);
-    } else if (activeTool === 'margin') {
-      onShowToast?.(`Saved: ${currencyPair} | Required Margin: ${marginCalculations.marginValue}`);
-    } else if (activeTool === 'rebate') {
-      onShowToast?.(`Saved: ${currencyPair} | Estimated Rebate: ${rebateCalculations.rebateValue}`);
-    } else if (activeTool === 'volatility') {
-      onShowToast?.(`Saved: ${currencyPair} | Volatility: ${volatilityCalculations.dailyVolatility}`);
-    } else {
-      onShowToast?.(`Saved: ${currencyPair} | Margin $${marginInput} | Ratio ${leverageCalculations.ratio}`);
+  const TOOL_LABELS: Record<string, string> = {
+    leverage: 'Leverage',
+    volatility: 'Volatility',
+    spread: 'Spread',
+    pips: 'Pips',
+    margin: 'Margin',
+    rebate: 'Rebate',
+    'position-size': 'Position Size',
+    sltp: 'Stop Loss Take Profit',
+    'stop-out': 'Stop-out',
+    fibonacci: 'Fibonacci',
+    'pivot-point': 'Pivot Point',
+    'profit-loss': 'Profit/Loss',
+    drawdown: 'Drawdown',
+    compound: 'Compound',
+    timezone: 'Timezone',
+    currency: 'Currency',
+  };
+
+  const handleOpenSaveModal = (toolOverride?: CalculatorTool) => {
+    const targetTool = toolOverride || activeTool;
+    const maxSlots = user.slotsTotal || 5;
+    // Check saved slot limit
+    if (savedCalculations.length >= maxSlots) {
+      onShowToast?.(`Save slots limit reached (${savedCalculations.length}/${maxSlots} full). View plans to unlock more!`);
+      setIsSavedSidebarOpen(true);
+      return;
     }
+    setPendingToolToSave(targetTool);
+    setEditingCalculation(null);
+    setIsSaveModalOpen(true);
+  };
+
+  const handleConfirmSaveScenario = (name: string) => {
+    if (editingCalculation) {
+      const updated = savedCalculations.map((item) =>
+        item.id === editingCalculation.id ? { ...item, name } : item
+      );
+      updateSavedCalculations(updated);
+      setEditingCalculation(null);
+      setIsSaveModalOpen(false);
+      onShowToast?.(`Scenario renamed to "${name}"`);
+      return;
+    }
+
+    const toolToUse = pendingToolToSave || activeTool;
+    const toolLabel = TOOL_LABELS[toolToUse] || 'Calculator';
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    let dataToSave: Record<string, any> = {
+      currencyPair,
+      accountCurrency,
+    };
+
+    if (toolToUse === 'leverage') {
+      dataToSave = { ...dataToSave, marginInput, positionSizeInput, ...leverageCalculations };
+    } else if (toolToUse === 'spread') {
+      dataToSave = { ...dataToSave, askPrice, bidPrice, ...spreadCalculations };
+    } else if (toolToUse === 'pips') {
+      dataToSave = { ...dataToSave, pipAmount, pipPositionSize, ...pipCalculations };
+    } else if (toolToUse === 'margin') {
+      dataToSave = { ...dataToSave, marginLeverage, marginPositionSize, ...marginCalculations };
+    } else if (toolToUse === 'rebate') {
+      dataToSave = { ...dataToSave, rebatePerLot, rebateCurrency, rebatePositionSize, ...rebateCalculations };
+    } else if (toolToUse === 'volatility') {
+      dataToSave = { ...dataToSave, volatilityHigh, volatilityLow, ...volatilityCalculations };
+    }
+
+    const newCalc: SavedCalculation = {
+      id: `calc-${Date.now()}`,
+      name,
+      tool: toolToUse,
+      toolLabel,
+      date: formattedDate,
+      timestamp: Date.now(),
+      data: dataToSave,
+    };
+
+    const updated = [newCalc, ...savedCalculations];
+    updateSavedCalculations(updated);
+
+    setIsSaveModalOpen(false);
+    setIsSaveToastOpen(true);
+  };
+
+  const handleLoadCalculation = (calc: SavedCalculation) => {
+    setActiveTool(calc.tool);
+    const forexTools = ['leverage', 'volatility', 'spread', 'pips', 'margin', 'rebate'];
+    const tradePlanningTools = ['position-size', 'sltp', 'stop-out'];
+    const technicalTools = ['fibonacci', 'pivot-point'];
+    const performanceTools = ['profit-loss', 'drawdown', 'compound'];
+    const conversionTools = ['timezone', 'currency'];
+
+    if (forexTools.includes(calc.tool)) setExpandedSection('forex');
+    else if (tradePlanningTools.includes(calc.tool)) setExpandedSection('trade-planning');
+    else if (technicalTools.includes(calc.tool)) setExpandedSection('technical');
+    else if (performanceTools.includes(calc.tool)) setExpandedSection('performance');
+    else if (conversionTools.includes(calc.tool)) setExpandedSection('conversion');
+
+    if (calc.data) {
+      if (calc.data.currencyPair) setCurrencyPair(calc.data.currencyPair);
+      if (calc.data.accountCurrency) setAccountCurrency(calc.data.accountCurrency);
+      if (calc.data.marginInput) setMarginInput(calc.data.marginInput);
+      if (calc.data.positionSizeInput) setPositionSizeInput(calc.data.positionSizeInput);
+      if (calc.data.askPrice) setAskPrice(calc.data.askPrice);
+      if (calc.data.bidPrice) setBidPrice(calc.data.bidPrice);
+      if (calc.data.pipAmount) setPipAmount(calc.data.pipAmount);
+      if (calc.data.pipPositionSize) setPipPositionSize(calc.data.pipPositionSize);
+      if (calc.data.marginLeverage) setMarginLeverage(calc.data.marginLeverage);
+      if (calc.data.marginPositionSize) setMarginPositionSize(calc.data.marginPositionSize);
+      if (calc.data.rebatePerLot) setRebatePerLot(calc.data.rebatePerLot);
+      if (calc.data.rebateCurrency) setRebateCurrency(calc.data.rebateCurrency);
+      if (calc.data.rebatePositionSize) setRebatePositionSize(calc.data.rebatePositionSize);
+      if (calc.data.volatilityHigh) setVolatilityHigh(calc.data.volatilityHigh);
+      if (calc.data.volatilityLow) setVolatilityLow(calc.data.volatilityLow);
+    }
+    setIsSavedSidebarOpen(false);
+    onShowToast?.(`Loaded "${calc.name}" (${calc.toolLabel})`);
+  };
+
+  const handleDeleteCalculation = (id: string) => {
+    const updated = savedCalculations.filter((c) => c.id !== id);
+    updateSavedCalculations(updated);
+    onShowToast?.('Calculation removed from saved slots');
+  };
+
+  const handleSave = () => {
+    handleOpenSaveModal(activeTool);
   };
 
   return (
@@ -698,21 +861,21 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
         {activeTool === 'position-size' && (
           <PositionSizeCalculatorView
             onReset={() => onShowToast?.('Position Size Calculator reset')}
-            onSave={() => onShowToast?.('Position Size calculation saved')}
+            onSave={() => handleOpenSaveModal('position-size')}
           />
         )}
 
         {activeTool === 'sltp' && (
           <StopLossTakeProfitCalculatorView
             onReset={() => onShowToast?.('SL & TP Calculator reset')}
-            onSave={() => onShowToast?.('SL & TP calculation saved')}
+            onSave={() => handleOpenSaveModal('sltp')}
           />
         )}
 
         {activeTool === 'stop-out' && (
           <StopOutCalculatorView
             onReset={() => onShowToast?.('Stop-out Calculator reset')}
-            onSave={() => onShowToast?.('Stop-out calculation saved')}
+            onSave={() => handleOpenSaveModal('stop-out')}
           />
         )}
 
@@ -720,14 +883,14 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
         {activeTool === 'fibonacci' && (
           <FibonacciCalculatorView
             onReset={() => onShowToast?.('Fibonacci Calculator reset')}
-            onSave={() => onShowToast?.('Fibonacci levels saved')}
+            onSave={() => handleOpenSaveModal('fibonacci')}
           />
         )}
 
         {activeTool === 'pivot-point' && (
           <PivotPointCalculatorView
             onReset={() => onShowToast?.('Pivot Point Calculator reset')}
-            onSave={() => onShowToast?.('Pivot Points saved')}
+            onSave={() => handleOpenSaveModal('pivot-point')}
           />
         )}
 
@@ -735,21 +898,21 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
         {activeTool === 'profit-loss' && (
           <ProfitLossCalculatorView
             onReset={() => onShowToast?.('Profit/Loss Calculator reset')}
-            onSave={() => onShowToast?.('Profit/Loss calculation saved')}
+            onSave={() => handleOpenSaveModal('profit-loss')}
           />
         )}
 
         {activeTool === 'drawdown' && (
           <DrawdownCalculatorView
             onReset={() => onShowToast?.('Drawdown Calculator reset')}
-            onSave={() => onShowToast?.('Drawdown projection saved')}
+            onSave={() => handleOpenSaveModal('drawdown')}
           />
         )}
 
         {activeTool === 'compound' && (
           <CompoundCalculatorView
             onReset={() => onShowToast?.('Compound Calculator reset')}
-            onSave={() => onShowToast?.('Compound projection saved')}
+            onSave={() => handleOpenSaveModal('compound')}
           />
         )}
 
@@ -757,14 +920,14 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
         {activeTool === 'timezone' && (
           <TradingTimezoneConverterView
             onReset={() => onShowToast?.('Timezone Converter reset')}
-            onSave={() => onShowToast?.('Market session times saved')}
+            onSave={() => handleOpenSaveModal('timezone')}
           />
         )}
 
         {activeTool === 'currency' && (
           <CurrencyConverterView
             onReset={() => onShowToast?.('Currency Converter reset')}
-            onSave={() => onShowToast?.('Currency conversion saved')}
+            onSave={() => handleOpenSaveModal('currency')}
           />
         )}
       </div>
@@ -1240,6 +1403,66 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
           </aside>
         )}
       </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          FLOATING RIGHT-EDGE SAVED CALCULATIONS BUTTON (Matches 'Calculator - Click Saved Calculations Icon.png')
+         ───────────────────────────────────────────────────────────── */}
+      <button
+        type="button"
+        onClick={() => setIsSavedSidebarOpen(true)}
+        className="fixed right-0 top-32 z-40 bg-[#5945F1] hover:bg-[#4736d4] text-white w-10 h-10 rounded-l-xl shadow-lg flex items-center justify-center cursor-pointer transition-all hover:w-11 group"
+        title="Saved Calculations"
+        aria-label="Open Saved Calculations Sidebar"
+      >
+        <svg
+          className="w-5 h-5 text-white transition-transform group-hover:scale-105"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect width="18" height="18" x="3" y="3" rx="3" />
+          <path d="M15 3v18" />
+        </svg>
+        {savedCalculations.length > 0 && (
+          <span className="absolute -top-1 -left-1 w-4 h-4 bg-[#FD02B0] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">
+            {savedCalculations.length}
+          </span>
+        )}
+      </button>
+
+      {/* ─── MODALS & TOAST ─── */}
+      <SaveScenarioModal
+        isOpen={isSaveModalOpen}
+        onClose={() => {
+          setIsSaveModalOpen(false);
+          setEditingCalculation(null);
+        }}
+        onSave={handleConfirmSaveScenario}
+        initialName={editingCalculation ? editingCalculation.name : ''}
+        isEditing={Boolean(editingCalculation)}
+      />
+
+      <SaveToast
+        isOpen={isSaveToastOpen}
+        onClose={() => setIsSaveToastOpen(false)}
+      />
+
+      <SavedCalculationsSidebar
+        isOpen={isSavedSidebarOpen}
+        onClose={() => setIsSavedSidebarOpen(false)}
+        savedCalculations={savedCalculations}
+        onLoadCalculation={handleLoadCalculation}
+        onEditCalculation={(calc) => {
+          setEditingCalculation(calc);
+          setIsSavedSidebarOpen(false);
+          setIsSaveModalOpen(true);
+        }}
+        onDeleteCalculation={handleDeleteCalculation}
+        onViewPlans={() => onNavigateToTab?.('member-plan')}
+      />
     </div>
   );
 };

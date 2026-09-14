@@ -240,33 +240,42 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
         </p>
       </div>
 
-      {/* ─── 2. CATEGORY PILLS ─── */}
-      <div className="flex items-center justify-center gap-2 flex-wrap pt-1">
+      {/* ─── 2. CATEGORY TABS (Matching Dashboard_Trading Signals_Desktop_Beginner.png) ─── */}
+      <div className="flex items-center justify-start gap-3 sm:gap-5 flex-wrap pt-2 pb-1">
         {categories.map((cat) => {
           const isActive = selectedCategory === cat.label;
+          if (isActive) {
+            return (
+              <button
+                key={cat.label}
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(cat.label);
+                  setCurrentPage(1);
+                }}
+                className="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 bg-[#5945F1] text-white shadow-2xs cursor-pointer"
+              >
+                <span>{cat.label}</span>
+                {cat.label === 'All' && (
+                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-[#4632db] text-white">
+                    {cat.count}
+                  </span>
+                )}
+              </button>
+            );
+          }
+
           return (
             <button
               key={cat.label}
+              type="button"
               onClick={() => {
                 setSelectedCategory(cat.label);
                 setCurrentPage(1);
               }}
-              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 ${
-                isActive
-                  ? 'bg-[#5030e5] text-white shadow-md'
-                  : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80 shadow-2xs'
-              }`}
+              className="text-slate-800 dark:text-slate-200 hover:text-[#5945F1] dark:hover:text-[#ABA1F8] text-xs sm:text-sm font-medium transition-colors cursor-pointer py-1 px-1.5"
             >
               <span>{cat.label}</span>
-              {cat.label === 'All' && (
-                <span
-                  className={`text-[11px] font-bold px-1.5 py-0.2 rounded-full ${
-                    isActive ? 'bg-[#3b23b3] text-white' : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  {cat.count}
-                </span>
-              )}
             </button>
           );
         })}
@@ -402,7 +411,7 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
       </div>
 
       {/* ─── 4. MAIN CONTENT (4-COL GRID + RIGHT SIDEBAR) ─── */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         {/* LEFT COLUMN: SIGNALS GRID (4 CARDS PER ROW) */}
         <div className="xl:col-span-9 space-y-5">
           {/* Top 8 Cards (Rows 1 & 2) */}
@@ -529,8 +538,9 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: 3 STACKED CARDS */}
-        <div className="xl:col-span-3 space-y-5">
+        {/* RIGHT COLUMN: 3 STACKED CARDS (Sticky sidebar during scroll) */}
+        <div className="xl:col-span-3">
+          <div className="space-y-5 xl:sticky xl:top-[84px] xl:max-h-[calc(100vh-96px)] xl:overflow-y-auto xl:overscroll-contain sidebar-scrollbar">
           {/* Card 1: Move up. Earn More. (Exact match to image.png) */}
           <div className="bg-white rounded-3xl border-2 border-[#FE01B1] p-6 shadow-xs space-y-4">
             <div>
@@ -721,6 +731,7 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* ─── 5. BOTTOM SECTION: "Meet Your Trading Partner." ─── */}
