@@ -483,7 +483,7 @@ export default function App() {
 
       {/* Main App Container */}
       <main className={`flex-1 w-full ${
-        activeTab === 'about' || activeTab === 'contact-us' || activeTab === 'contact' || activeTab === 'landing' || activeTab === 'home' || (!isLoggedIn && activeTab === 'dashboard')
+        activeTab === 'about' || activeTab === 'contact-us' || activeTab === 'contact' || activeTab === 'landing' || activeTab === 'home' || activeTab === 'instrument-analysis' || (!isLoggedIn && activeTab === 'dashboard')
           ? 'p-0 space-y-0'
           : 'px-4 sm:px-8 md:px-[56px] py-6 space-y-6'
       }`}>

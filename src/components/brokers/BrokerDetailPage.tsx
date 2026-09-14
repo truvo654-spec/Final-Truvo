@@ -7,6 +7,8 @@ import {
   Wallet,
   User,
   Building2,
+  CircleDollarSign,
+  Users,
 } from 'lucide-react';
 import { AuthModal } from '../AuthModal';
 import { Tier1CashbackTab } from './tabs/Tier1CashbackTab';
@@ -286,9 +288,21 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
           <FolderTabs<'cashback' | 'account' | 'company'>
             className="flex-1"
             tabs={[
-              { id: 'cashback', label: 'Cashback' },
-              { id: 'account', label: 'Account' },
-              { id: 'company', label: 'Company' },
+              {
+                id: 'cashback',
+                label: 'Cashback',
+                icon: <CircleDollarSign className="w-5 h-5" strokeWidth={2} />,
+              },
+              {
+                id: 'account',
+                label: 'Account',
+                icon: <Users className="w-5 h-5" strokeWidth={2} />,
+              },
+              {
+                id: 'company',
+                label: 'Company',
+                icon: <Building2 className="w-5 h-5" strokeWidth={2} />,
+              },
             ]}
             activeTab={activeTab}
             onChange={(tabId) => setActiveTab(tabId)}

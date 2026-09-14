@@ -9,6 +9,8 @@ import {
   Check,
   Shield,
   CreditCard,
+  User,
+  Bookmark,
   Plus,
   ExternalLink,
   Sparkles,
@@ -396,9 +398,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* Navigation Sub-Tabs (Matching Tab=Profile, Dark Mode_=off.png) */}
           <FolderTabs<'profile' | 'slots' | 'trading-accounts'>
             tabs={[
-              { id: 'profile', label: 'Profile' },
-              { id: 'slots', label: 'Slots Saved' },
-              { id: 'trading-accounts', label: 'Trading Accounts' },
+              {
+                id: 'profile',
+                label: 'Profile',
+                icon: <User className="w-5 h-5" strokeWidth={2} />,
+              },
+              {
+                id: 'slots',
+                label: 'Slots Saved',
+                icon: <Bookmark className="w-5 h-5" strokeWidth={2} />,
+              },
+              {
+                id: 'trading-accounts',
+                label: 'Trading Accounts',
+                icon: <CreditCard className="w-5 h-5" strokeWidth={2} />,
+              },
             ]}
             activeTab={activeSubTab}
             onChange={(tabId) => setActiveSubTab(tabId)}

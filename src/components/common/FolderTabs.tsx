@@ -25,7 +25,7 @@ export const FolderTabs = <T extends string = string>({
   return (
     <div className={`w-full ${className}`}>
       {/* Bottom border baseline */}
-      <div className="relative flex items-end border-b border-slate-300/80 dark:border-slate-700 w-full overflow-x-auto scrollbar-none">
+      <div className="relative flex items-end border-b border-[#B8ABFB]/90 dark:border-indigo-800/80 w-full overflow-x-auto scrollbar-none">
         <div className="flex items-end">
           {tabs.map((tab, index) => {
             const isActive = tab.id === activeTab;
@@ -36,7 +36,7 @@ export const FolderTabs = <T extends string = string>({
               return (
                 <div
                   key={tab.id}
-                  className="relative z-10 flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-white dark:bg-[#150444] text-[#5945F1] dark:text-[#ABA1F8] font-medium text-sm sm:text-base rounded-t-xl border-t border-l border-r border-slate-300/80 dark:border-slate-700 -mb-[1px] select-none cursor-default transition-all shadow-[0_-1px_2px_rgba(0,0,0,0.02)]"
+                  className="relative z-10 flex items-center gap-2 sm:gap-2.5 px-5 sm:px-6 py-2.5 sm:py-3 bg-white dark:bg-[#150444] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm sm:text-base rounded-t-xl border-t border-l border-r border-[#B8ABFB]/90 dark:border-indigo-800/80 -mb-[1px] select-none cursor-default transition-all shadow-[0_-1px_2px_rgba(0,0,0,0.02)]"
                 >
                   {/* Left Concave Fillet Curve (if not at the very left edge) */}
                   {!isFirst && (
@@ -53,14 +53,18 @@ export const FolderTabs = <T extends string = string>({
                       />
                       <path
                         d="M0 10 C5 10 10 5 10 0"
-                        className="stroke-slate-300/80 dark:stroke-slate-700"
+                        className="stroke-[#B8ABFB]/90 dark:stroke-indigo-800/80"
                         strokeWidth="1"
                         fill="none"
                       />
                     </svg>
                   )}
 
-                  {tab.icon && <span className="shrink-0">{tab.icon}</span>}
+                  {tab.icon && (
+                    <span className="shrink-0 flex items-center text-[#5945F1] dark:text-[#ABA1F8]">
+                      {tab.icon}
+                    </span>
+                  )}
                   <span className="whitespace-nowrap">{tab.label}</span>
                   {typeof tab.count === 'number' && (
                     <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] font-semibold">
@@ -82,7 +86,7 @@ export const FolderTabs = <T extends string = string>({
                     />
                     <path
                       d="M0 0 C0 5 5 10 10 10"
-                      className="stroke-slate-300/80 dark:stroke-slate-700"
+                      className="stroke-[#B8ABFB]/90 dark:stroke-indigo-800/80"
                       strokeWidth="1"
                       fill="none"
                     />
@@ -96,9 +100,13 @@ export const FolderTabs = <T extends string = string>({
                 key={tab.id}
                 type="button"
                 onClick={() => onChange(tab.id)}
-                className="relative z-0 flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 text-slate-800 dark:text-slate-200 hover:text-[#5945F1] dark:hover:text-[#ABA1F8] font-medium text-sm sm:text-base transition-colors cursor-pointer select-none whitespace-nowrap"
+                className="group relative z-0 flex items-center gap-2 sm:gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 text-slate-800 dark:text-slate-200 hover:text-[#5945F1] dark:hover:text-[#ABA1F8] font-medium text-sm sm:text-base transition-colors cursor-pointer select-none whitespace-nowrap"
               >
-                {tab.icon && <span className="shrink-0 text-slate-500">{tab.icon}</span>}
+                {tab.icon && (
+                  <span className="shrink-0 flex items-center text-slate-700 dark:text-slate-300 group-hover:text-[#5945F1] dark:group-hover:text-[#ABA1F8] transition-colors">
+                    {tab.icon}
+                  </span>
+                )}
                 <span>{tab.label}</span>
                 {typeof tab.count === 'number' && (
                   <span className="text-xs px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
