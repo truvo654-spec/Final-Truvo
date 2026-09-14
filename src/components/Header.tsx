@@ -28,6 +28,8 @@ import { InteractiveBrokersGraphic } from './submenu/InteractiveBrokersGraphic';
 import { InteractiveTradeGraphic } from './submenu/InteractiveTradeGraphic';
 import { InteractiveCommunityGraphic } from './submenu/InteractiveCommunityGraphic';
 import { InteractiveCompanyGraphic } from './submenu/InteractiveCompanyGraphic';
+import { InteractiveCompanySubmenuGraphic } from './submenu/InteractiveCompanySubmenuGraphic';
+import { CompanyModals } from './CompanyModals';
 import { CalculatorType } from './calculators/TradingCalculatorsModal';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -41,7 +43,7 @@ interface HeaderProps {
   onOpenLedger: () => void;
   onOpenBrokerComparison?: () => void;
   onSelectCommunitySubTab?: (tab: 'feeds' | 'topics' | 'articles' | 'mypage') => void;
-  onOpenCalculator?: (calcType: CalculatorType) => void;
+  onOpenCalculator?: (calcType: CalculatorType | string, subTool?: string) => void;
   onNavigateToCashbackOverview?: () => void;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
@@ -77,11 +79,60 @@ export const Header: React.FC<HeaderProps> = ({
   onSignOut,
 }) => {
   const [activeHoverMenu, setActiveHoverMenu] = useState<'trade' | 'brokers' | 'community' | 'company' | null>(null);
+  const [hoveredBrokerOption, setHoveredBrokerOption] = useState<'brokers' | 'broker-comparison' | null>(null);
+  const [hoveredTradeOption, setHoveredTradeOption] = useState<'signals' | 'calculators' | 'converters' | null>(null);
+  const [hoveredCommunityOption, setHoveredCommunityOption] = useState<string | null>(null);
+  const [hoveredCompanyOption, setHoveredCompanyOption] = useState<'about' | 'contact' | null>(null);
+  const [companyModal, setCompanyModal] = useState<{ isOpen: boolean; type: 'about' | 'contact' }>({
+    isOpen: false,
+    type: 'about',
+  });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const { theme, setTheme, toggleTheme } = useTheme();
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  const activeTradeFeature: 'signals' | 'calculators' | 'converters' =
+    hoveredTradeOption ||
+    (activeTab === 'signals' || activeTab === 'signal-detail'
+      ? 'signals'
+      : [
+          'timezone-converter',
+          'trading-timezone-converter',
+          'currency-converter',
+          'conversion-calculator',
+        ].includes(activeTab)
+      ? 'converters'
+      : [
+          'leverage-calculator',
+          'volatility-calculator',
+          'spread-calculator',
+          'pip-calculator',
+          'margin-calculator',
+          'rebate-calculator',
+          'position-size-calculator',
+          'trade-planning-calculator',
+          'sltp-calculator',
+          'stop-out-calculator',
+          'fibonacci-calculator',
+          'pivot-point-calculator',
+          'profit-loss-calculator',
+          'loss-calculator',
+          'drawdown-calculator',
+          'compound-calculator',
+          'performance-calculator',
+          'calculators',
+        ].includes(activeTab)
+      ? 'calculators'
+      : 'signals');
+
+  const activeBrokerFeature: 'brokers' | 'broker-comparison' =
+    hoveredBrokerOption ||
+    (activeTab === 'broker-comparison' ? 'broker-comparison' : 'brokers');
+
+  const activeCompanyFeature: 'about' | 'contact' =
+    hoveredCompanyOption || 'about';
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -126,7 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-indigo-100/70">
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-[56px] h-[68px] flex items-center justify-between relative">
+      <div className="w-full px-4 sm:px-8 md:px-[56px] h-[68px] flex items-center justify-between relative">
         {/* Brand Logo & Left Navigation */}
         <div className="flex items-center gap-10 lg:gap-12">
           {/* MarketSyde Logo */}
@@ -224,6 +275,32 @@ export const Header: React.FC<HeaderProps> = ({
               Member Plan
             </button>
 
+            {/* Community Dropdown Trigger */}
+            <div
+              className="relative py-4"
+              onMouseEnter={() => handleMouseEnter('community')}
+              onMouseLeave={handleMouseLeave}
+            >
+              <button
+                onClick={() => {
+                  setActiveTab('community');
+                  handleCloseImmediately();
+                }}
+                className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
+                  activeHoverMenu === 'community' || activeTab === 'community' || activeTab === 'leaderboard' || activeTab === 'points-credits'
+                    ? 'text-[#5945F1] font-semibold'
+                    : 'text-slate-800 hover:text-[#5945F1]'
+                }`}
+              >
+                <span>Community</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 stroke-[2] ${
+                    activeHoverMenu === 'community' ? 'rotate-180 text-[#5945F1]' : 'text-slate-700'
+                  }`}
+                />
+              </button>
+            </div>
+
             {/* Company Dropdown Trigger */}
             <div
               className="relative py-4"
@@ -232,11 +309,11 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <button
                 onClick={() => {
-                  setActiveTab('leaderboard');
+                  setActiveTab('about');
                   handleCloseImmediately();
                 }}
                 className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
-                  activeHoverMenu === 'company' || activeTab === 'leaderboard' || activeTab === 'community' || activeTab === 'points-credits'
+                  activeHoverMenu === 'company' || activeTab === 'about'
                     ? 'text-[#5945F1] font-semibold'
                     : 'text-slate-800 hover:text-[#5945F1]'
                 }`}
@@ -629,60 +706,71 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Invisible bridging shield to prevent premature mouse leave */}
             <div className="absolute -top-3 left-0 right-0 h-4 bg-transparent" />
 
-            <div className="w-full max-w-[940px] bg-white rounded-[26px] p-3.5 shadow-2xl border border-slate-200/90 flex flex-col md:flex-row items-stretch gap-2">
-              {/* Left Feature Illustration Banner (Soft Tinted Rounded Container) */}
-              <div className="w-full md:w-[56%] bg-[#eff3fa] rounded-[22px] p-6 sm:p-7 flex items-center justify-between relative overflow-hidden shrink-0">
+            <div className="w-full max-w-[940px] bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200/90 relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+              {/* Soft Lavender / Periwinkle Curved Backdrop (Left ~56% of container) */}
+              <div className="absolute inset-y-0 left-0 w-full md:w-[56%] bg-[#eff2fe] rounded-r-none md:rounded-r-[130px] pointer-events-none" />
+
+              {/* Left Feature Illustration Section */}
+              <div className="w-full md:w-[56%] flex items-center justify-between relative z-10 pl-2 pr-2 shrink-0">
                 {/* Left Typography Block */}
-                <div className="flex flex-col space-y-1 select-none z-10">
-                  <span className="text-[13px] sm:text-sm font-extrabold tracking-wider text-[#3b5bfd] uppercase font-display">
+                <div className="flex flex-col space-y-1 select-none z-10 pl-1 sm:pl-3 shrink-0">
+                  <span className="text-xs sm:text-[13px] font-bold tracking-wider text-[#5945F1] uppercase font-display">
                     REAL BROKER
                   </span>
-                  <span className="text-[13px] sm:text-sm font-extrabold tracking-wider text-[#3b5bfd] uppercase font-display">
-                    COMPARISONS THAT
-                  </span>
-                  <span className="text-base sm:text-[17px] font-black tracking-widest text-[#4f46e5] uppercase font-display">
+                  <div className="text-xs sm:text-[13px] tracking-wider text-[#5945F1] uppercase font-display">
+                    <span className="font-bold">COMPARISONS </span>
+                    <span className="font-black">THAT</span>
+                  </div>
+                  <span className="text-sm sm:text-base font-black tracking-wider text-[#5945F1] uppercase font-display">
                     ACTUALLY MATTER.
                   </span>
                 </div>
 
-                {/* Interactive 3D Orbiting Broker Arena */}
-                <InteractiveBrokersGraphic />
+                {/* Broker Comparison Card Arena with Floating Badges */}
+                <InteractiveBrokersGraphic
+                  variant={activeBrokerFeature}
+                  onOpenBrokerList={() => {
+                    setActiveTab('brokers');
+                    handleCloseImmediately();
+                  }}
+                  onOpenComparison={() => {
+                    if (onOpenBrokerComparison) {
+                      onOpenBrokerComparison();
+                    } else {
+                      setActiveTab('broker-comparison');
+                    }
+                    handleCloseImmediately();
+                  }}
+                />
               </div>
 
               {/* Right Menu Options */}
-              <div className="w-full md:w-[44%] pl-7 pr-6 py-6 flex flex-col justify-center space-y-7">
+              <div className="w-full md:w-[44%] flex flex-col justify-center space-y-7 pl-4 sm:pl-8 pr-4 relative z-10">
                 {/* 1. Broker List */}
                 <button
                   onClick={() => {
                     setActiveTab('brokers');
                     handleCloseImmediately();
                   }}
-                  className="group flex items-start gap-3.5 text-left transition-all cursor-pointer"
+                  onMouseEnter={() => setHoveredBrokerOption('brokers')}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full"
                 >
-                  {/* Circular bullet */}
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-xs transition-transform ${
-                      activeTab === 'brokers'
-                        ? 'bg-[#5338ec] scale-105'
-                        : 'border-2 border-slate-300 group-hover:border-[#5338ec] group-hover:bg-[#5338ec]/10'
-                    }`}
-                  >
-                    <div
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        activeTab === 'brokers' ? 'bg-white' : 'bg-transparent group-hover:bg-[#5338ec]'
-                      } transition-colors`}
-                    />
-                  </div>
-                  <div>
-                    <div
-                      className={`font-bold text-[15px] transition-colors leading-tight ${
-                        activeTab === 'brokers' ? 'text-[#5338ec]' : 'text-[#0b1c30] group-hover:text-[#5338ec]'
-                      }`}
-                    >
-                      Broker List
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      The ultimate broker directory. No blind dates, just total transparency.
+                  <div className="flex items-start gap-3">
+                    {/* Purple Circle Dot: Active when hovered or on brokers tab */}
+                    {activeBrokerFeature === 'brokers' ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div className={`font-bold text-base transition-colors leading-tight ${
+                        activeBrokerFeature === 'brokers'
+                          ? 'text-[#5945F1]'
+                          : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                      }`}>
+                        Broker List
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        The ultimate broker directory. No blind dates, just total transparency.
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -697,35 +785,25 @@ export const Header: React.FC<HeaderProps> = ({
                     }
                     handleCloseImmediately();
                   }}
-                  className="group flex items-start gap-3.5 text-left transition-all cursor-pointer"
+                  onMouseEnter={() => setHoveredBrokerOption('broker-comparison')}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full"
                 >
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-transform ${
-                      activeTab === 'broker-comparison'
-                        ? 'bg-[#5338ec] scale-105'
-                        : 'border-2 border-slate-300 group-hover:border-[#5338ec] group-hover:bg-[#5338ec]/10'
-                    }`}
-                  >
-                    <div
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        activeTab === 'broker-comparison'
-                          ? 'bg-white'
-                          : 'bg-transparent group-hover:bg-[#5338ec]'
-                      } transition-colors`}
-                    />
-                  </div>
-                  <div>
-                    <div
-                      className={`font-bold text-[15px] transition-colors leading-tight ${
-                        activeTab === 'broker-comparison'
-                          ? 'text-[#5338ec]'
-                          : 'text-[#0b1c30] group-hover:text-[#5338ec]'
-                      }`}
-                    >
-                      Broker Comparison
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      A head-to-head battle for your money.
+                  <div className="flex items-start gap-3">
+                    {/* Purple Circle Dot: Active when hovered or on comparison tab */}
+                    {activeBrokerFeature === 'broker-comparison' ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div className={`font-bold text-base transition-colors leading-tight ${
+                        activeBrokerFeature === 'broker-comparison'
+                          ? 'text-[#5945F1]'
+                          : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                      }`}>
+                        Broker Comparison
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        A head-to-head battle for your money.
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -735,7 +813,7 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            HOVER MEGA MENU: TRADE
+            HOVER MEGA MENU: TRADE (DYNAMIC LEFT GRAPHIC ON HOVER)
            ───────────────────────────────────────────────────────────── */}
         {activeHoverMenu === 'trade' && (
           <div
@@ -746,23 +824,28 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Bridging shield */}
             <div className="absolute -top-3 left-0 right-0 h-4 bg-transparent" />
 
-            <div className="w-full max-w-[960px] bg-white rounded-[26px] p-3.5 shadow-2xl border border-slate-200/90 flex flex-col md:flex-row items-stretch gap-3">
-              {/* Left Feature Illustration Banner matching Navigation Menu Content 2.png */}
-              <div className="w-full md:w-[48%] bg-[#bef226] rounded-[22px] p-6 sm:p-7 flex items-center justify-between relative overflow-hidden shrink-0 shadow-inner">
-                <div className="flex flex-col select-none z-10 space-y-0.5">
-                  <span className="text-[12px] sm:text-[13px] font-bold tracking-tight text-[#0f172a] uppercase leading-tight font-sans">
+            <div className="w-full max-w-[960px] bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200/90 relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+              {/* Vibrant Electric Lime Curved Backdrop (Left ~48% of container) matching Navigation Menu Content 44, 45, 46 */}
+              <div className="absolute inset-y-0 left-0 w-full md:w-[48%] bg-[#bef226] rounded-r-none md:rounded-r-[130px] pointer-events-none" />
+
+              {/* Left Feature Illustration Section */}
+              <div className="w-full md:w-[48%] flex items-center justify-between relative z-10 pl-2 pr-2 shrink-0">
+                {/* Left Typography Block */}
+                <div className="flex flex-col space-y-0.5 select-none z-10 pl-1 sm:pl-3 shrink-0">
+                  <span className="text-xs sm:text-[13px] font-bold tracking-tight text-black uppercase font-sans">
                     SPOT OPPORTUNITIES
                   </span>
-                  <span className="text-[12px] sm:text-[13px] font-bold tracking-tight text-[#0f172a] uppercase leading-tight font-sans">
+                  <span className="text-xs sm:text-[13px] font-bold tracking-tight text-black uppercase font-sans">
                     AND MANAGE RISK
                   </span>
-                  <span className="text-sm sm:text-[15px] font-black tracking-tight text-[#000000] uppercase leading-tight font-sans mt-0.5">
+                  <span className="text-sm sm:text-base font-black tracking-tight text-black uppercase font-sans mt-0.5">
                     WITH PRECISION
                   </span>
                 </div>
 
-                {/* Interactive Orbital Graphic with 4 Floating Feature Squircles */}
+                {/* Interactive Dynamic Graphic (Variants: signals, calculators, converters) */}
                 <InteractiveTradeGraphic
+                  variant={activeTradeFeature}
                   onSelectCalculator={(calcType) => {
                     onOpenCalculator?.(calcType);
                     handleCloseImmediately();
@@ -782,12 +865,12 @@ export const Header: React.FC<HeaderProps> = ({
                 />
               </div>
 
-              {/* Right Menu Options matching Navigation Menu Content 2.png */}
-              <div className="w-full md:w-[52%] pl-6 pr-5 py-4 flex flex-col justify-between">
+              {/* Right Menu Options (Preserving exact structure: Products & Tools) */}
+              <div className="w-full md:w-[52%] pl-4 sm:pl-6 pr-2 relative z-10">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Column 1: Products */}
                   <div className="space-y-4">
-                    <div className="text-sm font-medium text-slate-700 font-sans">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-sans">
                       Products
                     </div>
                     <div>
@@ -796,13 +879,22 @@ export const Header: React.FC<HeaderProps> = ({
                           setActiveTab('signals');
                           handleCloseImmediately();
                         }}
-                        className="text-left group transition-all"
+                        onMouseEnter={() => setHoveredTradeOption('signals')}
+                        className="group flex items-start text-left transition-all cursor-pointer w-full"
                       >
-                        <div className="font-bold text-[15px] text-[#0b1c30] group-hover:text-[#5338ec] transition-colors leading-tight">
-                          Trading Signals
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                          Skip the charts. Get instant buy/sell cues.
+                        <div className="flex items-start gap-2.5">
+                          {/* Purple Circle Dot: Active when trading signals is hovered/active */}
+                          {activeTradeFeature === 'signals' ? (
+                            <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-0.5 shadow-xs" />
+                          ) : null}
+                          <div>
+                            <div className="font-bold text-base text-[#0b1c30] group-hover:text-[#5945F1] transition-colors leading-tight">
+                              Trading Signals
+                            </div>
+                            <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                              Skip the charts. Get instant buy/sell cues.
+                            </div>
+                          </div>
                         </div>
                       </button>
                     </div>
@@ -810,84 +902,35 @@ export const Header: React.FC<HeaderProps> = ({
 
                   {/* Column 2: Tools */}
                   <div className="space-y-5">
-                    <div className="text-sm font-medium text-slate-700 font-sans">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 font-sans">
                       Tools
                     </div>
 
-                    {/* Section: Trading Calculators */}
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full bg-[#3b5bfd] shrink-0" />
-                        <span className="font-bold text-[14px] text-[#0b1c30]">
+                    {/* Section 1: Trading Calculators */}
+                    <div
+                      className="space-y-2"
+                      onMouseEnter={() => setHoveredTradeOption('calculators')}
+                    >
+                      <div className="flex items-center gap-2 cursor-pointer group">
+                        {/* Purple Circle Dot: Active when calculators is hovered/active */}
+                        {activeTradeFeature === 'calculators' ? (
+                          <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 shadow-xs" />
+                        ) : null}
+                        <span className="font-bold text-base text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">
                           Trading Calculators
                         </span>
                       </div>
 
-                      <ul className="space-y-1.5 pl-6 text-xs">
+                      <ul className="space-y-1.5 pl-3 text-xs">
                         <li>
                           <button
                             onClick={() => {
-                              setActiveTab('leverage-calculator');
+                              onOpenCalculator?.('forex');
                               handleCloseImmediately();
                             }}
-                            className="text-[#5030e5] font-bold hover:underline flex items-center gap-1.5 text-left"
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
                           >
-                            <span className="text-[#FD02B0] font-black">•</span> Leverage Calculator
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => {
-                              setActiveTab('volatility-calculator');
-                              handleCloseImmediately();
-                            }}
-                            className="text-slate-600 hover:text-[#5030e5] hover:underline flex items-center gap-1.5 text-left"
-                          >
-                            <span className="text-slate-400">•</span> Volatility Calculator
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => {
-                              setActiveTab('spread-calculator');
-                              handleCloseImmediately();
-                            }}
-                            className="text-slate-600 hover:text-[#5030e5] hover:underline flex items-center gap-1.5 text-left"
-                          >
-                            <span className="text-slate-400">•</span> Spread Calculator
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => {
-                              setActiveTab('pip-calculator');
-                              handleCloseImmediately();
-                            }}
-                            className="text-slate-600 hover:text-[#5030e5] hover:underline flex items-center gap-1.5 text-left"
-                          >
-                            <span className="text-slate-400">•</span> Pip Calculator
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => {
-                              setActiveTab('margin-calculator');
-                              handleCloseImmediately();
-                            }}
-                            className="text-slate-600 hover:text-[#5030e5] hover:underline flex items-center gap-1.5 text-left"
-                          >
-                            <span className="text-slate-400">•</span> Margin Calculator
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            onClick={() => {
-                              setActiveTab('rebate-calculator');
-                              handleCloseImmediately();
-                            }}
-                            className="text-slate-600 hover:text-[#5030e5] hover:underline flex items-center gap-1.5 text-left"
-                          >
-                            <span className="text-slate-400">•</span> Rebate Calculator
+                            <span className="text-slate-400">•</span> Forex Calculator
                           </button>
                         </li>
                         <li>
@@ -896,7 +939,7 @@ export const Header: React.FC<HeaderProps> = ({
                               onOpenCalculator?.('planning');
                               handleCloseImmediately();
                             }}
-                            className="text-slate-600 hover:text-[#5030e5] hover:underline flex items-center gap-1.5 text-left"
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
                           >
                             <span className="text-slate-400">•</span> Trade Planning Calculator
                           </button>
@@ -907,7 +950,7 @@ export const Header: React.FC<HeaderProps> = ({
                               onOpenCalculator?.('technical');
                               handleCloseImmediately();
                             }}
-                            className="text-slate-600 hover:text-[#5030e5] hover:underline flex items-center gap-1.5 text-left"
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
                           >
                             <span className="text-slate-400">•</span> Technical Calculator
                           </button>
@@ -918,7 +961,7 @@ export const Header: React.FC<HeaderProps> = ({
                               onOpenCalculator?.('performance');
                               handleCloseImmediately();
                             }}
-                            className="text-slate-600 hover:text-[#5030e5] hover:underline flex items-center gap-1.5 text-left"
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
                           >
                             <span className="text-slate-400">•</span> Performance Calculator
                           </button>
@@ -926,20 +969,35 @@ export const Header: React.FC<HeaderProps> = ({
                       </ul>
                     </div>
 
-                    {/* Section: Converter Calculators */}
-                    <div className="space-y-2 pt-1">
-                      <div className="font-bold text-[14px] text-[#0b1c30]">
-                        Converter Calculators
+                    {/* Section 2: Converter Calculators */}
+                    <div
+                      className="space-y-2 pt-2 border-t border-slate-100"
+                      onMouseEnter={() => setHoveredTradeOption('converters')}
+                    >
+                      <div className="flex items-center gap-2 cursor-pointer group">
+                        {/* Purple Circle Dot: Active when converters is hovered/active */}
+                        {activeTradeFeature === 'converters' ? (
+                          <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 shadow-xs" />
+                        ) : null}
+                        <button
+                          onClick={() => {
+                            onOpenCalculator?.('conversion');
+                            handleCloseImmediately();
+                          }}
+                          className="font-bold text-base text-[#0b1c30] group-hover:text-[#5945F1] transition-colors text-left cursor-pointer"
+                        >
+                          Converter Calculators
+                        </button>
                       </div>
 
-                      <ul className="space-y-1.5 pl-2 text-xs">
+                      <ul className="space-y-1.5 pl-3 text-xs">
                         <li>
                           <button
                             onClick={() => {
-                              onOpenCalculator?.('timezone');
+                              onOpenCalculator?.('conversion', 'timezone');
                               handleCloseImmediately();
                             }}
-                            className="text-slate-600 hover:text-[#5030e5] hover:underline flex items-center gap-1.5 text-left"
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
                           >
                             <span className="text-slate-400">•</span> Trading Timezone Converter
                           </button>
@@ -947,10 +1005,10 @@ export const Header: React.FC<HeaderProps> = ({
                         <li>
                           <button
                             onClick={() => {
-                              onOpenCalculator?.('currency');
+                              onOpenCalculator?.('conversion', 'currency');
                               handleCloseImmediately();
                             }}
-                            className="text-slate-600 hover:text-[#5030e5] hover:underline flex items-center gap-1.5 text-left"
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
                           >
                             <span className="text-slate-400">•</span> Currency Converter
                           </button>
@@ -965,7 +1023,7 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            HOVER MEGA MENU: COMMUNITY (NEW DEDICATED SUB-MENU FLOW)
+            HOVER MEGA MENU: COMMUNITY (MOVED FROM FORMER COMPANY MENU)
            ───────────────────────────────────────────────────────────── */}
         {activeHoverMenu === 'community' && (
           <div
@@ -976,113 +1034,111 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Bridging shield */}
             <div className="absolute -top-3 left-0 right-0 h-4 bg-transparent" />
 
-            <div className="w-full max-w-[940px] bg-white rounded-[26px] p-3.5 shadow-2xl border border-slate-200/90 flex flex-col md:flex-row items-stretch gap-2">
+            <div className="w-full max-w-[940px] bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200/90 relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+              {/* Soft Lavender / Periwinkle Curved Backdrop (Left ~54% of container) */}
+              <div className="absolute inset-y-0 left-0 w-full md:w-[54%] bg-[#eff2fe] rounded-r-none md:rounded-r-[130px] pointer-events-none" />
+
               {/* Left Feature Illustration Banner */}
-              <div className="w-full md:w-[56%] bg-[#eff3fa] rounded-[22px] p-6 sm:p-7 flex items-center justify-between relative overflow-hidden shrink-0">
-                <div className="flex flex-col space-y-1 select-none z-10">
-                  <span className="text-[13px] sm:text-sm font-extrabold tracking-wider text-[#3b5bfd] uppercase font-display">
-                    COMMUNITY ALPHA
+              <div className="w-full md:w-[54%] flex items-center justify-between relative z-10 pl-2 pr-2 shrink-0">
+                <div className="flex flex-col space-y-1 select-none z-10 pl-1 sm:pl-3 shrink-0">
+                  <span className="text-xs sm:text-[13px] font-bold tracking-wider text-[#5945F1] uppercase font-display">
+                    GROW WITH OUR
                   </span>
-                  <span className="text-[13px] sm:text-sm font-extrabold tracking-wider text-[#3b5bfd] uppercase font-display">
-                    CONNECTING
-                  </span>
-                  <span className="text-base sm:text-[17px] font-black tracking-widest text-[#4f46e5] uppercase font-display">
-                    SMART TRADERS.
+                  <div className="text-xs sm:text-[13px] tracking-wider text-[#5945F1] uppercase font-display">
+                    <span className="font-bold">COMMUNITY </span>
+                    <span className="font-black">OF</span>
+                  </div>
+                  <span className="text-sm sm:text-base font-black tracking-wider text-[#5945F1] uppercase font-display">
+                    ACTIVE TRADERS.
                   </span>
                 </div>
 
-                {/* Interactive Live Community Sphere with Sentiment & Chat */}
-                <InteractiveCommunityGraphic />
+                {/* Interactive Trophy & Leaderboard Arena */}
+                <InteractiveCompanyGraphic />
               </div>
 
               {/* Right Menu Options */}
-              <div className="w-full md:w-[44%] pl-7 pr-6 py-4 flex flex-col justify-center space-y-4">
-                {/* 1. Community Floor & Feeds */}
+              <div className="w-full md:w-[46%] flex flex-col justify-center space-y-5 sm:space-y-6 pl-4 sm:pl-8 pr-4 relative z-10">
                 <button
                   onClick={() => {
                     setActiveTab('community');
-                    onSelectCommunitySubTab?.('feeds');
                     handleCloseImmediately();
                   }}
-                  className="group flex items-start gap-3.5 text-left transition-all"
+                  onMouseEnter={() => setHoveredCommunityOption('community')}
+                  onMouseLeave={() => setHoveredCommunityOption(null)}
+                  className="group flex items-start text-left transition-all cursor-pointer"
                 >
-                  <div className="w-5 h-5 rounded-full bg-[#5338ec] flex items-center justify-center shrink-0 mt-0.5 shadow-xs group-hover:scale-110 transition-transform">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-[14px] text-[#0b1c30] group-hover:text-[#5338ec] transition-colors leading-tight">
-                      Community Feeds
-                    </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                      Live trader streams, verified setup charts, and member market alpha.
+                  <div className="flex items-start gap-3">
+                    {(hoveredCommunityOption === 'community' || (!hoveredCommunityOption && activeTab === 'community')) ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div className={`font-bold text-base transition-colors leading-tight ${
+                        (hoveredCommunityOption === 'community' || (!hoveredCommunityOption && activeTab === 'community'))
+                          ? 'text-[#5945F1]'
+                          : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                      }`}>
+                        Community Floor
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        Live discussions, real-time trader sentiment, and verified setup ideas.
+                      </div>
                     </div>
                   </div>
                 </button>
 
-                {/* 2. Debate Topics & Polls */}
-                <button
-                  onClick={() => {
-                    setActiveTab('community');
-                    onSelectCommunitySubTab?.('topics');
-                    handleCloseImmediately();
-                  }}
-                  className="group flex items-start gap-3.5 text-left transition-all"
-                >
-                  <div className="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-[#5338ec] group-hover:bg-[#5338ec]/10 flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                    <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-[#5338ec] transition-colors" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-[14px] text-[#0b1c30] group-hover:text-[#5338ec] transition-colors leading-tight">
-                      Debate Topics & Polls
-                    </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                      Active macro theses, community debates, and daily sentiment voting.
-                    </div>
-                  </div>
-                </button>
-
-                {/* 3. Research Articles & Spread Tests */}
-                <button
-                  onClick={() => {
-                    setActiveTab('community');
-                    onSelectCommunitySubTab?.('articles');
-                    handleCloseImmediately();
-                  }}
-                  className="group flex items-start gap-3.5 text-left transition-all"
-                >
-                  <div className="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-[#5338ec] group-hover:bg-[#5338ec]/10 flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                    <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-[#5338ec] transition-colors" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-[14px] text-[#0b1c30] group-hover:text-[#5338ec] transition-colors leading-tight">
-                      Articles & Broker Audits
-                    </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                      In-depth quant studies, live slippage audits, and trading strategies.
-                    </div>
-                  </div>
-                </button>
-
-                {/* 4. Trader Leaderboard */}
                 <button
                   onClick={() => {
                     setActiveTab('leaderboard');
                     handleCloseImmediately();
                   }}
-                  className="group flex items-start gap-3.5 text-left transition-all"
+                  onMouseEnter={() => setHoveredCommunityOption('leaderboard')}
+                  onMouseLeave={() => setHoveredCommunityOption(null)}
+                  className="group flex items-start text-left transition-all cursor-pointer"
                 >
-                  <div className="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-[#5338ec] group-hover:bg-[#5338ec]/10 flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                    <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-[#5338ec] transition-colors" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-[14px] text-[#0b1c30] group-hover:text-[#5338ec] transition-colors leading-tight flex items-center gap-1.5">
-                      <span>Weekly Leaderboard</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#c6f831]/20 text-emerald-800 font-bold">
-                        $1,750 Pool
-                      </span>
+                  <div className="flex items-start gap-3">
+                    {(hoveredCommunityOption === 'leaderboard' || (!hoveredCommunityOption && activeTab === 'leaderboard')) ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div className={`font-bold text-base transition-colors leading-tight ${
+                        (hoveredCommunityOption === 'leaderboard' || (!hoveredCommunityOption && activeTab === 'leaderboard'))
+                          ? 'text-[#5945F1]'
+                          : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                      }`}>
+                        Weekly Leaderboard
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        Compete with top traders for weekly cash prize pools and prestige.
+                      </div>
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                      Compete for cash rewards, reputation badges, and tier upgrades.
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('points-credits');
+                    handleCloseImmediately();
+                  }}
+                  onMouseEnter={() => setHoveredCommunityOption('points-credits')}
+                  onMouseLeave={() => setHoveredCommunityOption(null)}
+                  className="group flex items-start text-left transition-all cursor-pointer"
+                >
+                  <div className="flex items-start gap-3">
+                    {(hoveredCommunityOption === 'points-credits' || (!hoveredCommunityOption && (activeTab === 'points-credits' || (activeTab !== 'community' && activeTab !== 'leaderboard')))) ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div className={`font-bold text-base transition-colors leading-tight ${
+                        (hoveredCommunityOption === 'points-credits' || (!hoveredCommunityOption && (activeTab === 'points-credits' || (activeTab !== 'community' && activeTab !== 'leaderboard'))))
+                          ? 'text-[#5945F1]'
+                          : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                      }`}>
+                        Points & Syde Credits
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        Level up through trader tiers, complete missions, and redeem rewards.
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -1092,7 +1148,8 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            HOVER MEGA MENU: COMPANY
+            HOVER MEGA MENU: COMPANY (ABOUT US & CONTACT US WITH DYNAMIC GRAPHICS)
+            Matching State=Company 1 and State=Company 2
            ───────────────────────────────────────────────────────────── */}
         {activeHoverMenu === 'company' && (
           <div
@@ -1103,83 +1160,92 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Bridging shield */}
             <div className="absolute -top-3 left-0 right-0 h-4 bg-transparent" />
 
-            <div className="w-full max-w-[940px] bg-white rounded-[26px] p-3.5 shadow-2xl border border-slate-200/90 flex flex-col md:flex-row items-stretch gap-2">
+            <div className="w-full max-w-[940px] bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200/90 relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+              {/* Soft Lavender / Periwinkle Curved Backdrop (Left ~50% of container) */}
+              <div className="absolute inset-y-0 left-0 w-full md:w-[50%] bg-[#eff2fe] rounded-r-none md:rounded-r-[130px] pointer-events-none" />
+
               {/* Left Feature Illustration Banner */}
-              <div className="w-full md:w-[56%] bg-[#eff3fa] rounded-[22px] p-6 sm:p-7 flex items-center justify-between relative overflow-hidden shrink-0">
-                <div className="flex flex-col space-y-1 select-none z-10">
-                  <span className="text-[13px] sm:text-sm font-extrabold tracking-wider text-[#3b5bfd] uppercase font-display">
-                    GROW WITH OUR
+              <div className="w-full md:w-[50%] flex items-center justify-between relative z-10 pl-2 pr-2 shrink-0">
+                <div className="flex flex-col space-y-1 select-none z-10 pl-1 sm:pl-3 shrink-0">
+                  <span className="text-xs sm:text-[13px] font-bold tracking-tight text-[#5945F1] uppercase font-sans">
+                    DISCOVER WHO WE ARE
                   </span>
-                  <span className="text-[13px] sm:text-sm font-extrabold tracking-wider text-[#3b5bfd] uppercase font-display">
-                    COMMUNITY OF
+                  <span className="text-xs sm:text-[13px] font-medium tracking-tight text-[#5945F1] uppercase font-sans">
+                    AND GET THE SUPPORT YOU
                   </span>
-                  <span className="text-base sm:text-[17px] font-black tracking-widest text-[#4f46e5] uppercase font-display">
-                    ACTIVE TRADERS.
+                  <span className="text-xs sm:text-[13px] font-bold tracking-tight text-[#5945F1] uppercase font-sans">
+                    NEED.
                   </span>
                 </div>
 
-                {/* Interactive Trophy & Leaderboard Arena */}
-                <InteractiveCompanyGraphic />
+                {/* Dynamic Graphic: About Us Globe vs Contact Us Envelope */}
+                <InteractiveCompanySubmenuGraphic
+                  variant={activeCompanyFeature}
+                  onOpenAbout={() => {
+                    setActiveTab('about');
+                    handleCloseImmediately();
+                  }}
+                  onOpenContact={() => {
+                    setCompanyModal({ isOpen: true, type: 'contact' });
+                    handleCloseImmediately();
+                  }}
+                />
               </div>
 
               {/* Right Menu Options */}
-              <div className="w-full md:w-[44%] pl-7 pr-6 py-6 flex flex-col justify-center space-y-7">
+              <div className="w-full md:w-[50%] flex flex-col justify-center space-y-6 sm:space-y-7 pl-4 sm:pl-8 pr-4 relative z-10">
+                {/* 1. About Us */}
                 <button
                   onClick={() => {
-                    setActiveTab('community');
+                    setActiveTab('about');
                     handleCloseImmediately();
                   }}
-                  className="group flex items-start gap-3.5 text-left transition-all"
+                  onMouseEnter={() => setHoveredCompanyOption('about')}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full"
                 >
-                  <div className="w-5 h-5 rounded-full bg-[#5338ec] flex items-center justify-center shrink-0 mt-0.5 shadow-xs group-hover:scale-110 transition-transform">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-[15px] text-[#0b1c30] group-hover:text-[#5338ec] transition-colors leading-tight">
-                      Community Floor
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Live discussions, real-time trader sentiment, and verified setup ideas.
+                  <div className="flex items-start gap-3">
+                    {activeCompanyFeature === 'about' ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div className={`font-bold text-base transition-colors leading-tight ${
+                        activeCompanyFeature === 'about'
+                          ? 'text-[#5945F1]'
+                          : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                      }`}>
+                        About Us
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        Learn about our mission, values, and story.
+                      </div>
                     </div>
                   </div>
                 </button>
 
+                {/* 2. Contact Us */}
                 <button
                   onClick={() => {
-                    setActiveTab('leaderboard');
+                    setCompanyModal({ isOpen: true, type: 'contact' });
                     handleCloseImmediately();
                   }}
-                  className="group flex items-start gap-3.5 text-left transition-all"
+                  onMouseEnter={() => setHoveredCompanyOption('contact')}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full"
                 >
-                  <div className="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-[#5338ec] group-hover:bg-[#5338ec]/10 flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                    <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-[#5338ec] transition-colors" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-[15px] text-[#0b1c30] group-hover:text-[#5338ec] transition-colors leading-tight">
-                      Weekly Leaderboard
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Compete with top traders for weekly cash prize pools and prestige.
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveTab('points-credits');
-                    handleCloseImmediately();
-                  }}
-                  className="group flex items-start gap-3.5 text-left transition-all"
-                >
-                  <div className="w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-[#5338ec] group-hover:bg-[#5338ec]/10 flex items-center justify-center shrink-0 mt-0.5 transition-all">
-                    <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-[#5338ec] transition-colors" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-[15px] text-[#0b1c30] group-hover:text-[#5338ec] transition-colors leading-tight">
-                      Points & Syde Credits
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      Level up through trader tiers, complete missions, and redeem rewards.
+                  <div className="flex items-start gap-3">
+                    {activeCompanyFeature === 'contact' ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div className={`font-bold text-base transition-colors leading-tight ${
+                        activeCompanyFeature === 'contact'
+                          ? 'text-[#5945F1]'
+                          : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                      }`}>
+                        Contact Us
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        Drop a message, find our details, or browse FAQs.
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -1336,6 +1402,77 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => {
+              setActiveTab('position-size-calculator');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold flex items-center justify-between ${
+              activeTab === 'position-size-calculator' || activeTab === 'trade-planning-calculator'
+                ? 'text-[#5338ec]'
+                : 'text-slate-700'
+            }`}
+          >
+            <span>Trade Planning Calculator</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#5945F1]/10 text-[#5945F1] font-bold">
+              PLAN
+            </span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('fibonacci-calculator');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold flex items-center justify-between ${
+              activeTab === 'fibonacci-calculator' || activeTab === 'pivot-point-calculator'
+                ? 'text-[#5338ec]'
+                : 'text-slate-700'
+            }`}
+          >
+            <span>Technical Calculator</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#5945F1]/10 text-[#5945F1] font-bold">
+              TECH
+            </span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('profit-loss-calculator');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold flex items-center justify-between ${
+              activeTab === 'profit-loss-calculator' ||
+              activeTab === 'loss-calculator' ||
+              activeTab === 'drawdown-calculator' ||
+              activeTab === 'compound-calculator' ||
+              activeTab === 'performance-calculator'
+                ? 'text-[#5338ec]'
+                : 'text-slate-700'
+            }`}
+          >
+            <span>Performance Calculator</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#5945F1]/10 text-[#5945F1] font-bold">
+              PERF
+            </span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('timezone-converter');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold flex items-center justify-between ${
+              activeTab === 'timezone-converter' ||
+              activeTab === 'trading-timezone-converter' ||
+              activeTab === 'currency-converter' ||
+              activeTab === 'conversion-calculator'
+                ? 'text-[#5338ec]'
+                : 'text-slate-700'
+            }`}
+          >
+            <span>Conversion Calculator</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#5945F1]/10 text-[#5945F1] font-bold">
+              CONV
+            </span>
+          </button>
+          <button
+            onClick={() => {
               setActiveTab('member-plan');
               setMobileMenuOpen(false);
             }}
@@ -1345,6 +1482,31 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Member Plan
           </button>
+
+          {/* Company Modals Triggers in Mobile Drawer */}
+          <div className="pt-2 border-t border-slate-100 flex flex-col space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
+              Company
+            </span>
+            <button
+              onClick={() => {
+                setActiveTab('about');
+                setMobileMenuOpen(false);
+              }}
+              className="w-full py-1.5 text-left text-sm font-semibold text-slate-700 hover:text-[#5338ec]"
+            >
+              About Us
+            </button>
+            <button
+              onClick={() => {
+                setCompanyModal({ isOpen: true, type: 'contact' });
+                setMobileMenuOpen(false);
+              }}
+              className="w-full py-1.5 text-left text-sm font-semibold text-slate-700 hover:text-[#5338ec]"
+            >
+              Contact Us
+            </button>
+          </div>
 
           {/* Theme switcher for mobile */}
           <div className="pt-3 mt-2 border-t border-slate-100 dark:border-[#230674] flex items-center justify-between">
@@ -1370,6 +1532,14 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       )}
+
+      {/* Company Info & Contact Dialog Modals */}
+      <CompanyModals
+        isOpen={companyModal.isOpen}
+        type={companyModal.type}
+        onClose={() => setCompanyModal((prev) => ({ ...prev, isOpen: false }))}
+        onNavigateToAbout={() => setActiveTab('about')}
+      />
     </header>
   );
 };

@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.23.4] - 2026-09-14
+### Changed
+- **Full Width Layout & Unified 56px Left-Right Padding Across All Screens**:
+  - Removed artificial `max-w-[1440px] mx-auto` restrictions from `<main>` and the sticky navigation `<header>`.
+  - Configured full-width layout (`w-full`) with standard `px-[56px]` left-right padding across desktop and large screens (`px-4 sm:px-8 md:px-[56px]`), providing a spacious, seamless edge-to-edge experience.
+  - Removed internal `max-w-7xl` and `max-w-[1080px]` restrictions from individual page containers (`MembershipPlanPage`, `ProfilePage`, `AccountSecurityPage`, and `ConnectToTruvoPage`), ensuring all pages expand uniformly to 100% width with the consistent 56px padding.
+  - Aligned `<Footer>` horizontal padding with the rest of the application layout (`px-4 sm:px-8 md:px-[56px]`).
+
+## [0.23.3] - 2026-09-14
+### Changed
+- **Revamped Brokers Mega Submenu (1:1 with Reference Screenshot `Nav Content Box.png`)**:
+  - **Single Seamless Outer Card**: Restyled the dropdown container with a continuous white rounded card (`rounded-3xl border border-slate-200/90 shadow-2xl`) and elegant lavender/periwinkle backdrop curve (`bg-[#eff2fe] rounded-r-[130px]`) occupying the left feature area.
+  - **Left Typography Block**: Aligned display typography (`REAL BROKER`, `COMPARISONS THAT`, `ACTUALLY MATTER.`) in signature purple (`#5945F1`) with bold weight emphasis.
+  - **Interactive 1:1 Comparison Graphic (`InteractiveBrokersGraphic`)**:
+    - **HFM Card**: Tilted -6deg white card with black HFM logo squircle, "HFM" label, purple "500+" stat, and "instruments" subtext.
+    - **Exness Card**: Tilted +6deg white card with iconic yellow "ex" logo squircle, "Exness" label, purple "240+" stat, and "instruments" subtext.
+    - **"VS" Overlap Badge**: Solid purple circular badge (`#5945F1`) with crisp white border positioned at the center intersection of both cards.
+    - **Floating Badges**: Lime green circular dollar badge (`$`), tilted black XM logo tile, tilted red FxPro tile, and hot pink star badge (`#FE01B1`).
+    - Added subtle smooth floating and hover interactive effects; clicking the graphic navigates to Broker Comparison.
+  - **Right Menu Navigation**:
+    - **Broker List**: Bold title with subtitle *"The ultimate broker directory. No blind dates, just total transparency."*
+    - **Broker Comparison**: Paired with the solid purple indicator circle (`● bg-[#5945F1]`) and subtitle *"A head-to-head battle for your money."*
+    - Dynamic hover tracking that smoothly highlights whichever option is hovered or active.
+
+## [0.23.2] - 2026-09-11
+### Changed
+- **Comprehensive "View Plan" Navigation to Member Plan Page Across App**:
+  - Matched the **"Move up. Earn More."** level promotion sidebar card 1:1 to the uploaded screenshot (`image.png`):
+    - Added crisp 2px pink border (`border-[#FE01B1]`), `rounded-3xl` container, bold display typography with pink period (`.`), and subtext.
+    - Updated progression stepper with purple "You" floating tooltip, filled purple circle, hot pink "Rookie" label (`#FE01B1`), divider line, and purple bordered "Climber" node.
+    - Designed the solid purple `View Plan` pill button (`bg-[#5945F1]`) with active scale feedback and smooth transition.
+  - Synchronized across all occurrences of the card (Trading Signals, Broker Listing, Broker Comparison).
+  - Verified and routed **100% of "View Plan" buttons** across the entire application directly to the **Member Plan** page (`setActiveTab('member-plan')`), including:
+    - Dashboard Level Card (Customizable Widgets & Empty State)
+    - Signals Page Sidebar Level Card
+    - Broker Listing Page Sidebar Level Card
+    - Broker Comparison Page Sidebar Level Card
+    - Broker Detail Page (Tier 1 & Tier 2 cashback upgrade prompts)
+    - User Profile Page Level Card
+    - Cashback Overview Page Level Card
+    - Global Search Modal ("Plans" button)
+    - Leaderboard Card
+
+## [0.23.1] - 2026-09-11
+### Changed
+- **Direct Navigation from Dashboard "View Plan" to Member Plan Page**:
+  - Wired the "View Plan" button on the purple **Your Level (Rookie)** card in the dashboard directly to the **Member Plan** page (`setActiveTab('member-plan')`).
+  - Matched the button design and card typography precisely to the uploaded screenshot (`image.png`): solid white pill button with purple text, crisp contrast, proper spacing, and ⚡ lightning icon for "Higher Confidence Signals".
+  - Added smooth scroll-to-top transition when switching to the Member Plan view so the user immediately sees the full tier roadmap and progression badges.
+  - Aligned all corresponding "View Plan" action triggers across other views (broker listing, broker comparison, leaderboard, and profile) to route directly to the Member Plan page.
+
 ## [0.23.0] - 2026-09-11
 ### Added
 - **Pixel-Perfect Membership Plan Page (`Membership plan - Member Lv.1.png`)**:

@@ -34,7 +34,7 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
   };
 
   return (
-    <div id="membership-plan-page" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12">
+    <div id="membership-plan-page" className="w-full py-2 sm:py-4 space-y-12">
       {/* ─────────────────────────────────────────────────────────────
           DEMO SWITCHER / INTERACTIVE LEVEL CONTROLLER (SUBTLE BAR)
          ───────────────────────────────────────────────────────────── */}

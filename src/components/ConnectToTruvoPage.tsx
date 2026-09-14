@@ -54,7 +54,7 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
   };
 
   return (
-    <div className="w-full max-w-[1080px] mx-auto space-y-6 pb-20 animate-in fade-in duration-200">
+    <div className="w-full space-y-6 pb-20 animate-in fade-in duration-200">
       {/* Back button */}
       <div className="pt-1">
         <button

@@ -531,47 +531,47 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
 
         {/* RIGHT COLUMN: 3 STACKED CARDS */}
         <div className="xl:col-span-3 space-y-5">
-          {/* Card 1: Move up. Earn More. */}
-          <div className="bg-white rounded-2xl border border-pink-200/90 p-5 shadow-2xs space-y-4">
+          {/* Card 1: Move up. Earn More. (Exact match to image.png) */}
+          <div className="bg-white rounded-3xl border-2 border-[#FE01B1] p-6 shadow-xs space-y-4">
             <div>
-              <h3 className="font-bold text-base text-[#0b1c30]">
+              <h3 className="font-display font-black text-xl text-[#0b1c30] tracking-tight">
                 Move up. Earn More
-                <span className="text-[#ec4899]">.</span>
+                <span className="text-[#FE01B1]">.</span>
               </h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                 Keep trading to climb levels and boost cashback.
               </p>
             </div>
 
-            {/* Stepper with "You" Badge */}
-            <div className="pt-4 pb-2 flex items-center justify-between">
-              <div className="flex items-center flex-1 pr-4">
+            {/* Stepper with "You" Badge & View Plan Button (Exact match to image.png) */}
+            <div className="pt-2 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
                 {/* Node 1: Rookie */}
                 <div className="flex flex-col items-center relative">
-                  <div className="absolute -top-7 px-2 py-0.5 rounded-md bg-[#5030e5] text-white text-[10px] font-extrabold shadow-xs whitespace-nowrap">
+                  {/* "You" Floating Tooltip */}
+                  <div className="absolute -top-7 px-2.5 py-0.5 rounded-lg bg-[#5945F1] text-white text-[11px] font-bold shadow-xs whitespace-nowrap">
                     You
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#5030e5] rotate-45" />
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#5945F1] rotate-45" />
                   </div>
-                  <div className="w-4 h-4 rounded-full bg-[#5030e5] flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                  </div>
-                  <span className="text-[11px] font-bold text-[#5030e5] mt-1.5">Rookie</span>
+                  <div className="w-6 h-6 rounded-full bg-[#5945F1]" />
+                  <span className="text-xs font-bold text-[#FE01B1] mt-1.5">Rookie</span>
                 </div>
 
                 {/* Connecting Line */}
-                <div className="h-0.5 bg-slate-200 flex-1 mx-2" />
+                <div className="w-12 sm:w-16 h-0.5 bg-slate-200" />
 
                 {/* Node 2: Climber */}
                 <div className="flex flex-col items-center">
-                  <div className="w-4 h-4 rounded-full border-2 border-[#5030e5] bg-white" />
-                  <span className="text-[11px] font-semibold text-slate-600 mt-1.5">Climber</span>
+                  <div className="w-6 h-6 rounded-full border-2 border-[#5945F1] bg-white" />
+                  <span className="text-xs font-bold text-[#5945F1] mt-1.5">Climber</span>
                 </div>
               </div>
 
               {/* View Plan Button */}
               <button
+                type="button"
                 onClick={onUpgradePrompt}
-                className="bg-[#5030e5] hover:bg-[#4326cf] text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs transition-all whitespace-nowrap"
+                className="px-5 py-2.5 rounded-2xl bg-[#5945F1] hover:bg-[#4834df] text-white text-sm font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
               >
                 View Plan
               </button>

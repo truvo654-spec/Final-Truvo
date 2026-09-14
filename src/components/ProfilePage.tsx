@@ -231,7 +231,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const displayNameVal = user.username || displayName || 'Toh';
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-200">
+    <div className="w-full py-2 animate-in fade-in duration-200">
       {/* Top Breadcrumb & Quick Back Navigation */}
       <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
         <div className="flex items-center gap-2 text-sm text-slate-500">

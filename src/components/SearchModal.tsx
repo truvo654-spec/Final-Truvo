@@ -327,7 +327,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
           >
             <span>Trading Calculators</span>
             <span className="px-2 py-0.5 rounded-full bg-[#5945F1] text-white text-[10px] sm:text-[11px] font-bold">
-              11
+              16
             </span>
           </button>
 
@@ -784,6 +784,16 @@ export const SearchModal: React.FC<SearchModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               {[
+                { name: 'Trading Timezone Converter', desc: 'Convert market sessions and monitor trading hours overlaps', tab: 'timezone-converter', icon: Clock },
+                { name: 'Currency Converter', desc: 'Real-time global currency conversion and exchange rates', tab: 'currency-converter', icon: ArrowRightLeft },
+                { name: 'Fibonacci Calculator', desc: 'Map levels where price may pause, reverse, or accelerate', tab: 'fibonacci-calculator', icon: TrendingUp },
+                { name: 'Pivot Point Calculator', desc: 'Calculate classical support and resistance levels', tab: 'pivot-point-calculator', icon: Target },
+                { name: 'Profit/Loss Calculator', desc: 'Calculate potential profit or loss before you trade', tab: 'profit-loss-calculator', icon: DollarSign },
+                { name: 'Drawdown Calculator', desc: 'Track drawdown and plan your recovery', tab: 'drawdown-calculator', icon: TrendingUp },
+                { name: 'Compound Calculator', desc: 'See how reinvested gains can build over time', tab: 'compound-calculator', icon: Calculator },
+                { name: 'Position Size Calculator', desc: 'Calculate exact lot sizing and risk management', tab: 'position-size-calculator', icon: Target },
+                { name: 'Stop Loss Take Profit', desc: 'Real-time Risk/Reward projection and pip targets', tab: 'sltp-calculator', icon: TrendingUp },
+                { name: 'Stop-out Calculator', desc: 'Find your margin call and stop-out price buffers', tab: 'stop-out-calculator', icon: ShieldAlert },
                 { name: 'Leverage Calculator', desc: 'Determine safe leverage with advance risk assessment', tab: 'leverage-calculator', icon: Calculator },
                 { name: 'Volatility Calculator', desc: 'Measure market volatility and expected range', tab: 'volatility-calculator', icon: Activity },
                 { name: 'Spread Calculator', desc: 'See what spreads cost before you place a trade', tab: 'spread-calculator', icon: ArrowRightLeft },
@@ -821,7 +831,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
               </h3>
               <button
                 onClick={() => {
-                  onNavigateToTab('calculators');
+                  onNavigateToTab('timezone-converter');
                   onClose();
                 }}
                 className="text-xs sm:text-sm font-semibold text-slate-700 hover:text-[#5945F1] transition-colors flex items-center gap-0.5 cursor-pointer"
@@ -834,23 +844,23 @@ export const SearchModal: React.FC<SearchModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div
                 onClick={() => {
-                  onNavigateToTab('calculators');
+                  onNavigateToTab('timezone-converter');
                   onClose();
                 }}
                 className="border border-slate-200/80 rounded-2xl p-4 bg-white hover:border-[#5945F1] transition-all cursor-pointer"
               >
-                <div className="font-bold text-sm text-[#0b1c30]">Currency Exchange Converter</div>
-                <div className="text-xs text-slate-500 mt-1">Live interbank rates across 168+ global currencies.</div>
+                <div className="font-bold text-sm text-[#0b1c30]">Trading Timezone Converter</div>
+                <div className="text-xs text-slate-500 mt-1">Live market sessions, overlaps, and worldwide trading hours.</div>
               </div>
               <div
                 onClick={() => {
-                  onNavigateToTab('calculators');
+                  onNavigateToTab('currency-converter');
                   onClose();
                 }}
                 className="border border-slate-200/80 rounded-2xl p-4 bg-white hover:border-[#5945F1] transition-all cursor-pointer"
               >
-                <div className="font-bold text-sm text-[#0b1c30]">Crypto to Fiat Converter</div>
-                <div className="text-xs text-slate-500 mt-1">Real-time Bitcoin, Ethereum, and USDT valuation tool.</div>
+                <div className="font-bold text-sm text-[#0b1c30]">Currency Converter</div>
+                <div className="text-xs text-slate-500 mt-1">Live interbank rates across global fiat and currency pairs.</div>
               </div>
             </div>
           </div>

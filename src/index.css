@@ -366,3 +366,31 @@
   background: #94a3b8;
 }
 
+/* Thin sleek scrollbar for sticky sidebars */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 9999px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+.dark .sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: #230674;
+}
+.dark .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #3410D5;
+}
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+.dark .sidebar-scrollbar {
+  scrollbar-color: #230674 transparent;
+}
+

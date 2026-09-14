@@ -39,6 +39,8 @@ import { PointsAndCreditsView } from './components/PointsAndCreditsView';
 import { LevelPointsGuideView } from './components/LevelPointsGuideView';
 import { CreditEarningGuideView } from './components/CreditEarningGuideView';
 import { ActivityLogsView } from './components/ActivityLogsView';
+import { AboutUsPage } from './components/AboutUsPage';
+import { PublicLandingPage } from './components/PublicLandingPage';
 import { CashbackOverviewPage } from './components/CashbackOverviewPage';
 import { ConnectToTruvoPage } from './components/ConnectToTruvoPage';
 import { TradingSignalsPage } from './components/TradingSignalsPage';
@@ -217,6 +219,11 @@ export default function App() {
     showToast("You've been signed out. Welcome back anytime!");
   };
 
+  // Scroll to top when activeTab changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
+
   // Global Keyboard Shortcut: Cmd+K / Ctrl+K opens Search Modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -361,11 +368,67 @@ export default function App() {
         onOpenViewPlan={() => setActiveTab('member-plan')}
         onOpenLedger={() => setIsLedgerOpen(true)}
         onOpenBrokerComparison={() => setActiveTab('broker-comparison')}
-        onOpenCalculator={(calcType) => {
+        onOpenCalculator={(calcType, subTool) => {
           if (calcType === 'forex') {
             setActiveTab('leverage-calculator');
+          } else if (
+            calcType === 'planning' ||
+            calcType === 'trade-planning' ||
+            calcType === 'trade-planning-calculator' ||
+            calcType === 'position-size'
+          ) {
+            if (subTool === 'sltp') {
+              setActiveTab('sltp-calculator');
+            } else if (subTool === 'stop-out') {
+              setActiveTab('stop-out-calculator');
+            } else {
+              // Default to Position Size calculator
+              setActiveTab('position-size-calculator');
+            }
+          } else if (
+            calcType === 'technical' ||
+            calcType === 'technical-calculator' ||
+            calcType === 'fibonacci' ||
+            calcType === 'pivot-point'
+          ) {
+            if (subTool === 'pivot-point' || calcType === 'pivot-point') {
+              setActiveTab('pivot-point-calculator');
+            } else {
+              // Default to Fibonacci calculator
+              setActiveTab('fibonacci-calculator');
+            }
+          } else if (
+            calcType === 'performance' ||
+            calcType === 'performance-calculator' ||
+            calcType === 'profit-loss' ||
+            calcType === 'loss' ||
+            calcType === 'drawdown' ||
+            calcType === 'compound'
+          ) {
+            if (subTool === 'drawdown' || calcType === 'drawdown') {
+              setActiveTab('drawdown-calculator');
+            } else if (subTool === 'compound' || calcType === 'compound') {
+              setActiveTab('compound-calculator');
+            } else {
+              // Default to Profit/Loss calculator
+              setActiveTab('profit-loss-calculator');
+            }
+          } else if (
+            calcType === 'conversion' ||
+            calcType === 'conversion-calculator' ||
+            calcType === 'converters' ||
+            calcType === 'timezone' ||
+            calcType === 'trading-timezone' ||
+            calcType === 'currency'
+          ) {
+            if (subTool === 'currency' || calcType === 'currency') {
+              setActiveTab('currency-converter');
+            } else {
+              // Default to Trading Timezone Converter
+              setActiveTab('timezone-converter');
+            }
           } else {
-            setSelectedCalculatorType(calcType);
+            setSelectedCalculatorType(calcType as CalculatorType);
             setIsCalculatorModalOpen(true);
           }
         }}
@@ -396,9 +459,13 @@ export default function App() {
       )}
 
       {/* Main App Container */}
-      <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-[56px] py-6 space-y-6">
+      <main className={`flex-1 w-full ${
+        activeTab === 'about' || activeTab === 'landing' || activeTab === 'home' || (!isLoggedIn && activeTab === 'dashboard')
+          ? 'p-0 space-y-0'
+          : 'px-4 sm:px-8 md:px-[56px] py-6 space-y-6'
+      }`}>
         {/* Welcome Bar / Subheader for other tabs */}
-        {activeTab !== 'dashboard' && activeTab !== 'brokers' && activeTab !== 'broker-comparison' && activeTab !== 'broker-detail' && activeTab !== 'connect-to-truvo' && activeTab !== 'points-credits' && activeTab !== 'cashback-overview' && activeTab !== 'signals' && activeTab !== 'signal-detail' && activeTab !== 'level-points-guide' && activeTab !== 'credit-earning-guide' && activeTab !== 'activity-logs' && activeTab !== 'leverage-calculator' && activeTab !== 'volatility-calculator' && activeTab !== 'spread-calculator' && activeTab !== 'pip-calculator' && activeTab !== 'pips-calculator' && activeTab !== 'margin-calculator' && activeTab !== 'rebate-calculator' && activeTab !== 'calculators' && (
+        {activeTab !== 'about' && activeTab !== 'landing' && activeTab !== 'home' && activeTab !== 'dashboard' && activeTab !== 'brokers' && activeTab !== 'broker-comparison' && activeTab !== 'broker-detail' && activeTab !== 'connect-to-truvo' && activeTab !== 'points-credits' && activeTab !== 'cashback-overview' && activeTab !== 'signals' && activeTab !== 'signal-detail' && activeTab !== 'level-points-guide' && activeTab !== 'credit-earning-guide' && activeTab !== 'activity-logs' && activeTab !== 'leverage-calculator' && activeTab !== 'volatility-calculator' && activeTab !== 'spread-calculator' && activeTab !== 'pip-calculator' && activeTab !== 'pips-calculator' && activeTab !== 'margin-calculator' && activeTab !== 'rebate-calculator' && activeTab !== 'trade-planning-calculator' && activeTab !== 'position-size-calculator' && activeTab !== 'sltp-calculator' && activeTab !== 'stop-out-calculator' && activeTab !== 'fibonacci-calculator' && activeTab !== 'pivot-point-calculator' && activeTab !== 'loss-calculator' && activeTab !== 'profit-loss-calculator' && activeTab !== 'drawdown-calculator' && activeTab !== 'compound-calculator' && activeTab !== 'performance-calculator' && activeTab !== 'timezone-converter' && activeTab !== 'trading-timezone-converter' && activeTab !== 'currency-converter' && activeTab !== 'conversion-calculator' && activeTab !== 'calculators' && (
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
             <div>
               <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
@@ -451,7 +518,7 @@ export default function App() {
               setActivityLogs((prev) => [log, ...prev]);
               showToast(`Activity Logged: ${log.title}`);
             }}
-            onOpenViewPlan={() => setIsViewPlanOpen(true)}
+            onOpenViewPlan={() => setActiveTab('member-plan')}
             onOpenLevelPointsGuide={() => setActiveTab('level-points-guide')}
             onOpenCreditEarningGuide={() => setActiveTab('credit-earning-guide')}
             onOpenActivityLog={() => setActiveTab('activity-logs')}
@@ -493,40 +560,75 @@ export default function App() {
           />
         )}
 
-        {/* ─── TAB 1: Bento Grid Dashboard Matching Reference ─── */}
+        {/* ─── TAB 1: Bento Grid Dashboard Matching Reference (or Public Landing Page if guest) ─── */}
         {activeTab === 'dashboard' && (
-          <ReferenceDashboard
-            user={user}
-            brokers={brokers}
-            signals={signals}
-            quickSteps={quickSteps}
-            performanceData={PERFORMANCE_DATA}
-            leaderboardUsers={LEADERBOARD_USERS}
-            onOpenViewPlan={() => setIsViewPlanOpen(true)}
-            onAddDemoPoints={handleAddDemoPoints}
-            onStepClick={handleStepClick}
-            onToggleStep={handleToggleStep}
-            onOpenConnectModal={(broker) => {
-              setSelectedBrokerForConnect(broker || brokers[0]);
-              setIsConnectModalOpen(true);
+          !isLoggedIn ? (
+            <PublicLandingPage
+              onOpenSignUp={() => {
+                setAuthModalMode('signup');
+                setIsAuthModalOpen(true);
+              }}
+              onOpenSignIn={() => {
+                setAuthModalMode('signin');
+                setIsAuthModalOpen(true);
+              }}
+              onNavigateToBrokers={() => setActiveTab('brokers')}
+              onNavigateToSignals={() => setActiveTab('signals')}
+              onNavigateToPlan={() => setActiveTab('member-plan')}
+              onNavigateToTab={setActiveTab}
+            />
+          ) : (
+            <ReferenceDashboard
+              user={user}
+              brokers={brokers}
+              signals={signals}
+              quickSteps={quickSteps}
+              performanceData={PERFORMANCE_DATA}
+              leaderboardUsers={LEADERBOARD_USERS}
+              onOpenViewPlan={() => setActiveTab('member-plan')}
+              onAddDemoPoints={handleAddDemoPoints}
+              onStepClick={handleStepClick}
+              onToggleStep={handleToggleStep}
+              onOpenConnectModal={(broker) => {
+                setSelectedBrokerForConnect(broker || brokers[0]);
+                setIsConnectModalOpen(true);
+              }}
+              onOpenLedger={() => setIsLedgerOpen(true)}
+              onSelectSignal={(sig) => {
+                setSelectedSignal(sig);
+                setIsSignalModalOpen(true);
+              }}
+              onNavigateToTab={setActiveTab}
+              onNavigateToConnectBroker={(broker) => {
+                if (broker) setSelectedBrokerForConnect(broker);
+                setActiveTab('connect-to-truvo');
+              }}
+              onSelectBrokerDetail={(broker) => {
+                setSelectedBrokerForDetail(broker);
+                setActiveTab('broker-detail');
+              }}
+              onTriggerEarningModal={handleTriggerEarningReward}
+              onOpenSearchModal={() => setIsSearchModalOpen(true)}
+              onShowToast={showToast}
+            />
+          )
+        )}
+
+        {/* ─── Explicit Landing/Home Tab ─── */}
+        {(activeTab === 'landing' || activeTab === 'home') && (
+          <PublicLandingPage
+            onOpenSignUp={() => {
+              setAuthModalMode('signup');
+              setIsAuthModalOpen(true);
             }}
-            onOpenLedger={() => setIsLedgerOpen(true)}
-            onSelectSignal={(sig) => {
-              setSelectedSignal(sig);
-              setIsSignalModalOpen(true);
+            onOpenSignIn={() => {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
             }}
+            onNavigateToBrokers={() => setActiveTab('brokers')}
+            onNavigateToSignals={() => setActiveTab('signals')}
+            onNavigateToPlan={() => setActiveTab('member-plan')}
             onNavigateToTab={setActiveTab}
-            onNavigateToConnectBroker={(broker) => {
-              if (broker) setSelectedBrokerForConnect(broker);
-              setActiveTab('connect-to-truvo');
-            }}
-            onSelectBrokerDetail={(broker) => {
-              setSelectedBrokerForDetail(broker);
-              setActiveTab('broker-detail');
-            }}
-            onTriggerEarningModal={handleTriggerEarningReward}
-            onOpenSearchModal={() => setIsSearchModalOpen(true)}
-            onShowToast={showToast}
           />
         )}
 
@@ -549,7 +651,7 @@ export default function App() {
               }
               setActiveTab('broker-comparison');
             }}
-            onOpenViewPlan={() => setIsViewPlanOpen(true)}
+            onOpenViewPlan={() => setActiveTab('member-plan')}
             onShowToast={showToast}
           />
         )}
@@ -581,7 +683,7 @@ export default function App() {
               setSelectedBrokerForDetail(b);
               setActiveTab('broker-detail');
             }}
-            onOpenViewPlan={() => setIsViewPlanOpen(true)}
+            onOpenViewPlan={() => setActiveTab('member-plan')}
             onOpenSignUp={() => {
               setAuthModalMode('signup');
               setIsAuthModalOpen(true);
@@ -615,7 +717,7 @@ export default function App() {
               setSelectedBrokerForConnect(b);
               setActiveTab('connect-to-truvo');
             }}
-            onOpenViewPlan={() => setIsViewPlanOpen(true)}
+            onOpenViewPlan={() => setActiveTab('member-plan')}
             onShowToast={showToast}
             onOpenSignUp={() => {
               setAuthModalMode('signup');
@@ -635,7 +737,7 @@ export default function App() {
               setSelectedSignal(sig);
               setActiveTab('signal-detail');
             }}
-            onUpgradePrompt={() => setIsViewPlanOpen(true)}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
             onOpenConnectModal={(broker) => {
               setSelectedBrokerForConnect(broker || brokers[0]);
               setIsConnectModalOpen(true);
@@ -662,7 +764,7 @@ export default function App() {
             brokers={brokers}
             onBackToSignals={() => setActiveTab('signals')}
             onSelectSignal={(sig) => setSelectedSignal(sig)}
-            onOpenViewPlan={() => setIsViewPlanOpen(true)}
+            onOpenViewPlan={() => setActiveTab('member-plan')}
             onConnectBroker={(b) => {
               setSelectedBrokerForConnect(b);
               setIsConnectModalOpen(true);
@@ -679,7 +781,7 @@ export default function App() {
             user={user}
             brokers={brokers}
             onUpdateUserProfile={handleUpdateUserProfile}
-            onOpenViewPlan={() => setIsViewPlanOpen(true)}
+            onOpenViewPlan={() => setActiveTab('member-plan')}
             onShowToast={showToast}
             onNavigateToBrokers={() => setActiveTab('brokers')}
             onNavigateToCashback={() => setActiveTab('cashback-overview')}
@@ -730,7 +832,7 @@ export default function App() {
               setSelectedBrokerForConnect(broker || brokers[0]);
               setIsConnectModalOpen(true);
             }}
-            onOpenViewPlan={() => setIsViewPlanOpen(true)}
+            onOpenViewPlan={() => setActiveTab('member-plan')}
             onNavigateToBrokers={() => setActiveTab('brokers')}
             onNavigateToSignals={() => setActiveTab('signals')}
             onSelectSignal={(sig) => {
@@ -777,6 +879,7 @@ export default function App() {
           activeTab === 'pips-calculator' ||
           activeTab === 'margin-calculator' ||
           activeTab === 'rebate-calculator' ||
+          activeTab === 'trade-planning-calculator' ||
           activeTab === 'position-size-calculator' ||
           activeTab === 'sltp-calculator' ||
           activeTab === 'stop-out-calculator' ||
@@ -786,9 +889,11 @@ export default function App() {
           activeTab === 'profit-loss-calculator' ||
           activeTab === 'drawdown-calculator' ||
           activeTab === 'compound-calculator' ||
+          activeTab === 'performance-calculator' ||
           activeTab === 'timezone-converter' ||
           activeTab === 'trading-timezone-converter' ||
           activeTab === 'currency-converter' ||
+          activeTab === 'conversion-calculator' ||
           activeTab === 'calculators') && (
           <LeverageCalculatorPage
             user={user}
@@ -805,7 +910,7 @@ export default function App() {
                 ? 'margin'
                 : activeTab === 'rebate-calculator'
                 ? 'rebate'
-                : activeTab === 'position-size-calculator'
+                : activeTab === 'trade-planning-calculator' || activeTab === 'position-size-calculator'
                 ? 'position-size'
                 : activeTab === 'sltp-calculator'
                 ? 'sltp'
@@ -815,13 +920,13 @@ export default function App() {
                 ? 'fibonacci'
                 : activeTab === 'pivot-point-calculator'
                 ? 'pivot-point'
-                : activeTab === 'loss-calculator' || activeTab === 'profit-loss-calculator'
+                : activeTab === 'loss-calculator' || activeTab === 'profit-loss-calculator' || activeTab === 'performance-calculator'
                 ? 'profit-loss'
                 : activeTab === 'drawdown-calculator'
                 ? 'drawdown'
                 : activeTab === 'compound-calculator'
                 ? 'compound'
-                : activeTab === 'timezone-converter' || activeTab === 'trading-timezone-converter'
+                : activeTab === 'timezone-converter' || activeTab === 'trading-timezone-converter' || activeTab === 'conversion-calculator'
                 ? 'timezone'
                 : activeTab === 'currency-converter'
                 ? 'currency'
@@ -847,7 +952,7 @@ export default function App() {
             <div className="lg:col-span-7">
               <LeaderboardCard
                 users={LEADERBOARD_USERS}
-                onOpenViewPlan={() => setIsViewPlanOpen(true)}
+                onOpenViewPlan={() => setActiveTab('member-plan')}
               />
             </div>
             <div className="lg:col-span-5 space-y-6">
@@ -885,10 +990,36 @@ export default function App() {
             </div>
           </div>
         )}
+        {/* ─── TAB: About Us Page (Exact replica of Reference Design) ─── */}
+        {activeTab === 'about' && (
+          <AboutUsPage
+            onOpenSignUp={() => {
+              setAuthModalMode('signup');
+              setIsAuthModalOpen(true);
+            }}
+            onNavigateToBrokers={() => setActiveTab('brokers')}
+            onNavigateToSignals={() => setActiveTab('signals')}
+            onNavigateToPlan={() => setActiveTab('member-plan')}
+            onNavigateToTab={setActiveTab}
+          />
+        )}
       </main>
 
-      {/* Footer Matching Reference */}
-      <Footer />
+      {/* Footer Matching Reference - Rendered on ALL pages as full width */}
+      <Footer
+        onNavigateToAbout={() => {
+          setActiveTab('about');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onNavigateToPlan={() => {
+          setActiveTab('member-plan');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onNavigateToTab={(tab) => {
+          setActiveTab(tab);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
 
       {/* Modals */}
       <ConnectBrokerModal

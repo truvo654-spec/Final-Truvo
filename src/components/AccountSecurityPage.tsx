@@ -98,7 +98,7 @@ export const AccountSecurityPage: React.FC<AccountSecurityPageProps> = ({
   const emailDisplay = user.email || 'truvo654@gmail.com';
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-200">
+    <div className="w-full py-2 animate-in fade-in duration-200">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* ─── LEFT / MAIN COLUMN ─── */}
         <div className="lg:col-span-8 space-y-8">

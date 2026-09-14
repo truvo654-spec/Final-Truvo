@@ -312,51 +312,52 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
             </div>
           </div>
 
-          {/* Your Level Card (md:col-span-4) */}
+          {/* Your Level Card (md:col-span-4) - Matching image.png */}
           <div className="md:col-span-4 rounded-2xl bg-[#5945F1] p-5 text-white flex flex-col justify-between shadow-xs relative overflow-hidden">
             <div>
-              <div className="text-[11px] font-semibold text-white/80">
+              <div className="text-xs font-semibold text-white/80">
                 Your Level
               </div>
-              <div className="flex items-center gap-3 mt-1">
+              <div className="flex items-center gap-3.5 mt-2">
                 <RookieGhostIcon />
                 <div>
-                  <h4 className="font-display font-black text-xl text-white">
+                  <h4 className="font-display font-black text-2xl text-white tracking-tight leading-tight">
                     {user.rankTitle || 'Rookie'}
                   </h4>
-                  <div className="flex items-center gap-1 text-[11px] font-semibold text-white/95 mt-0.5">
-                    <Gem className="w-3 h-3 text-white shrink-0" />
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-white/95 mt-1">
+                    <Gem className="w-3.5 h-3.5 text-white shrink-0" />
                     <span>{user.currentPoints}/150 points.</span>
                   </div>
                 </div>
               </div>
 
               {/* Progress bar */}
-              <div className="w-full bg-white/20 rounded-full h-1.5 mt-3 mb-2 overflow-hidden">
+              <div className="w-full bg-white/25 rounded-full h-2 mt-4 mb-2.5 overflow-hidden">
                 <div
-                  className="h-full bg-[#FD02B0] rounded-full"
+                  className="h-full bg-[#FE01B1] rounded-full transition-all duration-300"
                   style={{ width: `${Math.min(100, (user.currentPoints / 150) * 100)}%` }}
                 />
               </div>
 
-              <div className="flex items-center justify-between gap-1 text-[10px] text-white/90">
-                <span>Next level at 50 Points</span>
+              <div className="flex items-center justify-between gap-2 text-xs text-white/90">
+                <span className="font-medium">Next level at 50 Points</span>
                 <button
+                  id="dashboard-level-view-plan-btn"
                   onClick={onOpenViewPlan}
-                  className="px-2.5 py-0.5 rounded-full bg-white hover:bg-white/90 text-[#5945F1] font-bold text-[10px] shadow-2xs transition-all cursor-pointer"
+                  className="px-4 py-1.5 rounded-full bg-white hover:bg-slate-100 text-[#5945F1] font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
                 >
                   View Plan
                 </button>
               </div>
             </div>
 
-            <div className="border-t border-white/20 pt-2.5 mt-3 space-y-1 text-[11px] text-white/95 font-medium">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold">$</span>
-                <span>+10% Cashback Boost</span>
+            <div className="border-t border-white/20 pt-3 mt-4 space-y-1.5 text-xs text-white/95 font-medium">
+              <div className="flex items-center gap-2">
+                <span className="font-black text-sm">$</span>
+                <span>+{user.boostPercentage || 10}% Cashback Boost</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold">⚡</span>
+              <div className="flex items-center gap-2">
+                <span className="text-amber-300 text-sm leading-none">⚡</span>
                 <span>Higher Confidence Signals</span>
               </div>
             </div>

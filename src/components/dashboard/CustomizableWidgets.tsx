@@ -134,56 +134,57 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
         </div>
       )}
 
-      {/* ─── 1. LEVEL CARD (ROOKIE) ─── */}
+      {/* ─── 1. LEVEL CARD (ROOKIE) - Matching image.png ─── */}
       {slot.type === 'level-card' && (
-        <div className="bg-[#5945F1] rounded-2xl p-5 text-white flex flex-col justify-between h-full relative overflow-hidden">
+        <div className="bg-[#5945F1] rounded-2xl p-5 text-white flex flex-col justify-between h-full relative overflow-hidden shadow-xs">
           <div>
+            <div className="text-xs font-semibold text-white/80">
+              Your Level
+            </div>
             <div
               onClick={() => onNavigateToTab('profile')}
-              className="flex items-start gap-3 cursor-pointer group"
+              className="flex items-center gap-3.5 mt-2 cursor-pointer group"
               title="View Profile & Account"
             >
               <RookieGhostIcon />
               <div className="flex-1 min-w-0">
-                <h3 className="font-display font-extrabold text-2xl text-white tracking-tight leading-none group-hover:underline">
+                <h3 className="font-display font-black text-2xl text-white tracking-tight leading-tight group-hover:underline">
                   {user.rankTitle || 'Rookie'}
                 </h3>
-                <div className="w-full bg-white/25 rounded-full h-2 mt-3 mb-1.5 overflow-hidden">
-                  <div
-                    className="h-full bg-[#FD02B0] rounded-full"
-                    style={{ width: `${Math.min(100, (user.currentPoints / 150) * 100)}%` }}
-                  />
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-white/95">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-white/95 mt-1">
                   <Gem className="w-3.5 h-3.5 text-white shrink-0" />
                   <span>{user.currentPoints}/150 points.</span>
-                </div>
-                <div className="text-xs font-extrabold text-[#CAEB0E] mt-0.5 tracking-tight">
-                  Don't Stop Now
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-white/20 my-3.5" />
+            {/* Progress bar */}
+            <div className="w-full bg-white/25 rounded-full h-2 mt-4 mb-2.5 overflow-hidden">
+              <div
+                className="h-full bg-[#FE01B1] rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(100, (user.currentPoints / 150) * 100)}%` }}
+              />
+            </div>
 
-            <div className="flex items-end justify-between gap-2">
-              <div className="space-y-1">
-                <div className="text-[11px] font-medium text-white/80">Next level at 50 Points</div>
-                <div className="flex items-center gap-1.5 text-xs font-medium text-white">
-                  <span className="font-bold text-sm leading-none">$</span>
-                  <span>+{user.boostPercentage || 10}% Cashback Boost</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-medium text-white">
-                  <span className="font-bold text-sm leading-none">%</span>
-                  <span>Higher Confidence Signals</span>
-                </div>
-              </div>
+            <div className="flex items-center justify-between gap-2 text-xs text-white/90">
+              <span className="font-medium">Next level at 50 Points</span>
               <button
                 onClick={onOpenViewPlan}
-                className="px-3.5 py-1.5 rounded-full border border-white/90 hover:bg-white/15 text-white font-bold text-xs transition-all shadow-2xs whitespace-nowrap cursor-pointer active:scale-95"
+                className="px-4 py-1.5 rounded-full bg-white hover:bg-slate-100 text-[#5945F1] font-bold text-xs shadow-xs transition-all whitespace-nowrap cursor-pointer active:scale-95 shrink-0"
               >
                 View Plan
               </button>
+            </div>
+          </div>
+
+          <div className="border-t border-white/20 pt-3 mt-4 space-y-1.5 text-xs text-white/95 font-medium">
+            <div className="flex items-center gap-2">
+              <span className="font-black text-sm">$</span>
+              <span>+{user.boostPercentage || 10}% Cashback Boost</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-amber-300 text-sm leading-none">⚡</span>
+              <span>Higher Confidence Signals</span>
             </div>
           </div>
         </div>

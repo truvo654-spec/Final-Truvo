@@ -1,304 +1,340 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Radio, Star, ShieldCheck, ArrowUpRight } from 'lucide-react';
 
-interface FloatingBadgeProps {
-  name: string;
-  sub: string;
-  perk: string;
-  rating: string;
-  color: string;
-  bg: string;
-  border: string;
-  positionClass: string;
-  delay: number;
+export type BrokerGraphicVariant = 'brokers' | 'broker-comparison';
+
+interface InteractiveBrokersGraphicProps {
+  variant?: BrokerGraphicVariant;
+  onOpenBrokerList?: () => void;
+  onOpenComparison?: () => void;
 }
 
-export const InteractiveBrokersGraphic: React.FC = () => {
-  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [pings, setPings] = useState<Array<{ id: number; x: number; y: number }>>([]);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+export const InteractiveBrokersGraphic: React.FC<InteractiveBrokersGraphicProps> = ({
+  variant = 'brokers',
+  onOpenBrokerList,
+  onOpenComparison,
+}) => {
+  // Generate horizontal scanlines for the 3D halftone sphere
+  const sphereLines = React.useMemo(() => {
+    const lines = [];
+    const R = 74;
+    const cy0 = 100;
+    const cx0 = 100;
+    const step = 4;
+    for (let y = 28; y <= 172; y += step) {
+      const dy = y - cy0;
+      const dx = Math.sqrt(Math.max(0, R * R - dy * dy));
+      lines.push({
+        y,
+        x1: cx0 - dx,
+        x2: cx0 + dx,
+        width: dx * 2,
+      });
+    }
+    return lines;
+  }, []);
 
-  const badges: FloatingBadgeProps[] = [
-    {
-      name: 'exness',
-      sub: 'Raw Spread',
-      perk: '$8.50/lot instant cashback • 0.0 pip spread',
-      rating: '4.9 ★',
-      color: '#000000',
-      bg: '#ffcc00',
-      border: '#fde047',
-      positionClass: 'bottom-4 left-0 sm:left-2',
-      delay: 0,
-    },
-    {
-      name: 'HFM',
-      sub: 'HF MARKETS',
-      perk: '$7.20/lot rebate • Tier-1 FSC & FCA regulated',
-      rating: '4.8 ★',
-      color: '#ffffff',
-      bg: '#0c0d12',
-      border: '#334155',
-      positionClass: 'top-1 right-2',
-      delay: 0.3,
-    },
-    {
-      name: 'FxPro',
-      sub: 'PRO TRADE',
-      perk: '$6.00/lot rebate • No dealing desk NDD execution',
-      rating: '4.7 ★',
-      color: '#ffffff',
-      bg: '#dc2626',
-      border: '#f87171',
-      positionClass: 'top-12 -right-2',
-      delay: 0.6,
-    },
-    {
-      name: 'XM',
-      sub: 'Ultra-Low',
-      perk: '$6.80/lot rebate • Zero deposit & withdrawal fees',
-      rating: '4.8 ★',
-      color: '#ffffff',
-      bg: '#0c0d12',
-      border: '#334155',
-      positionClass: 'bottom-2 right-4',
-      delay: 0.9,
-    },
+  // Purple / blue glow capsule dots along the right equator limb
+  const rightLimbDots = [
+    { cy: 68, cx: 168, rx: 2.2, ry: 3.5 },
+    { cy: 77, cx: 171, rx: 2.6, ry: 4.2 },
+    { cy: 87, cx: 173.5, rx: 2.8, ry: 4.8 },
+    { cy: 98, cx: 174, rx: 3, ry: 5.2 },
+    { cy: 109, cx: 173, rx: 2.8, ry: 4.8 },
+    { cy: 119, cx: 170.5, rx: 2.6, ry: 4.2 },
+    { cy: 129, cx: 166.5, rx: 2.2, ry: 3.6 },
   ];
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 16;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * -16;
-    setTilt({ x, y });
-  };
-
-  const handleMouseLeave = () => {
-    setTilt({ x: 0, y: 0 });
-    setActiveTooltip(null);
-  };
-
-  const handleTriggerRadar = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsScanning(true);
-    const newPing = { id: Date.now(), x: 80, y: 80 };
-    setPings((prev) => [...prev.slice(-3), newPing]);
-    setTimeout(() => setIsScanning(false), 1400);
-  };
-
   return (
-    <div
-      className="relative w-48 h-48 sm:w-52 sm:h-52 shrink-0 flex items-center justify-center select-none cursor-pointer"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        perspective: '800px',
-      }}
-    >
-      {/* 3D Tilting Sphere Container */}
-      <motion.div
-        className="relative w-40 h-40 flex items-center justify-center"
-        animate={{
-          rotateX: tilt.y,
-          rotateY: tilt.x,
-        }}
-        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-      >
-        {/* SVG Base Sphere with Dynamic Shading */}
-        <svg viewBox="0 0 160 160" className="w-40 h-40 overflow-visible">
-          <defs>
-            <clipPath id="sphere-clip-interactive-brokers">
-              <circle cx="80" cy="80" r="66" />
-            </clipPath>
-            <radialGradient id="sphere-grad-interactive-brokers" cx="35%" cy="30%" r="70%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-              <stop offset="45%" stopColor="#e2e8f0" stopOpacity="0.65" />
-              <stop offset="100%" stopColor="#cbd5e1" stopOpacity="0.9" />
-            </radialGradient>
-            <linearGradient id="orbit-grad-brokers" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#5945F1" />
-              <stop offset="50%" stopColor="#FE01B1" />
-              <stop offset="100%" stopColor="#c6f831" />
-            </linearGradient>
-          </defs>
-
-          {/* Outer glowing aura */}
-          <circle cx="80" cy="80" r="70" fill="#5338ec" fillOpacity="0.04" />
-          <circle cx="80" cy="80" r="66" fill="url(#sphere-grad-interactive-brokers)" />
-
-          {/* Internal Dotted Latitude Matrix */}
-          <g clipPath="url(#sphere-clip-interactive-brokers)">
-            {[-52, -42, -32, -22, -12, -2, 8, 18, 28, 38, 48].map((yOffset, i) => (
-              <line
-                key={i}
-                x1="0"
-                y1={80 + yOffset}
-                x2="160"
-                y2={80 + yOffset}
-                stroke="#94a3b8"
-                strokeWidth="1.2"
-                strokeDasharray="2.5 3.5"
-                strokeOpacity="0.55"
-              />
-            ))}
-            {/* Continent Silhouettes */}
-            <path
-              d="M 45,55 Q 65,40 75,55 Q 90,60 82,75 Q 65,78 45,55 Z"
-              fill="#94a3b8"
-              fillOpacity="0.28"
-            />
-            <path
-              d="M 80,82 Q 105,75 115,92 Q 100,110 82,98 Z"
-              fill="#94a3b8"
-              fillOpacity="0.28"
-            />
-
-            {/* Radar Sweep Effect */}
-            {isScanning && (
-              <motion.circle
-                cx="80"
-                cy="80"
-                initial={{ r: 10, opacity: 0.9 }}
-                animate={{ r: 70, opacity: 0 }}
-                transition={{ duration: 1.2, ease: 'easeOut' }}
-                fill="none"
-                stroke="#5945F1"
-                strokeWidth="3"
-              />
-            )}
-          </g>
-
-          {/* Outer Rim */}
-          <circle
-            cx="80"
-            cy="80"
-            r="66"
-            fill="none"
-            stroke="#cbd5e1"
-            strokeWidth="1.2"
-            strokeDasharray="3 3"
-          />
-
-          {/* Animated Orbit Rings with Travelling Energy Orbs */}
-          <ellipse
-            cx="80"
-            cy="80"
-            rx="75"
-            ry="24"
-            fill="none"
-            stroke="url(#orbit-grad-brokers)"
-            strokeWidth="1.5"
-            strokeDasharray="4 6"
-            transform="rotate(-22 80 80)"
-            opacity="0.8"
-          />
-        </svg>
-
-        {/* Orbiting particles */}
-        <motion.div
-          className="absolute w-3 h-3 rounded-full bg-[#5945F1] shadow-[0_0_8px_#5945F1]"
-          animate={{
-            rotate: 360,
-          }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
-          style={{
-            transformOrigin: '80px 80px',
-            top: 2,
-            left: 2,
-          }}
-        />
-        <motion.div
-          className="absolute w-2.5 h-2.5 rounded-full bg-[#FE01B1] shadow-[0_0_8px_#FE01B1]"
-          animate={{
-            rotate: -360,
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-          style={{
-            transformOrigin: '80px 80px',
-            bottom: 4,
-            right: 4,
-          }}
-        />
-
-        {/* Radar Ping trigger button at center of globe */}
-        <motion.button
-          onClick={handleTriggerRadar}
-          whileHover={{ scale: 1.15 }}
-          whileTap={{ scale: 0.9 }}
-          title="Click to scan broker spreads"
-          className="absolute w-7 h-7 rounded-full bg-white/90 backdrop-blur-xs border border-indigo-200 text-[#5338ec] flex items-center justify-center shadow-md hover:bg-white transition-all z-20 group"
-        >
-          <Radio className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform" />
-        </motion.button>
-      </motion.div>
-
-      {/* Floating Interactive Badges with sine-wave bobbing & click tooltips */}
-      {badges.map((b) => {
-        const isHovered = activeTooltip === b.name;
-        return (
+    <div className="relative w-[280px] sm:w-[310px] h-[190px] select-none flex items-center justify-center shrink-0">
+      <AnimatePresence mode="wait">
+        {/* ─────────────────────────────────────────────────────────────
+            VARIANT 1: BROKER LIST (State=Broker 1, Dark Mode_=off.png)
+            Dotted Halftone Sphere Globe with Floating Broker Badges
+           ───────────────────────────────────────────────────────────── */}
+        {variant === 'brokers' && (
           <motion.div
-            key={b.name}
-            className={`absolute ${b.positionClass} z-30`}
-            animate={{
-              y: [-4, 4, -4],
-            }}
-            transition={{
-              duration: 3 + b.delay,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: b.delay,
-            }}
-            onMouseEnter={() => setActiveTooltip(b.name)}
-            onClick={() => setActiveTooltip(isHovered ? null : b.name)}
+            key="brokers-globe"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="relative w-full h-full flex items-center justify-center cursor-pointer"
+            onClick={onOpenBrokerList}
           >
+            {/* Halftone / Dotted Wireframe Sphere */}
+            <div className="relative w-48 h-48 sm:w-52 sm:h-52 flex items-center justify-center">
+              <svg viewBox="0 0 200 200" className="w-full h-full overflow-visible">
+                <defs>
+                  {/* Subtle continent mask/glow */}
+                  <radialGradient id="sphere-light" cx="35%" cy="35%" r="65%">
+                    <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#dbeafe" stopOpacity="0.2" />
+                  </radialGradient>
+                </defs>
+
+                {/* Sphere Backdrop Shape */}
+                <circle cx="100" cy="100" r="74" fill="url(#sphere-light)" opacity="0.3" />
+
+                {/* Horizontal Halftone Scanlines */}
+                {sphereLines.map((line, idx) => {
+                  const isUpper = line.y < 100;
+                  return (
+                    <line
+                      key={idx}
+                      x1={line.x1}
+                      y1={line.y}
+                      x2={line.x2}
+                      y2={line.y}
+                      stroke="#0f172a"
+                      strokeWidth="1.6"
+                      strokeDasharray={idx % 2 === 0 ? "2.2 3.2" : "1.8 2.8"}
+                      opacity={0.85}
+                    />
+                  );
+                })}
+
+                {/* Stylized continent dot clouds (white/soft clouds behind badges) */}
+                <ellipse cx="80" cy="75" rx="24" ry="18" fill="#ffffff" opacity="0.8" />
+                <ellipse cx="70" cy="125" rx="26" ry="16" fill="#ffffff" opacity="0.75" />
+                <ellipse cx="125" cy="85" rx="16" ry="20" fill="#ffffff" opacity="0.6" />
+
+                {/* Right Limb Purple Capsule Beads */}
+                {rightLimbDots.map((dot, i) => (
+                  <ellipse
+                    key={i}
+                    cx={dot.cx}
+                    cy={dot.cy}
+                    rx={dot.rx}
+                    ry={dot.ry}
+                    fill="#5945F1"
+                    opacity={0.95}
+                  />
+                ))}
+              </svg>
+
+              {/* ─── FLOATING BADGE 1: HFM (Top Center, tilted -5deg) ─── */}
+              <motion.div
+                animate={{ y: [-2, 3, -2], rotate: [-6, -3, -6] }}
+                transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+                whileHover={{ scale: 1.15, rotate: 0 }}
+                className="absolute top-2 left-[44%] -translate-x-1/2 z-20"
+              >
+                <div className="w-13 h-13 bg-black rounded-2xl shadow-xl border border-white/20 p-1.5 flex flex-col items-center justify-center">
+                  <div className="flex items-center justify-center leading-none">
+                    <span className="text-white font-black text-sm tracking-tight">HF</span>
+                    <span className="text-[#e11d48] font-black text-sm tracking-tight">M</span>
+                  </div>
+                  <span className="text-[6.5px] text-slate-300 font-bold tracking-widest mt-1 uppercase leading-none">
+                    HF MARKETS
+                  </span>
+                </div>
+              </motion.div>
+
+              {/* ─── FLOATING BADGE 2: FxPro (Mid-Right, tilted +8deg) ─── */}
+              <motion.div
+                animate={{ y: [2, -3, 2], rotate: [6, 10, 6] }}
+                transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
+                whileHover={{ scale: 1.15, rotate: 0 }}
+                className="absolute top-[42%] right-2 z-20"
+              >
+                <div className="w-10 h-10 bg-[#dc2626] rounded-xl shadow-xl border border-white/30 p-1 flex flex-col items-center justify-center">
+                  <span className="text-white font-black text-[10px] tracking-tight leading-none">
+                    FxPro
+                  </span>
+                  <span className="text-[5.5px] text-red-100 font-medium tracking-tight mt-0.5 leading-none">
+                    Trade Like a Pro
+                  </span>
+                </div>
+              </motion.div>
+
+              {/* ─── FLOATING BADGE 3: Exness (Bottom-Center, tilted -2deg) ─── */}
+              <motion.div
+                animate={{ y: [-3, 2, -3], rotate: [-2, 2, -2] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
+                whileHover={{ scale: 1.15, rotate: 0 }}
+                className="absolute bottom-6 left-[38%] z-20"
+              >
+                <div className="w-12 h-12 bg-[#ffcc00] rounded-2xl shadow-xl border border-white/30 flex items-center justify-center">
+                  <span className="text-black font-black text-2xl lowercase tracking-tighter leading-none select-none">
+                    ex
+                  </span>
+                </div>
+              </motion.div>
+
+              {/* ─── FLOATING BADGE 4: XM (Bottom-Right, tilted +6deg) ─── */}
+              <motion.div
+                animate={{ y: [2, -2, 2], rotate: [4, 8, 4] }}
+                transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.9 }}
+                whileHover={{ scale: 1.15, rotate: 0 }}
+                className="absolute bottom-2 right-4 z-20"
+              >
+                <div className="w-12 h-12 bg-black rounded-2xl shadow-xl border border-white/20 flex items-center justify-center">
+                  <span className="text-white font-black text-sm tracking-tighter">X</span>
+                  <span className="text-[#e11d48] font-black text-sm tracking-tighter">M</span>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────────
+            VARIANT 2: BROKER COMPARISON (State=Broker 2, Dark Mode_=off.png)
+            Dual Comparison Cards (HFM vs Exness) with VS badge, $, XM, FxPro
+           ───────────────────────────────────────────────────────────── */}
+        {variant === 'broker-comparison' && (
+          <motion.div
+            key="broker-comparison-cards"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="relative w-full h-full flex items-center justify-center cursor-pointer"
+            onClick={onOpenComparison}
+          >
+            {/* 1. Lime Green Dollar Badge (Top-Left above HFM) */}
             <motion.div
-              whileHover={{ scale: 1.12, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              style={{
-                backgroundColor: b.bg,
-                color: b.color,
-                borderColor: b.border,
+              animate={{
+                y: [-2, 3, -2],
+                rotate: [-6, -2, -6],
               }}
-              className="px-2.5 py-1 rounded-xl shadow-lg border text-left cursor-pointer transition-all flex items-center gap-1.5"
+              transition={{
+                duration: 3.5,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              className="absolute top-1 left-2 w-10 h-10 rounded-full bg-[#CAEB0E] flex items-center justify-center shadow-md z-20"
             >
-              <div>
-                <div className="font-extrabold text-[11px] leading-tight tracking-tight flex items-center gap-1">
-                  <span>{b.name}</span>
-                  {b.name === 'exness' && <Sparkles className="w-2.5 h-2.5 text-amber-950" />}
-                </div>
-                <div className="text-[7.5px] font-bold tracking-tighter opacity-80 uppercase leading-none">
-                  {b.sub}
-                </div>
-              </div>
-              <span className="text-[8px] px-1 py-0.2 rounded-md bg-black/15 font-bold font-mono">
-                {b.rating}
-              </span>
+              <span className="text-black font-black text-2xl leading-none select-none">$</span>
             </motion.div>
 
-            {/* Interactive Tooltip Card */}
-            <AnimatePresence>
-              {isHovered && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.85, y: 6 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 4 }}
-                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 rounded-xl bg-[#0b1c30] text-white shadow-2xl border border-indigo-500/40 z-50 pointer-events-none text-left"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-bold text-[#c6f831] pb-1 border-b border-slate-700/60">
-                    <span className="flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-[#c6f831]" />
-                      <span>Verified Rebate</span>
-                    </span>
-                    <span className="text-[9px] text-slate-400 font-mono">Real-Time</span>
-                  </div>
-                  <p className="text-[10px] text-slate-200 mt-1 leading-snug">{b.perk}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* 2. XM Logo Tile (Top Center, tilted -12deg) */}
+            <motion.div
+              animate={{
+                y: [2, -3, 2],
+                rotate: [-14, -10, -14],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: 0.2,
+              }}
+              className="absolute top-1 left-[105px] w-9 h-9 rounded-xl bg-black flex items-center justify-center shadow-md z-20 p-1 border border-white/20"
+            >
+              <div className="flex items-center justify-center tracking-tighter">
+                <span className="text-white font-black text-[11px]">X</span>
+                <span className="text-[#e11d48] font-black text-[11px]">M</span>
+              </div>
+            </motion.div>
+
+            {/* 3. FxPro Logo Tile (Top Right above Exness, tilted +12deg) */}
+            <motion.div
+              animate={{
+                y: [-2, 2, -2],
+                rotate: [10, 14, 10],
+              }}
+              transition={{
+                duration: 3.8,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: 0.4,
+              }}
+              className="absolute top-4 right-6 w-8 h-8 rounded-lg bg-[#dc2626] flex items-center justify-center shadow-md z-20 p-0.5 border border-white/20"
+            >
+              <span className="text-white font-black text-[9px] tracking-tight leading-none">FxPro</span>
+            </motion.div>
+
+            {/* 4. HFM Card (Left Comparison Card, tilted -6deg) */}
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: -3, y: -2 }}
+              className="absolute left-6 top-7 w-[114px] bg-white rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.07)] border border-slate-100 p-3 flex flex-col items-center text-center z-10 -rotate-[6deg] transition-shadow hover:shadow-xl"
+            >
+              {/* HFM Logo Square */}
+              <div className="w-14 h-14 bg-black rounded-xl flex flex-col items-center justify-center p-1.5 shadow-xs">
+                <div className="flex items-center justify-center">
+                  <span className="text-white font-black text-sm tracking-tight leading-none">HF</span>
+                  <span className="text-[#e11d48] font-black text-sm tracking-tight leading-none">M</span>
+                </div>
+                <span className="text-[6.5px] text-slate-300 font-bold tracking-widest mt-1 uppercase leading-none">
+                  HF Markets
+                </span>
+              </div>
+
+              {/* HFM Text */}
+              <span className="font-black text-sm text-[#0b1c30] mt-2 leading-tight">HFM</span>
+
+              {/* Instruments Stats */}
+              <div className="mt-1 flex flex-col items-center">
+                <span className="font-black text-sm text-[#5945F1] leading-none">500+</span>
+                <span className="text-[10px] font-medium text-slate-500 mt-0.5 leading-none">
+                  instruments
+                </span>
+              </div>
+            </motion.div>
+
+            {/* 5. Exness Card (Right Comparison Card, tilted +6deg) */}
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 3, y: -2 }}
+              className="absolute right-6 top-7 w-[114px] bg-white rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.07)] border border-slate-100 p-3 flex flex-col items-center text-center z-10 rotate-[6deg] transition-shadow hover:shadow-xl"
+            >
+              {/* Exness Yellow Logo Square */}
+              <div className="w-14 h-14 bg-[#ffcc00] rounded-xl flex items-center justify-center shadow-xs">
+                <span className="text-black font-black text-2xl lowercase tracking-tighter leading-none select-none">
+                  ex
+                </span>
+              </div>
+
+              {/* Exness Text */}
+              <span className="font-black text-sm text-[#0b1c30] mt-2 leading-tight">Exness</span>
+
+              {/* Instruments Stats */}
+              <div className="mt-1 flex flex-col items-center">
+                <span className="font-black text-sm text-[#5945F1] leading-none">240+</span>
+                <span className="text-[10px] font-medium text-slate-500 mt-0.5 leading-none">
+                  instruments
+                </span>
+              </div>
+            </motion.div>
+
+            {/* 6. "VS" Circular Badge (Center Overlap) */}
+            <motion.div
+              animate={{
+                scale: [1, 1.06, 1],
+              }}
+              transition={{
+                duration: 2.8,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              className="absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-[#5945F1] text-white font-black text-xs flex items-center justify-center shadow-lg border-2 border-white z-30 select-none"
+            >
+              VS
+            </motion.div>
+
+            {/* 7. Hot Pink Star Icon (Bottom near HFM & VS) */}
+            <motion.div
+              animate={{
+                rotate: [-12, -4, -12],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              className="absolute bottom-2 left-[118px] w-6 h-6 flex items-center justify-center z-20"
+            >
+              <svg
+                className="w-5 h-5 text-[#FE01B1] fill-[#FE01B1] stroke-black stroke-[1.6]"
+                viewBox="0 0 24 24"
+              >
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </motion.div>
           </motion.div>
-        );
-      })}
+        )}
+      </AnimatePresence>
     </div>
   );
 };

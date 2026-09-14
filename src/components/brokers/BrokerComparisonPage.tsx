@@ -1016,45 +1016,47 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
 
         {/* ─── RIGHT: Sidebar Widgets (Move up. Earn More. & Most Recent Signals) ─── */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Widget 1: Move up. Earn More. */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-[#15023a] border-2 border-[#FE01B1]/40 shadow-xs relative overflow-hidden">
+          {/* Widget 1: Move up. Earn More. (Exact match to image.png) */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-[#15023a] border-2 border-[#FE01B1] shadow-xs relative overflow-hidden">
             <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="font-display font-extrabold text-base text-[#0b1c30] dark:text-white">
-                Move up. <span className="text-[#5945F1] dark:text-[#CAEB0E]">Earn More</span>
-                <span className="text-[#FE01B1]">.</span>
+              <h3 className="font-display font-black text-xl text-[#0b1c30] dark:text-white tracking-tight">
+                Move up. Earn More<span className="text-[#FE01B1]">.</span>
               </h3>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
               Keep trading to climb levels and boost cashback.
             </p>
 
-            {/* Stepper Progress Bar */}
-            <div className="pt-6 pb-2">
-              <div className="relative flex items-center justify-between">
-                {/* Connecting Line */}
-                <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-1 bg-slate-200 dark:bg-slate-700 -z-0" />
-
-                {/* Left Dot: Rookie with 'You' pill */}
-                <div className="relative z-10 flex flex-col items-center">
-                  {/* Floating 'You' badge */}
-                  <div className="absolute -top-7 px-2 py-0.5 rounded-md bg-[#5945F1] text-white text-[10px] font-extrabold shadow-xs">
-                    You
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#5945F1] rotate-45" />
+            {/* Stepper Progress Bar (Exact match to image.png) */}
+            <div className="pt-4 pb-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {/* Left Dot: Rookie with 'You' pill */}
+                  <div className="relative flex flex-col items-center">
+                    {/* Floating 'You' badge */}
+                    <div className="absolute -top-7 px-2.5 py-0.5 rounded-lg bg-[#5945F1] text-white text-[11px] font-bold shadow-xs whitespace-nowrap">
+                      You
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#5945F1] rotate-45" />
+                    </div>
+                    <div className="w-6 h-6 rounded-full bg-[#5945F1]" />
+                    <span className="text-xs font-bold text-[#FE01B1] mt-1.5">Rookie</span>
                   </div>
-                  <div className="w-4 h-4 rounded-full bg-[#FE01B1] ring-4 ring-white dark:ring-[#15023a]" />
-                  <span className="text-[11px] font-bold text-[#FE01B1] mt-1.5">Rookie</span>
+
+                  {/* Connecting Line */}
+                  <div className="w-12 sm:w-16 h-0.5 bg-slate-200 dark:bg-slate-700" />
+
+                  {/* Right Dot: Climber */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-6 h-6 rounded-full border-2 border-[#5945F1] bg-white dark:bg-[#15023a]" />
+                    <span className="text-xs font-bold text-[#5945F1] mt-1.5">Climber</span>
+                  </div>
                 </div>
 
-                {/* Right Dot: Climber */}
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-[#15023a]" />
-                  <span className="text-[11px] font-medium text-slate-500 mt-1.5">Climber</span>
-                </div>
-
-                {/* Action button: View Plan / Sign Up */}
+                {/* Action button: View Plan */}
                 <button
+                  type="button"
                   onClick={onOpenViewPlan}
-                  className="ml-auto relative z-10 px-3.5 py-1.5 bg-[#5945F1] hover:bg-[#4834e0] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+                  className="px-5 py-2.5 rounded-2xl bg-[#5945F1] hover:bg-[#4834df] text-white text-sm font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
                 >
                   View Plan
                 </button>

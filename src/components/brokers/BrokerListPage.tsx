@@ -410,32 +410,32 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
             RIGHT SIDEBAR (4 COLS ON LG) (Exact match to Landing Page design)
            ───────────────────────────────────────────────────────────── */}
         <div className="lg:col-span-4 space-y-6">
-          {/* 1. LEVEL PROMOTION CARD (Move up. Earn More.) */}
-          <div className="bg-white rounded-2xl border-2 border-[#FD02B0]/90 p-5 shadow-sm space-y-4">
+          {/* 1. LEVEL PROMOTION CARD (Move up. Earn More. - Exact match to image.png) */}
+          <div className="bg-white rounded-3xl border-2 border-[#FE01B1] p-6 shadow-xs space-y-4">
             <div>
               <h3 className="font-display font-black text-xl text-[#0b1c30] tracking-tight">
-                Move up. Earn More<span className="text-[#FD02B0]">.</span>
+                Move up. Earn More<span className="text-[#FE01B1]">.</span>
               </h3>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                 Keep trading to climb levels and boost cashback.
               </p>
             </div>
 
-            {/* Stepper with "You" Pin */}
-            <div className="flex items-center justify-between pt-2">
+            {/* Stepper with "You" Pin & View Plan Button */}
+            <div className="flex items-center justify-between pt-2 gap-4">
               <div className="flex items-center gap-3">
                 {/* Step 1: Rookie with "You" bubble */}
                 <div className="relative flex flex-col items-center">
-                  <div className="absolute -top-7 px-2 py-0.5 rounded-md bg-[#5945F1] text-white text-[10px] font-black tracking-wider shadow-xs">
+                  <div className="absolute -top-7 px-2.5 py-0.5 rounded-lg bg-[#5945F1] text-white text-[11px] font-bold shadow-xs whitespace-nowrap">
                     You
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#5945F1] rotate-45" />
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#5945F1] rotate-45" />
                   </div>
-                  <div className="w-6 h-6 rounded-full bg-[#5945F1] border-2 border-white shadow-xs flex items-center justify-center text-white" />
-                  <span className="text-xs font-extrabold text-[#FD02B0] mt-1.5">Rookie</span>
+                  <div className="w-6 h-6 rounded-full bg-[#5945F1]" />
+                  <span className="text-xs font-bold text-[#FE01B1] mt-1.5">Rookie</span>
                 </div>
 
                 {/* Line connector */}
-                <div className="w-12 h-0.5 bg-slate-300" />
+                <div className="w-12 sm:w-16 h-0.5 bg-slate-200" />
 
                 {/* Step 2: Climber */}
                 <div className="flex flex-col items-center">
@@ -448,7 +448,7 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenViewPlan?.()}
-                className="px-4 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4834df] text-white font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95"
+                className="px-5 py-2.5 rounded-2xl bg-[#5945F1] hover:bg-[#4834df] text-white text-sm font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
               >
                 View Plan
               </button>

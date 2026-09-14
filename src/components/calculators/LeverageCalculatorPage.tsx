@@ -14,6 +14,7 @@ import {
   Activity,
   ArrowRightLeft,
   Briefcase,
+  ClipboardList,
   Layers,
   PanelRightClose,
   PanelRightOpen,
@@ -108,7 +109,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
   onShowToast,
 }) => {
   // Navigation Sidebar State
-  const [expandedSection, setExpandedSection] = useState<ParentCategory>('forex');
+  const [expandedSection, setExpandedSection] = useState<ParentCategory>(() => getParentCategory(initialTool));
   const [activeTool, setActiveTool] = useState<ForexCategory>(initialTool as ForexCategory);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
 
@@ -274,6 +275,27 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
     setActiveTool(tool);
     setExpandedSection(getParentCategory(tool));
     onToolChange?.(tool);
+    const toolToTab: Record<string, string> = {
+      'leverage': 'leverage-calculator',
+      'volatility': 'volatility-calculator',
+      'spread': 'spread-calculator',
+      'pips': 'pip-calculator',
+      'margin': 'margin-calculator',
+      'rebate': 'rebate-calculator',
+      'position-size': 'position-size-calculator',
+      'sltp': 'sltp-calculator',
+      'stop-out': 'stop-out-calculator',
+      'fibonacci': 'fibonacci-calculator',
+      'pivot-point': 'pivot-point-calculator',
+      'profit-loss': 'profit-loss-calculator',
+      'drawdown': 'drawdown-calculator',
+      'compound': 'compound-calculator',
+      'timezone': 'timezone-converter',
+      'currency': 'currency-converter',
+    };
+    if (toolToTab[tool]) {
+      onNavigateToTab?.(toolToTab[tool]);
+    }
   };
 
   const handleReset = () => {
@@ -337,7 +359,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
       {/* ─────────────────────────────────────────────────────────────
           COLUMN 1: LEFT NAVIGATION MENU / TREE SIDEBAR
          ───────────────────────────────────────────────────────────── */}
-      <aside className="w-56 shrink-0 hidden lg:block bg-transparent select-none">
+      <aside className="w-56 shrink-0 hidden lg:block bg-transparent select-none sticky top-[84px] self-start max-h-[calc(100vh-100px)] overflow-y-auto overscroll-contain pr-1 sidebar-scrollbar pb-6 z-10">
         <div className="space-y-2 text-sm font-medium">
           {/* Section: Forex (Expanded by default) */}
           <div className="space-y-1">
@@ -401,12 +423,12 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
               className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-[#CCC6FB] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#170345] transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-2.5">
-                <Briefcase className="w-4 h-4 text-slate-400 dark:text-[#8A7AF6]" />
+                <ClipboardList className="w-4 h-4 text-slate-500 dark:text-[#8A7AF6]" />
                 <span className="font-semibold text-[14px]">Trade Planning</span>
               </div>
-              <ChevronRight
+              <ChevronDown
                 className={`w-4 h-4 text-slate-400 transition-transform ${
-                  expandedSection === 'planning' ? 'rotate-90' : ''
+                  expandedSection === 'planning' ? 'rotate-0' : '-rotate-90'
                 }`}
               />
             </button>
@@ -414,7 +436,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
               <div className="pl-9 pr-2 space-y-1 py-0.5">
                 {[
                   { id: 'position-size', label: 'Position Size' },
-                  { id: 'sltp', label: 'SL & TP' },
+                  { id: 'sltp', label: 'Stop Loss Take Profit' },
                   { id: 'stop-out', label: 'Stop-out' },
                 ].map((item) => {
                   const isActive = activeTool === item.id;
@@ -424,7 +446,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
                       onClick={() => handleToolChange(item.id as ForexCategory)}
                       className={`w-full text-left py-1.5 px-2.5 rounded-lg text-[13px] transition-all cursor-pointer block ${
                         isActive
-                          ? 'text-[#5945F1] dark:text-[#ABA1F8] font-bold bg-indigo-50/60 dark:bg-[#230674]'
+                          ? 'text-[#5945F1] dark:text-[#ABA1F8] font-bold border-l-2 border-[#5945F1] pl-2.5 bg-indigo-50/60 dark:bg-[#230674]'
                           : 'text-slate-500 dark:text-[#CCC6FB] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-[#170345]'
                       }`}
                     >
@@ -500,7 +522,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
             {expandedSection === 'performance' && (
               <div className="pl-9 pr-2 space-y-1 py-0.5">
                 {[
-                  { id: 'profit-loss', label: 'Profit / Loss' },
+                  { id: 'profit-loss', label: 'Profit/Loss' },
                   { id: 'drawdown', label: 'Drawdown' },
                   { id: 'compound', label: 'Compound' },
                 ].map((item) => {
@@ -750,11 +772,11 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
       {/* ─────────────────────────────────────────────────────────────
           COLUMN 3: RIGHT SIDEBAR (MATCHED BROKERS & OPPORTUNITIES)
          ───────────────────────────────────────────────────────────── */}
-      <div className="relative">
+      <div className="relative sticky top-[84px] self-start shrink-0 hidden md:block z-10">
         {/* Toggle Sidebar Collapse Button */}
         <button
           onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-          className="hidden xl:flex absolute -left-10 top-0 w-8 h-8 rounded-lg bg-white dark:bg-[#170345] border border-slate-200 dark:border-[#3410D5] text-[#5945F1] dark:text-[#ABA1F8] items-center justify-center shadow-2xs hover:bg-slate-50 transition-all cursor-pointer z-10"
+          className="hidden xl:flex absolute -left-10 top-0 w-8 h-8 rounded-lg bg-white dark:bg-[#170345] border border-slate-200 dark:border-[#3410D5] text-[#5945F1] dark:text-[#ABA1F8] items-center justify-center shadow-2xs hover:bg-slate-50 transition-all cursor-pointer z-20"
           title={isRightSidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
         >
           {isRightSidebarOpen ? (
@@ -765,7 +787,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
         </button>
 
         {isRightSidebarOpen && (
-          <aside className="w-[360px] shrink-0 hidden md:block space-y-6 animate-in slide-in-from-right-3 duration-200">
+          <aside className="w-[360px] space-y-6 animate-in slide-in-from-right-3 duration-200 max-h-[calc(100vh-100px)] overflow-y-auto overscroll-contain pr-1.5 pb-6 sidebar-scrollbar">
             {activeTool === 'timezone' ? (
               <GlobalMarketStatusSidebar />
             ) : (
@@ -773,7 +795,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
             {/* Card: Brokers Matching Your Preferences */}
             <div className="bg-white dark:bg-[#170345] rounded-3xl p-5 sm:p-6 border border-slate-100 dark:border-[#230674] shadow-xs space-y-4">
               <div>
-                <h3 className="text-lg font-extrabold tracking-tight">
+                <h3 className="text-lg font-bold tracking-tight">
                   <span className="text-[#5945F1] dark:text-[#ABA1F8]">Brokers</span>{' '}
                   <span className="text-slate-900 dark:text-white">Matching Your</span>{' '}
                   <span className="text-[#5945F1] dark:text-[#ABA1F8]">Preferences</span>
@@ -794,50 +816,96 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
                       <Star className="w-3 h-3 fill-[#5945F1] dark:fill-white text-[#5945F1] dark:text-white" />
                       Best match
                     </span>
-                    <span className="text-[11px] font-semibold text-[#5945F1] dark:text-[#ABA1F8]">
-                      500:1
-                    </span>
                   </div>
 
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5">
                       <div className="w-10 h-10 rounded-xl bg-black text-white flex flex-col items-center justify-center shrink-0 border border-slate-800">
                         <span className="text-[11px] font-black tracking-tight leading-none">HFM</span>
-                        <span className="text-[6px] font-mono tracking-widest text-slate-400 mt-0.5">MARKETS</span>
+                        <span className="text-[6px] font-mono tracking-widest text-slate-400 mt-0.5">HF MARKETS</span>
                       </div>
                       <div>
                         <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
                           HFM
                         </div>
-                        <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">ECN | Raw spread</div>
+                        <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">Nano—Standard</div>
                         <div className="mt-1">
-                          <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-[#bef226] text-black text-[9px] font-bold">
                             ✔ Verified
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Stats & View Details */}
-                    <div className="text-right space-y-1">
-                      <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">
-                        Margin req: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.2%</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">
-                        Min deposit: <span className="text-slate-800 dark:text-white font-bold">$200</span>
-                      </div>
-                      <div className="pt-1">
-                        <button
-                          onClick={() => {
-                            const b = brokers.find((x) => x.name.toLowerCase().includes('hfm')) || brokers[0];
-                            onOpenConnectModal(b);
-                          }}
-                          className="px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-[#3410D5] text-[#5945F1] dark:text-[#ABA1F8] hover:bg-indigo-50 dark:hover:bg-[#2E0AA3] text-[10px] font-semibold transition-colors cursor-pointer"
-                        >
-                          View Details
-                        </button>
-                      </div>
+                    <div className="text-right space-y-1 text-[10px]">
+                      {activeTool === 'stop-out' ? (
+                        <>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Margin call: <span className="text-slate-800 dark:text-white font-bold">60%</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Stop-out level: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0%</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Negative balance: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Protected</span>
+                          </div>
+                        </>
+                      ) : activeTool === 'sltp' ? (
+                        <>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Avg spread: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.1 pips</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Slippage: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Very low</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Min SL distance: <span className="text-slate-800 dark:text-white font-bold">0 pips</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Min. deposit: <span className="text-emerald-600 dark:text-emerald-400 font-bold">$200</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Max leverage: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">1:400</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Step size: <span className="text-slate-800 dark:text-white font-bold">0.01 lots</span>
+                          </div>
+                        </>
+                      )}
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    {activeTool === 'stop-out' ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                          Safety buffer
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                          Max buffer
+                        </span>
+                      </div>
+                    ) : activeTool === 'sltp' ? (
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                        SL fill accuracy ~99.9%
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                        Min position size 0.01 lots
+                      </span>
+                    )}
+                    <button
+                      onClick={() => {
+                        const b = brokers.find((x) => x.name.toLowerCase().includes('hfm')) || brokers[0];
+                        onOpenConnectModal(b);
+                      }}
+                      className="text-[#5945F1] dark:text-[#ABA1F8] hover:underline text-xs font-semibold cursor-pointer"
+                    >
+                      View Details
+                    </button>
                   </div>
                 </div>
 
@@ -845,11 +913,8 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
                 <div className="p-3.5 rounded-2xl border border-slate-100 dark:border-[#230674] bg-[#fbfbff] dark:bg-[#230674]/50 hover:border-indigo-200 dark:hover:border-[#3410D5] transition-all space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#eef2ff] dark:bg-[#3410D5] text-[#5945F1] dark:text-white flex items-center gap-1">
-                      <ThumbsUp className="w-3 h-3 text-[#5945F1] dark:text-white" />
+                      <Star className="w-3 h-3 text-[#5945F1] dark:text-white" />
                       Low margin
-                    </span>
-                    <span className="text-[11px] font-semibold text-[#5945F1] dark:text-[#ABA1F8]">
-                      200:1
                     </span>
                   </div>
 
@@ -862,34 +927,84 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
                         <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
                           Exness
                         </div>
-                        <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">ECN | Raw spread</div>
+                        <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">Nano—Standard</div>
                         <div className="mt-1">
-                          <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-[#bef226] text-black text-[9px] font-bold">
                             ✔ Verified
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-right space-y-1">
-                      <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">
-                        Margin req: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.5%</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">
-                        Min deposit: <span className="text-slate-800 dark:text-white font-bold">$200</span>
-                      </div>
-                      <div className="pt-1">
-                        <button
-                          onClick={() => {
-                            const b = brokers.find((x) => x.name.toLowerCase().includes('exness')) || brokers[1];
-                            onOpenConnectModal(b);
-                          }}
-                          className="px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-[#3410D5] text-[#5945F1] dark:text-[#ABA1F8] hover:bg-indigo-50 dark:hover:bg-[#2E0AA3] text-[10px] font-semibold transition-colors cursor-pointer"
-                        >
-                          View Details
-                        </button>
-                      </div>
+                    <div className="text-right space-y-1 text-[10px]">
+                      {activeTool === 'stop-out' ? (
+                        <>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Margin call: <span className="text-slate-800 dark:text-white font-bold">60%</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Stop-out level: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0%</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Negative balance: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Protected</span>
+                          </div>
+                        </>
+                      ) : activeTool === 'sltp' ? (
+                        <>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Avg spread: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.1 pips</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Slippage: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Very low</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Min SL distance: <span className="text-slate-800 dark:text-white font-bold">0 pips</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Min. deposit: <span className="text-emerald-600 dark:text-emerald-400 font-bold">$200</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Max leverage: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">1:400</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Step size: <span className="text-slate-800 dark:text-white font-bold">0.01 lots</span>
+                          </div>
+                        </>
+                      )}
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    {activeTool === 'stop-out' ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                          Safety buffer
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                          Max buffer
+                        </span>
+                      </div>
+                    ) : activeTool === 'sltp' ? (
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                        SL fill accuracy ~99.9%
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                        Min position size 0.01 lots
+                      </span>
+                    )}
+                    <button
+                      onClick={() => {
+                        const b = brokers.find((x) => x.name.toLowerCase().includes('exness')) || brokers[1];
+                        onOpenConnectModal(b);
+                      }}
+                      className="text-[#5945F1] dark:text-[#ABA1F8] hover:underline text-xs font-semibold cursor-pointer"
+                    >
+                      View Details
+                    </button>
                   </div>
                 </div>
 
@@ -897,11 +1012,8 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
                 <div className="p-3.5 rounded-2xl border border-slate-100 dark:border-[#230674] bg-[#fbfbff] dark:bg-[#230674]/50 hover:border-indigo-200 dark:hover:border-[#3410D5] transition-all space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#eef2ff] dark:bg-[#3410D5] text-[#5945F1] dark:text-white flex items-center gap-1">
-                      <ThumbsUp className="w-3 h-3 text-[#5945F1] dark:text-white" />
+                      <Star className="w-3 h-3 text-[#5945F1] dark:text-white" />
                       Low margin
-                    </span>
-                    <span className="text-[11px] font-semibold text-[#5945F1] dark:text-[#ABA1F8]">
-                      100:1
                     </span>
                   </div>
 
@@ -915,29 +1027,79 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
                         <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
                           FxPro
                         </div>
-                        <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">ECN | Raw spread</div>
+                        <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">Nano—Standard</div>
                       </div>
                     </div>
 
-                    <div className="text-right space-y-1">
-                      <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">
-                        Margin req: <span className="text-slate-800 dark:text-white font-bold">1%</span>
-                      </div>
-                      <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">
-                        Min deposit: <span className="text-slate-800 dark:text-white font-bold">$200</span>
-                      </div>
-                      <div className="pt-1">
-                        <button
-                          onClick={() => {
-                            const b = brokers.find((x) => x.name.toLowerCase().includes('fxpro')) || brokers[2];
-                            onOpenConnectModal(b);
-                          }}
-                          className="px-2.5 py-1 rounded-lg border border-indigo-200 dark:border-[#3410D5] text-[#5945F1] dark:text-[#ABA1F8] hover:bg-indigo-50 dark:hover:bg-[#2E0AA3] text-[10px] font-semibold transition-colors cursor-pointer"
-                        >
-                          View Details
-                        </button>
-                      </div>
+                    <div className="text-right space-y-1 text-[10px]">
+                      {activeTool === 'stop-out' ? (
+                        <>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Margin call: <span className="text-slate-800 dark:text-white font-bold">60%</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Stop-out level: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0%</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Negative balance: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Protected</span>
+                          </div>
+                        </>
+                      ) : activeTool === 'sltp' ? (
+                        <>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Avg spread: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.1 pips</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Slippage: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Very low</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Min SL distance: <span className="text-slate-800 dark:text-white font-bold">0 pips</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Min. deposit: <span className="text-emerald-600 dark:text-emerald-400 font-bold">$200</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Max leverage: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">1:400</span>
+                          </div>
+                          <div className="text-slate-400 dark:text-[#8A7AF6]">
+                            Step size: <span className="text-slate-800 dark:text-white font-bold">0.01 lots</span>
+                          </div>
+                        </>
+                      )}
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    {activeTool === 'stop-out' ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                          Safety buffer
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                          Max buffer
+                        </span>
+                      </div>
+                    ) : activeTool === 'sltp' ? (
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                        SL fill accuracy ~99.9%
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
+                        Min position size 0.01 lots
+                      </span>
+                    )}
+                    <button
+                      onClick={() => {
+                        const b = brokers.find((x) => x.name.toLowerCase().includes('fxpro')) || brokers[2];
+                        onOpenConnectModal(b);
+                      }}
+                      className="text-[#5945F1] dark:text-[#ABA1F8] hover:underline text-xs font-semibold cursor-pointer"
+                    >
+                      View Details
+                    </button>
                   </div>
                 </div>
               </div>
@@ -945,7 +1107,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
               {/* Compare Matched Brokers Button */}
               <button
                 onClick={onOpenBrokerComparison}
-                className="w-full py-3 px-4 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+                className="w-full py-2.5 px-4 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
               >
                 <span>Compare Matched Brokers</span>
                 <ArrowRight className="w-4 h-4" />
@@ -953,7 +1115,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
             </div>
 
             {/* Bottom Card: Today's Market Opportunities */}
-            <div className="bg-gradient-to-br from-[#5945F1] via-[#4736d4] to-[#3410D5] rounded-3xl p-5 sm:p-6 text-white shadow-lg space-y-4">
+            <div className="bg-[#5945F1] rounded-3xl p-5 text-white shadow-lg space-y-3.5">
               <div>
                 <h3 className="text-lg font-black tracking-tight">
                   <span className="text-[#DCF73B]">Today's</span> Market{' '}
@@ -965,29 +1127,47 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
                 </p>
               </div>
 
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 {/* Card 1: USD/CAD */}
                 <div
                   onClick={() => {
                     const sig = signals.find((s) => s.ticker === 'USD/CAD') || signals[0];
                     onSelectSignal(sig);
                   }}
-                  className="p-3.5 rounded-2xl bg-white text-slate-900 shadow-sm hover:shadow-md transition-all cursor-pointer space-y-2"
+                  className="p-3 rounded-2xl bg-white text-slate-900 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">🇺🇸</span>
-                      <span className="font-extrabold text-sm tracking-tight">USD/CAD</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-bold text-xs tracking-tight">
+                        <span>🇺🇸</span>
+                        <span>USD/CAD</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-extrabold text-[#5945F1] leading-none">99%</div>
+                        <div className="text-[8px] text-slate-400">Confidence</div>
+                      </div>
                     </div>
-                    <span className="text-xs font-black text-[#5945F1]">99%</span>
+                    <div className="space-y-0.5 text-[10px] text-slate-500">
+                      <div className="flex items-center justify-between">
+                        <span>Target</span>
+                        <span className="blur-[3px] select-none text-slate-400 font-mono">1.3850</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Entry</span>
+                        <span className="blur-[3px] select-none text-slate-400 font-mono">1.3810</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Stop</span>
+                        <span className="blur-[3px] select-none text-slate-400 font-mono">1.3780</span>
+                      </div>
+                    </div>
+                    <div className="border-t border-slate-100 pt-1 flex items-center justify-between text-[9px] text-slate-400">
+                      <span>Risk/Reward</span>
+                      <span className="font-bold text-slate-700">1:1.8</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <div>
-                      Target: <span className="font-bold text-slate-800">1.3850</span>
-                    </div>
-                    <div>
-                      Entry: <span className="font-bold text-slate-800">1.3810</span>
-                    </div>
+                  <div className="mt-2.5 py-1 px-2 rounded-lg bg-indigo-50 text-[#5945F1] font-bold text-[10px] flex items-center justify-center gap-1">
+                    <span>💎</span> Level 4
                   </div>
                 </div>
 
@@ -997,24 +1177,62 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
                     const sig = signals.find((s) => s.ticker === 'GBP/USD') || signals[1];
                     onSelectSignal(sig);
                   }}
-                  className="p-3.5 rounded-2xl bg-white text-slate-900 shadow-sm hover:shadow-md transition-all cursor-pointer space-y-2"
+                  className="p-3 rounded-2xl bg-white text-slate-900 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">🇬🇧</span>
-                      <span className="font-extrabold text-sm tracking-tight">GBP/USD</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-bold text-xs tracking-tight">
+                        <span>🇬🇧</span>
+                        <span>GBP/USD</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-extrabold text-[#5945F1] leading-none">73%</div>
+                        <div className="text-[8px] text-slate-400">Confidence</div>
+                      </div>
                     </div>
-                    <span className="text-xs font-black text-[#5945F1]">73%</span>
+                    <div className="space-y-0.5 text-[10px] text-slate-500">
+                      <div className="flex items-center justify-between">
+                        <span>Target</span>
+                        <span className="font-semibold text-slate-800 font-mono">1.2875</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Entry</span>
+                        <span className="font-semibold text-slate-800 font-mono">1.2838</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Stop</span>
+                        <span className="font-semibold text-slate-800 font-mono">1.2795</span>
+                      </div>
+                    </div>
+                    <div className="border-t border-slate-100 pt-1 flex items-center justify-between text-[9px] text-slate-400">
+                      <span>Risk/Reward</span>
+                      <span className="font-bold text-slate-700">1:1.7</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <div>
-                      Target: <span className="font-bold text-slate-800">1.2875</span>
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center justify-between text-[8px] text-emerald-600 font-semibold px-0.5">
+                      <span>⏱ 30m period</span>
+                      <span>⌛ valid 12m</span>
                     </div>
-                    <div>
-                      Entry: <span className="font-bold text-slate-800">1.2838</span>
-                    </div>
+                    <button
+                      type="button"
+                      className="w-full py-1.5 rounded-lg bg-[#DCF73B] text-slate-900 font-bold text-[11px] flex items-center justify-center gap-1 shadow-2xs hover:brightness-105 cursor-pointer"
+                    >
+                      Buy <ArrowRight className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
+              </div>
+
+              {/* Explore Signals Button */}
+              <div className="pt-1 text-center">
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab?.('signals')}
+                  className="px-5 py-2 rounded-full bg-white hover:bg-slate-50 text-[#5945F1] font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                >
+                  Explore Signals
+                </button>
               </div>
             </div>
               </>

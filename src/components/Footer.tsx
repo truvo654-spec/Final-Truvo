@@ -1,69 +1,186 @@
 import React from 'react';
 
-export const Footer: React.FC = () => {
+export interface FooterProps {
+  onNavigateToAbout?: () => void;
+  onNavigateToPlan?: () => void;
+  onNavigateToTab?: (tab: string) => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({
+  onNavigateToAbout,
+  onNavigateToPlan,
+  onNavigateToTab,
+}) => {
   return (
-    <footer className="bg-white border-t border-slate-200 mt-12 py-8 px-[56px] text-slate-600 text-xs w-full">
-      <div className="w-full space-y-6">
-        {/* Top Links & Contacts Row */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-100">
-          {/* Left Email & Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#5338ec] flex items-center justify-center text-white shrink-0">
+    <footer className="w-full bg-[#5945F1] text-white pt-16 sm:pt-20 pb-8 px-4 sm:px-8 md:px-[56px] overflow-hidden relative selection:bg-[#bef226] selection:text-slate-900 z-10">
+      <div className="w-full relative z-10 space-y-12">
+        
+        {/* Main Top Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-8 lg:gap-12 items-start">
+          
+          {/* Col 1: Signature M Ribbon with Lime Ball & 3D Sphere */}
+          <div className="md:col-span-3 flex items-start">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 relative select-none">
               <svg
-                viewBox="0 0 24 24"
-                className="w-3.5 h-3.5 fill-none stroke-white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+                viewBox="0 0 160 160"
+                className="w-full h-full overflow-visible"
               >
-                <path d="M4 14C4 8.5 8 4 12 4s8 4.5 8 10-3 6-8 6c-3 0-5-1.5-6-4" />
-                <path d="M8 12c1.5-2 3.5-3 5.5-3s3.5 1 4.5 3" />
+                {/* Thick White Continuous Smooth 'M' Curve */}
+                <path
+                  d="M 32 126 C 30 84, 34 56, 50 56 C 66 56, 73 98, 88 98 C 102 98, 110 42, 126 42 C 138 42, 142 66, 144 86"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth="16"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                {/* Electric Lime Green Circle at the terminal of the 'M' path */}
+                <circle
+                  cx="145"
+                  cy="90"
+                  r="14"
+                  fill="#bef226"
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                  className="filter drop-shadow-sm"
+                />
               </svg>
             </div>
-            <a
-              href="mailto:abc@MarketSyde.com"
-              className="text-xs font-semibold text-[#5338ec] hover:underline"
-            >
-              abc@MarketSyde.com
-            </a>
           </div>
 
-          {/* Center Navigation Links */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-slate-700 font-medium text-xs">
-            <button
-              onClick={() => alert('MarketSyde provides automated institutional broker rebates and high-conviction market intelligence.')}
-              className="hover:text-[#5338ec] transition-colors"
-            >
-              About Us
-            </button>
-            <button
-              onClick={() => alert('Contact our 24/7 institutional desk at abc@MarketSyde.com')}
-              className="hover:text-[#5338ec] transition-colors"
-            >
-              Contact Us
-            </button>
-            <button
-              onClick={() => alert('Legal Notice: Financial market data and rebate calculations are provided as-is without warranty.')}
-              className="hover:text-[#5338ec] transition-colors"
-            >
-              Legal Notice
-            </button>
-            <button
-              onClick={() => alert('Privacy Policy: All client trading account credentials are encrypted and never shared.')}
-              className="hover:text-[#5338ec] transition-colors"
-            >
-              Privacy Policy
-            </button>
-            <button
-              onClick={() => alert('Terms & Conditions: Cashback rebates are funded directly by our institutional partner broker agreements.')}
-              className="hover:text-[#5338ec] transition-colors"
-            >
-              Terms & Conditions
-            </button>
+          {/* Col 2: More than product */}
+          <div className="md:col-span-3 space-y-3">
+            <h4 className="text-xs sm:text-sm font-semibold text-white/90">
+              More than product
+            </h4>
+            <ul className="space-y-2 text-xs sm:text-sm text-indigo-100/70 font-normal">
+              <li>
+                <button
+                  onClick={() => {
+                    if (onNavigateToPlan) onNavigateToPlan();
+                    else if (onNavigateToTab) onNavigateToTab('member-plan');
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Member Plan
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onNavigateToTab?.('points-credits')}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Loyalty Program
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onNavigateToTab?.('points-credits')}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Points System
+                </button>
+              </li>
+            </ul>
           </div>
 
-          {/* Right Social Icons */}
-          <div className="flex items-center gap-3 text-[#5338ec]">
+          {/* Col 3: Company */}
+          <div className="md:col-span-3 space-y-3">
+            <h4 className="text-xs sm:text-sm font-semibold text-white/90">
+              Company
+            </h4>
+            <ul className="space-y-2 text-xs sm:text-sm text-indigo-100/70 font-normal">
+              <li>
+                <button
+                  onClick={() => {
+                    if (onNavigateToAbout) onNavigateToAbout();
+                    else if (onNavigateToTab) onNavigateToTab('about');
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer text-left font-medium text-white"
+                >
+                  About Us
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onNavigateToTab?.('contact-us')}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Contact Us & FAQs
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onNavigateToTab?.('community')}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Company News
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onNavigateToTab?.('community')}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Careers
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Col 4: Regal / Legal */}
+          <div className="md:col-span-3 space-y-3">
+            <h4 className="text-xs sm:text-sm font-semibold text-white/90">
+              Regal
+            </h4>
+            <ul className="space-y-2 text-xs sm:text-sm text-indigo-100/70 font-normal">
+              <li>
+                <button
+                  onClick={() => alert('Legal Notice: Financial market data and rebate calculations are provided as-is without warranty.')}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Legal Notice
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => alert('Privacy Policy: All client trading account credentials are encrypted and never shared.')}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Privacy Policy
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => alert('Terms & Conditions: Cashback rebates are funded directly by our institutional partner broker agreements.')}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Terms & Conditions
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => alert('Cookies Policy: Cookies are used purely to maintain your preferences and active session.')}
+                  className="hover:text-white transition-colors cursor-pointer text-left"
+                >
+                  Cookies Policy
+                </button>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+        {/* Divider and Secondary Row: Copyright, Socials, and Email Callout */}
+        <div className="pt-8 border-t border-white/15 flex flex-col md:flex-row items-center justify-between gap-6">
+          
+          {/* Left Copyright */}
+          <div className="text-[11px] sm:text-xs text-indigo-200/80 font-normal order-2 md:order-1">
+            © 2026 MarketSyde. All rights reserved.
+          </div>
+
+          {/* Center Social Media Icons */}
+          <div className="flex items-center gap-4 text-white/90 order-1 md:order-2">
             {/* Facebook */}
             <a
               href="#facebook"
@@ -71,7 +188,7 @@ export const Footer: React.FC = () => {
                 e.preventDefault();
                 alert('Follow MarketSyde on Facebook');
               }}
-              className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center hover:bg-[#5338ec]/5 transition-colors"
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               title="Facebook"
             >
               <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -86,7 +203,7 @@ export const Footer: React.FC = () => {
                 e.preventDefault();
                 alert('Follow MarketSyde on Instagram');
               }}
-              className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center hover:bg-[#5338ec]/5 transition-colors"
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               title="Instagram"
             >
               <svg
@@ -109,7 +226,7 @@ export const Footer: React.FC = () => {
                 e.preventDefault();
                 alert('Follow MarketSyde on X');
               }}
-              className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center hover:bg-[#5338ec]/5 transition-colors"
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               title="X (Twitter)"
             >
               <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -124,7 +241,7 @@ export const Footer: React.FC = () => {
                 e.preventDefault();
                 alert('Join MarketSyde Discord Community');
               }}
-              className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center hover:bg-[#5338ec]/5 transition-colors text-[#5338ec]"
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               title="Discord"
             >
               <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -132,21 +249,41 @@ export const Footer: React.FC = () => {
               </svg>
             </a>
           </div>
+
+          {/* Right Direct Email with Lime Smiley / Target Accent */}
+          <div className="flex flex-col items-start md:items-end order-3">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-[#bef226] flex items-center justify-center text-slate-900 font-black text-[11px] shadow-2xs">
+                @
+              </div>
+              <a
+                href="mailto:abc@MarketSyde.com"
+                className="font-bold text-base sm:text-lg text-white hover:text-[#bef226] transition-colors font-sans"
+              >
+                abc@MarketSyde.com
+              </a>
+            </div>
+            <span className="text-[11px] text-indigo-200/80 font-normal mt-0.5">
+              Look who finally knows how to reach us
+            </span>
+          </div>
+
         </div>
 
-        {/* Legal Disclaimer Paragraph (Exact text from reference) */}
-        <p className="text-[11px] text-slate-500 text-center max-w-4xl mx-auto leading-relaxed">
-          By using this website, you agree to be bound by MarketSyde's Terms & Conditions, which
-          may be updated at any time without prior notice. Continued use of the site signifies your
-          acceptance of all current terms, including any revisions. All content is provided for
-          informational purposes only and may be changed or removed at our discretion. If you do not
-          agree with these terms, please discontinue use of the website.
-        </p>
+        {/* Legal Fine Print Paragraph */}
+        <div className="pt-4 pb-2 border-t border-white/10">
+          <p className="text-[11px] sm:text-xs text-indigo-200/70 leading-relaxed font-normal">
+            By using this website, you agree to be bound by MarketSyde's Terms & Conditions, which may be updated at any time without prior notice. Continued use of the site signifies your acceptance of all current terms, including any revisions. All content is provided for informational purposes only and may be changed or removed at our discretion. If you do not agree with these terms, please discontinue use of the website.
+          </p>
+        </div>
 
-        {/* Copyright */}
-        <p className="text-[11px] text-slate-400 text-center font-normal pt-2">
-          © 2026 MarketSyde. All rights reserved.
-        </p>
+        {/* Huge Bottom Watermark "marketsyde" (Edge-to-edge full width) */}
+        <div className="w-[calc(100%+32px)] sm:w-[calc(100%+64px)] md:w-[calc(100%+112px)] -mx-4 sm:-mx-8 md:-mx-[56px] select-none overflow-hidden pt-4 pb-2 -mb-8">
+          <h1 className="text-[14vw] sm:text-[15vw] font-black tracking-tighter text-white/20 leading-none text-center select-none font-sans pointer-events-none">
+            marketsyde
+          </h1>
+        </div>
+
       </div>
     </footer>
   );
