@@ -408,8 +408,8 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
       <main>
         {/* SUB-VIEW 1: FEEDS */}
         {activeSubTab === 'feeds' && (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            <div className="xl:col-span-9">
+          <div className="flex flex-col xl:flex-row items-start gap-6">
+            <div className="flex-1 min-w-0 w-full">
               <CommunityFeedsView
                 posts={posts}
                 onToggleLike={handleToggleLike}
@@ -421,7 +421,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
                 user={user}
               />
             </div>
-            <div className="xl:col-span-3">
+            <div className="w-full xl:w-[300px] xl:shrink-0">
               <CommunityRightSidebar
                 mode="default"
                 onSelectInfluencer={handleSelectInfluencer}
@@ -434,8 +434,8 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
 
         {/* SUB-VIEW 2: TOPICS */}
         {activeSubTab === 'topics' && (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            <div className="xl:col-span-9">
+          <div className="flex flex-col xl:flex-row items-start gap-6">
+            <div className="flex-1 min-w-0 w-full">
               <CommunityTopicsView
                 topics={COMMUNITY_TOPICS}
                 onAnswerTopic={(topicId, answer) => {
@@ -444,7 +444,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
                 onShowToast={showToast}
               />
             </div>
-            <div className="xl:col-span-3">
+            <div className="w-full xl:w-[300px] xl:shrink-0">
               <CommunityRightSidebar
                 mode="default"
                 onSelectInfluencer={handleSelectInfluencer}
@@ -472,8 +472,8 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
 
         {/* SUB-VIEW 4: MY PAGE */}
         {activeSubTab === 'my-page' && (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            <div className="xl:col-span-9">
+          <div className="flex flex-col xl:flex-row items-start gap-6">
+            <div className="flex-1 min-w-0 w-full">
               <CommunityMyPageView
                 user={user}
                 userPosts={userPosts}
@@ -487,7 +487,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
                 onShowToast={showToast}
               />
             </div>
-            <div className="xl:col-span-3">
+            <div className="w-full xl:w-[300px] xl:shrink-0">
               <CommunityRightSidebar
                 mode="default"
                 onSelectInfluencer={handleSelectInfluencer}
@@ -500,8 +500,8 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
 
         {/* SUB-VIEW 5: PROFILE PAGE (Viewing another creator, e.g. Crypto Adventure) */}
         {activeSubTab === 'profile' && (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            <div className="xl:col-span-9">
+          <div className="flex flex-col xl:flex-row items-start gap-6">
+            <div className="flex-1 min-w-0 w-full">
               <CommunityProfileView
                 influencer={selectedInfluencer || CRYPTO_ADVENTURE_PROFILE}
                 posts={
@@ -519,7 +519,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
                 onShowToast={showToast}
               />
             </div>
-            <div className="xl:col-span-3">
+            <div className="w-full xl:w-[300px] xl:shrink-0">
               <CommunityRightSidebar
                 mode="profile"
                 onSelectInfluencer={handleSelectInfluencer}

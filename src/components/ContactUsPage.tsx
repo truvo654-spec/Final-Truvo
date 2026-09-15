@@ -180,7 +180,7 @@ export const ContactUsPage: React.FC<ContactUsPageProps> = ({
           "Get In Touch With Us."
           "Have a question or need help? Hit us up. We're around."
          ───────────────────────────────────────────────────────────── */}
-      <section className="w-full pt-14 sm:pt-20 pb-8 sm:pb-12 px-4 sm:px-6 text-center max-w-5xl mx-auto">
+      <section className="w-full pt-[100px] pb-8 sm:pb-12 px-4 sm:px-6 text-center max-w-5xl mx-auto">
         {/* Main Display Heading */}
         <h1 className="text-4xl sm:text-5xl md:text-[62px] font-black tracking-tight leading-[1.08] mb-4 sm:mb-5">
           <span className="text-[#5945F1]">Get In Touch With U</span>

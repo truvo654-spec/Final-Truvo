@@ -950,7 +950,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
         </button>
 
         {isRightSidebarOpen && (
-          <aside className="w-[360px] space-y-6 animate-in slide-in-from-right-3 duration-200 max-h-[calc(100vh-100px)] overflow-y-auto overscroll-contain pr-1.5 pb-6 sidebar-scrollbar">
+          <aside className="w-[300px] space-y-6 animate-in slide-in-from-right-3 duration-200 max-h-[calc(100vh-100px)] overflow-y-auto overscroll-contain pr-1.5 pb-6 sidebar-scrollbar">
             {activeTool === 'timezone' ? (
               <GlobalMarketStatusSidebar />
             ) : (

@@ -99,9 +99,9 @@ export const AccountSecurityPage: React.FC<AccountSecurityPageProps> = ({
 
   return (
     <div className="w-full py-2 animate-in fade-in duration-200">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="flex flex-col lg:flex-row items-start gap-8">
         {/* ─── LEFT / MAIN COLUMN ─── */}
-        <div className="lg:col-span-8 space-y-8">
+        <div className="flex-1 min-w-0 w-full space-y-8">
           {/* Header Title with authentic colored typography: 'Account Securit' + pink 'y' + lime '.' */}
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#4338ca] flex items-center">
@@ -189,8 +189,8 @@ export const AccountSecurityPage: React.FC<AccountSecurityPageProps> = ({
           </div>
         </div>
 
-        {/* ─── RIGHT SIDEBAR (Sticky during scroll) ─── */}
-        <div className="lg:col-span-4">
+        {/* ─── RIGHT SIDEBAR (Fixed 300px on LG) (Sticky during scroll) ─── */}
+        <div className="w-full lg:w-[300px] lg:shrink-0">
           <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Card 1: Gamification Rank / Level Tracker (Exact match to 02. Account Security Landing.png) */}
           <div className="rounded-2xl p-5 border-2 border-transparent bg-gradient-to-br from-white via-indigo-50/30 to-pink-50/20 shadow-xs relative overflow-hidden ring-1 ring-slate-200/80">

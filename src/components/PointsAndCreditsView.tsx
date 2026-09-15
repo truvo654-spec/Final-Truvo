@@ -654,7 +654,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
   return (
     <div className="w-full space-y-8 pb-12">
       {/* ─── Hero Heading ─── */}
-      <div className="text-center max-w-2xl mx-auto pt-2 space-y-2">
+      <div className="text-center max-w-2xl mx-auto pt-0 space-y-2">
         <h1 className="font-display text-3xl sm:text-4xl lg:text-[44px] font-extrabold tracking-tight">
           <span className="text-[#5945F1]">Mission, Points </span>
           <span className="text-[#FE01B1]">& Credits</span>
@@ -731,9 +731,9 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
       )}
 
       {/* ─── Main 2-Column Layout (Left: Top Cards + Missions | Right: Sidebar Widgets) ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* ═══ LEFT COLUMN: TOP CARDS & MISSIONS (8 COLS) ═══ */}
-        <div className="lg:col-span-8 space-y-6">
+      <div className="flex flex-col lg:flex-row items-start gap-6">
+        {/* ═══ LEFT COLUMN: TOP CARDS & MISSIONS ═══ */}
+        <div className="flex-1 min-w-0 w-full space-y-6">
           {/* ── Top 3 Cards Row (Your Tier | Syde Credits | Unlock Conversion) ── */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-2xs">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 items-stretch">
@@ -1346,8 +1346,8 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
           </div>
         </div>
 
-        {/* ═══ RIGHT COLUMN: SIDEBAR WIDGETS (4 COLS) (Sticky during scroll) ═══ */}
-        <div className="lg:col-span-4">
+        {/* ═══ RIGHT COLUMN: SIDEBAR WIDGETS (Fixed 300px on LG) (Sticky during scroll) ═══ */}
+        <div className="w-full lg:w-[300px] lg:shrink-0">
           <div className="space-y-5 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* ── Widget 1: Track every point and credit earned (Glowing Gradient Border) ── */}
           <div

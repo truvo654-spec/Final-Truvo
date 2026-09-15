@@ -34,6 +34,7 @@ import { HowItWorksModal } from './dashboard/HowItWorksModal';
 import { WidgetPickerModal } from './dashboard/WidgetPickerModal';
 import { CustomizableWidget } from './dashboard/CustomizableWidgets';
 import { EmptyStateDashboardView } from './dashboard/EmptyStateDashboardView';
+import { ActivityCarousel } from './dashboard/ActivityCarousel';
 import { DashboardRow, DashboardSlot, WidgetType, WidgetSize } from '../types/dashboardWidgets';
 
 interface ReferenceDashboardProps {
@@ -414,7 +415,14 @@ function CustomizeRightSidebar({
   onNavigateToTab: (tab: string) => void;
 }) {
   return (
-    <div className="space-y-5 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
+    <aside
+      id="customize-right-sidebar"
+      aria-label="Sidebar"
+      className="space-y-5 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+    >
+      {/* Activity Carousel (Auto-slides every 4s) */}
+      <ActivityCarousel onNavigateToTab={onNavigateToTab} />
+
       {/* 1. 😎 Just This Spot */}
       <div className="rounded-2xl bg-white/80 backdrop-blur-md border border-indigo-100 p-6 shadow-2xs text-center space-y-2 relative overflow-hidden">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FD02B0] text-white text-xs font-bold shadow-xs">
@@ -586,7 +594,7 @@ function CustomizeRightSidebar({
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
-    </div>
+    </aside>
   );
 }
 
@@ -785,8 +793,8 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
   return (
     <div className="w-full space-y-6 pb-12">
       {/* ─── 1. TOP GREETING / CUSTOMIZER HEADER ─── */}
-      {isCustomizeMode ? (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 bg-white p-4 sm:p-5 rounded-2xl border border-indigo-100 shadow-2xs">
+      {isCustomizeMode && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-indigo-100 shadow-2xs">
           <div>
             <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
               <span>Your vibe. Your dashboar</span>
@@ -825,38 +833,13 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
             </button>
           </div>
         </div>
-      ) : (
-        <div className="flex items-start justify-between gap-4 pt-1">
-          <div>
-            <h1 className="font-display text-2xl sm:text-3xl lg:text-[32px] font-extrabold tracking-tight leading-tight">
-              <span>👋 </span>
-              <span className="text-[#5945F1]">Welcome, </span>
-              <span className="text-[#FD02B0]">{user.username}!</span>
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-              Look alive. The market won't wait, and we'd hate for you to miss what's next.
-            </p>
-          </div>
-
-          {/* Right edit button to enter widget customize mode */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleEnterCustomizeMode}
-              className="px-3 py-1.5 rounded-xl border border-indigo-100/90 bg-white hover:bg-indigo-50 text-[#5945F1] flex items-center gap-2 shadow-2xs transition-all cursor-pointer hover:border-indigo-300 font-bold text-xs"
-              title="Customize dashboard widgets"
-            >
-              <Pencil className="w-3.5 h-3.5 stroke-[2]" />
-              <span className="hidden sm:inline">Customize</span>
-            </button>
-          </div>
-        </div>
       )}
 
       {/* ─── 2. MAIN DASHBOARD CONTENT (CUSTOMIZE MODE vs STANDARD BENTO) ─── */}
       {isCustomizeMode ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* ════ LEFT COLUMN (8 cols): Customizable Rows + More Connected Brokers ════ */}
-          <div className="lg:col-span-8 space-y-5">
+        <div className="flex flex-col lg:flex-row gap-5 items-start">
+          {/* ════ LEFT COLUMN: Customizable Rows + More Connected Brokers ════ */}
+          <div className="flex-1 min-w-0 w-full space-y-5">
             {rows.map((row, rowIndex) => (
               <div
                 key={row.id}
@@ -962,8 +945,8 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
             />
           </div>
 
-          {/* ════ RIGHT COLUMN (4 cols): Just This Spot + Winning Signals + Tops Earning Points ════ */}
-          <div className="lg:col-span-4">
+          {/* ════ RIGHT COLUMN (Fixed 300px on LG): Just This Spot + Winning Signals + Tops Earning Points ════ */}
+          <div className="w-full lg:w-[300px] lg:shrink-0">
             <CustomizeRightSidebar
               signals={signals}
               onSelectSignal={onSelectSignal}
@@ -982,6 +965,7 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
           onNavigateToConnectBroker={onNavigateToConnectBroker}
           onSelectBrokerDetail={onSelectBrokerDetail}
           onSelectSignal={onSelectSignal}
+          onEnterCustomizeMode={handleEnterCustomizeMode}
         />
       )}
 

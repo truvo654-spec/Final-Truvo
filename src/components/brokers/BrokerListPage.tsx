@@ -157,7 +157,7 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
       {/* ─────────────────────────────────────────────────────────────
           1. HEADER SECTION (Exact typography: Partner Brokers.)
          ───────────────────────────────────────────────────────────── */}
-      <div className="text-center space-y-3 pt-2">
+      <div className="text-center space-y-3 pt-0">
         <h1 className="font-display text-4xl sm:text-5xl font-black tracking-tight text-[#0b1c30]">
           <span className="text-[#5945F1]">Partner Broker</span>
           <span className="text-[#FD02B0]">s</span>
@@ -250,9 +250,9 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
       {/* ─────────────────────────────────────────────────────────────
           2. MAIN CONTENT: 2-COLUMN LAYOUT (BROKER CARDS & RIGHT SIDEBAR)
          ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* LEFT COLUMN: BROKER CARDS GRID (8 COLS ON LG) */}
-        <div className="lg:col-span-8 space-y-4">
+      <div className="flex flex-col lg:flex-row items-start gap-6">
+        {/* LEFT COLUMN: BROKER CARDS GRID */}
+        <div className="flex-1 min-w-0 w-full space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
             {filteredBrokers.map((broker) => {
               const hasCashback = broker.hasCashback !== false;
@@ -407,12 +407,12 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
-            RIGHT SIDEBAR (4 COLS ON LG) (Sticky during scroll)
+            RIGHT SIDEBAR (Fixed 300px on LG) (Sticky during scroll)
            ───────────────────────────────────────────────────────────── */}
-        <div className="lg:col-span-4">
+        <div className="w-full lg:w-[300px] lg:shrink-0">
           <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* 1. LEVEL PROMOTION CARD (Move up. Earn More. - Exact match to image.png) */}
-          <div className="bg-white rounded-3xl border-2 border-[#FE01B1] p-6 shadow-xs space-y-4">
+          <div className="bg-white rounded-3xl border-2 border-[#FE01B1] p-5 shadow-xs space-y-4">
             <div>
               <h3 className="font-display font-black text-xl text-[#0b1c30] tracking-tight">
                 Move up. Earn More<span className="text-[#FE01B1]">.</span>
@@ -423,8 +423,8 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
             </div>
 
             {/* Stepper with "You" Pin & View Plan Button */}
-            <div className="flex items-center justify-between pt-2 gap-4">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between pt-2 gap-2">
+              <div className="flex items-center gap-2.5">
                 {/* Step 1: Rookie with "You" bubble */}
                 <div className="relative flex flex-col items-center">
                   <div className="absolute -top-7 px-2.5 py-0.5 rounded-lg bg-[#5945F1] text-white text-[11px] font-bold shadow-xs whitespace-nowrap">
@@ -432,16 +432,16 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#5945F1] rotate-45" />
                   </div>
                   <div className="w-6 h-6 rounded-full bg-[#5945F1]" />
-                  <span className="text-xs font-bold text-[#FE01B1] mt-1.5">Rookie</span>
+                  <span className="text-[11px] font-bold text-[#FE01B1] mt-1.5">Rookie</span>
                 </div>
 
                 {/* Line connector */}
-                <div className="w-12 sm:w-16 h-0.5 bg-slate-200" />
+                <div className="w-8 sm:w-10 h-0.5 bg-slate-200" />
 
                 {/* Step 2: Climber */}
                 <div className="flex flex-col items-center">
                   <div className="w-6 h-6 rounded-full border-2 border-[#5945F1] bg-white" />
-                  <span className="text-xs font-bold text-[#5945F1] mt-1.5">Climber</span>
+                  <span className="text-[11px] font-bold text-[#5945F1] mt-1.5">Climber</span>
                 </div>
               </div>
 
@@ -449,7 +449,7 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenViewPlan?.()}
-                className="px-5 py-2.5 rounded-2xl bg-[#5945F1] hover:bg-[#4834df] text-white text-sm font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+                className="px-3.5 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4834df] text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
               >
                 View Plan
               </button>

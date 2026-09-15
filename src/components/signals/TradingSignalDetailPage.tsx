@@ -581,9 +581,9 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
       </section>
 
       {/* ─── MAIN CONTENT GRID: 8 COLS CHART + 4 COLS SIDEBAR ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="flex flex-col lg:flex-row items-start gap-6">
         {/* ─── LEFT COLUMN: CANDLESTICK CHART MODULE (8 Cols) ─── */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className="flex-1 min-w-0 w-full space-y-4">
           <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 sm:p-5 flex flex-col">
             {/* Chart Toolbar Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
@@ -1265,8 +1265,8 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
           </div>
         </div>
 
-        {/* ─── RIGHT SIDEBAR (4 Cols): EXACT MATCH TO SCREENSHOT (Sticky during scroll) ─── */}
-        <div className="lg:col-span-4">
+        {/* ─── RIGHT SIDEBAR (Fixed 300px on LG): EXACT MATCH TO SCREENSHOT (Sticky during scroll) ─── */}
+        <div className="w-full lg:w-[300px] lg:shrink-0">
           <div className="space-y-5 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Card 1: Next Milestone / You're Connected. Nice! (Magenta Border) */}
           <div className="bg-white rounded-2xl border-2 border-[#FD02B0] p-5 shadow-xs relative">

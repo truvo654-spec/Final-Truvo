@@ -323,10 +323,10 @@ export const CommunityHub: React.FC<CommunityHubProps> = ({
         </div>
       </div>
 
-      {/* Main Community Grid: 8 Cols for Posts & Discussions, 4 Cols for Sidebars */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left 8 Cols: Alpha Feed & Discussions */}
-        <div className="lg:col-span-8 space-y-4">
+      {/* Main Community Layout: Posts & Discussions Left, Right Sidebar */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Left: Alpha Feed & Discussions */}
+        <div className="flex-1 min-w-0 w-full space-y-4">
           {/* Controls Bar: Category Filters & Search & New Post Button */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -678,8 +678,8 @@ export const CommunityHub: React.FC<CommunityHubProps> = ({
           </div>
         </div>
 
-        {/* Right 4 Cols: Top Contributors & Lot Challenges */}
-        <div className="lg:col-span-4">
+        {/* Right Sidebar: Fixed 300px on LG */}
+        <div className="w-full lg:w-[300px] lg:shrink-0">
           <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Top Alpha Contributors Card */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">

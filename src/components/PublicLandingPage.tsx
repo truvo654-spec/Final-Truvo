@@ -40,7 +40,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
           SECTION 1: HERO
           "Your trade starts before Buy and grows far beyond Sell."
          ───────────────────────────────────────────────────────────── */}
-      <section className="relative w-full pt-12 sm:pt-16 md:pt-20 pb-16 px-4 sm:px-6 md:px-12 flex flex-col items-center text-center">
+      <section className="relative w-full pt-[100px] pb-16 px-4 sm:px-6 md:px-12 flex flex-col items-center text-center">
         {/* Main Headline */}
         <div className="max-w-4xl mx-auto space-y-4">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-black tracking-tight text-[#5945F1] leading-[1.12]">

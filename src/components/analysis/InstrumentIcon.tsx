@@ -60,45 +60,56 @@ export const InstrumentIcon: React.FC<InstrumentIconProps> = ({
     case 'xrp':
       return (
         <div
-          className={`${className} rounded-full bg-[#008CE7] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 select-none`}
+          className={`${className} rounded-full bg-[#006097] text-white flex items-center justify-center p-1.5 shadow-xs shrink-0 select-none`}
         >
-          ✕
+          <svg viewBox="0 0 24 24" className="w-full h-full fill-white">
+            <circle cx="12" cy="5.5" r="2.5" />
+            <circle cx="6.5" cy="15" r="2.5" />
+            <circle cx="17.5" cy="15" r="2.5" />
+            <path d="M12 8v3m-3.5 2.5L10 12m4 0l1.5 1.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
         </div>
       );
     case 'pol':
       return (
         <div
-          className={`${className} rounded-full bg-[#8247E5] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 select-none`}
+          className={`${className} rounded-full bg-[#8247E5] text-white flex items-center justify-center p-1.5 shadow-xs shrink-0 select-none`}
         >
-          ∞
+          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
+            <path d="M16.5 8.5L12 6 7.5 8.5v5L12 16l4.5-2.5v-5zM12 4l6.5 3.75v7.5L12 19l-6.5-3.75V7.75L12 4z" />
+          </svg>
         </div>
       );
     case 'avax':
       return (
         <div
-          className={`${className} rounded-full bg-[#E84142] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+          className={`${className} rounded-full bg-[#E84142] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 select-none`}
         >
-          ▲
+          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
+            <path d="M12 4L4 18h4.5l3.5-6.5 3.5 6.5H20L12 4z" />
+          </svg>
         </div>
       );
     case 'sol':
       return (
         <div
-          className={`${className} rounded-full bg-gradient-to-tr from-[#9945FF] to-[#14F195] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 select-none`}
+          className={`${className} rounded-full bg-[#10141E] text-white flex items-center justify-center p-1.5 shadow-xs shrink-0 select-none`}
         >
-          <div className="space-y-[2px]">
-            <div className="w-3 h-[2px] bg-white rounded-full"></div>
-            <div className="w-3 h-[2px] bg-white rounded-full ml-0.5"></div>
-            <div className="w-3 h-[2px] bg-white rounded-full"></div>
-          </div>
+          <svg viewBox="0 0 24 24" className="w-4 h-4">
+            <path d="M4 6.5h13l3 2H7l-3-2z" fill="#00FFA3" />
+            <path d="M20 11.5H7l-3 2h13l3-2z" fill="#03E1FF" />
+            <path d="M4 16.5h13l3 2H7l-3-2z" fill="#DC1FFF" />
+          </svg>
         </div>
       );
     case 'uni':
       return (
         <div
-          className={`${className} rounded-full bg-[#FF007A] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 select-none`}
+          className={`${className} rounded-full bg-pink-50 text-[#FF007A] flex items-center justify-center p-1 shadow-xs shrink-0 select-none border border-pink-100`}
         >
-          🦄
+          <svg viewBox="0 0 24 24" className="w-5 h-5 fill-[#FF007A]">
+            <path d="M12 2C8.5 4 6 7 6 11c0 2.5 1 4.5 3 6-1 2-1 3-1 3s3-1 5-2c2 1 4.5 0 6-2 2-3 2-7-1-10-2-2-5-3-7-4z" />
+          </svg>
         </div>
       );
     case 'link':

@@ -24,7 +24,7 @@ export const AboutUsPage: React.FC<AboutUsPageProps> = ({
           Built To Simplify. Designed To Connect.
           Made For Traders.
          ───────────────────────────────────────────────────────────── */}
-      <section className="relative w-full pt-12 sm:pt-16 md:pt-20 pb-16 sm:pb-24 px-4 sm:px-8 md:px-12 flex flex-col items-center text-center">
+      <section className="relative w-full pt-[100px] pb-16 sm:pb-24 px-4 sm:px-8 md:px-12 flex flex-col items-center text-center">
         {/* Decorative subtle background gradient */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-gradient-to-b from-[#eff2fe]/70 via-[#f8f9ff]/30 to-transparent pointer-events-none -z-10" />
 

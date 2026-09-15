@@ -725,9 +725,9 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
       </div>
 
       {/* ─── Main Comparison Arena + Right Sidebar Grid ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* ─── LEFT: 3-Slot Comparison Matrix (lg:col-span-9) ─── */}
-        <div className="lg:col-span-9 bg-white dark:bg-[#120233] border border-slate-200/80 dark:border-[#2f1073] rounded-3xl p-4 sm:p-6 shadow-2xs">
+      <div className="flex flex-col lg:flex-row items-start gap-8">
+        {/* ─── LEFT: 3-Slot Comparison Matrix ─── */}
+        <div className="flex-1 min-w-0 w-full bg-white dark:bg-[#120233] border border-slate-200/80 dark:border-[#2f1073] rounded-3xl p-4 sm:p-6 shadow-2xs">
           {/* Top 3 Columns: Dropdown Slots */}
           <div className="grid grid-cols-12 gap-3 sm:gap-4 items-start pb-6 border-b border-slate-100 dark:border-[#270868]">
             {/* Blank offset matching left label column */}
@@ -1014,11 +1014,11 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
           </div>
         </div>
 
-        {/* ─── RIGHT: Sidebar Widgets (Move up. Earn More. & Most Recent Signals) ─── */}
-        <div className="lg:col-span-3">
+        {/* ─── RIGHT: Sidebar Widgets (Fixed 300px on LG) ─── */}
+        <div className="w-full lg:w-[300px] lg:shrink-0">
           <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Widget 1: Move up. Earn More. (Exact match to image.png) */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-[#15023a] border-2 border-[#FE01B1] shadow-xs relative overflow-hidden">
+          <div className="p-5 rounded-3xl bg-white dark:bg-[#15023a] border-2 border-[#FE01B1] shadow-xs relative overflow-hidden">
             <div className="flex items-start justify-between gap-2 mb-1">
               <h3 className="font-display font-black text-xl text-[#0b1c30] dark:text-white tracking-tight">
                 Move up. Earn More<span className="text-[#FE01B1]">.</span>
@@ -1030,8 +1030,8 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
 
             {/* Stepper Progress Bar (Exact match to image.png) */}
             <div className="pt-4 pb-2">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
                   {/* Left Dot: Rookie with 'You' pill */}
                   <div className="relative flex flex-col items-center">
                     {/* Floating 'You' badge */}
@@ -1040,16 +1040,16 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#5945F1] rotate-45" />
                     </div>
                     <div className="w-6 h-6 rounded-full bg-[#5945F1]" />
-                    <span className="text-xs font-bold text-[#FE01B1] mt-1.5">Rookie</span>
+                    <span className="text-[11px] font-bold text-[#FE01B1] mt-1.5">Rookie</span>
                   </div>
 
                   {/* Connecting Line */}
-                  <div className="w-12 sm:w-16 h-0.5 bg-slate-200 dark:bg-slate-700" />
+                  <div className="w-8 sm:w-10 h-0.5 bg-slate-200 dark:bg-slate-700" />
 
                   {/* Right Dot: Climber */}
                   <div className="flex flex-col items-center">
                     <div className="w-6 h-6 rounded-full border-2 border-[#5945F1] bg-white dark:bg-[#15023a]" />
-                    <span className="text-xs font-bold text-[#5945F1] mt-1.5">Climber</span>
+                    <span className="text-[11px] font-bold text-[#5945F1] mt-1.5">Climber</span>
                   </div>
                 </div>
 
@@ -1057,7 +1057,7 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
                 <button
                   type="button"
                   onClick={onOpenViewPlan}
-                  className="px-5 py-2.5 rounded-2xl bg-[#5945F1] hover:bg-[#4834df] text-white text-sm font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+                  className="px-3.5 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4834df] text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
                 >
                   View Plan
                 </button>

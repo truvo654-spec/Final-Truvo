@@ -2,6 +2,101 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.60.0] - 2026-09-15
+### Added
+- **Sidebar Fixed Sticky Scroll Layout ("side bar scroll fix")**:
+  - Pinned the right sidebar with `lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto` while allowing the middle/center content area to scroll freely and smoothly.
+  - Added hidden sleek scrollbars (`[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`) so long sidebar contents remain accessible without disruptive scroll tracks.
+- **Activity Carousel in Sidebar ("activity carousel with 4s auto-slide")**:
+  - Implemented the dedicated `ActivityCarousel` component matching `UPS Next Milestone.png` and `UPS Pick up where you left off.png`:
+    - **Slide 1: Next Milestone**:
+      - Distinct gradient border with solid magenta `#FE01B1` "● Next Milestone" badge.
+      - Blue gradient icon, "You're Connected. Nice!", "Start trading to get cashback", and "Trade Now" button linking to signals.
+    - **Slide 2: Pick up where you left off**:
+      - Gradient border with "Pick up where you left off■" header and "View >" link.
+      - 3 interactive broker quick-action badges: `Axi` (vibrant red), `OANDA` (midnight navy with neon green tick marks and "SMARTER TRADING"), and `AVATRADE` (royal blue with "TRADE WITH CONFIDENCE").
+  - Configured automated 4-second (`4000ms`) interval rotation with pause-on-hover capability and interactive pagination dots & arrows.
+  - Integrated into both `EmptyStateDashboardView` and `ReferenceDashboard` customizable sidebar.
+
+## [0.59.0] - 2026-09-15
+### Added
+- **Account Rejected State (1:1 with `03a. Dashboard - Account Rejected.png`)**:
+  - Displays `Premium • 1100012001 • 🔴 Rejected ⓘ` with a distinct red status badge and interactive info icon.
+  - Action buttons on the right of the account row:
+    - `Reconnect`: Quick-action button in `#5945F1` to re-enter MT4/MT5 credentials or re-link broker account.
+    - `Delete`: Dark button in `#0b1c30` to safely remove or unlink the failed account with a confirmation modal.
+  - Interactive Rejection Info Modal explaining broker failure reasons (account number discrepancy, invalid read-only password, or archived status) and guidance on how to fix it.
+- **Account Unavailable State (1:1 with `03b. Dashboard - Account Unavailable.png`)**:
+  - Displays `Premium • 1100012001 • ⚫ Unavailable ⓘ` with a subtle slate/dark badge and interactive info icon.
+  - Action button on the right of the account row:
+    - `Go to 'Broker'`: Navigates to broker detail / official broker portal to check live maintenance or server status.
+  - Interactive Unavailable Status Modal clarifying that broker API servers are temporarily offline or undergoing scheduled maintenance, and reassuring the user that pending cashback remains safe.
+- **Interactive State Switcher Updated**:
+  - Expanded the top state switcher bar to include all 7 lifecycle states:
+    `1. Empty State`, `2. Pending Approval`, `3. Approved`, `3a. Rejected`, `3b. Unavailable`, `4. First Trade`, and `5. Active Performance`.
+- **Confirmation & Notification Dialogs**:
+  - Added Delete Account Confirmation modal with instant removal feedback via a floating toast alert.
+### Added
+- **Dashboard Sidebar Fixed Width at 300px**:
+  - Aligned the dashboard layout structure to match other platform pages with a flexible content area (`flex-1 min-w-0`) and fixed 300px right sidebar (`w-full lg:w-[300px] lg:shrink-0`).
+- **5 Comprehensive Dashboard Lifecycle States (1:1 with Design Files)**:
+  - **1. Empty State** (`01. Dashboard - Empty State.png`):
+    - Greeting: `👋 Welcome, Josh! Look alive. The market won't wait...`
+    - Top Left: Quick Start Guide (4 numbered steps: Choose Broker, Link Trading Account, Trade as Usual, Earn Cashback).
+    - Top Middle: Your Level (Rookie, 0/150 points, View Plan button).
+    - Stats: 0 days streak (14 empty square dots), $0.00 cumulative cashback, 3D empty performance chart graphic with "Connect Broker" CTA.
+    - Bottom: "Ready to connect?" with 6 verified broker cards.
+  - **2. Pending Approval** (`02. Dashboard - Pending Approval.png`):
+    - Greeting: `🥳 Oh look, you’re back!`
+    - Top Left: "Your Connected Account" with HFM Premium account marked with orange dot `🟠 Pending Approval`, plus "Connect More &rarr;" and "Add Trading Account".
+    - Performance: "Your Performance: March 2026" with pending state guidance.
+  - **3. Trading Account Approved** (`03. Dashboard - Account Approved.png`):
+    - Replaces pending status with green dot `🟢 Approved` and displays direct purple `Trade Now` action button.
+  - **4. First Trade Completed** (`04. Dashboard - First Trade Completed.png`):
+    - Your Level increases to `5/150 points` with `Don't stop now` highlighted.
+    - Active streak increments to `1 days` with first square dot filled in purple.
+    - Cumulative cashback displays `$8.00` and `1.6 Lots` with smooth area wave sparkline.
+    - Top 3 Earning Assets displays donut chart with XAU/USD ($5.00), Dow Jones ($1.00), AUDUSD ($2.00).
+    - Main Chart renders dual-axis Bar + Line chart ($0-$100 on left, 0-10 lots on right, Days 1-31 on X axis) with Day 1 data.
+    - Lower Section renders full-width "Most Recent Signals." table with Asset filter, technical SL/TP levels, and execution actions.
+    - Right Sidebar updates to display "Next Milestone: You're Connected. Nice!", "Your Winning Signals.", and "Tops Earning Points."
+  - **5. Active Trading Performance** (`05. Dashboard - Active Trading Performance.png`):
+    - Your Connected Account displays multi-broker accounts (HFM Approved, XM Approved, FxPro Pending Approval).
+    - Level progress increases to `50/150 points` (33% progress).
+    - Active streak updates to `12 days` (12 purple square dots, 2 empty).
+    - Cumulative cashback updates to `$3,128.00` and `163.6 Lots`.
+    - Dual-axis Chart displays multi-day trading activity across Days 1 through 15 with volume peaks and cashback bars.
+- **Cashback Calendar Modal (`Modal - Cashback Calendar.png`)**:
+  - Modal opens on clicking the Calendar icon in the timeframe bar or active streak card.
+  - Header with "Cashback Calendar", "Latest Update 15 Feb 2026 11:59PM", and Month selector ("February").
+  - Gradient-bordered summary banner with 3D wallet icon, `$3,128.00`, `163.6 Lots`, and smooth purple area wave.
+  - 7-column calendar grid (Sunday to Saturday) with date numbers, solid purple trading indicators, cashback amounts (e.g. `$155.00`, `$415.00`), and trading lots.
+  - Action footer buttons: "My Cashback" (linking to cashback overview) and "Trade Now".
+- **Interactive State Switcher Bar**:
+  - Added clean pill selector at top of dashboard allowing instant preview and switching between all 5 lifecycle states.
+
+## [0.57.0] - 2026-09-15
+### Added
+- **Conditional Tab Rendering for Brokers (Cashback vs. Non-Cashback)**:
+  - Brokers with cashback offer 3 tabs: **Cashback**, **Account**, and **Company**.
+  - Brokers without cashback offer only 2 tabs: **Account** and **Company** (Cashback tab is fully hidden and auto-redirected).
+  - Added dedicated right-hand card for non-cashback brokers highlighting direct institutional execution terms, spreads, leverage, and zero markup execution.
+  - Interactive scenario toggle added in the tab header to preview both **Has Cashback** and **No Cashback** states on the fly.
+- **Cashback Rebate Table Navigation (`BrokerRebateTablePage`)**:
+  - Implemented full dedicated **Rebate Table page** matching `D02_Cashback Rebate Table_Default View.png`.
+  - Added "View for all levels &rarr;" button in the Cashback Breakdown header linking directly to the full Rebate Table page.
+  - Includes instrument breakdown tabs (Forex, Metals, Commodities, Indices, Cryptos, Energies, Stocks), comprehensive search filter, pagination, export, and account level rebate columns.
+
+## [0.56.0] - 2026-09-15
+### Added
+- **Broker Detail Page: Connected to MarketSyde Scenario Support**:
+  - Implemented the "Connected to MarketSyde" state toggle and UI across all 3 Tiers (`Tier 1`, `Tier 2`, `Offshore`) and all 3 Tabs (`Cashback`, `Account`, `Company`):
+    - **Interactive Scenario Switcher**: Added seamless 1-click toggle between `Not Connected` and `Connected` alongside the Tier picker.
+    - **Header Cashback Card**: Displays active connected badge (`● CONNECTED`), active cashback metric (`$8.00/lot`), and direct `Trade with HFM (Account #1100045789)` action button.
+    - **Cashback Tab**: Displays verified connected trading account banner with active rebate status and member tier calculation.
+    - **Account Tab**: Highlights connected trading account specifications (`Pro Account #1100045789`).
+    - **Company Tab**: Provides MarketSyde Partner Priority Support and verified IB dispute resolution routing.
+
 ## [0.23.4] - 2026-09-14
 ### Changed
 - **Full Width Layout & Unified 56px Left-Right Padding Across All Screens**:

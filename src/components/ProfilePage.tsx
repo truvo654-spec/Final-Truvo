@@ -308,9 +308,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   return (
     <div className="w-full py-4 animate-in fade-in duration-200">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="flex flex-col lg:flex-row items-start gap-8">
         {/* ─── LEFT / MAIN COLUMN ─── */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="flex-1 min-w-0 w-full space-y-6">
           {/* User Profile Header */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             {/* Avatar with Floating Edit Pencil Button */}
@@ -635,8 +635,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           )}
         </div>
 
-        {/* ─── RIGHT SIDEBAR (Sticky during scroll) ─── */}
-        <div className="lg:col-span-4">
+        {/* ─── RIGHT SIDEBAR (Fixed 300px on LG) (Sticky during scroll) ─── */}
+        <div className="w-full lg:w-[300px] lg:shrink-0">
           <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Card 1: Gamification Rank / Level Tracker */}
           <div className="rounded-2xl p-[1.5px] bg-gradient-to-r from-[#5945F1] via-[#8A7AF6] to-[#FD02B0] shadow-2xs">

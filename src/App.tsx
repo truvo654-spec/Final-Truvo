@@ -29,6 +29,7 @@ import { DashboardBentoGrid } from './components/DashboardBentoGrid';
 import { BrokerDirectory } from './components/BrokerDirectory';
 import { BrokerListPage } from './components/brokers/BrokerListPage';
 import { BrokerDetailPage } from './components/brokers/BrokerDetailPage';
+import { BrokerRebateTablePage } from './components/brokers/BrokerRebateTablePage';
 import { BrokerComparisonPage } from './components/brokers/BrokerComparisonPage';
 import { MembershipPlanPage } from './components/membership/MembershipPlanPage';
 import { SignalsList } from './components/SignalsList';
@@ -485,7 +486,7 @@ export default function App() {
       <main className={`flex-1 w-full ${
         activeTab === 'about' || activeTab === 'contact-us' || activeTab === 'contact' || activeTab === 'landing' || activeTab === 'home' || activeTab === 'instrument-analysis' || (!isLoggedIn && activeTab === 'dashboard')
           ? 'p-0 space-y-0'
-          : 'px-4 sm:px-8 md:px-[56px] py-6 space-y-6'
+          : 'px-4 sm:px-8 md:px-[56px] pt-[100px] pb-12 space-y-6'
       }`}>
         {/* ─── TAB 0: Mission, Points & Credits (User Reference Focus) ─── */}
         {activeTab === 'points-credits' && (
@@ -694,6 +695,8 @@ export default function App() {
             user={user}
             isLoggedIn={isLoggedIn}
             onBackToBrokers={() => setActiveTab('brokers')}
+            onNavigateToComparison={() => setActiveTab('broker-comparison')}
+            onNavigateToRebateTable={() => setActiveTab('broker-rebate-table')}
             onNavigateToConnectBroker={(b) => {
               setSelectedBrokerForConnect(b);
               setActiveTab('connect-to-truvo');
@@ -705,6 +708,20 @@ export default function App() {
               setIsAuthModalOpen(true);
             }}
             onLoginSuccess={handleAuthSuccess}
+          />
+        )}
+
+        {/* ─── TAB: Broker Rebate Table Page (Matches D02_Cashback Rebate Table_Default View.png) ─── */}
+        {activeTab === 'broker-rebate-table' && (
+          <BrokerRebateTablePage
+            broker={selectedBrokerForDetail}
+            user={user}
+            onBack={() => setActiveTab('broker-detail')}
+            onConnectBroker={(b) => {
+              setSelectedBrokerForConnect(b);
+              setActiveTab('connect-to-truvo');
+            }}
+            onShowToast={showToast}
           />
         )}
 

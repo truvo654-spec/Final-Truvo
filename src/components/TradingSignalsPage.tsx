@@ -228,7 +228,7 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
   return (
     <div id="trading-signals-dashboard" className="w-full space-y-8 pb-12">
       {/* ─── 1. HERO HEADER ─── */}
-      <div className="text-center space-y-2 pt-2">
+      <div className="text-center space-y-2 pt-0">
         <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-center">
           <span className="bg-gradient-to-r from-[#5945F1] to-[#FE01B1] bg-clip-text text-transparent inline-block pb-1">
             Trading Signals
@@ -411,9 +411,9 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
       </div>
 
       {/* ─── 4. MAIN CONTENT (4-COL GRID + RIGHT SIDEBAR) ─── */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <div className="flex flex-col xl:flex-row items-start gap-6">
         {/* LEFT COLUMN: SIGNALS GRID (4 CARDS PER ROW) */}
-        <div className="xl:col-span-9 space-y-5">
+        <div className="flex-1 min-w-0 w-full space-y-5">
           {/* Top 8 Cards (Rows 1 & 2) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
             {topSignals.map((sig) => (
@@ -538,11 +538,11 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: 3 STACKED CARDS (Sticky sidebar during scroll) */}
-        <div className="xl:col-span-3">
+        {/* RIGHT COLUMN: 3 STACKED CARDS (Fixed 300px on XL) */}
+        <div className="w-full xl:w-[300px] xl:shrink-0">
           <div className="space-y-5 xl:sticky xl:top-[84px] xl:max-h-[calc(100vh-96px)] xl:overflow-y-auto xl:overscroll-contain sidebar-scrollbar">
           {/* Card 1: Move up. Earn More. (Exact match to image.png) */}
-          <div className="bg-white rounded-3xl border-2 border-[#FE01B1] p-6 shadow-xs space-y-4">
+          <div className="bg-white rounded-3xl border-2 border-[#FE01B1] p-5 shadow-xs space-y-4">
             <div>
               <h3 className="font-display font-black text-xl text-[#0b1c30] tracking-tight">
                 Move up. Earn More
@@ -554,8 +554,8 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
             </div>
 
             {/* Stepper with "You" Badge & View Plan Button (Exact match to image.png) */}
-            <div className="pt-2 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
+            <div className="pt-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
                 {/* Node 1: Rookie */}
                 <div className="flex flex-col items-center relative">
                   {/* "You" Floating Tooltip */}
@@ -564,16 +564,16 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#5945F1] rotate-45" />
                   </div>
                   <div className="w-6 h-6 rounded-full bg-[#5945F1]" />
-                  <span className="text-xs font-bold text-[#FE01B1] mt-1.5">Rookie</span>
+                  <span className="text-[11px] font-bold text-[#FE01B1] mt-1.5">Rookie</span>
                 </div>
 
                 {/* Connecting Line */}
-                <div className="w-12 sm:w-16 h-0.5 bg-slate-200" />
+                <div className="w-8 sm:w-10 h-0.5 bg-slate-200" />
 
                 {/* Node 2: Climber */}
                 <div className="flex flex-col items-center">
                   <div className="w-6 h-6 rounded-full border-2 border-[#5945F1] bg-white" />
-                  <span className="text-xs font-bold text-[#5945F1] mt-1.5">Climber</span>
+                  <span className="text-[11px] font-bold text-[#5945F1] mt-1.5">Climber</span>
                 </div>
               </div>
 
@@ -581,7 +581,7 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
               <button
                 type="button"
                 onClick={onUpgradePrompt}
-                className="px-5 py-2.5 rounded-2xl bg-[#5945F1] hover:bg-[#4834df] text-white text-sm font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+                className="px-3.5 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4834df] text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
               >
                 View Plan
               </button>
