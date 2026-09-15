@@ -35,6 +35,7 @@ import { WidgetPickerModal } from './dashboard/WidgetPickerModal';
 import { CustomizableWidget } from './dashboard/CustomizableWidgets';
 import { EmptyStateDashboardView } from './dashboard/EmptyStateDashboardView';
 import { ActivityCarousel } from './dashboard/ActivityCarousel';
+import { MoreConnectedBrokersBanner } from './dashboard/MoreConnectedBrokersBanner';
 import { DashboardRow, DashboardSlot, WidgetType, WidgetSize } from '../types/dashboardWidgets';
 
 interface ReferenceDashboardProps {
@@ -338,70 +339,15 @@ function ConnectedBrokersRow({
   onOpenConnectModal: (broker?: Broker) => void;
   onNavigateToTab: (tab: string) => void;
 }) {
-  const featuredBrokers = [
-    { name: 'XM', logoColor: 'bg-black', logoText: 'XM', cashback: '$8.00', verified: true },
-    { name: 'HFM', logoColor: 'bg-black', logoText: 'HFM', cashback: '$8.00', verified: true },
-    { name: 'Exness', logoColor: 'bg-[#FFD200]', logoText: 'ex', cashback: '$8.00', verified: true },
-    { name: 'Pepperstone', logoColor: 'bg-[#002B49]', logoText: 'P', cashback: '$8.00', verified: false },
-    { name: 'IC Markets', logoColor: 'bg-[#002D3B]', logoText: 'IC', cashback: '$8.00', verified: false },
-    { name: 'FxPro', logoColor: 'bg-[#E11928]', logoText: 'fx', cashback: '$8.00', verified: false },
-  ];
-
   return (
-    <div className="rounded-2xl border-2 border-[#f0abfc] p-5 sm:p-6 bg-white shadow-2xs space-y-4">
-      <div>
-        <h3 className="font-display font-extrabold text-lg text-[#5945F1] tracking-tight">
-          More Connected Brokers. More Opportunities.
-        </h3>
-        <p className="text-xs text-slate-500 mt-0.5 font-normal">
-          Connect more broker partners and give your trades more ways to earn cashback.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {featuredBrokers.map((b) => {
-          const brokerObj = brokers.find((br) => br.name.toLowerCase().includes(b.name.toLowerCase()));
-          return (
-            <div
-              key={b.name}
-              className="rounded-xl border border-slate-200/90 bg-white p-3 flex flex-col items-center justify-between text-center space-y-2.5 shadow-2xs hover:border-indigo-300 transition-all"
-            >
-              <div className="relative">
-                <div className={`w-10 h-10 rounded-xl ${b.logoColor} text-white flex items-center justify-center font-black text-sm shadow-2xs`}>
-                  {b.logoText}
-                </div>
-                {b.verified && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] shadow-xs">
-                    ✓
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <div className="font-extrabold text-xs text-[#0b1c30] truncate max-w-[100px]">{b.name}</div>
-                <div className="text-[10px] text-slate-500 font-medium">{b.cashback} Max Cashback</div>
-              </div>
-
-              <button
-                onClick={() => onOpenConnectModal(brokerObj)}
-                className="w-full py-1.5 rounded-lg bg-[#5945F1] hover:bg-[#4836d9] text-white font-bold text-[11px] transition-colors cursor-pointer shadow-2xs active:scale-95"
-              >
-                Connect
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex justify-center pt-1">
-        <button
-          onClick={() => onNavigateToTab('brokers')}
-          className="px-6 py-2 rounded-xl bg-[#FD02B0] hover:bg-[#e0029c] text-white font-bold text-xs shadow-xs transition-transform active:scale-95 cursor-pointer"
-        >
-          Explore All Brokers
-        </button>
-      </div>
-    </div>
+    <MoreConnectedBrokersBanner
+      onConnectBroker={(brokerName) => {
+        const brokerObj = brokers.find((br) => br.name.toLowerCase().includes(brokerName.toLowerCase()));
+        onOpenConnectModal(brokerObj);
+      }}
+      onNavigateToTab={onNavigateToTab}
+      className="w-full"
+    />
   );
 }
 

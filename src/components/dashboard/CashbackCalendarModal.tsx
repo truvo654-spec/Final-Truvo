@@ -16,7 +16,7 @@ interface CalendarDayData {
 }
 
 const FEBRUARY_DAYS_DATA: CalendarDayData[] = [
-  // Week 1
+  // Week 1 (Days 1 to 7: Sunday to Saturday)
   { day: 1, cashback: '$155.00', lots: '8.2 Lots', status: 'active' },
   { day: 2, cashback: '$240.50', lots: '12.5 Lots', status: 'active' },
   { day: 3, status: 'empty-outline' },
@@ -25,7 +25,7 @@ const FEBRUARY_DAYS_DATA: CalendarDayData[] = [
   { day: 6, cashback: '$178.50', lots: '9.4 Lots', status: 'active' },
   { day: 7, cashback: '$415.00', lots: '22.0 Lots', status: 'active' },
 
-  // Week 2
+  // Week 2 (Days 8 to 14: Sunday to Saturday)
   { day: 8, cashback: '$210.75', lots: '11.2 Lots', status: 'active' },
   { day: 9, cashback: '$285.00', lots: '14.6 Lots', status: 'active' },
   { day: 10, cashback: '$345.50', lots: '18.3 Lots', status: 'active' },
@@ -34,7 +34,7 @@ const FEBRUARY_DAYS_DATA: CalendarDayData[] = [
   { day: 13, cashback: '$388.00', lots: '20.1 Lots', status: 'active' },
   { day: 14, status: 'empty-outline' },
 
-  // Week 3
+  // Week 3 (Days 15 to 21: Sunday to Saturday)
   { day: 15, status: 'empty-outline' },
   { day: 16, status: 'empty-outline' },
   { day: 17, cashback: '$265.25', lots: '13.9 Lots', status: 'active' },
@@ -43,7 +43,7 @@ const FEBRUARY_DAYS_DATA: CalendarDayData[] = [
   { day: 20, status: 'empty-filled' },
   { day: 21, status: 'empty-filled' },
 
-  // Week 4
+  // Week 4 (Days 22 to 28: Sunday to Saturday)
   { day: 22, status: 'empty-filled' },
   { day: 23, status: 'empty-filled' },
   { day: 24, status: 'empty-filled' },
@@ -65,106 +65,212 @@ export const CashbackCalendarModal: React.FC<CashbackCalendarModalProps> = ({
 
   return (
     <div
-      id="cashback-calendar-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/40 backdrop-blur-xs overflow-y-auto animate-fadeIn"
+      id="cashback-calendar-modal-backdrop"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/30 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 sm:p-8 space-y-6 my-auto"
+        id="cashback-calendar-modal-content"
+        className="relative w-full max-w-[860px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-6 sm:p-8 space-y-5 my-auto animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close Button */}
+        {/* Close Button (X in top-right corner) */}
         <button
           id="close-cashback-calendar-btn"
           onClick={onClose}
           className="absolute top-6 right-6 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
           aria-label="Close modal"
         >
-          <CloseIcon className="w-5 h-5 stroke-[2.2]" />
+          <CloseIcon className="w-5 h-5 stroke-[2]" />
         </button>
 
-        {/* Modal Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pr-8">
+        {/* Modal Header: Title & Month Dropdown (1:1 with Notification Card.png) */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pr-10">
           <div>
-            <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-[#0b1c30] tracking-tight">
+            <h2 className="font-display text-2xl sm:text-[26px] font-extrabold text-[#0b1c30] tracking-tight">
               Cashback Calendar
             </h2>
-            <p className="text-xs text-slate-400 mt-1 font-medium">
+            <p className="text-xs sm:text-[13px] text-slate-400 mt-1 font-normal">
               Latest Update 15 Feb 2026 11:59PM HH:MM
             </p>
           </div>
 
           {/* Month Selector */}
           <div className="flex flex-col items-start sm:items-end">
-            <span className="text-xs font-semibold text-slate-500 mb-1">Month</span>
-            <div className="relative">
+            <label
+              htmlFor="cashback-calendar-month-select"
+              className="text-xs font-semibold text-slate-700 mb-1"
+            >
+              Month
+            </label>
+            <div className="relative w-36 sm:w-40">
               <select
                 id="cashback-calendar-month-select"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="appearance-none pl-3.5 pr-8 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#0b1c30] shadow-2xs hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-[#5945F1]/20 cursor-pointer"
+                className="w-full appearance-none pl-3.5 pr-8 py-2 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-medium text-slate-600 shadow-2xs hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#5945F1]/20 cursor-pointer"
               >
                 <option value="January">January</option>
                 <option value="February">February</option>
                 <option value="March">March</option>
                 <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
         </div>
 
-        {/* Top Summary Card with Gradient Glow Border */}
-        <div className="rounded-2xl p-[2px] bg-gradient-to-r from-[#5945F1] via-[#c084fc] to-[#FE01B1] shadow-xs">
-          <div className="rounded-2xl bg-white p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden relative">
-            <div className="flex items-center gap-4 relative z-10">
-              {/* 3D Wallet Icon */}
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#818cf8] via-[#6366f1] to-[#4f46e5] p-2.5 shadow-md flex items-center justify-center relative shrink-0">
-                <svg viewBox="0 0 36 36" fill="none" className="w-9 h-9 drop-shadow-xs">
-                  <path
-                    d="M 8 14 C 8 10, 12 8, 18 8 C 24 8, 28 10, 28 14 L 30 26 C 30 30, 26 32, 18 32 C 10 32, 6 30, 6 26 Z"
-                    fill="#a5b4fc"
+        {/* Divider line under header matching design */}
+        <div className="w-full h-px bg-slate-100 -mt-1" />
+
+        {/* ─── BANNER CARD (GRADIENT BORDER + 3D WALLET + AREA WAVE GRAPH) ─── */}
+        <div className="rounded-2xl p-[1.5px] bg-gradient-to-r from-[#5945F1] via-[#A855F7] to-[#FD02B0] shadow-xs">
+          <div className="rounded-[14px] bg-white px-5 py-4 sm:py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden relative">
+            {/* Left: 3D Wallet Icon & Amount */}
+            <div className="flex items-center gap-4 relative z-10 shrink-0">
+              {/* 3D Wallet Icon matching design with coin badge */}
+              <div className="w-14 h-14 relative flex items-center justify-center shrink-0">
+                <svg viewBox="0 0 64 64" fill="none" className="w-full h-full drop-shadow-sm">
+                  {/* Soft shadow */}
+                  <ellipse cx="32" cy="54" rx="22" ry="4" fill="#6366f1" fillOpacity="0.12" />
+                  
+                  {/* Back wallet card/leather */}
+                  <rect
+                    x="10"
+                    y="16"
+                    width="44"
+                    height="32"
+                    rx="8"
+                    fill="#F1F3FB"
+                    stroke="#D9E0F2"
+                    strokeWidth="1.5"
                   />
+                  {/* Inner flap fold */}
                   <path
-                    d="M 10 14 C 10 12, 13 10, 18 10 C 23 10, 26 12, 26 14 C 26 16, 23 17, 18 17 C 13 17, 10 16, 10 14 Z"
-                    fill="#c7d2fe"
+                    d="M 10 24 Q 32 30 54 24"
+                    stroke="#D0D7EE"
+                    strokeWidth="1.5"
+                    fill="none"
                   />
-                  <circle cx="18" cy="22" r="5" fill="#fde047" stroke="#ca8a04" strokeWidth="1" />
-                  <text x="18" y="24.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#854d0e">$</text>
+                  
+                  {/* Front wallet flap */}
+                  <rect
+                    x="13"
+                    y="22"
+                    width="41"
+                    height="28"
+                    rx="7"
+                    fill="#FFFFFF"
+                    stroke="#CBD5E1"
+                    strokeWidth="1.5"
+                  />
+                  
+                  {/* Side clasp / blue card notch */}
+                  <rect
+                    x="48"
+                    y="32"
+                    width="8"
+                    height="8"
+                    rx="2"
+                    fill="#38BDF8"
+                    fillOpacity="0.9"
+                  />
+                  
+                  {/* 3D Purple Dollar Coin on left */}
+                  <g transform="translate(6, 12)">
+                    <circle
+                      cx="14"
+                      cy="14"
+                      r="12"
+                      fill="url(#coinGrad)"
+                      stroke="#4338CA"
+                      strokeWidth="1"
+                    />
+                    <circle
+                      cx="14"
+                      cy="14"
+                      r="10"
+                      fill="none"
+                      stroke="#A5B4FC"
+                      strokeWidth="0.75"
+                      strokeDasharray="2 1"
+                    />
+                    <text
+                      x="14"
+                      y="18.5"
+                      textAnchor="middle"
+                      fill="#FFFFFF"
+                      fontSize="13"
+                      fontWeight="900"
+                      fontFamily="sans-serif"
+                    >
+                      $
+                    </text>
+                  </g>
+
+                  <defs>
+                    <linearGradient id="coinGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#818CF8" />
+                      <stop offset="50%" stopColor="#6366F1" />
+                      <stop offset="100%" stopColor="#4F46E5" />
+                    </linearGradient>
+                  </defs>
                 </svg>
               </div>
 
               <div>
-                <div className="text-2xl sm:text-3xl font-extrabold font-display text-[#5945F1] tracking-tight">
+                <div className="text-3xl sm:text-[32px] font-extrabold font-display text-[#4338CA] tracking-tight leading-none">
                   $3,128.00
                 </div>
-                <div className="text-xs sm:text-sm text-slate-500 font-semibold mt-0.5">
+                <div className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
                   163.6 Lots
                 </div>
               </div>
             </div>
 
-            {/* Smooth Purple Wave Graph stretching right */}
-            <div className="w-full md:w-1/2 h-14 flex items-end">
-              <svg viewBox="0 0 360 70" preserveAspectRatio="none" className="w-full h-full">
+            {/* Right: Smooth Area Line Chart (1:1 with Notification Card.png) */}
+            <div className="w-full md:w-[58%] h-14 sm:h-16 flex items-end">
+              <svg
+                viewBox="0 0 360 80"
+                preserveAspectRatio="none"
+                className="w-full h-full overflow-visible"
+              >
                 <defs>
-                  <linearGradient id="calWaveGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.35" />
-                    <stop offset="100%" stopColor="#c084fc" stopOpacity="0.0" />
+                  {/* Line Gradient: starts with pink accent, blends into purple */}
+                  <linearGradient id="calLineGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#FD02B0" />
+                    <stop offset="10%" stopColor="#6366F1" />
+                    <stop offset="100%" stopColor="#4F46E5" />
+                  </linearGradient>
+                  {/* Area fill gradient: soft purple fading to transparent */}
+                  <linearGradient id="calAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366F1" stopOpacity="0.32" />
+                    <stop offset="70%" stopColor="#A855F7" stopOpacity="0.08" />
+                    <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
-                {/* Gradient Fill */}
+
+                {/* Area Fill */}
                 <path
-                  d="M 0,35 Q 40,38 80,45 T 160,40 T 240,32 T 300,18 T 360,8 L 360,70 L 0,70 Z"
-                  fill="url(#calWaveGrad)"
+                  d="M 0,40 C 20,40 40,44 70,46 C 105,48 135,45 165,44 C 190,43 210,44 230,36 C 242,31 254,32 265,36 C 278,40 290,39 300,36 C 315,30 330,22 350,16 L 350,80 L 0,80 Z"
+                  fill="url(#calAreaGrad)"
                 />
-                {/* Purple Line */}
+
+                {/* Line Path */}
                 <path
-                  d="M 0,35 Q 40,38 80,45 T 160,40 T 240,32 T 300,18 T 360,8"
+                  d="M 0,40 C 20,40 40,44 70,46 C 105,48 135,45 165,44 C 190,43 210,44 230,36 C 242,31 254,32 265,36 C 278,40 290,39 300,36 C 315,30 330,22 350,16"
                   fill="none"
-                  stroke="#5945F1"
+                  stroke="url(#calLineGrad)"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                 />
@@ -173,63 +279,69 @@ export const CashbackCalendarModal: React.FC<CashbackCalendarModalProps> = ({
           </div>
         </div>
 
-        {/* Calendar Grid Container */}
-        <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
-          {/* Day Names Header */}
-          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/70 text-center">
-            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d) => (
-              <div key={d} className="py-2.5 text-xs font-bold text-slate-600 truncate px-1">
-                <span className="hidden sm:inline">{d}</span>
-                <span className="sm:hidden">{d.slice(0, 3)}</span>
-              </div>
-            ))}
+        {/* ─── CALENDAR DAYS OF WEEK HEADERS (CLEAN TEXT HEADERS 1:1) ─── */}
+        <div className="pt-2">
+          <div className="grid grid-cols-7 text-center pb-2">
+            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(
+              (dayName) => (
+                <div
+                  key={dayName}
+                  className="text-xs sm:text-[13px] font-medium text-slate-700 truncate px-1"
+                >
+                  <span className="hidden sm:inline">{dayName}</span>
+                  <span className="sm:hidden">{dayName.slice(0, 3)}</span>
+                </div>
+              )
+            )}
           </div>
 
-          {/* Days Cells Grid */}
-          <div className="grid grid-cols-7 divide-x divide-y divide-slate-200">
+          {/* ─── CALENDAR 4x7 CELLS GRID (1:1 with Notification Card.png) ─── */}
+          <div className="border border-slate-200 bg-white grid grid-cols-7 divide-x divide-y divide-slate-200 shadow-2xs">
             {FEBRUARY_DAYS_DATA.map((item) => (
               <div
                 key={`feb-day-${item.day}`}
-                className={`min-h-[72px] sm:min-h-[88px] p-1.5 sm:p-2.5 flex flex-col justify-between transition-colors ${
+                className={`min-h-[76px] sm:min-h-[86px] p-2 sm:p-2.5 flex flex-col justify-between transition-colors ${
                   item.status === 'active'
-                    ? 'bg-white hover:bg-indigo-50/30'
+                    ? 'bg-white hover:bg-indigo-50/25'
                     : item.status === 'empty-filled'
-                    ? 'bg-slate-50/60'
+                    ? 'bg-white'
                     : 'bg-white'
                 }`}
               >
-                {/* Cell Header: Day Number & Status Indicator */}
+                {/* Header row of cell: Day Number & Status Indicator Square */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-700">{item.day}</span>
+                  <span className="text-xs sm:text-[13px] font-semibold text-slate-800 leading-none">
+                    {item.day}
+                  </span>
 
-                  {/* Status Indicator Icon */}
+                  {/* Status Indicator Square */}
                   {item.status === 'active' && (
                     <span
                       title="Trading activity logged"
-                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-xs bg-[#5945F1] shrink-0"
+                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[1px] bg-[#5945F1] shrink-0"
                     />
                   )}
                   {item.status === 'empty-outline' && (
                     <span
-                      title="No trading"
-                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-xs border border-slate-300 shrink-0"
+                      title="No trades"
+                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[1px] border border-slate-300 bg-white shrink-0"
                     />
                   )}
                   {item.status === 'empty-filled' && (
                     <span
-                      title="Future or unlogged date"
-                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-xs bg-slate-300 shrink-0"
+                      title="Unlogged / Future date"
+                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[1px] bg-slate-300 shrink-0"
                     />
                   )}
                 </div>
 
-                {/* Cashback & Lots Content */}
+                {/* Cell Body: Cashback Amount & Lots (Shown on active trading days) */}
                 {item.status === 'active' ? (
                   <div className="mt-1 space-y-0.5">
-                    <div className="text-[11px] sm:text-xs font-bold text-[#5945F1] font-mono leading-tight">
+                    <div className="text-xs sm:text-[13px] font-bold text-[#4338CA] font-mono leading-tight">
                       {item.cashback}
                     </div>
-                    <div className="text-[9px] sm:text-[10px] font-semibold text-slate-400 leading-tight">
+                    <div className="text-[10px] sm:text-[11px] font-normal text-slate-500 leading-tight">
                       {item.lots}
                     </div>
                   </div>
@@ -241,19 +353,21 @@ export const CashbackCalendarModal: React.FC<CashbackCalendarModalProps> = ({
           </div>
         </div>
 
-        {/* Modal Footer Action Buttons */}
-        <div className="flex items-center justify-center gap-3 pt-2">
+        {/* ─── MODAL FOOTER ACTIONS (1:1 with Notification Card.png) ─── */}
+        <div className="flex items-center justify-center gap-3 pt-3">
+          {/* Button 1: My Cashback (White with purple border & text) */}
           <button
             id="modal-my-cashback-btn"
             onClick={() => {
               onClose();
               if (onNavigateToTab) onNavigateToTab('cashback-overview');
             }}
-            className="px-6 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-95"
+            className="px-6 sm:px-7 py-2.5 rounded-xl border border-indigo-200 hover:border-indigo-300 bg-white hover:bg-indigo-50/40 text-[#4F46E5] font-semibold text-xs sm:text-sm shadow-2xs transition-all cursor-pointer active:scale-95"
           >
             My Cashback
           </button>
 
+          {/* Button 2: Trade Now (Solid purple with white text) */}
           <button
             id="modal-trade-now-btn"
             onClick={() => {
@@ -264,7 +378,7 @@ export const CashbackCalendarModal: React.FC<CashbackCalendarModalProps> = ({
                 onNavigateToTab('signals');
               }
             }}
-            className="px-6 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4734dc] text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
+            className="px-6 sm:px-7 py-2.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-semibold text-xs sm:text-sm shadow-xs transition-all cursor-pointer active:scale-95"
           >
             Trade Now
           </button>

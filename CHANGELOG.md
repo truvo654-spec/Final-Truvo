@@ -2,6 +2,79 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.65.0] - 2026-09-15
+### Reverted
+- **Reverted 1024px Layout Width Constraint**:
+  - Fully restored the original responsive layout width across all views and pages.
+  - Removed explicit 1024px bounds from `src/index.css`, `index.html`, and `src/App.tsx`, restoring the full-width responsive container scaling.
+
+## [0.64.0] - 2026-09-15
+### Changed
+- **Global 1024px Centered Body Layout**:
+  - Configured global layout width across all pages to 1024px centered (`max-w-[1024px] mx-auto w-full`):
+    - Added global `html` and `body` rules in `src/index.css` with a refined neutral backdrop on widescreen viewports and clean subtle elevation.
+    - Updated `index.html` `<body>` and `<div id="root">` containers to ensure 1024px maximum width constraint and horizontal auto-centering.
+    - Applied `max-w-[1024px] mx-auto` to the root application shell in `src/App.tsx` ensuring the sticky header, tab views, and all page contents consistently render within the centered 1024px layout grid.
+
+## [0.63.0] - 2026-09-15
+### Added
+- **More Connected Brokers. More Opportunities Banner (1:1 with `Small Banner 3.png`)**:
+  - Rebuilt the "More Connected Brokers. More Opportunities." section to replicate the reference image with pixel precision:
+    - **Gradient Border Card**: Encased in an outer container with a vibrant gradient border running smoothly from `#5945F1` through `#A855F7` to `#FD02B0` around clean white interior with mathematical nested corner radius.
+    - **Header Typography**:
+      - Title: "More Connected Brokers" in purple `#5945F1`, amber/yellow period `.` in `#FACC15`, " More Opportunitie" in purple `#5945F1`, and magenta "s." in `#FD02B0`.
+      - Subtitle: "Connect more broker partners and give your trades more ways to earn cashback." in refined slate-500.
+    - **6 Broker Cards (XM, HFM, Exness, Pepperstone, IC Markets, FxPro)**:
+      - **Verified Badges**: Chartreuse/lime badge (`✓ Verified`) accurately displayed on verified partners (XM, HFM, Exness) with equal height alignment preserved across non-badged partners (Pepperstone, IC Markets, FxPro).
+      - **Custom Official SVG Logos**:
+        - **XM**: Black background with white XM typography and signature red corner triangle.
+        - **HFM**: Black background with white/red HFM lettering and "HF MARKETS" subtext.
+        - **Exness**: Official yellow `#FFCC00` background with bold black "ex" branding.
+        - **Pepperstone**: Royal blue `#0066FF` shield icon and "pepperstone" lowercase branding.
+        - **IC Markets**: Black background with 3 green signal bars and "IC Markets Global".
+        - **FxPro**: Deep red `#E61C24` background with white "FxPro" and "Trade Like a Pro".
+      - **Cashback Rate**: `$8.00` in vibrant `#5945F1` font-mono bold with "Max Cashback" beneath.
+      - **Connect Button**: White pill button with soft purple border and purple text matching the reference image.
+    - **Explore All Brokers Action**: Centered solid purple `#5945F1` pill button at the bottom of the banner.
+
+## [0.62.0] - 2026-09-15
+### Added
+- **Full-Width Dual-Axis Performance Chart & Summary Table (1:1 with `image.png`)**:
+  - Rebuilt the dashboard performance chart and summary metric table to match the provided UI design reference 1:1:
+    - **Top 4-Column Summary Table / Metric Row**:
+      - `Total Cashback (1M)`: Displayed in bold vibrant purple `#5945F1` (e.g. `$0.00` or `$3,128.00`).
+      - `Lots Traded`: Displayed in bold vibrant purple `#5945F1` (e.g. `0` or `163.6`).
+      - `Avg Cashback / Lot`: Displayed in bold vibrant purple `#5945F1` (e.g. `$0.00` or `$19.12`).
+      - `Best Day`: Displayed in bold vibrant purple `#5945F1` (e.g. `$0.00` or `$415.00`).
+      - Spanned by a full-width subtle line divider underneath.
+    - **Full-Width Dual-Axis Combo Chart**:
+      - **Truly Full Width**: Rendered with responsive high-resolution SVG geometry (`viewBox="0 0 1000 320"` and `w-full`) that smoothly fills 100% of the available width on all viewports without horizontal scroll clipping or empty gaps.
+      - **Left Y-Axis**: Scale from `$0` to `$100` with 10 intermediate intervals (`$10`, `$20`, ..., `$100`).
+      - **Right Y-Axis**: Volume scale from `0 lots` to `10 lots` with 1-lot steps.
+      - **Gridlines**: Soft lavender/indigo dashed horizontal lines (`#c7d2fe` with 5 5 dasharray) and solid baseline at `$0 / 0 lots`.
+      - **Bars (Cashback USD)**: Light lavender/purple rounded bars (`#C4B5FD` with `rx="3"`) precisely positioned on active days (Days 1–12, 15).
+      - **Line (Trading Volume Lots)**: Vibrant royal purple polyline (`#5945F1`, 2.5px width) tracing exact volume coordinates matching the design reference, plunging to baseline on zero days (Days 13–14) and terminating cleanly after Day 15.
+      - **Interactive Tooltips**: Hovering over any day reveals a contextual tooltip with day number, cashback amount, and lot volume.
+      - **X-Axis (Days 1 to 31)**: All 31 days aligned symmetrically under their respective slots.
+      - **Legend**: Centered below chart with rounded square for `Cashback (USD)` and line marker for `Trading Volume (Lots)`.
+    - **Signals Table**: Always rendered in full width on the dashboard, allowing immediate browsing and execution of market signals.
+
+## [0.61.0] - 2026-09-15
+### Added
+- **Cashback Calendar Modal (1:1 with `Notification Card.png`)**:
+  - Replaced and aligned the Cashback Calendar component to match the exact design in the uploaded UI screenshot:
+    - **Header**: "Cashback Calendar" title with "Latest Update 15 Feb 2026 11:59PM HH:MM", clean horizontal divider, and top-right "Month" dropdown (`February`).
+    - **Top Summary Banner**:
+      - 2px gradient outline border (`#5945F1` to `#FD02B0`).
+      - 3D wallet graphic with purple dollar coin badge (`$3,128.00` in royal indigo `#4338CA` and `163.6 Lots` below).
+      - Dynamic area wave chart with soft purple gradient fill and smooth surge matching the UI curve.
+    - **Calendar Grid**:
+      - Plain text day of week headers (`Sunday` to `Saturday`) without enclosing container boxes.
+      - 28-cell grid (February 2026, 4 rows x 7 columns) with 1px borders.
+      - Status squares in top-right of each cell: solid purple for active trading cashback days, thin gray outline for non-trading days, and solid gray for unlogged/future dates.
+      - Daily earnings and lot sizes (e.g. Day 1: `$155.00` / `8.2 Lots`, Day 7: `$415.00` / `22.0 Lots`, Day 17: `$265.25` / `13.9 Lots`).
+    - **Action Buttons**: Centered "My Cashback" (white with purple border) and "Trade Now" (solid vibrant purple `#4F46E5`).
+
 ## [0.60.0] - 2026-09-15
 ### Added
 - **Sidebar Fixed Sticky Scroll Layout ("side bar scroll fix")**:

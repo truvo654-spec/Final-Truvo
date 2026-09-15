@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { CashbackCalendarModal } from './CashbackCalendarModal';
 import { ActivityCarousel } from './ActivityCarousel';
+import { PerformanceComboChart } from './PerformanceComboChart';
+import { MoreConnectedBrokersBanner } from './MoreConnectedBrokersBanner';
 
 export type DashboardStateType =
   | 'empty'
@@ -999,247 +1001,43 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                 )}
               </div>
             </div>
-
-            {/* 4 Secondary Mini Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-1 text-left border-b border-slate-100">
-              <div>
-                <div className="text-xs text-slate-500 font-medium">Total Cashback (1M)</div>
-                <div className="text-sm sm:text-base font-bold text-[#5945F1] mt-1 font-mono">
-                  {dashboardState === 'active-performance'
-                    ? '$3,128.00'
-                    : dashboardState === 'first-trade'
-                    ? '$8.00'
-                    : '$0.00'}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-500 font-medium">Lots Traded</div>
-                <div className="text-sm sm:text-base font-bold text-[#0b1c30] mt-1 font-mono">
-                  {dashboardState === 'active-performance'
-                    ? '163.6'
-                    : dashboardState === 'first-trade'
-                    ? '1.6'
-                    : '0'}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-500 font-medium">Avg Cashback / Lot</div>
-                <div className="text-sm sm:text-base font-bold text-[#0b1c30] mt-1 font-mono">
-                  {dashboardState === 'active-performance'
-                    ? '$19.12'
-                    : dashboardState === 'first-trade'
-                    ? '$5.00'
-                    : '$0.00'}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-500 font-medium">Best Day</div>
-                <div className="text-sm sm:text-base font-bold text-[#0b1c30] mt-1 font-mono">
-                  {dashboardState === 'active-performance'
-                    ? '$415.00'
-                    : dashboardState === 'first-trade'
-                    ? '$8.00'
-                    : '$0.00'}
-                </div>
-              </div>
-            </div>
-
-            {/* ── PERFORMANCE CHART AREA: Empty vs Active Dual Axis ── */}
-            {!isPerformanceActive ? (
-              <div className="py-8 flex flex-col items-center justify-center text-center space-y-3">
-                <EmptyPerformanceChartGraphic />
-                <div className="space-y-1">
-                  <div className="font-bold text-sm text-[#0b1c30]">
-                    Your performance tracking starts with your first trade.
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {dashboardState === 'empty'
-                      ? 'As a blank chart never paid anyone.'
-                      : "Connect your broker's trading account to begin."}
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleConnectBrokerAction('XM')}
-                  className="mt-1 px-5 py-2 rounded-full border-2 border-[#5945F1] text-[#5945F1] hover:bg-[#5945F1] hover:text-white font-bold text-xs shadow-2xs transition-all cursor-pointer active:scale-95"
-                >
-                  Connect Broker
-                </button>
-              </div>
-            ) : (
-              /* Dual Axis Bar + Line Chart Matching Images 04 & 05 */
-              <div className="pt-4 space-y-3">
-                <div className="relative w-full overflow-x-auto">
-                  <div className="min-w-[620px] h-64 relative flex flex-col justify-between py-2">
-                    {/* SVG Grid & Data */}
-                    <svg viewBox="0 0 620 220" className="w-full h-full overflow-visible">
-                      <defs>
-                        <linearGradient id="barLightPurple" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#c084fc" />
-                          <stop offset="100%" stopColor="#a855f7" />
-                        </linearGradient>
-                      </defs>
-
-                      {/* Horizontal Gridlines for $0 - $100 */}
-                      {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((val, idx) => {
-                        const y = 190 - (idx / 10) * 170;
-                        return (
-                          <g key={`grid-val-${val}`}>
-                            {/* Left Axis Label ($) */}
-                            <text
-                              x="32"
-                              y={y + 3.5}
-                              textAnchor="end"
-                              className="text-[9px] fill-slate-400 font-mono font-semibold"
-                            >
-                              ${val}
-                            </text>
-
-                            {/* Grid Line */}
-                            <line
-                              x1="38"
-                              y1={y}
-                              x2="562"
-                              y2={y}
-                              stroke="#e2e8f0"
-                              strokeDasharray="4 4"
-                              strokeWidth="1"
-                            />
-
-                            {/* Right Axis Label (lots) */}
-                            <text
-                              x="568"
-                              y={y + 3.5}
-                              textAnchor="start"
-                              className="text-[9px] fill-slate-400 font-mono font-semibold"
-                            >
-                              {idx} lots
-                            </text>
-                          </g>
-                        );
-                      })}
-
-                      {/* Bars & Lines for First Trade vs Active Performance */}
-                      {dashboardState === 'first-trade' ? (
-                        /* Day 1 only: Bar to $20, line at 2 lots */
-                        <g>
-                          {/* Day 1 Bar */}
-                          <rect
-                            x="45"
-                            y={190 - (20 / 100) * 170}
-                            width="10"
-                            height={(20 / 100) * 170}
-                            rx="2"
-                            fill="#c084fc"
-                          />
-                          {/* Day 1 Line point */}
-                          <line
-                            x1="40"
-                            y1={190 - (2 / 10) * 170}
-                            x2="60"
-                            y2={190 - (2 / 10) * 170}
-                            stroke="#5945F1"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                          />
-                        </g>
-                      ) : (
-                        /* Active Performance: Bars on days 1, 3, 4, 7, 8, 10, 11, 12, 13, 15 */
-                        <g>
-                          {[
-                            { day: 1, val: 20, lots: 2 },
-                            { day: 3, val: 40, lots: 3.8 },
-                            { day: 4, val: 40, lots: 3.8 },
-                            { day: 7, val: 20, lots: 2.2 },
-                            { day: 8, val: 30, lots: 3.2 },
-                            { day: 10, val: 40, lots: 4.1 },
-                            { day: 11, val: 48, lots: 4.8 },
-                            { day: 12, val: 58, lots: 5.5 },
-                            { day: 13, val: 60, lots: 5.8 },
-                            { day: 15, val: 42, lots: 4.0 },
-                          ].map((d) => {
-                            const x = 38 + ((d.day - 0.5) / 31) * 524;
-                            const barH = (d.val / 100) * 170;
-                            const y = 190 - barH;
-                            return (
-                              <rect
-                                key={`active-bar-${d.day}`}
-                                x={x - 5}
-                                y={y}
-                                width="10"
-                                height={barH}
-                                rx="2"
-                                fill="#c084fc"
-                                opacity="0.85"
-                              />
-                            );
-                          })}
-
-                          {/* Line connecting the points */}
-                          <polyline
-                            fill="none"
-                            stroke="#5945F1"
-                            strokeWidth="2.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            points="
-                              46,156 
-                              63,156 
-                              80,125 
-                              97,125 
-                              114,152 
-                              131,152 
-                              148,156 
-                              165,135 
-                              182,135 
-                              199,120 
-                              216,108 
-                              233,96 
-                              250,91 
-                              267,190 
-                              284,122
-                            "
-                          />
-                        </g>
-                      )}
-
-                      {/* X-Axis Days Numbers 1 through 31 */}
-                      {[...Array(31)].map((_, i) => {
-                        const dayNum = i + 1;
-                        const x = 38 + ((dayNum - 0.5) / 31) * 524;
-                        return (
-                          <text
-                            key={`x-day-${dayNum}`}
-                            x={x}
-                            y="206"
-                            textAnchor="middle"
-                            className="text-[8px] fill-slate-400 font-mono"
-                          >
-                            {dayNum}
-                          </text>
-                        );
-                      })}
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Legend */}
-                <div className="flex items-center justify-center gap-6 pt-1 text-xs font-semibold text-slate-600">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-xs bg-[#c084fc]" />
-                    <span>Cashback (USD)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-4 h-0.5 bg-[#5945F1]" />
-                    <span>Trading Volume (Lots)</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* ─── FULL-WIDTH SIGNALS TABLE FOR STATE 4 & 5 (Matching Images 04 & 05) ─── */}
-          {isPerformanceActive && (
-            <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-4">
+          {/* ─── ROW 3: Dedicated Full-Width Performance Combo Chart (1:1 with image.png) ─── */}
+          <PerformanceComboChart
+            totalCashback={
+              dashboardState === 'active-performance'
+                ? '$3,128.00'
+                : dashboardState === 'first-trade'
+                ? '$8.00'
+                : '$0.00'
+            }
+            lotsTraded={
+              dashboardState === 'active-performance'
+                ? '163.6'
+                : dashboardState === 'first-trade'
+                ? '1.6'
+                : '0'
+            }
+            avgCashbackPerLot={
+              dashboardState === 'active-performance'
+                ? '$19.12'
+                : dashboardState === 'first-trade'
+                ? '$5.00'
+                : '$0.00'
+            }
+            bestDay={
+              dashboardState === 'active-performance'
+                ? '$415.00'
+                : dashboardState === 'first-trade'
+                ? '$8.00'
+                : '$0.00'
+            }
+            className="w-full"
+          />
+
+          {/* ─── FULL-WIDTH SIGNALS TABLE (Matching Images 04 & 05) ─── */}
+          <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="font-display font-extrabold text-lg text-[#0b1c30]">
@@ -1420,198 +1218,13 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                 </button>
               </div>
             </div>
-          )}
 
-          {/* ─── BOTTOM ROW: Ready to connect? vs More Connected Brokers ─── */}
-          {isPerformanceActive ? (
-            /* More Connected Brokers. More Opportunities. (Purple Bordered Card) */
-            <div className="rounded-2xl border-2 border-[#f0abfc] p-5 sm:p-6 bg-white shadow-2xs space-y-4">
-              <div>
-                <h3 className="font-display font-extrabold text-lg text-[#5945F1] tracking-tight">
-                  More Connected Brokers. <span className="text-[#FD02B0]">More Opportunities.</span>
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5 font-normal">
-                  Connect more broker partners and give your trades more ways to earn cashback.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                {[
-                  { name: 'XM', cashback: '$8.00', logoBg: 'bg-black', text: 'XM', verified: true },
-                  { name: 'HFM', cashback: '$8.00', logoBg: 'bg-black', text: 'HFM', verified: true },
-                  { name: 'Exness', cashback: '$8.00', logoBg: 'bg-[#FFCC00]', text: 'ex', textCol: 'text-black', verified: true },
-                  { name: 'Pepperstone', cashback: '$8.00', logoBg: 'bg-[#002B49]', text: 'P', verified: false },
-                  { name: 'IC Markets', cashback: '$8.00', logoBg: 'bg-[#002D3B]', text: 'IC', verified: false },
-                  { name: 'Fx Pro', cashback: '$8.00', logoBg: 'bg-[#E11928]', text: 'fx', verified: false },
-                ].map((b) => (
-                  <div
-                    key={`more-broker-${b.name}`}
-                    className="p-3 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col items-center text-center justify-between space-y-2 hover:border-[#5945F1]/40 transition-all cursor-pointer"
-                    onClick={() => handleCardClick(b.name)}
-                  >
-                    {b.verified ? (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-slate-900 bg-[#a3e635] px-2 py-0.5 rounded-full">
-                        ✔ Verified
-                      </span>
-                    ) : (
-                      <span className="h-4" />
-                    )}
-
-                    <div className={`w-11 h-11 rounded-xl ${b.logoBg} flex items-center justify-center font-black ${b.textCol || 'text-white'} text-sm shadow-xs`}>
-                      {b.text}
-                    </div>
-
-                    <div>
-                      <div className="font-bold text-xs text-[#0b1c30]">{b.name}</div>
-                      <div className="text-[10px] font-bold text-[#5945F1] mt-0.5 font-mono">
-                        {b.cashback} Max Cashback
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleConnectBrokerAction(b.name);
-                      }}
-                      className="w-full py-1.5 px-2 rounded-xl bg-[#5945F1] hover:bg-[#4734dc] text-white font-bold text-[11px] shadow-2xs transition-all active:scale-95 cursor-pointer"
-                    >
-                      Connect
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-center pt-1">
-                <button
-                  onClick={() => onNavigateToTab('brokers')}
-                  className="px-6 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4836d9] text-white font-bold text-xs shadow-xs transition-transform active:scale-95 cursor-pointer"
-                >
-                  Explore All Brokers
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Ready to connect? (6 Broker Cards Grid) */
-            <div className="space-y-4 pt-1">
-              <div>
-                <h3 className="font-display font-extrabold text-xl text-[#5945F1] tracking-tight">
-                  Ready to connect?
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Verified, reliable, and fully supported. Pick your broker below to securely sync your trading data.
-                </p>
-              </div>
-
-              {/* 6 Broker Cards Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                {[
-                  {
-                    name: 'XM',
-                    cashback: '$8.00 Max Cashback',
-                    logoBg: 'bg-black',
-                    renderLogo: () => (
-                      <div className="flex items-center justify-center font-black text-white text-sm relative overflow-hidden">
-                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#E11928] rounded-full" />
-                        <span>XM</span>
-                      </div>
-                    ),
-                  },
-                  {
-                    name: 'HFM',
-                    cashback: '$8.00 Max Cashback',
-                    logoBg: 'bg-black',
-                    renderLogo: () => (
-                      <div className="flex flex-col items-center justify-center leading-none">
-                        <span className="font-extrabold text-white text-[11px] tracking-tight">HFM</span>
-                        <span className="text-[5px] text-slate-400 font-bold uppercase tracking-tighter scale-90">HF MARKETS</span>
-                      </div>
-                    ),
-                  },
-                  {
-                    name: 'Exness',
-                    cashback: '$8.00 Max Cashback',
-                    logoBg: 'bg-[#FFCC00]',
-                    renderLogo: () => (
-                      <div className="flex items-center justify-center font-black text-black text-sm tracking-tighter">
-                        ex
-                      </div>
-                    ),
-                  },
-                  {
-                    name: 'Pepperstone',
-                    cashback: '$8.00 Max Cashback',
-                    logoBg: 'bg-[#002B49]',
-                    renderLogo: () => (
-                      <div className="flex items-center justify-center font-black text-white text-base">
-                        P
-                      </div>
-                    ),
-                  },
-                  {
-                    name: 'IC Markets',
-                    cashback: '$8.00 Max Cashback',
-                    logoBg: 'bg-[#002D3B]',
-                    renderLogo: () => (
-                      <div className="flex flex-col items-center justify-center text-white text-center leading-none">
-                        <span className="font-black text-[10px]">IC</span>
-                        <span className="text-[5px] text-slate-300 uppercase scale-90">Markets</span>
-                      </div>
-                    ),
-                  },
-                  {
-                    name: 'Fx Pro',
-                    cashback: '$8.00 Max Cashback',
-                    logoBg: 'bg-[#E11928]',
-                    renderLogo: () => (
-                      <div className="flex flex-col items-center justify-center text-white text-center leading-none">
-                        <span className="font-black text-[10px]">FxPro</span>
-                      </div>
-                    ),
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.name}
-                    onClick={() => handleCardClick(item.name)}
-                    className="p-3 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col items-center text-center justify-between space-y-2 hover:shadow-md hover:border-[#5945F1]/40 transition-all cursor-pointer group"
-                  >
-                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-slate-900 bg-[#a3e635] px-2 py-0.5 rounded-full">
-                      ✔ Verified
-                    </span>
-
-                    <div className={`w-11 h-11 rounded-xl ${item.logoBg} flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform`}>
-                      {item.renderLogo()}
-                    </div>
-
-                    <div>
-                      <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">{item.name}</div>
-                      <div className="text-[10px] font-bold text-[#5945F1] mt-0.5 font-mono">
-                        {item.cashback}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleConnectBrokerAction(item.name);
-                      }}
-                      className="w-full py-1.5 px-2 rounded-xl bg-[#5945F1] hover:bg-[#4734dc] text-white font-bold text-[11px] shadow-2xs transition-all active:scale-95 cursor-pointer"
-                    >
-                      Connect
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-1">
-                <button
-                  onClick={() => onNavigateToTab('brokers')}
-                  className="px-5 py-2 rounded-full border border-[#5945F1]/30 bg-white hover:bg-slate-50 text-[#5945F1] font-bold text-xs shadow-2xs transition-colors cursor-pointer"
-                >
-                  Explore All Brokers
-                </button>
-              </div>
-            </div>
-          )}
+          {/* ─── BOTTOM ROW: More Connected Brokers. More Opportunities. (1:1 with Small Banner 3.png) ─── */}
+          <MoreConnectedBrokersBanner
+            onConnectBroker={handleConnectBrokerAction}
+            onNavigateToTab={onNavigateToTab}
+            className="w-full"
+          />
         </div>
 
         {/* ════════════ RIGHT SIDEBAR: STRICTLY FIXED AT 300px WITH STICKY SCROLL FIX ════════════ */}

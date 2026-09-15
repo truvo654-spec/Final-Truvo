@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { MarketSignal, Broker, UserProfile } from '../types';
 import { REFERENCE_SIGNALS } from '../data/signalsReferenceData';
+import { TabMain, TabMainItem } from './common/TabMain';
 import {
   Search,
   SlidersHorizontal,
@@ -75,13 +76,13 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
   }, [initialSignals]);
 
   // Categories list matching reference: All 99, Forex, Indices, Stocks, Commodities, Cryptos
-  const categories = [
-    { label: 'All', count: 99 },
-    { label: 'Forex', count: 42 },
-    { label: 'Indices', count: 18 },
-    { label: 'Stocks', count: 16 },
-    { label: 'Commodities', count: 12 },
-    { label: 'Cryptos', count: 11 },
+  const categories: TabMainItem<string>[] = [
+    { id: 'All', label: 'All', count: 99 },
+    { id: 'Forex', label: 'Forex', count: 42 },
+    { id: 'Indices', label: 'Indices', count: 18 },
+    { id: 'Stocks', label: 'Stocks', count: 16 },
+    { id: 'Commodities', label: 'Commodities', count: 12 },
+    { id: 'Cryptos', label: 'Cryptos', count: 11 },
   ];
 
   // Filtered signals logic
@@ -240,45 +241,17 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
         </p>
       </div>
 
-      {/* ─── 2. CATEGORY TABS (Matching Dashboard_Trading Signals_Desktop_Beginner.png) ─── */}
-      <div className="flex items-center justify-start gap-3 sm:gap-5 flex-wrap pt-2 pb-1">
-        {categories.map((cat) => {
-          const isActive = selectedCategory === cat.label;
-          if (isActive) {
-            return (
-              <button
-                key={cat.label}
-                type="button"
-                onClick={() => {
-                  setSelectedCategory(cat.label);
-                  setCurrentPage(1);
-                }}
-                className="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 bg-[#5945F1] text-white shadow-2xs cursor-pointer"
-              >
-                <span>{cat.label}</span>
-                {cat.label === 'All' && (
-                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-[#4632db] text-white">
-                    {cat.count}
-                  </span>
-                )}
-              </button>
-            );
-          }
-
-          return (
-            <button
-              key={cat.label}
-              type="button"
-              onClick={() => {
-                setSelectedCategory(cat.label);
-                setCurrentPage(1);
-              }}
-              className="text-slate-800 dark:text-slate-200 hover:text-[#5945F1] dark:hover:text-[#ABA1F8] text-xs sm:text-sm font-medium transition-colors cursor-pointer py-1 px-1.5"
-            >
-              <span>{cat.label}</span>
-            </button>
-          );
-        })}
+      {/* ─── 2. CATEGORY TABS (TabMain - 1:1 with reference design) ─── */}
+      <div className="pt-2">
+        <TabMain
+          tabs={categories}
+          activeTab={selectedCategory}
+          onChange={(newCat) => {
+            setSelectedCategory(newCat);
+            setCurrentPage(1);
+          }}
+          showBadgeOnActiveOnly={true}
+        />
       </div>
 
       {/* ─── 3. SUB-BAR (ACTIVE SIGNALS COUNT + SEARCH & FILTER) ─── */}
