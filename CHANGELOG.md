@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.66.0] - 2026-09-15
+### Added
+- **TabMain Component (`src/components/common/TabMain.tsx` & `src/components/TabMain.tsx`)**:
+  - Reusable folder-tab navigation component replicating the design from the reference image.
+  - Features precise SVG inverted fillets (concave smooth bottom curves) transitioning cleanly into the lavender baseline border.
+  - Active tab styling with solid white/dark background, subtle lavender borders, vibrant purple pill badge, and active text coloring.
+  - Responsive horizontal scrolling with clean touch/mouse interactions.
+- **Integrated TabMain into Trading Signals Page (`src/components/TradingSignalsPage.tsx`)**:
+  - Replaced the previous pill buttons with the new `TabMain` component for categories (`All (99)`, `Forex`, `Indices`, `Stocks`, `Commodities`, `Cryptos`).
+
 ## [0.65.0] - 2026-09-15
 ### Reverted
 - **Reverted 1024px Layout Width Constraint**:
