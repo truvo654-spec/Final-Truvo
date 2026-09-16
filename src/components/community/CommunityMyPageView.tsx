@@ -25,6 +25,7 @@ interface CommunityMyPageViewProps {
   onUpdateUserProfile: (updatedUser: Partial<UserProfile>) => void;
   onDeletePost?: (postId: string) => void;
   onShowToast: (msg: string) => void;
+  onOpenTierModal?: () => void;
 }
 
 export const CommunityMyPageView: React.FC<CommunityMyPageViewProps> = ({
@@ -34,6 +35,7 @@ export const CommunityMyPageView: React.FC<CommunityMyPageViewProps> = ({
   onUpdateUserProfile,
   onDeletePost,
   onShowToast,
+  onOpenTierModal,
 }) => {
   const [activeTab, setActiveTab] = useState<'posts' | 'comments' | 'reactions'>('posts');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -108,23 +110,111 @@ export const CommunityMyPageView: React.FC<CommunityMyPageViewProps> = ({
 
             {/* Name & Handle */}
             <div>
-              <h3 className="text-base font-bold text-[#0b1c30] font-display">{user.username || 'User_wrzl75940815'}</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base font-bold text-[#0b1c30] font-display">{user.username || 'User_wrzl75940815'}</h3>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-300 font-mono">
+                  <span>💎</span>
+                  <span>Lvl {user.level} {user.rankTitle || 'Whale'}</span>
+                </span>
+              </div>
               <p className="text-xs text-[#474556] font-mono">@{user.username || 'User_wrzl75940815'}</p>
-              <p className="text-xs text-[#474556] mt-2 leading-relaxed">{editBio}</p>
+              
+              {/* Followers & Following (Image 5) */}
+              <div className="flex items-center gap-4 mt-2 text-xs">
+                <div>
+                  <span className="font-bold text-[#0b1c30]">12.8M</span>{' '}
+                  <span className="text-[#474556]">Followers</span>
+                </div>
+                <div>
+                  <span className="font-bold text-[#0b1c30]">1.2K</span>{' '}
+                  <span className="text-[#474556]">Following</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-[#474556] mt-2.5 leading-relaxed">{editBio}</p>
             </div>
 
-            {/* Watchlist CTA */}
-            <button
-              onClick={() => onShowToast('Watchlist creator opened')}
-              className="w-full py-2 px-3 rounded-xl bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#0b1c30] border border-[#e2e8f0] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5 text-[#5338ec]" />
-              <span>Create My First Watchlist</span>
-            </button>
+            {/* Action buttons (Image 5) */}
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={() => onShowToast('🔄 Profile synchronized with institutional broker account')}
+                className="w-full py-2 px-3 rounded-xl bg-[#5338ec] hover:bg-[#4326d8] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Auto-Sync Profile</span>
+              </button>
+
+              <button
+                onClick={() => onShowToast('MarketSyde Community Rules & Trader Verification Guidelines')}
+                className="w-full text-center text-[11px] text-[#474556] hover:text-[#5338ec] transition-colors font-medium py-1"
+              >
+                Disclaimer &gt;
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Social Insights Card */}
+        {/* ─── GAMIFICATION TIER & ACCESSIBILITY STATUS CARD ─── */}
+        <div className="bg-gradient-to-br from-white via-indigo-50/30 to-purple-50/40 border border-indigo-200/70 rounded-2xl p-4 text-[#0b1c30] shadow-xs space-y-3 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">💎</span>
+              <div>
+                <h4 className="text-xs font-bold text-[#0b1c30] uppercase tracking-wider">
+                  Tier Accessibility
+                </h4>
+                <p className="text-[11px] text-[#5338ec] font-semibold">
+                  Level {user.level}: {user.rankTitle || 'Diamond Whale'}
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full">
+              +{user.cashbackBooster || 15}% Cashback Boost
+            </span>
+          </div>
+
+          {/* Progress bar to next level */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] font-mono text-[#474556]">
+              <span>Progress</span>
+              <span><strong>{user.currentPoints}</strong> / {user.nextLevelPoints || 2500} Pts</span>
+            </div>
+            <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#5338ec] via-purple-600 to-amber-500 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(100, Math.round((user.currentPoints / (user.nextLevelPoints || 2500)) * 100))}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Active Perk Highlights */}
+          <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+            <div className="bg-white/80 border border-slate-200/80 rounded-xl p-2">
+              <span className="text-slate-500 block text-[10px]">Syde Credits</span>
+              <span className="font-bold text-amber-600 flex items-center gap-1 font-mono">
+                <span>🪙</span> {user.sydeCredits} Credits
+              </span>
+            </div>
+            <div className="bg-white/80 border border-slate-200/80 rounded-xl p-2">
+              <span className="text-slate-500 block text-[10px]">Host Spaces</span>
+              <span className="font-bold text-emerald-600 flex items-center gap-1">
+                <span>✓</span> Unlocked (Lvl 5+)
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onOpenTierModal ? onOpenTierModal() : onShowToast('Opening Tier Matrix')}
+            className="w-full py-2 px-3 rounded-xl bg-white hover:bg-slate-50 border border-indigo-200 text-[#5338ec] font-semibold text-xs transition-colors flex items-center justify-center gap-1 shadow-2xs"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>View All Tier Unlocks &amp; Matrix</span>
+          </button>
+        </div>
+
+        {/* Social Insights Card (Image 5) */}
         <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 text-[#0b1c30] shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#474556]">
@@ -141,11 +231,11 @@ export const CommunityMyPageView: React.FC<CommunityMyPageViewProps> = ({
           <div className="grid grid-cols-2 gap-3 pt-1">
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3">
               <span className="text-[11px] text-[#474556] block mb-1">Social Influence</span>
-              <span className="text-base font-bold font-mono text-[#0b1c30]">--</span>
+              <span className="text-base font-bold font-mono text-[#0b1c30]">794.57</span>
             </div>
             <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3">
               <span className="text-[11px] text-[#474556] block mb-1">Analytical Depth</span>
-              <span className="text-base font-bold font-mono text-[#0b1c30]">--</span>
+              <span className="text-base font-bold font-mono text-[#0b1c30]">33.60</span>
             </div>
           </div>
         </div>

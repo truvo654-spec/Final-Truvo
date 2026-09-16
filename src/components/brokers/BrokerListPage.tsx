@@ -260,12 +260,14 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
                 <div
                   key={broker.id}
                   onClick={() => onSelectBrokerDetail(broker)}
-                  className="group bg-white rounded-2xl p-5 border border-slate-200/90 hover:border-[#5945F1] hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[350px] relative hover:-translate-y-0.5"
+                  className="interactive-card group bg-white rounded-2xl p-5 border border-slate-200/90 hover:border-[#5945F1] hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between min-h-[350px] relative"
                 >
                   <div>
                     {/* Top Row: Logo & Broker Name & Score & Badges */}
                     <div className="flex items-start gap-3 mb-4">
-                      {renderBrokerLogo(broker)}
+                      <div className="group-hover:scale-105 group-hover:rotate-3 transition-transform duration-300 shrink-0">
+                        {renderBrokerLogo(broker)}
+                      </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
@@ -284,13 +286,13 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
                         {/* Badges: Verified (Lime) & Top Pick (Pink) */}
                         <div className="flex flex-wrap items-center gap-1.5 mt-2">
                           {broker.verified && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#CAEB0E] text-black text-[10px] font-extrabold tracking-tight">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#CAEB0E] text-black text-[10px] font-extrabold tracking-tight group-hover:scale-105 transition-transform">
                               <Check className="w-3 h-3 stroke-[3]" />
                               <span>Verified</span>
                             </span>
                           )}
                           {broker.isTopPick && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#FD02B0] text-white text-[10px] font-bold tracking-tight shadow-2xs">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#FD02B0] text-white text-[10px] font-bold tracking-tight shadow-2xs group-hover:scale-105 transition-transform">
                               Top Pick
                             </span>
                           )}

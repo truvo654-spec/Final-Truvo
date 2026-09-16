@@ -28,6 +28,7 @@ import { CashbackCalendarModal } from './CashbackCalendarModal';
 import { ActivityCarousel } from './ActivityCarousel';
 import { PerformanceComboChart } from './PerformanceComboChart';
 import { MoreConnectedBrokersBanner } from './MoreConnectedBrokersBanner';
+import { ConnectedAccountsCarousel } from './ConnectedAccountsCarousel';
 
 export type DashboardStateType =
   | 'empty'
@@ -53,11 +54,11 @@ interface EmptyStateDashboardViewProps {
 }
 
 /**
- * Rookie Ghost Vector Badge (matches exact ghost outline from reference)
+ * Rookie Ghost Vector Badge (matches exact ghost outline from reference with playful floating animation)
  */
 function RookieGhostIcon() {
   return (
-    <div className="w-14 h-16 sm:w-16 sm:h-18 flex items-center justify-center shrink-0">
+    <div className="w-14 h-16 sm:w-16 sm:h-18 flex items-center justify-center shrink-0 animate-float-slow group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 cursor-pointer">
       <svg
         viewBox="0 0 100 120"
         className="w-full h-full drop-shadow-md"
@@ -79,11 +80,11 @@ function RookieGhostIcon() {
 }
 
 /**
- * 3D Calendar Vector Icon for Active Streak
+ * 3D Calendar Vector Icon for Active Streak with interactive hover
  */
 function ActiveStreakCalendarIcon() {
   return (
-    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#c084fc] via-[#a855f7] to-[#7c3aed] p-2 shadow-sm flex items-center justify-center relative shrink-0">
+    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#c084fc] via-[#a855f7] to-[#7c3aed] p-2 shadow-sm flex items-center justify-center relative shrink-0 hover:scale-110 hover:-rotate-3 transition-transform duration-300 cursor-pointer">
       <svg viewBox="0 0 36 36" fill="none" className="w-8 h-8 drop-shadow-xs">
         <rect x="5" y="8" width="26" height="24" rx="6" fill="url(#streakCalGrad)" />
         <rect x="5" y="8" width="26" height="8" rx="3" fill="#6b21a8" />
@@ -107,11 +108,11 @@ function ActiveStreakCalendarIcon() {
 }
 
 /**
- * 3D Wallet & Coin Bag Vector Icon for Cumulative Cashback Empty State
+ * 3D Wallet & Coin Bag Vector Icon for Cumulative Cashback Empty State with interactive hover
  */
 function WalletCoin3DIcon() {
   return (
-    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#818cf8] via-[#6366f1] to-[#4f46e5] p-2 shadow-sm flex items-center justify-center relative shrink-0">
+    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#818cf8] via-[#6366f1] to-[#4f46e5] p-2 shadow-sm flex items-center justify-center relative shrink-0 hover:scale-110 hover:rotate-3 transition-transform duration-300 cursor-pointer">
       <svg viewBox="0 0 36 36" fill="none" className="w-8 h-8 drop-shadow-xs">
         <path
           d="M 8 14 C 8 10, 12 8, 18 8 C 24 8, 28 10, 28 14 L 30 26 C 30 30, 26 32, 18 32 C 10 32, 6 30, 6 26 Z"
@@ -135,11 +136,11 @@ function WalletCoin3DIcon() {
 }
 
 /**
- * 3D Coin Swap Vector Icon for Top Earning Assets Empty State
+ * 3D Coin Swap Vector Icon for Top Earning Assets Empty State with interactive hover
  */
 function CoinSwap3DIcon() {
   return (
-    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#c084fc] via-[#a855f7] to-[#7e22ce] p-2 shadow-sm flex items-center justify-center relative shrink-0">
+    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#c084fc] via-[#a855f7] to-[#7e22ce] p-2 shadow-sm flex items-center justify-center relative shrink-0 hover:scale-110 hover:-rotate-3 transition-transform duration-300 cursor-pointer">
       <svg viewBox="0 0 36 36" fill="none" className="w-8 h-8 drop-shadow-xs">
         <circle cx="18" cy="18" r="14" fill="url(#swapEmptyGrad)" />
         <path
@@ -483,7 +484,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
             {/* ── LEFT TOP CARD: Quick Start Guide vs Your Connected Account ── */}
             {dashboardState === 'empty' ? (
-              <div className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 shadow-2xs flex flex-col justify-between">
+              <div className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 shadow-2xs flex flex-col justify-between interactive-card group">
                 <div>
                   <h3 className="font-display font-extrabold text-lg text-[#0b1c30] tracking-tight">
                     Quick Start Guid<span className="text-[#FD02B0]">e.</span>
@@ -495,8 +496,8 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                   {/* 4 Steps Row with Connecting Dots */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                     {/* Step 1 */}
-                    <div className="flex flex-col items-center text-center space-y-1.5">
-                      <div className="w-8 h-8 rounded-full bg-[#5945F1] text-white flex items-center justify-center shadow-2xs shrink-0">
+                    <div className="flex flex-col items-center text-center space-y-1.5 p-2 rounded-xl hover:bg-indigo-50/50 transition-colors">
+                      <div className="w-8 h-8 rounded-full bg-[#5945F1] text-white flex items-center justify-center shadow-2xs shrink-0 group-hover:scale-110 transition-transform">
                         <UserCheck className="w-4 h-4" />
                       </div>
                       <div className="font-bold text-xs text-[#0b1c30]">Choose Broker</div>
@@ -506,8 +507,8 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                     </div>
 
                     {/* Step 2 */}
-                    <div className="flex flex-col items-center text-center space-y-1.5">
-                      <div className="w-8 h-8 rounded-full border border-slate-300 text-[#5945F1] flex items-center justify-center shadow-2xs shrink-0 bg-white">
+                    <div className="flex flex-col items-center text-center space-y-1.5 p-2 rounded-xl hover:bg-indigo-50/50 transition-colors">
+                      <div className="w-8 h-8 rounded-full border border-slate-300 text-[#5945F1] flex items-center justify-center shadow-2xs shrink-0 bg-white group-hover:scale-110 transition-transform">
                         <Link2 className="w-4 h-4" />
                       </div>
                       <div className="font-bold text-xs text-[#0b1c30]">Link Trading Account</div>
@@ -517,8 +518,8 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                     </div>
 
                     {/* Step 3 */}
-                    <div className="flex flex-col items-center text-center space-y-1.5">
-                      <div className="w-8 h-8 rounded-full border border-slate-300 text-[#5945F1] flex items-center justify-center shadow-2xs shrink-0 bg-white">
+                    <div className="flex flex-col items-center text-center space-y-1.5 p-2 rounded-xl hover:bg-indigo-50/50 transition-colors">
+                      <div className="w-8 h-8 rounded-full border border-slate-300 text-[#5945F1] flex items-center justify-center shadow-2xs shrink-0 bg-white group-hover:scale-110 transition-transform">
                         <CandlestickChart className="w-4 h-4" />
                       </div>
                       <div className="font-bold text-xs text-[#0b1c30]">Trade as Usual</div>
@@ -528,8 +529,8 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                     </div>
 
                     {/* Step 4 */}
-                    <div className="flex flex-col items-center text-center space-y-1.5">
-                      <div className="w-8 h-8 rounded-full border border-slate-300 text-[#5945F1] flex items-center justify-center shadow-2xs shrink-0 bg-white">
+                    <div className="flex flex-col items-center text-center space-y-1.5 p-2 rounded-xl hover:bg-indigo-50/50 transition-colors">
+                      <div className="w-8 h-8 rounded-full border border-slate-300 text-[#5945F1] flex items-center justify-center shadow-2xs shrink-0 bg-white group-hover:scale-110 transition-transform">
                         <DollarSign className="w-4 h-4" />
                       </div>
                       <div className="font-bold text-xs text-[#0b1c30]">Earn Cashback</div>
@@ -540,9 +541,17 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                   </div>
                 </div>
               </div>
+            ) : dashboardState === 'active-performance' ? (
+              <ConnectedAccountsCarousel
+                className="md:col-span-8"
+                onNavigateToTab={onNavigateToTab}
+                onNavigateToConnectBroker={handleConnectBrokerAction}
+                onOpenConnectModal={onOpenConnectModal}
+                onShowToast={showToast}
+              />
             ) : (
               /* Your Connected Account Card (Matches Images 02, 03, 04, 05) */
-              <div className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 shadow-2xs flex flex-col justify-between space-y-4">
+              <div className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 shadow-2xs flex flex-col justify-between space-y-4 interactive-card">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="font-display font-extrabold text-xl text-[#5945F1] tracking-tight">
@@ -552,14 +561,14 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
 
                   <div className="flex flex-col items-end gap-1">
                     <button
-                      onClick={() => onNavigateToTab('brokers')}
+                      onClick={() => onNavigateToTab('active-trading-accounts')}
                       className="px-4 py-1.5 rounded-xl bg-[#5945F1] hover:bg-[#4734dc] text-white font-bold text-xs shadow-2xs flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
                     >
                       <span>Connect More</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => onNavigateToTab('connect-to-truvo')}
+                      onClick={() => onNavigateToTab('active-trading-accounts')}
                       className="text-[11px] font-bold text-[#5945F1] hover:underline cursor-pointer"
                     >
                       Add Trading Account
@@ -731,7 +740,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
             )}
 
             {/* ── RIGHT TOP CARD: Your Level Card (md:col-span-4) ── */}
-            <div className="md:col-span-4 rounded-2xl bg-[#5945F1] p-5 text-white flex flex-col justify-between shadow-xs relative overflow-hidden">
+            <div className="md:col-span-4 rounded-2xl bg-[#5945F1] p-5 text-white flex flex-col justify-between shadow-xs relative overflow-hidden interactive-card group">
               <div>
                 <div className="text-xs font-semibold text-white/80">
                   Your Level
@@ -778,7 +787,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                   <span>+{user.boostPercentage || 10}% Cashback Boost</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-amber-300 text-sm leading-none">⚡</span>
+                  <span className="font-black text-sm">%</span>
                   <span>Higher Confidence Signals</span>
                 </div>
               </div>
@@ -786,12 +795,11 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
           </div>
 
           {/* ─── ROW 2: Your Stats / Your Performance Card ─── */}
-          <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5">
+          <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5 interactive-card">
             {/* Header: Title & Timeframe Filters */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
-              <h2 className="font-display text-lg sm:text-xl font-bold text-slate-700 tracking-tight">
-                {dashboardState === 'empty' ? 'Your Stats: ' : 'Your Performance: '}
-                <span className="text-[#0b1c30] font-black">March 2026</span>
+              <h2 className="font-display text-lg sm:text-xl font-normal text-slate-700 tracking-tight">
+                Your Stats: <span className="text-[#0b1c30] font-black">March 2026</span>
               </h2>
 
               <div className="flex items-center gap-2.5 flex-wrap">
@@ -802,7 +810,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                       onClick={() => setSelectedTimeframe(tf)}
                       className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                         selectedTimeframe === tf
-                          ? 'bg-[#5945F1] text-white font-black shadow-xs'
+                          ? 'bg-[#CAEB0E] text-black font-extrabold shadow-2xs'
                           : 'hover:text-[#0b1c30] text-slate-600'
                       }`}
                     >
@@ -1246,7 +1254,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <h3 className="font-display font-extrabold text-sm text-[#0b1c30]">
-                    Your <span className="text-[#5945F1]">Winning Signals.</span>
+                    Your <span className="text-[#5945F1]">Winning Signals</span><span className="text-[#FD02B0]">.</span>
                   </h3>
                   <p className="text-[11px] text-slate-500 mt-0.5">
                     Signals from your actual money-makers.
@@ -1262,14 +1270,14 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
-                {/* XAU/USD */}
+                {/* EUR/USD */}
                 <div
                   onClick={() => onNavigateToTab('signals')}
                   className="bg-white rounded-xl p-2.5 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer space-y-1.5"
                 >
                   <div className="flex items-center gap-1 font-bold text-xs text-[#0b1c30]">
-                    <span>🪙</span>
-                    <span>XAU/USD</span>
+                    <span>🇪🇺</span>
+                    <span>EUR/USD</span>
                   </div>
                   <div className="flex items-center justify-between gap-1">
                     <MiniSparkline trend="up" color="#16a34a" />

@@ -84,6 +84,13 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
   // Monthly Lots Interactive Slider in Top Card (matches exact screenshot default of 25)
   const [lotsPerMonth, setLotsPerMonth] = useState<number>(25);
 
+  // User authentication state (defaults to isLoggedIn prop, togglable in scenario controls)
+  const [isSignedIn, setIsSignedIn] = useState<boolean>(isLoggedIn);
+
+  useEffect(() => {
+    setIsSignedIn(isLoggedIn);
+  }, [isLoggedIn]);
+
   // Scenario toggle: Connected to MarketSyde (default true for current user scenario)
   const [isConnectedToMarketSyde, setIsConnectedToMarketSyde] = useState<boolean>(true);
 
@@ -230,94 +237,137 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
 
         {/* RIGHT CARD: CASHBACK WITH MARKETSYDE (5 COLS ON LG) OR DIRECT BROKER CARD */}
         {hasCashbackProgram ? (
-          <div className="lg:col-span-5 bg-[#5945F1] rounded-[24px] p-6 sm:p-7 text-white shadow-xl flex flex-col justify-between">
+          <div className="lg:col-span-5 bg-[#5240F2] rounded-[24px] p-6 sm:p-7 text-white shadow-xl flex flex-col justify-between">
             <div>
-              {/* Title & Connection Badge */}
+              {/* Title: Cashback with MarketSyde (Exact match to hero.png) */}
               <div className="flex items-center justify-between gap-2">
-                <h3 className="font-display font-bold text-xl sm:text-[22px] tracking-tight text-white">
+                <h3 className="font-display font-extrabold text-[22px] sm:text-2xl tracking-tight text-white">
                   Cashback with <span className="text-[#CAEB0E]">MarketSyde</span>
                 </h3>
-                {isConnectedToMarketSyde ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#CAEB0E] text-black text-[10px] font-black uppercase tracking-wider shadow-2xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
-                    Connected
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/15 text-white/90 text-[10px] font-semibold">
-                    Not Connected
-                  </span>
-                )}
               </div>
 
-              {/* Estimated / Active Cashback Metric */}
-              <div className="flex items-center gap-3 mt-3">
-                <div className="text-[11px] sm:text-xs text-white/80 font-medium leading-tight">
-                  <div>{isConnectedToMarketSyde ? 'Your active' : 'Estimated'}</div>
+              {/* Estimated Cashback Metric (Exact match to hero.png) */}
+              <div className="flex items-center gap-4 mt-3.5">
+                <div className="text-[13px] text-white/90 font-medium leading-[1.25] shrink-0">
+                  <div>Estimated</div>
                   <div>cashback</div>
                 </div>
-                <div className="text-3xl sm:text-4xl font-black text-[#CAEB0E] tracking-tight">
-                  $8.00/lot
+                <div className="text-3xl sm:text-[38px] font-black text-[#CAEB0E] tracking-tight leading-none">
+                  {broker.cashbackPerLot > 0 ? `$${broker.cashbackPerLot.toFixed(2)}/lot` : '$8.00/lot'}
                 </div>
               </div>
 
-              {/* Lots Slider */}
+              {/* Lots Slider (Exact match to hero.png) */}
               <div className="mt-5 space-y-2">
-                <div className="text-xs text-white/90 font-medium">
+                <div className="text-xs sm:text-[13px] text-white font-bold tracking-tight">
                   Lots trade per month
                 </div>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="1"
-                    max="100"
-                    value={lotsPerMonth}
-                    onChange={(e) => setLotsPerMonth(parseInt(e.target.value))}
-                    className="flex-1 h-2 bg-white/30 rounded-lg appearance-none cursor-pointer accent-[#CAEB0E]"
-                  />
-                  <div className="w-11 h-8 rounded-lg bg-white text-[#5945F1] font-bold text-sm flex items-center justify-center shadow-xs shrink-0">
+                <div className="flex items-center gap-3.5">
+                  <div className="relative flex-1 flex items-center">
+                    <input
+                      type="range"
+                      min="1"
+                      max="100"
+                      value={lotsPerMonth}
+                      onChange={(e) => setLotsPerMonth(parseInt(e.target.value))}
+                      className="hero-slider w-full h-2.5 rounded-full appearance-none cursor-pointer focus:outline-none"
+                      style={{
+                        background: `linear-gradient(to right, #CAEB0E ${((lotsPerMonth - 1) / 99) * 100}%, #D6DCE7 ${((lotsPerMonth - 1) / 99) * 100}%)`,
+                      }}
+                    />
+                  </div>
+                  <div className="w-[52px] h-[38px] rounded-xl bg-white text-[#5240F2] font-black text-lg flex items-center justify-center shadow-xs shrink-0 select-none">
                     {lotsPerMonth}
                   </div>
                 </div>
               </div>
 
-              {/* Monthly & Annual Projected Rewards */}
-              <div className="grid grid-cols-2 gap-4 mt-6 pt-3 border-t border-white/10">
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs text-white/80">
+              {/* Monthly & Annual Projected Rewards with subtle vertical divider (Exact match to hero.png) */}
+              <div className="grid grid-cols-2 gap-2 mt-5 pt-3 relative">
+                {/* Left Column: Your monthly rewards */}
+                <div className="pr-2">
+                  <div className="flex items-center gap-1.5 text-xs text-white/90 font-medium">
                     <Wallet className="w-3.5 h-3.5 text-white stroke-[2]" />
                     <span>Your monthly rewards</span>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
-                    ${calculatedMonthly.toLocaleString()}/mth.
+                  <div className="mt-1 flex items-baseline gap-0.5">
+                    <span className="text-2xl sm:text-[32px] font-black text-white tracking-tight leading-none">
+                      ${calculatedMonthly.toLocaleString()}
+                    </span>
+                    <span className="text-sm sm:text-base font-normal text-white">
+                      /mth.
+                    </span>
                   </div>
                 </div>
 
-                <div className="border-l border-white/15 pl-4">
-                  <div className="flex items-center gap-1.5 text-xs text-white/80">
+                {/* Center subtle vertical line divider */}
+                <div className="absolute top-3 bottom-0 left-1/2 w-[1px] bg-white/20 -translate-x-1/2" />
+
+                {/* Right Column: Your annual total */}
+                <div className="pl-3 sm:pl-4">
+                  <div className="flex items-center gap-1.5 text-xs text-white/90 font-medium">
                     <Calendar className="w-3.5 h-3.5 text-white stroke-[2]" />
                     <span>Your annual total</span>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
-                    ${calculatedAnnual.toLocaleString()}/yr.
+                  <div className="mt-1 flex items-baseline gap-0.5">
+                    <span className="text-2xl sm:text-[32px] font-black text-white tracking-tight leading-none">
+                      ${calculatedAnnual.toLocaleString()}
+                    </span>
+                    <span className="text-sm sm:text-base font-normal text-white">
+                      /yr.
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Action Button: Connect Now or Trade Now */}
-            <button
-              type="button"
-              onClick={handleConnectClick}
-              className="w-full mt-6 py-3.5 rounded-xl bg-[#CAEB0E] hover:bg-[#b8d60d] text-black font-extrabold text-sm transition-all shadow-md active:scale-95 cursor-pointer text-center flex items-center justify-center gap-2"
-            >
-              {isConnectedToMarketSyde ? (
-                <>
-                  <span>Trade with {broker.name} (Account #1100045789)</span>
-                </>
-              ) : (
-                'Connect Now'
-              )}
-            </button>
+            {/* Action Buttons: 3 States based on user request:
+                State 1 (!isSignedIn): hero (1) -> "Get Cashback"
+                State 2 (isSignedIn && !isConnectedToMarketSyde): hero (2) -> "Connect Now"
+                State 3 (isSignedIn && isConnectedToMarketSyde): hero (4) -> "Add Trading Account" + "Trade with HFM"
+            */}
+            {!isSignedIn ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenSignUp) {
+                    onOpenSignUp();
+                  } else {
+                    setIsLocalSignUpModalOpen(true);
+                  }
+                }}
+                className="w-full mt-6 py-3.5 rounded-xl bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 font-extrabold text-sm sm:text-base transition-all shadow-md active:scale-95 cursor-pointer text-center"
+              >
+                Get Cashback
+              </button>
+            ) : !isConnectedToMarketSyde ? (
+              <button
+                type="button"
+                onClick={() => onNavigateToConnectBroker(broker)}
+                className="w-full mt-6 py-3.5 rounded-xl bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 font-extrabold text-sm sm:text-base transition-all shadow-md active:scale-95 cursor-pointer text-center"
+              >
+                Connect Now
+              </button>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 mt-6 pt-1">
+                <button
+                  type="button"
+                  onClick={() => onNavigateToConnectBroker(broker)}
+                  className="w-full py-3 px-3 rounded-xl border border-white bg-transparent hover:bg-white/10 text-white font-medium text-xs sm:text-sm transition-all cursor-pointer text-center truncate active:scale-[0.98]"
+                >
+                  Add Trading Account
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onShowToast?.(`Routing trade execution through ${broker.name} (Account #1100045789)`);
+                  }}
+                  className="w-full py-3 px-3 rounded-xl bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 font-bold text-xs sm:text-sm transition-all cursor-pointer text-center shadow-xs active:scale-[0.98] truncate"
+                >
+                  Trade with {broker.name}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           /* BROKER WITHOUT CASHBACK RIGHT CARD */
@@ -433,6 +483,37 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
                   title="Show 2 tabs: Account, Company"
                 >
                   No Cashback
+                </button>
+              </div>
+            </div>
+
+            {/* Auth State Toggle: Not Signed In (hero 1) vs Signed In (hero 2/4) */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400 font-medium text-[11px]">Auth:</span>
+              <div className="inline-flex p-0.5 bg-slate-100 rounded-lg border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setIsSignedIn(false)}
+                  className={`px-2 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    !isSignedIn
+                      ? 'bg-white text-slate-800 shadow-2xs font-bold'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="ยังไม่ได้ Sign In -> แสดง Hero (1): ปุ่ม 'Get Cashback'"
+                >
+                  Not Signed In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsSignedIn(true)}
+                  className={`px-2 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                    isSignedIn
+                      ? 'bg-white text-[#5945F1] shadow-2xs font-bold'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                  title="Sign In แล้ว -> แสดง Hero (2) หรือ (4)"
+                >
+                  Signed In
                 </button>
               </div>
             </div>

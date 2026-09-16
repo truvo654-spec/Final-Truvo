@@ -1,19 +1,37 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../../types';
-import { Gem, ArrowRight, Sparkles, Check, ChevronRight } from 'lucide-react';
+import { Gem, ArrowRight, Sparkles, Check, ChevronRight, UserCheck, Eye } from 'lucide-react';
+import { MembershipPlanGuestView } from './MembershipPlanGuestView';
 
 export interface MembershipPlanPageProps {
   user: UserProfile;
+  isLoggedIn?: boolean;
   onNavigateToTrade?: () => void;
   onShowToast?: (msg: string) => void;
+  onOpenSignIn?: () => void;
+  onOpenSignUp?: () => void;
+  onNavigateToTab?: (tab: string) => void;
+  onToggleLogin?: () => void;
 }
 
 export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
   user,
+  isLoggedIn = true,
   onNavigateToTrade,
   onShowToast,
+  onOpenSignIn,
+  onOpenSignUp,
+  onNavigateToTab,
+  onToggleLogin,
 }) => {
-  // State for active preview level (1: Rookie, 2: Climber, 3: Player, 4: Boss)
+  // Allow toggling between Guest mode and Member mode for preview/testing
+  const [viewModeOverride, setViewModeOverride] = useState<'guest' | 'member' | null>(null);
+
+  // Determine whether to display the Guest UI (matching D03. Membership plan - Guest.png)
+  // or the Logged-in Member UI (matching Membership plan - Member Lv.1.png)
+  const isGuest = viewModeOverride !== null ? viewModeOverride === 'guest' : !isLoggedIn;
+
+  // State for active preview level in member mode (1: Rookie, 2: Climber, 3: Player, 4: Boss)
   // Default to Lv. 1 (Rookie) matching "Membership plan - Member Lv.1.png" exactly
   const [activeLevel, setActiveLevel] = useState<number>(1);
 
@@ -32,6 +50,50 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
         return 'Rookie';
     }
   };
+
+  if (isGuest) {
+    return (
+      <div className="relative w-full">
+        {/* Subtle Preview Switcher Banner at top of Guest View */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-4 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-slate-500 font-medium">
+            <span className="w-2 h-2 rounded-full bg-[#CAEB0E]" />
+            <span>Membership Plan View:</span>
+            <span className="font-bold text-[#5945F1]">Guest Mode (Not Logged In)</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+            <button
+              onClick={() => {
+                setViewModeOverride('guest');
+                onShowToast?.('Showing Guest view');
+              }}
+              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#5945F1] text-white shadow-2xs cursor-pointer"
+            >
+              Guest UI
+            </button>
+            <button
+              onClick={() => {
+                setViewModeOverride('member');
+                onShowToast?.('Showing Logged-in Member view');
+              }}
+              className="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+            >
+              Member Lv.1 UI
+            </button>
+          </div>
+        </div>
+
+        {/* Guest View exact match to D03. Membership plan - Guest.png */}
+        <MembershipPlanGuestView
+          onOpenSignIn={onOpenSignIn}
+          onOpenSignUp={onOpenSignUp}
+          onNavigateToTab={onNavigateToTab}
+          onShowToast={onShowToast}
+        />
+      </div>
+    );
+  }
 
   return (
     <div id="membership-plan-page" className="w-full py-2 sm:py-4 space-y-12">
@@ -52,31 +114,47 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto">
-          {[
-            { level: 1, name: 'Rookie (Lv.1)' },
-            { level: 2, name: 'Climber (Lv.2)' },
-            { level: 3, name: 'Player (Lv.3)' },
-            { level: 4, name: 'Boss (Lv.4)' },
-          ].map((item) => {
-            const isSelected = activeLevel === item.level;
-            return (
-              <button
-                key={item.level}
-                onClick={() => {
-                  setActiveLevel(item.level);
-                  onShowToast?.(`Previewing ${item.name} plan`);
-                }}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#5945F1] text-white shadow-xs'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                {item.name}
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            {[
+              { level: 1, name: 'Rookie (Lv.1)' },
+              { level: 2, name: 'Climber (Lv.2)' },
+              { level: 3, name: 'Player (Lv.3)' },
+              { level: 4, name: 'Boss (Lv.4)' },
+            ].map((item) => {
+              const isSelected = activeLevel === item.level;
+              return (
+                <button
+                  key={item.level}
+                  onClick={() => {
+                    setActiveLevel(item.level);
+                    onShowToast?.(`Previewing ${item.name} plan`);
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#5945F1] text-white shadow-xs'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {item.name}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="h-4 w-px bg-slate-200" />
+
+          {/* Quick toggle back to guest view */}
+          <button
+            onClick={() => {
+              setViewModeOverride('guest');
+              onShowToast?.('Switching to Guest UI');
+            }}
+            className="px-2.5 py-1 rounded-xl text-xs font-bold text-slate-500 hover:text-[#5945F1] hover:bg-indigo-50 transition-colors cursor-pointer"
+            title="Preview how this page looks for guests (not logged in)"
+          >
+            Preview as Guest
+          </button>
         </div>
       </div>
 

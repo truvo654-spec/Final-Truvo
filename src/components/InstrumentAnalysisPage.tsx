@@ -40,7 +40,8 @@ interface InstrumentAnalysisPageProps {
   onSelectSignal: (signal: MarketSignal) => void;
   onOpenConnectModal: (broker?: Broker) => void;
   onOpenCalculator?: (type: string) => void;
-  onNavigateToTab?: (tab: string) => void;
+  onNavigateToTab?: (tab: string, subTab?: string, symbol?: string) => void;
+  onShareToCommunity?: (symbol: string, name: string) => void;
   onShowToast?: (msg: string) => void;
 }
 
@@ -55,6 +56,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
   onOpenConnectModal,
   onOpenCalculator,
   onNavigateToTab,
+  onShareToCommunity,
   onShowToast,
 }) => {
   // Carousel items layout representing the 5 major market categories:
@@ -574,8 +576,25 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
               {activeCategory.totalResults} Results Shown
             </h2>
 
-            {/* Action Buttons: Broker Access + Export CSV */}
-            <div className="flex items-center gap-2.5">
+            {/* Action Buttons: Broker Access + Export CSV + Share to Community */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  const firstInst = activeCategory.instruments[0];
+                  if (onShareToCommunity && firstInst) {
+                    onShareToCommunity(firstInst.symbol, firstInst.name);
+                  } else {
+                    onNavigateToTab?.('community', 'feeds', firstInst?.symbol);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#5945F1] to-[#7c3aed] text-white hover:opacity-95 font-semibold text-xs sm:text-sm rounded-lg transition-all shadow-xs cursor-pointer select-none"
+                title="Share this instrument setup with the trader community to earn points & credits"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#c6f831]" />
+                <span>Share to Community (+25 💎)</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => onOpenConnectModal?.(brokers[0])}

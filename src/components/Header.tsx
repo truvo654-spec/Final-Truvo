@@ -32,6 +32,7 @@ import { InteractiveCompanySubmenuGraphic } from './submenu/InteractiveCompanySu
 import { CompanyModals } from './CompanyModals';
 import { CalculatorType } from './calculators/TradingCalculatorsModal';
 import { useTheme } from '../theme/ThemeContext';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface HeaderProps {
   user: UserProfile;
@@ -191,7 +192,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-2.5 text-left focus:outline-none group cursor-pointer"
           >
             {/* Purple Circular Glyph with Swirl 'm' & Neon Lime Dot */}
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#5945F1] flex items-center justify-center relative shadow-xs group-hover:scale-105 transition-transform shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#5945F1] flex items-center justify-center relative shadow-xs group-hover:scale-110 group-hover:rotate-6 group-active:scale-95 transition-all duration-300 shrink-0">
               <svg viewBox="0 0 32 32" className="w-5 h-5 fill-none">
                 <path
                   d="M 8 20 C 8 14.5, 9.5 11.5, 12 11.5 C 14 11.5, 15.5 13.5, 16.5 16 C 17.5 13.5, 19 11.5, 21 11.5 C 23 11.5, 24 14.5, 24 18.5"
@@ -389,8 +390,9 @@ export const Header: React.FC<HeaderProps> = ({
                       <User className="w-4 h-4 stroke-[1.75]" />
                     )}
                   </div>
-                  {/* Purple notification dot floating on top-right corner */}
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#5945F1] absolute -top-1 -right-1 ring-2 ring-white" />
+                  {/* Purple notification dot floating on top-right corner with radar pulse */}
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#5945F1] absolute -top-1 -right-1 ring-2 ring-white z-10" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#5945F1] absolute -top-1 -right-1 animate-ping opacity-75 pointer-events-none" />
                 </div>
 
                 {/* Name + Rank with Purple Ghost Icon */}
@@ -399,10 +401,10 @@ export const Header: React.FC<HeaderProps> = ({
                     Hi, {user.username}
                   </div>
                   <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-0.5">
-                    {/* Custom Purple Ghost Icon matching Total Nav Bar.png */}
+                    {/* Custom Purple Ghost Icon matching Total Nav Bar.png with playful hover */}
                     <svg
                       viewBox="0 0 24 24"
-                      className="w-3.5 h-3.5 text-[#5945F1] fill-none stroke-current shrink-0"
+                      className="w-3.5 h-3.5 text-[#5945F1] fill-none stroke-current shrink-0 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -416,11 +418,18 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </button>
 
-            {/* Profile Dropdown Menu - Exact match to image.png */}
-            {isProfileMenuOpen && (
-              <div className="absolute top-full right-0 mt-2.5 w-[275px] max-w-[calc(100vw-24px)] bg-white rounded-[22px] border border-indigo-100/90 shadow-2xl shadow-indigo-950/15 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
-                {/* Top Header Card: Ghost Mascot, Rank, Progress Bar, Diamond Points, Edit Icon */}
-                <div className="flex items-start justify-between pb-3.5 border-b border-slate-100">
+            {/* Profile Dropdown Menu - Exact match to image.png with bouncy spring */}
+            <AnimatePresence>
+              {isProfileMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12, scale: 0.94 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 25 }}
+                  className="absolute top-full right-0 mt-2.5 w-[275px] max-w-[calc(100vw-24px)] bg-white rounded-[22px] border border-indigo-100/90 shadow-2xl shadow-indigo-950/15 p-4 z-50"
+                >
+                  {/* Top Header Card: Ghost Mascot, Rank, Progress Bar, Diamond Points, Edit Icon */}
+                  <div className="flex items-start justify-between pb-3.5 border-b border-slate-100">
                   <button
                     onClick={() => {
                       setActiveTab('profile');
@@ -641,9 +650,10 @@ export const Header: React.FC<HeaderProps> = ({
                     Sign Out
                   </button>
                 </div>
-              </div>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
+        </div>
         ) : (
           /* Guest Actions (Sign In & Open free account) matching D12_Sign-Up.png */
           <div className="flex items-center gap-2 sm:gap-3">

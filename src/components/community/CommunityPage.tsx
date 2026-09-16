@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import {
   Bell,
-  ChevronDown,
   Sparkles,
   Flame,
   Radio,
   BookOpen,
   User,
-  ExternalLink,
-  MessageSquare,
-  ShieldCheck,
-  Award,
-  CheckCircle2,
-  X,
+  ChevronRight,
+  Coins,
+  Zap,
 } from 'lucide-react';
 import {
   CommunitySubTab,
@@ -34,28 +30,36 @@ import { CommunityArticlesView } from './CommunityArticlesView';
 import { CommunityMyPageView } from './CommunityMyPageView';
 import { CommunityProfileView } from './CommunityProfileView';
 import { CommunityRightSidebar } from './CommunityRightSidebar';
+import { CommunityLivesView } from './CommunityLivesView';
+import { TierUnlockModal } from './TierUnlockModal';
 import { CreateCommunityPostModal } from './CreateCommunityPostModal';
 
 interface CommunityPageProps {
   user: UserProfile;
   onUpdateUserProfile: (updatedUser: Partial<UserProfile>) => void;
   onRewardPoints: (points: number, reason: string) => void;
+  onRewardPointsAndCredits?: (points: number, credits: number, reason: string) => void;
   onOpenConnectModal?: () => void;
+  onNavigateToTab?: (tab: string, subTab?: string, symbol?: string) => void;
+  initialInstrumentSymbol?: string | null;
 }
 
 export const CommunityPage: React.FC<CommunityPageProps> = ({
   user,
   onUpdateUserProfile,
   onRewardPoints,
+  onRewardPointsAndCredits,
   onOpenConnectModal,
+  onNavigateToTab,
+  initialInstrumentSymbol,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<CommunitySubTab>('feeds');
   const [selectedInfluencer, setSelectedInfluencer] = useState<CommunityInfluencer | null>(null);
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_FEED_POSTS);
   const [userPosts, setUserPosts] = useState<CommunityPost[]>([]);
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isTierModalOpen, setIsTierModalOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -73,10 +77,6 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
         if (p.id === postId) {
           const hasLiked = !p.hasLiked;
           const delta = hasLiked ? 1 : -1;
-          if (hasLiked) {
-            onRewardPoints(5, 'Liked community post');
-            showToast('❤️ Post upvoted! +5 Points awarded');
-          }
           return { ...p, likes: p.likes + delta, hasLiked };
         }
         return p;
@@ -110,10 +110,11 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
           const newComment = {
             id: `c-${Date.now()}`,
             author: user.username || 'You',
-            avatar: user.avatar.startsWith('http') || user.avatar.startsWith('/')
-              ? user.avatar
-              : '/toh-avatar.svg',
-            tier: 'Bronze',
+            avatar:
+              user.avatar.startsWith('http') || user.avatar.startsWith('/')
+                ? user.avatar
+                : '/toh-avatar.svg',
+            tier: user.rankTitle || 'Rookie',
             time: 'Just now',
             text,
           };
@@ -126,8 +127,6 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
         return p;
       })
     );
-    onRewardPoints(10, 'Commented on market alpha');
-    showToast('💬 Comment posted! +10 Points awarded');
   };
 
   // Reaction Emoji click
@@ -153,46 +152,49 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
     );
   };
 
-  // Create new post
+  // Create post submission
   const handleCreatePost = (newPostData: Partial<CommunityPost>) => {
-    const newPost: CommunityPost = {
-      id: `user-post-${Date.now()}`,
+    const createdPost: CommunityPost = {
+      id: `post-${Date.now()}`,
       author: {
         name: user.username || 'You',
         handle: `@${user.username || 'trader'}`,
-        avatar: user.avatar.startsWith('http') || user.avatar.startsWith('/')
-          ? user.avatar
-          : '/toh-avatar.svg',
+        avatar:
+          user.avatar.startsWith('http') || user.avatar.startsWith('/')
+            ? user.avatar
+            : '/toh-avatar.svg',
         verified: true,
-        influenceScore: 100.0,
+        influenceScore: 101.4,
       },
       timestamp: 'Just now',
-      title: newPostData.title || 'Market Analysis',
+      title: newPostData.title || 'Market Update',
       content: newPostData.content || '',
       image: newPostData.image,
-      tokenMentions: newPostData.tokenMentions || [],
-      tags: newPostData.tags || ['CommunityAlpha'],
+      tags: newPostData.tags || ['General'],
       likes: 1,
       hasLiked: true,
       commentsCount: 0,
       comments: [],
       reactions: [
-        { emoji: '🚀', count: 1, active: true },
-        { emoji: '🔥', count: 1, active: false },
+        { emoji: '👏', count: 1, active: false },
+        { emoji: '❤️', count: 1, active: true },
+        { emoji: '🔥', count: 0, active: false },
+        { emoji: '🚀', count: 0, active: false },
+        { emoji: '📉', count: 0, active: false },
+        { emoji: '💡', count: 0, active: false },
       ],
       viewsCount: '1',
       repostsCount: 0,
       bookmarksCount: 0,
-      isCurrentUser: true,
+      isFollowingAuthor: false,
     };
 
-    setPosts([newPost, ...posts]);
-    setUserPosts([newPost, ...userPosts]);
-    onRewardPoints(25, 'Published community post');
-    showToast('🚀 Post published to Community Feed and My Page! +25 Points awarded');
+    setPosts([createdPost, ...posts]);
+    setUserPosts([createdPost, ...userPosts]);
+    showToast('Post published successfully!');
   };
 
-  // Navigate to Influencer Profile
+  // Influencer profile viewing
   const handleSelectInfluencer = (influencer: CommunityInfluencer) => {
     setSelectedInfluencer(influencer);
     setActiveSubTab('profile');
@@ -200,209 +202,164 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
   };
 
   const handleSelectInfluencerByHandle = (handle: string) => {
-    const found = TOP_INFLUENCERS.find((inf) => inf.handle === handle);
+    const found = TOP_INFLUENCERS.find((inf) => inf.handle.toLowerCase() === handle.toLowerCase());
     if (found) {
       handleSelectInfluencer(found);
     } else {
-      // Default to Crypto Adventure profile
-      handleSelectInfluencer(CRYPTO_ADVENTURE_PROFILE);
+      showToast(`Viewing profile of ${handle}`);
     }
   };
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* ─── TOAST NOTIFICATION ─── */}
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+      {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#0b1c30] border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 animate-in slide-in-from-bottom-5 duration-300">
-          <CheckCircle2 className="w-4 h-4 text-[#c6f831] shrink-0" />
-          <span className="text-xs font-semibold">{toastMessage}</span>
+        <div className="fixed bottom-6 right-6 z-50 bg-[#0b1c30] text-white border border-slate-700 px-4 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <Sparkles className="w-4 h-4 text-[#bef264]" />
+          <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* ─── SUB-MENU NAVIGATION BAR ─── */}
-      <div className="bg-white border border-[#e2e8f0] rounded-2xl p-2 sm:p-2.5 shadow-xs">
-        <div className="flex items-center justify-between gap-3">
-          {/* Left Sub-Menu Tabs */}
-          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-1">
-            {/* Feeds Tab */}
-            <button
-              onClick={() => {
-                setActiveSubTab('feeds');
-                setSelectedInfluencer(null);
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeSubTab === 'feeds'
-                  ? 'bg-[#5338ec] text-white shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9]'
-              }`}
-            >
-              <span>Feeds</span>
-            </button>
+      {/* ─── COMMUNITY TOP BAR & NAVIGATION ─── */}
+      <header className="bg-white border border-[#e2e8f0] rounded-2xl px-4 sm:px-5 py-3 text-[#0b1c30] shadow-xs flex flex-wrap items-center justify-between gap-3">
+        {/* Sub-tabs pills */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          <button
+            onClick={() => {
+              setActiveSubTab('feeds');
+              setSelectedInfluencer(null);
+            }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+              activeSubTab === 'feeds'
+                ? 'bg-[#5338ec] text-white shadow-xs'
+                : 'text-[#474556] hover:bg-[#f1f5f9] hover:text-[#0b1c30]'
+            }`}
+          >
+            <Radio className="w-3.5 h-3.5" />
+            <span>Feeds</span>
+          </button>
 
-            {/* Topics Tab */}
-            <button
-              onClick={() => {
-                setActiveSubTab('topics');
-                setSelectedInfluencer(null);
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeSubTab === 'topics'
-                  ? 'bg-[#5338ec] text-white shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9]'
-              }`}
-            >
-              <span>Topics</span>
-            </button>
+          <button
+            onClick={() => {
+              setActiveSubTab('topics');
+              setSelectedInfluencer(null);
+            }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+              activeSubTab === 'topics'
+                ? 'bg-[#5338ec] text-white shadow-xs'
+                : 'text-[#474556] hover:bg-[#f1f5f9] hover:text-[#0b1c30]'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5 text-amber-500" />
+            <span>Hot Topics</span>
+          </button>
 
-            {/* Lives Tab */}
-            <button
-              onClick={() => {
-                showToast('🎙️ Live audio stream starting in 45m');
-              }}
-              className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9] transition-all flex items-center gap-1.5"
-            >
-              <span>Lives</span>
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-            </button>
+          {/* New: Lives & Audio Spaces Tab */}
+          <button
+            onClick={() => {
+              setActiveSubTab('lives');
+              setSelectedInfluencer(null);
+            }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 relative ${
+              activeSubTab === 'lives'
+                ? 'bg-[#5338ec] text-white shadow-xs'
+                : 'text-[#474556] hover:bg-[#f1f5f9] hover:text-[#0b1c30]'
+            }`}
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            </span>
+            <span>Lives</span>
+            <span className="text-[10px] font-mono font-bold bg-rose-500/20 text-rose-600 px-1 rounded ml-0.5">
+              Live
+            </span>
+          </button>
 
-            {/* Articles Tab */}
-            <button
-              onClick={() => {
-                setActiveSubTab('articles');
-                setSelectedInfluencer(null);
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeSubTab === 'articles'
-                  ? 'bg-[#5338ec] text-white shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9]'
-              }`}
-            >
-              <span>Articles</span>
-            </button>
+          <button
+            onClick={() => {
+              setActiveSubTab('articles');
+              setSelectedInfluencer(null);
+            }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+              activeSubTab === 'articles'
+                ? 'bg-[#5338ec] text-white shadow-xs'
+                : 'text-[#474556] hover:bg-[#f1f5f9] hover:text-[#0b1c30]'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+            <span>Articles</span>
+          </button>
 
-            {/* My Page Tab */}
-            <button
-              onClick={() => {
-                setActiveSubTab('my-page');
-                setSelectedInfluencer(null);
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeSubTab === 'my-page'
-                  ? 'bg-[#5338ec] text-white shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9]'
-              }`}
-            >
-              <span>My Page</span>
-            </button>
+          <button
+            onClick={() => {
+              setActiveSubTab('my-page');
+              setSelectedInfluencer(null);
+            }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+              activeSubTab === 'my-page'
+                ? 'bg-[#5338ec] text-white shadow-xs'
+                : 'text-[#474556] hover:bg-[#f1f5f9] hover:text-[#0b1c30]'
+            }`}
+          >
+            <User className="w-3.5 h-3.5 text-emerald-500" />
+            <span>My Profile</span>
+          </button>
+        </div>
 
-            {/* More dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                className="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9] transition-all flex items-center gap-1"
-              >
-                <span>More</span>
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-
-              {isMoreMenuOpen && (
-                <div className="absolute left-0 mt-2 w-56 bg-white border border-[#e2e8f0] rounded-2xl shadow-xl py-2 z-40">
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      showToast('Community Guidelines: 100% verified alpha, no spam, institutional respectful analysis.');
-                    }}
-                    className="w-full px-4 py-2 text-left text-xs text-[#0b1c30] hover:bg-[#f8fafc] flex items-center gap-2 font-medium"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-[#5338ec]" />
-                    <span>Community Guidelines</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      showToast('Redirecting to MarketSyde VIP Discord');
-                    }}
-                    className="w-full px-4 py-2 text-left text-xs text-[#0b1c30] hover:bg-[#f8fafc] flex items-center gap-2 font-medium"
-                  >
-                    <ExternalLink className="w-4 h-4 text-blue-600" />
-                    <span>VIP Discord Lounge</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsMoreMenuOpen(false);
-                      showToast('Rebate Pool: $142,850 distributed to traders this month');
-                    }}
-                    className="w-full px-4 py-2 text-left text-xs text-[#0b1c30] hover:bg-[#f8fafc] flex items-center gap-2 font-medium"
-                  >
-                    <Award className="w-4 h-4 text-amber-500" />
-                    <span>Cashback Rebate Pools</span>
-                  </button>
-                </div>
-              )}
+        {/* Right Actions: Gamification Tier + Syde Credits + Notifications Bell */}
+        <div className="flex items-center gap-2 sm:gap-3 justify-end ml-auto">
+          {/* Tier Unlock Progress Pill (Clickable) */}
+          <button
+            onClick={() => setIsTierModalOpen(true)}
+            className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-blue-500/10 border border-amber-500/30 hover:border-amber-500/60 hover:bg-amber-500/15 transition-all cursor-pointer group shadow-2xs"
+            title="Click to view all Tier Unlocks &amp; Gamification Matrix"
+          >
+            <span className="text-sm">💎</span>
+            <div className="text-left">
+              <div className="text-[11px] font-bold text-[#0b1c30] flex items-center gap-1">
+                <span>{user.rankTitle || 'Diamond Whale'}</span>
+                <span className="text-[9px] bg-amber-500 text-slate-900 px-1 py-0.2 rounded font-mono font-bold">
+                  Lvl {user.level}
+                </span>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 text-[9px] text-slate-500">
+                <span className="font-mono">{user.currentPoints} Pts</span>
+                <span className="text-emerald-600 font-semibold">+{user.cashbackBooster || 15}% Boost</span>
+              </div>
             </div>
+            <ChevronRight className="w-3 h-3 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+          </button>
+
+          {/* Syde Credits Pill */}
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] text-xs font-semibold hover:border-amber-400/50 transition-colors"
+            title="Syde Credits: Redeemable for Broker fee discounts &amp; tipping"
+          >
+            <span className="text-amber-500">🪙</span>
+            <span className="font-mono text-[#0b1c30]">{user.sydeCredits}</span>
           </div>
 
-          {/* Right Notifications Button */}
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Notifications Bell */}
+          <div className="relative">
             <button
               onClick={() => {
                 setIsNotificationsOpen(!isNotificationsOpen);
                 setUnreadNotifications(0);
               }}
-              className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-slate-200 text-xs font-semibold text-[#0b1c30] transition-colors"
+              className="p-2 rounded-xl border border-[#e2e8f0] hover:bg-[#f8fafc] text-slate-600 transition-colors relative"
+              title="Notifications"
             >
-              <Bell className="w-3.5 h-3.5 text-[#5338ec]" />
-              <span className="hidden sm:inline">Notifications</span>
+              <Bell className="w-4 h-4" />
               {unreadNotifications > 0 && (
-                <span className="w-4 h-4 rounded-full bg-[#5338ec] text-white text-[10px] flex items-center justify-center font-mono font-bold">
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
                   {unreadNotifications}
                 </span>
               )}
             </button>
           </div>
         </div>
-      </div>
-
-      {/* ─── NOTIFICATIONS DRAWER / MODAL ─── */}
-      {isNotificationsOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-end p-4 sm:p-6 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white border border-[#e2e8f0] rounded-2xl w-full max-w-sm text-[#0b1c30] shadow-2xl p-5 space-y-4 mt-16 animate-in slide-in-from-right-5 duration-200">
-            <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-3">
-              <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-[#5338ec]" />
-                <h4 className="text-sm font-bold text-[#0b1c30]">Community Alerts</h4>
-              </div>
-              <button
-                onClick={() => setIsNotificationsOpen(false)}
-                className="text-[#474556] hover:text-[#0b1c30]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-2.5 text-xs">
-              <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
-                <p className="font-semibold text-[#0b1c30]">
-                  Michael Saylor commented on your Bitcoin thesis
-                </p>
-                <span className="text-[10px] text-[#474556] font-mono">15m ago</span>
-              </div>
-              <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
-                <p className="font-semibold text-[#0b1c30]">
-                  Upcoming Live: "Weekly Crypto Forecast" in 2 hours
-                </p>
-                <span className="text-[10px] text-[#474556] font-mono">1h ago</span>
-              </div>
-              <div className="p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
-                <p className="font-semibold text-[#0b1c30]">
-                  Cashback reward of $14.80 credited from IC Markets trades
-                </p>
-                <span className="text-[10px] text-[#474556] font-mono">3h ago</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </header>
 
       {/* ─── MAIN CONTENT CONTAINER ─── */}
       <main>
@@ -412,13 +369,16 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
             <div className="flex-1 min-w-0 w-full">
               <CommunityFeedsView
                 posts={posts}
+                user={user}
                 onToggleLike={handleToggleLike}
                 onToggleFollowAuthor={handleToggleFollowAuthor}
                 onAddComment={handleAddComment}
                 onOpenCreatePost={() => setIsCreateModalOpen(true)}
                 onSelectInfluencerByHandle={handleSelectInfluencerByHandle}
                 onReactionClick={handleReactionClick}
-                user={user}
+                onShowToast={showToast}
+                onOpenTierModal={() => setIsTierModalOpen(true)}
+                onRewardPointsAndCredits={onRewardPointsAndCredits}
               />
             </div>
             <div className="w-full xl:w-[300px] xl:shrink-0">
@@ -439,7 +399,12 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
               <CommunityTopicsView
                 topics={COMMUNITY_TOPICS}
                 onAnswerTopic={(topicId, answer) => {
-                  onRewardPoints(15, 'Answered community debate');
+                  if (onRewardPointsAndCredits) {
+                    onRewardPointsAndCredits(25, 10, 'Debate Participation');
+                  } else {
+                    onRewardPoints(25, 'Debate Participation');
+                  }
+                  showToast('Debate answer submitted! Earned +25 Pts & +10 Syde Credits 🎉');
                 }}
                 onShowToast={showToast}
               />
@@ -455,7 +420,17 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
           </div>
         )}
 
-        {/* SUB-VIEW 3: ARTICLES */}
+        {/* SUB-VIEW 3: LIVES & AUDIO SPACES */}
+        {activeSubTab === 'lives' && (
+          <CommunityLivesView
+            user={user}
+            onRewardPoints={onRewardPoints}
+            onShowToast={showToast}
+            onOpenTierModal={() => setIsTierModalOpen(true)}
+          />
+        )}
+
+        {/* SUB-VIEW 4: ARTICLES */}
         {activeSubTab === 'articles' && (
           <CommunityArticlesView
             articles={COMMUNITY_ARTICLES}
@@ -470,7 +445,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
           />
         )}
 
-        {/* SUB-VIEW 4: MY PAGE */}
+        {/* SUB-VIEW 5: MY PAGE */}
         {activeSubTab === 'my-page' && (
           <div className="flex flex-col xl:flex-row items-start gap-6">
             <div className="flex-1 min-w-0 w-full">
@@ -485,6 +460,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
                   showToast('Post deleted');
                 }}
                 onShowToast={showToast}
+                onOpenTierModal={() => setIsTierModalOpen(true)}
               />
             </div>
             <div className="w-full xl:w-[300px] xl:shrink-0">
@@ -498,7 +474,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
           </div>
         )}
 
-        {/* SUB-VIEW 5: PROFILE PAGE (Viewing another creator, e.g. Crypto Adventure) */}
+        {/* SUB-VIEW 6: PROFILE PAGE */}
         {activeSubTab === 'profile' && (
           <div className="flex flex-col xl:flex-row items-start gap-6">
             <div className="flex-1 min-w-0 w-full">
@@ -514,7 +490,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
                   setSelectedInfluencer(null);
                 }}
                 onToggleFollow={(id) => {
-                  onRewardPoints(10, 'Followed community alpha creator');
+                  showToast('Follow status updated');
                 }}
                 onShowToast={showToast}
               />
@@ -537,6 +513,14 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreatePost}
         user={user}
+      />
+
+      {/* ─── GAMIFICATION TIER UNLOCK MATRIX MODAL ─── */}
+      <TierUnlockModal
+        isOpen={isTierModalOpen}
+        onClose={() => setIsTierModalOpen(false)}
+        user={user}
+        onShowToast={showToast}
       />
     </div>
   );

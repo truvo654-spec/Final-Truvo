@@ -255,7 +255,39 @@ export interface TopContributor {
   alphaCalls: number;
 }
 
-export type CommunitySubTab = 'feeds' | 'topics' | 'articles' | 'my-page' | 'profile';
+export type CommunitySubTab = 'feeds' | 'topics' | 'lives' | 'articles' | 'my-page' | 'profile';
+
+export interface CommunityLiveSession {
+  id: string;
+  title: string;
+  hosts: {
+    name: string;
+    avatar: string;
+    badge?: string;
+  }[];
+  tokens?: { symbol: string; change: number }[];
+  date: string;
+  listenersCount: number;
+  status: 'upcoming' | 'past' | 'live';
+  isReminderSet?: boolean;
+  recordingUrl?: string;
+  audioDuration?: string;
+  tags?: string[];
+}
+
+export interface TierUnlockItem {
+  level: number;
+  title: string;
+  minPoints: number;
+  badge: string;
+  color: string;
+  cashbackBoost: number;
+  unlockedFeatures: {
+    name: string;
+    description: string;
+    unlocked: boolean;
+  }[];
+}
 
 export interface TokenMarketItem {
   id: string;

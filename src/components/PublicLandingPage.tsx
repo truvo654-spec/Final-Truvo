@@ -9,6 +9,7 @@ import {
   ExternalLink,
   Zap,
 } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface PublicLandingPageProps {
   onOpenSignUp?: () => void;
@@ -57,7 +58,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
         <div className="relative w-full max-w-5xl mx-auto mt-12 sm:mt-16 flex items-center justify-center min-h-[300px] sm:min-h-[360px]">
           
           {/* Left Floating Sphere / Globe with Broker Badges */}
-          <div className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 w-44 h-44 rounded-full bg-gradient-to-br from-indigo-100/70 via-indigo-50/40 to-transparent items-center justify-center p-3">
+          <div className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 w-44 h-44 rounded-full bg-gradient-to-br from-indigo-100/70 via-indigo-50/40 to-transparent items-center justify-center p-3 animate-float-slow">
             <div className="relative w-full h-full rounded-full border border-indigo-200/60 flex items-center justify-center">
               {/* Central stylized world outline */}
               <div className="text-[#5945F1] opacity-75">
@@ -69,31 +70,31 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
                   <path d="M16 70 Q 50 60 84 70" />
                 </svg>
               </div>
-              {/* Floating Broker Mini Badges */}
-              <div className="absolute -top-1 left-3 bg-[#0b1c30] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md">
+              {/* Floating Broker Mini Badges with hover effects */}
+              <div className="absolute -top-1 left-3 bg-[#0b1c30] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md hover:scale-125 transition-transform duration-200 cursor-pointer">
                 HFM
               </div>
-              <div className="absolute top-10 -right-2 bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md">
+              <div className="absolute top-10 -right-2 bg-rose-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md hover:scale-125 transition-transform duration-200 cursor-pointer">
                 +14%
               </div>
-              <div className="absolute -bottom-2 right-4 bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md">
+              <div className="absolute -bottom-2 right-4 bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md hover:scale-125 transition-transform duration-200 cursor-pointer">
                 XM
               </div>
-              <div className="absolute bottom-6 -left-2 bg-amber-400 text-black text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-md">
+              <div className="absolute bottom-6 -left-2 bg-amber-400 text-black text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-md hover:scale-125 transition-transform duration-200 cursor-pointer">
                 ex
               </div>
             </div>
           </div>
 
           {/* Central Layered Glass Cards & Tickers */}
-          <div className="relative z-10 w-full max-w-2xl bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-[0_20px_60px_rgba(89,69,241,0.08)] flex flex-col items-center">
+          <div className="relative z-10 w-full max-w-2xl bg-white/90 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-[0_20px_60px_rgba(89,69,241,0.08)] flex flex-col items-center interactive-card">
             
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b border-slate-100">
               {/* Left Context Pill */}
               <div className="text-left space-y-1">
                 <span className="text-xs text-slate-500 font-medium">Signals scale with your level.</span>
                 <div className="text-xs sm:text-sm font-semibold text-slate-800">
-                  <button onClick={onOpenSignUp} className="text-[#5945F1] underline font-bold hover:text-[#492CED]">
+                  <button onClick={onOpenSignUp} className="text-[#5945F1] underline font-bold hover:text-[#492CED] cursor-pointer">
                     Start free
                   </button>
                   , then unlock more history, faster access, and AI picks.
@@ -101,7 +102,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
               </div>
 
               {/* Main Center Dark Trading Signal Card: XAU/USD */}
-              <div className="w-60 bg-[#070b14] text-white rounded-2xl p-4 shadow-xl border border-slate-800 shrink-0">
+              <div className="w-60 bg-[#070b14] text-white rounded-2xl p-4 shadow-xl border border-slate-800 shrink-0 animate-float-reverse hover:scale-105 transition-all duration-300 cursor-pointer">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-amber-400 text-black flex items-center justify-center font-bold text-xs">
@@ -419,18 +420,18 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
           </p>
         </div>
 
-        {/* 3 Circular Steps Interconnected */}
+        {/* 3 Circular Steps Interconnected with interactive playful float and hover */}
         <div className="flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-4 max-w-5xl mx-auto">
           
           {/* Step 01: Lime Circle */}
-          <div className="w-72 h-72 sm:w-80 sm:h-80 rounded-full bg-[#bef226] p-8 flex flex-col justify-center items-center text-center shadow-lg relative shrink-0">
+          <div className="w-72 h-72 sm:w-80 sm:h-80 rounded-full bg-[#bef226] p-8 flex flex-col justify-center items-center text-center shadow-lg relative shrink-0 animate-float-slow hover:scale-105 hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
             {/* Broker Micro-Pill on top right */}
-            <div className="absolute -top-3 right-6 bg-white px-3 py-1 rounded-full shadow-md text-[10px] font-bold text-slate-700 flex items-center gap-1">
+            <div className="absolute -top-3 right-6 bg-white px-3 py-1 rounded-full shadow-md text-[10px] font-bold text-slate-700 flex items-center gap-1 group-hover:scale-110 transition-transform">
               <span>Link to MarketSyde</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
             </div>
 
-            <span className="text-3xl sm:text-4xl font-black text-slate-900 block mb-1">
+            <span className="text-3xl sm:text-4xl font-black text-slate-900 block mb-1 group-hover:rotate-6 transition-transform">
               01
             </span>
             <h4 className="font-extrabold text-sm sm:text-base text-slate-900 uppercase tracking-tight mb-2">
@@ -441,10 +442,10 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
             </p>
             <button
               onClick={onNavigateToBrokers}
-              className="text-xs font-bold text-slate-900 underline hover:text-[#5945F1] inline-flex items-center gap-1"
+              className="text-xs font-bold text-slate-900 underline hover:text-[#5945F1] inline-flex items-center gap-1 cursor-pointer"
             >
               <span>Explore All Brokers</span>
-              <ArrowRight className="w-3 h-3" />
+              <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
 
@@ -454,8 +455,8 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
           </div>
 
           {/* Step 02: Deep Violet / Blue Circle */}
-          <div className="w-72 h-72 sm:w-80 sm:h-80 rounded-full bg-[#5945F1] text-white p-8 flex flex-col justify-center items-center text-center shadow-lg relative shrink-0">
-            <span className="text-3xl sm:text-4xl font-black text-white block mb-1">
+          <div className="w-72 h-72 sm:w-80 sm:h-80 rounded-full bg-[#5945F1] text-white p-8 flex flex-col justify-center items-center text-center shadow-lg relative shrink-0 animate-float-reverse hover:scale-105 hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <span className="text-3xl sm:text-4xl font-black text-white block mb-1 group-hover:-rotate-6 transition-transform">
               02
             </span>
             <h4 className="font-extrabold text-sm sm:text-base text-white uppercase tracking-tight mb-2">
@@ -472,8 +473,8 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
           </div>
 
           {/* Step 03: Soft White Circle with Rose Accent */}
-          <div className="w-72 h-72 sm:w-80 sm:h-80 rounded-full bg-white border border-slate-200 text-slate-800 p-8 flex flex-col justify-center items-center text-center shadow-lg relative shrink-0">
-            <span className="text-3xl sm:text-4xl font-black text-slate-300 block mb-1">
+          <div className="w-72 h-72 sm:w-80 sm:h-80 rounded-full bg-white border border-slate-200 text-slate-800 p-8 flex flex-col justify-center items-center text-center shadow-lg relative shrink-0 animate-float-slow hover:scale-105 hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 cursor-pointer group">
+            <span className="text-3xl sm:text-4xl font-black text-slate-300 block mb-1 group-hover:scale-110 transition-transform">
               03
             </span>
             <h4 className="font-extrabold text-xs sm:text-sm text-rose-500 uppercase tracking-tight mb-2">
@@ -598,7 +599,7 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
           </div>
 
           {/* Right Column: Dark Ghost Card (Exact match to reference) */}
-          <div className="lg:col-span-7 bg-[#0b101b] text-white rounded-3xl p-8 sm:p-10 shadow-2xl flex flex-col justify-between relative overflow-hidden">
+          <div className="lg:col-span-7 bg-[#0b101b] text-white rounded-3xl p-8 sm:p-10 shadow-2xl flex flex-col justify-between relative overflow-hidden interactive-card group">
             
             <div className="flex items-start justify-between">
               {/* Title and Cashback Info */}
@@ -639,9 +640,9 @@ export const PublicLandingPage: React.FC<PublicLandingPageProps> = ({
                 </div>
               </div>
 
-              {/* White Arcade Mascot Ghost on top right */}
-              <div className="w-24 h-28 sm:w-28 sm:h-32 text-white fill-white shrink-0">
-                <svg viewBox="0 0 100 120" className="w-full h-full">
+              {/* White Arcade Mascot Ghost on top right with playful floating animation */}
+              <div className="w-24 h-28 sm:w-28 sm:h-32 text-white fill-white shrink-0 animate-float-slow group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 cursor-pointer">
+                <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-[0_10px_20px_rgba(255,255,255,0.15)]">
                   <path
                     d="M 15 50 C 15 25 30 10 50 10 C 70 10 85 25 85 50 L 85 95 L 75 85 L 60 95 L 50 85 L 40 95 L 25 85 L 15 95 Z"
                     fill="white"

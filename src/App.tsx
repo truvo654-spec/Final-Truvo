@@ -45,6 +45,7 @@ import { ContactUsPage } from './components/ContactUsPage';
 import { PublicLandingPage } from './components/PublicLandingPage';
 import { CashbackOverviewPage } from './components/CashbackOverviewPage';
 import { ConnectToTruvoPage } from './components/ConnectToTruvoPage';
+import { ActiveTradingAccountsPage } from './components/dashboard/ActiveTradingAccountsPage';
 import { TradingSignalsPage } from './components/TradingSignalsPage';
 import { TradingSignalDetailPage } from './components/signals/TradingSignalDetailPage';
 import { InstrumentAnalysisPage } from './components/InstrumentAnalysisPage';
@@ -64,6 +65,7 @@ import { BrokerComparisonModal } from './components/BrokerComparisonModal';
 import { SearchModal } from './components/SearchModal';
 import { AuthModal } from './components/AuthModal';
 import { Sparkles, Trophy, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [user, setUser] = useState<UserProfile>(() => {
@@ -163,10 +165,12 @@ export default function App() {
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>(INITIAL_COMMUNITY_POSTS);
   const [communityChallenges, setCommunityChallenges] = useState<CommunityChallenge[]>(COMMUNITY_CHALLENGES);
   const [topContributors, setTopContributors] = useState<TopContributor[]>(TOP_CONTRIBUTORS);
+  const [selectedInstrumentForCommunity, setSelectedInstrumentForCommunity] = useState<string | null>(null);
 
   // Modals state
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [selectedBrokerForConnect, setSelectedBrokerForConnect] = useState<Broker | null>(null);
+  const [connectReturnTab, setConnectReturnTab] = useState<string>('dashboard');
   const [selectedBrokerForDetail, setSelectedBrokerForDetail] = useState<Broker>(brokers[0] || INITIAL_BROKERS[0]);
   const [comparisonInitialBroker, setComparisonInitialBroker] = useState<Broker | null>(null);
   const [isViewPlanOpen, setIsViewPlanOpen] = useState(false);
@@ -272,8 +276,14 @@ export default function App() {
 
   // Gamification: Reward points with tier upgrade checking
   const handleRewardPoints = (pointsToAdd: number, reason?: string) => {
+    handleRewardPointsAndCredits(pointsToAdd, 0, reason);
+  };
+
+  // Gamification: Reward both points & Syde Credits with tier upgrade and activity log
+  const handleRewardPointsAndCredits = (pointsToAdd: number, creditsToAdd: number, reason?: string) => {
     setUser((prev) => {
       const newPoints = prev.currentPoints + pointsToAdd;
+      const newCredits = prev.sydeCredits + creditsToAdd;
       let newTitle = prev.rankTitle;
       let newTier = prev.tierLevel;
       let newBoost = prev.boostPercentage;
@@ -289,22 +299,40 @@ export default function App() {
         newBoost = 20;
         showToast('🚀 Level Up! You unlocked Silver Tier with +20% Boost!');
       } else if (reason) {
-        showToast(`💎 +${pointsToAdd} Points: ${reason}`);
+        if (creditsToAdd > 0) {
+          showToast(`💎 +${pointsToAdd} Pts • 🪙 +${creditsToAdd} Credits: ${reason}`);
+        } else {
+          showToast(`💎 +${pointsToAdd} Points: ${reason}`);
+        }
       }
 
       return {
         ...prev,
         currentPoints: newPoints,
+        sydeCredits: newCredits,
         rankTitle: newTitle,
         tierLevel: newTier,
         boostPercentage: newBoost,
       };
     });
+
+    // Add to activity logs for real-time synchronization with Points & Credits view
+    const newLogItem: ActivityLogItem = {
+      id: `act-${Date.now()}`,
+      title: reason || 'Community Activity',
+      description: `Earned from trading community engagement and alpha sharing`,
+      pointsChange: pointsToAdd,
+      creditsChange: creditsToAdd,
+      timestamp: 'Just now',
+      type: pointsToAdd > 0 && creditsToAdd > 0 ? 'both' : creditsToAdd > 0 ? 'credits' : 'points',
+      category: 'Bonus',
+    };
+    setActivityLogs((prev) => [newLogItem, ...prev]);
   };
 
   // Gamification: Earn demo points
   const handleAddDemoPoints = () => {
-    handleRewardPoints(25, 'Trader Level Progress');
+    handleRewardPointsAndCredits(25, 5, 'Trader Level Progress');
   };
 
   // Trigger Earning Modals (Quest Complete, Mission Complete, Trade Complete)
@@ -474,22 +502,39 @@ export default function App() {
         onSignOut={handleSignOut}
       />
 
-      {/* Floating Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#0b1c30] text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-2.5 text-xs font-semibold animate-in slide-in-from-bottom-3 duration-200">
-          <Sparkles className="w-4 h-4 text-[#c6f831] shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      {/* Floating Toast Notification with Spring Physics */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.88 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.92 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+            className="fixed bottom-6 right-6 z-50 bg-[#0b1c30] text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-2.5 text-xs font-semibold"
+          >
+            <Sparkles className="w-4 h-4 text-[#c6f831] shrink-0 animate-pulse" />
+            <span>{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main App Container */}
       <main className={`flex-1 w-full ${
-        activeTab === 'about' || activeTab === 'contact-us' || activeTab === 'contact' || activeTab === 'landing' || activeTab === 'home' || activeTab === 'instrument-analysis' || (!isLoggedIn && activeTab === 'dashboard')
+        activeTab === 'about' || activeTab === 'contact-us' || activeTab === 'contact' || activeTab === 'landing' || activeTab === 'home' || activeTab === 'instrument-analysis' || (!isLoggedIn && activeTab === 'dashboard') || (!isLoggedIn && activeTab === 'member-plan')
           ? 'p-0 space-y-0'
           : 'px-4 sm:px-8 md:px-[56px] pt-[100px] pb-12 space-y-6'
       }`}>
-        {/* ─── TAB 0: Mission, Points & Credits (User Reference Focus) ─── */}
-        {activeTab === 'points-credits' && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10, scale: 0.996 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.996 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full"
+          >
+            {/* ─── TAB 0: Mission, Points & Credits (User Reference Focus) ─── */}
+            {activeTab === 'points-credits' && (
           <PointsAndCreditsView
             user={user}
             missions={missions}
@@ -679,12 +724,23 @@ export default function App() {
           />
         )}
 
-        {/* ─── TAB: Member Plan Page (Exact match to Membership plan - Member Lv.1.png) ─── */}
+        {/* ─── TAB: Member Plan Page (Logged-in: Member Lv.1 view, Guest: D03 view) ─── */}
         {activeTab === 'member-plan' && (
           <MembershipPlanPage
             user={user}
+            isLoggedIn={isLoggedIn}
             onNavigateToTrade={() => setActiveTab('brokers')}
             onShowToast={showToast}
+            onOpenSignIn={() => {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+            }}
+            onOpenSignUp={() => {
+              setAuthModalMode('signup');
+              setIsAuthModalOpen(true);
+            }}
+            onNavigateToTab={(tab) => setActiveTab(tab)}
+            onToggleLogin={() => setIsLoggedIn((prev) => !prev)}
           />
         )}
 
@@ -792,7 +848,15 @@ export default function App() {
               else if (type === 'planning') setActiveTab('position-size-calculator');
               else setActiveTab('leverage-calculator');
             }}
-            onNavigateToTab={setActiveTab}
+            onNavigateToTab={(tab, subTab, sym) => {
+              if (sym) setSelectedInstrumentForCommunity(sym);
+              setActiveTab(tab);
+            }}
+            onShareToCommunity={(symbol, name) => {
+              setSelectedInstrumentForCommunity(symbol);
+              setActiveTab('community');
+              showToast(`📢 Ready to share ${symbol} to Community Floor! +25 💎 Bounty`);
+            }}
             onShowToast={showToast}
           />
         )}
@@ -844,6 +908,12 @@ export default function App() {
               });
             }}
             onRewardPoints={handleRewardPoints}
+            onRewardPointsAndCredits={handleRewardPointsAndCredits}
+            onNavigateToTab={(tab, subTab, sym) => {
+              if (sym) setSelectedInstrumentForCommunity(sym);
+              setActiveTab(tab);
+            }}
+            initialInstrumentSymbol={selectedInstrumentForCommunity}
             onOpenConnectModal={() => {
               setSelectedBrokerForConnect(brokers[0]);
               setIsConnectModalOpen(true);
@@ -884,13 +954,27 @@ export default function App() {
           />
         )}
 
+        {/* ─── TAB: Active Trading Account / Linked Brokers (D2 - Select Linked Broker.png) ─── */}
+        {activeTab === 'active-trading-accounts' && (
+          <ActiveTradingAccountsPage
+            brokers={brokers}
+            onBackToDashboard={() => setActiveTab('dashboard')}
+            onSelectBroker={(b) => {
+              setSelectedBrokerForConnect(b);
+              setConnectReturnTab('active-trading-accounts');
+              setActiveTab('connect-to-truvo');
+            }}
+            onShowToast={showToast}
+          />
+        )}
+
         {/* ─── TAB: Connect to MarketSyde / Broker Onboarding (Exact Match to D12_Connect to MarketSyde.png) ─── */}
         {activeTab === 'connect-to-truvo' && (
           <ConnectToTruvoPage
             broker={selectedBrokerForConnect || selectedBrokerForDetail || brokers[0]}
             brokers={brokers}
             onSelectBroker={(b) => setSelectedBrokerForConnect(b)}
-            onBackToDashboard={() => setActiveTab('broker-detail')}
+            onBackToDashboard={() => setActiveTab(connectReturnTab || 'active-trading-accounts')}
             onNavigateToCashback={() => setActiveTab('cashback-overview')}
             onOpenConnectModal={(b) => {
               setSelectedBrokerForConnect(b);
@@ -1044,23 +1128,27 @@ export default function App() {
             onNavigateToTab={setActiveTab}
           />
         )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
-      {/* Footer Matching Reference - Rendered on ALL pages as full width */}
-      <Footer
-        onNavigateToAbout={() => {
-          setActiveTab('about');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onNavigateToPlan={() => {
-          setActiveTab('member-plan');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onNavigateToTab={(tab) => {
-          setActiveTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />
+      {/* Footer Matching Reference - Rendered on pages (suppressed on guest member-plan which has its own full purple footer) */}
+      {!(activeTab === 'member-plan' && !isLoggedIn) && (
+        <Footer
+          onNavigateToAbout={() => {
+            setActiveTab('about');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onNavigateToPlan={() => {
+            setActiveTab('member-plan');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onNavigateToTab={(tab) => {
+            setActiveTab(tab);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      )}
 
       {/* Modals */}
       <ConnectBrokerModal

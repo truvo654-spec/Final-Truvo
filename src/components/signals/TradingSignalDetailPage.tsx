@@ -98,6 +98,35 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
   const [tradeLotSize, setTradeLotSize] = useState<string>('1.0');
   const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'technical'>('overview');
 
+  // Agreement modal state (first entry requires scrolling to activate "I Accept")
+  const [isAgreementModalOpen, setIsAgreementModalOpen] = useState<boolean>(() => {
+    try {
+      const accepted = localStorage.getItem('marketsyde_signals_agreement_accepted');
+      return accepted !== 'true';
+    } catch {
+      return true;
+    }
+  });
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState<boolean>(false);
+  const agreementScrollRef = React.useRef<HTMLDivElement>(null);
+
+  const handleAgreementScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop - clientHeight <= 30) {
+      setHasScrolledToBottom(true);
+    }
+  };
+
+  const handleAcceptAgreement = () => {
+    try {
+      localStorage.setItem('marketsyde_signals_agreement_accepted', 'true');
+    } catch {
+      // ignore storage errors
+    }
+    setIsAgreementModalOpen(false);
+    onShowToast('Agreement accepted. Welcome to Trading Signal Analytics!');
+  };
+
   const isBuy = activeSignal.action === 'BUY';
 
   // Determine whether user has connected brokers for the Place Trade modal
@@ -222,14 +251,26 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
   const renderDualFlag = (ticker: string) => {
     if (ticker.includes('EUR/JPY') || ticker === 'EUR/JPY') {
       return (
-        <div className="flex items-center -space-x-1 shrink-0">
-          {/* EU Flag */}
-          <div className="w-6 h-6 rounded-full overflow-hidden border border-white shadow-xs bg-[#003399] flex items-center justify-center">
-            <span className="text-[11px] text-yellow-300">★</span>
+        <div className="flex items-center gap-1 shrink-0">
+          {/* EU Flag Rectangle */}
+          <div className="w-6 h-4 sm:w-7 sm:h-5 rounded-[2px] overflow-hidden border border-slate-200/80 shadow-2xs bg-[#003399] flex items-center justify-center">
+            <svg viewBox="0 0 24 16" className="w-full h-full p-0.5">
+              <rect width="24" height="16" fill="#003399" />
+              <g fill="#FFCC00" transform="translate(12, 8) scale(0.65)">
+                {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
+                  <circle
+                    key={deg}
+                    cx={7 * Math.cos((deg * Math.PI) / 180)}
+                    cy={7 * Math.sin((deg * Math.PI) / 180)}
+                    r="1"
+                  />
+                ))}
+              </g>
+            </svg>
           </div>
-          {/* Japan Flag */}
-          <div className="w-6 h-6 rounded-full overflow-hidden border border-white shadow-xs bg-white flex items-center justify-center">
-            <div className="w-3 h-3 rounded-full bg-[#bc002d]" />
+          {/* Japan Flag Rectangle */}
+          <div className="w-6 h-4 sm:w-7 sm:h-5 rounded-[2px] overflow-hidden border border-slate-200/80 shadow-2xs bg-white flex items-center justify-center">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#bc002d]" />
           </div>
         </div>
       );
@@ -434,7 +475,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-200 pb-16">
-      {/* Top Back Navigation Breadcrumb */}
+      {/* Top Back Navigation Breadcrumb & Agreement Trigger */}
       <div className="flex items-center justify-between text-xs text-slate-500">
         <button
           onClick={onBackToSignals}
@@ -444,105 +485,124 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
           <span>Back to Trading Signals</span>
         </button>
 
-        <div className="flex items-center gap-2 text-slate-400">
-          <span>Signals</span>
-          <span>/</span>
-          <span className="text-[#0b1c30] font-semibold">{activeSignal.ticker}</span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setHasScrolledToBottom(false);
+              setIsAgreementModalOpen(true);
+            }}
+            className="text-[11px] font-semibold text-[#5945F1] hover:underline flex items-center gap-1 cursor-pointer bg-indigo-50/60 px-2.5 py-1 rounded-md"
+          >
+            <span>Signal Agreement</span>
+            <Info className="w-3 h-3" />
+          </button>
+          <div className="flex items-center gap-2 text-slate-400">
+            <span>Signals</span>
+            <span>/</span>
+            <span className="text-[#0b1c30] font-semibold">{activeSignal.ticker}</span>
+          </div>
         </div>
       </div>
 
-      {/* ─── TOP SECTION: SIGNAL HERO OVERVIEW BAR ─── */}
+      {/* ─── TOP SECTION: SIGNAL HERO OVERVIEW BAR (Exact match to screenshot) ─── */}
       <section className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-          {/* Left Block: Asset Ticker, Dual Flags, Price, Time */}
-          <div className="space-y-1.5">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          {/* Left Block: Asset Ticker, Rectangular Dual Flags, Live Price, Timestamp */}
+          <div className="space-y-1.5 shrink-0">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0b1c30] tracking-tight">
               {activeSignal.ticker}
             </h1>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               {renderDualFlag(activeSignal.ticker)}
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-black text-[#0b1c30] tracking-tight">
+              <div className="flex items-center gap-1">
+                <span className="text-3xl sm:text-4xl font-extrabold text-[#0b1c30] tracking-tight">
                   {activeSignal.price > 100
                     ? activeSignal.price.toFixed(2)
                     : activeSignal.price.toFixed(4)}
                 </span>
-                <span
-                  className={`text-lg sm:text-xl font-bold ${
-                    isBuy ? 'text-emerald-500' : 'text-rose-500'
-                  }`}
-                >
-                  {isBuy ? '↑' : '↓'}
+                <span className="text-emerald-500 font-bold text-2xl leading-none ml-1">
+                  ↑
                 </span>
               </div>
             </div>
 
-            <p className="text-xs text-slate-400 font-normal">
+            <p className="text-[11px] sm:text-xs text-slate-400 font-normal">
               {activeSignal.timestamp || 'As of May 27, 2026 09:45 GMT+7'}
             </p>
           </div>
 
-          {/* Center 4 Core Metrics: Entry, Target, Stop Loss, Risk/Reward */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 py-2 border-y lg:border-y-0 border-slate-100">
-            <div className="space-y-0.5">
-              <span className="text-xs text-slate-400 block font-normal">Entry Price</span>
-              <span className="text-base sm:text-lg font-bold text-[#0b1c30] tracking-tight">
-                {activeSignal.entryPrice.toFixed(activeSignal.price > 100 ? 2 : 4)}
-              </span>
+          {/* Center 2x2 Core Metrics Grid (Exact match to screenshot) */}
+          <div className="flex items-start gap-8 sm:gap-14 py-1">
+            {/* Column 1: Entry Price & Stop Loss */}
+            <div className="space-y-3">
+              <div>
+                <span className="text-[11px] text-slate-400 block font-normal leading-none mb-1">
+                  Entry Price
+                </span>
+                <span className="text-base sm:text-lg font-bold text-[#0b1c30] tracking-tight">
+                  {activeSignal.entryPrice.toFixed(activeSignal.price > 100 ? 2 : 4)}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] text-slate-400 block font-normal leading-none mb-1">
+                  Stop Loss
+                </span>
+                <span className="text-base sm:text-lg font-bold text-[#0b1c30] tracking-tight">
+                  {activeSignal.stopLoss.toFixed(activeSignal.price > 100 ? 2 : 4)}
+                </span>
+              </div>
             </div>
 
-            <div className="space-y-0.5">
-              <span className="text-xs text-slate-400 block font-normal">Target Price</span>
-              <span className="text-base sm:text-lg font-bold text-[#0b1c30] tracking-tight">
-                {activeSignal.takeProfit1.toFixed(activeSignal.price > 100 ? 2 : 4)}
-              </span>
-            </div>
-
-            <div className="space-y-0.5">
-              <span className="text-xs text-slate-400 block font-normal">Stop Loss</span>
-              <span className="text-base sm:text-lg font-bold text-[#0b1c30] tracking-tight">
-                {activeSignal.stopLoss.toFixed(activeSignal.price > 100 ? 2 : 4)}
-              </span>
-            </div>
-
-            <div className="space-y-0.5">
-              <span className="text-xs text-slate-400 block font-normal">Risk/Reward</span>
-              <span className="text-base sm:text-lg font-bold text-[#0b1c30] tracking-tight">
-                {activeSignal.riskReward || '1:2'}
-              </span>
+            {/* Column 2: Target Price & Risk/Reward */}
+            <div className="space-y-3">
+              <div>
+                <span className="text-[11px] text-slate-400 block font-normal leading-none mb-1">
+                  Target Price
+                </span>
+                <span className="text-base sm:text-lg font-bold text-[#0b1c30] tracking-tight">
+                  {activeSignal.takeProfit1.toFixed(activeSignal.price > 100 ? 2 : 4)}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] text-slate-400 block font-normal leading-none mb-1">
+                  Risk/Reward
+                </span>
+                <span className="text-base sm:text-lg font-bold text-[#0b1c30] tracking-tight">
+                  {activeSignal.riskReward || '1:2'}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Confidence Rate with 5 Dots */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="text-center lg:text-left">
-              <div className="text-3xl font-black text-[#5945F1] leading-none">
-                {activeSignal.confidence}%
-              </div>
-              <div className="flex items-center justify-center lg:justify-start gap-1.5 my-1.5">
-                {[1, 2, 3, 4, 5].map((dotIndex) => {
-                  const filled = dotIndex <= Math.round((activeSignal.confidence / 100) * 5);
-                  return (
-                    <span
-                      key={dotIndex}
-                      className={`w-2 h-2 rounded-full ${
-                        filled ? 'bg-[#5945F1]' : 'bg-indigo-100'
-                      }`}
-                    />
-                  );
-                })}
-              </div>
-              <span className="text-[11px] text-slate-600 font-medium block">
-                Confidence Rate
-              </span>
+          {/* Confidence Rate: 71% with 5 dots (Exact match to screenshot) */}
+          <div className="shrink-0 text-center lg:text-left">
+            <div className="text-3xl sm:text-4xl font-black text-[#5945F1] leading-none">
+              {activeSignal.confidence}%
             </div>
+            <div className="flex items-center justify-center lg:justify-start gap-1.5 my-1.5">
+              {[1, 2, 3, 4, 5].map((dotIndex) => {
+                const filled = dotIndex <= Math.round((activeSignal.confidence / 100) * 5);
+                return (
+                  <span
+                    key={dotIndex}
+                    className={`w-2 h-2 rounded-full ${
+                      filled ? 'bg-[#5945F1]' : 'bg-slate-200'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+            <span className="text-[11px] text-slate-600 font-medium block">
+              Confidence Rate
+            </span>
           </div>
 
-          {/* Right Action: Validity + Bright Lime Action Button */}
-          <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end justify-between gap-3">
+          {/* Right Action: Validity + Bright Lime Action Button (Exact match to screenshot) */}
+          <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end justify-between gap-3 shrink-0">
             <div className="space-y-1 text-right sm:text-left lg:text-right">
-              <div className="flex items-center justify-end gap-1.5 text-xs text-indigo-700 font-medium">
+              <div className="flex items-center justify-end gap-1.5 text-xs text-[#5945F1] font-medium">
                 <Clock className="w-3.5 h-3.5 text-[#5945F1]" />
                 <span>{activeSignal.period || '30m period'}</span>
               </div>
@@ -553,10 +613,11 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
               </div>
             </div>
 
-            {/* Vibrant Lime Green Buy / Sell Button (Matching Screenshot) */}
+            {/* Vibrant Lime Green Buy / Sell Button */}
             <button
+              type="button"
               onClick={() => setIsPlaceTradeModalOpen(true)}
-              className="px-7 py-2.5 rounded-lg bg-[#CAEB0E] hover:bg-[#bce000] active:scale-98 text-slate-950 font-extrabold text-sm transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto px-10 sm:px-12 py-2.5 rounded-lg bg-[#CAEB0E] hover:bg-[#bce000] active:scale-95 text-slate-950 font-extrabold text-sm transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer interactive-btn"
             >
               <span>{isBuy ? 'Buy' : 'Sell'}</span>
               <ArrowRight className="w-4 h-4 stroke-[2.5]" />
@@ -565,17 +626,17 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
         </div>
 
         {/* Divider line */}
-        <div className="border-b border-slate-200/80 my-3.5" />
+        <div className="border-b border-slate-200/80 my-4" />
 
         {/* Metadata Line under separator: Type & Group (Right Aligned matching screenshot) */}
         <div className="flex items-center justify-end gap-6 text-xs text-slate-500">
           <div className="flex items-center gap-1.5">
             <span className="text-slate-400">Type</span>
-            <span className="font-bold text-[#0b1c30]">{activeSignal.type || 'Currency'}</span>
+            <span className="font-semibold text-[#0b1c30]">{activeSignal.type || 'Currency'}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-slate-400">Group</span>
-            <span className="font-bold text-[#0b1c30]">{activeSignal.group || 'Major Crosses'}</span>
+            <span className="font-semibold text-[#0b1c30]">{activeSignal.group || 'Major Crosses'}</span>
           </div>
         </div>
       </section>
@@ -1874,6 +1935,117 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
               >
                 Confirm {activeSignal.action}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL: Accept Agreement to Access Trading Signal Analytics (Exact match to screenshot) ─── */}
+      {isAgreementModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200/90 space-y-4 animate-in zoom-in-95 duration-150">
+            {/* Modal Title */}
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-[#0b1c30] tracking-tight">
+                Accept Agreement to Access Trading Signal Analytics
+              </h2>
+            </div>
+
+            {/* Scrollable Agreement Text Container */}
+            <div
+              ref={agreementScrollRef}
+              onScroll={handleAgreementScroll}
+              className="max-h-[360px] sm:max-h-[400px] overflow-y-auto pr-3 space-y-3.5 text-xs sm:text-[13px] text-slate-700 leading-relaxed custom-scrollbar border-y border-slate-100 py-4 my-2 select-text"
+            >
+              <p>
+                MarketSyde Insights is an advanced technical analysis tool designed to help you track market trends, chart patterns, and price momentum.
+              </p>
+
+              <p>
+                Accessible to all registered members, this dashboard delivers real-time trading ideas, including suggested entry zones, stop-loss thresholds, profit targets, visual chart analysis, and market commentary.
+              </p>
+
+              <div className="space-y-2.5 pt-1">
+                <h3 className="font-bold text-[#0b1c30] text-sm">
+                  MarketSyde Trading Signal Agreement
+                </h3>
+                <p>
+                  The trading signals, setups, and ideas displayed on this platform (collectively, the &quot;Signals&quot;) are generated by independent, third-party technical analysis providers. These Signals utilize underlying market data supplied by MarketSyde. By clicking &quot;I Accept&quot; below, you acknowledge, understand, and agree to the following terms:
+                </p>
+
+                <ol className="list-decimal list-outside pl-4 space-y-2 text-slate-700">
+                  <li>
+                    <strong className="text-slate-900 font-semibold">No Performance Guarantees:</strong> MarketSyde offers no warranties, explicit or implied, regarding the reliability or accuracy of the Signals, nor do we guarantee that this data stream will be uninterrupted, secure, or entirely error-free.
+                  </li>
+                  <li>
+                    <strong className="text-slate-900 font-semibold">Data Latency and Accuracy:</strong> Market pricing data, historical metrics, and real-time feeds displayed on this platform may experience delays or absent. MarketSyde assumes no responsibility for, and does not guarantee, the absolute precision, timeliness, or completeness of any current or past market information provided.
+                  </li>
+                  <li>
+                    <strong className="text-slate-900 font-semibold">No Solicitation:</strong> The publication of a Signal does not represent an offer, recommendation, or solicitation by MarketSyde to buy, sell, or liquidate any specific financial instrument or asset class.
+                  </li>
+                  <li>
+                    <strong className="text-slate-900 font-semibold">Execution-Only Service &amp; No Advisory:</strong> This Signal service is strictly for educational and execution-only purposes. It does not constitute, and must not be interpreted as, personalized investment or financial advice. MarketSyde does not evaluate your financial standing, risk tolerance, or trading objectives. Any decision to trade based on these Signals is made at your own sole discretion and entirely at your own risk.
+                  </li>
+                  <li>
+                    <strong className="text-slate-900 font-semibold">Limitation of Liability:</strong> To the maximum extent permitted by law, and excluding cases of proven fraud, willful misconduct, or gross negligence by the company, MarketSyde shall not be held liable for any financial losses, damages, missed market opportunities, or lost profits resulting directly or indirectly from your reliance on or use of these Signals.
+                  </li>
+                </ol>
+
+                <p className="text-[11px] text-slate-500 pt-2 leading-relaxed border-t border-slate-100">
+                  <strong className="text-slate-700 font-semibold">Disclaimer:</strong> The information provided through this service is intended for general informational purposes only and does not cater to the individual investment objectives or financial constraints of any specific user. MarketSyde gives no warranty regarding data completeness, and users acting upon this information do so entirely at their own risk.
+                </p>
+              </div>
+
+              {/* Scroll status helper indicator */}
+              <div className="pt-2 text-center text-xs font-medium">
+                {hasScrolledToBottom ? (
+                  <span className="text-emerald-600 font-bold inline-flex items-center gap-1 bg-emerald-50 px-3 py-1 rounded-full">
+                    ✓ You have reached the bottom. &quot;I Accept&quot; is now active.
+                  </span>
+                ) : (
+                  <span className="text-[#5945F1] font-semibold inline-flex items-center gap-1 bg-indigo-50 px-3 py-1 rounded-full animate-bounce">
+                    ↓ Please scroll to the bottom of the terms to activate acceptance
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Footer Action Buttons matching screenshot */}
+            <div className="flex items-center justify-between pt-2">
+              <div className="text-xs">
+                {!hasScrolledToBottom && (
+                  <span className="text-amber-600 font-medium text-[11px]">
+                    Scroll through the agreement to enable button
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAgreementModalOpen(false);
+                    onBackToSignals();
+                  }}
+                  className="text-rose-500 hover:text-rose-600 font-semibold text-xs sm:text-sm cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!hasScrolledToBottom}
+                  onClick={handleAcceptAgreement}
+                  className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all shadow-xs ${
+                    hasScrolledToBottom
+                      ? 'bg-[#5945F1] hover:bg-[#4834df] text-white active:scale-95 cursor-pointer shadow-md'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed pointer-events-none'
+                  }`}
+                >
+                  <span>I Accept</span>
+                  <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
