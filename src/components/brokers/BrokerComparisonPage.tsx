@@ -1014,9 +1014,8 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
           </div>
         </div>
 
-        {/* ─── RIGHT: Sidebar Widgets (Fixed 300px on LG) ─── */}
-        <div className="w-full lg:w-[300px] lg:shrink-0">
-          <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
+        {/* ─── RIGHT: Sidebar Widgets (Fixed 300px on LG) (Sticky during scroll) ─── */}
+        <aside className="w-full lg:w-[300px] lg:shrink-0 space-y-6 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Widget 1: Move up. Earn More. (Exact match to image.png) */}
           <div className="p-5 rounded-3xl bg-white dark:bg-[#15023a] border-2 border-[#FE01B1] shadow-xs relative overflow-hidden">
             <div className="flex items-start justify-between gap-2 mb-1">
@@ -1211,8 +1210,7 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
               </div>
             </div>
           </div>
-          </div>
-        </div>
+        </aside>
       </div>
 
       {/* ─── Bottom Banner: Most Viewed Broker Matchups (Exact match to D02-D08) ─── */}

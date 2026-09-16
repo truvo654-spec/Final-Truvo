@@ -10,6 +10,9 @@ import { InstrumentIcon } from './analysis/InstrumentIcon';
 import { TodaysCryptoWidget } from './analysis/TodaysCryptoWidget';
 import { TradeVolumeComparisonWidget } from './analysis/TradeVolumeComparisonWidget';
 import { MeetingTradingPartnerSection } from './analysis/MeetingTradingPartnerSection';
+import { InstrumentHeatmapView } from './analysis/InstrumentHeatmapView';
+import { InstrumentScatterView } from './analysis/InstrumentScatterView';
+import { InstrumentCorrelationView } from './analysis/InstrumentCorrelationView';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Star,
@@ -486,97 +489,112 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
 
       {/* ─── 3. LOWER SECTION CONTAINER (Full Width matching other pages) ─── */}
       <div className="w-full px-4 sm:px-8 md:px-[56px] space-y-5">
-        {/* ─── VIEW TABS: Table | Heatmap | 🔒 Scatter | 🔒 Correlation (Exact match to Instrumental Analysis (1).png) ─── */}
-        <div className="flex items-center gap-1 border-b border-slate-200/80 pb-1">
-          <button
-            type="button"
-            onClick={() => setActiveViewTab('table')}
-            className={`px-4 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
-              activeViewTab === 'table'
-                ? 'bg-white border border-indigo-200 text-[#5945F1] shadow-2xs'
-                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
-            }`}
-          >
-            Table
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveViewTab('heatmap')}
-            className={`px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer ${
-              activeViewTab === 'heatmap'
-                ? 'bg-white border border-indigo-200 text-[#5945F1] shadow-2xs'
-                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50'
-            }`}
-          >
-            Heatmap
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveViewTab('scatter');
-              onShowToast?.('Scatter plot is an advanced feature unlocked in Pro tier');
-            }}
-            className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-600 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
-          >
-            <Lock className="w-3.5 h-3.5 text-slate-400" />
-            <span>Scatter</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveViewTab('correlation');
-              onShowToast?.('Correlation matrix is an advanced feature unlocked in Pro tier');
-            }}
-            className="px-4 py-2 text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-600 rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
-          >
-            <Lock className="w-3.5 h-3.5 text-slate-400" />
-            <span>Correlation</span>
-          </button>
-        </div>
-
-        {/* ─── TOP BAR OF TABLE: Results Count + Action Buttons (Exact match to Instrumental Analysis (1).png) ─── */}
-        <div className="flex items-center justify-between gap-4 pt-1">
-          {/* Results Shown Label */}
-          <h2 className="text-base sm:text-lg font-bold font-display text-slate-800 select-none">
-            {activeCategory.totalResults} Results Shown
-          </h2>
-
-          {/* Action Buttons: Broker Access + Export CSV + Filter Funnel */}
-          <div className="flex items-center gap-2.5">
-            {/* Broker Access Button */}
+        {/* ─── VIEW TABS: Table | Heatmap | 🔒 Scatter | 🔒 Correlation (Exact match to Frame 427322387 series) ─── */}
+        <div className="flex items-center justify-between border-b border-slate-200/90 pb-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Table Tab */}
             <button
               type="button"
-              onClick={() => onOpenConnectModal?.(brokers[0])}
-              className="px-4 py-1.5 bg-white border border-indigo-200 text-[#5945F1] hover:bg-indigo-50/50 font-semibold text-sm rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
-            >
-              Broker Access
-            </button>
-
-            {/* Export CSV Button */}
-            <button
-              type="button"
-              onClick={handleExportCSV}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-indigo-200 text-[#5945F1] hover:bg-indigo-50/50 font-semibold text-sm rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
-            >
-              <Download className="w-4 h-4 text-[#5945F1]" />
-              <span>Export CSV</span>
-            </button>
-
-            {/* Filter Funnel Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setIsFilterOpen((prev) => !prev)}
-              className={`p-2 rounded-lg border transition-all cursor-pointer select-none ${
-                isFilterOpen
-                  ? 'bg-indigo-50 border-[#5945F1] text-[#5945F1]'
-                  : 'bg-white border-indigo-200 text-[#5945F1] hover:bg-indigo-50/50'
+              onClick={() => setActiveViewTab('table')}
+              className={`px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-xl transition-all cursor-pointer select-none ${
+                activeViewTab === 'table'
+                  ? 'border border-[#8B5CF6]/80 text-[#5945F1] bg-white shadow-2xs font-semibold'
+                  : 'text-slate-700 hover:text-slate-900'
               }`}
-              title="Filter & Search"
             >
-              <Filter className="w-4 h-4" />
+              Table
+            </button>
+
+            {/* Heatmap Tab */}
+            <button
+              type="button"
+              onClick={() => setActiveViewTab('heatmap')}
+              className={`px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-xl transition-all cursor-pointer select-none ${
+                activeViewTab === 'heatmap'
+                  ? 'border border-[#8B5CF6]/80 text-[#5945F1] bg-white shadow-2xs font-semibold'
+                  : 'text-slate-700 hover:text-slate-900'
+              }`}
+            >
+              Heatmap
+            </button>
+
+            {/* Scatter Tab */}
+            <button
+              type="button"
+              onClick={() => setActiveViewTab('scatter')}
+              className={`px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-xl transition-all cursor-pointer select-none flex items-center gap-1.5 ${
+                activeViewTab === 'scatter'
+                  ? 'border border-[#8B5CF6]/80 text-[#5945F1] bg-white shadow-2xs font-semibold'
+                  : 'text-slate-700 hover:text-slate-900'
+              }`}
+            >
+              {activeViewTab !== 'scatter' && (
+                <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              )}
+              <span>Scatter</span>
+            </button>
+
+            {/* Correlation Tab */}
+            <button
+              type="button"
+              onClick={() => setActiveViewTab('correlation')}
+              className={`px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-xl transition-all cursor-pointer select-none flex items-center gap-1.5 ${
+                activeViewTab === 'correlation'
+                  ? 'border border-[#8B5CF6]/80 text-[#5945F1] bg-white shadow-2xs font-semibold'
+                  : 'text-slate-700 hover:text-slate-900'
+              }`}
+            >
+              {activeViewTab !== 'correlation' && (
+                <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              )}
+              <span>Correlation</span>
             </button>
           </div>
+
+          {/* Filter Funnel Toggle Button (Right side of Tab Bar matching Frame 427322387 series) */}
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen((prev) => !prev)}
+            className={`p-2 rounded-xl border transition-all cursor-pointer select-none shadow-2xs ${
+              isFilterOpen
+                ? 'bg-purple-50 border-[#8B5CF6] text-[#8B5CF6]'
+                : 'bg-white border-[#8B5CF6]/40 text-[#8B5CF6] hover:bg-purple-50/60'
+            }`}
+            title="Filter & Search"
+          >
+            <Filter className="w-4 h-4 text-[#8B5CF6]" />
+          </button>
         </div>
+
+        {/* ─── TABLE VIEW HEADER: Results Count + Action Buttons (Shown when Table tab is active) ─── */}
+        {activeViewTab === 'table' && (
+          <div className="flex items-center justify-between gap-4 pt-1">
+            {/* Results Shown Label */}
+            <h2 className="text-base sm:text-lg font-bold font-display text-slate-800 select-none">
+              {activeCategory.totalResults} Results Shown
+            </h2>
+
+            {/* Action Buttons: Broker Access + Export CSV */}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => onOpenConnectModal?.(brokers[0])}
+                className="px-4 py-1.5 bg-white border border-indigo-200 text-[#5945F1] hover:bg-indigo-50/50 font-semibold text-sm rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+              >
+                Broker Access
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-indigo-200 text-[#5945F1] hover:bg-indigo-50/50 font-semibold text-sm rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+              >
+                <Download className="w-4 h-4 text-[#5945F1]" />
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Expandable Filter & Search Drawer */}
         {isFilterOpen && (
@@ -639,15 +657,18 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
           </div>
         )}
 
-        {/* ─── 4. MAIN CONTENT 2-COLUMN LAYOUT (Table + Right Sidebar Stack) ─── */}
+        {/* ─── 4. MAIN CONTENT 2-COLUMN LAYOUT (Active Tab View + Right Sidebar Stack) ─── */}
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
-          {/* LEFT COLUMN: TABLE */}
+          {/* LEFT COLUMN: VIEW CONTENT + MEETING TRADING PARTNER */}
           <div className="flex-1 min-w-0 w-full space-y-6">
-            <div className="bg-white border border-[#E0E7FF] rounded-2xl shadow-xs overflow-hidden">
-              <div className="overflow-x-auto scrollbar-none">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-indigo-100 text-xs font-medium text-[#5945F1] bg-white select-none">
+            {/* VIEW 1: TABLE VIEW */}
+            {activeViewTab === 'table' && (
+              <>
+                <div className="bg-white border border-[#E0E7FF] rounded-2xl shadow-xs overflow-hidden">
+                  <div className="overflow-x-auto scrollbar-none">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-indigo-100 text-xs font-medium text-[#5945F1] bg-white select-none">
                       {/* Favorite Star Column (Empty Header) */}
                       <th className="py-3.5 pl-4 pr-1 w-9 text-center">
                         <span className="sr-only">Star</span>
@@ -1003,8 +1024,40 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                 <ChevronsRight className="w-3.5 h-3.5" />
               </button>
             </div>
+            </>
+            )}
 
-            {/* ─── Meeting Your Trading Partner Section (Exact match to Instrumental Analysis (1).png) ─── */}
+            {/* VIEW 2: HEATMAP VIEW */}
+            {activeViewTab === 'heatmap' && (
+              <InstrumentHeatmapView
+                onSelectInstrument={(symbol) => {
+                  const match = filteredInstruments.find((i) => i.symbol === symbol);
+                  if (match) handleSignalClick(match);
+                }}
+              />
+            )}
+
+            {/* VIEW 3: SCATTER VIEW */}
+            {activeViewTab === 'scatter' && (
+              <InstrumentScatterView
+                onSelectInstrument={(symbol) => {
+                  const match = filteredInstruments.find((i) => i.symbol === symbol);
+                  if (match) handleSignalClick(match);
+                }}
+              />
+            )}
+
+            {/* VIEW 4: CORRELATION VIEW */}
+            {activeViewTab === 'correlation' && (
+              <InstrumentCorrelationView
+                onSelectInstrument={(symbol) => {
+                  const match = filteredInstruments.find((i) => i.symbol === symbol);
+                  if (match) handleSignalClick(match);
+                }}
+              />
+            )}
+
+            {/* ─── Meeting Your Trading Partner Section (Exact match to Frame 427322387 series) ─── */}
             <MeetingTradingPartnerSection
               brokers={brokers}
               onOpenConnectModal={onOpenConnectModal}
@@ -1012,11 +1065,11 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
             />
           </div>
 
-          {/* RIGHT COLUMN: STACKED WIDGETS (Fixed 300px on LG) */}
-          <div className="w-full lg:w-[300px] lg:shrink-0 space-y-6">
+          {/* RIGHT COLUMN: STACKED WIDGETS (Fixed 300px on LG, Sticky on scroll) */}
+          <aside className="w-full lg:w-[300px] lg:shrink-0 space-y-6 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
             <TradeVolumeComparisonWidget data={activeCategory.volumeComparison} />
             <TodaysCryptoWidget />
-          </div>
+          </aside>
         </div>
       </div>
     </div>

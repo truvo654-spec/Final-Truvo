@@ -511,9 +511,8 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: 3 STACKED CARDS (Fixed 300px on XL) */}
-        <div className="w-full xl:w-[300px] xl:shrink-0">
-          <div className="space-y-5 xl:sticky xl:top-[84px] xl:max-h-[calc(100vh-96px)] xl:overflow-y-auto xl:overscroll-contain sidebar-scrollbar">
+        {/* RIGHT COLUMN: 3 STACKED CARDS (Fixed 300px on XL, Sticky on scroll) */}
+        <aside className="w-full xl:w-[300px] xl:shrink-0 space-y-5 xl:sticky xl:top-[84px] xl:self-start xl:max-h-[calc(100vh-96px)] xl:overflow-y-auto xl:overscroll-contain sidebar-scrollbar">
           {/* Card 1: Move up. Earn More. (Exact match to image.png) */}
           <div className="bg-white rounded-3xl border-2 border-[#FE01B1] p-5 shadow-xs space-y-4">
             <div>
@@ -703,8 +702,7 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </aside>
       </div>
 
       {/* ─── 5. BOTTOM SECTION: "Meet Your Trading Partner." ─── */}

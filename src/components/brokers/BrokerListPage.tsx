@@ -409,8 +409,7 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
         {/* ─────────────────────────────────────────────────────────────
             RIGHT SIDEBAR (Fixed 300px on LG) (Sticky during scroll)
            ───────────────────────────────────────────────────────────── */}
-        <div className="w-full lg:w-[300px] lg:shrink-0">
-          <div className="space-y-6 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
+        <aside className="w-full lg:w-[300px] lg:shrink-0 space-y-6 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* 1. LEVEL PROMOTION CARD (Move up. Earn More. - Exact match to image.png) */}
           <div className="bg-white rounded-3xl border-2 border-[#FE01B1] p-5 shadow-xs space-y-4">
             <div>
@@ -534,8 +533,7 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
               )}
             </div>
           </div>
-          </div>
-        </div>
+        </aside>
       </div>
     </div>
   );

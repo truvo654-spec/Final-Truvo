@@ -1265,9 +1265,8 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
           </div>
         </div>
 
-        {/* ─── RIGHT SIDEBAR (Fixed 300px on LG): EXACT MATCH TO SCREENSHOT (Sticky during scroll) ─── */}
-        <div className="w-full lg:w-[300px] lg:shrink-0">
-          <div className="space-y-5 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
+        {/* ─── RIGHT SIDEBAR (Fixed 300px on LG): Sticky on scroll ─── */}
+        <aside className="w-full lg:w-[300px] lg:shrink-0 space-y-5 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* Card 1: Next Milestone / You're Connected. Nice! (Magenta Border) */}
           <div className="bg-white rounded-2xl border-2 border-[#FD02B0] p-5 shadow-xs relative">
             {/* Floating Pill on top right border */}
@@ -1401,8 +1400,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
               </div>
             </div>
           </div>
-          </div>
-        </div>
+        </aside>
       </div>
 
       {/* ─── MEET YOUR TRADING PARTNER FULL-WIDTH BANNER ─── */}

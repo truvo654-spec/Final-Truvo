@@ -1347,8 +1347,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
         </div>
 
         {/* ═══ RIGHT COLUMN: SIDEBAR WIDGETS (Fixed 300px on LG) (Sticky during scroll) ═══ */}
-        <div className="w-full lg:w-[300px] lg:shrink-0">
-          <div className="space-y-5 lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
+        <aside className="w-full lg:w-[300px] lg:shrink-0 space-y-5 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {/* ── Widget 1: Track every point and credit earned (Glowing Gradient Border) ── */}
           <div
             onClick={onOpenActivityLog}
@@ -1614,8 +1613,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
               </div>
             </div>
           </div>
-          </div>
-        </div>
+        </aside>
       </div>
 
       {/* ─── Interactive Action Modals ─── */}

@@ -128,6 +128,103 @@ export const InstrumentIcon: React.FC<InstrumentIconProps> = ({
           ₳
         </div>
       );
+    case 'doge':
+      return (
+        <div
+          className={`${className} rounded-full bg-[#C2A633] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          Ð
+        </div>
+      );
+    case 'usdt':
+    case 'tether':
+      return (
+        <div
+          className={`${className} rounded-full bg-[#26A17B] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          ₮
+        </div>
+      );
+    case 'icp':
+      return (
+        <div
+          className={`${className} rounded-full bg-gradient-to-r from-amber-500 via-pink-500 to-indigo-500 text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          ∞
+        </div>
+      );
+    case 'kcs':
+      return (
+        <div
+          className={`${className} rounded-full bg-[#24AE8F] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          ₭
+        </div>
+      );
+    case 'near':
+      return (
+        <div
+          className={`${className} rounded-full bg-black text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          N
+        </div>
+      );
+    case 'hbar':
+      return (
+        <div
+          className={`${className} rounded-full bg-black text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          Ħ
+        </div>
+      );
+    case 'ton':
+      return (
+        <div
+          className={`${className} rounded-full bg-[#0098EA] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          💎
+        </div>
+      );
+    case 'pepe':
+      return (
+        <div
+          className={`${className} rounded-full bg-[#499946] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          🐸
+        </div>
+      );
+    case 'chz':
+      return (
+        <div
+          className={`${className} rounded-full bg-[#CD0124] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          ⚽
+        </div>
+      );
+    case 'crv':
+      return (
+        <div
+          className={`${className} rounded-full bg-[#3B82F6] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          CRV
+        </div>
+      );
+    case 'shib':
+      return (
+        <div
+          className={`${className} rounded-full bg-[#FFA409] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          🦊
+        </div>
+      );
+    case 'aave':
+      return (
+        <div
+          className={`${className} rounded-full bg-gradient-to-r from-[#2EBAC6] to-[#B6509E] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0 select-none`}
+        >
+          A
+        </div>
+      );
 
     // Forex
     case 'fx-eur':
