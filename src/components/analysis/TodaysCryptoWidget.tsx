@@ -72,10 +72,12 @@ export const TodaysCryptoWidget: React.FC = () => {
               </span>
             </div>
 
-            {/* Editorial Headline */}
-            <h4 className="font-bold text-xs text-slate-800 leading-snug">
-              {item.headline}
-            </h4>
+            {/* Editorial Headline with purple left border */}
+            <div className="border-l-2 border-[#5046E5] pl-2.5 py-1 bg-slate-50/60 rounded-r-lg">
+              <h4 className="font-bold text-xs text-slate-800 leading-snug">
+                "{item.headline}"
+              </h4>
+            </div>
 
             {/* Paragraph body */}
             <p className="text-[11px] text-slate-500 leading-relaxed">

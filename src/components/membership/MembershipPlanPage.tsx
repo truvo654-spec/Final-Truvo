@@ -184,482 +184,430 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
 
       {/* ─────────────────────────────────────────────────────────────
           2. 4 TIERS CONNECTED ROW (ROOKIE, CLIMBER, PLAYER, BOSS)
+          (Exact match to Frame 427322784, 427322785, 427322786, 427322787)
          ───────────────────────────────────────────────────────────── */}
       <div className="relative pt-16">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
-          {/* ════════════════════════════════════════════════════════════
-              CARD 1: ROOKIE
-             ════════════════════════════════════════════════════════════ */}
-          <div className="relative flex flex-col">
-            {/* Cute Cartoon Ghost & "You're here" callout (when activeLevel === 1) */}
-            {activeLevel === 1 && (
-              <div className="absolute -top-14 left-4 z-20 flex items-end gap-2 pointer-events-none select-none">
-                {/* Friendly cartoon ghost */}
-                <div className="relative -mb-1">
-                  <svg
-                    width="54"
-                    height="62"
-                    viewBox="0 0 54 62"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="drop-shadow-xs"
-                  >
-                    {/* Ghost body with rounded arch head and ruffled skirt bottom */}
-                    <path
-                      d="M7 28 C7 12, 18 5, 27 5 C36 5, 47 12, 47 28 L47 50 C47 50, 42 46, 38 50 C34 54, 31 46, 27 50 C23 54, 19 46, 16 50 C12 54, 7 50, 7 50 Z"
-                      fill="white"
-                      stroke="#0B1C30"
-                      strokeWidth="2.5"
-                      strokeLinejoin="round"
-                    />
-                    {/* Two vertical dark eyes */}
-                    <ellipse cx="21" cy="24" rx="2.4" ry="4.5" fill="#0B1C30" />
-                    <ellipse cx="33" cy="24" rx="2.4" ry="4.5" fill="#0B1C30" />
-                  </svg>
-                </div>
-
-                {/* Curved arrow from badge to ghost */}
-                <div className="flex items-center gap-1 -mb-2">
-                  <svg
-                    width="38"
-                    height="28"
-                    viewBox="0 0 38 28"
-                    fill="none"
-                    className="text-[#3B82F6]"
-                  >
-                    <path
-                      d="M32 4 C20 6, 10 14, 6 23"
-                      stroke="#3B82F6"
-                      strokeWidth="1.75"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M6 23 L12 20 M6 23 L7 17"
-                      stroke="#3B82F6"
-                      strokeWidth="1.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-
-                  {/* Lime green badge: You're here */}
-                  <div className="bg-[#CAEB0E] text-black font-black text-[11px] leading-tight px-3 py-1 rounded-full shadow-xs text-center">
-                    <div>You&apos;re</div>
-                    <div>here</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Card Outer with Gradient Border if Level 1 */}
-            <div
-              className={`h-full rounded-[26px] transition-all duration-200 flex flex-col ${
-                activeLevel === 1
-                  ? 'p-[2px] bg-gradient-to-br from-[#5945F1] via-[#8B5CF6] to-[#FE01B1] shadow-lg'
-                  : 'border border-slate-200/90 hover:border-slate-300 hover:shadow-md'
-              }`}
-            >
-              <div className="bg-white rounded-[24px] p-6 sm:p-7 h-full flex flex-col justify-between">
-                <div>
-                  {/* Top Pill Tag: ROOKIE */}
-                  <div className="mb-6">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-white text-xs font-black uppercase tracking-wider shadow-2xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                      <span>ROOKIE</span>
+          {[
+            {
+              level: 1,
+              name: 'ROOKIE',
+              badgeBg: 'bg-black text-white',
+              badgeDotBg: 'bg-white',
+              cashbackType: 'standard',
+              whatTitle: 'What you have now',
+              features: [
+                { text: <span>Trading Tools</span> },
+                {
+                  text: (
+                    <span>
+                      <strong className="font-bold text-[#0b1c30]">70% - 74%</strong> Signal Confidence
                     </span>
-                  </div>
+                  ),
+                },
+                { text: <span>Broker Comparisons</span> },
+              ],
+            },
+            {
+              level: 2,
+              name: 'CLIMBER',
+              badgeBg: 'bg-[#FD02B0] text-white',
+              badgeDotBg: 'bg-white',
+              cashbackType: 'boost',
+              cashbackRate: '+5%',
+              cashbackColor: '#FD02B0',
+              whatTitle: 'What you get',
+              features: [
+                { text: <span>Trading Tools</span> },
+                {
+                  text: (
+                    <span>
+                      Trading Signal with{' '}
+                      <strong className="font-bold text-[#FD02B0]">75% - 79%</strong> Confidence
+                    </span>
+                  ),
+                },
+                { text: <span>Better Broker Offers</span> },
+              ],
+            },
+            {
+              level: 3,
+              name: 'PLAYER',
+              badgeBg: 'bg-[#CAEB0E] text-slate-950 font-black',
+              badgeDotBg: 'bg-black',
+              cashbackType: 'boost',
+              cashbackRate: '+10%',
+              cashbackColor: '#65A30D',
+              whatTitle: 'What you get',
+              features: [
+                { text: <span>Trading Tools</span> },
+                {
+                  text: (
+                    <span>
+                      Trading Signal with{' '}
+                      <strong className="font-bold text-[#65A30D]">80% - 89%</strong> Confidence
+                    </span>
+                  ),
+                },
+                { text: <span>Premium Promotions</span> },
+              ],
+            },
+            {
+              level: 4,
+              name: 'BOSS',
+              badgeBg: 'bg-[#5046E5] text-white',
+              badgeDotBg: 'bg-white',
+              cashbackType: 'boost',
+              cashbackRate: '+15%',
+              cashbackColor: '#5046E5',
+              whatTitle: 'What you get',
+              features: [
+                { text: <span>Trading Tools</span> },
+                {
+                  text: (
+                    <span>
+                      Gain full access to{' '}
+                      <strong className="font-bold text-[#5046E5]">90%+</strong> confidence signals
+                    </span>
+                  ),
+                },
+                { text: <span>Exclusive member only benefits</span> },
+              ],
+            },
+          ].map((tier, idx) => {
+            const isActive = activeLevel === tier.level;
 
-                  {/* Cashback section */}
-                  <div className="mb-6">
-                    <span className="text-xs text-slate-500 font-medium block">Cashback</span>
-                    <h3 className="text-2xl sm:text-3xl font-black text-[#0b1c30] tracking-tight mt-1">
-                      Standard rate
-                    </h3>
-                  </div>
+            return (
+              <div key={tier.level} className="relative flex flex-col">
+                {/* ─── Avatar & Callout Badge above the active card ─── */}
+                {isActive && (
+                  <div className="absolute -top-16 left-4 z-20 flex items-end gap-2 pointer-events-none select-none">
+                    {/* Character Avatar inside soft circular backdrop */}
+                    <div className="w-14 h-14 rounded-full bg-[#E8EDF9] flex items-center justify-center shadow-xs">
+                      {tier.level === 1 ? (
+                        /* Cute Cartoon Ghost (ROOKIE) */
+                        <svg
+                          width="38"
+                          height="44"
+                          viewBox="0 0 38 44"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M5 19 C5 8, 12 4, 19 4 C26 4, 33 8, 33 19 L33 36 C33 36, 29 33, 26 36 C23 39, 21 33, 19 36 C17 39, 14 33, 12 36 C9 39, 5 36, 5 36 Z"
+                            fill="white"
+                            stroke="#0B1C30"
+                            strokeWidth="2.5"
+                            strokeLinejoin="round"
+                          />
+                          <ellipse cx="14" cy="17" rx="1.8" ry="3.5" fill="#0B1C30" />
+                          <ellipse cx="24" cy="17" rx="1.8" ry="3.5" fill="#0B1C30" />
+                        </svg>
+                      ) : tier.level === 2 || tier.level === 3 ? (
+                        /* Pink Footsteps (CLIMBER & PLAYER) */
+                        <svg
+                          width="40"
+                          height="42"
+                          viewBox="0 0 40 42"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <g transform="translate(6, 6) rotate(-6)">
+                            <rect x="2" y="1" width="9.5" height="15" rx="4.75" fill="white" stroke="#FD02B0" strokeWidth="2.5" />
+                            <rect x="3.2" y="18" width="7" height="7.5" rx="3.5" fill="white" stroke="#FD02B0" strokeWidth="2.5" />
+                          </g>
+                          <g transform="translate(20, 3) rotate(6)">
+                            <rect x="2" y="1" width="9.5" height="15" rx="4.75" fill="white" stroke="#FD02B0" strokeWidth="2.5" />
+                            <rect x="3.2" y="18" width="7" height="7.5" rx="3.5" fill="white" stroke="#FD02B0" strokeWidth="2.5" />
+                          </g>
+                        </svg>
+                      ) : (
+                        /* Purple Royal Crown (BOSS) */
+                        <svg
+                          width="42"
+                          height="42"
+                          viewBox="0 0 42 42"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M7 16 L12 30 L30 30 L35 16 L27 22 L21 11 L15 22 Z"
+                            fill="white"
+                            stroke="#5046E5"
+                            strokeWidth="2.5"
+                            strokeLinejoin="round"
+                            strokeLinecap="round"
+                          />
+                          <line x1="10" y1="33" x2="32" y2="33" stroke="#5046E5" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                      )}
+                    </div>
 
-                  {/* What you have now */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-bold text-[#0b1c30]">What you have now</h4>
-                    <ul className="space-y-2 text-xs text-slate-600">
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>Trading Tools</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>
-                          <strong className="font-bold text-[#0b1c30]">70% - 74%</strong> Signal Confidence
+                    {/* Curved Arrow & Callout Badge */}
+                    {tier.level === 4 ? (
+                      /* Boss Level Activated callout */
+                      <div className="flex items-center gap-1 -mb-1">
+                        <svg width="38" height="28" viewBox="0 0 38 28" fill="none">
+                          <path d="M34 5 C22 7, 12 14, 6 24" stroke="#5046E5" strokeWidth="1.75" strokeLinecap="round" />
+                          <path d="M6 24 L13 21 M6 24 L8 17" stroke="#5046E5" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <div className="bg-[#CAEB0E] px-3 py-1 rounded-full shadow-xs text-center">
+                          <div className="text-[11px] font-black text-[#5046E5] leading-tight">Boss Level</div>
+                          <div className="text-[11px] font-bold text-slate-900 leading-tight">Activated</div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* You're here callout */
+                      <div className="flex items-center gap-1 -mb-1">
+                        <svg width="38" height="28" viewBox="0 0 38 28" fill="none">
+                          <path d="M34 5 C22 7, 12 14, 6 24" stroke="#5046E5" strokeWidth="1.75" strokeLinecap="round" />
+                          <path d="M6 24 L13 21 M6 24 L8 17" stroke="#5046E5" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <div className="bg-[#CAEB0E] px-3 py-1 rounded-full shadow-xs text-center">
+                          <div className="text-[11px] font-bold text-slate-900 leading-tight">You&apos;re</div>
+                          <div className="text-[11px] font-black text-[#5046E5] leading-tight">here</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ─── Card Container with Active Gradient Border ─── */}
+                <div
+                  onClick={() => {
+                    setActiveLevel(tier.level);
+                    onShowToast?.(`Selected ${tier.name} tier`);
+                  }}
+                  className={`h-full rounded-[28px] transition-all duration-300 flex flex-col cursor-pointer ${
+                    isActive
+                      ? 'p-[2.5px] bg-gradient-to-b from-[#5046E5] via-[#8B5CF6] to-[#FD02B0] shadow-md'
+                      : 'border border-[#E0E7FF] bg-white hover:border-slate-300 hover:shadow-xs'
+                  }`}
+                >
+                  <div className="bg-white rounded-[25.5px] p-6 sm:p-7 h-full flex flex-col justify-between">
+                    <div>
+                      {/* Top Pill Tag: ROOKIE, CLIMBER, PLAYER, BOSS */}
+                      <div className="mb-6">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-2xs ${tier.badgeBg}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${tier.badgeDotBg}`} />
+                          <span>{tier.name}</span>
                         </span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>Broker Comparisons</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+                      </div>
 
-                {/* Divider */}
-                <div>
-                  <div className="h-px bg-slate-100 my-6" />
+                      {/* Cashback Section */}
+                      <div className="mb-6">
+                        {tier.cashbackType === 'standard' ? (
+                          <>
+                            <span className="text-xs text-slate-500 font-medium block">Cashback</span>
+                            <h3 className="text-2xl sm:text-3xl font-black text-[#0b1c30] tracking-tight mt-1">
+                              Standard rate
+                            </h3>
+                          </>
+                        ) : (
+                          <div className="flex items-baseline gap-2.5">
+                            <span
+                              className="text-4xl font-black tracking-tight leading-none"
+                              style={{ color: tier.cashbackColor }}
+                            >
+                              {tier.cashbackRate}
+                            </span>
+                            <div className="flex flex-col leading-tight">
+                              <span className="text-[11px] text-slate-500 font-medium">Cashback</span>
+                              <span
+                                className="text-xs font-bold"
+                                style={{ color: tier.cashbackColor }}
+                              >
+                                boost rate
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
-                  {/* Don't stop now! + Progress Bar + Points */}
-                  <div className="space-y-2">
-                    <div className="font-bold text-sm text-[#5945F1]">Don&apos;t stop now!</div>
-                    <div className="text-xs text-slate-400">The good stuff is waiting.</div>
-
-                    {/* Progress Track */}
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-3">
-                      <div className="h-full bg-[#5945F1] rounded-full w-[33.3%]" />
-                    </div>
-
-                    {/* Diamond and Points Counter */}
-                    <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium pt-1">
-                      <Gem className="w-3.5 h-3.5 text-[#5945F1]" />
-                      <span>
-                        <strong className="font-bold text-[#5945F1]">50</strong>/150 to Next Level
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Dotted Arrow to Next Card (Desktop XL) */}
-            <div className="hidden xl:flex absolute -right-5 top-[52%] -translate-y-1/2 z-10 pointer-events-none">
-              <svg width="28" height="12" viewBox="0 0 28 12" fill="none">
-                <line x1="0" y1="6" x2="22" y2="6" stroke="#CBD5E1" strokeWidth="1.5" strokeDasharray="2 3" />
-                <path d="M18 2 L23 6 L18 10" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
-
-          {/* ════════════════════════════════════════════════════════════
-              CARD 2: CLIMBER
-             ════════════════════════════════════════════════════════════ */}
-          <div className="relative flex flex-col">
-            {/* Cute Cartoon Ghost & "You're here" callout (when activeLevel === 2) */}
-            {activeLevel === 2 && (
-              <div className="absolute -top-14 left-4 z-20 flex items-end gap-2 pointer-events-none select-none">
-                <div className="relative -mb-1">
-                  <svg width="54" height="62" viewBox="0 0 54 62" fill="none" className="drop-shadow-xs">
-                    <path
-                      d="M7 28 C7 12, 18 5, 27 5 C36 5, 47 12, 47 28 L47 50 C47 50, 42 46, 38 50 C34 54, 31 46, 27 50 C23 54, 19 46, 16 50 C12 54, 7 50, 7 50 Z"
-                      fill="white"
-                      stroke="#0B1C30"
-                      strokeWidth="2.5"
-                      strokeLinejoin="round"
-                    />
-                    <ellipse cx="21" cy="24" rx="2.4" ry="4.5" fill="#0B1C30" />
-                    <ellipse cx="33" cy="24" rx="2.4" ry="4.5" fill="#0B1C30" />
-                  </svg>
-                </div>
-                <div className="flex items-center gap-1 -mb-2">
-                  <svg width="38" height="28" viewBox="0 0 38 28" fill="none" className="text-[#3B82F6]">
-                    <path d="M32 4 C20 6, 10 14, 6 23" stroke="#3B82F6" strokeWidth="1.75" strokeLinecap="round" />
-                    <path d="M6 23 L12 20 M6 23 L7 17" stroke="#3B82F6" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <div className="bg-[#CAEB0E] text-black font-black text-[11px] leading-tight px-3 py-1 rounded-full shadow-xs text-center">
-                    <div>You&apos;re</div>
-                    <div>here</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div
-              className={`h-full rounded-[26px] transition-all duration-200 flex flex-col ${
-                activeLevel === 2
-                  ? 'p-[2px] bg-gradient-to-br from-[#5945F1] via-[#8B5CF6] to-[#FE01B1] shadow-lg'
-                  : 'border border-slate-200/90 hover:border-slate-300 hover:shadow-md'
-              }`}
-            >
-              <div className="bg-white rounded-[24px] p-6 sm:p-7 h-full flex flex-col justify-between">
-                <div>
-                  {/* Top Pill Tag: CLIMBER */}
-                  <div className="mb-6">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FE01B1] text-white text-xs font-black uppercase tracking-wider shadow-2xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                      <span>CLIMBER</span>
-                    </span>
-                  </div>
-
-                  {/* Cashback section */}
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-2.5">
-                      <span className="text-4xl font-black text-[#FE01B1] tracking-tight leading-none">
-                        +5%
-                      </span>
-                      <div className="flex flex-col leading-tight">
-                        <span className="text-[11px] text-slate-500 font-medium">Cashback</span>
-                        <span className="text-xs font-bold text-[#FE01B1]">boost rate</span>
+                      {/* What you have now / What you get */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-bold text-[#0b1c30]">{tier.whatTitle}</h4>
+                        <ul className="space-y-2 text-xs text-slate-600">
+                          {tier.features.map((feat, fIdx) => (
+                            <li key={fIdx} className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
+                              {feat.text}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
-                  </div>
 
-                  {/* What you get */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-bold text-[#0b1c30]">What you get</h4>
-                    <ul className="space-y-2 text-xs text-slate-600">
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>Trading Tools</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>
-                          Trading Signal with{' '}
-                          <strong className="font-bold text-[#FE01B1]">75% - 79%</strong> Confidence
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>Better Broker Offers</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+                    {/* Divider & Dynamic Bottom Content */}
+                    <div>
+                      <div className="h-px bg-slate-200/80 my-5" />
 
-                {/* Divider */}
-                <div>
-                  <div className="h-px bg-slate-100 my-6" />
+                      {/* Dynamic Bottom Status based on user's active tier */}
+                      {(() => {
+                        // 1. ACTIVE TIER
+                        if (isActive) {
+                          if (tier.level === 4) {
+                            return (
+                              <div className="space-y-2">
+                                <div className="font-bold text-sm text-[#5046E5]">Big leagues now.</div>
+                                <div className="text-xs text-slate-500">
+                                  Time to show them how it&apos;s done.
+                                </div>
+                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-3">
+                                  <div className="h-full bg-gradient-to-r from-[#5046E5] to-[#FD02B0] rounded-full w-[25.1%]" />
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium pt-1">
+                                  <Gem className="w-3.5 h-3.5 text-[#5046E5]" />
+                                  <span>
+                                    <strong className="font-bold text-[#5046E5]">251</strong>/1,000
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }
 
-                  {/* How to get it? */}
-                  <div className="space-y-1.5">
-                    <div className="font-bold text-xs text-[#0b1c30]">How to get it?</div>
-                    <div className="text-xs text-slate-700">
-                      Just <strong className="font-bold text-[#FE01B1]">100 points.</strong>
+                          return (
+                            <div className="space-y-2">
+                              <div className="font-bold text-sm text-[#5046E5]">Don&apos;t stop now!</div>
+                              <div className="text-xs text-slate-500">The good stuff is waiting.</div>
+                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mt-3">
+                                <div className="h-full bg-gradient-to-r from-[#5046E5] to-[#FD02B0] rounded-full w-[33.3%]" />
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium pt-1">
+                                <Gem className="w-3.5 h-3.5 text-[#5046E5]" />
+                                <span>
+                                  <strong className="font-bold text-[#5046E5]">50</strong>/150 to Next Level
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // 2. PREVIOUS ALREADY ACHIEVED TIERS
+                        if (tier.level < activeLevel) {
+                          if (tier.level === 1) {
+                            return (
+                              <div className="space-y-1.5">
+                                <div className="font-bold text-sm text-[#0b1c30]">Level achieved.</div>
+                                <div className="text-xs text-slate-500 leading-relaxed">
+                                  Don&apos;t look back now, we know exactly what you&apos;re capable of.
+                                </div>
+                              </div>
+                            );
+                          }
+                          if (tier.level === 2) {
+                            return (
+                              <div className="space-y-1.5">
+                                <div className="font-bold text-sm text-[#0b1c30]">100 points in the bag.</div>
+                                <div className="text-xs text-slate-500 leading-relaxed">
+                                  Level secured. Keep chasing the next one.
+                                </div>
+                              </div>
+                            );
+                          }
+                          if (tier.level === 3) {
+                            return (
+                              <div className="space-y-1.5">
+                                <div className="font-bold text-sm text-[#0b1c30]">250 points bagged.</div>
+                                <div className="text-xs text-slate-500 leading-relaxed">
+                                  Go ahead and celebrate, just try not to brag too much.
+                                </div>
+                              </div>
+                            );
+                          }
+                        }
+
+                        // 3. FUTURE LOCKED TIERS
+                        if (tier.level === 2) {
+                          return (
+                            <div className="space-y-1.5">
+                              <div className="font-bold text-sm text-[#0b1c30]">How to get it?</div>
+                              <div className="text-xs text-slate-700">
+                                Just <strong className="font-bold text-[#FD02B0]">100 points.</strong>
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                A few good trades and you&apos;re here.
+                              </div>
+                            </div>
+                          );
+                        }
+                        if (tier.level === 3) {
+                          return (
+                            <div className="space-y-1.5">
+                              <div className="font-bold text-sm text-[#0b1c30]">How to get it?</div>
+                              <div className="text-xs text-slate-700">
+                                Earn <strong className="font-bold text-[#65A30D]">250 Points .</strong>
+                              </div>
+                              <div className="text-xs text-slate-500">Popular with active traders.</div>
+                            </div>
+                          );
+                        }
+                        if (tier.level === 4) {
+                          return (
+                            <div className="space-y-1.5">
+                              <div className="font-bold text-sm text-[#0b1c30]">How to get it?</div>
+                              <div className="text-xs text-slate-700">
+                                <strong className="font-bold text-[#5046E5]">500 Points</strong>
+                              </div>
+                              <div className="text-xs text-slate-500">For traders who don&apos;t quit.</div>
+                            </div>
+                          );
+                        }
+
+                        return null;
+                      })()}
                     </div>
-                    <div className="text-xs text-slate-400">A few good trades and you&apos;re here.</div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Dotted Arrow to Next Card (Desktop XL) */}
-            <div className="hidden xl:flex absolute -right-5 top-[52%] -translate-y-1/2 z-10 pointer-events-none">
-              <svg width="28" height="12" viewBox="0 0 28 12" fill="none">
-                <line x1="0" y1="6" x2="22" y2="6" stroke="#CBD5E1" strokeWidth="1.5" strokeDasharray="2 3" />
-                <path d="M18 2 L23 6 L18 10" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
-
-          {/* ════════════════════════════════════════════════════════════
-              CARD 3: PLAYER
-             ════════════════════════════════════════════════════════════ */}
-          <div className="relative flex flex-col">
-            {/* Cute Cartoon Ghost & "You're here" callout (when activeLevel === 3) */}
-            {activeLevel === 3 && (
-              <div className="absolute -top-14 left-4 z-20 flex items-end gap-2 pointer-events-none select-none">
-                <div className="relative -mb-1">
-                  <svg width="54" height="62" viewBox="0 0 54 62" fill="none" className="drop-shadow-xs">
-                    <path
-                      d="M7 28 C7 12, 18 5, 27 5 C36 5, 47 12, 47 28 L47 50 C47 50, 42 46, 38 50 C34 54, 31 46, 27 50 C23 54, 19 46, 16 50 C12 54, 7 50, 7 50 Z"
-                      fill="white"
-                      stroke="#0B1C30"
-                      strokeWidth="2.5"
-                      strokeLinejoin="round"
-                    />
-                    <ellipse cx="21" cy="24" rx="2.4" ry="4.5" fill="#0B1C30" />
-                    <ellipse cx="33" cy="24" rx="2.4" ry="4.5" fill="#0B1C30" />
-                  </svg>
-                </div>
-                <div className="flex items-center gap-1 -mb-2">
-                  <svg width="38" height="28" viewBox="0 0 38 28" fill="none" className="text-[#3B82F6]">
-                    <path d="M32 4 C20 6, 10 14, 6 23" stroke="#3B82F6" strokeWidth="1.75" strokeLinecap="round" />
-                    <path d="M6 23 L12 20 M6 23 L7 17" stroke="#3B82F6" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <div className="bg-[#CAEB0E] text-black font-black text-[11px] leading-tight px-3 py-1 rounded-full shadow-xs text-center">
-                    <div>You&apos;re</div>
-                    <div>here</div>
+                {/* Dotted Arrow Connector to Next Card (Desktop XL) */}
+                {idx < 3 && (
+                  <div className="hidden xl:flex absolute -right-5 top-[52%] -translate-y-1/2 z-10 pointer-events-none">
+                    <svg width="28" height="12" viewBox="0 0 28 12" fill="none">
+                      <line
+                        x1="0"
+                        y1="6"
+                        x2="20"
+                        y2="6"
+                        stroke="#CBD5E1"
+                        strokeWidth="1.5"
+                        strokeDasharray="2 3"
+                      />
+                      <path
+                        d="M16 2 L21 6 L16 10"
+                        stroke="#94A3B8"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </div>
-                </div>
+                )}
               </div>
-            )}
+            );
+          })}
+        </div>
 
-            <div
-              className={`h-full rounded-[26px] transition-all duration-200 flex flex-col ${
-                activeLevel === 3
-                  ? 'p-[2px] bg-gradient-to-br from-[#5945F1] via-[#8B5CF6] to-[#FE01B1] shadow-lg'
-                  : 'border border-slate-200/90 hover:border-slate-300 hover:shadow-md'
+        {/* ─── Pagination Dots (Exact match to screenshots) ─── */}
+        <div className="flex items-center justify-center gap-2 pt-8 select-none">
+          {[1, 2, 3, 4].map((lvl) => (
+            <button
+              key={lvl}
+              type="button"
+              onClick={() => {
+                setActiveLevel(lvl);
+                onShowToast?.(`Selected ${getLevelTitle(lvl)} tier`);
+              }}
+              aria-label={`Go to Level ${lvl}`}
+              className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${
+                activeLevel === lvl
+                  ? 'bg-[#5046E5] ring-2 ring-[#5046E5]/20 scale-110'
+                  : 'bg-[#DDD6FE] hover:bg-[#C4B5FD]'
               }`}
-            >
-              <div className="bg-white rounded-[24px] p-6 sm:p-7 h-full flex flex-col justify-between">
-                <div>
-                  {/* Top Pill Tag: PLAYER */}
-                  <div className="mb-6">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#CAEB0E] text-black text-xs font-black uppercase tracking-wider shadow-2xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-black" />
-                      <span>PLAYER</span>
-                    </span>
-                  </div>
-
-                  {/* Cashback section */}
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-2.5">
-                      <span className="text-4xl font-black text-[#85A900] tracking-tight leading-none">
-                        +10%
-                      </span>
-                      <div className="flex flex-col leading-tight">
-                        <span className="text-[11px] text-slate-500 font-medium">Cashback</span>
-                        <span className="text-xs font-bold text-[#85A900]">boost rate</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* What you get */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-bold text-[#0b1c30]">What you get</h4>
-                    <ul className="space-y-2 text-xs text-slate-600">
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>Trading Tools</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>
-                          Trading Signal with{' '}
-                          <strong className="font-bold text-[#85A900]">80% - 89%</strong> Confidence
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>Premium Promotions</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div>
-                  <div className="h-px bg-slate-100 my-6" />
-
-                  {/* How to get it? */}
-                  <div className="space-y-1.5">
-                    <div className="font-bold text-xs text-[#0b1c30]">How to get it?</div>
-                    <div className="text-xs text-slate-700">
-                      Earn <strong className="font-bold text-[#85A900]">250 Points .</strong>
-                    </div>
-                    <div className="text-xs text-slate-400">
-                      This is a favourite stop for active traders.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Dotted Arrow to Next Card (Desktop XL) */}
-            <div className="hidden xl:flex absolute -right-5 top-[52%] -translate-y-1/2 z-10 pointer-events-none">
-              <svg width="28" height="12" viewBox="0 0 28 12" fill="none">
-                <line x1="0" y1="6" x2="22" y2="6" stroke="#CBD5E1" strokeWidth="1.5" strokeDasharray="2 3" />
-                <path d="M18 2 L23 6 L18 10" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
-
-          {/* ════════════════════════════════════════════════════════════
-              CARD 4: BOSS
-             ════════════════════════════════════════════════════════════ */}
-          <div className="relative flex flex-col">
-            {/* Cute Cartoon Ghost & "You're here" callout (when activeLevel === 4) */}
-            {activeLevel === 4 && (
-              <div className="absolute -top-14 left-4 z-20 flex items-end gap-2 pointer-events-none select-none">
-                <div className="relative -mb-1">
-                  <svg width="54" height="62" viewBox="0 0 54 62" fill="none" className="drop-shadow-xs">
-                    <path
-                      d="M7 28 C7 12, 18 5, 27 5 C36 5, 47 12, 47 28 L47 50 C47 50, 42 46, 38 50 C34 54, 31 46, 27 50 C23 54, 19 46, 16 50 C12 54, 7 50, 7 50 Z"
-                      fill="white"
-                      stroke="#0B1C30"
-                      strokeWidth="2.5"
-                      strokeLinejoin="round"
-                    />
-                    <ellipse cx="21" cy="24" rx="2.4" ry="4.5" fill="#0B1C30" />
-                    <ellipse cx="33" cy="24" rx="2.4" ry="4.5" fill="#0B1C30" />
-                  </svg>
-                </div>
-                <div className="flex items-center gap-1 -mb-2">
-                  <svg width="38" height="28" viewBox="0 0 38 28" fill="none" className="text-[#3B82F6]">
-                    <path d="M32 4 C20 6, 10 14, 6 23" stroke="#3B82F6" strokeWidth="1.75" strokeLinecap="round" />
-                    <path d="M6 23 L12 20 M6 23 L7 17" stroke="#3B82F6" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <div className="bg-[#CAEB0E] text-black font-black text-[11px] leading-tight px-3 py-1 rounded-full shadow-xs text-center">
-                    <div>You&apos;re</div>
-                    <div>here</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div
-              className={`h-full rounded-[26px] transition-all duration-200 flex flex-col ${
-                activeLevel === 4
-                  ? 'p-[2px] bg-gradient-to-br from-[#5945F1] via-[#8B5CF6] to-[#FE01B1] shadow-lg'
-                  : 'border border-slate-200/90 hover:border-slate-300 hover:shadow-md'
-              }`}
-            >
-              <div className="bg-white rounded-[24px] p-6 sm:p-7 h-full flex flex-col justify-between">
-                <div>
-                  {/* Top Pill Tag: BOSS */}
-                  <div className="mb-6">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#5945F1] text-white text-xs font-black uppercase tracking-wider shadow-2xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                      <span>BOSS</span>
-                    </span>
-                  </div>
-
-                  {/* Cashback section */}
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-2.5">
-                      <span className="text-4xl font-black text-[#5945F1] tracking-tight leading-none">
-                        +15%
-                      </span>
-                      <div className="flex flex-col leading-tight">
-                        <span className="text-[11px] text-slate-500 font-medium">Cashback</span>
-                        <span className="text-xs font-bold text-[#5945F1]">boost rate</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* What you get */}
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-bold text-[#0b1c30]">What you get</h4>
-                    <ul className="space-y-2 text-xs text-slate-600">
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>Trading Tools</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>
-                          Gain full access to{' '}
-                          <strong className="font-bold text-[#5945F1]">90%+</strong> confidence signals
-                        </span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
-                        <span>Exclusive member only benefits</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div>
-                  <div className="h-px bg-slate-100 my-6" />
-
-                  {/* How to get it? */}
-                  <div className="space-y-1.5">
-                    <div className="font-bold text-xs text-[#0b1c30]">How to get it?</div>
-                    <div className="text-xs text-slate-700">
-                      <strong className="font-bold text-[#5945F1]">500 Points</strong>
-                    </div>
-                    <div className="text-xs text-slate-400">For traders who don&apos;t quit.</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            />
+          ))}
         </div>
       </div>
 

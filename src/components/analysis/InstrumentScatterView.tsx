@@ -27,30 +27,30 @@ export const InstrumentScatterView: React.FC<InstrumentScatterViewProps> = ({
 
   // Exact distribution matching Frame 427322387 (2).png
   const points: ScatterPoint[] = [
-    // Negative cluster (pink/rose dots)
-    { id: 'ltc', name: 'Litecoin', symbol: 'LTC/USD', xVal: -2.3, yVal: -2.2, marketCap: '$4.08B', size: 8, color: '#EC4899', winRate: '>50%' },
-    { id: 'xmr', name: 'Monero', symbol: 'XMR/USD', xVal: -2.0, yVal: -1.9, marketCap: '$2.80B', size: 7, color: '#F43F5E', winRate: '48%' },
-    { id: 'ton', name: 'Toncoin', symbol: 'TON/USD', xVal: -1.7, yVal: -1.8, marketCap: '$14.2B', size: 9, color: '#F43F5E', winRate: '>50%' },
-    { id: 'avax', name: 'Avalanche', symbol: 'AVAX/USD', xVal: -1.5, yVal: -1.5, marketCap: '$9.56B', size: 10, color: '#E11D48', winRate: '>50%' },
-    { id: 'dot', name: 'Polkadot', symbol: 'DOT/USD', xVal: -1.2, yVal: -1.3, marketCap: '$6.20B', size: 7, color: '#DB2777', winRate: '46%' },
-    { id: 'pol', name: 'Polygon', symbol: 'POL/USD', xVal: -0.9, yVal: -0.8, marketCap: '$57.8B', size: 12, color: '#C026D3', winRate: '>50%' },
-    { id: 'hbar', name: 'Hedera', symbol: 'HBAR/USD', xVal: -0.6, yVal: -0.5, marketCap: '$3.50B', size: 8, color: '#A855F7', winRate: '>50%' },
-    { id: 'near', name: 'NEAR Protocol', symbol: 'NEAR/USD', xVal: -0.4, yVal: -0.3, marketCap: '$4.80B', size: 9, color: '#9333EA', winRate: '49%' },
+    // Negative cluster (loss - purple/indigo dots)
+    { id: 'ltc', name: 'Litecoin', symbol: 'LTC/USD', xVal: -2.3, yVal: -2.2, marketCap: '$4.08B', size: 8, color: '#5046E5', winRate: '>50%' },
+    { id: 'xmr', name: 'Monero', symbol: 'XMR/USD', xVal: -2.0, yVal: -1.9, marketCap: '$2.80B', size: 7, color: '#5046E5', winRate: '48%' },
+    { id: 'ton', name: 'Toncoin', symbol: 'TON/USD', xVal: -1.7, yVal: -1.8, marketCap: '$14.2B', size: 9, color: '#5046E5', winRate: '>50%' },
+    { id: 'avax', name: 'Avalanche', symbol: 'AVAX/USD', xVal: -1.5, yVal: -1.5, marketCap: '$9.56B', size: 10, color: '#6366F1', winRate: '>50%' },
+    { id: 'dot', name: 'Polkadot', symbol: 'DOT/USD', xVal: -1.2, yVal: -1.3, marketCap: '$6.20B', size: 7, color: '#6366F1', winRate: '46%' },
+    { id: 'pol', name: 'Polygon', symbol: 'POL/USD', xVal: -0.9, yVal: -0.8, marketCap: '$57.8B', size: 12, color: '#6366F1', winRate: '>50%' },
+    { id: 'hbar', name: 'Hedera', symbol: 'HBAR/USD', xVal: -0.6, yVal: -0.5, marketCap: '$3.50B', size: 8, color: '#818CF8', winRate: '>50%' },
+    { id: 'near', name: 'NEAR Protocol', symbol: 'NEAR/USD', xVal: -0.4, yVal: -0.3, marketCap: '$4.80B', size: 9, color: '#818CF8', winRate: '49%' },
 
-    // Centered around 0% (purple/indigo dots)
-    { id: 'link', name: 'Chainlink', symbol: 'LINK/USD', xVal: -0.1, yVal: 0.1, marketCap: '$7.40B', size: 10, color: '#7C3AED', winRate: '>50%' },
-    { id: 'ada', name: 'Cardano', symbol: 'ADA/USD', xVal: 0.2, yVal: 0.3, marketCap: '$12.5B', size: 10, color: '#6366F1', winRate: '>50%' },
-    { id: 'doge', name: 'Dogecoin', symbol: 'DOGE/USD', xVal: 0.4, yVal: 0.4, marketCap: '$14.2B', size: 9, color: '#5945F1', winRate: '>50%' },
-    { id: 'xrp', name: 'Ripple', symbol: 'XRP/USD', xVal: 0.7, yVal: 0.7, marketCap: '$83.88B', size: 12, color: '#4F46E5', winRate: 'Neutral' },
-    { id: 'uni', name: 'Uniswap', symbol: 'UNI/USD', xVal: 1.0, yVal: 0.9, marketCap: '$3.71B', size: 8, color: '#4F46E5', winRate: '>50%' },
+    // Centered around 0%
+    { id: 'link', name: 'Chainlink', symbol: 'LINK/USD', xVal: -0.1, yVal: 0.1, marketCap: '$7.40B', size: 10, color: '#BEF226', winRate: '>50%' },
+    { id: 'ada', name: 'Cardano', symbol: 'ADA/USD', xVal: 0.2, yVal: 0.3, marketCap: '$12.5B', size: 10, color: '#BEF226', winRate: '>50%' },
+    { id: 'doge', name: 'Dogecoin', symbol: 'DOGE/USD', xVal: 0.4, yVal: 0.4, marketCap: '$14.2B', size: 9, color: '#BEF226', winRate: '>50%' },
+    { id: 'xrp', name: 'Ripple', symbol: 'XRP/USD', xVal: 0.7, yVal: 0.7, marketCap: '$83.88B', size: 12, color: '#A3E635', winRate: 'Neutral' },
+    { id: 'uni', name: 'Uniswap', symbol: 'UNI/USD', xVal: 1.0, yVal: 0.9, marketCap: '$3.71B', size: 8, color: '#A3E635', winRate: '>50%' },
 
-    // Positive cluster (indigo/blue dots)
-    { id: 'sol', name: 'Solana', symbol: 'SOL/USD', xVal: 1.5, yVal: 1.3, marketCap: '$60.3B', size: 10, color: '#4338CA', winRate: '>50%' },
-    { id: 'bnb', name: 'Binance Coin', symbol: 'BNB/USD', xVal: 1.8, yVal: 1.4, marketCap: '$84.04B', size: 11, color: '#4338CA', winRate: '>50%' },
-    { id: 'aave', name: 'Aave', symbol: 'AAVE/USD', xVal: 2.1, yVal: 1.5, marketCap: '$2.10B', size: 8, color: '#4338CA', winRate: '>50%' },
-    { id: 'usdt', name: 'Tether USD', symbol: 'USDT/USD', xVal: 3.2, yVal: 2.0, marketCap: '$118B', size: 11, color: '#3730A3', winRate: '>50%' },
-    { id: 'eth', name: 'Ethereum', symbol: 'ETH/USD', xVal: 4.6, yVal: 2.4, marketCap: '$297.46B', size: 14, color: '#3730A3', winRate: '>50%' },
-    { id: 'btc', name: 'Bitcoin', symbol: 'BTC/USD', xVal: 5.0, yVal: 2.7, marketCap: '$1.54T', size: 20, color: '#3730A3', winRate: '>50%' },
+    // Positive cluster (gain - lime green dots)
+    { id: 'sol', name: 'Solana', symbol: 'SOL/USD', xVal: 1.5, yVal: 1.3, marketCap: '$60.3B', size: 10, color: '#A3E635', winRate: '>50%' },
+    { id: 'bnb', name: 'Binance Coin', symbol: 'BNB/USD', xVal: 1.8, yVal: 1.4, marketCap: '$84.04B', size: 11, color: '#A3E635', winRate: '>50%' },
+    { id: 'aave', name: 'Aave', symbol: 'AAVE/USD', xVal: 2.1, yVal: 1.5, marketCap: '$2.10B', size: 8, color: '#84CC16', winRate: '>50%' },
+    { id: 'usdt', name: 'Tether USD', symbol: 'USDT/USD', xVal: 3.2, yVal: 2.0, marketCap: '$118B', size: 11, color: '#84CC16', winRate: '>50%' },
+    { id: 'eth', name: 'Ethereum', symbol: 'ETH/USD', xVal: 4.6, yVal: 2.4, marketCap: '$297.46B', size: 14, color: '#84CC16', winRate: '>50%' },
+    { id: 'btc', name: 'Bitcoin', symbol: 'BTC/USD', xVal: 5.0, yVal: 2.7, marketCap: '$1.54T', size: 20, color: '#84CC16', winRate: '>50%' },
   ];
 
   // Grid bounds: Y runs from 9% down to -3% (span of 12%)
@@ -83,6 +83,16 @@ export const InstrumentScatterView: React.FC<InstrumentScatterViewProps> = ({
           <p className="text-xs text-slate-500 mt-0.5">
             Compare available market metrics with native units
           </p>
+          <div className="flex items-center gap-3.5 mt-2 text-xs font-bold text-slate-700 select-none">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#BEF226] border border-[#a2bf06]" />
+              <span>Gain</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#5046E5]" />
+              <span>Loss</span>
+            </span>
+          </div>
         </div>
 
         {/* 3 Dropdowns */}

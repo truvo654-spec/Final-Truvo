@@ -586,19 +586,21 @@ export const Header: React.FC<HeaderProps> = ({
                   {/* Notifications */}
                   <button
                     onClick={() => {
-                      if (onShowToast) {
-                        onShowToast('🔔 1 Notification: Welcome bonus of 25 Syde Credits credited!');
-                      }
+                      setActiveTab('notifications');
                       setIsProfileMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-slate-800 hover:bg-slate-50 hover:text-[#5945F1] transition-colors text-left group cursor-pointer"
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl transition-colors text-left group cursor-pointer ${
+                      activeTab === 'notifications'
+                        ? 'bg-indigo-50/80 text-[#5945F1] font-semibold'
+                        : 'text-slate-800 hover:bg-slate-50 hover:text-[#5945F1]'
+                    }`}
                   >
                     <div className="flex items-center gap-3.5">
-                      <Bell className="w-4 h-4 text-slate-700 group-hover:text-[#5945F1] stroke-[1.8] shrink-0" />
+                      <Bell className={`w-4 h-4 stroke-[1.8] shrink-0 ${activeTab === 'notifications' ? 'text-[#5945F1]' : 'text-slate-700 group-hover:text-[#5945F1]'}`} />
                       <span className="text-[13.5px] font-medium leading-none">Notifications</span>
                     </div>
                     <span className="w-5 h-5 rounded-md bg-[#5945F1] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
-                      1
+                      2
                     </span>
                   </button>
                 </div>
@@ -1285,6 +1287,29 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   </div>
                 </button>
+
+                {/* 3. System Status & Error Pages */}
+                <button
+                  onClick={() => {
+                    setActiveTab('404');
+                    handleCloseImmediately();
+                  }}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full pt-3 border-t border-slate-100"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <div>
+                      <div className="font-bold text-sm text-[#0b1c30] group-hover:text-[#5945F1] transition-colors leading-tight flex items-center gap-2">
+                        <span>System Status</span>
+                        <span className="text-[10px] font-semibold text-[#5945F1] bg-indigo-50 px-1.5 py-0.5 rounded">
+                          404 · 500 · 503
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                        Preview 404, 500, and 503 maintenance screens.
+                      </div>
+                    </div>
+                  </div>
+                </button>
               </div>
             </div>
           </div>
@@ -1552,6 +1577,15 @@ export const Header: React.FC<HeaderProps> = ({
               className="w-full py-1.5 text-left text-sm font-semibold text-slate-700 hover:text-[#5338ec]"
             >
               Contact Us
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('404');
+                setMobileMenuOpen(false);
+              }}
+              className="w-full py-1.5 text-left text-sm font-semibold text-slate-700 hover:text-[#5338ec]"
+            >
+              System Status (404, 500, 503)
             </button>
           </div>
         </div>

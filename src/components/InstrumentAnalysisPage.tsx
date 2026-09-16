@@ -6,6 +6,7 @@ import {
   InstrumentRow,
 } from './analysis/instrumentAnalysisData';
 import { MarketCarouselCard } from './analysis/MarketCarouselCard';
+import { MarketBannerCard } from './analysis/MarketBannerCard';
 import { InstrumentIcon } from './analysis/InstrumentIcon';
 import { TodaysCryptoWidget } from './analysis/TodaysCryptoWidget';
 import { TradeVolumeComparisonWidget } from './analysis/TradeVolumeComparisonWidget';
@@ -59,8 +60,20 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
   onShareToCommunity,
   onShowToast,
 }) => {
+  // Market categories order matching the user's reference pills:
+  // Forex | Crypto | Commodities | Indicies | Stock
+  const categoryPills = [
+    { id: 'forex', label: 'Forex' },
+    { id: 'crypto', label: 'Crypto' },
+    { id: 'commodities', label: 'Commodities' },
+    { id: 'indices', label: 'Indicies' },
+    { id: 'stocks', label: 'Stock' },
+  ];
+
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('forex');
+  const [displayMode, setDisplayMode] = useState<'banner' | 'carousel'>('banner');
+
   // Carousel items layout representing the 5 major market categories:
-  // Crypto | Forex | Indices CFDs (Default Center) | Commodities | Stocks
   const carouselCategories = useMemo(() => {
     return MARKET_CATEGORIES.map((cat) => ({
       ...cat,
@@ -68,18 +81,22 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
     }));
   }, []);
 
-  // Active Category in Carousel (defaulting to center card index 2: 'Indices CFDs')
-  const [activeCardIndex, setActiveCardIndex] = useState<number>(2);
+  // Active Category in Carousel
+  const [activeCardIndex, setActiveCardIndex] = useState<number>(1);
 
   // Active Category object for table & widgets
   const activeCategory: MarketCategory = useMemo(() => {
+    if (displayMode === 'banner') {
+      const match = MARKET_CATEGORIES.find((c) => c.id === selectedCategoryId);
+      if (match) return match;
+    }
     const activeItem = carouselCategories[activeCardIndex];
     if (activeItem) {
       const match = MARKET_CATEGORIES.find((c) => c.id === activeItem.originalId);
       if (match) return match;
     }
-    return MARKET_CATEGORIES[2]; // Default to Indices CFDs (which has 463 results matching Frame 427322387.png)
-  }, [activeCardIndex, carouselCategories]);
+    return MARKET_CATEGORIES.find((c) => c.id === 'forex') || MARKET_CATEGORIES[0];
+  }, [displayMode, selectedCategoryId, activeCardIndex, carouselCategories]);
 
   // Favorites tracking
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -302,9 +319,9 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
   };
 
   return (
-    <div className="w-full pb-16 space-y-8 animate-in fade-in duration-200">
-      {/* ─── 1. TITLE & SUBTITLE AREA (Exact match to Frame 427322364.png) ─── */}
-      <div className="text-center max-w-3xl mx-auto px-4 sm:px-8 md:px-[56px] space-y-2 pt-[100px]">
+    <div className="w-full pb-16 space-y-7 animate-in fade-in duration-200">
+      {/* ─── 1. TITLE & SUBTITLE AREA (Exact match to Reference screenshots) ─── */}
+      <div className="text-center max-w-3xl mx-auto px-4 sm:px-8 md:px-[56px] space-y-3 pt-[100px]">
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-display tracking-tight">
           <span className="text-[#4F46E5]">Instrument</span>{' '}
           <span className="text-[#FD02B0]">Analysis</span>
@@ -312,182 +329,214 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
         <p className="text-slate-500 text-sm sm:text-base leading-relaxed">
           Review market highlight, Fear &amp; greed, derivatives activity, and 24-hour changes before selecting an instrument.
         </p>
-      </div>
 
-      {/* ─── 2. FULL-WIDTH 3D PLAYFUL CAROUSEL WITH LEFT-RIGHT PHASE BLUR ─── */}
-      <div className="relative w-full overflow-hidden pt-1 pb-2">
-        {/* Left Phase Blur Overlay */}
-        <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-36 md:w-56 lg:w-72 z-40 pointer-events-none bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/80 to-transparent dark:from-[#090119] dark:via-[#090119]/80 backdrop-blur-[1.5px]" />
-
-        {/* Right Phase Blur Overlay */}
-        <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-36 md:w-56 lg:w-72 z-40 pointer-events-none bg-gradient-to-l from-[#f8fafc] via-[#f8fafc]/80 to-transparent dark:from-[#090119] dark:via-[#090119]/80 backdrop-blur-[1.5px]" />
-
-        {/* Full-Width 3D Transform-Centered Carousel Stage */}
-        <div
-          className="relative w-full h-[650px] sm:h-[670px] md:h-[680px] select-none"
-          style={{ perspective: 1200 }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          {carouselCategories.map((cat, idx) => {
-            const diff = idx - activeCardIndex;
-            const absDiff = Math.abs(diff);
-            const isActive = diff === 0;
-
-            // Spacing offsets for different screen viewports:
-            const step1 = isMobile ? 220 : isTablet ? 275 : 340;
-            const step2 = isMobile ? 390 : isTablet ? 490 : 600;
-            const step3 = isMobile ? 560 : isTablet ? 700 : 860;
-
-            let x = 0;
-            let scale = 1;
-            let rotateY = 0;
-            let rotateZ = 0;
-            let zIndex = 30;
-            let opacity = 1;
-
-            if (diff === 0) {
-              x = 0;
-              scale = 1;
-              rotateY = 0;
-              rotateZ = 0;
-              zIndex = 30;
-              opacity = 1;
-            } else if (absDiff === 1) {
-              x = diff * step1;
-              scale = isMobile ? 0.76 : 0.83;
-              rotateY = diff > 0 ? -24 : 24;
-              rotateZ = diff > 0 ? 2.5 : -2.5;
-              zIndex = 20;
-              opacity = isMobile ? 0.65 : 0.88;
-            } else if (absDiff === 2) {
-              x = diff > 0 ? step2 : -step2;
-              scale = isMobile ? 0.58 : 0.68;
-              rotateY = diff > 0 ? -38 : 38;
-              rotateZ = diff > 0 ? 4 : -4;
-              zIndex = 10;
-              opacity = isMobile ? 0 : 0.52;
-            } else {
-              x = diff > 0 ? step3 : -step3;
-              scale = 0.5;
-              rotateY = diff > 0 ? -45 : 45;
-              rotateZ = diff > 0 ? 5 : -5;
-              zIndex = 0;
-              opacity = 0;
-            }
-
+        {/* ─── Category Pills Selector (Exact match to Reference Images) ─── */}
+        <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap pt-2">
+          {categoryPills.map((cat) => {
+            const isSelected = activeCategory.id === cat.id;
             return (
-              <motion.div
+              <button
                 key={cat.id}
-                initial={false}
-                animate={{
-                  x: `calc(-50% + ${x}px)`,
-                  y: isActive ? 0 : Math.min(absDiff * 14, 28),
-                  scale,
-                  rotateY,
-                  rotateZ,
-                  opacity,
-                  z: isActive ? 50 : -80 * absDiff,
+                type="button"
+                onClick={() => {
+                  setSelectedCategoryId(cat.id);
+                  const idx = carouselCategories.findIndex((c) => c.id === cat.id);
+                  if (idx >= 0) setActiveCardIndex(idx);
+                  setCurrentPage(1);
                 }}
-                transition={{
-                  type: 'spring',
-                  stiffness: 280,
-                  damping: 24,
-                  mass: 0.75,
-                }}
-                whileHover={
-                  !isActive && absDiff <= 2
-                    ? {
-                        scale: scale * 1.05,
-                        y: Math.min(absDiff * 14, 28) - 10,
-                        rotateY: rotateY * 0.4,
-                        rotateZ: 0,
-                        opacity: 1,
-                        transition: { duration: 0.2 },
-                      }
-                    : {}
-                }
-                whileTap={{ scale: scale * 0.95 }}
-                style={{
-                  top: '16px',
-                  left: '50%',
-                  transformStyle: 'preserve-3d',
-                  zIndex,
-                  pointerEvents:
-                    absDiff > 2 || (isMobile && absDiff > 1) ? 'none' : 'auto',
-                }}
-                className={`absolute will-change-transform ${
-                  isActive ? 'cursor-default' : 'cursor-pointer'
+                className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer shadow-2xs select-none ${
+                  isSelected
+                    ? 'bg-white border-2 border-[#5046E5] text-[#5046E5] shadow-xs'
+                    : 'bg-white/90 border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300'
                 }`}
-                onClick={() => handleSelectCard(idx)}
               >
-                <MarketCarouselCard
-                  category={cat}
-                  isActive={isActive}
-                  distance={absDiff}
-                  onClick={() => handleSelectCard(idx)}
-                />
-              </motion.div>
+                {cat.label}
+              </button>
             );
           })}
         </div>
+      </div>
 
-        {/* ─── Carousel Navigation: < • • • • • > with Playful Tactile Bounces ─── */}
-        <div className="flex items-center justify-center gap-3 mt-3 mb-2 select-none relative z-40">
-          {/* Previous Arrow < */}
-          <motion.button
-            type="button"
-            onClick={handlePrevCard}
-            whileHover={{ scale: 1.18, x: -3 }}
-            whileTap={{ scale: 0.85 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-            className="w-9 h-9 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-[#5945F1] hover:border-[#5945F1] transition-colors cursor-pointer"
-            aria-label="Previous card"
+      {/* ─── 2. WIDE MARKET BANNER CARD (Exact match to Instrumental Analysis.png) ─── */}
+      {displayMode === 'banner' ? (
+        <div className="w-full px-4 sm:px-8 md:px-[56px]">
+          <MarketBannerCard
+            category={activeCategory}
+            onOpenHighlight={() => {
+              onShowToast?.(`Viewing 24H Highlight for ${activeCategory.name}`);
+            }}
+            onOpenETF={() => {
+              onShowToast?.(`Viewing ETF statistics for ${activeCategory.name}`);
+            }}
+          />
+        </div>
+      ) : (
+        /* Full-Width 3D Carousel if toggled */
+        <div className="relative w-full overflow-hidden pt-1 pb-2">
+          <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-36 md:w-56 lg:w-72 z-40 pointer-events-none bg-gradient-to-r from-[#f8fafc] via-[#f8fafc]/80 to-transparent dark:from-[#090119] dark:via-[#090119]/80 backdrop-blur-[1.5px]" />
+          <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-36 md:w-56 lg:w-72 z-40 pointer-events-none bg-gradient-to-l from-[#f8fafc] via-[#f8fafc]/80 to-transparent dark:from-[#090119] dark:via-[#090119]/80 backdrop-blur-[1.5px]" />
+
+          <div
+            className="relative w-full h-[650px] sm:h-[670px] md:h-[680px] select-none"
+            style={{ perspective: 1200 }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
-            <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
-          </motion.button>
+            {carouselCategories.map((cat, idx) => {
+              const diff = idx - activeCardIndex;
+              const absDiff = Math.abs(diff);
+              const isActive = diff === 0;
 
-          {/* Dots Indicator with Morphing Pill */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/80 border border-slate-200/60 shadow-inner">
-            {carouselCategories.map((_, i) => {
-              const isCurrent = i === activeCardIndex;
+              const step1 = isMobile ? 220 : isTablet ? 275 : 340;
+              const step2 = isMobile ? 390 : isTablet ? 490 : 600;
+              const step3 = isMobile ? 560 : isTablet ? 700 : 860;
+
+              let x = 0;
+              let scale = 1;
+              let rotateY = 0;
+              let rotateZ = 0;
+              let zIndex = 30;
+              let opacity = 1;
+
+              if (diff === 0) {
+                x = 0;
+                scale = 1;
+                rotateY = 0;
+                rotateZ = 0;
+                zIndex = 30;
+                opacity = 1;
+              } else if (absDiff === 1) {
+                x = diff * step1;
+                scale = isMobile ? 0.76 : 0.83;
+                rotateY = diff > 0 ? -24 : 24;
+                rotateZ = diff > 0 ? 2.5 : -2.5;
+                zIndex = 20;
+                opacity = isMobile ? 0.65 : 0.88;
+              } else if (absDiff === 2) {
+                x = diff > 0 ? step2 : -step2;
+                scale = isMobile ? 0.58 : 0.68;
+                rotateY = diff > 0 ? -38 : 38;
+                rotateZ = diff > 0 ? 4 : -4;
+                zIndex = 10;
+                opacity = isMobile ? 0 : 0.52;
+              } else {
+                x = diff > 0 ? step3 : -step3;
+                scale = 0.5;
+                rotateY = diff > 0 ? -45 : 45;
+                rotateZ = diff > 0 ? 5 : -5;
+                zIndex = 0;
+                opacity = 0;
+              }
+
               return (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleSelectCard(i)}
-                  className="relative p-1 cursor-pointer focus:outline-hidden"
-                  aria-label={`Go to slide ${i + 1}`}
+                <motion.div
+                  key={cat.id}
+                  initial={false}
+                  animate={{
+                    x: `calc(-50% + ${x}px)`,
+                    y: isActive ? 0 : Math.min(absDiff * 14, 28),
+                    scale,
+                    rotateY,
+                    rotateZ,
+                    opacity,
+                    z: isActive ? 50 : -80 * absDiff,
+                  }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 280,
+                    damping: 24,
+                    mass: 0.75,
+                  }}
+                  whileHover={
+                    !isActive && absDiff <= 2
+                      ? {
+                          scale: scale * 1.05,
+                          y: Math.min(absDiff * 14, 28) - 10,
+                          rotateY: rotateY * 0.4,
+                          rotateZ: 0,
+                          opacity: 1,
+                          transition: { duration: 0.2 },
+                        }
+                      : {}
+                  }
+                  whileTap={{ scale: scale * 0.95 }}
+                  style={{
+                    top: '16px',
+                    left: '50%',
+                    transformStyle: 'preserve-3d',
+                    zIndex,
+                    pointerEvents:
+                      absDiff > 2 || (isMobile && absDiff > 1) ? 'none' : 'auto',
+                  }}
+                  className={`absolute will-change-transform ${
+                    isActive ? 'cursor-default' : 'cursor-pointer'
+                  }`}
+                  onClick={() => handleSelectCard(idx)}
                 >
-                  {isCurrent ? (
-                    <motion.div
-                      layoutId="activeCarouselDot"
-                      className="w-7 h-2.5 rounded-full bg-gradient-to-r from-[#5945F1] to-[#FD02B0] shadow-xs shadow-[#5945F1]/40"
-                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    />
-                  ) : (
-                    <div className="w-2 h-2 rounded-full bg-slate-300 hover:bg-[#A5B4FC] transition-colors" />
-                  )}
-                </button>
+                  <MarketCarouselCard
+                    category={cat}
+                    isActive={isActive}
+                    distance={absDiff}
+                    onClick={() => handleSelectCard(idx)}
+                  />
+                </motion.div>
               );
             })}
           </div>
 
-          {/* Next Arrow > */}
-          <motion.button
-            type="button"
-            onClick={handleNextCard}
-            whileHover={{ scale: 1.18, x: 3 }}
-            whileTap={{ scale: 0.85 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-            className="w-9 h-9 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-[#5945F1] hover:border-[#5945F1] transition-colors cursor-pointer"
-            aria-label="Next card"
-          >
-            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-          </motion.button>
+          <div className="flex items-center justify-center gap-3 mt-3 mb-2 select-none relative z-40">
+            <motion.button
+              type="button"
+              onClick={handlePrevCard}
+              whileHover={{ scale: 1.18, x: -3 }}
+              whileTap={{ scale: 0.85 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              className="w-9 h-9 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-[#5945F1] hover:border-[#5945F1] transition-colors cursor-pointer"
+              aria-label="Previous card"
+            >
+              <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+            </motion.button>
+
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/80 border border-slate-200/60 shadow-inner">
+              {carouselCategories.map((_, i) => {
+                const isCurrent = i === activeCardIndex;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSelectCard(i)}
+                    className="relative p-1 cursor-pointer focus:outline-hidden"
+                    aria-label={`Go to slide ${i + 1}`}
+                  >
+                    {isCurrent ? (
+                      <motion.div
+                        layoutId="activeCarouselDot"
+                        className="w-7 h-2.5 rounded-full bg-gradient-to-r from-[#5945F1] to-[#FD02B0] shadow-xs shadow-[#5945F1]/40"
+                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                      />
+                    ) : (
+                      <div className="w-2 h-2 rounded-full bg-slate-300 hover:bg-[#A5B4FC] transition-colors" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <motion.button
+              type="button"
+              onClick={handleNextCard}
+              whileHover={{ scale: 1.18, x: 3 }}
+              whileTap={{ scale: 0.85 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              className="w-9 h-9 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-[#5945F1] hover:border-[#5945F1] transition-colors cursor-pointer"
+              aria-label="Next card"
+            >
+              <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+            </motion.button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ─── 3. LOWER SECTION CONTAINER (Full Width matching other pages) ─── */}
       <div className="w-full px-4 sm:px-8 md:px-[56px] space-y-5">
@@ -849,13 +898,24 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                                   name={inst.name}
                                   className="w-7 h-7"
                                 />
-                                <div className="flex items-baseline gap-1.5">
+                                <div className="flex items-center gap-2">
                                   <span className="font-bold text-slate-900 text-sm leading-tight">
                                     {inst.name}
                                   </span>
-                                  <span className="text-xs text-slate-400 font-medium">
+                                  <span className="text-xs text-slate-400 font-medium hidden sm:inline">
                                     {inst.symbol}
                                   </span>
+                                  {/* Trade purple pill button matching screenshot */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSignalClick(inst);
+                                    }}
+                                    className="px-2.5 py-0.5 rounded-full bg-[#5046E5] text-white text-[11px] font-bold shadow-xs hover:bg-[#4338CA] cursor-pointer transition-all shrink-0"
+                                  >
+                                    Trade
+                                  </button>
                                 </div>
                               </div>
                             </td>

@@ -135,25 +135,25 @@ export const InstrumentCorrelationView: React.FC<InstrumentCorrelationViewProps>
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null);
 
   // Exact color styling matching Frame 427322387 (3).png
-  const getCellClasses = (val: number) => {
-    if (val === 100) {
-      return 'bg-[#16A34A] text-white font-bold shadow-2xs';
+  const getCellClasses = (val: number, isDiagonal: boolean) => {
+    if (isDiagonal) {
+      return 'bg-slate-100/60 text-transparent font-normal border border-slate-200/50';
     }
     if (val < 0) {
-      // Soft red / salmon
-      if (val <= -50) return 'bg-[#FECDD3] text-slate-800 font-medium';
-      return 'bg-[#FEE2E2] text-slate-800 font-medium';
+      // Soft pastel pink / magenta
+      if (val <= -50) return 'bg-[#FFA0DD] text-slate-900 font-bold';
+      return 'bg-[#FFBEE7] text-slate-900 font-semibold';
     }
-    // Positive mint green scale
-    if (val >= 75) return 'bg-[#86EFAC]/80 text-slate-800 font-medium';
-    if (val >= 50) return 'bg-[#BBF7D0]/70 text-slate-800 font-medium';
-    if (val >= 30) return 'bg-[#DCFCE7]/70 text-slate-800 font-medium';
-    return 'bg-[#F0FDF4] text-slate-800 font-medium';
+    // Positive lime-yellow pastel scale
+    if (val >= 75) return 'bg-[#E2F764] text-slate-900 font-bold';
+    if (val >= 50) return 'bg-[#EBF98D] text-slate-900 font-semibold';
+    if (val >= 30) return 'bg-[#F2FBAF] text-slate-900 font-medium';
+    return 'bg-[#F7FDCB] text-slate-900 font-medium';
   };
 
   return (
     <div className="w-full bg-white rounded-2xl border border-[#8B5CF6]/30 p-5 sm:p-7 shadow-2xs space-y-6">
-      {/* ─── Top Header Bar: Title + Subtitle ─── */}
+      {/* ─── Top Header Bar: Title + Subtitle + Legend ─── */}
       <div>
         <h2 className="text-base sm:text-lg font-bold font-display text-slate-900 select-none">
           Adaptive Correlation
@@ -161,6 +161,16 @@ export const InstrumentCorrelationView: React.FC<InstrumentCorrelationViewProps>
         <p className="text-xs text-slate-500 mt-0.5">
           Derived from the current market, venue, sector, and filter selection.
         </p>
+        <div className="flex items-center gap-3.5 mt-2 text-xs font-bold text-slate-700 select-none">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#CAEB0E] border border-[#a2bf06]" />
+            <span>Gain</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#FD02B0]" />
+            <span>Loss</span>
+          </span>
+        </div>
       </div>
 
       {/* ─── 9x9 Matrix Table (Exact match to Frame 427322387 (3).png) ─── */}
@@ -208,13 +218,14 @@ export const InstrumentCorrelationView: React.FC<InstrumentCorrelationViewProps>
                         key={cIdx}
                         onMouseEnter={() => setHoveredCell({ row: rIdx, col: cIdx })}
                         onMouseLeave={() => setHoveredCell(null)}
-                        whileHover={{ scale: 1.04 }}
+                        whileHover={rIdx === cIdx ? {} : { scale: 1.04 }}
                         onClick={() => onSelectInstrument?.(rowInst)}
                         className={`h-12 sm:h-14 rounded-xl flex items-center justify-center text-xs sm:text-sm transition-all cursor-pointer ${getCellClasses(
-                          cell.val
-                        )} ${isHovered ? 'ring-2 ring-indigo-400 shadow-sm' : ''}`}
+                          cell.val,
+                          rIdx === cIdx
+                        )} ${isHovered && rIdx !== cIdx ? 'ring-2 ring-indigo-400 shadow-sm' : ''}`}
                       >
-                        {cell.text}
+                        {rIdx === cIdx ? '' : cell.text}
                       </motion.div>
                     );
                   })}

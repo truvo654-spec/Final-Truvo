@@ -51,6 +51,7 @@ import { TradingSignalDetailPage } from './components/signals/TradingSignalDetai
 import { InstrumentAnalysisPage } from './components/InstrumentAnalysisPage';
 import { ProfilePage } from './components/ProfilePage';
 import { AccountSecurityPage } from './components/AccountSecurityPage';
+import { NotificationsPage } from './components/notifications/NotificationsPage';
 import { LeverageCalculatorPage } from './components/calculators/LeverageCalculatorPage';
 import { SavedCalculation, INITIAL_SAVED_CALCULATIONS } from './components/calculators/savedCalculationsTypes';
 import { TradingCalculatorsModal, CalculatorType } from './components/calculators/TradingCalculatorsModal';
@@ -64,8 +65,68 @@ import { CashbackLedgerModal } from './components/CashbackLedgerModal';
 import { BrokerComparisonModal } from './components/BrokerComparisonModal';
 import { SearchModal } from './components/SearchModal';
 import { AuthModal } from './components/AuthModal';
+import { ErrorPageView, Error404Page, Error500Page, Error503Page } from './components/errors';
 import { Sparkles, Trophy, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+const KNOWN_APP_TABS = new Set([
+  'points-credits',
+  'activity-logs',
+  'level-points-guide',
+  'credit-earning-guide',
+  'dashboard',
+  'landing',
+  'home',
+  'brokers',
+  'broker-comparison',
+  'member-plan',
+  'broker-detail',
+  'broker-rebate-table',
+  'signals',
+  'signal-detail',
+  'instrument-analysis',
+  'profile',
+  'account-security',
+  'notifications',
+  'community',
+  'cashback-overview',
+  'active-trading-accounts',
+  'connect-to-truvo',
+  'leverage-calculator',
+  'volatility-calculator',
+  'spread-calculator',
+  'pip-calculator',
+  'pips-calculator',
+  'margin-calculator',
+  'rebate-calculator',
+  'trade-planning-calculator',
+  'position-size-calculator',
+  'sltp-calculator',
+  'stop-out-calculator',
+  'fibonacci-calculator',
+  'pivot-point-calculator',
+  'loss-calculator',
+  'profit-loss-calculator',
+  'drawdown-calculator',
+  'compound-calculator',
+  'performance-calculator',
+  'timezone-converter',
+  'trading-timezone-converter',
+  'currency-converter',
+  'conversion-calculator',
+  'calculators',
+  'leaderboard',
+  'about',
+  'contact-us',
+  'contact',
+  '500',
+  'server-error',
+  '503',
+  'maintenance',
+  'service-unavailable',
+  '404',
+  'not-found',
+]);
 
 export default function App() {
   const [user, setUser] = useState<UserProfile>(() => {
@@ -520,8 +581,23 @@ export default function App() {
 
       {/* Main App Container */}
       <main className={`flex-1 w-full ${
-        activeTab === 'about' || activeTab === 'contact-us' || activeTab === 'contact' || activeTab === 'landing' || activeTab === 'home' || activeTab === 'instrument-analysis' || (!isLoggedIn && activeTab === 'dashboard') || (!isLoggedIn && activeTab === 'member-plan')
-          ? 'p-0 space-y-0'
+        activeTab === 'about' ||
+        activeTab === 'contact-us' ||
+        activeTab === 'contact' ||
+        activeTab === 'landing' ||
+        activeTab === 'home' ||
+        activeTab === 'instrument-analysis' ||
+        activeTab === '404' ||
+        activeTab === 'not-found' ||
+        activeTab === '500' ||
+        activeTab === 'server-error' ||
+        activeTab === '503' ||
+        activeTab === 'maintenance' ||
+        activeTab === 'service-unavailable' ||
+        !KNOWN_APP_TABS.has(activeTab) ||
+        (!isLoggedIn && activeTab === 'dashboard') ||
+        (!isLoggedIn && activeTab === 'member-plan')
+          ? 'p-0 space-y-0 pt-[84px]'
           : 'px-4 sm:px-8 md:px-[56px] pt-[100px] pb-12 space-y-6'
       }`}>
         <AnimatePresence mode="wait">
@@ -794,7 +870,8 @@ export default function App() {
             onUpgradePrompt={() => setActiveTab('member-plan')}
             onOpenConnectModal={(broker) => {
               setSelectedBrokerForConnect(broker || brokers[0]);
-              setIsConnectModalOpen(true);
+              setConnectReturnTab('signals');
+              setActiveTab('connect-to-truvo');
             }}
             onOpenBrokerComparison={() => setActiveTab('broker-comparison')}
             onNavigateToBrokers={() => setActiveTab('brokers')}
@@ -821,7 +898,8 @@ export default function App() {
             onOpenViewPlan={() => setActiveTab('member-plan')}
             onConnectBroker={(b) => {
               setSelectedBrokerForConnect(b);
-              setIsConnectModalOpen(true);
+              setConnectReturnTab('signal-detail');
+              setActiveTab('connect-to-truvo');
             }}
             onNavigateToBrokers={() => setActiveTab('brokers')}
             onNavigateToComparison={() => setActiveTab('broker-comparison')}
@@ -889,6 +967,22 @@ export default function App() {
             onShowToast={showToast}
             onNavigateToTrade={() => setActiveTab('signals')}
             onNavigateToBrokers={() => setActiveTab('brokers')}
+          />
+        )}
+
+        {/* ─── TAB: Notifications Page (Activities & Announcements) ─── */}
+        {activeTab === 'notifications' && (
+          <NotificationsPage
+            brokers={brokers}
+            onNavigateToTab={setActiveTab}
+            onNavigateToCashback={() => setActiveTab('cashback-overview')}
+            onNavigateToSignals={() => setActiveTab('signals')}
+            onNavigateToBrokers={() => setActiveTab('brokers')}
+            onOpenConnectModal={(b) => {
+              setSelectedBrokerForConnect(b || brokers[0]);
+              setIsConnectModalOpen(true);
+            }}
+            onShowToast={showToast}
           />
         )}
 
@@ -975,6 +1069,13 @@ export default function App() {
             brokers={brokers}
             onSelectBroker={(b) => setSelectedBrokerForConnect(b)}
             onBackToDashboard={() => setActiveTab(connectReturnTab || 'active-trading-accounts')}
+            backLabel={
+              connectReturnTab === 'signal-detail'
+                ? 'Back to Trading Signal'
+                : connectReturnTab === 'signals'
+                ? 'Back to Signals'
+                : 'Back to Brokers'
+            }
             onNavigateToCashback={() => setActiveTab('cashback-overview')}
             onOpenConnectModal={(b) => {
               setSelectedBrokerForConnect(b);
@@ -1126,6 +1227,46 @@ export default function App() {
           <ContactUsPage
             onShowToast={showToast}
             onNavigateToTab={setActiveTab}
+          />
+        )}
+
+        {/* ─── ERROR PAGES: 404, 500, 503 (Matches Member Desktop Reference Screens) ─── */}
+        {(activeTab === '404' || activeTab === 'not-found' || !KNOWN_APP_TABS.has(activeTab)) && (
+          <Error404Page
+            onNavigateHome={() => {
+              setActiveTab('dashboard');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onNavigateToTab={(tab) => {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        )}
+
+        {(activeTab === '500' || activeTab === 'server-error') && (
+          <Error500Page
+            onNavigateHome={() => {
+              setActiveTab('dashboard');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onNavigateToTab={(tab) => {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        )}
+
+        {(activeTab === '503' || activeTab === 'maintenance' || activeTab === 'service-unavailable') && (
+          <Error503Page
+            onNavigateHome={() => {
+              setActiveTab('dashboard');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onNavigateToTab={(tab) => {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
           </motion.div>

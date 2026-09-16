@@ -54,9 +54,9 @@ export const CommunityMyPageView: React.FC<CommunityMyPageViewProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full items-start">
       {/* ─── LEFT COLUMN: USER PROFILE & INSIGHTS (4 cols) ─── */}
-      <div className="lg:col-span-4 space-y-4">
+      <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
         {/* Profile Card */}
         <div className="bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden text-[#0b1c30] shadow-xs hover:border-[#cbd5e1] transition-all">
           {/* Header Banner */}

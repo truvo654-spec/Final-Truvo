@@ -19,6 +19,7 @@ interface ConnectToTruvoPageProps {
   brokers: Broker[];
   onSelectBroker: (broker: Broker) => void;
   onBackToDashboard: () => void;
+  backLabel?: string;
   onNavigateToCashback: () => void;
   onOpenConnectModal: (broker: Broker) => void;
   onShowToast?: (msg: string) => void;
@@ -29,6 +30,7 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
   brokers,
   onSelectBroker,
   onBackToDashboard,
+  backLabel,
   onNavigateToCashback,
   onOpenConnectModal,
   onShowToast,
@@ -62,7 +64,7 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-indigo-200/80 bg-white dark:bg-[#120d2b] dark:border-indigo-950 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-[#5338ec] hover:border-[#5338ec] transition-all shadow-2xs cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Brokers</span>
+          <span>{backLabel || 'Back to Brokers'}</span>
         </button>
 
         {/* Quick Broker Switcher if user wants to test with different brokers */}

@@ -304,17 +304,17 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({
   const getTileClasses = (theme: 'green' | 'red' | 'lime') => {
     switch (theme) {
       case 'green':
-        return 'bg-[#EBF6EE] border-emerald-100/60 hover:bg-[#E2F3E7] hover:border-emerald-300/80';
+        return 'bg-[#E8F88E] border-[#D6EC6F] text-slate-900 hover:bg-[#DFF27B] hover:shadow-xs';
       case 'red':
-        return 'bg-[#FEE2E2]/75 border-rose-100/60 hover:bg-[#FCD2D2] hover:border-rose-300/80';
+        return 'bg-[#FFBBE5] border-[#F2A3D4] text-slate-900 hover:bg-[#FFAFDF] hover:shadow-xs';
       case 'lime':
-        return 'bg-[#FEF9C3]/75 border-amber-100/60 hover:bg-[#FEF08A]/80 hover:border-amber-300/80';
+        return 'bg-[#FEF08A] border-amber-200 text-slate-900 hover:bg-[#FDE047] hover:shadow-xs';
     }
   };
 
   return (
     <div className="w-full bg-white rounded-2xl border border-[#8B5CF6]/30 p-5 sm:p-7 shadow-2xs space-y-6">
-      {/* ─── Top Header Bar: Title + Subtitle + Size/Color Selects ─── */}
+      {/* ─── Top Header Bar: Title + Subtitle + Legend + Size/Color Selects ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-base sm:text-lg font-bold font-display text-slate-900 select-none">
@@ -323,6 +323,16 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({
           <p className="text-xs text-slate-500 mt-0.5">
             Tile size and color use the selected market fields
           </p>
+          <div className="flex items-center gap-3.5 mt-2 text-xs font-bold text-slate-700 select-none">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#CAEB0E] border border-[#a2bf06]" />
+              <span>Gain</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#FD02B0]" />
+              <span>Loss</span>
+            </span>
+          </div>
         </div>
 
         {/* Dropdowns */}
