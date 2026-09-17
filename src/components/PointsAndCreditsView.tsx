@@ -35,12 +35,49 @@ import {
   AssetPointsDetailModal,
 } from './MissionActionModals';
 import { EarningRewardData } from './EarningRewardModal';
+import { getTierForPoints, getNextTierInfo } from '../data/levelScenarios';
 
 // ─────────────────────────────────────────────────────────────
 // Custom 3D SVG Assets matching reference designs
 // ─────────────────────────────────────────────────────────────
 
-function RookieGhostBadge() {
+function RookieGhostBadge({ tierLevel = 1 }: { tierLevel?: number }) {
+  if (tierLevel === 4) {
+    return (
+      <div className="relative w-18 h-18 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-2xl bg-[#5046E5]/30 blur-lg transform scale-90" />
+        <div className="w-full h-full rounded-2xl bg-gradient-to-br from-[#5046E5] to-[#3730A3] border-2 border-indigo-200 p-2 flex flex-col items-center justify-center shadow-lg relative z-10 text-white">
+          <span className="text-3xl filter drop-shadow-md">👑</span>
+          <span className="text-[10px] font-black tracking-widest text-[#CAEB0E] uppercase mt-0.5">BOSS</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (tierLevel === 3) {
+    return (
+      <div className="relative w-18 h-18 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-2xl bg-[#CAEB0E]/30 blur-lg transform scale-90" />
+        <div className="w-full h-full rounded-2xl bg-gradient-to-br from-[#CAEB0E] to-[#A3BD0B] border-2 border-lime-300 p-2 flex flex-col items-center justify-center shadow-lg relative z-10 text-slate-950">
+          <span className="text-3xl filter drop-shadow-md">⚡</span>
+          <span className="text-[10px] font-black tracking-widest text-black uppercase mt-0.5">PLAYER</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (tierLevel === 2) {
+    return (
+      <div className="relative w-18 h-18 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-2xl bg-[#FD02B0]/25 blur-lg transform scale-90" />
+        <div className="w-full h-full rounded-2xl bg-gradient-to-br from-[#FD02B0] to-[#C90089] border-2 border-pink-200 p-2 flex flex-col items-center justify-center shadow-lg relative z-10 text-white">
+          <span className="text-3xl filter drop-shadow-md">👣</span>
+          <span className="text-[10px] font-black tracking-widest text-pink-100 uppercase mt-0.5">CLIMBER</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-18 h-18 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
       {/* Soft Purple Glow underneath */}
@@ -617,23 +654,22 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
     const newCredits = user.sydeCredits - creditsToDeduct;
     const newPoints = user.currentPoints + pointsToAdd;
 
-    // Check if new points level up user from Rookie to Silver Voyager (threshold: 150)
-    let newRank = user.rankTitle;
-    let newBoost = user.boostPercentage;
+    // Check if new points level up user according to system tiers (Rookie -> Climber -> Player -> Boss)
+    const tierInfo = getTierForPoints(newPoints);
     let levelUpMsg = '';
 
-    if (newPoints >= 150 && user.currentLevel === 1) {
-      newRank = 'Silver Voyager';
-      newBoost = 15;
-      levelUpMsg = ' 🌟 Congratulations! You have ranked up to Silver Voyager (+15% Multiplier unlocked)!';
+    if (tierInfo.level > user.tierLevel) {
+      levelUpMsg = ` 🌟 Congratulations! You reached Level ${tierInfo.level} (${tierInfo.rankTitle}) with +${tierInfo.boostPercentage}% Multiplier!`;
     }
 
     onUpdateUser({
       sydeCredits: newCredits,
       currentPoints: newPoints,
-      rankTitle: newRank,
-      boostPercentage: newBoost,
-      currentLevel: newPoints >= 150 ? 2 : 1,
+      rankTitle: tierInfo.rankTitle,
+      tierLevel: tierInfo.level,
+      maxPoints: tierInfo.maxPoints,
+      boostPercentage: tierInfo.boostPercentage,
+      perks: tierInfo.perks,
     });
 
     onAddActivityLog({
@@ -876,15 +912,34 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
                   </button>
                 </div>
 
-                {/* Main Content: 3D Ghost Hexagon Badge + Info */}
+                {/* Main Content: Tier Hexagon Badge + Info */}
                 <div className="flex items-center gap-4 py-2">
-                  <RookieGhostBadge />
+                  <RookieGhostBadge tierLevel={user.tierLevel} />
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-2xl sm:text-[28px] font-bold font-display text-[#5338ec] tracking-tight leading-none">
-                      {user.rankTitle || 'Rookie'}
-                    </h3>
-                    {/* Thin Purple-to-Pink Progress Bar */}
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-2xl sm:text-[28px] font-bold font-display text-[#5338ec] tracking-tight leading-none">
+                        {user.rankTitle || 'Rookie'}
+                      </h3>
+                      {user.tierLevel === 4 ? (
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#5046E5] text-white tracking-wider">
+                          Lv.4 Boss
+                        </span>
+                      ) : user.tierLevel === 3 ? (
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#CAEB0E] text-slate-950 tracking-wider">
+                          Lv.3 Player
+                        </span>
+                      ) : user.tierLevel === 2 ? (
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#FD02B0] text-white tracking-wider">
+                          Lv.2 Climber
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-black text-white tracking-wider">
+                          Lv.1 Rookie
+                        </span>
+                      )}
+                    </div>
+                    {/* Thin Progress Bar */}
                     <div className="w-full max-w-[190px] h-1.5 bg-[#eceffd] rounded-full overflow-hidden my-2.5">
                       <div
                         className="h-full bg-gradient-to-r from-[#6366f1] to-[#ec4899] rounded-full transition-all duration-500"
@@ -893,12 +948,23 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
                         }}
                       />
                     </div>
-                    {/* Points Line: Faceted Gem + 50/150 Total Points */}
+                    {/* Points Line: Faceted Gem + Current/Max Total Points */}
                     <div className="flex items-center gap-1 text-sm font-medium flex-wrap">
                       <FacetedGemIcon className="w-4 h-4" />
                       <span className="font-extrabold text-[#5338ec] text-base">{user.currentPoints}</span>
                       <span className="font-normal text-[#818cf8]">/{user.maxPoints}</span>
                       <span className="font-medium text-[#6366f1] ml-1">Total Points</span>
+                      {(() => {
+                        const nextInfo = getNextTierInfo(user.tierLevel || 1, user.currentPoints);
+                        if (nextInfo.isMaxLevel) {
+                          return <span className="text-[11px] font-bold text-emerald-600 ml-1.5">• Max Level</span>;
+                        }
+                        return (
+                          <span className="text-[11px] font-medium text-slate-500 ml-1.5">
+                            • {nextInfo.pointsNeeded} pts to {nextInfo.nextTierName}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

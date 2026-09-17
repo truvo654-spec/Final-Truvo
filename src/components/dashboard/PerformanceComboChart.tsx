@@ -7,40 +7,112 @@ export interface PerformanceComboChartProps {
   bestDay?: string;
   className?: string;
   isDemoActive?: boolean;
+  timeframe?: '1D' | '1W' | '1M' | 'All';
 }
 
-interface DayData {
-  day: number;
+interface ChartPoint {
+  label: string; // "1", "2" or "Mon" or "Jan"
+  fullLabel: string; // "March 10, 2026"
   cashback: number; // in USD
   lots: number; // in lots
   hasData: boolean;
 }
 
-// Exact dataset matching image.png (Days 1-15 active data, Days 16-31 zero/future)
-const DEFAULT_CHART_DATA: DayData[] = [
-  { day: 1, cashback: 22.5, lots: 2.25, hasData: true },
-  { day: 2, cashback: 22.5, lots: 2.25, hasData: true },
-  { day: 3, cashback: 36.8, lots: 3.68, hasData: true },
-  { day: 4, cashback: 36.8, lots: 3.68, hasData: true },
-  { day: 5, cashback: 27.5, lots: 2.75, hasData: true },
-  { day: 6, cashback: 26.5, lots: 2.65, hasData: true },
-  { day: 7, cashback: 15.8, lots: 1.58, hasData: true },
-  { day: 8, cashback: 15.8, lots: 1.58, hasData: true },
-  { day: 9, cashback: 32.8, lots: 3.28, hasData: true },
-  { day: 10, cashback: 36.5, lots: 3.65, hasData: true },
-  { day: 11, cashback: 46.8, lots: 4.68, hasData: true },
-  { day: 12, cashback: 50.8, lots: 5.08, hasData: true },
-  { day: 13, cashback: 0, lots: 0, hasData: true },
-  { day: 14, cashback: 0, lots: 0, hasData: true },
-  { day: 15, cashback: 36.8, lots: 3.68, hasData: true },
-  // Days 16 through 31: no trades yet
-  ...Array.from({ length: 16 }, (_, i) => ({
-    day: 16 + i,
-    cashback: 0,
-    lots: 0,
-    hasData: false,
-  })),
+// 31-day data for 1M timeframe filling the full width (Day 1 through Day 31)
+const MONTH_DATA: ChartPoint[] = [
+  { label: '1', fullLabel: 'March 1, 2026', cashback: 22.0, lots: 2.3, hasData: true },
+  { label: '2', fullLabel: 'March 2, 2026', cashback: 23.5, lots: 2.8, hasData: true },
+  { label: '3', fullLabel: 'March 3, 2026', cashback: 36.5, lots: 3.8, hasData: true },
+  { label: '4', fullLabel: 'March 4, 2026', cashback: 37.0, lots: 3.7, hasData: true },
+  { label: '5', fullLabel: 'March 5, 2026', cashback: 35.0, lots: 2.6, hasData: true },
+  { label: '6', fullLabel: 'March 6, 2026', cashback: 30.0, lots: 2.3, hasData: true },
+  { label: '7', fullLabel: 'March 7, 2026', cashback: 22.5, lots: 2.0, hasData: true },
+  { label: '8', fullLabel: 'March 8, 2026', cashback: 22.0, lots: 2.2, hasData: true },
+  { label: '9', fullLabel: 'March 9, 2026', cashback: 30.0, lots: 3.2, hasData: true },
+  { label: '10', fullLabel: 'March 10, 2026', cashback: 42.0, lots: 3.8, hasData: true },
+  { label: '11', fullLabel: 'March 11, 2026', cashback: 54.0, lots: 4.6, hasData: true },
+  { label: '12', fullLabel: 'March 12, 2026', cashback: 56.0, lots: 3.5, hasData: true },
+  { label: '13', fullLabel: 'March 13, 2026', cashback: 30.0, lots: 1.5, hasData: true },
+  { label: '14', fullLabel: 'March 14, 2026', cashback: 6.0, lots: 0.6, hasData: true },
+  { label: '15', fullLabel: 'March 15, 2026', cashback: 42.0, lots: 4.0, hasData: true },
+  { label: '16', fullLabel: 'March 16, 2026', cashback: 48.0, lots: 4.5, hasData: true },
+  { label: '17', fullLabel: 'March 17, 2026', cashback: 58.5, lots: 5.2, hasData: true },
+  { label: '18', fullLabel: 'March 18, 2026', cashback: 64.0, lots: 5.8, hasData: true },
+  { label: '19', fullLabel: 'March 19, 2026', cashback: 55.0, lots: 4.9, hasData: true },
+  { label: '20', fullLabel: 'March 20, 2026', cashback: 46.0, lots: 4.2, hasData: true },
+  { label: '21', fullLabel: 'March 21, 2026', cashback: 8.0, lots: 0.8, hasData: true },
+  { label: '22', fullLabel: 'March 22, 2026', cashback: 12.0, lots: 1.2, hasData: true },
+  { label: '23', fullLabel: 'March 23, 2026', cashback: 48.0, lots: 4.4, hasData: true },
+  { label: '24', fullLabel: 'March 24, 2026', cashback: 62.0, lots: 5.3, hasData: true },
+  { label: '25', fullLabel: 'March 25, 2026', cashback: 72.0, lots: 6.2, hasData: true },
+  { label: '26', fullLabel: 'March 26, 2026', cashback: 66.0, lots: 5.7, hasData: true },
+  { label: '27', fullLabel: 'March 27, 2026', cashback: 78.0, lots: 6.9, hasData: true },
+  { label: '28', fullLabel: 'March 28, 2026', cashback: 10.0, lots: 1.0, hasData: true },
+  { label: '29', fullLabel: 'March 29, 2026', cashback: 16.0, lots: 1.6, hasData: true },
+  { label: '30', fullLabel: 'March 30, 2026', cashback: 68.0, lots: 6.0, hasData: true },
+  { label: '31', fullLabel: 'March 31, 2026', cashback: 82.0, lots: 7.2, hasData: true },
 ];
+
+const WEEK_DATA: ChartPoint[] = [
+  { label: 'Mon', fullLabel: 'Monday, March 9', cashback: 30.0, lots: 3.2, hasData: true },
+  { label: 'Tue', fullLabel: 'Tuesday, March 10', cashback: 42.0, lots: 3.8, hasData: true },
+  { label: 'Wed', fullLabel: 'Wednesday, March 11', cashback: 54.0, lots: 4.6, hasData: true },
+  { label: 'Thu', fullLabel: 'Thursday, March 12', cashback: 56.0, lots: 3.5, hasData: true },
+  { label: 'Fri', fullLabel: 'Friday, March 13', cashback: 30.0, lots: 1.5, hasData: true },
+  { label: 'Sat', fullLabel: 'Saturday, March 14', cashback: 6.0, lots: 0.6, hasData: true },
+  { label: 'Sun', fullLabel: 'Sunday, March 15', cashback: 42.0, lots: 4.0, hasData: true },
+];
+
+const DAY_DATA: ChartPoint[] = [
+  { label: '00:00', fullLabel: '00:00 UTC', cashback: 4.0, lots: 0.4, hasData: true },
+  { label: '04:00', fullLabel: '04:00 UTC', cashback: 12.0, lots: 1.1, hasData: true },
+  { label: '08:00', fullLabel: '08:00 London Open', cashback: 45.0, lots: 4.2, hasData: true },
+  { label: '12:00', fullLabel: '12:00 UTC', cashback: 32.0, lots: 2.8, hasData: true },
+  { label: '14:30', fullLabel: '14:30 NY Open', cashback: 76.0, lots: 6.8, hasData: true },
+  { label: '18:00', fullLabel: '18:00 UTC', cashback: 48.0, lots: 4.0, hasData: true },
+  { label: '22:00', fullLabel: '22:00 Close', cashback: 18.0, lots: 1.5, hasData: true },
+];
+
+const ALL_DATA: ChartPoint[] = [
+  { label: 'Jan', fullLabel: 'January 2026', cashback: 420.0, lots: 38.0, hasData: true },
+  { label: 'Feb', fullLabel: 'February 2026', cashback: 680.0, lots: 56.0, hasData: true },
+  { label: 'Mar', fullLabel: 'March 2026', cashback: 1248.0, lots: 112.4, hasData: true },
+  { label: 'Apr', fullLabel: 'April 2026 (Est)', cashback: 850.0, lots: 75.0, hasData: true },
+  { label: 'May', fullLabel: 'May 2026 (Est)', cashback: 920.0, lots: 80.0, hasData: true },
+  { label: 'Jun', fullLabel: 'June 2026 (Est)', cashback: 1040.0, lots: 92.0, hasData: true },
+  { label: 'Jul', fullLabel: 'July 2026 (Est)', cashback: 1100.0, lots: 98.0, hasData: true },
+  { label: 'Aug', fullLabel: 'August 2026 (Est)', cashback: 950.0, lots: 84.0, hasData: true },
+  { label: 'Sep', fullLabel: 'September 2026 (Est)', cashback: 1180.0, lots: 105.0, hasData: true },
+  { label: 'Oct', fullLabel: 'October 2026 (Est)', cashback: 1250.0, lots: 110.0, hasData: true },
+  { label: 'Nov', fullLabel: 'November 2026 (Est)', cashback: 1320.0, lots: 118.0, hasData: true },
+  { label: 'Dec', fullLabel: 'December 2026 (Est)', cashback: 1450.0, lots: 130.0, hasData: true },
+];
+
+/**
+ * Helper to compute continuous, smooth cubic Bézier spline across coordinate points
+ */
+function getSplinePath(points: { x: number; y: number }[], tension = 0.32): string {
+  if (points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+
+  let path = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i === 0 ? 0 : i - 1];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+
+    const cp1x = p1.x + (p2.x - p0.x) * tension;
+    const cp1y = p1.y + (p2.y - p0.y) * tension;
+    const cp2x = p2.x - (p3.x - p1.x) * tension;
+    const cp2y = p2.y - (p3.y - p1.y) * tension;
+
+    path += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+
+  return path;
+}
 
 export const PerformanceComboChart: React.FC<PerformanceComboChartProps> = ({
   totalCashback = '$0.00',
@@ -48,19 +120,29 @@ export const PerformanceComboChart: React.FC<PerformanceComboChartProps> = ({
   avgCashbackPerLot = '$0.00',
   bestDay = '$0.00',
   className = '',
+  timeframe = '1M',
 }) => {
-  const [hoveredDay, setHoveredDay] = useState<DayData | null>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<ChartPoint | null>(null);
 
-  // SVG Coordinate Geometry:
-  // ViewBox: 0 0 1000 320 (High-res 16:5 ratio that stretches full-width across any container)
-  const leftAxisX = 45;
-  const rightAxisX = 955;
-  const plotLeft = 55;
-  const plotRight = 945;
-  const plotWidth = plotRight - plotLeft; // 890px
-  const plotTop = 38;
-  const plotBottom = 260;
-  const plotHeight = plotBottom - plotTop; // 222px
+  // Pick dataset based on timeframe
+  const currentData: ChartPoint[] =
+    timeframe === '1D'
+      ? DAY_DATA
+      : timeframe === '1W'
+      ? WEEK_DATA
+      : timeframe === 'All'
+      ? ALL_DATA
+      : MONTH_DATA;
+
+  // SVG Geometry - 1000px wide for high precision, balanced 340px height for harmonious ratio
+  const leftAxisX = 48;
+  const rightAxisX = 952;
+  const plotLeft = 56;
+  const plotRight = 944;
+  const plotWidth = plotRight - plotLeft; // 888px
+  const plotTop = 24;
+  const plotBottom = 265;
+  const plotHeight = plotBottom - plotTop; // 241px
 
   const yTicks = [
     { usd: '$100', lots: '10 lots', val: 100 },
@@ -77,249 +159,255 @@ export const PerformanceComboChart: React.FC<PerformanceComboChartProps> = ({
   ];
 
   const getY = (val: number) => {
-    return plotBottom - (val / 100) * plotHeight;
+    // For 'All' timeframe, scale is higher (max 1500 USD, 150 lots)
+    const maxVal = timeframe === 'All' ? 1500 : 100;
+    const clamped = Math.min(maxVal, Math.max(0, val));
+    return plotBottom - (clamped / maxVal) * plotHeight;
   };
 
-  const daySlotWidth = plotWidth / 31; // ~28.71px per day
-  const barWidth = 14.5; // Width of lavender bar
+  const totalPoints = currentData.length;
+  const slotWidth = plotWidth / totalPoints;
 
-  const getDayCenterX = (dayNum: number) => {
-    return plotLeft + (dayNum - 0.5) * daySlotWidth;
+  const getPointCenterX = (index: number) => {
+    return plotLeft + (index + 0.5) * slotWidth;
   };
 
-  // Build the continuous polyline for Days 1 to 15 (matching image.png)
-  const activeDays = DEFAULT_CHART_DATA.filter((d) => d.day <= 15);
-  const polylinePoints = activeDays
-    .map((d) => {
-      const x = getDayCenterX(d.day);
-      const y = getY(d.cashback);
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(' ');
+  // Full-width points spanning all items in currentData
+  const cashbackPoints = currentData.map((d, i) => ({
+    x: getPointCenterX(i),
+    y: getY(d.cashback),
+  }));
+
+  // Volume scale: 10 lots = 100 on normal, 150 lots = 1500 on All
+  const volumePoints = currentData.map((d, i) => ({
+    x: getPointCenterX(i),
+    y: getY(timeframe === 'All' ? d.lots * 10 : d.lots * 10),
+  }));
+
+  // Build the continuous splines spanning the entire width
+  const cashbackSpline = getSplinePath(cashbackPoints, 0.3);
+  const volumeSpline = getSplinePath(volumePoints, 0.32);
+
+  // Build the closed area path for the lime gradient fill across the entire chart
+  const firstPt = cashbackPoints[0];
+  const lastPt = cashbackPoints[cashbackPoints.length - 1];
+  const cashbackAreaPath = `${cashbackSpline} L ${lastPt.x.toFixed(2)} ${plotBottom.toFixed(2)} L ${firstPt.x.toFixed(2)} ${plotBottom.toFixed(2)} Z`;
 
   return (
-    <div
-      id="dashboard-performance-chart-card"
-      className={`w-full rounded-2xl bg-white border border-slate-200/90 shadow-2xs overflow-hidden ${className}`}
-    >
-      {/* ─── TOP KPI SUMMARY TABLE / METRIC ROW (1:1 with image.png) ─── */}
-      <div className="px-6 sm:px-8 pt-6 pb-5">
+    <div id="dashboard-performance-chart-card" className={`w-full space-y-4 ${className}`}>
+      {/* ─── TOP KPI SUMMARY ROW (Matching Top Performers - Dropdown Open.jpg) ─── */}
+      <div className="pt-2 pb-1">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-left">
-          {/* Col 1: Total Cashback (1M) */}
+          {/* Col 1: Total Cashback */}
           <div className="space-y-1">
-            <div className="text-xs sm:text-[13px] font-normal text-slate-500 tracking-normal">
-              Total Cashback (1M)
+            <div className="text-xs sm:text-[13px] font-normal text-slate-700 tracking-normal">
+              Total Cashback ({timeframe})
             </div>
-            <div className="text-base sm:text-lg font-bold text-[#5945F1] font-mono leading-none">
+            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono leading-none">
               {totalCashback}
             </div>
           </div>
 
           {/* Col 2: Lots Traded */}
           <div className="space-y-1">
-            <div className="text-xs sm:text-[13px] font-normal text-slate-500 tracking-normal">
+            <div className="text-xs sm:text-[13px] font-normal text-slate-700 tracking-normal">
               Lots Traded
             </div>
-            <div className="text-base sm:text-lg font-bold text-[#5945F1] font-mono leading-none">
+            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono leading-none">
               {lotsTraded}
             </div>
           </div>
 
           {/* Col 3: Avg Cashback / Lot */}
           <div className="space-y-1">
-            <div className="text-xs sm:text-[13px] font-normal text-slate-500 tracking-normal">
+            <div className="text-xs sm:text-[13px] font-normal text-slate-700 tracking-normal">
               Avg Cashback / Lot
             </div>
-            <div className="text-base sm:text-lg font-bold text-[#5945F1] font-mono leading-none">
+            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono leading-none">
               {avgCashbackPerLot}
             </div>
           </div>
 
           {/* Col 4: Best Day */}
           <div className="space-y-1">
-            <div className="text-xs sm:text-[13px] font-normal text-slate-500 tracking-normal">
+            <div className="text-xs sm:text-[13px] font-normal text-slate-700 tracking-normal">
               Best Day
             </div>
-            <div className="text-base sm:text-lg font-bold text-[#5945F1] font-mono leading-none">
+            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono leading-none">
               {bestDay}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Full-width Divider Line (1:1 with image.png) */}
-      <div className="w-full h-px bg-slate-100" />
-
-      {/* ─── DUAL AXIS COMBO CHART (FULL WIDTH 1:1 WITH image.png) ─── */}
-      <div className="px-4 sm:px-6 pt-5 pb-6">
-        <div className="w-full relative">
-          {/* Hover Tooltip Overlay */}
-          {hoveredDay && hoveredDay.hasData && (
-            <div
-              className="absolute pointer-events-none z-20 bg-[#0b1c30] text-white text-[11px] py-1.5 px-3 rounded-lg shadow-xl border border-slate-700 transition-all duration-75"
-              style={{
-                left: `${((getDayCenterX(hoveredDay.day) / 1000) * 100).toFixed(1)}%`,
-                top: '15px',
-                transform: 'translateX(-50%)',
-              }}
-            >
-              <div className="font-bold text-slate-300">Day {hoveredDay.day}</div>
-              <div className="text-[#c4b5fd] font-semibold">
-                Cashback: ${hoveredDay.cashback.toFixed(2)}
-              </div>
-              <div className="text-emerald-400 font-medium">
-                Volume: {hoveredDay.lots.toFixed(2)} Lots
-              </div>
-            </div>
-          )}
-
-          {/* Responsive Full-Width SVG (Scales to 100% width on any screen) */}
-          <svg
-            viewBox="0 0 1000 320"
-            className="w-full h-auto max-h-[360px] overflow-visible select-none"
+      {/* ─── DUAL AXIS COMBO CHART (Full-Width, Balanced & Seamless) ─── */}
+      <div className="w-full relative select-none">
+        {/* Hover Tooltip Overlay */}
+        {hoveredPoint && (
+          <div
+            className="absolute pointer-events-none z-20 bg-[#0b1c30] text-white text-[11px] py-1.5 px-3 rounded-lg shadow-xl border border-slate-700 transition-all duration-75"
+            style={{
+              left: `${(
+                (getPointCenterX(currentData.findIndex((p) => p.label === hoveredPoint.label)) /
+                  1000) *
+                100
+              ).toFixed(1)}%`,
+              top: '8px',
+              transform: 'translateX(-50%)',
+            }}
           >
-            {/* Horizontal Gridlines & Dual Y-Axis Labels */}
-            {yTicks.map((tick) => {
-              const y = getY(tick.val);
-              const isBaseline = tick.val === 0;
+            <div className="font-bold text-slate-300">{hoveredPoint.fullLabel}</div>
+            <div className="text-[#CAEB0E] font-semibold">
+              Cashback: ${hoveredPoint.cashback.toFixed(2)}
+            </div>
+            <div className="text-[#FD02B0] font-medium">
+              Volume: {hoveredPoint.lots.toFixed(2)} Lots
+            </div>
+          </div>
+        )}
 
-              return (
-                <g key={`ytick-${tick.val}`}>
-                  {/* Left Y-Axis Label: USD */}
-                  <text
-                    x={leftAxisX}
-                    y={y + 4}
-                    textAnchor="end"
-                    className="text-[12px] fill-slate-700 font-semibold"
-                  >
-                    {tick.usd}
-                  </text>
+        {/* Responsive Full-Width SVG */}
+        <svg
+          viewBox="0 0 1000 330"
+          className="w-full h-auto overflow-visible"
+        >
+          <defs>
+            {/* Soft lime area gradient matching design */}
+            <linearGradient id="cashbackAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#BEF226" stopOpacity="0.45" />
+              <stop offset="65%" stopColor="#BEF226" stopOpacity="0.12" />
+              <stop offset="100%" stopColor="#BEF226" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
 
-                  {/* Horizontal Gridline (Dashed for 10-100, Solid for 0 baseline) */}
-                  {isBaseline ? (
-                    <line
-                      x1={plotLeft}
-                      y1={y}
-                      x2={plotRight}
-                      y2={y}
-                      stroke="#e2e8f0"
-                      strokeWidth="1.4"
-                    />
-                  ) : (
-                    <line
-                      x1={plotLeft}
-                      y1={y}
-                      x2={plotRight}
-                      y2={y}
-                      stroke="#c7d2fe"
-                      strokeOpacity="0.45"
-                      strokeDasharray="5 5"
-                      strokeWidth="1.1"
-                    />
-                  )}
+          {/* Horizontal Dashed Gridlines & Dual Y-Axis Labels */}
+          {yTicks.map((tick) => {
+            const y = getY(timeframe === 'All' ? tick.val * 15 : tick.val);
+            const isBaseline = tick.val === 0;
 
-                  {/* Right Y-Axis Label: Lots */}
-                  <text
-                    x={rightAxisX}
-                    y={y + 4}
-                    textAnchor="start"
-                    className="text-[12px] fill-slate-700 font-semibold"
-                  >
-                    {tick.lots}
-                  </text>
-                </g>
-              );
-            })}
-
-            {/* Bars: Cashback (USD) in light lavender/purple (#C4B5FD) */}
-            {DEFAULT_CHART_DATA.map((d) => {
-              if (!d.hasData || d.cashback <= 0) return null;
-
-              const centerX = getDayCenterX(d.day);
-              const barHeight = (d.cashback / 100) * plotHeight;
-              const y = plotBottom - barHeight;
-
-              return (
-                <g
-                  key={`chart-bar-${d.day}`}
-                  className="cursor-pointer"
-                  onMouseEnter={() => setHoveredDay(d)}
-                  onMouseLeave={() => setHoveredDay(null)}
-                >
-                  <rect
-                    x={centerX - barWidth / 2}
-                    y={y}
-                    width={barWidth}
-                    height={barHeight}
-                    rx="3"
-                    fill="#C4B5FD"
-                    className="transition-opacity hover:opacity-90"
-                  />
-                </g>
-              );
-            })}
-
-            {/* Line: Trading Volume (Lots) in vibrant purple (#5945F1) */}
-            <polyline
-              points={polylinePoints}
-              fill="none"
-              stroke="#5945F1"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-
-            {/* Transparent Hitboxes for all 31 days to enable hover tooltips */}
-            {DEFAULT_CHART_DATA.map((d) => {
-              const centerX = getDayCenterX(d.day);
-              return (
-                <rect
-                  key={`day-hitbox-${d.day}`}
-                  x={centerX - daySlotWidth / 2}
-                  y={plotTop}
-                  width={daySlotWidth}
-                  height={plotHeight + 25}
-                  fill="transparent"
-                  className="cursor-pointer"
-                  onMouseEnter={() => setHoveredDay(d)}
-                  onMouseLeave={() => setHoveredDay(null)}
-                />
-              );
-            })}
-
-            {/* X-Axis Days 1 through 31 */}
-            {DEFAULT_CHART_DATA.map((d) => {
-              const centerX = getDayCenterX(d.day);
-              const isHovered = hoveredDay?.day === d.day;
-
-              return (
+            return (
+              <g key={`ytick-${tick.val}`}>
+                {/* Left Y-Axis Label: USD ($100 down to $0) */}
                 <text
-                  key={`x-day-${d.day}`}
-                  x={centerX}
-                  y="280"
-                  textAnchor="middle"
-                  className={`text-[11px] font-mono transition-colors ${
-                    isHovered
-                      ? 'fill-[#5945F1] font-bold text-[12px]'
-                      : 'fill-slate-500 font-medium'
-                  }`}
+                  x={leftAxisX}
+                  y={y + 4}
+                  textAnchor="end"
+                  className="text-[11px] fill-slate-500 font-medium"
                 >
-                  {d.day}
+                  {timeframe === 'All' ? `$${tick.val * 15}` : tick.usd}
                 </text>
-              );
-            })}
-          </svg>
-        </div>
 
-        {/* ─── CHART LEGEND (1:1 with image.png) ─── */}
-        <div className="flex items-center justify-center gap-6 pt-3 text-xs font-semibold text-slate-600">
+                {/* Horizontal Gridline: Dashed for 10..100, Solid for Baseline $0 */}
+                {isBaseline ? (
+                  <line
+                    x1={plotLeft}
+                    y1={y}
+                    x2={plotRight}
+                    y2={y}
+                    stroke="#cbd5e1"
+                    strokeWidth="1.2"
+                  />
+                ) : (
+                  <line
+                    x1={plotLeft}
+                    y1={y}
+                    x2={plotRight}
+                    y2={y}
+                    stroke="#e2e8f0"
+                    strokeDasharray="4 4"
+                    strokeWidth="1.1"
+                  />
+                )}
+
+                {/* Right Y-Axis Label: Lots (10 lots down to 0 lots) */}
+                <text
+                  x={rightAxisX}
+                  y={y + 4}
+                  textAnchor="start"
+                  className="text-[11px] fill-slate-500 font-medium"
+                >
+                  {timeframe === 'All' ? `${(tick.val * 1.5).toFixed(0)} lots` : tick.lots}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* 1. Lime-Green Area Fill for Cashback (USD) - Seamless across all days */}
+          <path
+            d={cashbackAreaPath}
+            fill="url(#cashbackAreaGrad)"
+          />
+
+          {/* 2. Lime-Green Smooth Spline Stroke for Cashback (USD) */}
+          <path
+            d={cashbackSpline}
+            fill="none"
+            stroke="#A3E635"
+            strokeWidth="2.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* 3. Vibrant Hot-Pink / Magenta Line Spline for Trading Volume (Lots) */}
+          <path
+            d={volumeSpline}
+            fill="none"
+            stroke="#FD02B0"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* Transparent Hitboxes for all points to enable hover tooltips */}
+          {currentData.map((d, idx) => {
+            const centerX = getPointCenterX(idx);
+            return (
+              <rect
+                key={`point-hitbox-${d.label}-${idx}`}
+                x={centerX - slotWidth / 2}
+                y={plotTop}
+                width={slotWidth}
+                height={plotHeight + 35}
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseEnter={() => setHoveredPoint(d)}
+                onMouseLeave={() => setHoveredPoint(null)}
+              />
+            );
+          })}
+
+          {/* X-Axis Points (Days 1..31 or Mon..Sun or Jan..Dec) */}
+          {currentData.map((d, idx) => {
+            const centerX = getPointCenterX(idx);
+            const isHovered = hoveredPoint?.label === d.label;
+
+            return (
+              <text
+                key={`x-point-${d.label}-${idx}`}
+                x={centerX}
+                y="292"
+                textAnchor="middle"
+                className={`text-[11px] font-mono transition-colors ${
+                  isHovered
+                    ? 'fill-[#0b1c30] font-black text-[12px]'
+                    : 'fill-slate-500 font-medium'
+                }`}
+              >
+                {d.label}
+              </text>
+            );
+          })}
+        </svg>
+
+        {/* ─── CHART LEGEND (Matching Top Performers - Dropdown Open.jpg) ─── */}
+        <div className="flex items-center justify-center gap-7 pt-2 text-xs font-normal text-slate-700">
           <div className="flex items-center gap-2">
-            <span className="w-4 h-3.5 rounded-[2px] bg-[#C4B5FD]" />
-            <span className="text-[13px] text-slate-700 font-normal">Cashback (USD)</span>
+            <span className="w-4 h-2.5 rounded-[2px] bg-[#BEF226] border border-[#a3e635]/60" />
+            <span className="text-[12px] sm:text-[13px] text-slate-700">Cashback (USD)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-4 h-[2.5px] bg-[#5945F1] rounded-full" />
-            <span className="text-[13px] text-slate-700 font-normal">Trading Volume (Lots)</span>
+            <span className="w-4 h-[2.5px] rounded-full bg-[#FD02B0]" />
+            <span className="text-[12px] sm:text-[13px] text-slate-700">Trading Volume (Lots)</span>
           </div>
         </div>
       </div>

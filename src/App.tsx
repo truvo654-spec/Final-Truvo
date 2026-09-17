@@ -23,6 +23,7 @@ import {
   Mission,
   ActivityLogItem,
 } from './types';
+import { LEVEL_SCENARIOS, LevelScenarioId, applyLevelScenarioToUser, getTierForPoints } from './data/levelScenarios';
 import { Header } from './components/Header';
 import { ReferenceDashboard } from './components/ReferenceDashboard';
 import { DashboardBentoGrid } from './components/DashboardBentoGrid';
@@ -348,20 +349,10 @@ export default function App() {
     setUser((prev) => {
       const newPoints = prev.currentPoints + pointsToAdd;
       const newCredits = prev.sydeCredits + creditsToAdd;
-      let newTitle = prev.rankTitle;
-      let newTier = prev.tierLevel;
-      let newBoost = prev.boostPercentage;
+      const tierInfo = getTierForPoints(newPoints);
 
-      if (newPoints >= 150 && prev.tierLevel < 2) {
-        newTitle = 'Bronze';
-        newTier = 2;
-        newBoost = 15;
-        showToast('🎉 Level Up! You unlocked Bronze Tier with +15% Boost!');
-      } else if (newPoints >= 500 && prev.tierLevel < 3) {
-        newTitle = 'Silver';
-        newTier = 3;
-        newBoost = 20;
-        showToast('🚀 Level Up! You unlocked Silver Tier with +20% Boost!');
+      if (tierInfo.level > prev.tierLevel) {
+        showToast(`🎉 Level Up! You reached Level ${tierInfo.level} (${tierInfo.rankTitle}) with +${tierInfo.boostPercentage}% Cashback Boost!`);
       } else if (reason) {
         if (creditsToAdd > 0) {
           showToast(`💎 +${pointsToAdd} Pts • 🪙 +${creditsToAdd} Credits: ${reason}`);
@@ -374,9 +365,11 @@ export default function App() {
         ...prev,
         currentPoints: newPoints,
         sydeCredits: newCredits,
-        rankTitle: newTitle,
-        tierLevel: newTier,
-        boostPercentage: newBoost,
+        rankTitle: tierInfo.rankTitle,
+        tierLevel: tierInfo.level,
+        maxPoints: tierInfo.maxPoints,
+        boostPercentage: tierInfo.boostPercentage,
+        perks: tierInfo.perks,
       };
     });
 
@@ -411,6 +404,21 @@ export default function App() {
     if (data.points) {
       handleRewardPoints(data.points, data.title || 'Reward Earning');
     }
+  };
+
+  // User Level Scenario Switcher (Rookie, Climber, Player, Boss)
+  const handleSelectLevelScenario = (scenarioId: LevelScenarioId) => {
+    setUser((prev) => {
+      const updated = applyLevelScenarioToUser(prev, scenarioId);
+      try {
+        localStorage.setItem('marketsyde_user_profile', JSON.stringify(updated));
+      } catch (e) {
+        // ignore
+      }
+      const scenario = LEVEL_SCENARIOS.find((s) => s.id === scenarioId);
+      showToast(`🎮 Switched to ${scenario?.label || scenarioId} (Level ${scenario?.level}) scenario! Features updated.`);
+      return updated;
+    });
   };
 
   // Connect broker callback
@@ -554,6 +562,7 @@ export default function App() {
         onOpenSearchModal={() => setIsSearchModalOpen(true)}
         onShowToast={showToast}
         onUpdateAvatar={handleUpdateAvatar}
+        onSelectLevelScenario={handleSelectLevelScenario}
         isLoggedIn={isLoggedIn}
         onOpenSignIn={() => {
           setAuthModalMode('signin');
@@ -820,6 +829,7 @@ export default function App() {
             }}
             onNavigateToTab={(tab) => setActiveTab(tab)}
             onToggleLogin={() => setIsLoggedIn((prev) => !prev)}
+            onSelectLevelScenario={handleSelectLevelScenario}
           />
         )}
 
@@ -960,6 +970,7 @@ export default function App() {
             onNavigateToBrokers={() => setActiveTab('brokers')}
             onNavigateToCashback={() => setActiveTab('cashback-overview')}
             onNavigateToDashboard={() => setActiveTab('dashboard')}
+            onSelectLevelScenario={handleSelectLevelScenario}
           />
         )}
 
@@ -1191,15 +1202,15 @@ export default function App() {
                 <div className="space-y-2 text-xs">
                   <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between font-semibold text-amber-900">
                     <span>🥇 1st Place:</span>
-                    <span>$1,000 Cash + 1 Mo Elite Tier</span>
+                    <span>$1,000 Cash + Boss Tier (Lv.4)</span>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-between font-semibold text-slate-800">
                     <span>🥈 2nd Place:</span>
-                    <span>$500 Cash + Pro Trader Tier</span>
+                    <span>$500 Cash + Player Tier (Lv.3)</span>
                   </div>
                   <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-between font-semibold text-orange-900">
                     <span>🥉 3rd Place:</span>
-                    <span>$250 Cash + Silver Tier</span>
+                    <span>$250 Cash + Climber Tier (Lv.2)</span>
                   </div>
                 </div>
                 <button

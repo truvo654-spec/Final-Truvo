@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserProfile } from '../types';
-import { Sparkles, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
+import { getNextTierInfo } from '../data/levelScenarios';
+import { Sparkles, ArrowRight, Zap, CheckCircle2, Crown } from 'lucide-react';
 
 interface LevelTrackerCardProps {
   user: UserProfile;
@@ -16,6 +17,17 @@ export const LevelTrackerCard: React.FC<LevelTrackerCardProps> = ({
   onNavigateToProfile,
 }) => {
   const percentage = Math.min(100, Math.round((user.currentPoints / user.maxPoints) * 100));
+  const nextInfo = getNextTierInfo(user.tierLevel, user.currentPoints);
+
+  // Background and badge colors matching the level
+  const tierColor =
+    user.tierLevel === 4
+      ? '#5046E5'
+      : user.tierLevel === 3
+      ? '#CAEB0E'
+      : user.tierLevel === 2
+      ? '#FD02B0'
+      : '#0B1C30';
 
   return (
     <div
@@ -37,12 +49,18 @@ export const LevelTrackerCard: React.FC<LevelTrackerCardProps> = ({
           className="flex items-center gap-3.5 text-left group cursor-pointer"
           title="View User Profile"
         >
-          {/* Ghost Mascot Avatar Frame */}
+          {/* Tier Mascot Avatar Frame */}
           <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-3xl shadow-inner shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
             {user.avatar && (user.avatar.startsWith('/') || user.avatar.startsWith('http') || user.avatar.startsWith('data:')) ? (
               <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : user.tierLevel === 4 ? (
+              <span className="text-2xl">👑</span>
+            ) : user.tierLevel === 3 ? (
+              <span className="text-2xl">⚡</span>
+            ) : user.tierLevel === 2 ? (
+              <span className="text-2xl">👣</span>
             ) : (
-              <span>{user.avatar}</span>
+              <span className="text-2xl">👻</span>
             )}
           </div>
 
@@ -56,9 +74,23 @@ export const LevelTrackerCard: React.FC<LevelTrackerCardProps> = ({
               <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight group-hover:underline">
                 {user.rankTitle}
               </h2>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#c6f831] text-[#0b1c30] tracking-tight">
-                Tier {user.tierLevel}
-              </span>
+              {user.tierLevel === 4 ? (
+                <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-[#5046E5] text-white tracking-wider border border-white/20 shadow-xs">
+                  Lv.4 Boss
+                </span>
+              ) : user.tierLevel === 3 ? (
+                <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-[#CAEB0E] text-slate-950 tracking-wider shadow-xs">
+                  Lv.3 Player
+                </span>
+              ) : user.tierLevel === 2 ? (
+                <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-[#FD02B0] text-white tracking-wider border border-white/20 shadow-xs">
+                  Lv.2 Climber
+                </span>
+              ) : (
+                <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-black text-white tracking-wider border border-white/20 shadow-xs">
+                  Lv.1 Rookie
+                </span>
+              )}
             </div>
           </div>
         </button>
@@ -73,9 +105,15 @@ export const LevelTrackerCard: React.FC<LevelTrackerCardProps> = ({
               </span>
               <span className="text-white/70">points</span>
             </div>
-            <span className="text-[#c6f831] font-bold text-xs tabular-nums">
-              {user.maxPoints - user.currentPoints} pts to Bronze
-            </span>
+            {nextInfo.isMaxLevel ? (
+              <span className="text-[#c6f831] font-bold text-xs">
+                ★ Max Level Reached
+              </span>
+            ) : (
+              <span className="text-[#c6f831] font-bold text-xs tabular-nums">
+                {nextInfo.pointsNeeded} pts to {nextInfo.nextTierName}
+              </span>
+            )}
           </div>
 
           {/* Progress bar with white fill & glow */}

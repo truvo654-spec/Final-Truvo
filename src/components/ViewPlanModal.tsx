@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserProfile } from '../types';
 import { GAMIFICATION_TIERS } from '../data/mockData';
+import { getNextTierInfo } from '../data/levelScenarios';
 import { X, Check, Lock, Sparkles, Award, Zap, HelpCircle } from 'lucide-react';
 
 interface ViewPlanModalProps {
@@ -17,6 +18,8 @@ export const ViewPlanModal: React.FC<ViewPlanModalProps> = ({
   onNavigateToFullPlan,
 }) => {
   if (!isOpen) return null;
+
+  const nextInfo = getNextTierInfo(user.tierLevel, user.currentPoints);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -60,12 +63,26 @@ export const ViewPlanModal: React.FC<ViewPlanModalProps> = ({
                 <h4 className="font-display text-xl font-bold text-[#0b1c30]">
                   {user.rankTitle} Tier
                 </h4>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#5338ec] text-white">
-                  Level {user.tierLevel}
-                </span>
+                {user.tierLevel === 4 ? (
+                  <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-[#5046E5] text-white tracking-wider">
+                    Level 4 Boss
+                  </span>
+                ) : user.tierLevel === 3 ? (
+                  <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-[#CAEB0E] text-slate-950 tracking-wider">
+                    Level 3 Player
+                  </span>
+                ) : user.tierLevel === 2 ? (
+                  <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-[#FD02B0] text-white tracking-wider">
+                    Level 2 Climber
+                  </span>
+                ) : (
+                  <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-black text-white tracking-wider">
+                    Level 1 Rookie
+                  </span>
+                )}
               </div>
               <p className="text-xs text-[#474556] mt-1">
-                Currently earning {user.boostPercentage}% boosted cashback on every executed lot.
+                Currently earning {user.boostPercentage > 0 ? `+${user.boostPercentage}% boosted` : 'standard'} cashback on every executed lot.
               </p>
             </div>
 
@@ -74,8 +91,12 @@ export const ViewPlanModal: React.FC<ViewPlanModalProps> = ({
               <div className="text-lg font-bold text-[#5338ec] tabular-nums">
                 💎 {user.currentPoints} / {user.maxPoints} pts
               </div>
-              <span className="text-[11px] text-slate-500">
-                {user.maxPoints - user.currentPoints} points needed for Bronze
+              <span className="text-[11px] text-slate-500 font-semibold">
+                {nextInfo.isMaxLevel ? (
+                  <span className="text-[#15803d]">★ Maximum Level Reached</span>
+                ) : (
+                  <span>{nextInfo.pointsNeeded} points needed for {nextInfo.nextTierName}</span>
+                )}
               </span>
             </div>
           </div>

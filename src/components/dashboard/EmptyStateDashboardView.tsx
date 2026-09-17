@@ -83,187 +83,216 @@ function RookieGhostIcon() {
 }
 
 /**
- * 3D Calendar Vector Icon for Active Streak with interactive hover
+ * Crisp Vector Calendar Icon for Active Streak (matching Top Performers - Dropdown Open.jpg)
  */
-function ActiveStreakCalendarIcon() {
+function LimeCalendarIcon({ className = 'w-10 h-10' }: { className?: string }) {
   return (
-    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#c084fc] via-[#a855f7] to-[#7c3aed] p-2 shadow-sm flex items-center justify-center relative shrink-0 hover:scale-110 hover:-rotate-3 transition-transform duration-300 cursor-pointer">
-      <svg viewBox="0 0 36 36" fill="none" className="w-8 h-8 drop-shadow-xs">
-        <rect x="5" y="8" width="26" height="24" rx="6" fill="url(#streakCalGrad)" />
-        <rect x="5" y="8" width="26" height="8" rx="3" fill="#6b21a8" />
-        <rect x="10" y="5" width="3" height="5" rx="1.5" fill="#f8fafc" />
-        <rect x="23" y="5" width="3" height="5" rx="1.5" fill="#f8fafc" />
-        <circle cx="12" cy="21" r="1.5" fill="white" />
-        <circle cx="18" cy="21" r="1.5" fill="white" />
-        <circle cx="24" cy="21" r="1.5" fill="white" />
-        <circle cx="12" cy="26" r="1.5" fill="white" />
-        <circle cx="18" cy="26" r="1.5" fill="white" />
-        <circle cx="24" cy="26" r="1.5" fill="white" />
-        <defs>
-          <linearGradient id="streakCalGrad" x1="5" y1="8" x2="31" y2="32">
-            <stop offset="0%" stopColor="#d8b4fe" />
-            <stop offset="100%" stopColor="#9333ea" />
-          </linearGradient>
-        </defs>
+    <div className={`${className} shrink-0 flex items-center justify-center`}>
+      <svg viewBox="0 0 44 44" fill="none" className="w-full h-full">
+        {/* Binder rings */}
+        <rect x="13" y="3" width="3.5" height="7" rx="1.75" fill="#84CC16" />
+        <rect x="27.5" y="3" width="3.5" height="7" rx="1.75" fill="#84CC16" />
+        {/* Calendar Body */}
+        <rect x="6" y="6.5" width="32" height="32" rx="7" fill="#F7FEE7" stroke="#84CC16" strokeWidth="2.4" />
+        {/* Top Header Divider */}
+        <line x1="6" y1="16" x2="38" y2="16" stroke="#84CC16" strokeWidth="2" strokeLinecap="round" />
+        {/* Calendar Grid Dots */}
+        <rect x="11.5" y="21" width="3.5" height="3.5" rx="1" fill="#84CC16" />
+        <rect x="20.25" y="21" width="3.5" height="3.5" rx="1" fill="#84CC16" />
+        <rect x="29" y="21" width="3.5" height="3.5" rx="1" fill="#84CC16" />
+        <rect x="11.5" y="28" width="3.5" height="3.5" rx="1" fill="#84CC16" />
+        <rect x="20.25" y="28" width="3.5" height="3.5" rx="1" fill="#84CC16" />
+        <rect x="29" y="28" width="3.5" height="3.5" rx="1" fill="#84CC16" />
       </svg>
     </div>
   );
 }
 
 /**
- * 3D Wallet & Coin Bag Vector Icon for Cumulative Cashback Empty State with interactive hover
+ * Crisp Vector Wallet Icon for Cumulative Cashback (matching Top Performers - Dropdown Open.jpg)
  */
-function WalletCoin3DIcon() {
+function LimeWalletIcon({ className = 'w-10 h-10' }: { className?: string }) {
   return (
-    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#818cf8] via-[#6366f1] to-[#4f46e5] p-2 shadow-sm flex items-center justify-center relative shrink-0 hover:scale-110 hover:rotate-3 transition-transform duration-300 cursor-pointer">
-      <svg viewBox="0 0 36 36" fill="none" className="w-8 h-8 drop-shadow-xs">
+    <div className={`${className} shrink-0 flex items-center justify-center`}>
+      <svg viewBox="0 0 44 44" fill="none" className="w-full h-full">
+        {/* Card Peaking Out */}
         <path
-          d="M 8 14 C 8 10, 12 8, 18 8 C 24 8, 28 10, 28 14 L 30 26 C 30 30, 26 32, 18 32 C 10 32, 6 30, 6 26 Z"
-          fill="url(#walletEmptyGrad)"
+          d="M 13 10 L 31 10 C 32.5 10 33.5 11 33.5 12.5 L 33.5 15 L 10.5 15 L 10.5 12.5 C 10.5 11 11.5 10 13 10 Z"
+          fill="#D9F99D"
+          stroke="#84CC16"
+          strokeWidth="2"
         />
+        {/* Main Body */}
+        <rect x="6" y="14" width="32" height="24" rx="6" fill="#F7FEE7" stroke="#84CC16" strokeWidth="2.4" />
+        {/* Clasp */}
         <path
-          d="M 10 14 C 10 12, 13 10, 18 10 C 23 10, 26 12, 26 14 C 26 16, 23 17, 18 17 C 13 17, 10 16, 10 14 Z"
-          fill="#c7d2fe"
+          d="M 26 21 L 38 21 C 39 21 40 22 40 23 L 40 29 C 40 30 39 31 38 31 L 26 31 C 23.5 31 22 29.5 22 26 C 22 22.5 23.5 21 26 21 Z"
+          fill="#BEF226"
+          stroke="#84CC16"
+          strokeWidth="2"
         />
-        <circle cx="18" cy="22" r="5" fill="#fde047" stroke="#ca8a04" strokeWidth="1" />
-        <text x="18" y="24.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#854d0e">$</text>
-        <defs>
-          <linearGradient id="walletEmptyGrad" x1="6" y1="8" x2="30" y2="32">
-            <stop offset="0%" stopColor="#a5b4fc" />
-            <stop offset="100%" stopColor="#4338ca" />
-          </linearGradient>
-        </defs>
+        <circle cx="28.5" cy="26" r="2" fill="#4D7C0F" />
       </svg>
     </div>
   );
 }
 
 /**
- * 3D Coin Swap Vector Icon for Top Earning Assets Empty State with interactive hover
+ * Crisp Flag Icon Circles for Top Performers
+ */
+function EUFlagCircle() {
+  return (
+    <svg className="w-4 h-4 rounded-full shrink-0 shadow-2xs" viewBox="0 0 32 32">
+      <circle cx="16" cy="16" r="16" fill="#003399" />
+      <g fill="#FFCC00" transform="translate(16,16) scale(0.68)">
+        {[...Array(12)].map((_, i) => {
+          const angle = (i * 30 * Math.PI) / 180;
+          const x = 15 * Math.sin(angle);
+          const y = -15 * Math.cos(angle);
+          return <circle key={i} cx={x} cy={y} r="1.8" />;
+        })}
+      </g>
+    </svg>
+  );
+}
+
+function UKFlagCircle() {
+  return (
+    <svg className="w-4 h-4 rounded-full shrink-0 shadow-2xs overflow-hidden" viewBox="0 0 32 32">
+      <circle cx="16" cy="16" r="16" fill="#012169" />
+      <path d="M0,0 L32,32 M32,0 L0,32" stroke="#FFF" strokeWidth="5.5" />
+      <path d="M0,0 L32,32 M32,0 L0,32" stroke="#C8102E" strokeWidth="2.5" />
+      <path d="M16,0 L16,32 M0,16 L32,16" stroke="#FFF" strokeWidth="8" />
+      <path d="M16,0 L16,32 M0,16 L32,16" stroke="#C8102E" strokeWidth="4.5" />
+    </svg>
+  );
+}
+
+function AUDFlagCircle() {
+  return (
+    <svg className="w-4 h-4 rounded-full shrink-0 shadow-2xs overflow-hidden" viewBox="0 0 32 32">
+      <circle cx="16" cy="16" r="16" fill="#00247D" />
+      {/* Union Jack canton */}
+      <rect x="0" y="0" width="16" height="16" fill="#00247D" />
+      <path d="M0,0 L16,16 M16,0 L0,16" stroke="#FFF" strokeWidth="2.8" />
+      <path d="M0,0 L16,16 M16,0 L0,16" stroke="#CF142B" strokeWidth="1.2" />
+      <path d="M8,0 L8,16 M0,8 L16,8" stroke="#FFF" strokeWidth="4.2" />
+      <path d="M8,0 L8,16 M0,8 L16,8" stroke="#CF142B" strokeWidth="2" />
+      {/* Stars */}
+      <circle cx="7" cy="24" r="2.2" fill="#FFF" />
+      <circle cx="24" cy="8" r="1.4" fill="#FFF" />
+      <circle cx="21.5" cy="14" r="1.3" fill="#FFF" />
+      <circle cx="27" cy="17" r="1.3" fill="#FFF" />
+      <circle cx="23" cy="22" r="1.3" fill="#FFF" />
+      <circle cx="25" cy="26.5" r="1.5" fill="#FFF" />
+    </svg>
+  );
+}
+
+/**
+ * 3D Coin Swap Vector Icon for Top Earning Assets Empty State
  */
 function CoinSwap3DIcon() {
   return (
-    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#c084fc] via-[#a855f7] to-[#7e22ce] p-2 shadow-sm flex items-center justify-center relative shrink-0 hover:scale-110 hover:-rotate-3 transition-transform duration-300 cursor-pointer">
-      <svg viewBox="0 0 36 36" fill="none" className="w-8 h-8 drop-shadow-xs">
-        <circle cx="18" cy="18" r="14" fill="url(#swapEmptyGrad)" />
-        <path
-          d="M 11 15 C 13 11, 18 10, 22 12 L 20 14 M 22 12 L 23 9"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M 25 21 C 23 25, 18 26, 14 24 L 16 22 M 14 24 L 13 27"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx="18" cy="18" r="4.5" fill="#fde047" stroke="#ca8a04" strokeWidth="0.8" />
-        <text x="18" y="20" textAnchor="middle" fontSize="5" fontWeight="bold" fill="#854d0e">$</text>
-        <defs>
-          <linearGradient id="swapEmptyGrad" x1="4" y1="4" x2="32" y2="32">
-            <stop offset="0%" stopColor="#d8b4fe" />
-            <stop offset="100%" stopColor="#6b21a8" />
-          </linearGradient>
-        </defs>
-      </svg>
+    <div className="w-10 h-10 rounded-xl bg-slate-100 p-1.5 shadow-2xs flex items-center justify-center shrink-0">
+      <LimeCalendarIcon className="w-8 h-8" />
     </div>
   );
 }
 
 /**
- * 3D Empty Performance Chart Graphic
+ * Donut Chart for Top 3 Performers (Matching Top Performers - Dropdown Open.jpg)
  */
-function EmptyPerformanceChartGraphic() {
-  return (
-    <div className="relative w-32 h-24 flex items-center justify-center">
-      <svg viewBox="0 0 100 80" fill="none" className="w-full h-full drop-shadow-md">
-        <ellipse cx="50" cy="70" rx="42" ry="7" fill="#e2e8f0" />
-        <rect x="20" y="38" width="12" height="30" rx="5" fill="url(#pinkBarGrad2)" />
-        <rect x="36" y="26" width="12" height="42" rx="5" fill="url(#greenBarGrad2)" />
-        <rect x="52" y="16" width="12" height="52" rx="5" fill="url(#yellowBarGrad2)" />
-        <rect x="68" y="8" width="12" height="60" rx="5" fill="url(#purpleBarGrad2)" />
-        <path
-          d="M 16 52 Q 44 42 74 16"
-          stroke="#16a34a"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          fill="none"
-        />
-        <polygon points="76,14 66,16 74,24" fill="#16a34a" />
-        <defs>
-          <linearGradient id="pinkBarGrad2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f472b6" />
-            <stop offset="100%" stopColor="#db2777" />
-          </linearGradient>
-          <linearGradient id="greenBarGrad2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#86efac" />
-            <stop offset="100%" stopColor="#16a34a" />
-          </linearGradient>
-          <linearGradient id="yellowBarGrad2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#fde047" />
-            <stop offset="100%" stopColor="#ca8a04" />
-          </linearGradient>
-          <linearGradient id="purpleBarGrad2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#c084fc" />
-            <stop offset="100%" stopColor="#7c3aed" />
-          </linearGradient>
-        </defs>
-      </svg>
-    </div>
-  );
-}
+function TopPerformersDonutChart({ type = 'assets' }: { type?: 'assets' | 'brokers' }) {
+  if (type === 'brokers') {
+    return (
+      <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
+        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 transform">
+          <circle cx="50" cy="50" r="36" fill="none" stroke="#f1f5f9" strokeWidth="14" />
+          <circle
+            cx="50"
+            cy="50"
+            r="36"
+            fill="none"
+            stroke="#DC2626"
+            strokeWidth="14"
+            strokeDasharray="90 226"
+            strokeDashoffset="0"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r="36"
+            fill="none"
+            stroke="#B91C1C"
+            strokeWidth="14"
+            strokeDasharray="72 226"
+            strokeDashoffset="-90"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r="36"
+            fill="none"
+            stroke="#F59E0B"
+            strokeWidth="14"
+            strokeDasharray="64 226"
+            strokeDashoffset="-162"
+          />
+        </svg>
+      </div>
+    );
+  }
 
-/**
- * Donut Chart for Top 3 Performers (Matching Images 04 & 05)
- */
-function TopPerformersDonutChart() {
   return (
-    <div className="relative w-16 h-16 sm:w-20 sm:h-20 shrink-0">
+    <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 transform">
-        <circle cx="50" cy="50" r="38" fill="none" stroke="#f1f5f9" strokeWidth="16" />
-        {/* Yellow/Amber Segment: XAU/USD */}
+        <circle cx="50" cy="50" r="36" fill="none" stroke="#f8fafc" strokeWidth="14" />
+        {/* Lime Green segment (36%) */}
         <circle
           cx="50"
           cy="50"
-          r="38"
+          r="36"
           fill="none"
-          stroke="#F59E0B"
-          strokeWidth="16"
-          strokeDasharray="91 238"
+          stroke="#BEF226"
+          strokeWidth="14"
+          strokeDasharray="81 226"
           strokeDashoffset="0"
-          strokeLinecap="round"
         />
-        {/* Magenta Segment: Dow Jones */}
+        {/* Hot Pink segment (28%) */}
         <circle
           cx="50"
           cy="50"
-          r="38"
+          r="36"
           fill="none"
           stroke="#FD02B0"
-          strokeWidth="16"
-          strokeDasharray="81 238"
-          strokeDashoffset="-96"
-          strokeLinecap="round"
+          strokeWidth="14"
+          strokeDasharray="63 226"
+          strokeDashoffset="-81"
         />
-        {/* Blue/Indigo Segment: AUDUSD */}
+        {/* Purple segment (22%) */}
         <circle
           cx="50"
           cy="50"
-          r="38"
+          r="36"
           fill="none"
-          stroke="#3B82F6"
-          strokeWidth="16"
-          strokeDasharray="66 238"
-          strokeDashoffset="-182"
-          strokeLinecap="round"
+          stroke="#5945F1"
+          strokeWidth="14"
+          strokeDasharray="50 226"
+          strokeDashoffset="-144"
+        />
+        {/* Cyan segment (14%) */}
+        <circle
+          cx="50"
+          cy="50"
+          r="36"
+          fill="none"
+          stroke="#38BDF8"
+          strokeWidth="14"
+          strokeDasharray="32 226"
+          strokeDashoffset="-194"
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <span className="w-2.5 h-2.5 rounded-full bg-white shadow-2xs" />
-      </div>
     </div>
   );
 }
@@ -319,6 +348,8 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
   });
 
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1D' | '1W' | '1M' | 'All'>('1M');
+  const [performerType, setPerformerType] = useState<'assets' | 'brokers'>('assets');
+  const [isPerformerDropdownOpen, setIsPerformerDropdownOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isAllConnectedModalOpen, setIsAllConnectedModalOpen] = useState(false);
   const recentDateStr = new Date().toLocaleDateString('en-GB', {
@@ -866,51 +897,53 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
             </div>
 
             {/* 3 Metric Blocks */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2 pb-4 border-b border-slate-100 items-stretch">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2 pb-5 border-b border-slate-100 items-stretch">
               {/* Block 1: ACTIVE STREAK */}
               <div
                 onClick={() => setIsCalendarModalOpen(true)}
-                className="space-y-2 p-2 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer"
+                className="space-y-2 p-1.5 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer"
                 title="Click to view Calendar"
               >
                 <div className="flex items-start gap-3">
-                  <ActiveStreakCalendarIcon />
+                  <LimeCalendarIcon className="w-11 h-11" />
                   <div>
                     <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
                       ACTIVE STREAK
                     </div>
                     <div className="text-2xl font-black font-display text-[#0b1c30] leading-tight">
-                      {dashboardState === 'active-performance'
-                        ? '12 days'
-                        : dashboardState === 'first-trade'
-                        ? '1 days'
-                        : '0 days'}
+                      12 days
                     </div>
                     <div className="text-xs text-slate-400 mt-0.5 font-normal">
-                      {isPerformanceActive ? 'Keep it going!' : 'Track your consistency'}
+                      Track your consistency
                     </div>
                   </div>
                 </div>
 
-                {/* 2 Rows of 7 Square Dots (14 Dots Total) */}
-                <div className="pt-2">
-                  <div className="grid grid-cols-7 gap-1.5 max-w-[170px]">
-                    {[...Array(14)].map((_, i) => {
-                      const isFilled =
-                        dashboardState === 'active-performance'
-                          ? i < 12
-                          : dashboardState === 'first-trade'
-                          ? i < 1
-                          : false;
-                      return (
+                {/* 2 Rows of 16 Heatmap Squares (Matching Top Performers - Dropdown Open.jpg) */}
+                <div className="pt-2 space-y-1">
+                  <div className="flex items-center gap-[3px] flex-wrap max-w-[210px]">
+                    {[true, true, true, true, false, true, false, true, true, true, true, true, true, true, false, true].map(
+                      (isActive, i) => (
                         <span
-                          key={`streak-dot-${i}`}
-                          className={`w-3 h-3 rounded-xs transition-colors ${
-                            isFilled ? 'bg-[#5945F1]' : 'bg-slate-200'
+                          key={`streak-r1-${i}`}
+                          className={`w-2.5 h-2.5 rounded-[2px] transition-colors ${
+                            isActive ? 'bg-[#BEF226] border border-[#a3e635]/50' : 'bg-slate-200/90'
                           }`}
                         />
-                      );
-                    })}
+                      )
+                    )}
+                  </div>
+                  <div className="flex items-center gap-[3px] flex-wrap max-w-[210px]">
+                    {[false, true, false, true, true, false, false, true, true, false, true, true, true, true, false, false].map(
+                      (isActive, i) => (
+                        <span
+                          key={`streak-r2-${i}`}
+                          className={`w-2.5 h-2.5 rounded-[2px] transition-colors ${
+                            isActive ? 'bg-[#BEF226] border border-[#a3e635]/50' : 'bg-slate-200/90'
+                          }`}
+                        />
+                      )
+                    )}
                   </div>
                 </div>
               </div>
@@ -918,157 +951,224 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
               {/* Block 2: CUMULATIVE CASHBACK */}
               <div
                 onClick={() => onNavigateToTab('cashback-overview')}
-                className="space-y-2 p-2 rounded-2xl border border-transparent hover:border-[#FD02B0]/40 hover:bg-slate-50/70 transition-all cursor-pointer group relative overflow-hidden"
+                className="space-y-2 p-1.5 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer group"
                 title="Click to view Cashback Overview"
               >
                 <div className="flex items-start gap-3">
-                  <WalletCoin3DIcon />
-                  <div>
-                    <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
-                      <span>CUMULATIVE CASHBACK</span>
-                      <span className="text-[10px] text-[#FD02B0] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                        View →
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl font-black font-display text-[#0b1c30] leading-tight">
-                        {dashboardState === 'active-performance'
-                          ? '$3,128.00'
-                          : dashboardState === 'first-trade'
-                          ? '$8.00'
-                          : '$0.00'}
-                      </span>
-                      {!isPerformanceActive && (
-                        <span className="w-2 h-2 rounded-full bg-black shrink-0" />
-                      )}
-                    </div>
-                    <div className="text-xs text-slate-400 mt-0.5 font-normal">
-                      {dashboardState === 'active-performance'
-                        ? '163.6 Lots'
-                        : dashboardState === 'first-trade'
-                        ? '1.6 Lots'
-                        : '0.0 Lots'}
-                    </div>
-                  </div>
-                </div>
-
-                {isPerformanceActive ? (
-                  /* Smooth Area Wave Graph */
-                  <div className="w-full h-10 mt-1">
-                    <svg viewBox="0 0 200 40" preserveAspectRatio="none" className="w-full h-full">
-                      <defs>
-                        <linearGradient id="cumWaveGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="#c084fc" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      <path
-                        d="M 0,30 Q 30,32 60,25 T 120,20 T 170,12 T 200,6 L 200,40 L 0,40 Z"
-                        fill="url(#cumWaveGrad)"
-                      />
-                      <path
-                        d="M 0,30 Q 30,32 60,25 T 120,20 T 170,12 T 200,6"
-                        fill="none"
-                        stroke="#5945F1"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-400 leading-relaxed pt-1">
-                    Your cashback earned during the selected period will appear here.
-                  </p>
-                )}
-              </div>
-
-              {/* Block 3: TOP 3 EARNING ASSETS */}
-              <div className="space-y-2 p-2">
-                <div className="flex items-start gap-3">
-                  {!isPerformanceActive && <CoinSwap3DIcon />}
+                  <LimeWalletIcon className="w-11 h-11" />
                   <div>
                     <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
-                      TOP 3 EARNING ASSETS
+                      CUMULATIVE CASHBACK
+                    </div>
+                    <div className="text-2xl font-black font-display text-[#0b1c30] leading-tight">
+                      $3,128.00
+                    </div>
+                    <div className="text-xs text-slate-400 mt-0.5 font-normal">
+                      0.0 Lots
                     </div>
                   </div>
                 </div>
 
-                {isPerformanceActive ? (
-                  <div className="flex items-center gap-3 pt-1">
-                    <TopPerformersDonutChart />
-                    <div className="space-y-1 text-xs">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-1.5 font-semibold text-slate-700">
-                          <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
-                          <span>🪙 XAU/USD</span>
+                <p className="text-xs text-slate-400 leading-relaxed pt-1.5 max-w-[240px]">
+                  Your cashback earned during the selected period will appear here.
+                </p>
+              </div>
+
+              {/* Block 3: TOP 3 PERFORMERS (Matching Top Performers - Dropdown Open.jpg) */}
+              <div className="space-y-2 p-1.5 relative">
+                <div className="flex items-center justify-between gap-2 relative">
+                  <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
+                    TOP 3 PERFORMERS
+                  </div>
+
+                  {/* Dropdown Selector */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsPerformerDropdownOpen((prev) => !prev)}
+                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-all cursor-pointer shadow-2xs"
+                    >
+                      <span>{performerType === 'assets' ? 'Earning Assets' : 'Cashback Brokers'}</span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-slate-500 transition-transform ${
+                          isPerformerDropdownOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {/* Popover Menu matching design */}
+                    {isPerformerDropdownOpen && (
+                      <div className="absolute right-0 top-full mt-1.5 w-40 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-30 animate-in fade-in zoom-in-95 duration-100">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPerformerType('assets');
+                            setIsPerformerDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3.5 py-2 text-xs transition-colors cursor-pointer ${
+                            performerType === 'assets'
+                              ? 'bg-[#F0EFFF] text-[#5945F1] font-bold'
+                              : 'text-slate-700 hover:bg-slate-50 font-medium'
+                          }`}
+                        >
+                          Earning Assets
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPerformerType('brokers');
+                            setIsPerformerDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3.5 py-2 text-xs transition-colors cursor-pointer ${
+                            performerType === 'brokers'
+                              ? 'bg-[#F0EFFF] text-[#5945F1] font-bold'
+                              : 'text-slate-700 hover:bg-slate-50 font-medium'
+                          }`}
+                        >
+                          Cashback Brokers
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Donut Chart & List */}
+                <div className="flex items-center gap-3 pt-2">
+                  <TopPerformersDonutChart type={performerType} />
+
+                  {performerType === 'assets' ? (
+                    <div className="space-y-1.5 text-xs flex-1 min-w-0">
+                      {/* Item 1: EUR/USD */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#BEF226] shrink-0" />
+                          <EUFlagCircle />
+                          <span className="truncate">EUR/USD</span>
                         </div>
-                        <span className="font-mono font-bold text-slate-900">
-                          {dashboardState === 'active-performance' ? '$1,150.00' : '$5.00'}
+                        <span className="font-mono font-bold text-slate-900 shrink-0">
+                          $1,150.00
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-1.5 font-semibold text-slate-700">
-                          <span className="w-2 h-2 rounded-full bg-[#FD02B0]" />
-                          <span>🇬🇧 Dow Jones</span>
+
+                      {/* Item 2: Dow Jones */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#FD02B0] shrink-0" />
+                          <UKFlagCircle />
+                          <span className="truncate">Dow Jones</span>
                         </div>
-                        <span className="font-mono font-bold text-slate-900">
-                          {dashboardState === 'active-performance' ? '$1,035.00' : '$1.00'}
+                        <span className="font-mono font-bold text-slate-900 shrink-0">
+                          $1,035.00
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-1.5 font-semibold text-slate-700">
-                          <span className="w-2 h-2 rounded-full bg-[#3B82F6]" />
-                          <span>🇦🇺 AUDUSD</span>
+
+                      {/* Item 3: AUDUSD */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#5945F1] shrink-0" />
+                          <AUDFlagCircle />
+                          <span className="truncate">AUDUSD</span>
                         </div>
-                        <span className="font-mono font-bold text-slate-900">
-                          {dashboardState === 'active-performance' ? '$943.00' : '$2.00'}
+                        <span className="font-mono font-bold text-slate-900 shrink-0">
+                          $943.00
                         </span>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-400 leading-relaxed pt-1">
-                    {dashboardState === 'empty'
-                      ? 'Your top-paying assets will rank here once you take your first trade.'
-                      : 'Your highest cashback generating assets will show up here after your first trades.'}
-                  </p>
-                )}
+                  ) : (
+                    <div className="space-y-1.5 text-xs flex-1 min-w-0">
+                      {/* Item 1: XM Global */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626] shrink-0" />
+                          <span className="w-4 h-4 rounded-full bg-red-600 text-[9px] font-black text-white flex items-center justify-center shrink-0">
+                            XM
+                          </span>
+                          <span className="truncate">XM Global</span>
+                        </div>
+                        <span className="font-mono font-bold text-slate-900 shrink-0">
+                          $1,420.00
+                        </span>
+                      </div>
+
+                      {/* Item 2: HFM Markets */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#B91C1C] shrink-0" />
+                          <span className="w-4 h-4 rounded-full bg-red-700 text-[8px] font-black text-white flex items-center justify-center shrink-0">
+                            HF
+                          </span>
+                          <span className="truncate">HFM Markets</span>
+                        </div>
+                        <span className="font-mono font-bold text-slate-900 shrink-0">
+                          $1,080.00
+                        </span>
+                      </div>
+
+                      {/* Item 3: Exness Pro */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shrink-0" />
+                          <span className="w-4 h-4 rounded-full bg-amber-500 text-[8px] font-black text-white flex items-center justify-center shrink-0">
+                            EX
+                          </span>
+                          <span className="truncate">Exness Pro</span>
+                        </div>
+                        <span className="font-mono font-bold text-slate-900 shrink-0">
+                          $628.00
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* ─── ROW 3: Dedicated Full-Width Performance Combo Chart (1:1 with image.png) ─── */}
-          <PerformanceComboChart
-            totalCashback={
-              dashboardState === 'active-performance'
-                ? '$3,128.00'
-                : dashboardState === 'first-trade'
-                ? '$8.00'
-                : '$0.00'
-            }
-            lotsTraded={
-              dashboardState === 'active-performance'
-                ? '163.6'
-                : dashboardState === 'first-trade'
-                ? '1.6'
-                : '0'
-            }
-            avgCashbackPerLot={
-              dashboardState === 'active-performance'
-                ? '$19.12'
-                : dashboardState === 'first-trade'
-                ? '$5.00'
-                : '$0.00'
-            }
-            bestDay={
-              dashboardState === 'active-performance'
-                ? '$415.00'
-                : dashboardState === 'first-trade'
-                ? '$8.00'
-                : '$0.00'
-            }
-            className="w-full"
-          />
+            {/* ─── INTEGRATED PERFORMANCE COMBO CHART (Inside Same Card) ─── */}
+            <PerformanceComboChart
+              totalCashback={
+                dashboardState === 'active-performance'
+                  ? selectedTimeframe === '1D'
+                    ? '$76.00'
+                    : selectedTimeframe === '1W'
+                    ? '$290.50'
+                    : selectedTimeframe === 'All'
+                    ? '$12,480.00'
+                    : '$1,248.00'
+                  : dashboardState === 'first-trade'
+                  ? '$8.00'
+                  : '$0.00'
+              }
+              lotsTraded={
+                dashboardState === 'active-performance'
+                  ? selectedTimeframe === '1D'
+                    ? '6.8'
+                    : selectedTimeframe === '1W'
+                    ? '22.8'
+                    : selectedTimeframe === 'All'
+                    ? '1,124.0'
+                    : '112.4'
+                  : dashboardState === 'first-trade'
+                  ? '1.6'
+                  : '0'
+              }
+              avgCashbackPerLot={
+                dashboardState === 'active-performance'
+                  ? '$11.10'
+                  : dashboardState === 'first-trade'
+                  ? '$5.00'
+                  : '$0.00'
+              }
+              bestDay={
+                dashboardState === 'active-performance'
+                  ? '$82.00'
+                  : dashboardState === 'first-trade'
+                  ? '$8.00'
+                  : '$0.00'
+              }
+              timeframe={selectedTimeframe}
+              className="w-full pt-1"
+            />
+          </div>
 
           {/* ─── FULL-WIDTH SIGNALS TABLE (Matching Images 04 & 05) ─── */}
           <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-4">

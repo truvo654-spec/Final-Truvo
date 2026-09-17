@@ -153,7 +153,13 @@ export const MarketCarouselCard: React.FC<MarketCarouselCardProps> = ({
                     {category.statValue}
                   </span>
                   <span className="text-xs font-bold text-emerald-500 flex items-center gap-0.5">
-                    <TrendingUp className="w-3 h-3" />
+                    <motion.span
+                      animate={{ y: [0, -1.8, 0], x: [0, 1.2, 0] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                      className="inline-flex items-center"
+                    >
+                      <TrendingUp className="w-3 h-3" />
+                    </motion.span>
                     {category.statChange}
                   </span>
                 </div>
@@ -192,17 +198,18 @@ export const MarketCarouselCard: React.FC<MarketCarouselCardProps> = ({
                 />
               </svg>
 
-              {/* Playful Animated Needle with Spring Settle */}
+              {/* Playful Animated Needle with Spring Settle and Gentle Sway */}
               <motion.div
                 className="absolute bottom-0 left-1/2 w-[2.5px] h-8 bg-slate-900 rounded-full z-10"
                 style={{ transformOrigin: 'bottom center' }}
                 initial={{ rotate: -180 }}
-                animate={{ rotate: needleAngle }}
+                animate={{
+                  rotate: [needleAngle, needleAngle - 3, needleAngle + 2.5, needleAngle - 1, needleAngle],
+                }}
                 transition={{
-                  type: 'spring',
-                  stiffness: 140,
-                  damping: 12,
-                  delay: isActive ? 0.12 : 0,
+                  duration: 4.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
                 }}
               >
                 <div className="w-2 h-2 bg-slate-950 rounded-full -top-1 -left-[3px] absolute shadow-xs border border-white" />
@@ -212,15 +219,17 @@ export const MarketCarouselCard: React.FC<MarketCarouselCardProps> = ({
             {/* Score & Label Pill */}
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-sm font-extrabold text-slate-900">{score}</span>
-              <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-transform"
+              <motion.span
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-transform inline-block"
                 style={{
                   backgroundColor: '#BEF226',
                   color: '#1C4100',
                 }}
               >
                 Greed
-              </span>
+              </motion.span>
             </div>
           </div>
         </div>
@@ -296,7 +305,13 @@ export const MarketCarouselCard: React.FC<MarketCarouselCardProps> = ({
               <div className="flex items-center gap-1">
                 <span className="font-bold text-slate-900 text-sm">+$2.0T</span>
                 <span className="text-emerald-500 font-bold text-xs flex items-center">
-                  <TrendingUp className="w-3 h-3 mr-0.5" />
+                  <motion.span
+                    animate={{ y: [0, -1.8, 0], x: [0, 1.2, 0] }}
+                    transition={{ duration: 2.3, repeat: Infinity, ease: 'easeInOut' }}
+                    className="inline-flex items-center mr-0.5"
+                  >
+                    <TrendingUp className="w-3 h-3" />
+                  </motion.span>
                   +0.45%
                 </span>
               </div>
@@ -306,7 +321,13 @@ export const MarketCarouselCard: React.FC<MarketCarouselCardProps> = ({
               <div className="flex items-center gap-1">
                 <span className="font-bold text-slate-900 text-sm">+$2.0T</span>
                 <span className="text-[#FD02B0] font-bold text-xs flex items-center">
-                  <TrendingDown className="w-3 h-3 mr-0.5" />
+                  <motion.span
+                    animate={{ y: [0, 1.8, 0], x: [0, 1.0, 0] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                    className="inline-flex items-center mr-0.5"
+                  >
+                    <TrendingDown className="w-3 h-3" />
+                  </motion.span>
                   +0.45%
                 </span>
               </div>

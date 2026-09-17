@@ -18,6 +18,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { UserProfile, Broker } from '../types';
+import { LEVEL_SCENARIOS, LevelScenarioId } from '../data/levelScenarios';
 import { SaveScenarioModal } from './calculators/SaveScenarioModal';
 import { SavedCalculationsSidebar } from './calculators/SavedCalculationsSidebar';
 import { SavedCalculation, INITIAL_SAVED_CALCULATIONS } from './calculators/savedCalculationsTypes';
@@ -37,6 +38,7 @@ interface ProfilePageProps {
   onNavigateToBrokers?: () => void;
   onNavigateToCashback?: () => void;
   onNavigateToDashboard?: () => void;
+  onSelectLevelScenario?: (scenarioId: LevelScenarioId) => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
@@ -53,6 +55,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onNavigateToBrokers,
   onNavigateToCashback,
   onNavigateToDashboard,
+  onSelectLevelScenario,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'slots' | 'trading-accounts'>(initialSubTab);
 
@@ -338,9 +341,74 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
             {/* Name and Stats */}
             <div className="flex-1 space-y-3">
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#0b1c30] tracking-tight">
-                {fullNameDisplay}
-              </h1>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#0b1c30] tracking-tight">
+                    {fullNameDisplay}
+                  </h1>
+                  {/* Tier Pill Badge matching Member Plan */}
+                  {user.tierLevel === 4 ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#5046E5] text-white shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                      <span>{user.rankTitle || 'Boss'} (Lv.4)</span>
+                    </span>
+                  ) : user.tierLevel === 3 ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#CAEB0E] text-slate-950 shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-black" />
+                      <span>{user.rankTitle || 'Player'} (Lv.3)</span>
+                    </span>
+                  ) : user.tierLevel === 2 ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#FD02B0] text-white shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                      <span>{user.rankTitle || 'Climber'} (Lv.2)</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-black text-white shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                      <span>{user.rankTitle || 'Rookie'} (Lv.1)</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Level Scenario Switcher */}
+                <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-xl border border-slate-200/80">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase px-1.5 hidden md:inline">
+                    Scenario:
+                  </span>
+                  {LEVEL_SCENARIOS.map((sc) => {
+                    const isCurrent =
+                      user.rankTitle?.toLowerCase() === sc.id.toLowerCase() ||
+                      user.tierLevel === sc.level;
+
+                    let activeClass = '';
+                    if (isCurrent) {
+                      if (sc.level === 4) {
+                        activeClass = 'bg-[#5046E5] text-white shadow-xs font-bold';
+                      } else if (sc.level === 3) {
+                        activeClass = 'bg-[#CAEB0E] text-slate-950 font-black shadow-xs';
+                      } else if (sc.level === 2) {
+                        activeClass = 'bg-[#FD02B0] text-white shadow-xs font-bold';
+                      } else {
+                        activeClass = 'bg-black text-white shadow-xs font-bold';
+                      }
+                    } else {
+                      activeClass = 'text-slate-600 hover:text-slate-900 hover:bg-white/80 font-medium';
+                    }
+
+                    return (
+                      <button
+                        key={sc.id}
+                        type="button"
+                        onClick={() => onSelectLevelScenario?.(sc.id)}
+                        className={`px-2.5 py-1 rounded-lg text-xs capitalize transition-all cursor-pointer ${activeClass}`}
+                        title={`Switch scenario to ${sc.label} (Level ${sc.level})`}
+                      >
+                        {sc.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               {/* Stats Row with Vertical Dividers */}
               <div className="flex items-center gap-5 sm:gap-7 flex-wrap text-sm">

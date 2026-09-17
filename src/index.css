@@ -574,4 +574,22 @@ input[type='range'].hero-slider::-moz-range-thumb {
   animation: playfulWiggle 0.4s ease-in-out;
 }
 
+@keyframes shimmerEffect {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.animate-shimmer {
+  animation: shimmerEffect 2.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes livePulseGlow {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.4); }
+}
+
+.animate-live-glow {
+  animation: livePulseGlow 2s infinite ease-in-out;
+}
+
 

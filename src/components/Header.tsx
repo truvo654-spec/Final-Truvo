@@ -33,6 +33,7 @@ import { CompanyModals } from './CompanyModals';
 import { CalculatorType } from './calculators/TradingCalculatorsModal';
 import { useTheme } from '../theme/ThemeContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { LEVEL_SCENARIOS, LevelScenarioId } from '../data/levelScenarios';
 
 interface HeaderProps {
   user: UserProfile;
@@ -51,6 +52,7 @@ interface HeaderProps {
   onOpenSearchModal?: () => void;
   onShowToast?: (msg: string) => void;
   onUpdateAvatar?: (avatarUrl: string) => void;
+  onSelectLevelScenario?: (scenarioId: LevelScenarioId) => void;
   isLoggedIn?: boolean;
   onOpenSignIn?: () => void;
   onOpenSignUp?: () => void;
@@ -74,6 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSearchModal,
   onShowToast,
   onUpdateAvatar,
+  onSelectLevelScenario,
   isLoggedIn = true,
   onOpenSignIn,
   onOpenSignUp,
@@ -400,20 +403,28 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="text-xs sm:text-[13px] font-semibold text-[#0b1c30]">
                     Hi, {user.username}
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-0.5">
-                    {/* Custom Purple Ghost Icon matching Total Nav Bar.png with playful hover */}
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="w-3.5 h-3.5 text-[#5945F1] fill-none stroke-current shrink-0 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 4a7 7 0 0 0-7 7v8l3-1.5 3 1.5 3-1.5 3 1.5 3-1.5V11a7 7 0 0 0-7-7z" />
-                      <circle cx="9.5" cy="10" r="1.1" fill="currentColor" />
-                      <circle cx="14.5" cy="10" r="1.1" fill="currentColor" />
-                    </svg>
-                    <span>{user.rankTitle}</span>
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold mt-0.5">
+                    {user.tierLevel === 4 ? (
+                      <span className="inline-flex items-center gap-1 text-[#5046E5] font-black">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#5046E5]" />
+                        <span>{user.rankTitle || 'Boss'}</span>
+                      </span>
+                    ) : user.tierLevel === 3 ? (
+                      <span className="inline-flex items-center gap-1 text-[#65A30D] font-black">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#65A30D]" />
+                        <span>{user.rankTitle || 'Player'}</span>
+                      </span>
+                    ) : user.tierLevel === 2 ? (
+                      <span className="inline-flex items-center gap-1 text-[#FD02B0] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#FD02B0]" />
+                        <span>{user.rankTitle || 'Climber'}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-slate-700 font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-black" />
+                        <span>{user.rankTitle || 'Rookie'}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </button>
@@ -426,10 +437,10 @@ export const Header: React.FC<HeaderProps> = ({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.96 }}
                   transition={{ type: 'spring', stiffness: 420, damping: 25 }}
-                  className="absolute top-full right-0 mt-2.5 w-[275px] max-w-[calc(100vw-24px)] bg-white rounded-[22px] border border-indigo-100/90 shadow-2xl shadow-indigo-950/15 p-4 z-50"
+                  className="absolute top-full right-0 mt-2.5 w-[285px] sm:w-[305px] max-w-[calc(100vw-24px)] bg-white rounded-[22px] border border-indigo-100/90 shadow-2xl shadow-indigo-950/15 p-4 z-50"
                 >
                   {/* Top Header Card: Ghost Mascot, Rank, Progress Bar, Diamond Points, Edit Icon */}
-                  <div className="flex items-start justify-between pb-3.5 border-b border-slate-100">
+                  <div className="flex items-start justify-between pb-3 border-b border-slate-100">
                   <button
                     onClick={() => {
                       setActiveTab('profile');
@@ -438,50 +449,176 @@ export const Header: React.FC<HeaderProps> = ({
                     className="flex items-center gap-3 text-left group cursor-pointer"
                     title="View Profile & Account"
                   >
-                    {/* Purple Arcade Mascot Ghost */}
-                    <svg
-                      viewBox="0 0 32 36"
-                      className="w-10 h-11 text-[#5945F1] fill-none stroke-current shrink-0 group-hover:scale-105 transition-transform"
-                      strokeWidth="2.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M 5 18 C 5 9 9.5 5 16 5 C 22.5 5 27 9 27 18 L 27 28 C 25.5 30 23.5 30 22 28 C 20.5 26 17.5 26 16 28 C 14.5 30 12.5 30 11 28 C 9.5 26 6.5 26 5 28 Z" />
-                      <circle cx="12" cy="15" r="1.5" fill="#5945F1" stroke="none" />
-                      <circle cx="20" cy="15" r="1.5" fill="#5945F1" stroke="none" />
-                    </svg>
+                    {/* Avatar Mascot: matches MembershipPlanPage per tier exactly */}
+                    {user.tierLevel === 4 ? (
+                      <div className="w-11 h-11 rounded-full bg-[#EEF2FF] flex items-center justify-center shrink-0 border border-indigo-200/80 shadow-2xs group-hover:scale-105 transition-transform duration-300">
+                        <svg width="28" height="28" viewBox="0 0 42 42" fill="none">
+                          <path
+                            d="M7 16 L12 30 L30 30 L35 16 L27 22 L21 11 L15 22 Z"
+                            fill="white"
+                            stroke="#5046E5"
+                            strokeWidth="2.75"
+                            strokeLinejoin="round"
+                            strokeLinecap="round"
+                          />
+                          <line x1="10" y1="33" x2="32" y2="33" stroke="#5046E5" strokeWidth="2.75" strokeLinecap="round" />
+                        </svg>
+                      </div>
+                    ) : user.tierLevel === 3 ? (
+                      <div className="w-11 h-11 rounded-full bg-[#F7FEE7] flex items-center justify-center shrink-0 border border-lime-300/80 shadow-2xs group-hover:scale-105 transition-transform duration-300">
+                        <svg width="28" height="30" viewBox="0 0 40 42" fill="none">
+                          <g transform="translate(6, 6) rotate(-6)">
+                            <rect x="2" y="1" width="9.5" height="15" rx="4.75" fill="#CAEB0E" stroke="#65A30D" strokeWidth="2.5" />
+                            <rect x="3.2" y="18" width="7" height="7.5" rx="3.5" fill="#CAEB0E" stroke="#65A30D" strokeWidth="2.5" />
+                          </g>
+                          <g transform="translate(20, 3) rotate(6)">
+                            <rect x="2" y="1" width="9.5" height="15" rx="4.75" fill="#CAEB0E" stroke="#65A30D" strokeWidth="2.5" />
+                            <rect x="3.2" y="18" width="7" height="7.5" rx="3.5" fill="#CAEB0E" stroke="#65A30D" strokeWidth="2.5" />
+                          </g>
+                        </svg>
+                      </div>
+                    ) : user.tierLevel === 2 ? (
+                      <div className="w-11 h-11 rounded-full bg-[#FCE7F3] flex items-center justify-center shrink-0 border border-pink-200/80 shadow-2xs group-hover:scale-105 transition-transform duration-300">
+                        <svg width="28" height="30" viewBox="0 0 40 42" fill="none">
+                          <g transform="translate(6, 6) rotate(-6)">
+                            <rect x="2" y="1" width="9.5" height="15" rx="4.75" fill="white" stroke="#FD02B0" strokeWidth="2.5" />
+                            <rect x="3.2" y="18" width="7" height="7.5" rx="3.5" fill="white" stroke="#FD02B0" strokeWidth="2.5" />
+                          </g>
+                          <g transform="translate(20, 3) rotate(6)">
+                            <rect x="2" y="1" width="9.5" height="15" rx="4.75" fill="white" stroke="#FD02B0" strokeWidth="2.5" />
+                            <rect x="3.2" y="18" width="7" height="7.5" rx="3.5" fill="white" stroke="#FD02B0" strokeWidth="2.5" />
+                          </g>
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className="w-11 h-11 rounded-full bg-[#E8EDF9] flex items-center justify-center shrink-0 border border-slate-200/80 shadow-2xs group-hover:scale-105 transition-transform duration-300">
+                        <svg width="28" height="32" viewBox="0 0 38 44" fill="none">
+                          <path
+                            d="M5 19 C5 8, 12 4, 19 4 C26 4, 33 8, 33 19 L33 36 C33 36, 29 33, 26 36 C23 39, 21 33, 19 36 C17 39, 14 33, 12 36 C9 39, 5 36, 5 36 Z"
+                            fill="white"
+                            stroke="#0B1C30"
+                            strokeWidth="2.75"
+                            strokeLinejoin="round"
+                          />
+                          <ellipse cx="14" cy="17" rx="1.8" ry="3.5" fill="#0B1C30" />
+                          <ellipse cx="24" cy="17" rx="1.8" ry="3.5" fill="#0B1C30" />
+                        </svg>
+                      </div>
+                    )}
 
                     <div>
-                      <div className="text-[17px] font-bold text-[#5945F1] leading-tight group-hover:underline">
-                        {user.rankTitle}
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`text-[17px] leading-tight group-hover:underline capitalize ${
+                            user.tierLevel === 4
+                              ? 'text-[#5046E5] font-black'
+                              : user.tierLevel === 3
+                              ? 'text-[#0B1C30] font-black'
+                              : user.tierLevel === 2
+                              ? 'text-[#FD02B0] font-black'
+                              : 'text-[#0B1C30] font-black'
+                          }`}
+                        >
+                          {user.rankTitle || 'Rookie'}
+                        </span>
+
+                        {/* Tier Pill Badge matching Member Plan */}
+                        {user.tierLevel === 4 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#5046E5] text-white shadow-2xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                            <span>Lv.4</span>
+                          </span>
+                        ) : user.tierLevel === 3 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#CAEB0E] text-slate-950 shadow-2xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-black" />
+                            <span>Lv.3</span>
+                          </span>
+                        ) : user.tierLevel === 2 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#FD02B0] text-white shadow-2xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                            <span>Lv.2</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-black text-white shadow-2xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                            <span>Lv.1</span>
+                          </span>
+                        )}
                       </div>
-                      {/* Horizontal progress bar */}
+                      {/* Horizontal progress bar matching Member Plan styling */}
                       <div className="w-28 sm:w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1.5">
                         <div
-                          className="h-full bg-[#5945F1] rounded-full transition-all duration-300"
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            user.tierLevel === 4
+                              ? 'bg-gradient-to-r from-[#5046E5] to-[#FD02B0]'
+                              : user.tierLevel === 3
+                              ? 'bg-gradient-to-r from-[#65A30D] to-[#CAEB0E]'
+                              : user.tierLevel === 2
+                              ? 'bg-[#FD02B0]'
+                              : 'bg-[#0B1C30]'
+                          }`}
                           style={{
-                            width: `${Math.min(100, Math.max(0, (user.currentPoints / (user.nextTierThreshold || 150)) * 100))}%`,
+                            width: `${Math.min(
+                              100,
+                              Math.max(0, (user.currentPoints / (user.maxPoints || user.nextTierThreshold || 100)) * 100)
+                            )}%`,
                           }}
                         />
                       </div>
                       {/* Diamond & Points */}
                       <div className="flex items-center gap-1 mt-1.5 text-xs">
-                        <Diamond className="w-3 h-3 text-[#5945F1] stroke-[2.2] shrink-0" />
-                        <span className="font-bold text-[#5945F1]">{user.currentPoints}</span>
-                        <span className="text-indigo-400/90 font-medium">/{user.nextTierThreshold || 150} pts.</span>
+                        <Diamond
+                          className={`w-3 h-3 stroke-[2.2] shrink-0 ${
+                            user.tierLevel === 4
+                              ? 'text-[#5046E5]'
+                              : user.tierLevel === 3
+                              ? 'text-[#65A30D]'
+                              : user.tierLevel === 2
+                              ? 'text-[#FD02B0]'
+                              : 'text-[#0B1C30]'
+                          }`}
+                        />
+                        <span
+                          className={`font-bold ${
+                            user.tierLevel === 4
+                              ? 'text-[#5046E5]'
+                              : user.tierLevel === 3
+                              ? 'text-[#65A30D]'
+                              : user.tierLevel === 2
+                              ? 'text-[#FD02B0]'
+                              : 'text-[#0B1C30]'
+                          }`}
+                        >
+                          {user.currentPoints.toLocaleString()}
+                        </span>
+                        <span className="text-slate-400 font-medium">
+                          /{user.maxPoints || user.nextTierThreshold || 100} pts.
+                        </span>
                       </div>
                     </div>
                   </button>
 
-                  {/* Edit Pencil Button */}
+                  {/* Edit Pencil Button (Quick Scenario Toggle) */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setActiveTab('profile');
-                      setIsProfileMenuOpen(false);
+                      const sequence: LevelScenarioId[] = ['rookie', 'climber', 'player', 'boss'];
+                      const currentIdx = sequence.findIndex((id) => id === (user.rankTitle?.toLowerCase() || 'rookie'));
+                      const nextScenario = sequence[(currentIdx + 1) % sequence.length];
+                      if (onSelectLevelScenario) {
+                        onSelectLevelScenario(nextScenario);
+                      }
                     }}
-                    className="p-1.5 rounded-lg text-[#5945F1] hover:text-[#432ec4] hover:bg-indigo-50/80 transition-colors cursor-pointer"
-                    title="Edit Profile & Account"
+                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                      user.tierLevel === 4
+                        ? 'text-[#5046E5] hover:bg-indigo-50'
+                        : user.tierLevel === 3
+                        ? 'text-[#65A30D] hover:bg-lime-50'
+                        : user.tierLevel === 2
+                        ? 'text-[#FD02B0] hover:bg-pink-50'
+                        : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                    title="Switch to next Level Scenario (Rookie → Climber → Player → Boss)"
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -494,6 +631,93 @@ export const Header: React.FC<HeaderProps> = ({
                       <path d="m15 5 4 4" />
                     </svg>
                   </button>
+                </div>
+
+                {/* ─── SCENARIO LEVEL SWITCHER: Rookie | Climber | Player | Boss ─── */}
+                <div className="py-2.5 px-0.5 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`w-2 h-2 rounded-full animate-pulse ${
+                          user.tierLevel === 4
+                            ? 'bg-[#5046E5]'
+                            : user.tierLevel === 3
+                            ? 'bg-[#CAEB0E]'
+                            : user.tierLevel === 2
+                            ? 'bg-[#FD02B0]'
+                            : 'bg-black'
+                        }`}
+                      />
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        Level Scenario
+                      </span>
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        user.tierLevel === 4
+                          ? 'text-[#5046E5] bg-indigo-50 border-indigo-100'
+                          : user.tierLevel === 3
+                          ? 'text-slate-900 bg-lime-100 border-lime-200 font-black'
+                          : user.tierLevel === 2
+                          ? 'text-[#FD02B0] bg-pink-50 border-pink-100'
+                          : 'text-slate-800 bg-slate-100 border-slate-200'
+                      }`}
+                    >
+                      Click to Test
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100/90 rounded-xl border border-slate-200/60">
+                    {LEVEL_SCENARIOS.map((sc) => {
+                      const isCurrent =
+                        user.rankTitle?.toLowerCase() === sc.id.toLowerCase() ||
+                        user.tierLevel === sc.level;
+
+                      let activeClass = '';
+                      let subTextClass = '';
+
+                      if (isCurrent) {
+                        if (sc.level === 4) {
+                          activeClass = 'bg-[#5046E5] text-white shadow-2xs font-bold';
+                          subTextClass = 'text-indigo-100 font-semibold';
+                        } else if (sc.level === 3) {
+                          activeClass = 'bg-[#CAEB0E] text-slate-950 font-black shadow-2xs';
+                          subTextClass = 'text-slate-800 font-bold';
+                        } else if (sc.level === 2) {
+                          activeClass = 'bg-[#FD02B0] text-white shadow-2xs font-bold';
+                          subTextClass = 'text-pink-100 font-semibold';
+                        } else {
+                          activeClass = 'bg-black text-white shadow-2xs font-bold';
+                          subTextClass = 'text-slate-300 font-semibold';
+                        }
+                      } else {
+                        activeClass = 'text-slate-600 hover:text-slate-900 hover:bg-white/80 font-medium';
+                        subTextClass = 'text-slate-400';
+                      }
+
+                      return (
+                        <button
+                          key={sc.id}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSelectLevelScenario) {
+                              onSelectLevelScenario(sc.id);
+                            }
+                          }}
+                          className={`py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer select-none relative ${activeClass}`}
+                          title={`Switch to ${sc.label} (Level ${sc.level}) scenario`}
+                        >
+                          <div className="text-[11.5px] leading-tight capitalize">
+                            {sc.label}
+                          </div>
+                          <div className={`text-[9.5px] leading-none mt-0.5 ${subTextClass}`}>
+                            Lv.{sc.level}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Menu List Items */}
@@ -1338,9 +1562,23 @@ export const Header: React.FC<HeaderProps> = ({
               <div>
                 <div className="text-sm font-bold text-[#0b1c30] flex items-center gap-1.5">
                   <span>{user.fullName || user.username}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#5945F1] text-white font-semibold">
-                    {user.rankTitle}
-                  </span>
+                  {user.tierLevel === 4 ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#5046E5] text-white font-black uppercase tracking-wider shadow-2xs">
+                      Lv.4 Boss
+                    </span>
+                  ) : user.tierLevel === 3 ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#CAEB0E] text-slate-950 font-black uppercase tracking-wider shadow-2xs">
+                      Lv.3 Player
+                    </span>
+                  ) : user.tierLevel === 2 ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FD02B0] text-white font-black uppercase tracking-wider shadow-2xs">
+                      Lv.2 Climber
+                    </span>
+                  ) : (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-black text-white font-black uppercase tracking-wider shadow-2xs">
+                      Lv.1 Rookie
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-[#5945F1] font-medium mt-0.5">
                   {user.currentPoints} pts • Tap to view Profile

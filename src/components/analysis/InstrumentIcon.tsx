@@ -217,6 +217,33 @@ export const InstrumentIcon: React.FC<InstrumentIconProps> = ({
           🦊
         </div>
       );
+    case 'wld':
+      return (
+        <div
+          className={`${className} rounded-full bg-black text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 select-none`}
+        >
+          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
+            <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2" fill="none" />
+            <circle cx="12" cy="12" r="4" fill="white" />
+          </svg>
+        </div>
+      );
+    case 'dot':
+      return (
+        <div
+          className={`${className} rounded-full bg-[#E6007A] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0 select-none`}
+        >
+          ●
+        </div>
+      );
+    case 'canton':
+      return (
+        <div
+          className={`${className} rounded-full bg-[#0F172A] text-[#F59E0B] flex items-center justify-center font-bold text-xs shadow-xs shrink-0 select-none border border-amber-500/30`}
+        >
+          C
+        </div>
+      );
     case 'aave':
       return (
         <div

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../../types';
 import { Gem, ArrowRight, Sparkles, Check, ChevronRight, UserCheck, Eye } from 'lucide-react';
+import { LevelScenarioId } from '../../data/levelScenarios';
 import { MembershipPlanGuestView } from './MembershipPlanGuestView';
 
 export interface MembershipPlanPageProps {
@@ -12,6 +13,7 @@ export interface MembershipPlanPageProps {
   onOpenSignUp?: () => void;
   onNavigateToTab?: (tab: string) => void;
   onToggleLogin?: () => void;
+  onSelectLevelScenario?: (scenarioId: LevelScenarioId) => void;
 }
 
 export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
@@ -23,6 +25,7 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
   onOpenSignUp,
   onNavigateToTab,
   onToggleLogin,
+  onSelectLevelScenario,
 }) => {
   // Allow toggling between Guest mode and Member mode for preview/testing
   const [viewModeOverride, setViewModeOverride] = useState<'guest' | 'member' | null>(null);
@@ -32,8 +35,14 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
   const isGuest = viewModeOverride !== null ? viewModeOverride === 'guest' : !isLoggedIn;
 
   // State for active preview level in member mode (1: Rookie, 2: Climber, 3: Player, 4: Boss)
-  // Default to Lv. 1 (Rookie) matching "Membership plan - Member Lv.1.png" exactly
-  const [activeLevel, setActiveLevel] = useState<number>(1);
+  // Synced with user.tierLevel
+  const [activeLevel, setActiveLevel] = useState<number>(user?.tierLevel || 1);
+
+  useEffect(() => {
+    if (user?.tierLevel) {
+      setActiveLevel(user.tierLevel);
+    }
+  }, [user?.tierLevel]);
 
   // Derive dynamic title based on active level
   const getLevelTitle = (lvl: number) => {
@@ -117,10 +126,10 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 overflow-x-auto">
             {[
-              { level: 1, name: 'Rookie (Lv.1)' },
-              { level: 2, name: 'Climber (Lv.2)' },
-              { level: 3, name: 'Player (Lv.3)' },
-              { level: 4, name: 'Boss (Lv.4)' },
+              { level: 1, id: 'rookie' as const, name: 'Rookie (Lv.1)', activeClass: 'bg-black text-white shadow-xs font-bold' },
+              { level: 2, id: 'climber' as const, name: 'Climber (Lv.2)', activeClass: 'bg-[#FD02B0] text-white shadow-xs font-bold' },
+              { level: 3, id: 'player' as const, name: 'Player (Lv.3)', activeClass: 'bg-[#CAEB0E] text-slate-950 shadow-xs font-black' },
+              { level: 4, id: 'boss' as const, name: 'Boss (Lv.4)', activeClass: 'bg-[#5046E5] text-white shadow-xs font-bold' },
             ].map((item) => {
               const isSelected = activeLevel === item.level;
               return (
@@ -128,12 +137,13 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
                   key={item.level}
                   onClick={() => {
                     setActiveLevel(item.level);
-                    onShowToast?.(`Previewing ${item.name} plan`);
+                    onSelectLevelScenario?.(item.id);
+                    onShowToast?.(`Switched to ${item.name} plan`);
                   }}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-xl text-xs transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-[#5945F1] text-white shadow-xs'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      ? item.activeClass
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold'
                   }`}
                 >
                   {item.name}
@@ -376,6 +386,11 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
                 <div
                   onClick={() => {
                     setActiveLevel(tier.level);
+                    const scenarioIds: LevelScenarioId[] = ['rookie', 'climber', 'player', 'boss'];
+                    const scId = scenarioIds[tier.level - 1];
+                    if (onSelectLevelScenario && scId) {
+                      onSelectLevelScenario(scId);
+                    }
                     onShowToast?.(`Selected ${tier.name} tier`);
                   }}
                   className={`h-full rounded-[28px] transition-all duration-300 flex flex-col cursor-pointer ${

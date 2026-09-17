@@ -161,7 +161,7 @@ export const LevelPointsGuideView: React.FC<LevelPointsGuideViewProps> = ({
     },
     {
       q: 'What happens when I reach a new level?',
-      a: 'Reaching higher tiers (from Rookie to Bronze, Silver, Gold, and VIP) permanently increases your cashback multiplier rate (up to +25%), grants access to institutional trading signals, and provides priority rebate withdrawals.',
+      a: 'Reaching higher levels (from Level 1 Rookie to Level 2 Climber, Level 3 Player, and Level 4 Boss) permanently increases your cashback boost rate (up to +20%), unlocks exclusive trading perks, and grants priority rebate processing.',
     },
   ];
 
@@ -363,40 +363,54 @@ export const LevelPointsGuideView: React.FC<LevelPointsGuideViewProps> = ({
 
                 {/* Level Node Track with "You're here!" annotation */}
                 <div className="flex flex-col items-center relative">
-                  {/* Handwritten style "You're here!" pointer */}
-                  <div className="flex items-center gap-1 text-[11px] text-slate-600 font-medium mb-1">
-                    <span>You're <strong className="text-slate-900 font-bold">here!</strong></span>
-                  </div>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    {[
+                      { level: 1, name: 'Rookie', icon: '👻', color: '#0B1C30' },
+                      { level: 2, name: 'Climber', icon: '👣', color: '#FD02B0' },
+                      { level: 3, name: 'Player', icon: '⚡', color: '#CAEB0E' },
+                      { level: 4, name: 'Boss', icon: '👑', color: '#5046E5' },
+                    ].map((tier, idx, arr) => {
+                      const isCurrent = (user?.tierLevel || 1) === tier.level;
+                      const isPast = (user?.tierLevel || 1) > tier.level;
 
-                  <div className="flex items-center gap-2">
-                    {/* Active Node: Rookie Ghost Icon */}
-                    <div className="flex flex-col items-center">
-                      <div className="w-8 h-8 rounded-xl border border-indigo-200 bg-indigo-50/70 flex items-center justify-center text-sm shadow-2xs">
-                        {/* Ghost mascot silhouette */}
-                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#5338ec]">
-                          <path d="M12 2a7 7 0 0 0-7 7v10l2.5-1.5L10 19l2-1.5 2 1.5 2.5-1.5L19 19V9a7 7 0 0 0-7-7zm-2.5 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm5 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
-                        </svg>
-                      </div>
-                      <span className="text-[10px] font-bold text-[#0b1c30] mt-1">
-                        Rookie
-                      </span>
-                    </div>
-
-                    {/* Dotted connecting line */}
-                    <div className="w-4 border-t-2 border-dotted border-slate-300 -mt-3" />
-
-                    {/* Milestone 2: Gray dot */}
-                    <div className="w-3.5 h-3.5 rounded-full bg-slate-300 -mt-3" title="Bronze" />
-
-                    <div className="w-4 border-t-2 border-dotted border-slate-300 -mt-3" />
-
-                    {/* Milestone 3: Gray dot */}
-                    <div className="w-3.5 h-3.5 rounded-full bg-slate-300 -mt-3" title="Silver" />
-
-                    <div className="w-4 border-t-2 border-dotted border-slate-300 -mt-3" />
-
-                    {/* Milestone 4: Gray dot */}
-                    <div className="w-3.5 h-3.5 rounded-full bg-slate-300 -mt-3" title="Gold" />
+                      return (
+                        <React.Fragment key={tier.level}>
+                          <div className="flex flex-col items-center relative">
+                            {isCurrent && (
+                              <div className="absolute -top-5 flex items-center gap-0.5 text-[10px] text-slate-700 font-bold whitespace-nowrap animate-bounce">
+                                <span>You're here!</span>
+                              </div>
+                            )}
+                            <div
+                              className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm transition-all ${
+                                isCurrent
+                                  ? 'border-2 border-[#5338ec] bg-[#f0efff] shadow-md scale-110'
+                                  : isPast
+                                  ? 'border border-emerald-300 bg-emerald-50 shadow-2xs'
+                                  : 'border border-slate-200 bg-slate-100 opacity-60'
+                              }`}
+                              title={`Level ${tier.level} - ${tier.name}`}
+                            >
+                              <span>{tier.icon}</span>
+                            </div>
+                            <span
+                              className={`text-[10px] font-bold mt-1 ${
+                                isCurrent ? 'text-[#5338ec]' : 'text-slate-600'
+                              }`}
+                            >
+                              {tier.name}
+                            </span>
+                          </div>
+                          {idx < arr.length - 1 && (
+                            <div
+                              className={`w-3 sm:w-4 border-t-2 border-dotted -mt-3 ${
+                                isPast ? 'border-emerald-400' : 'border-slate-300'
+                              }`}
+                            />
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

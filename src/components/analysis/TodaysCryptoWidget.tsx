@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { InstrumentIcon } from './InstrumentIcon';
 import { ArrowRight, X } from 'lucide-react';
+import { LockedFeatureOverlay } from './LockedFeatureOverlay';
 
 interface CryptoRecapItem {
   name: string;
@@ -12,7 +13,19 @@ interface CryptoRecapItem {
   tags: string[];
 }
 
-export const TodaysCryptoWidget: React.FC = () => {
+export interface TodaysCryptoWidgetProps {
+  isLocked?: boolean;
+  onUnlock?: () => void;
+  requiredLevelTitle?: string;
+  requiredLevelDesc?: string;
+}
+
+export const TodaysCryptoWidget: React.FC<TodaysCryptoWidgetProps> = ({
+  isLocked = false,
+  onUnlock,
+  requiredLevelTitle = 'Daily Market News & Recap requires Level 3',
+  requiredLevelDesc = 'Institutional market sentiment, macro drivers, and daily crypto recaps are reserved for Player tier (Lv.3) and above.',
+}) => {
   const [selectedRecap, setSelectedRecap] = useState<CryptoRecapItem | null>(null);
 
   const items: CryptoRecapItem[] = [
@@ -47,69 +60,120 @@ export const TodaysCryptoWidget: React.FC = () => {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-      {/* Title matching Instrumental Analysis (1).png */}
-      <h3 className="text-lg font-bold font-display flex items-center gap-1.5">
-        <span className="text-[#0b1c30]">Today’s</span>
-        <span className="text-[#5945F1]">Crypto</span>
-      </h3>
-
-      {/* 3 Detailed Editorial Cards */}
-      <div className="space-y-3.5">
-        {items.map((item, idx) => (
-          <div
-            key={idx}
-            className="p-4 rounded-xl border border-slate-200/80 bg-white hover:border-indigo-200 hover:shadow-xs transition-all space-y-2.5"
-          >
-            {/* Header: Icon + Name + Symbol + Green Change Badge */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <InstrumentIcon iconType={item.iconType} name={item.name} className="w-6 h-6" />
-                <span className="font-bold text-sm text-slate-900">{item.name}</span>
-                <span className="text-xs text-slate-400 font-medium">{item.symbol}</span>
-              </div>
-              <span className="text-xs font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                {item.change}
-              </span>
-            </div>
-
-            {/* Editorial Headline with purple left border */}
-            <div className="border-l-2 border-[#5046E5] pl-2.5 py-1 bg-slate-50/60 rounded-r-lg">
-              <h4 className="font-bold text-xs text-slate-800 leading-snug">
-                "{item.headline}"
-              </h4>
-            </div>
-
-            {/* Paragraph body */}
-            <p className="text-[11px] text-slate-500 leading-relaxed">
-              {item.body}
-            </p>
-
-            {/* Hashtags */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              {item.tags.map((tag, tIdx) => (
-                <span
-                  key={tIdx}
-                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold text-slate-600 bg-slate-100"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            {/* View Full Recap Button in lime green #BEF226 */}
-            <div className="pt-1.5">
-              <button
-                type="button"
-                onClick={() => setSelectedRecap(item)}
-                className="w-full py-2 px-3 rounded-lg bg-[#BEF226] hover:bg-[#aedb24] text-[#0f2402] font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-              >
-                <span>View Full Recap</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Title matching Instrumental Analysis (1).png + Live desk indicator */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold font-display flex items-center gap-1.5">
+          <span className="text-[#0b1c30]">Today’s</span>
+          <span className="text-[#5945F1]">Crypto</span>
+        </h3>
+        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-bold text-emerald-700">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+          </span>
+          <span>LIVE DESK</span>
+        </div>
       </div>
+
+      {/* 3 Detailed Editorial Cards / Glassmorphic Blurred Preview when Locked */}
+      {isLocked ? (
+        <div className="relative rounded-xl overflow-hidden min-h-[350px]">
+          {/* Glassmorphic preview of actual content: properly blurred */}
+          <div className="space-y-3.5 filter blur-[4.5px] opacity-45 pointer-events-none select-none max-h-[380px] overflow-hidden">
+            {items.map((item, idx) => (
+              <div
+                key={idx}
+                className="p-4 rounded-xl border border-slate-200/80 bg-white space-y-2.5"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <InstrumentIcon iconType={item.iconType} name={item.name} className="w-6 h-6" />
+                    <span className="font-bold text-sm text-slate-900">{item.name}</span>
+                    <span className="text-xs text-slate-400 font-medium">{item.symbol}</span>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                    {item.change}
+                  </span>
+                </div>
+                <div className="border-l-2 border-[#5046E5] pl-2.5 py-1 bg-slate-50/60 rounded-r-lg">
+                  <h4 className="font-bold text-xs text-slate-800 leading-snug">
+                    "{item.headline}"
+                  </h4>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">
+                  {item.body}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Centered Glassmorphic Lock Overlay Card */}
+          <LockedFeatureOverlay
+            title={requiredLevelTitle}
+            description={requiredLevelDesc}
+            buttonText="Unlock"
+            compact={true}
+            onUnlock={onUnlock || (() => {})}
+          />
+        </div>
+      ) : (
+        <div className="space-y-3.5">
+          {items.map((item, idx) => (
+            <div
+              key={idx}
+              className="p-4 rounded-xl border border-slate-200/80 bg-white hover:border-indigo-200 hover:shadow-xs transition-all space-y-2.5"
+            >
+              {/* Header: Icon + Name + Symbol + Green Change Badge */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <InstrumentIcon iconType={item.iconType} name={item.name} className="w-6 h-6" />
+                  <span className="font-bold text-sm text-slate-900">{item.name}</span>
+                  <span className="text-xs text-slate-400 font-medium">{item.symbol}</span>
+                </div>
+                <span className="text-xs font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                  {item.change}
+                </span>
+              </div>
+
+              {/* Editorial Headline with purple left border */}
+              <div className="border-l-2 border-[#5046E5] pl-2.5 py-1 bg-slate-50/60 rounded-r-lg">
+                <h4 className="font-bold text-xs text-slate-800 leading-snug">
+                  "{item.headline}"
+                </h4>
+              </div>
+
+              {/* Paragraph body */}
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                {item.body}
+              </p>
+
+              {/* Hashtags */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {item.tags.map((tag, tIdx) => (
+                  <span
+                    key={tIdx}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-semibold text-slate-600 bg-slate-100"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+
+              {/* View Full Recap Button in lime green #BEF226 */}
+              <div className="pt-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRecap(item)}
+                  className="w-full py-2 px-3 rounded-lg bg-[#BEF226] hover:bg-[#aedb24] text-[#0f2402] font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <span>View Full Recap</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Full Recap Modal Popup */}
       {selectedRecap && (

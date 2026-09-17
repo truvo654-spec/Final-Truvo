@@ -18,6 +18,7 @@ export interface TabMainProps<T extends string = string> {
    * Inactive tabs remain clean text.
    */
   showBadgeOnActiveOnly?: boolean;
+  rightContent?: React.ReactNode;
 }
 
 /**
@@ -32,14 +33,18 @@ export const TabMain = <T extends string = string>({
   onChange,
   className = '',
   showBadgeOnActiveOnly = true,
+  rightContent,
 }: TabMainProps<T>) => {
   return (
     <div className={`w-full ${className}`} id="tab-main-navigation">
       {/* Scrollable container for mobile responsiveness */}
       <div className="w-full overflow-x-auto scrollbar-none pt-1">
         {/* Baseline line with left & right padding */}
-        <div className="relative flex items-end min-w-max border-b-[1.5px] border-[#D4D0FC] dark:border-[#3B2E85] pl-3 sm:pl-5 pr-4 pb-0">
-          <div className="flex items-end">
+        <div className="relative flex items-end justify-between min-w-full pl-3 sm:pl-5 pr-3 sm:pr-4 pb-0">
+          <div className="flex items-end flex-1">
+            {/* Left baseline spacer */}
+            <div className="w-2 sm:w-3 border-b-[1.5px] border-[#D4D0FC] dark:border-[#3B2E85] self-end" />
+
             {tabs.map((tab) => {
               const isActive = tab.id === activeTab;
               const shouldShowBadge =
@@ -54,22 +59,26 @@ export const TabMain = <T extends string = string>({
                 return (
                   <div
                     key={tab.id}
-                    className="relative z-10 flex items-center gap-2 px-5 py-2 sm:py-2.5 bg-white dark:bg-[#090119] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm sm:text-[15px] rounded-t-[10px] border-t-[1.5px] border-l-[1.5px] border-r-[1.5px] border-[#D4D0FC] dark:border-[#3B2E85] -mb-[1.5px] select-none cursor-default transition-all shadow-[0_-1px_3px_rgba(89,69,241,0.03)]"
+                    className="relative z-10 flex items-center gap-2 px-5 py-2 sm:py-2.5 bg-transparent text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm sm:text-[15px] select-none cursor-default transition-all self-end"
                   >
+                    {/* Outline wrapper without filling background */}
+                    <div className="absolute inset-0 pointer-events-none">
+                      {/* Top rounded section */}
+                      <div className="absolute inset-x-0 top-0 h-[10px] rounded-t-[10px] border-t-[1.5px] border-l-[1.5px] border-r-[1.5px] border-[#D4D0FC] dark:border-[#3B2E85]" />
+                      {/* Straight left edge down to 12px from bottom */}
+                      <div className="absolute left-0 top-[10px] bottom-[12px] w-[1.5px] bg-[#D4D0FC] dark:bg-[#3B2E85]" />
+                      {/* Straight right edge down to 12px from bottom */}
+                      <div className="absolute right-0 top-[10px] bottom-[12px] w-[1.5px] bg-[#D4D0FC] dark:bg-[#3B2E85]" />
+                    </div>
+
                     {/* ─── Left Inverted Fillet (Concave Curve) ─── */}
                     <svg
-                      width="14"
+                      width="12"
                       height="12"
-                      viewBox="0 0 14 12"
+                      viewBox="0 0 12 12"
                       fill="none"
                       className="absolute bottom-0 -left-[12px] pointer-events-none overflow-visible z-10"
                     >
-                      {/* White fill covering bottom 12px of tab's border-l */}
-                      <path
-                        d="M 0 12 C 6 12 12 6 12 0 L 14 0 L 14 12 Z"
-                        className="fill-white dark:fill-[#090119]"
-                      />
-                      {/* Lavender curve matching stroke */}
                       <path
                         d="M 0 12 C 6 12 12 6 12 0"
                         fill="none"
@@ -87,7 +96,7 @@ export const TabMain = <T extends string = string>({
 
                     <span className="whitespace-nowrap font-semibold">{tab.label}</span>
 
-                    {/* Pill Badge (matching image.png) */}
+                    {/* Pill Badge */}
                     {shouldShowBadge && (
                       <span className="inline-flex items-center justify-center min-w-[22px] px-2 py-0.5 text-[11px] sm:text-xs font-bold rounded-full bg-[#5945F1] text-white leading-none shadow-2xs">
                         {tab.count}
@@ -96,20 +105,14 @@ export const TabMain = <T extends string = string>({
 
                     {/* ─── Right Inverted Fillet (Concave Curve) ─── */}
                     <svg
-                      width="14"
+                      width="12"
                       height="12"
-                      viewBox="0 0 14 12"
+                      viewBox="0 0 12 12"
                       fill="none"
                       className="absolute bottom-0 -right-[12px] pointer-events-none overflow-visible z-10"
                     >
-                      {/* White fill covering bottom 12px of tab's border-r */}
                       <path
-                        d="M 0 0 L 2 0 C 2 6 8 12 14 12 L 0 12 Z"
-                        className="fill-white dark:fill-[#090119]"
-                      />
-                      {/* Lavender curve matching stroke */}
-                      <path
-                        d="M 2 0 C 2 6 8 12 14 12"
+                        d="M 0 0 C 0 6 6 12 12 12"
                         fill="none"
                         className="stroke-[#D4D0FC] dark:stroke-[#3B2E85]"
                         strokeWidth="1.5"
@@ -125,7 +128,7 @@ export const TabMain = <T extends string = string>({
                   key={tab.id}
                   type="button"
                   onClick={() => onChange(tab.id)}
-                  className="group relative z-0 flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-slate-800 dark:text-slate-200 hover:text-[#5945F1] dark:hover:text-[#ABA1F8] font-medium text-sm sm:text-[15px] transition-colors cursor-pointer select-none whitespace-nowrap"
+                  className="group relative z-0 flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-slate-800 dark:text-slate-200 hover:text-[#5945F1] dark:hover:text-[#ABA1F8] font-medium text-sm sm:text-[15px] transition-colors cursor-pointer select-none whitespace-nowrap border-b-[1.5px] border-[#D4D0FC] dark:border-[#3B2E85] self-end"
                 >
                   {tab.icon && (
                     <span className="shrink-0 flex items-center text-slate-700 dark:text-slate-300 group-hover:text-[#5945F1] dark:group-hover:text-[#ABA1F8] transition-colors">
@@ -141,7 +144,18 @@ export const TabMain = <T extends string = string>({
                 </button>
               );
             })}
+
+            {/* Baseline filler to right */}
+            <div className="flex-1 border-b-[1.5px] border-[#D4D0FC] dark:border-[#3B2E85] self-end" />
           </div>
+
+          {rightContent && (
+            <div className="pb-1.5 pl-3 sm:pl-4 ml-auto flex items-center shrink-0 border-b-[1.5px] border-[#D4D0FC] dark:border-[#3B2E85] self-end">
+              {rightContent}
+            </div>
+          )}
+          {/* Far right spacer */}
+          <div className="w-3 sm:w-4 border-b-[1.5px] border-[#D4D0FC] dark:border-[#3B2E85] self-end" />
         </div>
       </div>
     </div>
