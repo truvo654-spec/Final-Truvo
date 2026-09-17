@@ -186,6 +186,9 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
               <span className="text-amber-300 text-sm leading-none">⚡</span>
               <span>Higher Confidence Signals</span>
             </div>
+            <div className="pt-1 text-[11px] text-white/70 font-normal select-none">
+              showing data of {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </div>
           </div>
         </div>
       )}

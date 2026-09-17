@@ -58,6 +58,7 @@ import { TradingCalculatorsModal, CalculatorType } from './components/calculator
 import { ActivityLogModal } from './components/ActivityLogModal';
 import { EarningRewardModal, EarningRewardData } from './components/EarningRewardModal';
 import { Footer } from './components/Footer';
+import { TermsAndConditionsPage } from './components/TermsAndConditionsPage';
 import { ConnectBrokerModal } from './components/ConnectBrokerModal';
 import { ViewPlanModal } from './components/ViewPlanModal';
 import { SignalDetailModal } from './components/SignalDetailModal';
@@ -70,6 +71,8 @@ import { Sparkles, Trophy, Shield, ArrowRight, CheckCircle2 } from 'lucide-react
 import { motion, AnimatePresence } from 'motion/react';
 
 const KNOWN_APP_TABS = new Set([
+  'terms-and-conditions',
+  'terms',
   'points-credits',
   'activity-logs',
   'level-points-guide',
@@ -1082,6 +1085,7 @@ export default function App() {
               setIsConnectModalOpen(true);
             }}
             onShowToast={showToast}
+            onOpenTermsPage={() => setActiveTab('terms-and-conditions')}
           />
         )}
 
@@ -1227,6 +1231,16 @@ export default function App() {
           <ContactUsPage
             onShowToast={showToast}
             onNavigateToTab={setActiveTab}
+          />
+        )}
+
+        {/* ─── TAB: Terms and Conditions Page (Image D33) ─── */}
+        {(activeTab === 'terms-and-conditions' || activeTab === 'terms') && (
+          <TermsAndConditionsPage
+            onBack={() => {
+              setActiveTab('connect-to-truvo');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 

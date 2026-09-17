@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { GenerateIbEmailModal } from './GenerateIbEmailModal';
+import { LinkToMarketsydeModal } from './LinkToMarketsydeModal';
 
 export type AlreadyHaveIbScenario = 'multi_ib' | 'single_ib' | 'restricted_ib';
 
@@ -23,6 +24,7 @@ interface ConnectToTruvoPageProps {
   onNavigateToCashback: () => void;
   onOpenConnectModal: (broker: Broker) => void;
   onShowToast?: (msg: string) => void;
+  onOpenTermsPage?: () => void;
 }
 
 export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
@@ -34,6 +36,7 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
   onNavigateToCashback,
   onOpenConnectModal,
   onShowToast,
+  onOpenTermsPage,
 }) => {
   // Default to selected broker or HFM to match D5, D6, D7 exactly
   const currentBroker = broker || brokers.find((b) => b.name === 'HFM') || brokers[0];
@@ -42,6 +45,7 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
   const [copiedCode, setCopiedCode] = useState(false);
   const [partnerCode] = useState('xyz123');
   const [isGenerateEmailOpen, setIsGenerateEmailOpen] = useState(false);
+  const [isLinkMarketsydeModalOpen, setIsLinkMarketsydeModalOpen] = useState(false);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(partnerCode);
@@ -608,7 +612,7 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => onOpenConnectModal(currentBroker)}
+                  onClick={() => setIsLinkMarketsydeModalOpen(true)}
                   className="px-6 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4533db] text-white font-bold text-xs sm:text-sm shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95 sm:self-center"
                 >
                   Register to Marketsyde
@@ -959,6 +963,16 @@ export const ConnectToTruvoPage: React.FC<ConnectToTruvoPageProps> = ({
         partnerCode={partnerCode}
         scenarioType={ibScenario === 'restricted_ib' ? 'restricted_ib' : 'single_ib'}
         onShowToast={onShowToast}
+      />
+
+      {/* ─── LINK TO MARKETSYDE MODAL (Images D29, D32, D33, D38) ─── */}
+      <LinkToMarketsydeModal
+        isOpen={isLinkMarketsydeModalOpen}
+        onClose={() => setIsLinkMarketsydeModalOpen(false)}
+        brokerName={currentBroker.name}
+        onNavigateToCashback={onNavigateToCashback}
+        onShowToast={onShowToast}
+        onOpenFullTermsPage={onOpenTermsPage}
       />
     </div>
   );

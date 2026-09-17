@@ -23,12 +23,15 @@ import {
   Trash2,
   X,
   ExternalLink,
+  Search,
+  Plus,
 } from 'lucide-react';
 import { CashbackCalendarModal } from './CashbackCalendarModal';
 import { ActivityCarousel } from './ActivityCarousel';
 import { PerformanceComboChart } from './PerformanceComboChart';
 import { MoreConnectedBrokersBanner } from './MoreConnectedBrokersBanner';
 import { ConnectedAccountsCarousel } from './ConnectedAccountsCarousel';
+import { AllConnectedAccountsModal } from './AllConnectedAccountsModal';
 
 export type DashboardStateType =
   | 'empty'
@@ -312,11 +315,17 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
         return saved as DashboardStateType;
       }
     } catch {}
-    return 'empty';
+    return 'active-performance';
   });
 
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1D' | '1W' | '1M' | 'All'>('1M');
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [isAllConnectedModalOpen, setIsAllConnectedModalOpen] = useState(false);
+  const recentDateStr = new Date().toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
   const [selectedAssetFilter, setSelectedAssetFilter] = useState('All');
   const [statusInfoModal, setStatusInfoModal] = useState<'rejected' | 'unavailable' | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -541,7 +550,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                   </div>
                 </div>
               </div>
-            ) : dashboardState === 'active-performance' ? (
+            ) : dashboardState === 'active-performance' || dashboardState === 'approved' ? (
               <ConnectedAccountsCarousel
                 className="md:col-span-8"
                 onNavigateToTab={onNavigateToTab}
@@ -552,27 +561,41 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
             ) : (
               /* Your Connected Account Card (Matches Images 02, 03, 04, 05) */
               <div className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 shadow-2xs flex flex-col justify-between space-y-4 interactive-card">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-display font-extrabold text-xl text-[#5945F1] tracking-tight">
+                    <h3 className="font-display font-extrabold text-xl text-[#0b1c30] tracking-tight">
                       Your Connected Account
                     </h3>
+                    <p className="text-xs text-slate-500 mt-1 font-normal">
+                      Account connected and ready for trading.
+                    </p>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-start sm:items-end gap-1.5 shrink-0">
                     <button
-                      onClick={() => onNavigateToTab('active-trading-accounts')}
-                      className="px-4 py-1.5 rounded-xl bg-[#5945F1] hover:bg-[#4734dc] text-white font-bold text-xs shadow-2xs flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer"
+                      type="button"
+                      onClick={() => setIsAllConnectedModalOpen(true)}
+                      className="px-4 py-1 rounded-full border border-indigo-200/90 hover:border-indigo-300 text-[#5945F1] hover:text-[#432bd4] text-xs sm:text-sm font-semibold bg-white hover:bg-indigo-50/40 shadow-2xs transition-colors cursor-pointer"
                     >
-                      <span>Connect More</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      Connected Accounts
                     </button>
-                    <button
-                      onClick={() => onNavigateToTab('active-trading-accounts')}
-                      className="text-[11px] font-bold text-[#5945F1] hover:underline cursor-pointer"
-                    >
-                      Add Trading Account
-                    </button>
+                    <div className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#5945F1]">
+                      <button
+                        onClick={() => onNavigateToTab('active-trading-accounts')}
+                        className="hover:underline hover:text-[#432bd4] flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>Add More Accounts</span>
+                      </button>
+                      <span className="text-[#5945F1] select-none">,</span>
+                      <button
+                        onClick={() => onNavigateToTab('brokers')}
+                        className="hover:underline hover:text-[#432bd4] flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Search className="w-3.5 h-3.5 stroke-[2.2]" />
+                        <span>Explore Brokers</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -789,6 +812,9 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                 <div className="flex items-center gap-2">
                   <span className="font-black text-sm">%</span>
                   <span>Higher Confidence Signals</span>
+                </div>
+                <div className="pt-1.5 text-[11px] text-white/70 font-normal select-none">
+                  showing data of {recentDateStr}
                 </div>
               </div>
             </div>
@@ -1651,6 +1677,15 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
           </div>
         </div>
       )}
+      {/* ─── ALL CONNECTED ACCOUNTS MODAL ─── */}
+      <AllConnectedAccountsModal
+        isOpen={isAllConnectedModalOpen}
+        onClose={() => setIsAllConnectedModalOpen(false)}
+        onNavigateToTab={onNavigateToTab}
+        onNavigateToConnectBroker={handleConnectBrokerAction}
+        onOpenConnectModal={onOpenConnectModal}
+        onShowToast={showToast}
+      />
     </div>
   );
 };

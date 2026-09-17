@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { UserProfile, Mission, ActivityLogItem, MarketSignal } from '../types';
 import {
   Sparkles,
@@ -323,6 +323,103 @@ function UnlockConversionIcon() {
   );
 }
 
+function CriteriaPuzzleKeyIllustration() {
+  return (
+    <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto relative flex items-center justify-center">
+      <svg viewBox="0 0 140 140" className="w-full h-full overflow-visible">
+        <defs>
+          <linearGradient id="puzzleTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#7c3aed" />
+            <stop offset="50%" stopColor="#6366f1" />
+            <stop offset="100%" stopColor="#4f46e5" />
+          </linearGradient>
+          <linearGradient id="puzzleSideGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#4338ca" />
+            <stop offset="100%" stopColor="#312e81" />
+          </linearGradient>
+          <linearGradient id="puzzleHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#c4b5fd" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#e0e7ff" stopOpacity="0.3" />
+          </linearGradient>
+          <linearGradient id="keyHeadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#6366f1" />
+            <stop offset="50%" stopColor="#818cf8" />
+            <stop offset="100%" stopColor="#4f46e5" />
+          </linearGradient>
+          <linearGradient id="keyShaftGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#f1f5f9" />
+            <stop offset="50%" stopColor="#cbd5e1" />
+            <stop offset="100%" stopColor="#94a3b8" />
+          </linearGradient>
+          <filter id="puzzleGlowShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="8" stdDeviation="8" floodColor="#4f46e5" floodOpacity="0.25" />
+          </filter>
+        </defs>
+
+        {/* Ambient background soft glow circle */}
+        <circle cx="70" cy="70" r="46" fill="#e0e7ff" opacity="0.4" />
+
+        {/* 3D Extruded Puzzle Body */}
+        <g filter="url(#puzzleGlowShadow)">
+          {/* Depth / Extrusion base */}
+          <path
+            d="M 38,48 C 38,44 42,40 46,40 L 58,40 C 58,35 62,31 67,31 C 72,31 76,35 76,40 L 94,40 C 98,40 102,44 102,48 L 102,60 C 107,60 111,64 111,69 C 111,74 107,78 102,78 L 102,94 C 102,98 98,102 94,102 L 82,102 C 82,97 78,93 73,93 C 68,93 64,97 64,102 L 46,102 C 42,102 38,98 38,94 Z"
+            transform="translate(0, 8)"
+            fill="url(#puzzleSideGrad)"
+          />
+
+          {/* Top Puzzle Face */}
+          <path
+            d="M 38,48 C 38,44 42,40 46,40 L 58,40 C 58,35 62,31 67,31 C 72,31 76,35 76,40 L 94,40 C 98,40 102,44 102,48 L 102,60 C 107,60 111,64 111,69 C 111,74 107,78 102,78 L 102,94 C 102,98 98,102 94,102 L 82,102 C 82,97 78,93 73,93 C 68,93 64,97 64,102 L 46,102 C 42,102 38,98 38,94 Z"
+            fill="url(#puzzleTopGrad)"
+          />
+
+          {/* Puzzle Top Bevel Highlight */}
+          <path
+            d="M 46,41 L 57,41 C 58,37 62,33 67,33 C 72,33 76,37 77,41 L 94,41"
+            fill="none"
+            stroke="url(#puzzleHighlight)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+
+          {/* Center Keyhole */}
+          <g transform="translate(64, 61)">
+            <circle cx="6" cy="6" r="4.8" fill="#1e1b4b" />
+            <polygon points="3.5,8 8.5,8 9.5,18 2.5,18" fill="#1e1b4b" />
+            <circle cx="6" cy="6" r="3" fill="#0f172a" />
+          </g>
+        </g>
+
+        {/* 3D Key angled next to keyhole */}
+        <g transform="translate(70, 48) rotate(-22)">
+          {/* Key Shaft */}
+          <rect x="0" y="8" width="36" height="5.5" rx="2.5" fill="url(#keyShaftGrad)" />
+          {/* Key Teeth */}
+          <rect x="2" y="13.5" width="4" height="5" rx="1.2" fill="url(#keyShaftGrad)" />
+          <rect x="8.5" y="13.5" width="3.5" height="3.8" rx="1.2" fill="url(#keyShaftGrad)" />
+          {/* Circular Head / Coin */}
+          <circle cx="44" cy="10.75" r="13" fill="url(#keyHeadGrad)" stroke="#c7d2fe" strokeWidth="1.5" />
+          <circle cx="44" cy="10.75" r="9.5" fill="#4338ca" stroke="#a5b4fc" strokeWidth="0.8" />
+          <circle cx="44" cy="10.75" r="3.2" fill="#c6f831" />
+          <path d="M 41,14.5 L 43,7.5 L 45,10.5 L 47,7.5 L 49,14.5" fill="none" stroke="#bef264" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
+
+        {/* Sparkles */}
+        <g transform="translate(24, 30)">
+          <path d="M 6,0 L 7.5,4.5 L 12,6 L 7.5,7.5 L 6,12 L 4.5,7.5 L 0,6 L 4.5,4.5 Z" fill="#c6f831" />
+        </g>
+        <g transform="translate(108, 36)">
+          <path d="M 5,0 L 6.2,3.8 L 10,5 L 6.2,6.2 L 5,10 L 3.8,6.2 L 0,5 L 3.8,3.8 Z" fill="#818cf8" />
+        </g>
+        <g transform="translate(100, 96)">
+          <path d="M 4,0 L 5,3 L 8,4 L 5,5 L 4,8 L 3,5 L 0,4 L 3,3 Z" fill="#c6f831" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
 function DualFlag() {
   return (
     <div className="flex items-center -space-x-1.5 shrink-0">
@@ -442,7 +539,12 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
     '7-day-explorer': false,
   });
 
-  // Converter State
+  // Converter State & 3 Scenarios:
+  // 1: 'not-met' -> If the Users Have Not Met Criteria for Converter
+  // 2: 'met' -> If the Users Have Met Criteria for Converter
+  // 3: 'insufficient' -> If the Users Have Met Criteria but Have Insufficient Credits
+  const [converterScenario, setConverterScenario] = useState<'not-met' | 'met' | 'insufficient'>('not-met');
+  const [isCriteriaModalOpen, setIsCriteriaModalOpen] = useState<boolean>(false);
   const [converterCredits, setConverterCredits] = useState<number>(500);
   const [conversionSuccess, setConversionSuccess] = useState<string | null>(null);
   const [converterHighlight, setConverterHighlight] = useState<boolean>(false);
@@ -472,6 +574,13 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
 
   // Conversion rate: 5 Syde Credits = 1 Point (500 Credits = 100 Points)
   const convertedPoints = Math.floor((converterCredits || 0) / 5);
+
+  // Today's formatted date string for recently updated indicator
+  const recentDateStr = new Date().toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 
   const toggleMission = (id: string) => {
     setExpandedMissions((prev) => ({
@@ -793,6 +902,11 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Bottom-right: showing data of [date] */}
+                <div className="pt-2 text-[11px] text-slate-400 font-normal select-none flex justify-end">
+                  showing data of {recentDateStr}
+                </div>
               </div>
 
               {/* Card 2: Syde Credits Card */}
@@ -836,111 +950,221 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
                     <div className="text-xs font-semibold text-[#16a34a] mt-1">
                       + {user.lastWeekCredits || 75} Last Week
                     </div>
-                    <div className="flex items-center justify-between gap-2 mt-1.5 flex-wrap">
+                    <div className="mt-1.5">
                       <span className="text-sm font-normal text-[#6366f1]">Total Balance</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleClaimBonusCredits();
-                        }}
-                        className="px-2.5 py-0.5 rounded-lg bg-[#FD02B0]/10 hover:bg-[#FD02B0]/20 text-[#FD02B0] text-[11px] font-bold border border-[#FD02B0]/25 transition-all cursor-pointer shadow-2xs active:scale-95"
-                      >
-                        Claim Daily +5 Cr
-                      </button>
                     </div>
                   </div>
+                </div>
+
+                {/* Bottom-right: showing data of [date] */}
+                <div className="pt-2 text-[11px] text-slate-400 font-normal select-none flex justify-end">
+                  showing data of {recentDateStr}
                 </div>
               </div>
 
-              {/* Card 3: Unlock Conversion Banner / Active Converter */}
-              {!showActiveConverter ? (
-                <div
-                  ref={converterRef}
-                  className={`rounded-2xl border border-indigo-100/90 bg-white p-4 sm:p-5 flex flex-col justify-between shadow-2xs hover:shadow-xs transition-all ${
-                    converterHighlight ? 'ring-2 ring-[#5338ec] bg-indigo-50/40' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-3 py-1">
-                    <UnlockConversionIcon />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm text-slate-800 leading-snug font-medium">
-                        Earn more <strong className="text-[#5945F1] font-bold">credits</strong> or{' '}
-                        <strong className="text-[#FE01B1] font-bold">points</strong>
-                        <br />to unlock conversion.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="pt-2 flex items-center justify-between">
-                    <button
-                      onClick={() => {
-                        if (onOpenCreditEarningGuide) onOpenCreditEarningGuide();
-                        else setShowActiveConverter(true);
-                      }}
-                      className="text-xs text-[#5945F1] font-semibold px-4 py-1.5 rounded-xl border border-indigo-200/90 hover:bg-indigo-50 inline-flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
-                    >
-                      <span>Learn More</span>
-                    </button>
-                    <button
-                      onClick={() => setShowActiveConverter(true)}
-                      className="text-[11px] text-slate-400 hover:text-[#5945F1] font-medium underline cursor-pointer"
-                      title="Open interactive converter"
-                    >
-                      Convert
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  ref={converterRef}
-                  className="rounded-2xl border border-indigo-200 bg-white p-3 sm:p-4 flex flex-col justify-between space-y-3 shadow-2xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-[#5338ec]">Converter</span>
-                    <button
-                      onClick={() => setShowActiveConverter(false)}
-                      className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-normal text-slate-700">Credits</span>
-                      <div className="flex items-center gap-1 bg-white border border-indigo-200 rounded-lg px-2 py-1 w-32">
-                        <MiniCoinsIcon />
-                        <input
-                          type="number"
-                          min="0"
-                          max="10000"
-                          step="50"
-                          value={converterCredits}
-                          onChange={(e) => setConverterCredits(Number(e.target.value))}
-                          className="w-full bg-transparent font-normal text-slate-700 focus:outline-none text-xs"
-                        />
+              {/* Card 3: Converter (3 Scenarios) */}
+              <div
+                ref={converterRef}
+                className={`rounded-2xl border border-indigo-100/90 bg-white p-4 sm:p-5 flex flex-col justify-between shadow-2xs hover:shadow-xs transition-all ${
+                  converterHighlight ? 'ring-2 ring-[#5338ec] bg-indigo-50/40' : ''
+                }`}
+              >
+                {converterScenario === 'not-met' ? (
+                  /* ── Scenario 1: Users Have Not Met Criteria for Converter ── */
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-[#5338ec]">Converter</span>
+                      {/* Interactive Scenario Switcher */}
+                      <div className="inline-flex rounded-lg bg-indigo-50/70 p-0.5 text-[10px] font-medium border border-indigo-100/80">
                         <button
                           type="button"
-                          onClick={handleMaxCredits}
-                          className="text-[10px] text-[#5338ec] font-bold"
+                          onClick={() => setConverterScenario('not-met')}
+                          className="px-2 py-0.5 rounded-md bg-white text-[#5338ec] font-bold shadow-2xs transition-all cursor-pointer"
+                          title="Scenario 1: Users Have Not Met Criteria for Converter"
                         >
-                          Max
+                          1: Not Met
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConverterScenario('met')}
+                          className="px-2 py-0.5 rounded-md text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+                          title="Scenario 2: Users Have Met Criteria for Converter"
+                        >
+                          2: Met
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConverterScenario('insufficient')}
+                          className="px-2 py-0.5 rounded-md text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+                          title="Scenario 3: Users Have Met Criteria but Have Insufficient Credits"
+                        >
+                          3: Low Credits
                         </button>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1 text-xs font-bold text-[#5338ec]">
-                        <span>{convertedPoints}</span>
-                        <FacetedGemIcon className="w-3.5 h-3.5" />
+
+                    <div className="flex items-center gap-3.5 py-2">
+                      <UnlockConversionIcon />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-[13px] text-slate-800 leading-snug font-medium">
+                          Earn more <strong className="text-[#5945F1] font-bold">credits</strong> or{' '}
+                          <strong className="text-[#FE01B1] font-bold">points</strong>
+                          <br />to unlock conversion.
+                        </p>
                       </div>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between">
                       <button
-                        onClick={handleConvert}
-                        className="px-3.5 py-1 rounded-lg bg-[#5338ec] hover:bg-[#432ec4] text-white font-medium text-xs shadow-2xs"
+                        type="button"
+                        onClick={() => setIsCriteriaModalOpen(true)}
+                        className="text-xs text-[#5945F1] font-semibold px-4 py-1.5 rounded-xl border border-indigo-200/90 hover:bg-indigo-50 inline-flex items-center gap-1 transition-all cursor-pointer shadow-2xs hover:border-[#5945F1]"
                       >
-                        Convert
+                        <span>Learn More</span>
                       </button>
                     </div>
-                  </div>
-                </div>
-              )}
+                  </>
+                ) : converterScenario === 'met' ? (
+                  /* ── Scenario 2: Users Have Met Criteria for Converter ── */
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-[#5338ec]">Converter</span>
+                      {/* Interactive Scenario Switcher */}
+                      <div className="inline-flex rounded-lg bg-indigo-50/70 p-0.5 text-[10px] font-medium border border-indigo-100/80">
+                        <button
+                          type="button"
+                          onClick={() => setConverterScenario('not-met')}
+                          className="px-2 py-0.5 rounded-md text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+                          title="Scenario 1: Users Have Not Met Criteria for Converter"
+                        >
+                          1: Not Met
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConverterScenario('met')}
+                          className="px-2 py-0.5 rounded-md bg-white text-[#5338ec] font-bold shadow-2xs transition-all cursor-pointer"
+                          title="Scenario 2: Users Have Met Criteria for Converter"
+                        >
+                          2: Met
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConverterScenario('insufficient')}
+                          className="px-2 py-0.5 rounded-md text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+                          title="Scenario 3: Users Have Met Criteria but Have Insufficient Credits"
+                        >
+                          3: Low Credits
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 py-1">
+                      {/* Row 1: Credits Amount */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs sm:text-sm font-normal text-slate-800">Credits Amount</span>
+                        <div className="flex items-center gap-1.5 bg-white border border-indigo-200/90 rounded-xl px-2.5 py-1.5 w-32 sm:w-36 focus-within:border-[#5338ec] shadow-2xs">
+                          <MiniCoinsIcon />
+                          <input
+                            type="number"
+                            min="0"
+                            max={user.sydeCredits}
+                            step="10"
+                            value={converterCredits}
+                            onChange={(e) => setConverterCredits(Math.max(0, Number(e.target.value)))}
+                            className="w-full bg-transparent font-medium text-slate-800 focus:outline-none text-xs sm:text-sm text-right pr-0.5"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleMaxCredits}
+                            className="text-[10px] text-[#5338ec] font-bold px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 transition-colors cursor-pointer"
+                          >
+                            Max
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Row 2: Points to Get */}
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <span className="text-xs sm:text-sm font-normal text-slate-800">Points to Get</span>
+                        <div className="flex items-center gap-2.5 sm:gap-3">
+                          <div className="flex items-center gap-1 text-xs sm:text-sm font-bold text-[#5338ec]">
+                            <span>{convertedPoints}</span>
+                            <FacetedGemIcon className="w-4 h-4" />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleConvert}
+                            className="px-4 py-1.5 rounded-xl bg-[#5338ec] hover:bg-[#432ec4] text-white font-semibold text-xs sm:text-sm shadow-2xs transition-all active:scale-95 cursor-pointer"
+                          >
+                            Convert
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-1 text-[11px] text-slate-400 font-normal select-none flex justify-end">
+                      Rate: 5 Cr = 1 Pt
+                    </div>
+                  </>
+                ) : (
+                  /* ── Scenario 3: Users Have Met Criteria but Have Insufficient Credits ── */
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-[#5338ec]">Converter</span>
+                      {/* Interactive Scenario Switcher */}
+                      <div className="inline-flex rounded-lg bg-indigo-50/70 p-0.5 text-[10px] font-medium border border-indigo-100/80">
+                        <button
+                          type="button"
+                          onClick={() => setConverterScenario('not-met')}
+                          className="px-2 py-0.5 rounded-md text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+                          title="Scenario 1: Users Have Not Met Criteria for Converter"
+                        >
+                          1: Not Met
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConverterScenario('met')}
+                          className="px-2 py-0.5 rounded-md text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+                          title="Scenario 2: Users Have Met Criteria for Converter"
+                        >
+                          2: Met
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConverterScenario('insufficient')}
+                          className="px-2 py-0.5 rounded-md bg-white text-[#5338ec] font-bold shadow-2xs transition-all cursor-pointer"
+                          title="Scenario 3: Users Have Met Criteria but Have Insufficient Credits"
+                        >
+                          3: Low Credits
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3.5 py-2">
+                      <UnlockConversionIcon />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-[13px] text-slate-800 leading-snug font-medium">
+                          Just 10 more <strong className="text-[#5945F1] font-bold">credits</strong> to
+                          <br />convert again!
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onOpenCreditEarningGuide) onOpenCreditEarningGuide();
+                          else onOpenActivityLog();
+                        }}
+                        className="text-xs text-[#5945F1] font-semibold px-4 py-1.5 rounded-xl border border-indigo-200/90 hover:bg-indigo-50 inline-flex items-center gap-1 transition-all cursor-pointer shadow-2xs hover:border-[#5945F1]"
+                      >
+                        <span>How to Earn</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1862,6 +2086,51 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
                 Done
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Criteria / Checkpoints Modal (Desktop Popup) ── */}
+      {isCriteriaModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-[420px] w-full p-6 sm:p-8 relative shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+            {/* Top right Close Button */}
+            <button
+              onClick={() => setIsCriteriaModalOpen(false)}
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* 3D Puzzle Key Illustration */}
+            <CriteriaPuzzleKeyIllustration />
+
+            {/* Heading */}
+            <h3 className="text-base sm:text-[17px] font-bold text-slate-800 text-center leading-snug mt-4 px-2">
+              Just a couple of quick checkpoints before we unlock conversion
+            </h3>
+
+            {/* Checkpoint Bullets */}
+            <div className="mt-5 space-y-2.5 max-w-[270px] mx-auto text-left">
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-slate-700 font-normal">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
+                <span>Complete at least 1 trade</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-slate-700 font-normal">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
+                <span>Connect one broker account</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-slate-700 font-normal">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-800 shrink-0" />
+                <span>Have 250 Credits minimum</span>
+              </div>
+            </div>
+
+            {/* Bottom Subtitle */}
+            <p className="text-xs sm:text-[13px] text-slate-500 text-center mt-6">
+              Once all are complete, you can start{' '}
+              <strong className="text-[#5945F1] font-bold">converting</strong> anytime!
+            </p>
           </div>
         </div>
       )}

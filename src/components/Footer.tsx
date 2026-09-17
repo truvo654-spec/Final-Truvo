@@ -231,13 +231,19 @@ export const Footer: React.FC<FooterProps> = ({
               {activeModal === 'terms' && (
                 <>
                   <p>
-                    <strong>1. Acceptance of Terms:</strong> By creating an account or accessing the MarketSyde platform, you agree to comply with and be legally bound by these terms.
+                    <strong>1. Account Linking & Eligibility:</strong> To be eligible for cashback (rebates), your trading account must be successfully linked to our platform under our specified IB (Introducing Broker) group. Only certain account types, such as &apos;Raw Spread&apos; or &apos;Standard&apos;, may be eligible for rebates. You may connect multiple accounts of the same type provided your broker&apos;s policy allows for multiple sub-account linking.
                   </p>
                   <p>
-                    <strong>2. Cash Rebates & Points Program:</strong> Rebate calculations are calculated based on verifiable lot execution reports supplied by affiliated regulated partner brokers. Syde Points and Level perks are governed by platform community rules and may be updated periodically.
+                    <strong>2. Cashback Calculation & Payments:</strong> Cashback is calculated based on closed trading volume (lots) and varies by instrument and account type. Rebates are only generated on &quot;valid&quot; trades as defined by the broker. We reserve the right to adjust or withhold cashback if the broker refuses payment due to a violation of their trading terms.
                   </p>
                   <p>
-                    <strong>3. Platform Availability:</strong> We strive to maintain continuous uptime but are not liable for transient broker feed interruptions or market latency beyond our infrastructure.
+                    <strong>3. Data Privacy & Authorization:</strong> By connecting your account, you authorize MarketSyde to view your trading history, including volume, symbols and timestamps, for the sole purpose of calculating and verifying your cashback.
+                  </p>
+                  <p>
+                    <strong>4. Broker Limitations:</strong> MarketSyde is not responsible for technical errors on the broker&apos;s side that may prevent a trade from being tracked. If a broker disconnects your account from our IB group, cashback accrual will cease immediately.
+                  </p>
+                  <p>
+                    <strong>5. Modifications:</strong> We reserve the right to modify these terms or change rebate rates at any time based on our agreements with partner brokers.
                   </p>
                 </>
               )}
