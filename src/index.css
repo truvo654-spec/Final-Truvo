@@ -592,4 +592,35 @@ input[type='range'].hero-slider::-moz-range-thumb {
   animation: livePulseGlow 2s infinite ease-in-out;
 }
 
+section.space-y-3:has(> h2:first-child) {
+  display: block;
+}
+
+section.space-y-3:has(> h2:first-child) > h2 {
+  display: none;
+}
+
+div.p-4 > section.mb-4.rounded-2xl:not(.overflow-hidden) {
+  display: none;
+}
+
+div.mt-2.space-y-1 > p.px-2.pb-1 {
+  font-size: 0;
+}
+
+div.mt-2.space-y-1 > p.px-2.pb-1::after {
+  content: 'Community Group';
+  font-size: 10px;
+}
+
+@media (min-width: 768px) {
+  section.grid.grid-cols-1:has(> div.group.relative) {
+    grid-template-columns: 30% 1fr;
+  }
+
+  section.space-y-3 article.group.grid {
+    grid-template-columns: 30% 1fr;
+  }
+}
+
 

@@ -3,6 +3,7 @@ import {
   UserProfile,
   Broker,
   MarketSignal,
+  Mission,
 } from '../../types';
 import {
   Calendar,
@@ -45,7 +46,7 @@ import { ConnectionDeniedPopup } from './ConnectionDeniedPopup';
 import { ConnectionUnavailablePopup } from './ConnectionUnavailablePopup';
 import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
 import { MissionCardWidget } from './MissionCardWidget';
-import { CommunityWidget, PostCard, SAMPLE_COMMUNITY_POSTS } from './CommunityWidget';
+import { CommunityWidget } from './CommunityWidget';
 import { getNextTierInfo, LEVEL_SCENARIOS, LevelScenarioId } from '../../data/levelScenarios';
 
 export type DashboardStateType =
@@ -70,6 +71,8 @@ interface EmptyStateDashboardViewProps {
   onEnterCustomizeMode?: () => void;
   onSelectLevelScenario?: (scenarioId: LevelScenarioId) => void;
   initialState?: DashboardStateType;
+  missions?: Mission[];
+  onUpdateMissions?: (missions: Mission[]) => void;
 }
 
 /**
@@ -446,6 +449,8 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
   onEnterCustomizeMode,
   onSelectLevelScenario,
   initialState,
+  missions,
+  onUpdateMissions,
 }) => {
   // Read state from localStorage or initial state
   const [dashboardState, setDashboardState] = useState<DashboardStateType>(() => {
@@ -1495,7 +1500,11 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
           </div>
 
           {/* ─── MISSION CARD WIDGET (Matching Mission Card.png & inserted between Performance Chart and Signals) ─── */}
-          <MissionCardWidget onNavigateToTab={onNavigateToTab} />
+          <MissionCardWidget
+            missions={missions}
+            onUpdateMissions={onUpdateMissions}
+            onNavigateToTab={onNavigateToTab}
+          />
 
           {/* ─── COMMUNITY WIDGET (Replaces Most Recent Signals widget - shows 2.5 cards + CTA to community) ─── */}
           <CommunityWidget
@@ -1684,42 +1693,140 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
             </button>
           </div>
 
-          {/* ── CARD 3: Community Spotlight (Shown on Right Sidebar for State 1, 2, 3) ── */}
+          {/* ── CARD 3: Most Recent Signals (Replaces Community Spotlight in Sidebar) ── */}
           {!isPerformanceActive && (
             <div className="rounded-2xl bg-white border border-slate-200/90 p-5 shadow-2xs space-y-3.5">
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <h3 className="font-display font-extrabold text-base text-[#0b1c30]">
-                    Community <span className="text-[#5945F1]">Pulse.</span>
+                    Most Recent <span className="text-[#5945F1]">Signals</span><span className="text-[#FD02B0]">.</span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Latest trade ideas & discussions
+                    View most recent signals for your trading
                   </p>
                 </div>
 
                 <button
-                  onClick={() => onNavigateToTab('community')}
+                  onClick={() => onNavigateToTab('signals')}
                   className="text-xs font-bold text-[#5945F1] hover:text-[#492CED] transition-colors cursor-pointer flex items-center gap-0.5 shrink-0"
                 >
-                  <span>Go to Community</span>
+                  <span>All Signals</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {/* Compact PostCard */}
-              <div className="pt-1">
-                <PostCard
-                  post={SAMPLE_COMMUNITY_POSTS[0]}
-                  onNavigateToTab={onNavigateToTab}
-                  onToast={showToast}
-                />
+              {/* Signal Items List */}
+              <div className="space-y-2.5 pt-1">
+                {/* 1. EUR/USD */}
+                <div
+                  onClick={() => {
+                    const s = signals.find((item) => item.ticker === 'EUR/USD') || signals[0];
+                    if (s) onSelectSignal(s);
+                  }}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 hover:bg-slate-100/90 border border-slate-100/80 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🇪🇺</span>
+                    <div>
+                      <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">EUR/USD</div>
+                      <div className="text-[11px] text-[#10B981] font-bold font-mono">+0.33%</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MiniSparkline trend="up" color="#16a34a" />
+                    <span className="px-2.5 py-0.5 bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 text-[10px] font-black rounded-lg shadow-2xs">
+                      Buy
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. GOOGL */}
+                <div
+                  onClick={() => {
+                    const s = signals.find((item) => item.ticker === 'GOOGL') || signals[1];
+                    if (s) onSelectSignal(s);
+                  }}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 hover:bg-slate-100/90 border border-slate-100/80 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black shadow-2xs text-[#4285F4]">
+                      G
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">GOOGL</div>
+                      <div className="text-[11px] text-red-500 font-bold font-mono">-0.11%</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MiniSparkline trend="down" color="#ef4444" />
+                    <span className="px-2.5 py-0.5 bg-[#5945F1] text-white text-[10px] font-black rounded-lg shadow-2xs">
+                      Sell
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. BTC/USD */}
+                <div
+                  onClick={() => {
+                    const s = signals.find((item) => item.ticker === 'BTC/USD') || signals[0];
+                    if (s) onSelectSignal(s);
+                  }}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 hover:bg-slate-100/90 border border-slate-100/80 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-[#f7931a] text-white font-bold text-[10px] flex items-center justify-center shadow-2xs shrink-0">
+                      ₿
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">BTC/USD</div>
+                      <div className="text-[10px] text-[#FD02B0] font-bold flex items-center gap-1">
+                        <Gem className="w-2.5 h-2.5" />
+                        <span>Premium Signal</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenViewPlan();
+                    }}
+                    className="px-2.5 py-0.5 border border-[#FD02B0] text-[#FD02B0] hover:bg-pink-50 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Upgrade
+                  </button>
+                </div>
+
+                {/* 4. S&P 500 */}
+                <div
+                  onClick={() => {
+                    const s = signals.find((item) => item.ticker.includes('S&P') || item.ticker.includes('500')) || signals[2];
+                    if (s) onSelectSignal(s);
+                  }}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 hover:bg-slate-100/90 border border-slate-100/80 transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-[#E11928] text-white font-black text-[8px] flex items-center justify-center shadow-2xs shrink-0">
+                      500
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">S&P 500</div>
+                      <div className="text-[11px] text-[#10B981] font-bold font-mono">+0.44%</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MiniSparkline trend="up" color="#16a34a" />
+                    <span className="px-2.5 py-0.5 bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 text-[10px] font-black rounded-lg shadow-2xs">
+                      Buy
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <button
-                onClick={() => onNavigateToTab('community')}
+                onClick={() => onNavigateToTab('signals')}
                 className="w-full mt-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#5945F1] to-[#8B5CF6] hover:opacity-95 text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Explore Community</span>
+                <span>Explore All Signals</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

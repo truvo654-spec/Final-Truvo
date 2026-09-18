@@ -1144,14 +1144,6 @@ export const INITIAL_MISSIONS: Mission[] = [
     theme: 'purple',
     tasks: [
       {
-        id: 'task-asset-class',
-        title: 'Add a New Asset Class',
-        description: "Buy into a sector you haven't invested in yet.",
-        completed: false,
-        actionLabel: 'Button',
-        category: 'trade',
-      },
-      {
         id: 'task-rebalance',
         title: 'Rebalance Your Holdings',
         description: 'Adjust allocations so no single stock exceeds 30%.',
@@ -1160,11 +1152,19 @@ export const INITIAL_MISSIONS: Mission[] = [
         category: 'rebalance',
       },
       {
-        id: 'task-stop-loss',
-        title: 'Set a Stop-Loss Order',
-        description: 'Protect a position by placing a stop-loss trigger.',
+        id: 'task-asset-class',
+        title: 'Adjust allocations so no single stock exceeds 30%.',
+        description: "Buy into a sector you haven't invested in yet.",
         completed: false,
-        actionLabel: 'Button',
+        actionLabel: 'Add Asset',
+        category: 'trade',
+      },
+      {
+        id: 'task-stop-loss',
+        title: 'Adjust allocations so no single stock exceeds 30%.',
+        description: "Buy into a sector you haven't invested in yet.",
+        completed: false,
+        actionLabel: 'Add Asset',
         category: 'stoploss',
       },
     ],

@@ -26,6 +26,7 @@ export const CommunityArticlesView: React.FC<CommunityArticlesViewProps> = ({
   const [selectedArticle, setSelectedArticle] = useState<CommunityArticle | null>(null);
   const [articlesList, setArticlesList] = useState<CommunityArticle[]>(articles);
   const [likedArticles, setLikedArticles] = useState<Record<string, boolean>>({});
+  const [followedAuthors, setFollowedAuthors] = useState<Record<string, boolean>>({});
 
   const handleToggleLike = (articleId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,18 +64,18 @@ export const CommunityArticlesView: React.FC<CommunityArticlesViewProps> = ({
         </button>
       </div>
 
-      {/* 3-Column Article Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* Two-column research feed with flexible article cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {articlesList.map((art) => {
           const isLiked = likedArticles[art.id];
           return (
             <article
               key={art.id}
               onClick={() => setSelectedArticle(art)}
-              className="bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden text-[#0b1c30] shadow-xs hover:border-[#cbd5e1] hover:shadow-sm transition-all cursor-pointer flex flex-col group"
+              className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_148px] overflow-hidden bg-white border border-[#e2e8f0] rounded-2xl text-[#0b1c30] shadow-xs hover:border-[#cbd5e1] hover:shadow-sm transition-all cursor-pointer group"
             >
               {/* Thumbnail header */}
-              <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
+              <div className="relative order-1 md:order-2 aspect-video md:aspect-auto md:min-h-[190px] w-full overflow-hidden bg-slate-100">
                 <img
                   src={art.thumbnail}
                   alt={art.title}
@@ -92,7 +93,7 @@ export const CommunityArticlesView: React.FC<CommunityArticlesViewProps> = ({
               </div>
 
               {/* Body */}
-              <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+              <div className="order-2 md:order-1 p-4 min-w-0 flex flex-col justify-between space-y-3">
                 <div className="space-y-2">
                   <h4 className="text-sm font-bold text-[#0b1c30] group-hover:text-[#5338ec] line-clamp-2 leading-snug transition-colors">
                     {art.title}
@@ -119,6 +120,18 @@ export const CommunityArticlesView: React.FC<CommunityArticlesViewProps> = ({
                     <span className="font-semibold text-[#0b1c30] text-xs truncate max-w-[110px]">
                       {art.publisher.name}
                     </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const following = !followedAuthors[art.publisher.name];
+                        setFollowedAuthors((prev) => ({ ...prev, [art.publisher.name]: following }));
+                        onShowToast(following ? `Following ${art.publisher.name}` : `Unfollowed ${art.publisher.name}`);
+                      }}
+                      className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${followedAuthors[art.publisher.name] ? 'bg-slate-100 text-slate-500' : 'bg-violet-50 text-[#5338ec] hover:bg-violet-100'}`}
+                    >
+                      {followedAuthors[art.publisher.name] ? 'Following' : 'Follow'}
+                    </button>
                   </div>
 
                   <div className="flex items-center gap-3 text-[#474556] font-mono text-[11px]">

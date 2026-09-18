@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import {
   Flame,
-  Radio,
-  Bell,
-  Check,
   ChevronRight,
-  ChevronLeft,
   Info,
   Play,
   ArrowUpRight,
@@ -30,29 +26,9 @@ export const CommunityRightSidebar: React.FC<CommunityRightSidebarProps> = ({
   onOpenHotTopic,
   onShowToast,
 }) => {
-  const [influencerTab, setInfluencerTab] = useState<'social' | 'depth'>('social');
-  const [isLiveReminded, setIsLiveReminded] = useState(false);
-  const [liveIndex, setLiveIndex] = useState(1);
-
-  const handleToggleReminder = () => {
-    setIsLiveReminded(!isLiveReminded);
-    if (!isLiveReminded) {
-      onShowToast?.('🔔 Live reminder set for "Weekly Crypto Forecast" (Sep 07, 22:00)');
-    } else {
-      onShowToast?.('Reminder removed');
-    }
-  };
-
-  const handlePrevLive = () => {
-    setLiveIndex((prev) => (prev > 1 ? prev - 1 : 4));
-  };
-
-  const handleNextLive = () => {
-    setLiveIndex((prev) => (prev < 4 ? prev + 1 : 1));
-  };
-
+  const [influencerTab, setInfluencerTab] = useState<'social' | 'trending'>('social');
   return (
-    <div className="space-y-4 w-full xl:sticky xl:top-[84px] xl:max-h-[calc(100vh-96px)] xl:overflow-y-auto xl:overscroll-contain sidebar-scrollbar">
+    <div className="space-y-4 w-full">
       {/* ─── 1. HOT TOPIC WIDGET ─── */}
       <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 text-[#0b1c30] shadow-xs hover:border-[#cbd5e1] hover:shadow-sm transition-all relative overflow-hidden">
         <div className="flex items-center justify-between mb-2">
@@ -93,79 +69,7 @@ export const CommunityRightSidebar: React.FC<CommunityRightSidebarProps> = ({
         </div>
       </div>
 
-      {/* ─── 2. UPCOMING LIVES WIDGET ─── */}
-      <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 text-[#0b1c30] shadow-xs">
-        <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0b1c30]">
-            <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
-            <span>Upcoming Lives</span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          </div>
-
-          <div className="flex items-center gap-1 text-xs text-[#474556] font-mono">
-            <button
-              onClick={handlePrevLive}
-              className="p-0.5 hover:text-[#0b1c30] hover:bg-slate-100 rounded transition-colors"
-              title="Previous Live"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <span className="text-[11px] text-[#474556]">{liveIndex}/4</span>
-            <button
-              onClick={handleNextLive}
-              className="p-0.5 hover:text-[#0b1c30] hover:bg-slate-100 rounded transition-colors"
-              title="Next Live"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-3 mb-3">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold text-[#0b1c30] line-clamp-1">
-                {liveIndex === 1 && 'Weekly Crypto Forecast'}
-                {liveIndex === 2 && 'Macro FX & NFP Liquidity Prep'}
-                {liveIndex === 3 && 'Layer 2 Tokenomics & Rebates'}
-                {liveIndex === 4 && 'Institutional Hedging Masterclass'}
-              </p>
-              <p className="text-[11px] text-[#474556] mt-1 font-mono">
-                {liveIndex === 1 && '22:00, Sep 07 | 92 going'}
-                {liveIndex === 2 && '14:30, Sep 08 | 148 going'}
-                {liveIndex === 3 && '19:00, Sep 09 | 81 going'}
-                {liveIndex === 4 && '16:00, Sep 10 | 210 going'}
-              </p>
-            </div>
-            <span className="shrink-0 w-7 h-7 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center text-xs font-bold">
-              🎙️
-            </span>
-          </div>
-        </div>
-
-        <button
-          onClick={handleToggleReminder}
-          className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold transition-all ${
-            isLiveReminded
-              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-              : 'bg-[#5338ec] hover:bg-[#4326d8] text-white shadow-xs'
-          }`}
-        >
-          {isLiveReminded ? (
-            <>
-              <Check className="w-3.5 h-3.5" />
-              <span>Reminder Set</span>
-            </>
-          ) : (
-            <>
-              <Bell className="w-3.5 h-3.5" />
-              <span>Set Reminder</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* ─── 3. TOP INFLUENCERS / OTHER INFLUENCERS ─── */}
+      {/* ─── 2. TOP INFLUENCERS / OTHER INFLUENCERS ─── */}
       <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 text-[#0b1c30] shadow-xs">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
@@ -194,21 +98,24 @@ export const CommunityRightSidebar: React.FC<CommunityRightSidebarProps> = ({
               Social Influence
             </button>
             <button
-              onClick={() => setInfluencerTab('depth')}
+              onClick={() => setInfluencerTab('trending')}
               className={`flex-1 py-1 px-2 rounded-lg font-medium transition-all ${
-                influencerTab === 'depth'
+                influencerTab === 'trending'
                   ? 'bg-white text-[#5338ec] font-bold shadow-xs'
                   : 'text-[#474556] hover:text-[#0b1c30]'
               }`}
             >
-              Analytical Depth
+              Trending
             </button>
           </div>
         )}
 
         <div className="space-y-1.5">
           {(mode === 'profile' ? OTHER_INFLUENCERS : TOP_INFLUENCERS).map((inf, idx) => {
-            const isBullish = inf.sentiment === 'Bullish';
+            const contentTypes = ['New Post', 'New Video', 'New Event', 'New Article'];
+            const contentType = contentTypes[idx % contentTypes.length];
+            const likeCount = Math.round(inf.influenceScore * 0.82) + idx * 7;
+            const shareCount = Math.round(inf.influenceScore * 0.19) + idx * 3;
             return (
               <div
                 key={inf.id}
@@ -237,21 +144,17 @@ export const CommunityRightSidebar: React.FC<CommunityRightSidebarProps> = ({
                     </p>
                     <p className="text-[10px] text-[#474556] font-mono">
                       {influencerTab === 'social'
-                        ? `${inf.influenceScore.toFixed(2)} Score`
-                        : `${inf.analyticalDepth || '92.0'} Depth`}
+                        ? `♥ ${likeCount} Like · ↗ ${shareCount} Share`
+                        : `+${(4.2 + (idx * 1.7) % 8.4).toFixed(1)}% followers this week`}
                     </p>
                   </div>
                 </div>
 
                 <div className="text-right shrink-0">
                   <span
-                    className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold font-mono ${
-                      isBullish
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
+                    className="inline-block rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700"
                   >
-                    {isBullish ? `Bullish ${inf.sentimentScore || '4.00'}` : 'Neutral'}
+                    {contentType}
                   </span>
                 </div>
               </div>

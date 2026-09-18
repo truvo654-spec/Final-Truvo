@@ -697,6 +697,8 @@ export default function App() {
               user={user}
               brokers={brokers}
               signals={signals}
+              missions={missions}
+              onUpdateMissions={setMissions}
               quickSteps={quickSteps}
               performanceData={PERFORMANCE_DATA}
               leaderboardUsers={LEADERBOARD_USERS}
@@ -1025,6 +1027,10 @@ export default function App() {
               setActiveTab(tab);
             }}
             initialInstrumentSymbol={selectedInstrumentForCommunity}
+            onOpenAdvancedChart={(symbol) => {
+              setSelectedInstrumentForCommunity(symbol);
+              setActiveTab('analysis');
+            }}
             onOpenConnectModal={() => {
               setSelectedBrokerForConnect(brokers[0]);
               setIsConnectModalOpen(true);

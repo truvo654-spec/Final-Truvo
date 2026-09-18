@@ -6,6 +6,7 @@ import {
   QuickStep,
   PerformanceTimeframeData,
   LeaderboardUser,
+  Mission,
 } from '../types';
 import {
   Search,
@@ -60,6 +61,8 @@ interface ReferenceDashboardProps {
   onNavigateToConnectBroker?: (broker?: Broker) => void;
   onSelectBrokerDetail?: (broker: Broker) => void;
   onSelectLevelScenario?: (scenarioId: LevelScenarioId) => void;
+  missions?: Mission[];
+  onUpdateMissions?: (missions: Mission[]) => void;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -572,6 +575,8 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
   onNavigateToConnectBroker,
   onSelectBrokerDetail,
   onSelectLevelScenario,
+  missions,
+  onUpdateMissions,
 }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1D' | '1W' | '1M' | 'All'>('1M');
   const [connectedPage, setConnectedPage] = useState<number>(1);
@@ -870,6 +875,8 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
                         onSelectSignal={onSelectSignal}
                         onNavigateToTab={onNavigateToTab}
                         onSelectLevelScenario={onSelectLevelScenario}
+                        missions={missions}
+                        onUpdateMissions={onUpdateMissions}
                       />
                     </div>
                   ))}
@@ -929,6 +936,8 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
           onSelectSignal={onSelectSignal}
           onEnterCustomizeMode={handleEnterCustomizeMode}
           onSelectLevelScenario={onSelectLevelScenario}
+          missions={missions}
+          onUpdateMissions={onUpdateMissions}
         />
       )}
 

@@ -988,7 +988,10 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
               >
                 {/* Top Row */}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-[#5338ec]">Syde Credits</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-[#5338ec]">Syde Credits</span>
+                    <span className="text-xs text-slate-400 font-normal">(Lasted 90 days)</span>
+                  </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

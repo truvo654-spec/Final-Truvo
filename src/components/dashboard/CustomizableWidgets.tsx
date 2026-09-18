@@ -13,7 +13,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { DashboardSlot } from '../../types/dashboardWidgets';
-import { UserProfile, MarketSignal, Broker } from '../../types';
+import { UserProfile, MarketSignal, Broker, Mission } from '../../types';
 import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
 import { MissionCardWidget } from './MissionCardWidget';
 import { getNextTierInfo, LEVEL_SCENARIOS, LevelScenarioId } from '../../data/levelScenarios';
@@ -31,6 +31,8 @@ interface CustomizableWidgetProps {
   onSelectSignal: (signal: MarketSignal) => void;
   onNavigateToTab: (tab: string) => void;
   onSelectLevelScenario?: (scenarioId: LevelScenarioId) => void;
+  missions?: Mission[];
+  onUpdateMissions?: (missions: Mission[]) => void;
 }
 
 /**
@@ -140,6 +142,8 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
   onSelectSignal,
   onNavigateToTab,
   onSelectLevelScenario,
+  missions,
+  onUpdateMissions,
 }) => {
   // Current user tier points & next tier calculation
   const currentPoints = user.currentPoints ?? 50;
@@ -554,6 +558,8 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
         <div className="w-full h-full">
           <MissionCardWidget
             size={slot.size}
+            missions={missions}
+            onUpdateMissions={onUpdateMissions}
             onNavigateToTab={onNavigateToTab}
           />
         </div>

@@ -58,9 +58,9 @@ export const CommunityProfileView: React.FC<CommunityProfileViewProps> = ({
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full">
       {/* ─── LEFT COLUMN: INFLUENCER PROFILE CARD (4 cols) ─── */}
-      <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
+      <div className="lg:col-span-4 space-y-4">
         <button
           onClick={onBackToFeeds}
           className="inline-flex items-center gap-1.5 text-xs text-[#474556] hover:text-[#0b1c30] transition-colors font-medium"

@@ -255,7 +255,7 @@ export interface TopContributor {
   alphaCalls: number;
 }
 
-export type CommunitySubTab = 'feeds' | 'topics' | 'lives' | 'articles' | 'my-page' | 'profile';
+export type CommunitySubTab = 'feeds' | 'topics' | 'lives' | 'media' | 'articles' | 'my-page' | 'profile';
 
 export interface CommunityLiveSession {
   id: string;
@@ -303,6 +303,7 @@ export interface TokenMarketItem {
 export interface CommunityTopic {
   id: string;
   title: string;
+  description?: string;
   tokens: { symbol: string; change: number }[];
   answersCount: number;
   image?: string;
