@@ -1,7 +1,10 @@
 import "./market.css";
 "use client";
 
-import React, { useEffect, useRef, useState, type ReactNode, type CSSProperties } from "react";
+import React, { useEffect, useRef, useState, useMemo, type ReactNode, type CSSProperties } from "react";
+import { TabMain, type TabMainItem } from "../../common/TabMain";
+import { TabSubmain, type TabSubmainItem } from "../../common/TabSubmain";
+import { LockedFeatureOverlay } from "../LockedFeatureOverlay";
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,6 +24,7 @@ import {
   Plus,
   Send,
   ShieldCheck,
+  Sparkles,
   Star,
   ThumbsDown,
   ThumbsUp,
@@ -633,27 +637,28 @@ export function InstrumentDetail({
     setWeeklyVote(nextVote);
     onToast(`${side} vote recorded for this week`);
   };
+  const detailTabs: TabMainItem<DetailTab>[] = useMemo(
+    () => [
+      ...tabList
+        .filter((item) => !["News", "Products", "Brokers"].includes(item))
+        .map((item) => ({ id: item, label: item })),
+      { id: "Products & Brokers" as DetailTab, label: "Products & Brokers" },
+      ...(kind === "Stock"
+        ? [{ id: "Financial Report" as DetailTab, label: "Financial Report" }]
+        : []),
+    ],
+    [kind],
+  );
   const instrumentTabs = (
-    <nav
-      className="concept-tabs concept-tabs-workspace"
-      aria-label="Instrument sections"
-    >
-      {[
-        ...tabList.filter(
-          (item) => !["News", "Products", "Brokers"].includes(item),
-        ),
-        "Products & Brokers",
-        ...(kind === "Stock" ? ["Financial Report"] : []),
-      ].map((item) => (
-        <button
-          key={item}
-          onClick={() => setTab(item)}
-          aria-current={tab === item ? "page" : undefined}
-        >
-          {item}
-        </button>
-      ))}
-    </nav>
+    <div className="w-full">
+      <TabMain<DetailTab>
+        tabs={detailTabs}
+        activeTab={tab}
+        onChange={(newTab) => setTab(newTab)}
+        showBadgeOnActiveOnly={true}
+        className="w-full"
+      />
+    </div>
   );
   return (
     <div className="market-feature">
@@ -742,80 +747,189 @@ export function InstrumentDetail({
           </div>
         </div>
       </section>
-      <div className="concept-columns" ref={conceptColumnsRef}>
-        <aside className="concept-news concept-card" id="financial-news">
-          <div className="concept-section-title">
-            <Newspaper size={19} />
-            <div>
-              <h2>Latest news</h2>
-              <p>Market context for {instrument.symbol}</p>
+      <div className="concept-columns flex flex-col lg:flex-row items-start gap-6 w-full" ref={conceptColumnsRef}>
+        {/* 1. LEFT SIDEBAR: Current right-side bar content (Community, Sentiment & Discussions) - 300px fixed width & sticky */}
+        <aside
+          className="concept-sidebar-left w-full lg:w-[300px] lg:shrink-0 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar"
+          aria-label={`${instrument.name} Community`}
+        >
+          <div className="concept-community concept-card">
+            <div className="concept-section-title">
+              <Users size={20} />
+              <div>
+                <h2>{instrument.name} Community</h2>
+                <p>Community perspectives and discussion</p>
+              </div>
+            </div>
+            <div className="concept-voting">
+              <div>
+                <b className="concept-up">↗ {instrument.sentiment}% Bullish</b>
+                <b className="concept-down">
+                  {100 - instrument.sentiment}% Bearish ↘
+                </b>
+              </div>
+              <div className="concept-sentiment-bar">
+                <i style={{ width: `${instrument.sentiment}%` }} />
+              </div>
+              <div>
+                {["Bullish", "Bearish"].map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    aria-pressed={weeklyVote?.side === item}
+                    disabled={Boolean(weeklyVote)}
+                    title={weeklyVote ? "You can vote again in 7 days" : undefined}
+                    onClick={() => recordVote(item as VoteSide)}
+                  >
+                    {weeklyVote?.side === item ? "✓ " : ""}Vote {item}
+                  </button>
+                ))}
+              </div>
+              <p className="concept-vote-status">
+                {weeklyVote
+                  ? `Your ${weeklyVote.side.toLowerCase()} vote is counted · next vote in 7 days`
+                  : "Vote once every 7 days to update the community view"}
+              </p>
+            </div>
+            <h3 className="concept-eyebrow">PREDICTOR SPOTLIGHT</h3>
+            <div className="concept-predictor">
+              <span className="concept-avatar">MC</span>
+              <div>
+                <b>Maya Chen</b>
+                <p>Momentum analyst</p>
+              </div>
+              <strong>
+                82%<small>accuracy · demo</small>
+              </strong>
+            </div>
+            <button
+              className="concept-outline"
+              onClick={() => setNewPostOpen(true)}
+            >
+              Discuss {instrument.symbol} <MessageCircle size={15} />
+            </button>
+            {newCommunityPost && (
+              <CommunityPredictionPost
+                instrument={instrument}
+                post={{
+                  name: "You",
+                  initials: "YO",
+                  time: "now",
+                  tag: "COMMUNITY",
+                  text: newCommunityPost,
+                  agree: 0,
+                  disagree: 0,
+                }}
+                followed={false}
+                onFollow={() => undefined}
+                onToast={onToast}
+                onCommunityChart={onCommunityChart}
+              />
+            )}
+            {[
+              {
+                name: "Daniel Markson",
+                initials: "DM",
+                time: "19h",
+                tag: "TECHNICAL",
+                text: `Watching ${instrument.symbol}: participation is stronger than the prior session. Looking for confirmation around the next pullback.`,
+                agree: 14,
+                disagree: 6,
+              },
+              {
+                name: "CLORA",
+                initials: "CL",
+                time: "21h",
+                tag: "BREADTH",
+                text: `The ${instrument.symbol} setup looks constructive. Volume and broader ${instrument.sector.toLowerCase()} activity are the next things on my checklist.`,
+                agree: 13,
+                disagree: 5,
+              },
+              {
+                name: "Aisha Rahman",
+                initials: "AR",
+                time: "1d",
+                tag: "MACRO",
+                text: `Base case for ${instrument.symbol}: steady demand and improving breadth support a measured continuation, with volatility around earnings.`,
+                agree: 17,
+                disagree: 7,
+              },
+              {
+                name: "Leo Park",
+                initials: "LP",
+                time: "1d",
+                tag: "SECTOR",
+                text: `I see a range scenario for ${instrument.symbol}. A breakout needs stronger volume; otherwise consolidation remains likely.`,
+                agree: 9,
+                disagree: 8,
+              },
+              {
+                name: "Sofia Mendes",
+                initials: "SM",
+                time: "2d",
+                tag: "RISK",
+                text: `Risk case for ${instrument.symbol}: valuation sensitivity could create a deeper retest before the longer-term trend resumes.`,
+                agree: 8,
+                disagree: 12,
+              },
+            ].map((post) => (
+              <CommunityPredictionPost
+                key={post.name}
+                instrument={instrument}
+                post={post}
+                followed={followedPublisher?.tag === post.tag}
+                onFollow={() => onFollowPublisher(post.name, post.tag)}
+                onToast={onToast}
+                onCommunityChart={onCommunityChart}
+              />
+            ))}
+            {/* Sticky Bottom Community Action with Frosted Glass Backdrop Blur */}
+            <div className="sticky bottom-0 z-20 -mx-5 -mb-5 mt-4 p-4 rounded-b-[17px] bg-white/80 backdrop-blur-md border-t border-[#E0E7FF]/80 shadow-[0_-8px_20px_-6px_rgba(96,70,255,0.08)]">
+              {/* Soft blur gradient fade above the sticky bar for smooth pass-through */}
+              <div className="pointer-events-none absolute -top-5 left-0 right-0 h-5 bg-gradient-to-t from-white/80 to-transparent backdrop-blur-[2px]" />
+
+              <div className="relative flex items-center justify-center w-full group">
+                <div
+                  className="absolute inset-0 duration-1000 opacity-60 transition-all bg-gradient-to-r from-[#5945F1] via-[#FD02B0] to-amber-400 rounded-xl blur-lg filter group-hover:opacity-100 group-hover:duration-200"
+                />
+                <button
+                  type="button"
+                  role="button"
+                  className="group relative inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-[#5945F1]/25 w-full cursor-pointer select-none"
+                  title="Open Community"
+                  aria-label={`Open ${instrument.symbol} Community`}
+                  onClick={onOpenCommunity}
+                >
+                  <span>Community</span>
+                  <svg
+                    viewBox="0 0 10 10"
+                    height="10"
+                    width="10"
+                    fill="none"
+                    className="mt-0.5 ml-2 -mr-1 stroke-white stroke-2 shrink-0"
+                  >
+                    <path
+                      d="M0 5h7"
+                      className="transition opacity-0 group-hover:opacity-100"
+                    />
+                    <path
+                      d="M1 1l4 4-4 4"
+                      className="transition group-hover:translate-x-[3px]"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
-          <div className="concept-news-filters">
-            {["All news", "Market", "Research"].map((item) => (
-              <button
-                key={item}
-                className={`${newsFilter === item ? "selected" : ""} ${item === "Research" && snapshot.level.level < 4 ? "cursor-not-allowed opacity-50" : ""}`}
-                aria-disabled={item === "Research" && snapshot.level.level < 4}
-                title={item === "Research" && snapshot.level.level < 4 ? "Requires Level 4" : undefined}
-                onClick={() => {
-                  if (item === "Research" && snapshot.level.level < 4) {
-                    requestUnlock("researchNews");
-                    return;
-                  }
-                  setNewsFilter(item);
-                }}
-              >
-                {item}
-                {item === "Research" && snapshot.level.level < 4 && <Lock className="ml-1 inline size-2.5" />}
-              </button>
-            ))}
-          </div>
-          {taggedNews
-            .filter(
-              (_, index) =>
-                newsFilter === "All news" ||
-                (newsFilter === "Market" ? index < 3 : index >= 3),
-            )
-            .map((item) => (
-              <article
-                id={`news-${instrument.symbol.replaceAll("/", "-")}-${item.tag}`}
-                className="market-tag-target"
-                key={item.title}
-                onClick={() => {
-                  setArticle(item);
-                  const target = document.getElementById(
-                    `news-${instrument.symbol.replaceAll("/", "-")}-${item.tag}`,
-                  );
-                  target?.classList.add("market-context-highlight");
-                  window.setTimeout(
-                    () => target?.classList.remove("market-context-highlight"),
-                    1800,
-                  );
-                }}
-              >
-                <div className="concept-news-meta">
-                  <span>{item.source}</span>
-                  <small>{item.time}</small>
-                </div>
-                <a
-                  className="market-context-tag"
-                  href={`#community-${instrument.symbol.replaceAll("/", "-")}-${item.tag}`}
-                >
-                  #{instrument.symbol}_{item.tag}
-                </a>
-                <h3>{item.title}</h3>
-                <p>{item.summary}</p>
-                <button onClick={() => setArticle(item)}>
-                  Read full <ArrowRight size={12} />
-                </button>
-              </article>
-            ))}
         </aside>
-        <div className="concept-analysis">
+
+        {/* 2. CENTER CONTENT: Full Width Overview & Tabs */}
+        <div className="concept-center-col concept-analysis flex-1 min-w-0 w-full">
           {tab !== "Overview" && (
-            <section className="panel concept-tabs-panel">
-              {instrumentTabs}
+            <section className="panel p-0 overflow-hidden mb-5">
+              <div className="pt-1.5">
+                {instrumentTabs}
+              </div>
             </section>
           )}
           {tab === "Overview" && (
@@ -862,7 +976,7 @@ export function InstrumentDetail({
           {["Products", "Brokers", "Products & Brokers"].includes(tab) && (
             <ProductsAndBrokersTable
               instrument={instrument}
-              product="CFD"
+              product={product}
               products={availableProducts(instrument)}
               setProduct={setProduct}
               brokers={brokers.filter((b) =>
@@ -878,241 +992,233 @@ export function InstrumentDetail({
             />
           )}
         </div>
-        <aside className="concept-trading-signal concept-card !bg-slate-100" aria-label="Most recent signals">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-                Most Recent <span className="text-violet-600">Signals.</span>
-              </h2>
-              <p className="mt-1 text-[11px] text-slate-500">
-                View most recent signals for your trading
-              </p>
-            </div>
-            <a
-              href="/?view=screener"
-              className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-slate-900"
-            >
-              More <ArrowRight className="size-3" />
-            </a>
-          </div>
-          <div className="mt-4 divide-y divide-slate-200">
-            {[
-              {
-                symbol: "EUR/USD",
-                mark: "EU",
-                markClass: "bg-blue-700",
-                change: "+0.33%",
-                action: "Buy",
-                actionClass: "bg-lime-400 text-slate-950",
-                chart: "M2 10 C14 8 16 16 25 12 S37 10 43 15 S53 8 61 12 S74 15 82 8 S92 11 98 6",
-                chartClass: "text-lime-500",
-              },
-              {
-                symbol: "GOOGL",
-                mark: "G",
-                markClass: "bg-white text-blue-600",
-                change: "-0.11%",
-                action: "Sell",
-                actionClass: "bg-violet-600 text-white",
-                chart: "M2 7 C12 12 17 5 26 10 S39 18 48 12 S58 14 67 8 S79 13 88 6 S94 7 98 4",
-                chartClass: "text-violet-500",
-              },
-              {
-                symbol: "BTC/USD",
-                mark: "₿",
-                markClass: "bg-orange-500 text-white",
-                change: "Premium Signal",
-                action: "Upgrade",
-                actionClass: "border border-violet-300 bg-white text-fuchsia-600",
-                chart: "M2 11 C13 6 18 15 27 10 S40 13 48 8 S61 14 70 9 S82 14 91 7 S96 9 98 5",
-                chartClass: "text-violet-500",
-                premium: true,
-              },
-              {
-                symbol: "S&P 500",
-                mark: "500",
-                markClass: "bg-rose-700 text-white",
-                change: "+0.44%",
-                action: "Buy",
-                actionClass: "bg-lime-400 text-slate-950",
-                chart: "M2 12 C13 10 16 6 24 11 S38 13 46 8 S59 15 67 10 S78 14 86 7 S94 10 98 4",
-                chartClass: "text-lime-500",
-              },
-              {
-                symbol: "XAU/USD",
-                mark: "Au",
-                markClass: "bg-amber-500 text-white",
-                change: "+0.24%",
-                action: "Buy",
-                actionClass: "bg-lime-400 text-slate-950",
-                chart: "M2 13 C12 8 20 16 29 11 S39 12 48 7 S62 14 70 10 S83 13 91 6 S96 8 98 4",
-                chartClass: "text-lime-500",
-              },
-            ].map((signal) => (
-              <div key={signal.symbol} className="flex items-center gap-2 py-3">
-                <span className={`grid size-8 shrink-0 place-items-center rounded-full text-[10px] font-bold ${signal.markClass}`}>
-                  {signal.mark}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <b className="block text-sm font-medium text-slate-800">{signal.symbol}</b>
-                  <span className={`block text-xs font-semibold ${signal.premium ? "text-fuchsia-500" : signal.change.startsWith("-") ? "text-violet-600" : "text-lime-600"}`}>
-                    {signal.premium && "◇ "}{signal.change}
-                  </span>
-                </div>
-                <svg viewBox="0 0 100 24" className={`h-7 w-20 shrink-0 ${signal.chartClass}`} aria-hidden="true">
-                  <path d={signal.chart} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <a
-                  href={signal.premium ? "/?view=points-credits" : `/?view=instrument&symbol=${encodeURIComponent(signal.symbol)}`}
-                  className={`inline-flex min-w-[64px] items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold ${signal.actionClass}`}
-                >
-                  {signal.action}
-                </a>
+
+        {/* 3. RIGHT SIDEBAR: Top is Most Recent Signals, Bottom is Latest News - 300px fixed width & sticky */}
+        <aside
+          className="concept-sidebar-right w-full lg:w-[300px] lg:shrink-0 space-y-4 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar"
+          aria-label="Signals and News"
+        >
+          {/* Top: Most Recent Signals */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-3" aria-label="Most recent signals">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-base font-bold font-display tracking-tight text-slate-900">
+                  Most Recent <span className="text-[#5945F1]">Signals</span>
+                </h2>
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  Live directional triggers for active markets
+                </p>
               </div>
-            ))}
-          </div>
-        </aside>
-        <aside className="concept-community concept-card">
-          <div className="concept-section-title">
-            <Users size={20} />
-            <div>
-              <h2>Nvidia Community</h2>
-              <p>Community perspectives and discussion</p>
+              <a
+                href="/?view=screener"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#5945F1] hover:text-[#4a36e2] transition-colors"
+              >
+                More <ArrowRight className="size-3" />
+              </a>
             </div>
-          </div>
-          <div className="concept-voting">
-            <div>
-              <b className="concept-up">↗ {instrument.sentiment}% Bullish</b>
-              <b className="concept-down">
-                {100 - instrument.sentiment}% Bearish ↘
-              </b>
-            </div>
-            <div className="concept-sentiment-bar">
-              <i style={{ width: `${instrument.sentiment}%` }} />
-            </div>
-            <div>
-              {["Bullish", "Bearish"].map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  aria-pressed={weeklyVote?.side === item}
-                  disabled={Boolean(weeklyVote)}
-                  title={weeklyVote ? "You can vote again in 7 days" : undefined}
-                  onClick={() => recordVote(item as VoteSide)}
-                >
-                  {weeklyVote?.side === item ? "✓ " : ""}Vote {item}
-                </button>
+            <div className="mt-2 divide-y divide-slate-100">
+              {[
+                {
+                  symbol: "EUR/USD",
+                  mark: "EU",
+                  markClass: "bg-blue-600 text-white",
+                  change: "+0.33%",
+                  action: "Buy",
+                  actionClass: "bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100",
+                  chart: "M2 10 C14 8 16 16 25 12 S37 10 43 15 S53 8 61 12 S74 15 82 8 S92 11 98 6",
+                  chartClass: "text-emerald-500",
+                },
+                {
+                  symbol: "GOOGL",
+                  mark: "G",
+                  markClass: "bg-blue-100 text-blue-700",
+                  change: "-0.11%",
+                  action: "Sell",
+                  actionClass: "bg-rose-50 text-rose-700 border border-rose-200/80 hover:bg-rose-100",
+                  chart: "M2 7 C12 12 17 5 26 10 S39 18 48 12 S58 14 67 8 S79 13 88 6 S94 7 98 4",
+                  chartClass: "text-rose-500",
+                },
+                {
+                  symbol: "BTC/USD",
+                  mark: "₿",
+                  markClass: "bg-amber-500 text-white",
+                  change: "Premium Signal",
+                  action: "Upgrade",
+                  actionClass: "border border-indigo-200 bg-indigo-50 text-[#5945F1] hover:bg-indigo-100",
+                  chart: "M2 11 C13 6 18 15 27 10 S40 13 48 8 S61 14 70 9 S82 14 91 7 S96 9 98 5",
+                  chartClass: "text-[#5945F1]",
+                  premium: true,
+                },
+                {
+                  symbol: "S&P 500",
+                  mark: "500",
+                  markClass: "bg-rose-600 text-white",
+                  change: "+0.44%",
+                  action: "Buy",
+                  actionClass: "bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100",
+                  chart: "M2 12 C13 10 16 6 24 11 S38 13 46 8 S59 15 67 10 S78 14 86 7 S94 10 98 4",
+                  chartClass: "text-emerald-500",
+                },
+                {
+                  symbol: "XAU/USD",
+                  mark: "Au",
+                  markClass: "bg-amber-500 text-white",
+                  change: "+0.24%",
+                  action: "Buy",
+                  actionClass: "bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100",
+                  chart: "M2 13 C12 8 20 16 29 11 S39 12 48 7 S62 14 70 10 S83 13 91 6 S96 8 98 4",
+                  chartClass: "text-emerald-500",
+                },
+              ].map((signal) => (
+                <div key={signal.symbol} className="flex items-center justify-between gap-2 py-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`grid size-7 shrink-0 place-items-center rounded-xl text-[10px] font-bold ${signal.markClass}`}>
+                      {signal.mark}
+                    </span>
+                    <div className="min-w-0">
+                      <b className="block text-xs font-bold text-slate-800 truncate">{signal.symbol}</b>
+                      <span className={`block text-[10px] font-semibold ${signal.premium ? "text-[#5945F1]" : signal.change.startsWith("-") ? "text-rose-600" : "text-emerald-600"}`}>
+                        {signal.premium && "◇ "}{signal.change}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <svg viewBox="0 0 100 24" className={`h-4 w-11 shrink-0 ${signal.chartClass}`} aria-hidden="true">
+                      <path d={signal.chart} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                    </svg>
+                    <a
+                      href={signal.premium ? "/?view=points-credits" : `/?view=instrument&symbol=${encodeURIComponent(signal.symbol)}`}
+                      className={`inline-flex min-w-[54px] items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors ${signal.actionClass}`}
+                    >
+                      {signal.action}
+                    </a>
+                  </div>
+                </div>
               ))}
             </div>
-            <p className="concept-vote-status">
-              {weeklyVote
-                ? `Your ${weeklyVote.side.toLowerCase()} vote is counted · next vote in 7 days`
-                : "Vote once every 7 days to update the community view"}
-            </p>
           </div>
-          <h3 className="concept-eyebrow">PREDICTOR SPOTLIGHT</h3>
-          <div className="concept-predictor">
-            <span className="concept-avatar">MC</span>
-            <div>
-              <b>Maya Chen</b>
-              <p>Momentum analyst</p>
+
+          {/* Bottom: Latest News (adapted from TodaysCryptoWidget) */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4" id="financial-news">
+            {/* Header matching TodaysCryptoWidget */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold font-display text-slate-900 flex items-center gap-1.5">
+                  <span>{instrument.market === "Crypto" ? "Today's" : "Market"}</span>
+                  <span className="text-[#5945F1]">{instrument.market === "Crypto" ? "Crypto" : "News"}</span>
+                </h3>
+                <p className="text-[11px] text-slate-400">Market intelligence for {instrument.symbol}</p>
+              </div>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-bold text-emerald-700">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                </span>
+                <span>LIVE DESK</span>
+              </div>
             </div>
-            <strong>
-              82%<small>accuracy · demo</small>
-            </strong>
-          </div>
-          <button
-            className="concept-outline"
-            onClick={() => setNewPostOpen(true)}
-          >
-            Discuss {instrument.symbol} <MessageCircle size={15} />
-          </button>
-          {newCommunityPost && (
-            <CommunityPredictionPost
-              instrument={instrument}
-              post={{
-                name: "You",
-                initials: "YO",
-                time: "now",
-                tag: "COMMUNITY",
-                text: newCommunityPost,
-                agree: 0,
-                disagree: 0,
-              }}
-              followed={false}
-              onFollow={() => undefined}
-              onToast={onToast}
-              onCommunityChart={onCommunityChart}
-            />
-          )}
-          {[
-            {
-              name: "Daniel Markson",
-              initials: "DM",
-              time: "19h",
-              tag: "TECHNICAL",
-              text: `Watching ${instrument.symbol}: participation is stronger than the prior session. Looking for confirmation around the next pullback.`,
-              agree: 14,
-              disagree: 6,
-            },
-            {
-              name: "CLORA",
-              initials: "CL",
-              time: "21h",
-              tag: "BREADTH",
-              text: `The ${instrument.symbol} setup looks constructive. Volume and broader ${instrument.sector.toLowerCase()} activity are the next things on my checklist.`,
-              agree: 13,
-              disagree: 5,
-            },
-            {
-              name: "Aisha Rahman",
-              initials: "AR",
-              time: "1d",
-              tag: "MACRO",
-              text: `Base case for ${instrument.symbol}: steady demand and improving breadth support a measured continuation, with volatility around earnings.`,
-              agree: 17,
-              disagree: 7,
-            },
-            {
-              name: "Leo Park",
-              initials: "LP",
-              time: "1d",
-              tag: "SECTOR",
-              text: `I see a range scenario for ${instrument.symbol}. A breakout needs stronger volume; otherwise consolidation remains likely.`,
-              agree: 9,
-              disagree: 8,
-            },
-            {
-              name: "Sofia Mendes",
-              initials: "SM",
-              time: "2d",
-              tag: "RISK",
-              text: `Risk case for ${instrument.symbol}: valuation sensitivity could create a deeper retest before the longer-term trend resumes.`,
-              agree: 8,
-              disagree: 12,
-            },
-          ].map((post) => (
-            <CommunityPredictionPost
-              key={post.name}
-              instrument={instrument}
-              post={post}
-              followed={followedPublisher?.tag === post.tag}
-              onFollow={() => onFollowPublisher(post.name, post.tag)}
-              onToast={onToast}
-              onCommunityChart={onCommunityChart}
-            />
-          ))}
-          <div className="concept-community-footer">
-            <button
-              type="button"
-              className="concept-post-community-link"
-              aria-label={`Open ${instrument.symbol} Community`}
-              title="Open Community"
-              onClick={onOpenCommunity}
-            >
-              <ExternalLink size={14} />
-              Community
-            </button>
+
+            {/* Filter Tabs using TabSubmain */}
+            <div className="border-b border-[#D4D0FC]/50 pb-1">
+              <TabSubmain
+                tabs={[
+                  { id: "All news", label: "All news" },
+                  { id: "Market", label: "Market" },
+                  {
+                    id: "Research",
+                    label: "Research",
+                    isLocked: snapshot.level.level < 4,
+                    icon: snapshot.level.level < 4 ? <Lock className="w-3 h-3 text-slate-400" /> : undefined,
+                  },
+                ]}
+                activeTab={newsFilter}
+                onChange={(tabId) => setNewsFilter(tabId)}
+                onLockedTabClick={() => requestUnlock("researchNews")}
+                size="sm"
+              />
+            </div>
+
+            {/* Gated state or News list */}
+            {newsFilter === "Research" && snapshot.level.level < 4 ? (
+              <div className="relative rounded-xl overflow-hidden min-h-[300px]">
+                <div className="space-y-3 filter blur-[4px] opacity-40 pointer-events-none select-none max-h-[320px] overflow-hidden">
+                  {taggedNews.slice(0, 3).map((item) => (
+                    <div key={item.title} className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-700">{item.source}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">{item.time}</span>
+                      </div>
+                      <div className="border-l-2 border-[#5046E5] pl-2 py-0.5 bg-slate-50 rounded-r">
+                        <h4 className="font-bold text-xs text-slate-800">"{item.title}"</h4>
+                      </div>
+                      <p className="text-[11px] text-slate-500 line-clamp-2">{item.summary}</p>
+                    </div>
+                  ))}
+                </div>
+                <LockedFeatureOverlay
+                  compact={true}
+                  title="Institutional Research requires Level 4"
+                  description="Curated macroeconomic intelligence, research notes, and editorial recaps are reserved for Elite tier (Lv.4) or a credit unlock."
+                  buttonText="Unlock"
+                  onUnlock={() => requestUnlock("researchNews")}
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {taggedNews
+                  .filter(
+                    (_, index) =>
+                      newsFilter === "All news" ||
+                      (newsFilter === "Market" ? index < 3 : index >= 3),
+                  )
+                  .map((item) => (
+                    <article
+                      id={`news-${instrument.symbol.replaceAll("/", "-")}-${item.tag}`}
+                      className="p-3.5 rounded-xl border border-slate-200/80 bg-white hover:border-indigo-200 hover:shadow-xs transition-all space-y-2 cursor-pointer group"
+                      key={item.title}
+                      onClick={() => {
+                        setArticle(item);
+                        const target = document.getElementById(
+                          `news-${instrument.symbol.replaceAll("/", "-")}-${item.tag}`,
+                        );
+                        target?.classList.add("market-context-highlight");
+                        window.setTimeout(
+                          () => target?.classList.remove("market-context-highlight"),
+                          1800,
+                        );
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-700">{item.source}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">{item.time}</span>
+                        </div>
+                        <a
+                          className="text-[10px] font-bold text-[#5945F1] bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                          href={`#community-${instrument.symbol.replaceAll("/", "-")}-${item.tag}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          #{instrument.symbol}_{item.tag}
+                        </a>
+                      </div>
+                      <div className="border-l-2 border-[#5046E5] pl-2.5 py-1 bg-slate-50/60 rounded-r-lg">
+                        <h4 className="font-bold text-xs text-slate-800 leading-snug group-hover:text-[#5945F1] transition-colors">
+                          "{item.title}"
+                        </h4>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">
+                        {item.summary}
+                      </p>
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
+                        <span className="text-slate-400 text-[10px]">Read full context</span>
+                        <span className="font-semibold text-[#5945F1] group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1">
+                          Read full <ArrowRight size={12} />
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+              </div>
+            )}
           </div>
         </aside>
       </div>
@@ -2613,7 +2719,9 @@ function Overview({
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-4 max-xl:grid-cols-1">
       <section className="panel p-5">
-        {tabs}
+        <div className="-mx-5 -mt-5 mb-5 pt-1.5">
+          {tabs}
+        </div>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="label">Performance</p>
@@ -2624,71 +2732,79 @@ function Overview({
               Demo price series · {compareRange} range
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="seg" aria-label="Chart display">
-              <button
-                onClick={() => chartOpen && onChart()}
-                className={!chartOpen ? "active" : ""}
-              >
-                Performance
-              </button>
-              <button
-                onClick={() => {
-                  if (tierLevel < 2) {
-                    requestUnlock("advancedChart");
-                    return;
-                  }
-                  if (!chartOpen) onChart();
-                }}
-                className={`${chartOpen ? "active" : ""} ${tierLevel < 2 ? "cursor-not-allowed opacity-50" : ""}`}
-                aria-disabled={tierLevel < 2}
-                title={tierLevel < 2 ? "Requires Level 2" : "Open advanced chart"}
-              >
-                Advanced chart
-                {tierLevel < 2 && <Lock className="ml-1 inline size-2.5" />}
-              </button>
-            </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <TabSubmain
+              tabs={[
+                { id: "performance", label: "Performance" },
+                {
+                  id: "advanced",
+                  label: "Advanced chart",
+                  isLocked: tierLevel < 2,
+                  icon: tierLevel < 2 ? <Lock className="w-3 h-3 text-slate-400" /> : undefined,
+                },
+              ]}
+              activeTab={chartOpen ? "advanced" : "performance"}
+              onChange={(tabId) => {
+                if (tabId === "advanced" && !chartOpen) onChart();
+                if (tabId === "performance" && chartOpen) onChart();
+              }}
+              onLockedTabClick={() => requestUnlock("advancedChart")}
+              size="sm"
+            />
             {!chartOpen && (
-              <>
-                <div className="seg">
-                  {(["1D", "1W", "1M", "1Y"] as PerformancePeriod[]).map(
-                    (item) => {
-                      const requiredTier = historicalTierForTimeframe(item);
-                      const locked = requiredTier > tierLevel;
-                      return (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => {
-                            if (locked) {
-                              requestUnlock(requiredTier >= 3 ? "performanceAnalytics" : "historicalData");
-                              return;
-                            }
-                            setPeriod(item);
-                            setCompareRange(periodToRange[item]);
-                          }}
-                          aria-disabled={locked}
-                          title={locked ? `Requires Level ${requiredTier}` : `Use ${item} performance`}
-                          className={`${period === item ? "active" : ""} ${locked ? "cursor-not-allowed opacity-50" : ""}`}
-                        >
-                          {item}
-                          {locked && <Lock className="ml-1 inline size-2.5" />}
-                        </button>
-                      );
-                    },
-                  )}
-                </div>
-              </>
+              <TabSubmain
+                prefixLabel="PERIOD"
+                tabs={(["1D", "1W", "1M", "1Y"] as PerformancePeriod[]).map(
+                  (item) => {
+                    const requiredTier = historicalTierForTimeframe(item);
+                    const locked = requiredTier > tierLevel;
+                    return {
+                      id: item,
+                      label: item,
+                      isLocked: locked,
+                      icon: locked ? <Lock className="w-3 h-3 text-slate-400" /> : undefined,
+                    };
+                  },
+                )}
+                activeTab={period}
+                onChange={(item) => {
+                  setPeriod(item as PerformancePeriod);
+                  setCompareRange(periodToRange[item as PerformancePeriod]);
+                }}
+                onLockedTabClick={(tab) => {
+                  const req = historicalTierForTimeframe(tab.id as PerformancePeriod);
+                  requestUnlock(req >= 3 ? "performanceAnalytics" : "historicalData");
+                }}
+                size="sm"
+              />
             )}
           </div>
         </div>
-        {chartOpen ? (
+        {chartOpen && tierLevel < 2 ? (
+          <div className="relative mt-5 min-h-[300px] rounded-xl overflow-hidden">
+            <div className="filter blur-[4px] opacity-35 pointer-events-none select-none">
+              {chartContent}
+            </div>
+            <LockedFeatureOverlay
+              title="Advanced Charting requires Level 2"
+              description="Multi-timeframe candlestick analysis, advanced drawing tools, and real-time order-book telemetry require Climber tier (Lv.2) or a credit unlock."
+              buttonText="Unlock"
+              onUnlock={() => requestUnlock("advancedChart")}
+            />
+          </div>
+        ) : chartOpen ? (
           <div className="mt-5 min-w-0 overflow-hidden rounded-xl">
             {chartContent}
           </div>
         ) : (
           <>
-            <div className="relative mt-5 h-52 overflow-hidden rounded-xl border border-border bg-white grid-surface">
+            <div className="relative mt-5 h-64 overflow-hidden rounded-2xl border border-[#E0E7FF] bg-gradient-to-b from-indigo-50/20 via-white to-slate-50/40">
+              {/* Subtle background dashed grid lines */}
+              <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 opacity-40">
+                <div className="border-b border-dashed border-slate-300 w-full" />
+                <div className="border-b border-dashed border-slate-300 w-full" />
+                <div className="border-b border-dashed border-slate-300 w-full" />
+              </div>
               <svg
                 viewBox="0 0 100 100"
                 preserveAspectRatio="none"
@@ -2696,39 +2812,40 @@ function Overview({
               >
                 <defs>
                   <linearGradient
-                    id="instrumentArea"
+                    id="modernInstrumentArea"
                     x1="0"
                     y1="0"
                     x2="0"
                     y2="1"
                   >
-                    <stop offset="0%" stopColor="#7c3aed" stopOpacity=".24" />
-                    <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
+                    <stop offset="0%" stopColor="#5945F1" stopOpacity="0.22" />
+                    <stop offset="60%" stopColor="#5945F1" stopOpacity="0.06" />
+                    <stop offset="100%" stopColor="#5945F1" stopOpacity="0" />
                   </linearGradient>
                 </defs>
                 <polyline
-                  points={`0,94 ${points} 100,94`}
-                  fill="url(#instrumentArea)"
+                  points={`0,96 ${points} 100,96`}
+                  fill="url(#modernInstrumentArea)"
                   stroke="none"
                 />
                 <polyline
                   points={points}
                   fill="none"
-                  stroke="#7c3aed"
-                  strokeWidth="1.8"
+                  stroke="#5945F1"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   vectorEffect="non-scaling-stroke"
                 />
               </svg>
-              <div className="absolute left-3 top-3 rounded-md bg-white/85 px-2 py-1 text-[10px] font-semibold text-slate-600">
-                {compareRange} - {changeLabel}
+              <div className="absolute left-4 top-4 rounded-lg bg-white/90 backdrop-blur border border-indigo-100 px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-2xs">
+                {compareRange} · <span className={selectedReturn >= 0 ? "text-emerald-600" : "text-rose-600"}>{changeLabel}</span>
               </div>
-              <div className="absolute right-3 top-3 rounded-md bg-white/85 px-2 py-1 text-[9px] text-slate-500">
-                Max ({compareRange}){" "}
-                {displayValue({ ...instrument, price: high })}
+              <div className="absolute right-4 top-4 rounded-lg bg-white/90 backdrop-blur border border-slate-200/80 px-2.5 py-1 text-[10px] font-semibold text-slate-600 shadow-2xs">
+                Max ({compareRange}) <span className="text-slate-900 font-bold ml-1">{displayValue({ ...instrument, price: high })}</span>
               </div>
-              <div className="absolute right-3 bottom-7 rounded-md bg-white/85 px-2 py-1 text-[9px] text-slate-500">
-                Min ({compareRange}){" "}
-                {displayValue({ ...instrument, price: low })}
+              <div className="absolute right-4 bottom-8 rounded-lg bg-white/90 backdrop-blur border border-slate-200/80 px-2.5 py-1 text-[10px] font-semibold text-slate-600 shadow-2xs">
+                Min ({compareRange}) <span className="text-slate-900 font-bold ml-1">{displayValue({ ...instrument, price: low })}</span>
               </div>
               {showLinkedTags &&
                 marketTagTopics.map((topic, index) => (
@@ -2947,34 +3064,26 @@ function TechnicalSummary({
           {instrument.signal} - {instrument.confidence}%
         </span>
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 bg-white p-1">
-        {technicalIntervals.map((interval) => {
-          const locked = tierLevel < interval.level;
-          return (
-            <button
-              key={interval.label}
-              type="button"
-              aria-pressed={technicalInterval === interval.label}
-              title={locked ? `Requires Level ${interval.level}` : `Use ${interval.label} interval`}
-              onClick={() => {
-                if (locked) {
-                  requestUnlock(interval.level >= 3 ? "technicalIntervals" : "historicalData");
-                  return;
-                }
-                setTechnicalInterval(interval.label);
-              }}
-              className={`rounded px-3 py-2 text-[10px] font-medium transition ${
-                technicalInterval === interval.label
-                  ? "bg-slate-100 text-slate-900 shadow-sm"
-                  : locked
-                    ? "cursor-not-allowed text-slate-300 blur-[1px] opacity-55"
-                    : "text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              {interval.label}
-            </button>
-          );
-        })}
+      <div className="mt-4">
+        <TabSubmain
+          prefixLabel="INTERVAL"
+          tabs={technicalIntervals.map((interval) => {
+            const locked = tierLevel < interval.level;
+            return {
+              id: interval.label,
+              label: interval.label,
+              isLocked: locked,
+              icon: locked ? <Lock className="w-3 h-3 text-slate-400" /> : undefined,
+            };
+          })}
+          activeTab={technicalInterval}
+          onChange={(tabId) => setTechnicalInterval(tabId)}
+          onLockedTabClick={(tab) => {
+            const target = technicalIntervals.find((t) => t.label === tab.id);
+            requestUnlock((target?.level ?? 1) >= 3 ? "technicalIntervals" : "historicalData");
+          }}
+          size="sm"
+        />
       </div>
       <div className="mt-5 grid grid-cols-3 gap-3 max-md:grid-cols-1">
         <CompassGauge
@@ -3196,9 +3305,17 @@ function TechnicalTable({
                 </button>
               )}
             </span>
-            <span className="text-right font-medium text-slate-800">{value}</span>
+            <span className="text-right font-semibold text-slate-800">{value}</span>
             <span className="flex items-center justify-end gap-1">
-              <span className={action === "Buy" ? "text-blue-600" : action === "Sell" ? "text-rose-500" : "text-slate-500"}>
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                  action === "Buy"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+                    : action === "Sell"
+                      ? "bg-rose-50 text-rose-700 border-rose-200/80"
+                      : "bg-slate-50 text-slate-600 border-slate-200/80"
+                }`}
+              >
                 {action ?? "Neutral"}
               </span>
             </span>
@@ -3375,16 +3492,18 @@ function SeasonalPerformance({
   const [mode, setMode] = useState<"Table" | "Chart">("Table");
   if (tierLevel < 4) {
     return (
-      <section className="panel flex min-h-48 flex-col items-center justify-center gap-2 p-5 text-center">
-        <Lock className="size-5 text-violet-500" />
-        <b className="text-xs text-slate-800">Seasonal performance requires Level 4</b>
-        <p className="max-w-sm text-[10px] text-slate-500">
-          Year-plus historical analysis is available with Elite access.
-        </p>
-        <button type="button" className="primary mt-1 px-3 py-1.5 text-[10px]" onClick={() => requestUnlock("performanceAnalytics")}>
-          Unlock
-        </button>
-      </section>
+      <div className="relative rounded-2xl overflow-hidden min-h-[320px] border border-slate-200/80 bg-white">
+        <div className="filter blur-[5px] opacity-30 pointer-events-none select-none p-5">
+          <div className="h-6 w-48 bg-slate-200 rounded mb-4" />
+          <div className="h-48 w-full bg-slate-100 rounded-xl" />
+        </div>
+        <LockedFeatureOverlay
+          title="Seasonal Performance requires Level 4"
+          description="Multi-year cyclical performance patterns, seasonal distribution matrices, and recurring monthly alpha analysis require Elite tier (Lv.4) or a credit unlock."
+          buttonText="Unlock"
+          onUnlock={() => requestUnlock("performanceAnalytics")}
+        />
+      </div>
     );
   }
   const months = [
@@ -3486,45 +3605,40 @@ function SeasonalPerformance({
             <option>Monthly</option>
             <option>Quarterly</option>
           </select>
-          <div className="seg">
-            <button
-              onClick={() => setMode("Table")}
-              className={mode === "Table" ? "active" : ""}
-            >
-              Table
-            </button>
-            <button
-              onClick={() => setMode("Chart")}
-              className={mode === "Chart" ? "active" : ""}
-            >
-              Chart
-            </button>
-          </div>
+          <TabSubmain
+            tabs={[
+              { id: "Table", label: "Table" },
+              { id: "Chart", label: "Chart" },
+            ]}
+            activeTab={mode}
+            onChange={(val) => setMode(val as "Table" | "Chart")}
+            size="sm"
+          />
         </div>
       </div>
       {mode === "Table" ? (
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-180 text-left text-[10px]">
+        <div className="overflow-x-auto rounded-xl border border-[#E0E7FF] bg-white shadow-2xs">
+          <table className="w-full min-w-180 border-collapse text-left text-xs">
             <thead>
-              <tr>
-                <th className="px-2 py-2">Year</th>
+              <tr className="border-b border-[#E0E7FF] bg-[#F8FAFC]">
+                <th className="px-3 py-2.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Year</th>
                 {periods.map((period) => (
-                  <th className="px-2 py-2 text-right" key={period}>
+                  <th className="px-2.5 py-2.5 text-right font-bold uppercase tracking-wider text-[10px] text-slate-500" key={period}>
                     {period}
                   </th>
                 ))}
-                <th className="px-2 py-2 text-right">Year</th>
+                <th className="px-3 py-2.5 text-right font-bold uppercase tracking-wider text-[10px] text-slate-500">Year</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[#E0E7FF]/60">
               {seasonal.map((row, rowIndex) => (
-                <tr className="border-t border-border" key={years[rowIndex]}>
-                  <td className="px-2 py-2 font-semibold text-slate-700">
+                <tr className="hover:bg-slate-50/70 transition-colors" key={years[rowIndex]}>
+                  <td className="px-3 py-2.5 font-semibold text-slate-800">
                     {years[rowIndex]}
                   </td>
                   {row.map((value, index) => (
                     <td
-                      className={`px-2 py-2 text-right font-mono ${value >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}
+                      className={`px-2.5 py-2.5 text-right font-mono font-medium ${value >= 0 ? "text-emerald-600 bg-emerald-50/40" : "text-rose-600 bg-rose-50/40"}`}
                       key={`${years[rowIndex]}-${index}`}
                     >
                       {value > 0 ? "+" : ""}
@@ -3532,27 +3646,27 @@ function SeasonalPerformance({
                     </td>
                   ))}
                   <td
-                    className={`px-2 py-2 text-right font-mono font-semibold ${annual[rowIndex] >= 0 ? "text-emerald-700" : "text-rose-700"}`}
+                    className={`px-3 py-2.5 text-right font-mono font-bold ${annual[rowIndex] >= 0 ? "text-emerald-700" : "text-rose-700"}`}
                   >
                     {annual[rowIndex] > 0 ? "+" : ""}
                     {annual[rowIndex].toFixed(2)}%
                   </td>
                 </tr>
               ))}
-              <tr className="border-t-2 border-border">
-                <td className="px-2 py-2 font-semibold text-slate-700">
+              <tr className="border-t-2 border-[#E0E7FF] bg-[#F8FAFC]/80 font-semibold">
+                <td className="px-3 py-2.5 text-slate-900 font-bold">
                   Average
                 </td>
                 {average.map((value, index) => (
                   <td
-                    className={`px-2 py-2 text-right font-mono font-semibold ${value >= 0 ? "text-emerald-700" : "text-rose-700"}`}
+                    className={`px-2.5 py-2.5 text-right font-mono font-bold ${value >= 0 ? "text-emerald-700" : "text-rose-700"}`}
                     key={`average-${index}`}
                   >
                     {value > 0 ? "+" : ""}
                     {value.toFixed(2)}%
                   </td>
                 ))}
-                <td className="px-2 py-2 text-right font-mono font-semibold text-slate-700">
+                <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900">
                   {average.reduce((sum, value) => sum + value, 0).toFixed(2)}%
                 </td>
               </tr>
@@ -3835,35 +3949,25 @@ function WeeklyVoteChart({
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-3">
-          <div className="seg">
-            {voteRangeOptions.map((option) => {
+          <TabSubmain
+            prefixLabel="TIMELINE"
+            tabs={voteRangeOptions.map((option) => {
               const locked = option.requiredLevel > tierLevel;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`${range === option.value ? "active" : ""} ${locked ? "cursor-not-allowed opacity-40" : ""}`}
-                  disabled={locked}
-                  aria-label={
-                    locked
-                      ? `${option.label} timeline requires Level ${option.requiredLevel}`
-                      : `Show ${option.label} vote timeline`
-                  }
-                  title={
-                    locked
-                      ? `Requires Level ${option.requiredLevel}`
-                      : `Show ${option.label} vote timeline`
-                  }
-                  onClick={() => locked
-                    ? requestUnlock(option.requiredLevel >= 3 ? "performanceAnalytics" : "historicalData")
-                    : setRange(option.value)}
-                >
-                  {locked && <Lock className="mr-1 inline size-2.5" />}
-                  {option.label}
-                </button>
-              );
+              return {
+                id: option.value,
+                label: option.label,
+                isLocked: locked,
+                icon: locked ? <Lock className="w-3 h-3 text-slate-400" /> : undefined,
+              };
             })}
-          </div>
+            activeTab={range}
+            onChange={(val) => setRange(val as VoteRange)}
+            onLockedTabClick={(tab) => {
+              const opt = voteRangeOptions.find((o) => o.value === tab.id);
+              requestUnlock((opt?.requiredLevel ?? 1) >= 3 ? "performanceAnalytics" : "historicalData");
+            }}
+            size="sm"
+          />
           <div className="flex gap-3 text-[9px] text-slate-500">
             <span>
               <i className="mr-1 inline-block size-2 rounded-full bg-violet-500" />
@@ -4148,26 +4252,19 @@ function FinancialReport({
               financial health.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="seg">
-              {(["Annual", "Quarterly"] as const).map((item) => (
-                <button
-                  key={item}
-                  onClick={() => {
-                    if (financialAnalysisLocked) {
-                      requestUnlock("performanceAnalytics");
-                      return;
-                    }
-                    setPeriod(item);
-                  }}
-                  aria-disabled={financialAnalysisLocked}
-                  className={`${period === item ? "active" : ""} ${financialAnalysisLocked ? "cursor-not-allowed opacity-50" : ""}`}
-                >
-                  {item}
-                  {financialAnalysisLocked && <Lock className="ml-1 inline size-2.5" />}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-3">
+            <TabSubmain
+              tabs={(["Annual", "Quarterly"] as const).map((item) => ({
+                id: item,
+                label: item,
+                isLocked: financialAnalysisLocked,
+                icon: financialAnalysisLocked ? <Lock className="w-3 h-3 text-slate-400" /> : undefined,
+              }))}
+              activeTab={period}
+              onChange={(item) => setPeriod(item as "Annual" | "Quarterly")}
+              onLockedTabClick={() => requestUnlock("performanceAnalytics")}
+              size="sm"
+            />
             <span className="badge positive">DEMO DATA</span>
           </div>
         </div>
@@ -4355,13 +4452,12 @@ function FinancialReport({
           </section>
         </div>
         {financialAnalysisLocked && (
-          <button
-            type="button"
-            className="absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-2xl bg-white/75 text-xs font-semibold text-violet-700 shadow-sm"
-            onClick={() => requestUnlock("performanceAnalytics")}
-          >
-            <Lock size={14} /> Financial analysis · Requires Level 3
-          </button>
+          <LockedFeatureOverlay
+            title="Financial Analysis requires Level 3"
+            description="Institutional income statements, quarterly cash flow balance sheets, and AI financial summaries require Player tier (Lv.3) or a credit unlock."
+            buttonText="Unlock"
+            onUnlock={() => requestUnlock("performanceAnalytics")}
+          />
         )}
       </div>
       <p className="px-1 text-[9px] leading-relaxed text-slate-400">
@@ -4423,49 +4519,59 @@ function ProductsAndBrokersTable({
     Perpetual: "Derivative contract without expiry; funding charges may apply.",
   };
   return (
-    <section className="panel overflow-hidden">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-5">
+    <section className="bg-white rounded-2xl border border-[#E0E7FF] shadow-xs overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E0E7FF] p-5">
         <div>
-          <p className="label">Products & broker access</p>
-          <h2 className="mt-1 text-sm font-semibold text-slate-900">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Products & broker access</p>
+          <h2 className="mt-1 text-base font-bold font-display text-slate-900">
             Trade {instrument.symbol} by product
           </h2>
-          <p className="mt-1 text-[10px] text-slate-400">
-            Choose a product to compare matching providers, costs, minimums, and
-            access.
+          <p className="mt-0.5 text-xs text-slate-400">
+            Choose a product to compare matching providers, costs, minimums, and access.
           </p>
         </div>
+        {products.length > 1 && (
+          <div className="overflow-x-auto">
+            <TabSubmain
+              prefixLabel="PRODUCT"
+              tabs={products.map((p) => ({ id: p, label: p }))}
+              activeTab={product}
+              onChange={(p) => setProduct(p as ProductType)}
+              size="sm"
+            />
+          </div>
+        )}
       </div>
-      <div className="w-full overflow-visible">
-        <table className="w-full table-fixed text-left text-[9px]">
-          <thead className="bg-slate-50 text-slate-500">
-            <tr>
-              <th className="px-5 py-3">Product</th>
-              <th className="px-4 py-3">Broker</th>
-              <th className="px-4 py-3">Spread</th>
-              <th className="px-4 py-3">Minimum</th>
-              <th className="px-4 py-3">Special offer</th>
-              <th className="px-5 py-3 text-right">Action</th>
+      <div className="w-full overflow-x-auto">
+        <table className="w-full border-collapse text-left text-xs">
+          <thead>
+            <tr className="border-b border-[#E0E7FF] bg-[#F8FAFC]">
+              <th className="px-5 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Product</th>
+              <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Broker</th>
+              <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Spread</th>
+              <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Minimum</th>
+              <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Special offer</th>
+              <th className="px-5 py-3.5 text-right font-bold uppercase tracking-wider text-[10px] text-slate-500">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <tbody className="divide-y divide-[#E0E7FF]/60">
             {instrument.market === "Crypto" ? (
               <CryptoBrokerRows instrument={instrument} product={product} />
             ) : (
             matchedBrokers.map((broker) => (
               <tr
                 key={`${product}-${broker.name}`}
-                className="group cursor-pointer bg-white hover:bg-violet-50/40"
+                className="group cursor-pointer bg-white hover:bg-slate-50/80 transition-colors"
                 onClick={() => {
                   window.location.href = "?view=brokers";
                 }}
               >
-                <td className="w-[11%] px-2 py-3 font-semibold text-violet-700">
+                <td className="px-5 py-3.5">
                   <div className="flex flex-wrap gap-1">
                     {brokerProductPair(broker, instrument).map((identifier) => (
                       <span
                         key={identifier}
-                        className="group/identifier relative rounded border border-violet-100 bg-violet-50 px-1.5 py-1 text-[9px] text-violet-700"
+                        className="group/identifier relative inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-[#5945F1] border border-indigo-100"
                         title={productIdentifierDetail(identifier, instrument)}
                       >
                         {identifier}
@@ -4477,52 +4583,57 @@ function ProductsAndBrokersTable({
                   </div>
                 </td>
                 <td
-                  className="relative w-[18%] px-2 py-3 font-semibold text-slate-900"
+                  className="relative px-4 py-3.5 font-bold text-slate-900"
                   tabIndex={0}
                 >
-                  {broker.name}
+                  <div className="flex items-center gap-2">
+                    <span className="grid size-6 place-items-center rounded-lg bg-indigo-50 text-[#5945F1] font-bold text-[10px] border border-indigo-100/60">
+                      {broker.name.slice(0, 2).toUpperCase()}
+                    </span>
+                    <span>{broker.name}</span>
+                  </div>
                   <div
                     role="tooltip"
-                    className="pointer-events-none absolute left-2 top-[calc(100%-4px)] z-40 hidden w-72 rounded-lg border border-violet-200 bg-white p-4 text-left font-normal shadow-2xl group-hover:block group-focus:block"
+                    className="pointer-events-none absolute left-2 top-[calc(100%-4px)] z-40 hidden w-72 rounded-xl border border-indigo-100 bg-white p-4 text-left font-normal shadow-xl group-hover:block group-focus:block"
                   >
-                    <b className="text-xs text-slate-900">{broker.name}</b>
-                    <p className="mt-1 leading-relaxed text-slate-500">
+                    <b className="text-xs font-bold text-slate-900">{broker.name}</b>
+                    <p className="mt-1 leading-relaxed text-xs text-slate-500">
                       {broker.details}
                     </p>
-                    <dl className="mt-3 grid grid-cols-2 gap-2">
+                    <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <dt className="text-[8px] uppercase text-slate-400">
+                        <dt className="text-[9px] uppercase font-semibold text-slate-400">
                           Commission
                         </dt>
-                        <dd className="mt-1 text-slate-700">
+                        <dd className="mt-0.5 font-medium text-slate-700">
                           {broker.commission}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[8px] uppercase text-slate-400">
+                        <dt className="text-[9px] uppercase font-semibold text-slate-400">
                           Execution
                         </dt>
-                        <dd className="mt-1 text-slate-700">
+                        <dd className="mt-0.5 font-medium text-slate-700">
                           {broker.execution}
                         </dd>
                       </div>
                     </dl>
                   </div>
                 </td>
-                <td className="w-[9%] px-2 py-3 text-slate-600">{broker.spread}</td>
-                <td className="w-[8%] px-2 py-3 text-slate-600">{broker.minimum}</td>
-                <td className="w-[18%] px-2 py-3">
-                  <span className="rounded bg-emerald-50 px-2 py-1 text-[9px] font-semibold text-emerald-700">
+                <td className="px-4 py-3.5 font-medium text-slate-600">{broker.spread}</td>
+                <td className="px-4 py-3.5 font-medium text-slate-600">{broker.minimum}</td>
+                <td className="px-4 py-3.5">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
                     {brokerSpecialOffer(broker.name)}
                   </span>
                 </td>
-                <td className="w-[10%] px-2 py-3 text-right">
+                <td className="px-5 py-3.5 text-right">
                   <button
                     onClick={(event) => {
                       event.stopPropagation();
                       window.location.href = "?view=brokers";
                     }}
-                    className="primary justify-center"
+                    className="inline-flex items-center justify-center rounded-xl bg-[#5945F1] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#4a36e2] transition-colors"
                   >
                     Connect
                   </button>
@@ -4534,9 +4645,9 @@ function ProductsAndBrokersTable({
         </table>
       </div>
       {instrument.market !== "Crypto" && matchedBrokers.length === 0 && (
-        <div className="m-5 rounded-xl bg-amber-50 p-4 text-xs text-amber-700">
-          <Lock className="mr-2 inline size-3" />
-          No demo provider supports this exact product combination.
+        <div className="m-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs font-medium text-amber-800 flex items-center gap-2">
+          <Lock className="size-4 shrink-0 text-amber-600" />
+          No partner provider supports this exact product combination currently.
         </div>
       )}
     </section>
@@ -4570,31 +4681,38 @@ function CryptoBrokerRows({
       }).map((row) => (
         <tr
           key={`${row.pair}-${row.broker}`}
-          className="group cursor-pointer bg-white hover:bg-violet-50/40"
+          className="group cursor-pointer bg-white hover:bg-slate-50/80 transition-colors"
           onClick={() => {
             window.location.href = "?view=brokers";
           }}
         >
-          <td className="w-[11%] px-2 py-3 font-semibold text-violet-700">
-            {row.pair}
+          <td className="px-5 py-3.5">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-[#5945F1] border border-indigo-100">
+              {row.pair}
+            </span>
           </td>
-          <td className="w-[18%] px-2 py-3 font-semibold text-slate-900">
-            {row.broker}
+          <td className="px-4 py-3.5 font-bold text-slate-900">
+            <div className="flex items-center gap-2">
+              <span className="grid size-6 place-items-center rounded-lg bg-indigo-50 text-[#5945F1] font-bold text-[10px] border border-indigo-100/60">
+                {row.broker.slice(0, 2).toUpperCase()}
+              </span>
+              <span>{row.broker}</span>
+            </div>
           </td>
-          <td className="w-[9%] px-2 py-3 text-slate-600">From 0.04%</td>
-          <td className="w-[8%] px-2 py-3 text-slate-600">$10</td>
-          <td className="w-[18%] px-2 py-3">
-            <span className="rounded bg-emerald-50 px-2 py-1 text-[9px] font-semibold text-emerald-700">
+          <td className="px-4 py-3.5 font-medium text-slate-600">From 0.04%</td>
+          <td className="px-4 py-3.5 font-medium text-slate-600">$10</td>
+          <td className="px-4 py-3.5">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
               {brokerSpecialOffer(row.broker)}
             </span>
           </td>
-          <td className="w-[10%] px-2 py-3 text-right">
+          <td className="px-5 py-3.5 text-right">
             <button
               onClick={(event) => {
                 event.stopPropagation();
                 window.location.href = "?view=brokers";
               }}
-              className="primary justify-center"
+              className="inline-flex items-center justify-center rounded-xl bg-[#5945F1] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#4a36e2] transition-colors"
             >
               Connect
             </button>
@@ -4663,45 +4781,49 @@ function BrokerPanel({
   brokers: Broker[];
 }) {
   return (
-    <section className="panel p-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section className="bg-white rounded-2xl border border-[#E0E7FF] p-5 shadow-xs space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E0E7FF]/60 pb-4">
         <div>
-          <p className="label">Broker matching</p>
-          <h2 className="mt-1 text-sm font-semibold text-slate-900">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Broker matching</p>
+          <h2 className="mt-1 text-base font-bold font-display text-slate-900">
             Providers for {instrument.symbol} - {product}
           </h2>
-          <p className="mt-1 text-[10px] text-slate-400">
+          <p className="mt-0.5 text-xs text-slate-400">
             Matched by exact symbol, product type, and demo eligibility.
           </p>
         </div>
-        <label className="flex items-center gap-2 text-[10px] text-slate-500">
-          Product
-          <select
-            value={product}
-            onChange={(event) => setProduct(event.target.value as ProductType)}
-            className="rounded-lg border border-border bg-white px-2 py-1.5 text-[10px]"
-          >
-            {products.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
+        <TabSubmain
+          prefixLabel="PRODUCT"
+          tabs={products.map((item) => ({ id: item, label: item }))}
+          activeTab={product}
+          onChange={(val) => setProduct(val as ProductType)}
+          size="sm"
+        />
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3 max-lg:grid-cols-1">
+      <div className="grid grid-cols-2 gap-4 max-lg:grid-cols-1">
         {brokers.map((broker) => (
           <div
             key={broker.name}
-            className="rounded-xl border border-border p-4"
+            className="rounded-xl border border-[#E0E7FF] bg-white p-4 shadow-2xs hover:border-indigo-300 hover:shadow-sm transition-all"
           >
             <div className="flex items-start justify-between gap-2">
-              <div>
-                <b className="text-sm text-slate-900">{broker.name}</b>
-                <p className="mt-1 text-[10px] text-slate-400">
-                  {broker.venue}
-                </p>
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-8 place-items-center rounded-xl bg-indigo-50 text-[#5945F1] font-bold text-xs border border-indigo-100">
+                  {broker.name.slice(0, 2).toUpperCase()}
+                </span>
+                <div>
+                  <b className="text-sm font-bold text-slate-900">{broker.name}</b>
+                  <p className="text-[11px] text-slate-400">
+                    {broker.venue}
+                  </p>
+                </div>
               </div>
               <span
-                className={`badge ${broker.status === "Available" ? "positive" : ""}`}
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  broker.status === "Available"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                    : "bg-slate-100 text-slate-600 border border-slate-200"
+                }`}
               >
                 {broker.status}
               </span>
@@ -4713,18 +4835,32 @@ function BrokerPanel({
               <Metric label="Symbol" value={instrument.symbol} />
             </div>
             <div className="mt-4 flex gap-2">
-              <button className="primary flex-1 justify-center">Connect</button>
-              <button className="secondary">
-                <ExternalLink />
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = "?view=brokers";
+                }}
+                className="flex-1 inline-flex items-center justify-center rounded-xl bg-[#5945F1] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-[#4a36e2] transition-colors"
+              >
+                Connect
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = "?view=brokers";
+                }}
+                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                <ExternalLink className="size-4" />
               </button>
             </div>
           </div>
         ))}
       </div>
       {brokers.length === 0 && (
-        <div className="mt-4 rounded-xl bg-amber-50 p-4 text-xs text-amber-700">
-          <Lock className="mr-2 inline size-3" />
-          No demo provider supports this exact product combination.
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs font-medium text-amber-800 flex items-center gap-2">
+          <Lock className="size-4 shrink-0 text-amber-600" />
+          No partner provider supports this exact product combination currently.
         </div>
       )}
     </section>

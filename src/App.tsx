@@ -725,6 +725,7 @@ export default function App() {
               onTriggerEarningModal={handleTriggerEarningReward}
               onOpenSearchModal={() => setIsSearchModalOpen(true)}
               onShowToast={showToast}
+              onSelectLevelScenario={handleSelectLevelScenario}
             />
           )
         )}
@@ -949,6 +950,8 @@ export default function App() {
               showToast(`📢 Ready to share ${symbol} to Community Floor! +25 💎 Bounty`);
             }}
             onShowToast={showToast}
+            onOpenViewPlan={() => setIsViewPlanOpen(true)}
+            onUpdateUser={handleUpdateUserProfile}
           />
         )}
 

@@ -14,6 +14,9 @@ import {
 } from 'lucide-react';
 import { DashboardSlot } from '../../types/dashboardWidgets';
 import { UserProfile, MarketSignal, Broker } from '../../types';
+import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
+import { MissionCardWidget } from './MissionCardWidget';
+import { getNextTierInfo, LEVEL_SCENARIOS, LevelScenarioId } from '../../data/levelScenarios';
 
 interface CustomizableWidgetProps {
   slot: DashboardSlot;
@@ -27,6 +30,7 @@ interface CustomizableWidgetProps {
   onOpenConnectModal: (broker?: Broker) => void;
   onSelectSignal: (signal: MarketSignal) => void;
   onNavigateToTab: (tab: string) => void;
+  onSelectLevelScenario?: (scenarioId: LevelScenarioId) => void;
 }
 
 /**
@@ -54,6 +58,51 @@ function RookieGhostIcon() {
       </svg>
     </div>
   );
+}
+
+/**
+ * Dynamic Tier Mascot Icon that supports Rookie Ghost (Lv.1), Climber (Lv.2), Player (Lv.3), and Boss (Lv.4)
+ */
+function TierMascotIcon({ tierLevel = 1 }: { tierLevel?: number }) {
+  if (tierLevel === 4) {
+    return (
+      <div className="w-12 h-14 sm:w-14 sm:h-16 flex items-center justify-center shrink-0">
+        <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-xs" fill="none" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M 20 85 L 20 44 L 38 62 L 50 30 L 62 62 L 80 44 L 80 85 Z" fill="none" />
+          <line x1="20" y1="94" x2="80" y2="94" strokeWidth="6" />
+          <circle cx="20" cy="40" r="4" fill="white" stroke="none" />
+          <circle cx="50" cy="26" r="4" fill="white" stroke="none" />
+          <circle cx="80" cy="40" r="4" fill="white" stroke="none" />
+        </svg>
+      </div>
+    );
+  }
+  if (tierLevel === 3) {
+    return (
+      <div className="w-12 h-14 sm:w-14 sm:h-16 flex items-center justify-center shrink-0">
+        <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-xs" fill="none" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="55,16 28,60 50,60 45,104 74,54 52,54" fill="none" stroke="white" strokeWidth="5" />
+          <circle cx="76" cy="30" r="4" fill="#CAEB0E" stroke="none" />
+          <circle cx="24" cy="85" r="4" fill="#CAEB0E" stroke="none" />
+        </svg>
+      </div>
+    );
+  }
+  if (tierLevel === 2) {
+    return (
+      <div className="w-12 h-14 sm:w-14 sm:h-16 flex items-center justify-center shrink-0">
+        <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-xs" fill="none" stroke="white" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
+          <g transform="translate(14, 16)">
+            <rect x="8" y="10" width="18" height="30" rx="9" fill="none" stroke="white" strokeWidth="4.5" />
+            <rect x="10" y="46" width="14" height="14" rx="7" fill="none" stroke="white" strokeWidth="4.5" />
+            <rect x="36" y="20" width="18" height="30" rx="9" fill="none" stroke="white" strokeWidth="4.5" />
+            <rect x="38" y="56" width="14" height="14" rx="7" fill="none" stroke="white" strokeWidth="4.5" />
+          </g>
+        </svg>
+      </div>
+    );
+  }
+  return <RookieGhostIcon />;
 }
 
 /**
@@ -90,7 +139,17 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
   onOpenConnectModal,
   onSelectSignal,
   onNavigateToTab,
+  onSelectLevelScenario,
 }) => {
+  // Current user tier points & next tier calculation
+  const currentPoints = user.currentPoints ?? 50;
+  const maxPoints = user.maxPoints || 100;
+  const progressPercent = Math.min(100, Math.max(0, (currentPoints / maxPoints) * 100));
+  const nextInfo = getNextTierInfo(user.tierLevel || 1, currentPoints);
+  const nextLevelText = nextInfo.isMaxLevel
+    ? 'Max Level Reached'
+    : `Next level at ${nextInfo.pointsNeeded} Points`;
+
   // ─── EMPTY SLOT ───
   if (slot.type === 'empty') {
     return (
@@ -138,22 +197,46 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
       {slot.type === 'level-card' && (
         <div className="bg-[#5945F1] rounded-2xl p-5 text-white flex flex-col justify-between h-full relative overflow-hidden shadow-xs">
           <div>
-            <div className="text-xs font-semibold text-white/80">
-              Your Level
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold text-white/80">
+                Your Level
+              </div>
+              {onSelectLevelScenario && (
+                <div className="flex items-center gap-1 bg-black/25 backdrop-blur-xs p-0.5 rounded-lg border border-white/10">
+                  {LEVEL_SCENARIOS.map((sc) => (
+                    <button
+                      key={sc.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectLevelScenario(sc.id);
+                      }}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        user.tierLevel === sc.level
+                          ? 'bg-white text-[#5945F1] shadow-xs'
+                          : 'text-white/70 hover:text-white hover:bg-white/10'
+                      }`}
+                      title={`Switch to ${sc.label} (Lv.${sc.level})`}
+                    >
+                      Lv.{sc.level}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div
               onClick={() => onNavigateToTab('profile')}
               className="flex items-center gap-3.5 mt-2 cursor-pointer group"
               title="View Profile & Account"
             >
-              <RookieGhostIcon />
+              <TierMascotIcon tierLevel={user.tierLevel || 1} />
               <div className="flex-1 min-w-0">
                 <h3 className="font-display font-black text-2xl text-white tracking-tight leading-tight group-hover:underline">
                   {user.rankTitle || 'Rookie'}
                 </h3>
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-white/95 mt-1">
                   <Gem className="w-3.5 h-3.5 text-white shrink-0" />
-                  <span>{user.currentPoints}/150 points.</span>
+                  <span>{currentPoints.toLocaleString()}/{maxPoints.toLocaleString()} points.</span>
                 </div>
               </div>
             </div>
@@ -162,12 +245,12 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
             <div className="w-full bg-white/25 rounded-full h-2 mt-4 mb-2.5 overflow-hidden">
               <div
                 className="h-full bg-[#FE01B1] rounded-full transition-all duration-300"
-                style={{ width: `${Math.min(100, (user.currentPoints / 150) * 100)}%` }}
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
 
             <div className="flex items-center justify-between gap-2 text-xs text-white/90">
-              <span className="font-medium">Next level at 50 Points</span>
+              <span className="font-medium">{nextLevelText}</span>
               <button
                 onClick={onOpenViewPlan}
                 className="px-4 py-1.5 rounded-full bg-white hover:bg-slate-100 text-[#5945F1] font-bold text-xs shadow-xs transition-all whitespace-nowrap cursor-pointer active:scale-95 shrink-0"
@@ -453,6 +536,26 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
           >
             Explore All Brokers →
           </button>
+        </div>
+      )}
+
+      {/* ─── 7. INSTRUMENT ANALYSIS WIDGET ─── */}
+      {slot.type === 'instrument-analysis' && (
+        <div className="w-full h-full">
+          <InstrumentAnalysisWidget
+            size={slot.size}
+            onNavigateToTab={onNavigateToTab}
+          />
+        </div>
+      )}
+
+      {/* ─── 8. MISSION CARD WIDGET ─── */}
+      {slot.type === 'mission-card' && (
+        <div className="w-full h-full">
+          <MissionCardWidget
+            size={slot.size}
+            onNavigateToTab={onNavigateToTab}
+          />
         </div>
       )}
     </div>

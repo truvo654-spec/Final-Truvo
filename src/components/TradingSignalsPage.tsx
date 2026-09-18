@@ -133,80 +133,121 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
   const topSignals = displayedSignals.slice(0, 8);
   const bottomSignals = displayedSignals.slice(8, 16);
 
-  // Asset icon helper with crisp visual badges
+  // Asset icon helper with crisp visual badges matching reference
   const renderAssetIcon = (sig: MarketSignal) => {
-    if (sig.ticker === 'EUR/JPY' || sig.ticker.includes('EUR')) {
+    if (sig.ticker === 'CHINA50') {
       return (
-        <div className="w-8 h-8 rounded-full bg-[#003399] flex items-center justify-center text-xs font-bold text-[#ffcc00] shrink-0 shadow-2xs">
-          🇪🇺
+        <div className="w-7 h-5 rounded-[3px] bg-[#DE2910] overflow-hidden flex items-center justify-center text-xs relative shadow-2xs shrink-0 border border-slate-200/50">
+          🇨🇳
+        </div>
+      );
+    }
+    if (sig.ticker === 'EUR/NZD' || (sig.ticker.includes('EUR') && sig.ticker.includes('NZD'))) {
+      return (
+        <div className="flex items-center -space-x-1 shrink-0">
+          <div className="w-5 h-4 rounded-[2px] overflow-hidden shadow-2xs border border-white/60 bg-[#003399] flex items-center justify-center text-[10px] z-10">
+            🇪🇺
+          </div>
+          <div className="w-5 h-4 rounded-[2px] overflow-hidden shadow-2xs border border-white/60 bg-[#00247D] flex items-center justify-center text-[10px]">
+            🇳🇿
+          </div>
+        </div>
+      );
+    }
+    if (sig.ticker === 'USD/TRY' || (sig.ticker.includes('USD') && sig.ticker.includes('TRY'))) {
+      return (
+        <div className="flex items-center -space-x-1 shrink-0">
+          <div className="w-5 h-4 rounded-[2px] overflow-hidden shadow-2xs border border-white/60 bg-red-600 flex items-center justify-center text-[10px] z-10">
+            🇺🇸
+          </div>
+          <div className="w-5 h-4 rounded-[2px] overflow-hidden shadow-2xs border border-white/60 bg-[#E30A17] flex items-center justify-center text-[10px]">
+            🇹🇷
+          </div>
+        </div>
+      );
+    }
+    if (sig.ticker === 'ETH' || sig.ticker.includes('ETH')) {
+      return (
+        <div className="w-6 h-6 flex items-center justify-center shrink-0">
+          <svg className="w-4.5 h-4.5 text-slate-800" viewBox="0 0 784.37 1277.39" fill="currentColor">
+            <path d="M392.07 0L383.5 29.11V874.74L392.07 883.29L784.13 651.54L392.07 0Z" fill="#2d3748" />
+            <path d="M392.07 0L0 651.54L392.07 883.29V470.89V0Z" fill="#718096" />
+            <path d="M392.07 956.52L387.24 962.41V1272.58L392.07 1277.38L784.37 724.89L392.07 956.52Z" fill="#2d3748" />
+            <path d="M392.07 1277.38V956.52L0 724.89L392.07 1277.38Z" fill="#718096" />
+            <path d="M392.07 883.29L784.13 651.54L392.07 470.9V883.29Z" fill="#1a202c" />
+            <path d="M0 651.54L392.07 883.29V470.9L0 651.54Z" fill="#4a5568" />
+          </svg>
+        </div>
+      );
+    }
+    if (sig.ticker === 'EUR/JPY' || (sig.ticker.includes('EUR') && sig.ticker.includes('JPY'))) {
+      return (
+        <div className="flex items-center -space-x-1 shrink-0">
+          <div className="w-5 h-4 rounded-[2px] overflow-hidden shadow-2xs border border-white/60 bg-[#003399] flex items-center justify-center text-[10px] z-10">
+            🇪🇺
+          </div>
+          <div className="w-5 h-4 rounded-[2px] overflow-hidden shadow-2xs border border-white/60 bg-white flex items-center justify-center text-[10px]">
+            🇯🇵
+          </div>
+        </div>
+      );
+    }
+    if (sig.ticker === 'USD/CAD' || (sig.ticker.includes('USD') && sig.ticker.includes('CAD'))) {
+      return (
+        <div className="flex items-center -space-x-1 shrink-0">
+          <div className="w-5 h-4 rounded-[2px] overflow-hidden shadow-2xs border border-white/60 bg-red-600 flex items-center justify-center text-[10px] z-10">
+            🇺🇸
+          </div>
+          <div className="w-5 h-4 rounded-[2px] overflow-hidden shadow-2xs border border-white/60 bg-red-600 flex items-center justify-center text-[10px]">
+            🇨🇦
+          </div>
         </div>
       );
     }
     if (sig.ticker.includes('Gas')) {
       return (
-        <div className="w-8 h-8 rounded-full bg-sky-100 border border-sky-200 flex items-center justify-center text-sm shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center text-sm shrink-0">
           💧
         </div>
       );
     }
     if (sig.ticker === 'BTC' || sig.ticker.includes('BTC')) {
       return (
-        <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-2xs">
+        <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-2xs">
           ₿
-        </div>
-      );
-    }
-    if (sig.ticker === 'USD/CAD' || sig.ticker.includes('USD/TRY') || sig.ticker.includes('USD')) {
-      return (
-        <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-2xs">
-          🇺🇸
-        </div>
-      );
-    }
-    if (sig.ticker === 'CHINA50') {
-      return (
-        <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-xs font-bold text-yellow-300 shrink-0 shadow-2xs">
-          🇨🇳
-        </div>
-      );
-    }
-    if (sig.ticker === 'ETH') {
-      return (
-        <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-100 text-xs font-bold shrink-0 shadow-2xs">
-          ⟠
         </div>
       );
     }
     if (sig.ticker === 'NIKKEI') {
       return (
-        <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+        <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
           🔴
         </div>
       );
     }
     if (sig.ticker === 'BRENT') {
       return (
-        <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-sm shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-slate-900 flex items-center justify-center text-sm shrink-0">
           🛢️
         </div>
       );
     }
     if (sig.ticker.includes('AUD')) {
       return (
-        <div className="w-8 h-8 rounded-full bg-[#00008b] flex items-center justify-center text-xs font-bold text-white shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-[#00008b] flex items-center justify-center text-xs font-bold text-white shrink-0">
           🇦🇺
         </div>
       );
     }
     if (sig.ticker.includes('GBP')) {
       return (
-        <div className="w-8 h-8 rounded-full bg-blue-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-blue-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
           🇬🇧
         </div>
       );
     }
     return (
-      <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold shrink-0">
+      <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold shrink-0">
         {sig.flag || '📈'}
       </div>
     );
@@ -1008,9 +1049,14 @@ const SignalCard: React.FC<SignalCardProps> = ({
   const isLocked = Boolean(signal.minLevel && signal.minLevel > userTierLevel);
   const isBuy = signal.action === 'BUY';
 
-  // Format price helper
+  // Format price helper exactly matching reference design
   const formatPrice = (val: number) => {
-    if (val > 1000) return val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+    if (val >= 1000) {
+      if (val >= 10000 && val % 1 === 0) {
+        return val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      }
+      return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
     if (val > 10) return val.toFixed(3);
     return val.toFixed(4);
   };
@@ -1024,112 +1070,139 @@ const SignalCard: React.FC<SignalCardProps> = ({
           onSelectSignal(signal);
         }
       }}
-      className="bg-white rounded-2xl border border-slate-200/85 hover:border-[#5030e5]/60 hover:shadow-md transition-all p-4 flex flex-col justify-between cursor-pointer group relative"
+      className="bg-white rounded-2xl border border-indigo-200/90 hover:border-indigo-400/90 hover:shadow-md transition-all p-5 flex flex-col justify-between cursor-pointer group relative shadow-2xs h-full"
     >
       <div className="space-y-3">
         {/* Top Header Row: Asset Icon & Name */}
         <div className="flex items-center gap-2.5">
           {renderAssetIcon(signal)}
-          <span className="font-bold text-[#0b1c30] text-[15px] group-hover:text-[#5030e5] transition-colors leading-tight">
+          <span className="font-display font-extrabold text-slate-900 text-lg group-hover:text-[#5338F5] transition-colors leading-tight tracking-tight">
             {signal.name || signal.ticker}
           </span>
         </div>
 
         {/* Middle Metrics Row */}
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex items-start justify-between pt-1">
           {/* Left Values: Target, Entry, Stop */}
-          <div className="space-y-1 text-xs">
-            <div className="flex items-center gap-3">
-              <span className="text-slate-400 w-10">Target</span>
+          <div className="space-y-1.5 text-xs sm:text-[13px]">
+            <div className="flex items-center gap-2.5">
+              <span className="text-slate-500 w-11 font-normal">Target</span>
               {isLocked ? (
-                <span className="font-mono text-slate-300 blur-[3px] select-none">162.75</span>
+                <span className="font-mono text-slate-400 blur-[4px] select-none opacity-40">
+                  {formatPrice(signal.takeProfit1)}
+                </span>
               ) : (
-                <span className="font-semibold text-slate-700">{formatPrice(signal.takeProfit1)}</span>
+                <span className="font-mono font-medium text-slate-900">
+                  {formatPrice(signal.takeProfit1)}
+                </span>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-slate-400 w-10">Entry</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-slate-500 w-11 font-normal">Entry</span>
               {isLocked ? (
-                <span className="font-mono text-slate-300 blur-[3px] select-none">162.10</span>
+                <span className="font-mono text-slate-400 blur-[4px] select-none opacity-40">
+                  {formatPrice(signal.entryPrice)}
+                </span>
               ) : (
-                <span className="font-semibold text-slate-700">{formatPrice(signal.entryPrice)}</span>
+                <span className="font-mono font-medium text-slate-900">
+                  {formatPrice(signal.entryPrice)}
+                </span>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-slate-400 w-10">Stop</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-slate-500 w-11 font-normal">Stop</span>
               {isLocked ? (
-                <span className="font-mono text-slate-300 blur-[3px] select-none">161.35</span>
+                <span className="font-mono text-slate-400 blur-[4px] select-none opacity-40">
+                  {formatPrice(signal.stopLoss)}
+                </span>
               ) : (
-                <span className="font-semibold text-slate-700">{formatPrice(signal.stopLoss)}</span>
+                <span className="font-mono font-medium text-slate-900">
+                  {formatPrice(signal.stopLoss)}
+                </span>
               )}
             </div>
           </div>
 
           {/* Right Value: Confidence % */}
           <div className="text-right">
-            <div className="text-2xl font-extrabold text-[#5030e5] leading-none tracking-tight">
-              {signal.confidence}%
+            <div className="font-display font-black text-2xl sm:text-3xl text-[#5338F5] leading-none tracking-tight">
+              {signal.confidence}
+              <span className="text-[#9333EA] font-extrabold">%</span>
             </div>
-            <div className="text-[11px] text-slate-400 font-medium mt-0.5">
+            <div className="text-xs font-semibold text-[#5338F5]/85 mt-1">
               Confidence
             </div>
           </div>
         </div>
 
         {/* Risk / Reward */}
-        <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
-          <span className="text-slate-400">Risk/Reward</span>
-          <span className="font-semibold text-slate-700">{signal.riskReward || '1:1.8'}</span>
+        <div className="flex items-center justify-between text-xs sm:text-[13px] pt-1">
+          <span className="text-slate-500 font-normal">Risk/Reward</span>
+          <span className="font-mono font-bold text-slate-900">
+            {signal.riskReward || '1:1.8'}
+          </span>
         </div>
       </div>
 
-      {/* Bottom Info / Button Area */}
-      <div className="pt-3 space-y-2">
+      {/* Bottom Area (Divider + Button or Required Level Badge) */}
+      <div className="pt-2">
+        <div className="border-t border-slate-100 my-2.5" />
+
         {isLocked ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onUpgradePrompt();
-            }}
-            className="w-full py-1.5 px-3 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100/80 text-[#5030e5] text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs"
-          >
-            <Gem className="w-3.5 h-3.5 text-[#5030e5]" />
-            <span>
-              {signal.minLevel === 4 ? 'Level 4' : `Level ${signal.minLevel || 2} and Above`}
-            </span>
-          </button>
+          /* Required Level Badge: EXACT UI MATCH to Card 2 & Card 4 */
+          <div className="space-y-2.5">
+            {/* Empty placeholder spacer matching validity row height */}
+            <div className="h-4 sm:h-[18px]" />
+
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpgradePrompt();
+              }}
+              className="w-full py-2.5 flex items-center justify-center gap-2 text-[#5338F5] hover:text-[#4326cf] font-bold text-sm sm:text-[15px] transition-colors cursor-pointer select-none"
+            >
+              <Gem className="w-4.5 h-4.5 text-[#5338F5] stroke-[2.2] shrink-0" />
+              <span>
+                {signal.minLevel === 4 ? 'Level 4 and Above' : `Level ${signal.minLevel || 2} and Above`}
+              </span>
+            </div>
+          </div>
         ) : (
-          <>
+          <div className="space-y-2.5">
             {/* Time period + validity tags */}
-            <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium px-0.5">
-              <div className="flex items-center gap-1">
-                <Clock className="w-3 h-3 text-slate-400" />
+            <div className="flex items-center justify-between text-xs font-medium px-0.5">
+              <div className="flex items-center gap-1.5 text-[#5338F5]">
+                <Clock className="w-3.5 h-3.5 text-[#5338F5] stroke-[2]" />
                 <span>{signal.period || '30m period'}</span>
               </div>
-              <div className="flex items-center gap-1 text-emerald-600 font-semibold">
-                <Hourglass className="w-3 h-3 text-emerald-600" />
+              <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                <Hourglass className="w-3.5 h-3.5 text-emerald-600 stroke-[2]" />
                 <span>{signal.validity || 'valid for 12m'}</span>
               </div>
             </div>
 
-            {/* Buy / Sell Button */}
+            {/* Buy / Sell Button: EXACT UI MATCH to Card 1 & Card 3 */}
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onSelectSignal(signal);
               }}
-              className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs ${
-                isBuy
-                  ? 'border border-amber-300 bg-amber-50/50 hover:bg-amber-100/60 text-amber-700'
-                  : 'border border-blue-200 bg-blue-50/50 hover:bg-blue-100/60 text-[#5030e5]'
-              }`}
+              className="w-full py-2.5 px-4 rounded-xl border border-indigo-200/90 bg-white hover:bg-slate-50/80 active:scale-[0.99] transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-2 group/btn"
             >
-              <span>{isBuy ? 'Buy' : 'Sell'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              {isBuy ? (
+                <>
+                  <span className="font-bold text-sm sm:text-base text-[#65a30d]">Buy</span>
+                  <ArrowRight className="w-4 h-4 text-[#65a30d] stroke-[2.5] group-hover/btn:translate-x-0.5 transition-transform" />
+                </>
+              ) : (
+                <>
+                  <span className="font-bold text-sm sm:text-base text-[#5338F5]">Sell</span>
+                  <ArrowRight className="w-4 h-4 text-[#5338F5] stroke-[2.5] group-hover/btn:translate-x-0.5 transition-transform" />
+                </>
+              )}
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>

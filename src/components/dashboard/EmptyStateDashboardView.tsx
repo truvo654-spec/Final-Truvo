@@ -14,6 +14,7 @@ import {
   CandlestickChart,
   DollarSign,
   UserCheck,
+  UserPlus,
   ChevronLeft,
   ChevronDown,
   Pencil,
@@ -25,6 +26,13 @@ import {
   ExternalLink,
   Search,
   Plus,
+  Radio,
+  Sparkles,
+  Clock,
+  CheckCircle2,
+  Archive,
+  TrendingUp,
+  BarChart3,
 } from 'lucide-react';
 import { CashbackCalendarModal } from './CashbackCalendarModal';
 import { ActivityCarousel } from './ActivityCarousel';
@@ -32,6 +40,13 @@ import { PerformanceComboChart } from './PerformanceComboChart';
 import { MoreConnectedBrokersBanner } from './MoreConnectedBrokersBanner';
 import { ConnectedAccountsCarousel } from './ConnectedAccountsCarousel';
 import { AllConnectedAccountsModal } from './AllConnectedAccountsModal';
+import { ConnectedAccountStepperCard } from './ConnectedAccountStepperCard';
+import { ConnectionDeniedPopup } from './ConnectionDeniedPopup';
+import { ConnectionUnavailablePopup } from './ConnectionUnavailablePopup';
+import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
+import { MissionCardWidget } from './MissionCardWidget';
+import { CommunityWidget, PostCard, SAMPLE_COMMUNITY_POSTS } from './CommunityWidget';
+import { getNextTierInfo, LEVEL_SCENARIOS, LevelScenarioId } from '../../data/levelScenarios';
 
 export type DashboardStateType =
   | 'empty'
@@ -53,6 +68,7 @@ interface EmptyStateDashboardViewProps {
   onSelectBrokerDetail?: (broker: Broker) => void;
   onSelectSignal?: (signal: MarketSignal) => void;
   onEnterCustomizeMode?: () => void;
+  onSelectLevelScenario?: (scenarioId: LevelScenarioId) => void;
   initialState?: DashboardStateType;
 }
 
@@ -80,6 +96,78 @@ function RookieGhostIcon() {
       </svg>
     </div>
   );
+}
+
+/**
+ * Dynamic Tier Mascot Icon that supports Rookie Ghost (Lv.1), Climber (Lv.2), Player (Lv.3), and Boss (Lv.4)
+ */
+function TierMascotIcon({ tierLevel = 1 }: { tierLevel?: number }) {
+  if (tierLevel === 4) {
+    return (
+      <div className="w-14 h-16 sm:w-16 sm:h-18 flex items-center justify-center shrink-0 animate-float-slow group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 cursor-pointer">
+        <svg
+          viewBox="0 0 100 120"
+          className="w-full h-full drop-shadow-md"
+          fill="none"
+          stroke="white"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {/* Boss Crown */}
+          <path d="M 20 85 L 20 44 L 38 62 L 50 30 L 62 62 L 80 44 L 80 85 Z" fill="none" />
+          <line x1="20" y1="94" x2="80" y2="94" strokeWidth="6" />
+          <circle cx="20" cy="40" r="4" fill="white" stroke="none" />
+          <circle cx="50" cy="26" r="4" fill="white" stroke="none" />
+          <circle cx="80" cy="40" r="4" fill="white" stroke="none" />
+        </svg>
+      </div>
+    );
+  }
+  if (tierLevel === 3) {
+    return (
+      <div className="w-14 h-16 sm:w-16 sm:h-18 flex items-center justify-center shrink-0 animate-float-slow group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 cursor-pointer">
+        <svg
+          viewBox="0 0 100 120"
+          className="w-full h-full drop-shadow-md"
+          fill="none"
+          stroke="white"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {/* Player Lightning Star */}
+          <polygon points="55,16 28,60 50,60 45,104 74,54 52,54" fill="none" stroke="white" strokeWidth="5" />
+          <circle cx="76" cy="30" r="4" fill="#CAEB0E" stroke="none" />
+          <circle cx="24" cy="85" r="4" fill="#CAEB0E" stroke="none" />
+        </svg>
+      </div>
+    );
+  }
+  if (tierLevel === 2) {
+    return (
+      <div className="w-14 h-16 sm:w-16 sm:h-18 flex items-center justify-center shrink-0 animate-float-slow group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 cursor-pointer">
+        <svg
+          viewBox="0 0 100 120"
+          className="w-full h-full drop-shadow-md"
+          fill="none"
+          stroke="white"
+          strokeWidth="4.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {/* Climber Footprints / Step */}
+          <g transform="translate(14, 16)">
+            <rect x="8" y="10" width="18" height="30" rx="9" fill="none" stroke="white" strokeWidth="4.5" />
+            <rect x="10" y="46" width="14" height="14" rx="7" fill="none" stroke="white" strokeWidth="4.5" />
+            <rect x="36" y="20" width="18" height="30" rx="9" fill="none" stroke="white" strokeWidth="4.5" />
+            <rect x="38" y="56" width="14" height="14" rx="7" fill="none" stroke="white" strokeWidth="4.5" />
+          </g>
+        </svg>
+      </div>
+    );
+  }
+  return <RookieGhostIcon />;
 }
 
 /**
@@ -203,7 +291,33 @@ function CoinSwap3DIcon() {
 /**
  * Donut Chart for Top 3 Performers (Matching Top Performers - Dropdown Open.jpg)
  */
-function TopPerformersDonutChart({ type = 'assets' }: { type?: 'assets' | 'brokers' }) {
+function TopPerformersDonutChart({
+  type = 'assets',
+  isFirstTrade = false,
+}: {
+  type?: 'assets' | 'brokers';
+  isFirstTrade?: boolean;
+}) {
+  if (isFirstTrade) {
+    return (
+      <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
+        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 transform">
+          <circle cx="50" cy="50" r="36" fill="none" stroke="#f1f5f9" strokeWidth="14" />
+          <circle
+            cx="50"
+            cy="50"
+            r="36"
+            fill="none"
+            stroke="#BEF226"
+            strokeWidth="14"
+            strokeDasharray="226 226"
+            strokeDashoffset="0"
+          />
+        </svg>
+      </div>
+    );
+  }
+
   if (type === 'brokers') {
     return (
       <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
@@ -330,6 +444,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
   onSelectBrokerDetail,
   onSelectSignal,
   onEnterCustomizeMode,
+  onSelectLevelScenario,
   initialState,
 }) => {
   // Read state from localStorage or initial state
@@ -358,7 +473,8 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
     year: 'numeric',
   });
   const [selectedAssetFilter, setSelectedAssetFilter] = useState('All');
-  const [statusInfoModal, setStatusInfoModal] = useState<'rejected' | 'unavailable' | null>(null);
+  const [isConnectionDeniedOpen, setIsConnectionDeniedOpen] = useState(false);
+  const [isConnectionUnavailableOpen, setIsConnectionUnavailableOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -369,6 +485,11 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
 
   const handleStateChange = (newState: DashboardStateType) => {
     setDashboardState(newState);
+    if (newState === 'rejected') {
+      setIsConnectionDeniedOpen(true);
+    } else if (newState === 'unavailable') {
+      setIsConnectionUnavailableOpen(true);
+    }
     try {
       localStorage.setItem('marketsyde_dashboard_active_state', newState);
     } catch {}
@@ -402,19 +523,15 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
   const isConnectedState = dashboardState !== 'empty';
   const isPerformanceActive = dashboardState === 'first-trade' || dashboardState === 'active-performance';
 
-  // Points and Progress calculation based on state
-  const points =
-    dashboardState === 'empty' ||
-    dashboardState === 'pending' ||
-    dashboardState === 'approved' ||
-    dashboardState === 'rejected' ||
-    dashboardState === 'unavailable'
-      ? 0
-      : dashboardState === 'first-trade'
-      ? 5
-      : 50;
-
-  const progressPercent = Math.min(100, (points / 150) * 100);
+  // Current user tier points & next tier calculation (synchronized with selected Level Scenario)
+  const currentPoints = user.currentPoints ?? (dashboardState === 'first-trade' ? 5 : 50);
+  const maxPoints = user.maxPoints || 100;
+  const progressPercent = Math.min(100, Math.max(0, (currentPoints / maxPoints) * 100));
+  const nextInfo = getNextTierInfo(user.tierLevel || 1, currentPoints);
+  const nextLevelText = nextInfo.isMaxLevel
+    ? 'Max Level Reached'
+    : `Next level at ${nextInfo.pointsNeeded} Points`;
+  const points = currentPoints;
 
   return (
     <div className="w-full space-y-6">
@@ -524,64 +641,105 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
             {/* ── LEFT TOP CARD: Quick Start Guide vs Your Connected Account ── */}
             {dashboardState === 'empty' ? (
-              <div className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 shadow-2xs flex flex-col justify-between interactive-card group">
+              <div className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 sm:p-6 shadow-2xs flex flex-col justify-between interactive-card">
                 <div>
-                  <h3 className="font-display font-extrabold text-lg text-[#0b1c30] tracking-tight">
-                    Quick Start Guid<span className="text-[#FD02B0]">e.</span>
+                  <h3 className="font-display font-extrabold text-xl sm:text-[22px] text-[#5240F2] tracking-tight flex items-baseline">
+                    <span>Quick Start Guide</span>
+                    <span className="w-1.5 h-1.5 rounded-[1px] bg-[#E11D89] ml-0.5 inline-block self-end mb-1"></span>
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
                     Turn your trading into cashback, insights and rewards.
                   </p>
 
-                  {/* 4 Steps Row with Connecting Dots */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                    {/* Step 1 */}
-                    <div className="flex flex-col items-center text-center space-y-1.5 p-2 rounded-xl hover:bg-indigo-50/50 transition-colors">
-                      <div className="w-8 h-8 rounded-full bg-[#5945F1] text-white flex items-center justify-center shadow-2xs shrink-0 group-hover:scale-110 transition-transform">
-                        <UserCheck className="w-4 h-4" />
-                      </div>
-                      <div className="font-bold text-xs text-[#0b1c30]">Choose Broker</div>
-                      <div className="text-[10px] text-slate-400 leading-tight">
-                        Choose yours, or find a better one here
-                      </div>
-                    </div>
+                  {/* 4 Steps Stepper Row matching design screenshot */}
+                  <div className="relative mt-7 mb-2">
+                    {/* Background track line */}
+                    <div className="absolute top-[24px] left-[12.5%] right-[12.5%] h-[3px] bg-[#EEF0F8] rounded-full z-0 pointer-events-none" />
 
-                    {/* Step 2 */}
-                    <div className="flex flex-col items-center text-center space-y-1.5 p-2 rounded-xl hover:bg-indigo-50/50 transition-colors">
-                      <div className="w-8 h-8 rounded-full border border-slate-300 text-[#5945F1] flex items-center justify-center shadow-2xs shrink-0 bg-white group-hover:scale-110 transition-transform">
-                        <Link2 className="w-4 h-4" />
-                      </div>
-                      <div className="font-bold text-xs text-[#0b1c30]">Link Trading Account</div>
-                      <div className="text-[10px] text-slate-400 leading-tight">
-                        Connect your account to start tracking
-                      </div>
-                    </div>
+                    {/* Active progress bar segment from Step 1 to middle */}
+                    <div className="absolute top-[24px] left-[12.5%] w-[12.5%] h-[3px] bg-[#5240F2] rounded-full z-0 pointer-events-none" />
 
-                    {/* Step 3 */}
-                    <div className="flex flex-col items-center text-center space-y-1.5 p-2 rounded-xl hover:bg-indigo-50/50 transition-colors">
-                      <div className="w-8 h-8 rounded-full border border-slate-300 text-[#5945F1] flex items-center justify-center shadow-2xs shrink-0 bg-white group-hover:scale-110 transition-transform">
-                        <CandlestickChart className="w-4 h-4" />
+                    {/* Steps Container */}
+                    <div className="grid grid-cols-4 relative z-10">
+                      {/* Step 1: Choose Broker (Active) */}
+                      <div
+                        onClick={() => onNavigateToTab('brokers')}
+                        className="flex flex-col items-center text-center cursor-pointer group px-1"
+                      >
+                        <div className="w-12 h-12 rounded-[14px] bg-[#5240F2] text-white flex items-center justify-center shadow-sm shrink-0 transition-transform group-hover:scale-105">
+                          <UserPlus className="w-5 h-5 stroke-[2.2]" />
+                        </div>
+                        <div className="font-bold text-xs sm:text-[13px] text-[#5240F2] mt-3">
+                          Choose Broker
+                        </div>
+                        <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
+                          Choose yours, or find a better one here
+                        </div>
                       </div>
-                      <div className="font-bold text-xs text-[#0b1c30]">Trade as Usual</div>
-                      <div className="text-[10px] text-slate-400 leading-tight">
-                        Keep trading normally on your platform
-                      </div>
-                    </div>
 
-                    {/* Step 4 */}
-                    <div className="flex flex-col items-center text-center space-y-1.5 p-2 rounded-xl hover:bg-indigo-50/50 transition-colors">
-                      <div className="w-8 h-8 rounded-full border border-slate-300 text-[#5945F1] flex items-center justify-center shadow-2xs shrink-0 bg-white group-hover:scale-110 transition-transform">
-                        <DollarSign className="w-4 h-4" />
+                      {/* Step 2: Link Trading Account */}
+                      <div
+                        onClick={() => onNavigateToTab('brokers')}
+                        className="flex flex-col items-center text-center cursor-pointer group px-1"
+                      >
+                        <div className="w-12 h-12 rounded-[14px] bg-[#EEF0F8] text-[#5240F2] flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+                          <Link2 className="w-5 h-5 stroke-[2.2]" />
+                        </div>
+                        <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
+                          Link Trading Account
+                        </div>
+                        <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
+                          Connect your account to start tracking
+                        </div>
                       </div>
-                      <div className="font-bold text-xs text-[#0b1c30]">Earn Cashback</div>
-                      <div className="text-[10px] text-slate-400 leading-tight">
-                        Get paid to trade. Automatically
+
+                      {/* Step 3: Trade as Usual */}
+                      <div className="flex flex-col items-center text-center px-1">
+                        <div className="w-12 h-12 rounded-[14px] bg-[#EEF0F8] text-[#5240F2] flex items-center justify-center shrink-0">
+                          <CandlestickChart className="w-5 h-5 stroke-[2.2]" />
+                        </div>
+                        <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
+                          Trade as Usual
+                        </div>
+                        <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
+                          Keep trading normally on your platform
+                        </div>
+                      </div>
+
+                      {/* Step 4: Earn Cashback */}
+                      <div className="flex flex-col items-center text-center px-1">
+                        <div className="w-12 h-12 rounded-[14px] bg-[#EEF0F8] text-[#5240F2] flex items-center justify-center shrink-0">
+                          <DollarSign className="w-5 h-5 stroke-[2.2]" />
+                        </div>
+                        <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
+                          Earn Cashback
+                        </div>
+                        <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
+                          Get paid to trade. Automatically
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            ) : dashboardState === 'active-performance' || dashboardState === 'approved' ? (
+            ) : dashboardState === 'pending' ||
+              dashboardState === 'approved' ||
+              dashboardState === 'rejected' ||
+              dashboardState === 'unavailable' ||
+              dashboardState === 'first-trade' ? (
+              <ConnectedAccountStepperCard
+                status={dashboardState}
+                brokerName="HFM"
+                accountNumber="1100012001"
+                accountType="Premium"
+                onNavigateToTab={onNavigateToTab}
+                onOpenConnectModal={onOpenConnectModal}
+                onShowToast={showToast}
+                onDeleteAccount={() => setShowDeleteConfirm(true)}
+                onOpenDeniedPopup={() => setIsConnectionDeniedOpen(true)}
+                onOpenUnavailablePopup={() => setIsConnectionUnavailableOpen(true)}
+              />
+            ) : dashboardState === 'active-performance' ? (
               <ConnectedAccountsCarousel
                 className="md:col-span-8"
                 onNavigateToTab={onNavigateToTab}
@@ -659,7 +817,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setStatusInfoModal('rejected');
+                                setIsConnectionDeniedOpen(true);
                               }}
                               className="text-rose-400 hover:text-rose-700 cursor-pointer transition-colors p-0.5 rounded-full hover:bg-rose-100"
                               title="Rejection details"
@@ -677,7 +835,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setStatusInfoModal('unavailable');
+                                setIsConnectionUnavailableOpen(true);
                               }}
                               className="text-slate-500 hover:text-slate-900 cursor-pointer transition-colors p-0.5 rounded-full hover:bg-slate-200"
                               title="Unavailable status details"
@@ -796,19 +954,48 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
             {/* ── RIGHT TOP CARD: Your Level Card (md:col-span-4) ── */}
             <div className="md:col-span-4 rounded-2xl bg-[#5945F1] p-5 text-white flex flex-col justify-between shadow-xs relative overflow-hidden interactive-card group">
               <div>
-                <div className="text-xs font-semibold text-white/80">
-                  Your Level
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold text-white/80">
+                    Your Level
+                  </div>
+                  {onSelectLevelScenario && (
+                    <div className="flex items-center gap-1 bg-black/25 backdrop-blur-xs p-0.5 rounded-lg border border-white/10">
+                      {LEVEL_SCENARIOS.map((sc) => (
+                        <button
+                          key={sc.id}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectLevelScenario(sc.id);
+                          }}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                            user.tierLevel === sc.level
+                              ? 'bg-white text-[#5945F1] shadow-xs'
+                              : 'text-white/70 hover:text-white hover:bg-white/10'
+                          }`}
+                          title={`Switch to ${sc.label} (Lv.${sc.level})`}
+                        >
+                          Lv.{sc.level}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-3.5 mt-2">
-                  <RookieGhostIcon />
+
+                <div
+                  onClick={() => onNavigateToTab('profile')}
+                  className="flex items-center gap-3.5 mt-2 cursor-pointer group"
+                  title="View Profile & Account"
+                >
+                  <TierMascotIcon tierLevel={user.tierLevel || 1} />
                   <div>
-                    <h4 className="font-display font-black text-2xl text-white tracking-tight leading-tight">
+                    <h4 className="font-display font-black text-2xl text-white tracking-tight leading-tight group-hover:underline">
                       {user.rankTitle || 'Rookie'}
                     </h4>
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-white/95 mt-1">
                       <Gem className="w-3.5 h-3.5 text-white shrink-0" />
-                      <span>{points}/150 points.</span>
-                      {points > 0 && (
+                      <span>{currentPoints.toLocaleString()}/{maxPoints.toLocaleString()} points.</span>
+                      {currentPoints > 0 && (
                         <span className="text-[#CAEB0E] font-bold ml-1">Don't stop now</span>
                       )}
                     </div>
@@ -824,7 +1011,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                 </div>
 
                 <div className="flex items-center justify-between gap-2 text-xs text-white/90">
-                  <span className="font-medium">Next level at 50 Points</span>
+                  <span className="font-medium">{nextLevelText}</span>
                   <button
                     id="dashboard-level-view-plan-btn"
                     onClick={onOpenViewPlan}
@@ -850,6 +1037,9 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
               </div>
             </div>
           </div>
+
+          {/* ─── INSTRUMENT ANALYSIS WIDGET (Matching Widget, 3 coloumn.png) ─── */}
+          <InstrumentAnalysisWidget onNavigateToTab={onNavigateToTab} />
 
           {/* ─── ROW 2: Your Stats / Your Performance Card ─── */}
           <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5 interactive-card">
@@ -911,39 +1101,51 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                       ACTIVE STREAK
                     </div>
                     <div className="text-2xl font-black font-display text-[#0b1c30] leading-tight">
-                      12 days
+                      {dashboardState === 'active-performance'
+                        ? '12 days'
+                        : dashboardState === 'first-trade'
+                        ? '1 day'
+                        : '0 days'}
                     </div>
                     <div className="text-xs text-slate-400 mt-0.5 font-normal">
-                      Track your consistency
+                      {dashboardState === 'active-performance'
+                        ? 'Track your consistency'
+                        : dashboardState === 'first-trade'
+                        ? 'First day of your streak!'
+                        : 'Start trading to build streak'}
                     </div>
                   </div>
                 </div>
 
-                {/* 2 Rows of 16 Heatmap Squares (Matching Top Performers - Dropdown Open.jpg) */}
+                {/* 2 Rows of 16 Heatmap Squares */}
                 <div className="pt-2 space-y-1">
                   <div className="flex items-center gap-[3px] flex-wrap max-w-[210px]">
-                    {[true, true, true, true, false, true, false, true, true, true, true, true, true, true, false, true].map(
-                      (isActive, i) => (
-                        <span
-                          key={`streak-r1-${i}`}
-                          className={`w-2.5 h-2.5 rounded-[2px] transition-colors ${
-                            isActive ? 'bg-[#BEF226] border border-[#a3e635]/50' : 'bg-slate-200/90'
-                          }`}
-                        />
-                      )
-                    )}
+                    {(dashboardState === 'active-performance'
+                      ? [true, true, true, true, false, true, false, true, true, true, true, true, true, true, false, true]
+                      : dashboardState === 'first-trade'
+                      ? [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+                      : Array(16).fill(false)
+                    ).map((isActive, i) => (
+                      <span
+                        key={`streak-r1-${i}`}
+                        className={`w-2.5 h-2.5 rounded-[2px] transition-colors ${
+                          isActive ? 'bg-[#BEF226] border border-[#a3e635]/50' : 'bg-slate-200/90'
+                        }`}
+                      />
+                    ))}
                   </div>
                   <div className="flex items-center gap-[3px] flex-wrap max-w-[210px]">
-                    {[false, true, false, true, true, false, false, true, true, false, true, true, true, true, false, false].map(
-                      (isActive, i) => (
-                        <span
-                          key={`streak-r2-${i}`}
-                          className={`w-2.5 h-2.5 rounded-[2px] transition-colors ${
-                            isActive ? 'bg-[#BEF226] border border-[#a3e635]/50' : 'bg-slate-200/90'
-                          }`}
-                        />
-                      )
-                    )}
+                    {(dashboardState === 'active-performance'
+                      ? [false, true, false, true, true, false, false, true, true, false, true, true, true, true, false, false]
+                      : Array(16).fill(false)
+                    ).map((isActive, i) => (
+                      <span
+                        key={`streak-r2-${i}`}
+                        className={`w-2.5 h-2.5 rounded-[2px] transition-colors ${
+                          isActive ? 'bg-[#BEF226] border border-[#a3e635]/50' : 'bg-slate-200/90'
+                        }`}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
@@ -961,165 +1163,241 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                       CUMULATIVE CASHBACK
                     </div>
                     <div className="text-2xl font-black font-display text-[#0b1c30] leading-tight">
-                      $3,128.00
+                      {dashboardState === 'active-performance'
+                        ? selectedTimeframe === '1D'
+                          ? '$76.00'
+                          : selectedTimeframe === '1W'
+                          ? '$290.50'
+                          : selectedTimeframe === 'All'
+                          ? '$12,480.00'
+                          : '$3,128.00'
+                        : dashboardState === 'first-trade'
+                        ? '$8.00'
+                        : '$0.00'}
                     </div>
                     <div className="text-xs text-slate-400 mt-0.5 font-normal">
-                      0.0 Lots
+                      {dashboardState === 'active-performance'
+                        ? selectedTimeframe === '1D'
+                          ? '6.8 Lots'
+                          : selectedTimeframe === '1W'
+                          ? '22.8 Lots'
+                          : selectedTimeframe === 'All'
+                          ? '1,124.0 Lots'
+                          : '112.4 Lots'
+                        : dashboardState === 'first-trade'
+                        ? '1.6 Lots'
+                        : '0.0 Lots'}
                     </div>
                   </div>
                 </div>
 
                 <p className="text-xs text-slate-400 leading-relaxed pt-1.5 max-w-[240px]">
-                  Your cashback earned during the selected period will appear here.
+                  {dashboardState === 'active-performance'
+                    ? 'Your cashback earned during the selected period will appear here.'
+                    : dashboardState === 'first-trade'
+                    ? 'Cashback earned from your first trade with HFM.'
+                    : 'Connect a broker to start earning cashback automatically.'}
                 </p>
               </div>
 
-              {/* Block 3: TOP 3 PERFORMERS (Matching Top Performers - Dropdown Open.jpg) */}
+              {/* Block 3: TOP 3 PERFORMERS */}
               <div className="space-y-2 p-1.5 relative">
                 <div className="flex items-center justify-between gap-2 relative">
                   <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
                     TOP 3 PERFORMERS
                   </div>
 
-                  {/* Dropdown Selector */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsPerformerDropdownOpen((prev) => !prev)}
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-all cursor-pointer shadow-2xs"
-                    >
-                      <span>{performerType === 'assets' ? 'Earning Assets' : 'Cashback Brokers'}</span>
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 text-slate-500 transition-transform ${
-                          isPerformerDropdownOpen ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </button>
+                  {isPerformanceActive ? (
+                    /* Dropdown Selector */
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsPerformerDropdownOpen((prev) => !prev)}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-all cursor-pointer shadow-2xs"
+                      >
+                        <span>{performerType === 'assets' ? 'Earning Assets' : 'Cashback Brokers'}</span>
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 text-slate-500 transition-transform ${
+                            isPerformerDropdownOpen ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
 
-                    {/* Popover Menu matching design */}
-                    {isPerformerDropdownOpen && (
-                      <div className="absolute right-0 top-full mt-1.5 w-40 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-30 animate-in fade-in zoom-in-95 duration-100">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPerformerType('assets');
-                            setIsPerformerDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3.5 py-2 text-xs transition-colors cursor-pointer ${
-                            performerType === 'assets'
-                              ? 'bg-[#F0EFFF] text-[#5945F1] font-bold'
-                              : 'text-slate-700 hover:bg-slate-50 font-medium'
-                          }`}
-                        >
-                          Earning Assets
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPerformerType('brokers');
-                            setIsPerformerDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3.5 py-2 text-xs transition-colors cursor-pointer ${
-                            performerType === 'brokers'
-                              ? 'bg-[#F0EFFF] text-[#5945F1] font-bold'
-                              : 'text-slate-700 hover:bg-slate-50 font-medium'
-                          }`}
-                        >
-                          Cashback Brokers
-                        </button>
+                      {/* Popover Menu matching design */}
+                      {isPerformerDropdownOpen && (
+                        <div className="absolute right-0 top-full mt-1.5 w-40 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-30 animate-in fade-in zoom-in-95 duration-100">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPerformerType('assets');
+                              setIsPerformerDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3.5 py-2 text-xs transition-colors cursor-pointer ${
+                              performerType === 'assets'
+                                ? 'bg-[#F0EFFF] text-[#5945F1] font-bold'
+                                : 'text-slate-700 hover:bg-slate-50 font-medium'
+                            }`}
+                          >
+                            Earning Assets
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPerformerType('brokers');
+                              setIsPerformerDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3.5 py-2 text-xs transition-colors cursor-pointer ${
+                              performerType === 'brokers'
+                                ? 'bg-[#F0EFFF] text-[#5945F1] font-bold'
+                                : 'text-slate-700 hover:bg-slate-50 font-medium'
+                            }`}
+                          >
+                            Cashback Brokers
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-[10px] font-bold text-slate-400 px-2 py-0.5 rounded-md bg-slate-100">
+                      No Data
+                    </span>
+                  )}
+                </div>
+
+                {dashboardState === 'active-performance' ? (
+                  /* Donut Chart & List (Full active trader) */
+                  <div className="flex items-center gap-3 pt-2">
+                    <TopPerformersDonutChart type={performerType} />
+
+                    {performerType === 'assets' ? (
+                      <div className="space-y-1.5 text-xs flex-1 min-w-0">
+                        {/* Item 1: EUR/USD */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#BEF226] shrink-0" />
+                            <EUFlagCircle />
+                            <span className="truncate">EUR/USD</span>
+                          </div>
+                          <span className="font-mono font-bold text-slate-900 shrink-0">
+                            $1,150.00
+                          </span>
+                        </div>
+
+                        {/* Item 2: Dow Jones */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FD02B0] shrink-0" />
+                            <UKFlagCircle />
+                            <span className="truncate">Dow Jones</span>
+                          </div>
+                          <span className="font-mono font-bold text-slate-900 shrink-0">
+                            $1,035.00
+                          </span>
+                        </div>
+
+                        {/* Item 3: AUDUSD */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#5945F1] shrink-0" />
+                            <AUDFlagCircle />
+                            <span className="truncate">AUDUSD</span>
+                          </div>
+                          <span className="font-mono font-bold text-slate-900 shrink-0">
+                            $943.00
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5 text-xs flex-1 min-w-0">
+                        {/* Item 1: XM Global */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626] shrink-0" />
+                            <span className="w-4 h-4 rounded-full bg-red-600 text-[9px] font-black text-white flex items-center justify-center shrink-0">
+                              XM
+                            </span>
+                            <span className="truncate">XM Global</span>
+                          </div>
+                          <span className="font-mono font-bold text-slate-900 shrink-0">
+                            $1,420.00
+                          </span>
+                        </div>
+
+                        {/* Item 2: HFM Markets */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#B91C1C] shrink-0" />
+                            <span className="w-4 h-4 rounded-full bg-red-700 text-[8px] font-black text-white flex items-center justify-center shrink-0">
+                              HF
+                            </span>
+                            <span className="truncate">HFM Markets</span>
+                          </div>
+                          <span className="font-mono font-bold text-slate-900 shrink-0">
+                            $1,080.00
+                          </span>
+                        </div>
+
+                        {/* Item 3: Exness Pro */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shrink-0" />
+                            <span className="w-4 h-4 rounded-full bg-amber-500 text-[8px] font-black text-white flex items-center justify-center shrink-0">
+                              EX
+                            </span>
+                            <span className="truncate">Exness Pro</span>
+                          </div>
+                          <span className="font-mono font-bold text-slate-900 shrink-0">
+                            $628.00
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* Donut Chart & List */}
-                <div className="flex items-center gap-3 pt-2">
-                  <TopPerformersDonutChart type={performerType} />
-
-                  {performerType === 'assets' ? (
-                    <div className="space-y-1.5 text-xs flex-1 min-w-0">
-                      {/* Item 1: EUR/USD */}
-                      <div className="flex items-center justify-between gap-3">
+                ) : dashboardState === 'first-trade' ? (
+                  /* Single First Trade Performer */
+                  <div className="flex items-center gap-3 pt-2">
+                    <TopPerformersDonutChart type={performerType} isFirstTrade={true} />
+                    <div className="space-y-1 text-xs flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#BEF226] shrink-0" />
-                          <EUFlagCircle />
-                          <span className="truncate">EUR/USD</span>
+                          {performerType === 'assets' ? (
+                            <>
+                              <EUFlagCircle />
+                              <span className="truncate font-bold">EUR/USD</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-4 h-4 rounded-full bg-red-700 text-[8px] font-black text-white flex items-center justify-center shrink-0">
+                                HF
+                              </span>
+                              <span className="truncate font-bold">HFM Markets</span>
+                            </>
+                          )}
                         </div>
-                        <span className="font-mono font-bold text-slate-900 shrink-0">
-                          $1,150.00
+                        <span className="font-mono font-black text-slate-900 shrink-0">
+                          $8.00
                         </span>
                       </div>
-
-                      {/* Item 2: Dow Jones */}
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#FD02B0] shrink-0" />
-                          <UKFlagCircle />
-                          <span className="truncate">Dow Jones</span>
-                        </div>
-                        <span className="font-mono font-bold text-slate-900 shrink-0">
-                          $1,035.00
-                        </span>
-                      </div>
-
-                      {/* Item 3: AUDUSD */}
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#5945F1] shrink-0" />
-                          <AUDFlagCircle />
-                          <span className="truncate">AUDUSD</span>
-                        </div>
-                        <span className="font-mono font-bold text-slate-900 shrink-0">
-                          $943.00
-                        </span>
+                      <div className="text-[11px] text-emerald-600 font-semibold">
+                        100% of trading volume (1 trade)
                       </div>
                     </div>
-                  ) : (
-                    <div className="space-y-1.5 text-xs flex-1 min-w-0">
-                      {/* Item 1: XM Global */}
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626] shrink-0" />
-                          <span className="w-4 h-4 rounded-full bg-red-600 text-[9px] font-black text-white flex items-center justify-center shrink-0">
-                            XM
-                          </span>
-                          <span className="truncate">XM Global</span>
-                        </div>
-                        <span className="font-mono font-bold text-slate-900 shrink-0">
-                          $1,420.00
-                        </span>
-                      </div>
-
-                      {/* Item 2: HFM Markets */}
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#B91C1C] shrink-0" />
-                          <span className="w-4 h-4 rounded-full bg-red-700 text-[8px] font-black text-white flex items-center justify-center shrink-0">
-                            HF
-                          </span>
-                          <span className="truncate">HFM Markets</span>
-                        </div>
-                        <span className="font-mono font-bold text-slate-900 shrink-0">
-                          $1,080.00
-                        </span>
-                      </div>
-
-                      {/* Item 3: Exness Pro */}
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shrink-0" />
-                          <span className="w-4 h-4 rounded-full bg-amber-500 text-[8px] font-black text-white flex items-center justify-center shrink-0">
-                            EX
-                          </span>
-                          <span className="truncate">Exness Pro</span>
-                        </div>
-                        <span className="font-mono font-bold text-slate-900 shrink-0">
-                          $628.00
-                        </span>
+                  </div>
+                ) : (
+                  /* Empty State for Block 3 */
+                  <div className="pt-2 pb-1 flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 text-slate-400">
+                      <TrendingUp className="w-5 h-5 stroke-[1.8]" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-700">No performance data yet</div>
+                      <div className="text-[11px] text-slate-400 leading-snug mt-0.5">
+                        Your top earning assets and brokers will appear here once you trade.
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1166,192 +1444,64 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                   : '$0.00'
               }
               timeframe={selectedTimeframe}
+              isEmpty={!isPerformanceActive}
+              isFirstTrade={dashboardState === 'first-trade'}
+              emptyStateTitle={
+                dashboardState === 'empty'
+                  ? 'No Performance Recorded Yet'
+                  : dashboardState === 'pending'
+                  ? 'Broker Review in Progress'
+                  : dashboardState === 'approved'
+                  ? 'Ready for Your First Trade'
+                  : dashboardState === 'rejected'
+                  ? 'Connection Denied'
+                  : 'Account Archived'
+              }
+              emptyStateDescription={
+                dashboardState === 'empty'
+                  ? 'Connect a broker and place your first trade to plot daily cashback earnings and volume in real time.'
+                  : dashboardState === 'pending'
+                  ? 'Your linked account (HFM • 1100012001) is awaiting review. Charts will activate once approved.'
+                  : dashboardState === 'approved'
+                  ? 'Your account is approved! Place your first trade with your broker to start earning cashback.'
+                  : dashboardState === 'rejected'
+                  ? 'Your broker connection could not be verified under Marketsyde. Please reconnect or link another broker.'
+                  : 'Your broker has archived this account due to inactivity. Re-link an active account to resume.'
+              }
+              emptyStateCtaText={
+                dashboardState === 'empty'
+                  ? 'Connect Broker'
+                  : dashboardState === 'pending'
+                  ? 'Check Broker Status'
+                  : dashboardState === 'approved'
+                  ? 'Trade Now'
+                  : dashboardState === 'rejected'
+                  ? 'Reconnect Account'
+                  : 'Connect New Brokers'
+              }
+              onEmptyStateCtaClick={
+                dashboardState === 'empty'
+                  ? handleConnectBrokerAction
+                  : dashboardState === 'pending'
+                  ? () => onNavigateToTab('brokers')
+                  : dashboardState === 'approved'
+                  ? () => onNavigateToTab('signals')
+                  : dashboardState === 'rejected'
+                  ? () => setIsConnectionDeniedOpen(true)
+                  : () => setIsConnectionUnavailableOpen(true)
+              }
               className="w-full pt-1"
             />
           </div>
 
-          {/* ─── FULL-WIDTH SIGNALS TABLE (Matching Images 04 & 05) ─── */}
-          <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="font-display font-extrabold text-lg text-[#0b1c30]">
-                    Most Recent Signal<span className="text-[#FD02B0]">s.</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Real-time signals, tailored to you. Spot opportunities and execute instantly
-                  </p>
-                </div>
+          {/* ─── MISSION CARD WIDGET (Matching Mission Card.png & inserted between Performance Chart and Signals) ─── */}
+          <MissionCardWidget onNavigateToTab={onNavigateToTab} />
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-500">Asset</span>
-                  <div className="relative">
-                    <select
-                      value={selectedAssetFilter}
-                      onChange={(e) => setSelectedAssetFilter(e.target.value)}
-                      className="appearance-none pl-3 pr-7 py-1 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#0b1c30] shadow-2xs cursor-pointer focus:outline-none"
-                    >
-                      <option value="All">All</option>
-                      <option value="Forex">Forex</option>
-                      <option value="Crypto">Crypto</option>
-                      <option value="Indices">Indices</option>
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Signals Detailed Rows */}
-              <div className="space-y-2.5 divide-y divide-slate-100">
-                {[
-                  {
-                    ticker: 'EUR/USD',
-                    flag: '🇪🇺',
-                    confidence: '70%',
-                    trend: 'up',
-                    sparkColor: '#84cc16',
-                    tp: '1.0690',
-                    sl: '1.0696',
-                    expectedMove: '▲ 20 - 29PIPS',
-                    moveColor: 'text-[#84cc16]',
-                    change: '+0.33%',
-                    action: 'Buy',
-                    btnBg: 'bg-[#A3E635] text-slate-900',
-                  },
-                  {
-                    ticker: 'GOOGL',
-                    icon: 'G',
-                    confidence: '74%',
-                    trend: 'down',
-                    sparkColor: '#5945F1',
-                    tp: '1.0690',
-                    sl: '1.0696',
-                    expectedMove: '▼ 25 - 40 PIPS',
-                    moveColor: 'text-[#5945F1]',
-                    change: '-0.11%',
-                    action: 'Sell',
-                    btnBg: 'bg-[#5945F1] text-white',
-                  },
-                  {
-                    ticker: 'BTC/USD',
-                    flag: '₿',
-                    confidence: '92%',
-                    isPremium: true,
-                    action: 'Plans',
-                  },
-                  {
-                    ticker: 'S&P 500',
-                    badge: '500',
-                    confidence: '71%',
-                    trend: 'up',
-                    sparkColor: '#84cc16',
-                    tp: '1.0690',
-                    sl: '1.0696',
-                    expectedMove: '▲ 20 - 29PIPS',
-                    moveColor: 'text-[#84cc16]',
-                    change: '+0.44%',
-                    action: 'Buy',
-                    btnBg: 'bg-[#A3E635] text-slate-900',
-                  },
-                  {
-                    ticker: 'XAU/USD',
-                    flag: '🪙',
-                    confidence: '73%',
-                    trend: 'down',
-                    sparkColor: '#5945F1',
-                    tp: '1.0690',
-                    sl: '1.0696',
-                    expectedMove: '▼ 25 - 40 PIPS',
-                    moveColor: 'text-[#5945F1]',
-                    change: '-0.24%',
-                    action: 'Sell',
-                    btnBg: 'bg-[#5945F1] text-white',
-                  },
-                ].map((s, idx) => (
-                  <div
-                    key={s.ticker}
-                    className="pt-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs"
-                  >
-                    {/* Symbol & Confidence */}
-                    <div className="flex items-center gap-3 w-44">
-                      <div className="flex items-center gap-2">
-                        {s.flag && <span className="text-base">{s.flag}</span>}
-                        {s.icon && (
-                          <div className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-[#4285F4] text-[10px]">
-                            G
-                          </div>
-                        )}
-                        {s.badge && (
-                          <div className="w-5 h-5 rounded-full bg-[#E11928] text-white flex items-center justify-center font-bold text-[8px]">
-                            500
-                          </div>
-                        )}
-                        <span className="font-bold text-[#0b1c30]">{s.ticker}</span>
-                      </div>
-                      <span className="font-bold text-[#5945F1]">{s.confidence} confidence</span>
-                    </div>
-
-                    {/* Sparkline & Technical Stats */}
-                    {s.isPremium ? (
-                      <div className="flex-1 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-full bg-purple-50 text-[#5945F1] font-bold text-[11px] border border-purple-200">
-                            💎 Premium Signal ⓘ
-                          </span>
-                          <span className="text-[11px] text-slate-500">
-                            Higher levels only. Connect broker and trade to unlock.
-                          </span>
-                        </div>
-                        <button
-                          onClick={onOpenViewPlan}
-                          className="px-4 py-1 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs cursor-pointer shrink-0"
-                        >
-                          Plans
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="w-24">
-                          <MiniSparkline
-                            trend={s.trend as 'up' | 'down'}
-                            color={s.sparkColor || '#84cc16'}
-                          />
-                        </div>
-
-                        <div className="font-mono text-slate-600 font-semibold">
-                          <span>TP: {s.tp} </span>
-                          <span className="ml-2">SL: {s.sl}</span>
-                        </div>
-
-                        <div className="text-slate-500">
-                          <span>Expected move </span>
-                          <span className={`font-bold ${s.moveColor}`}>{s.expectedMove}</span>
-                        </div>
-
-                        <div className="font-mono font-bold text-slate-800">
-                          Price change <span className={s.change?.startsWith('+') ? 'text-emerald-600' : 'text-[#5945F1]'}>{s.change}</span>
-                        </div>
-
-                        <button
-                          onClick={() => onNavigateToTab('signals')}
-                          className={`px-4 py-1 rounded-lg font-bold text-xs shadow-2xs hover:opacity-90 transition-all cursor-pointer ${s.btnBg}`}
-                        >
-                          {s.action}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-center pt-2">
-                <button
-                  onClick={() => onNavigateToTab('signals')}
-                  className="px-6 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition-colors cursor-pointer"
-                >
-                  View All Signals
-                </button>
-              </div>
-            </div>
+          {/* ─── COMMUNITY WIDGET (Replaces Most Recent Signals widget - shows 2.5 cards + CTA to community) ─── */}
+          <CommunityWidget
+            onNavigateToTab={onNavigateToTab}
+            onToast={showToast}
+          />
 
           {/* ─── BOTTOM ROW: More Connected Brokers. More Opportunities. (1:1 with Small Banner 3.png) ─── */}
           <MoreConnectedBrokersBanner
@@ -1534,92 +1684,44 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
             </button>
           </div>
 
-          {/* ── CARD 3: Most Recent Signals. (Shown on Right Sidebar for State 1, 2, 3) ── */}
+          {/* ── CARD 3: Community Spotlight (Shown on Right Sidebar for State 1, 2, 3) ── */}
           {!isPerformanceActive && (
             <div className="rounded-2xl bg-white border border-slate-200/90 p-5 shadow-2xs space-y-3.5">
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <h3 className="font-display font-extrabold text-base text-[#0b1c30]">
-                    Most Recent Signal<span className="text-[#FD02B0]">s.</span>
+                    Community <span className="text-[#5945F1]">Pulse.</span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    View most recent signals for your trading
+                    Latest trade ideas & discussions
                   </p>
                 </div>
 
                 <button
-                  onClick={() => onNavigateToTab('signals')}
-                  className="text-xs font-bold text-slate-600 hover:text-[#5945F1] transition-colors cursor-pointer flex items-center gap-0.5 shrink-0"
+                  onClick={() => onNavigateToTab('community')}
+                  className="text-xs font-bold text-[#5945F1] hover:text-[#492CED] transition-colors cursor-pointer flex items-center gap-0.5 shrink-0"
                 >
-                  <span>More</span>
+                  <span>Go to Community</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {/* 5 Signals in List */}
-              <div className="space-y-2">
-                {[
-                  { ticker: 'EUR/USD', change: '+0.33%', type: 'buy', sparkColor: '#16a34a' },
-                  { ticker: 'GOOGL', change: '-0.11%', type: 'sell', sparkColor: '#5945F1' },
-                  { ticker: 'BTC/USD', change: 'Premium', type: 'upgrade', sparkColor: '#FD02B0' },
-                  { ticker: 'S&P 500', change: '+0.44%', type: 'buy', sparkColor: '#16a34a' },
-                  { ticker: 'XAU/USD', change: '+0.24%', type: 'buy', sparkColor: '#16a34a' },
-                ].map((s) => (
-                  <div
-                    key={s.ticker}
-                    className="flex items-center justify-between py-1.5 px-2 rounded-xl hover:bg-slate-50 text-xs transition-colors"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-bold text-[#0b1c30]">{s.ticker}</span>
-                      {s.type !== 'upgrade' && (
-                        <div className="flex items-center gap-1">
-                          <MiniSparkline
-                            trend={s.change.startsWith('+') ? 'up' : 'down'}
-                            color={s.sparkColor}
-                          />
-                          <span
-                            className={`text-[11px] font-mono font-bold ${
-                              s.change.startsWith('+') ? 'text-emerald-600' : 'text-[#5945F1]'
-                            }`}
-                          >
-                            {s.change}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {s.type === 'buy' && (
-                      <button
-                        onClick={() => onNavigateToTab('signals')}
-                        className="px-3 py-1 rounded-md bg-[#A3E635] text-slate-900 font-bold text-[11px] shadow-2xs hover:opacity-90 cursor-pointer"
-                      >
-                        Buy
-                      </button>
-                    )}
-                    {s.type === 'sell' && (
-                      <button
-                        onClick={() => onNavigateToTab('signals')}
-                        className="px-3 py-1 rounded-md bg-[#5945F1] text-white font-bold text-[11px] shadow-2xs hover:opacity-90 cursor-pointer"
-                      >
-                        Sell
-                      </button>
-                    )}
-                    {s.type === 'upgrade' && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5">
-                          👑 Premium Signal
-                        </span>
-                        <button
-                          onClick={onOpenViewPlan}
-                          className="px-2.5 py-1 rounded-md border border-[#5945F1] text-[#5945F1] font-bold text-[11px] hover:bg-indigo-50 cursor-pointer"
-                        >
-                          Upgrade
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+              {/* Compact PostCard */}
+              <div className="pt-1">
+                <PostCard
+                  post={SAMPLE_COMMUNITY_POSTS[0]}
+                  onNavigateToTab={onNavigateToTab}
+                  onToast={showToast}
+                />
               </div>
+
+              <button
+                onClick={() => onNavigateToTab('community')}
+                className="w-full mt-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#5945F1] to-[#8B5CF6] hover:opacity-95 text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Explore Community</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           )}
         </aside>
@@ -1633,106 +1735,31 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
         onTradeNow={() => onNavigateToTab('signals')}
       />
 
-      {/* ─── STATUS INFO MODAL (REJECTED & UNAVAILABLE) ─── */}
-      {statusInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative animate-in zoom-in-95 duration-150 space-y-4">
-            <button
-              onClick={() => setStatusInfoModal(null)}
-              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      {/* ─── CONNECTION DENIED POPUP (Matches Connection Denied Popup.png) ─── */}
+      <ConnectionDeniedPopup
+        isOpen={isConnectionDeniedOpen}
+        onClose={() => setIsConnectionDeniedOpen(false)}
+        onReconnect={() => {
+          setIsConnectionDeniedOpen(false);
+          handleConnectBrokerAction('HFM');
+        }}
+        onExploreBrokers={() => {
+          setIsConnectionDeniedOpen(false);
+          onNavigateToTab('brokers');
+        }}
+        brokerName="HFM"
+      />
 
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                  statusInfoModal === 'rejected'
-                    ? 'bg-rose-100 text-rose-600'
-                    : 'bg-slate-100 text-slate-700'
-                }`}
-              >
-                {statusInfoModal === 'rejected' ? (
-                  <AlertCircle className="w-6 h-6" />
-                ) : (
-                  <AlertTriangle className="w-6 h-6" />
-                )}
-              </div>
-              <div>
-                <h3 className="font-display font-extrabold text-lg text-[#0b1c30]">
-                  {statusInfoModal === 'rejected'
-                    ? 'Account Verification Rejected'
-                    : 'Account Connection Unavailable'}
-                </h3>
-                <div className="text-xs text-slate-500 font-mono mt-0.5">
-                  HFM Premium • 1100012001
-                </div>
-              </div>
-            </div>
-
-            <div className="text-xs leading-relaxed text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200/70 space-y-2">
-              {statusInfoModal === 'rejected' ? (
-                <>
-                  <p className="font-semibold text-rose-700">
-                    The broker rejected verification for this trading account.
-                  </p>
-                  <p>Common reasons for rejection:</p>
-                  <ul className="list-disc list-inside space-y-1 text-slate-500 pl-1">
-                    <li>Account ID does not match an active HFM account.</li>
-                    <li>Investor or read-only password was invalid or expired.</li>
-                    <li>Account was archived or registered under a different affiliate group.</li>
-                  </ul>
-                  <p className="pt-1 text-slate-600 font-medium">
-                    Please click <strong>Reconnect</strong> to check your MT4/MT5 credentials and resubmit.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-semibold text-slate-800">
-                    Broker gateway server is temporarily unreachable.
-                  </p>
-                  <p>
-                    Marketsyde is currently unable to communicate with HFM's API server. This typically occurs during scheduled server maintenance or temporary connection latency.
-                  </p>
-                  <p className="pt-1 text-slate-600 font-medium">
-                    Your pending cashback and trade records are safe and will automatically synchronize once the connection is restored.
-                  </p>
-                </>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                onClick={() => setStatusInfoModal(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                Dismiss
-              </button>
-              {statusInfoModal === 'rejected' ? (
-                <button
-                  onClick={() => {
-                    setStatusInfoModal(null);
-                    handleConnectBrokerAction('HFM');
-                  }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#5945F1] hover:bg-[#4734dc] text-white shadow-xs cursor-pointer transition-all"
-                >
-                  Reconnect Now
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    setStatusInfoModal(null);
-                    handleCardClick('HFM');
-                  }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#0b1c30] hover:bg-slate-800 text-white shadow-xs cursor-pointer transition-all"
-                >
-                  Go to 'Broker'
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ─── CONNECTION UNAVAILABLE POPUP (Matches Connection Unavailable Popup.png) ─── */}
+      <ConnectionUnavailablePopup
+        isOpen={isConnectionUnavailableOpen}
+        onClose={() => setIsConnectionUnavailableOpen(false)}
+        onConnectNewBrokers={() => {
+          setIsConnectionUnavailableOpen(false);
+          onNavigateToTab('brokers');
+        }}
+        brokerName="HFM"
+      />
 
       {/* ─── DELETE ACCOUNT CONFIRMATION MODAL ─── */}
       {showDeleteConfirm && (

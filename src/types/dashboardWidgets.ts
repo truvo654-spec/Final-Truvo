@@ -6,6 +6,8 @@ export type WidgetType =
   | 'tops-earning-points'
   | 'connected-brokers'
   | 'market-clock'
+  | 'instrument-analysis'
+  | 'mission-card'
   | 'empty';
 
 export type WidgetSize = 1 | 2 | 3;

@@ -37,6 +37,7 @@ import { EmptyStateDashboardView } from './dashboard/EmptyStateDashboardView';
 import { ActivityCarousel } from './dashboard/ActivityCarousel';
 import { MoreConnectedBrokersBanner } from './dashboard/MoreConnectedBrokersBanner';
 import { DashboardRow, DashboardSlot, WidgetType, WidgetSize } from '../types/dashboardWidgets';
+import { LevelScenarioId } from '../data/levelScenarios';
 
 interface ReferenceDashboardProps {
   user: UserProfile;
@@ -58,6 +59,7 @@ interface ReferenceDashboardProps {
   onShowToast?: (msg: string) => void;
   onNavigateToConnectBroker?: (broker?: Broker) => void;
   onSelectBrokerDetail?: (broker: Broker) => void;
+  onSelectLevelScenario?: (scenarioId: LevelScenarioId) => void;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -328,6 +330,18 @@ const DEFAULT_ROWS: DashboardRow[] = [
       { id: 'slot-1-3', type: 'most-recent-signals', size: 1, title: 'Most Recent Signals' },
     ],
   },
+  {
+    id: 'row-2',
+    slots: [
+      { id: 'slot-2-1', type: 'instrument-analysis', size: 3, title: 'Instrument Analysis' },
+    ],
+  },
+  {
+    id: 'row-3',
+    slots: [
+      { id: 'slot-3-1', type: 'mission-card', size: 3, title: 'Portfolio Power-Up' },
+    ],
+  },
 ];
 
 function ConnectedBrokersRow({
@@ -557,6 +571,7 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
   onShowToast,
   onNavigateToConnectBroker,
   onSelectBrokerDetail,
+  onSelectLevelScenario,
 }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1D' | '1W' | '1M' | 'All'>('1M');
   const [connectedPage, setConnectedPage] = useState<number>(1);
@@ -854,6 +869,7 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
                         onOpenConnectModal={onOpenConnectModal}
                         onSelectSignal={onSelectSignal}
                         onNavigateToTab={onNavigateToTab}
+                        onSelectLevelScenario={onSelectLevelScenario}
                       />
                     </div>
                   ))}
@@ -912,6 +928,7 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
           onSelectBrokerDetail={onSelectBrokerDetail}
           onSelectSignal={onSelectSignal}
           onEnterCustomizeMode={handleEnterCustomizeMode}
+          onSelectLevelScenario={onSelectLevelScenario}
         />
       )}
 

@@ -16,6 +16,12 @@ import { InstrumentScatterView } from './analysis/InstrumentScatterView';
 import { InstrumentCorrelationView } from './analysis/InstrumentCorrelationView';
 import { LockedFeatureOverlay } from './analysis/LockedFeatureOverlay';
 import {
+  ToolCreditUnlockModal,
+  UNLOCKABLE_TOOLS_DATA,
+  UnlockableTool,
+  UnlockDurationOption,
+} from './analysis/ToolCreditUnlockModal';
+import {
   InstrumentFilterDrawer,
   FilterCondition,
   DEFAULT_FILTER_CONDITIONS,
@@ -55,6 +61,8 @@ interface InstrumentAnalysisPageProps {
   onNavigateToTab?: (tab: string, subTab?: string, symbol?: string) => void;
   onShareToCommunity?: (symbol: string, name: string) => void;
   onShowToast?: (msg: string) => void;
+  onOpenViewPlan?: () => void;
+  onUpdateUser?: (updated: Partial<UserProfile>) => void;
 }
 
 type SortField = 'name' | 'price' | 'change' | 'return1M' | 'rolVolume' | 'rsi';
@@ -70,6 +78,8 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
   onNavigateToTab,
   onShareToCommunity,
   onShowToast,
+  onOpenViewPlan,
+  onUpdateUser,
 }) => {
   // Market categories order matching the user's reference pills:
   // Forex | Crypto | Commodities | Indicies | Stock
@@ -134,6 +144,27 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
   // View tab state (Table | Heatmap | Scatter | Correlation)
   const [activeViewTab, setActiveViewTab] = useState<'table' | 'heatmap' | 'scatter' | 'correlation'>('table');
   const [selectedDetailInstrument, setSelectedDetailInstrument] = useState<Instrument | null>(null);
+
+  // Hovered row for Trade button & Mini Modal popover
+  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleRowMouseEnter = (id: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredRowId(id);
+  };
+
+  const handleRowMouseLeave = (id: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredRowId((current) => (current === id ? null : current));
+    }, 120);
+  };
 
   const toDetailInstrument = (inst: InstrumentRow): Instrument => {
     const matched = instruments.find(
@@ -450,23 +481,41 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
     return () => clearInterval(interval);
   }, [filteredInstruments]);
 
-  const handleUnlockTab = (tab: ViewTabType, tabName: string) => {
-    setUnlockedTabs((prev) => {
-      const next = new Set(prev);
-      next.add(tab);
-      return next;
-    });
-    onShowToast?.(`🔓 Unlocked ${tabName} view with Credits!`);
+  // Modal state for Tool Credit Unlock
+  const [unlockModalTool, setUnlockModalTool] = useState<UnlockableTool | null>(null);
+
+  const handleOpenUnlockModal = (toolKey: string) => {
+    const tool = UNLOCKABLE_TOOLS_DATA[toolKey];
+    if (tool) {
+      setUnlockModalTool(tool);
+    }
   };
 
-  const handleUnlockNews = () => {
-    setIsNewsUnlocked(true);
-    onShowToast?.('🔓 Unlocked Daily Market News & Recap with Credits!');
-  };
+  const handleConfirmUnlock = (
+    tool: UnlockableTool,
+    duration: UnlockDurationOption,
+    cost: number
+  ) => {
+    // 1. Deduct credits from user profile
+    const currentCredits = user.sydeCredits ?? 154;
+    const remainingCredits = Math.max(0, currentCredits - cost);
+    onUpdateUser?.({ sydeCredits: remainingCredits });
 
-  const handleUnlockVolume = () => {
-    setIsVolumeUnlocked(true);
-    onShowToast?.('🔓 Unlocked Cross-market Activity with Credits!');
+    // 2. Mark feature as unlocked
+    if (tool.id === 'heatmap') {
+      setUnlockedTabs((prev) => new Set(prev).add('heatmap'));
+    } else if (tool.id === 'scatter') {
+      setUnlockedTabs((prev) => new Set(prev).add('scatter'));
+    } else if (tool.id === 'correlation') {
+      setUnlockedTabs((prev) => new Set(prev).add('correlation'));
+    } else if (tool.id === 'volume') {
+      setIsVolumeUnlocked(true);
+    } else if (tool.id === 'news') {
+      setIsNewsUnlocked(true);
+    }
+
+    const durationLabel = duration === '1d' ? '1 day' : duration === '7d' ? '7 days' : '30 days';
+    onShowToast?.(`🔓 Successfully unlocked ${tool.title} for ${durationLabel}! (${cost.toLocaleString()} C deducted)`);
   };
 
   const viewTabs: TabMainItem<ViewTabType>[] = useMemo(
@@ -574,7 +623,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
         onShowToast={onShowToast}
         onViewPlans={() => onNavigateToTab?.('plans')}
       >
-        <div className="market-feature w-full min-h-screen pt-[88px] pb-16 px-3 sm:px-6 lg:px-8 animate-in fade-in duration-200">
+        <div className="market-feature w-full min-h-screen pt-1 sm:pt-2 pb-16 px-3 sm:px-6 lg:px-8 animate-in fade-in duration-200">
           <InstrumentDetail
             instrument={selectedDetailInstrument}
             onBack={() => setSelectedDetailInstrument(null)}
@@ -1065,7 +1114,11 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                         return (
                           <tr
                             key={inst.id}
-                            className="hover:bg-indigo-50/20 transition-colors group cursor-pointer"
+                            onMouseEnter={() => handleRowMouseEnter(inst.id)}
+                            onMouseLeave={() => handleRowMouseLeave(inst.id)}
+                            className={`hover:bg-indigo-50/40 transition-colors group cursor-pointer ${
+                              hoveredRowId === inst.id ? 'bg-indigo-50/25' : ''
+                            }`}
                             onClick={() => setSelectedDetailInstrument(toDetailInstrument(inst))}
                           >
                             {/* 1. Favorite Star (Purple outline star matching screenshot) */}
@@ -1086,7 +1139,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                               </button>
                             </td>
 
-                            {/* 2. Instrument Icon + Name (+ Trade pill button on row 1) */}
+                            {/* 2. Instrument Icon + Name (+ Trade pill button + Hover Mini-Modal) */}
                             <td className="py-3.5 px-3.5">
                               <div className="flex items-center gap-2.5">
                                 <InstrumentIcon
@@ -1094,22 +1147,151 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                                   name={inst.name}
                                   className="w-7 h-7 shrink-0"
                                 />
-                                <span className="font-bold text-slate-900 text-sm leading-tight">
+                                <span className="font-bold text-slate-900 text-sm leading-tight group-hover:text-[#5945F1] transition-colors">
                                   {inst.name}
                                 </span>
-                                {index === 0 && (
+
+                                {/* Trade pill button + Small Corner Modal Popover */}
+                                <div
+                                  className="relative inline-flex items-center"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <button
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleSignalClick(inst);
                                     }}
-                                    className="relative group overflow-hidden px-2.5 py-0.5 rounded-full bg-[#5046E5] text-white text-[11px] font-bold shadow-xs hover:bg-[#4338CA] cursor-pointer transition-all shrink-0 hover:scale-105 active:scale-95"
+                                    className={`relative group/btn overflow-hidden px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-xs cursor-pointer transition-all shrink-0 ${
+                                      index === 0 || hoveredRowId === inst.id
+                                        ? 'bg-[#5046E5] text-white hover:bg-[#4338CA] hover:scale-105 active:scale-95 opacity-100'
+                                        : 'bg-indigo-50 text-[#5046E5] hover:bg-[#5046E5] hover:text-white opacity-70 group-hover:opacity-100'
+                                    }`}
+                                    title={`Quick Trade ${inst.name}`}
                                   >
-                                    <span className="relative z-10">Trade</span>
+                                    <span className="relative z-10 flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                      Trade
+                                    </span>
                                     <span className="absolute inset-0 bg-linear-to-r from-transparent via-white/30 to-transparent animate-shimmer pointer-events-none" />
                                   </button>
-                                )}
+
+                                  {/* Small Hover Modal / Quick Trade Corner Card */}
+                                  <AnimatePresence>
+                                    {hoveredRowId === inst.id && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: index < 3 ? -6 : 6, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: index < 3 ? -6 : 6, scale: 0.95 }}
+                                        transition={{ duration: 0.15, ease: 'easeOut' }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className={`absolute z-50 min-w-[270px] p-3.5 bg-white/98 backdrop-blur-md rounded-2xl border border-indigo-100 shadow-2xl shadow-indigo-900/15 text-slate-800 ${
+                                          index < 3 ? 'top-full mt-2 left-0' : 'bottom-full mb-2 left-0'
+                                        }`}
+                                      >
+                                        {/* Popover Arrow Indicator */}
+                                        <div
+                                          className={`absolute left-5 w-2.5 h-2.5 bg-white border-indigo-100 rotate-45 ${
+                                            index < 3
+                                              ? '-top-1.5 border-t border-l'
+                                              : '-bottom-1.5 border-b border-r'
+                                          }`}
+                                        />
+
+                                        {/* Header: Instrument Symbol & Live Signal Status */}
+                                        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                                          <div className="flex items-center gap-2">
+                                            <InstrumentIcon
+                                              iconType={inst.iconType}
+                                              name={inst.name}
+                                              className="w-5 h-5 shrink-0"
+                                            />
+                                            <div>
+                                              <div className="font-extrabold text-xs text-slate-900 leading-tight">
+                                                {inst.name}
+                                              </div>
+                                              <div className="text-[10px] font-mono text-slate-400">
+                                                {inst.symbol}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <span
+                                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                              inst.signal.type === 'buy'
+                                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                                : inst.signal.type === 'sell'
+                                                ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                                                : 'bg-indigo-50 text-[#5945F1] border border-indigo-200'
+                                            }`}
+                                          >
+                                            {inst.signal.text}
+                                          </span>
+                                        </div>
+
+                                        {/* Price & 24h Change Details */}
+                                        <div className="py-2 flex items-center justify-between text-xs">
+                                          <span className="text-slate-500 text-[11px]">Live Price:</span>
+                                          <div className="text-right">
+                                            <div className="font-mono font-bold text-slate-900">
+                                              ${displayPrice.toLocaleString('en-US', {
+                                                minimumFractionDigits: inst.decimals,
+                                                maximumFractionDigits: inst.decimals,
+                                              })}
+                                            </div>
+                                            <div
+                                              className={`text-[10px] font-bold ${
+                                                isPositiveChange ? 'text-emerald-600' : 'text-rose-600'
+                                              }`}
+                                            >
+                                              {isPositiveChange ? '+' : ''}
+                                              {displayChange.toFixed(2)}% (24h)
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Broker Match & Institutional Rebate Info */}
+                                        <div className="p-2 rounded-xl bg-indigo-50/60 border border-indigo-100/80 flex items-center justify-between text-[11px] mb-2.5">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                            <span className="font-bold text-slate-700">HFM Partner</span>
+                                          </div>
+                                          <span className="font-extrabold text-[#5945F1] font-mono text-[10px]">
+                                            +$3.80/lot Rebate
+                                          </span>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="space-y-1.5">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleSignalClick(inst);
+                                            }}
+                                            className="w-full py-2 px-3 rounded-xl bg-[#5046E5] hover:bg-[#4338CA] text-white text-xs font-bold shadow-sm transition-all hover:scale-[1.02] active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer"
+                                          >
+                                            <span>⚡ Trade Now</span>
+                                            <span className="text-[10px] text-white/70 font-normal">
+                                              · Instant Rebate
+                                            </span>
+                                          </button>
+
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedDetailInstrument(toDetailInstrument(inst));
+                                            }}
+                                            className="w-full py-1 text-center text-[11px] text-slate-500 hover:text-[#5945F1] font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1"
+                                          >
+                                            <span>View Full Analysis Detail</span>
+                                            <span className="text-xs">→</span>
+                                          </button>
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
                               </div>
                             </td>
 
@@ -1384,7 +1566,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                     title="Heatmap Analysis requires Level 2"
                     description="Real-time multi-asset heatmaps, sector volatility mapping, and volume clustering are available from Climber tier. Unlock temporarily with Credits."
                     buttonText="Unlock"
-                    onUnlock={() => handleUnlockTab('heatmap', 'Heatmap')}
+                    onUnlock={() => handleOpenUnlockModal('heatmap')}
                   />
                 </div>
               ) : (
@@ -1412,7 +1594,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                     title="Scatter Plot Analysis requires Level 3"
                     description="Institutional 2D risk-reward distribution, RSI relative momentum, and beta correlation maps are reserved for Player tier and above."
                     buttonText="Unlock"
-                    onUnlock={() => handleUnlockTab('scatter', 'Scatter Plot')}
+                    onUnlock={() => handleOpenUnlockModal('scatter')}
                   />
                 </div>
               ) : (
@@ -1440,7 +1622,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                     title="Correlation Matrix requires Level 4"
                     description="Advanced cross-asset Pearson correlation matrices and portfolio hedging telemetry are exclusive to Boss tier. Unlock temporarily with Credits."
                     buttonText="Unlock"
-                    onUnlock={() => handleUnlockTab('correlation', 'Correlation Matrix')}
+                    onUnlock={() => handleOpenUnlockModal('correlation')}
                   />
                 </div>
               ) : (
@@ -1466,11 +1648,11 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
             <TradeVolumeComparisonWidget
               data={activeCategory.volumeComparison}
               isLocked={isVolumeLocked}
-              onUnlock={handleUnlockVolume}
+              onUnlock={() => handleOpenUnlockModal('volume')}
             />
             <TodaysCryptoWidget
               isLocked={isNewsLocked}
-              onUnlock={handleUnlockNews}
+              onUnlock={() => handleOpenUnlockModal('news')}
               requiredLevelTitle="Daily Market News & Recap requires Level 3"
               requiredLevelDesc="Curated macroeconomic intelligence, sentiment analysis, and editorial crypto recaps require Player tier (Lv.3) or a credit unlock."
             />
@@ -1491,6 +1673,22 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
         onAddCondition={handleAddFilterCondition}
         onResetAll={handleResetFilterConditions}
         onDone={handleApplyFilterDone}
+      />
+
+      {/* ─── TOOL CREDIT UNLOCK MODAL (Design matching specification) ─── */}
+      <ToolCreditUnlockModal
+        isOpen={!!unlockModalTool}
+        tool={unlockModalTool}
+        user={user}
+        onClose={() => setUnlockModalTool(null)}
+        onConfirmUnlock={handleConfirmUnlock}
+        onViewLevelBenefits={() => {
+          if (onOpenViewPlan) {
+            onOpenViewPlan();
+          } else {
+            onNavigateToTab?.('member-plan');
+          }
+        }}
       />
     </div>
   );

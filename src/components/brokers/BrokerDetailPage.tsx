@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Calendar,
   Wallet,
+  WalletCards,
   Building2,
   CircleDollarSign,
   Users,
@@ -19,6 +20,7 @@ import { Tier2CompanyTab } from './tabs/Tier2CompanyTab';
 import { OffshoreCashbackTab } from './tabs/OffshoreCashbackTab';
 import { OffshoreAccountTab } from './tabs/OffshoreAccountTab';
 import { OffshoreCompanyTab } from './tabs/OffshoreCompanyTab';
+import { BrokerDepositWithdrawalTabContent } from './tabs/BrokerDepositWithdrawalTabContent';
 import { FolderTabs } from '../common/FolderTabs';
 
 interface BrokerDetailPageProps {
@@ -59,9 +61,9 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
     broker.hasCashback !== false && (broker.cashbackPerLot > 0 || broker.maxCashback !== '-')
   );
 
-  // Active Tab Scenario (Cashback, Account, Company)
+  // Active Tab Scenario (Cashback, Account, Deposit & Withdrawal, Company)
   // If broker has no cashback, default to 'account'
-  const [activeTab, setActiveTab] = useState<'cashback' | 'account' | 'company'>(
+  const [activeTab, setActiveTab] = useState<'cashback' | 'account' | 'deposit-withdrawal' | 'company'>(
     broker.hasCashback !== false && (broker.cashbackPerLot > 0 || broker.maxCashback !== '-') ? 'cashback' : 'account'
   );
 
@@ -416,7 +418,7 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
          ───────────────────────────────────────────────────────────── */}
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#B8ABFB]/90 pb-0">
-          <FolderTabs<'cashback' | 'account' | 'company'>
+          <FolderTabs<'cashback' | 'account' | 'deposit-withdrawal' | 'company'>
             className="flex-1"
             tabs={
               hasCashbackProgram
@@ -432,6 +434,11 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
                       icon: <Users className="w-5 h-5" strokeWidth={2} />,
                     },
                     {
+                      id: 'deposit-withdrawal',
+                      label: 'Deposit and Withdrawal',
+                      icon: <WalletCards className="w-5 h-5" strokeWidth={2} />,
+                    },
+                    {
                       id: 'company',
                       label: 'Company',
                       icon: <Building2 className="w-5 h-5" strokeWidth={2} />,
@@ -442,6 +449,11 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
                       id: 'account',
                       label: 'Account',
                       icon: <Users className="w-5 h-5" strokeWidth={2} />,
+                    },
+                    {
+                      id: 'deposit-withdrawal',
+                      label: 'Deposit and Withdrawal',
+                      icon: <WalletCards className="w-5 h-5" strokeWidth={2} />,
                     },
                     {
                       id: 'company',
@@ -678,7 +690,12 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
           </>
         )}
 
-        {/* SCENARIO 3: ABOUT COMPANY TAB */}
+        {/* SCENARIO 3: DEPOSIT AND WITHDRAWAL TAB */}
+        {activeTab === 'deposit-withdrawal' && (
+          <BrokerDepositWithdrawalTabContent broker={broker} />
+        )}
+
+        {/* SCENARIO 4: ABOUT COMPANY TAB */}
         {activeTab === 'company' && (
           <>
             {userTier === 'tier-1' && (

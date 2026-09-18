@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BarChart3, ArrowRight } from 'lucide-react';
 
 export interface PerformanceComboChartProps {
   totalCashback?: string;
@@ -8,6 +9,12 @@ export interface PerformanceComboChartProps {
   className?: string;
   isDemoActive?: boolean;
   timeframe?: '1D' | '1W' | '1M' | 'All';
+  isEmpty?: boolean;
+  isFirstTrade?: boolean;
+  emptyStateTitle?: string;
+  emptyStateDescription?: string;
+  emptyStateCtaText?: string;
+  onEmptyStateCtaClick?: () => void;
 }
 
 interface ChartPoint {
@@ -121,11 +128,17 @@ export const PerformanceComboChart: React.FC<PerformanceComboChartProps> = ({
   bestDay = '$0.00',
   className = '',
   timeframe = '1M',
+  isEmpty = false,
+  isFirstTrade = false,
+  emptyStateTitle,
+  emptyStateDescription,
+  emptyStateCtaText,
+  onEmptyStateCtaClick,
 }) => {
   const [hoveredPoint, setHoveredPoint] = useState<ChartPoint | null>(null);
 
-  // Pick dataset based on timeframe
-  const currentData: ChartPoint[] =
+  // Pick dataset based on timeframe and state
+  const baseData: ChartPoint[] =
     timeframe === '1D'
       ? DAY_DATA
       : timeframe === '1W'
@@ -133,6 +146,22 @@ export const PerformanceComboChart: React.FC<PerformanceComboChartProps> = ({
       : timeframe === 'All'
       ? ALL_DATA
       : MONTH_DATA;
+
+  const currentData: ChartPoint[] = isEmpty
+    ? baseData.map((p) => ({
+        ...p,
+        cashback: 0,
+        lots: 0,
+        hasData: false,
+      }))
+    : isFirstTrade
+    ? baseData.map((p, idx) => ({
+        ...p,
+        cashback: idx === 0 ? 8.0 : 0,
+        lots: idx === 0 ? 1.6 : 0,
+        hasData: idx === 0,
+      }))
+    : baseData;
 
   // SVG Geometry - 1000px wide for high precision, balanced 340px height for harmonious ratio
   const leftAxisX = 48;
@@ -195,45 +224,45 @@ export const PerformanceComboChart: React.FC<PerformanceComboChartProps> = ({
 
   return (
     <div id="dashboard-performance-chart-card" className={`w-full space-y-4 ${className}`}>
-      {/* ─── TOP KPI SUMMARY ROW (Matching Top Performers - Dropdown Open.jpg) ─── */}
+      {/* ─── TOP KPI SUMMARY ROW (Matching Image 1 & Design Specs) ─── */}
       <div className="pt-2 pb-1">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-left">
           {/* Col 1: Total Cashback */}
           <div className="space-y-1">
-            <div className="text-xs sm:text-[13px] font-normal text-slate-700 tracking-normal">
+            <div className="text-xs sm:text-[13px] font-medium text-slate-600 tracking-normal">
               Total Cashback ({timeframe})
             </div>
-            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono leading-none">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono leading-tight">
               {totalCashback}
             </div>
           </div>
 
           {/* Col 2: Lots Traded */}
           <div className="space-y-1">
-            <div className="text-xs sm:text-[13px] font-normal text-slate-700 tracking-normal">
+            <div className="text-xs sm:text-[13px] font-medium text-slate-600 tracking-normal">
               Lots Traded
             </div>
-            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono leading-none">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono leading-tight">
               {lotsTraded}
             </div>
           </div>
 
           {/* Col 3: Avg Cashback / Lot */}
           <div className="space-y-1">
-            <div className="text-xs sm:text-[13px] font-normal text-slate-700 tracking-normal">
+            <div className="text-xs sm:text-[13px] font-medium text-slate-600 tracking-normal">
               Avg Cashback / Lot
             </div>
-            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono leading-none">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono leading-tight">
               {avgCashbackPerLot}
             </div>
           </div>
 
           {/* Col 4: Best Day */}
           <div className="space-y-1">
-            <div className="text-xs sm:text-[13px] font-normal text-slate-700 tracking-normal">
+            <div className="text-xs sm:text-[13px] font-medium text-slate-600 tracking-normal">
               Best Day
             </div>
-            <div className="text-base sm:text-lg font-bold text-slate-900 font-mono leading-none">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 font-mono leading-tight">
               {bestDay}
             </div>
           </div>
@@ -241,9 +270,44 @@ export const PerformanceComboChart: React.FC<PerformanceComboChartProps> = ({
       </div>
 
       {/* ─── DUAL AXIS COMBO CHART (Full-Width, Balanced & Seamless) ─── */}
-      <div className="w-full relative select-none">
+      <div className="w-full relative select-none min-h-[280px]">
+        {/* Empty State Overlay with Background Blur (1:1 with User Image 1) */}
+        {isEmpty && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-2xl p-6 sm:p-7 max-w-[420px] w-full text-center flex flex-col items-center animate-in zoom-in-95 duration-150">
+              {/* Rounded soft indigo icon container */}
+              <div className="w-14 h-14 rounded-2xl bg-[#EEF2FF] text-[#5240F2] flex items-center justify-center mb-4 shadow-2xs">
+                <BarChart3 className="w-7 h-7 stroke-[2]" />
+              </div>
+
+              {/* Title */}
+              <h4 className="font-display font-extrabold text-lg sm:text-xl text-[#0b1c30] tracking-tight">
+                {emptyStateTitle || 'No Performance Recorded Yet'}
+              </h4>
+
+              {/* Subtitle / Description */}
+              <p className="text-xs sm:text-[13px] text-slate-500 mt-2 mb-6 leading-relaxed max-w-[320px]">
+                {emptyStateDescription ||
+                  'Connect a broker and place your first trade to plot daily cashback earnings and volume in real time.'}
+              </p>
+
+              {/* Primary Action Button */}
+              {emptyStateCtaText && onEmptyStateCtaClick && (
+                <button
+                  type="button"
+                  onClick={onEmptyStateCtaClick}
+                  className="px-6 py-2.5 rounded-xl bg-[#5240F2] hover:bg-[#4335C4] text-white font-bold text-xs sm:text-sm shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                >
+                  <span>{emptyStateCtaText}</span>
+                  <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Hover Tooltip Overlay */}
-        {hoveredPoint && (
+        {!isEmpty && hoveredPoint && (
           <div
             className="absolute pointer-events-none z-20 bg-[#0b1c30] text-white text-[11px] py-1.5 px-3 rounded-lg shadow-xl border border-slate-700 transition-all duration-75"
             style={{
@@ -266,148 +330,156 @@ export const PerformanceComboChart: React.FC<PerformanceComboChartProps> = ({
           </div>
         )}
 
-        {/* Responsive Full-Width SVG */}
-        <svg
-          viewBox="0 0 1000 330"
-          className="w-full h-auto overflow-visible"
-        >
-          <defs>
-            {/* Soft lime area gradient matching design */}
-            <linearGradient id="cashbackAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#BEF226" stopOpacity="0.45" />
-              <stop offset="65%" stopColor="#BEF226" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="#BEF226" stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
+        {/* Responsive Full-Width SVG with gentle background blur when isEmpty */}
+        <div className={`w-full transition-all duration-300 ${isEmpty ? 'filter blur-[1.2px] opacity-90 select-none pointer-events-none' : ''}`}>
+          <svg
+            viewBox="0 0 1000 330"
+            className="w-full h-auto overflow-visible"
+          >
+            <defs>
+              {/* Soft lime area gradient matching design */}
+              <linearGradient id="cashbackAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#BEF226" stopOpacity="0.45" />
+                <stop offset="65%" stopColor="#BEF226" stopOpacity="0.12" />
+                <stop offset="100%" stopColor="#BEF226" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
 
-          {/* Horizontal Dashed Gridlines & Dual Y-Axis Labels */}
-          {yTicks.map((tick) => {
-            const y = getY(timeframe === 'All' ? tick.val * 15 : tick.val);
-            const isBaseline = tick.val === 0;
+            {/* Horizontal Dashed Gridlines & Dual Y-Axis Labels */}
+            {yTicks.map((tick) => {
+              const y = getY(timeframe === 'All' ? tick.val * 15 : tick.val);
+              const isBaseline = tick.val === 0;
 
-            return (
-              <g key={`ytick-${tick.val}`}>
-                {/* Left Y-Axis Label: USD ($100 down to $0) */}
-                <text
-                  x={leftAxisX}
-                  y={y + 4}
-                  textAnchor="end"
-                  className="text-[11px] fill-slate-500 font-medium"
-                >
-                  {timeframe === 'All' ? `$${tick.val * 15}` : tick.usd}
-                </text>
+              return (
+                <g key={`ytick-${tick.val}`}>
+                  {/* Left Y-Axis Label: USD ($100 down to $0) */}
+                  <text
+                    x={leftAxisX}
+                    y={y + 4}
+                    textAnchor="end"
+                    className="text-[11px] fill-slate-500 font-medium font-mono"
+                  >
+                    {timeframe === 'All' ? `$${tick.val * 15}` : tick.usd}
+                  </text>
 
-                {/* Horizontal Gridline: Dashed for 10..100, Solid for Baseline $0 */}
-                {isBaseline ? (
-                  <line
-                    x1={plotLeft}
-                    y1={y}
-                    x2={plotRight}
-                    y2={y}
-                    stroke="#cbd5e1"
-                    strokeWidth="1.2"
-                  />
-                ) : (
-                  <line
-                    x1={plotLeft}
-                    y1={y}
-                    x2={plotRight}
-                    y2={y}
-                    stroke="#e2e8f0"
-                    strokeDasharray="4 4"
-                    strokeWidth="1.1"
-                  />
-                )}
+                  {/* Horizontal Gridline: Dashed for 10..100, Solid for Baseline $0 */}
+                  {isBaseline ? (
+                    <line
+                      x1={plotLeft}
+                      y1={y}
+                      x2={plotRight}
+                      y2={y}
+                      stroke="#cbd5e1"
+                      strokeWidth="1.2"
+                    />
+                  ) : (
+                    <line
+                      x1={plotLeft}
+                      y1={y}
+                      x2={plotRight}
+                      y2={y}
+                      stroke="#e2e8f0"
+                      strokeDasharray="4 4"
+                      strokeWidth="1.1"
+                    />
+                  )}
 
-                {/* Right Y-Axis Label: Lots (10 lots down to 0 lots) */}
-                <text
-                  x={rightAxisX}
-                  y={y + 4}
-                  textAnchor="start"
-                  className="text-[11px] fill-slate-500 font-medium"
-                >
-                  {timeframe === 'All' ? `${(tick.val * 1.5).toFixed(0)} lots` : tick.lots}
-                </text>
-              </g>
-            );
-          })}
+                  {/* Right Y-Axis Label: Lots (10 lots down to 0 lots) */}
+                  <text
+                    x={rightAxisX}
+                    y={y + 4}
+                    textAnchor="start"
+                    className="text-[11px] fill-slate-500 font-medium font-mono"
+                  >
+                    {timeframe === 'All' ? `${(tick.val * 1.5).toFixed(0)} lots` : tick.lots}
+                  </text>
+                </g>
+              );
+            })}
 
-          {/* 1. Lime-Green Area Fill for Cashback (USD) - Seamless across all days */}
-          <path
-            d={cashbackAreaPath}
-            fill="url(#cashbackAreaGrad)"
-          />
-
-          {/* 2. Lime-Green Smooth Spline Stroke for Cashback (USD) */}
-          <path
-            d={cashbackSpline}
-            fill="none"
-            stroke="#A3E635"
-            strokeWidth="2.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* 3. Vibrant Hot-Pink / Magenta Line Spline for Trading Volume (Lots) */}
-          <path
-            d={volumeSpline}
-            fill="none"
-            stroke="#FD02B0"
-            strokeWidth="2.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* Transparent Hitboxes for all points to enable hover tooltips */}
-          {currentData.map((d, idx) => {
-            const centerX = getPointCenterX(idx);
-            return (
-              <rect
-                key={`point-hitbox-${d.label}-${idx}`}
-                x={centerX - slotWidth / 2}
-                y={plotTop}
-                width={slotWidth}
-                height={plotHeight + 35}
-                fill="transparent"
-                className="cursor-pointer"
-                onMouseEnter={() => setHoveredPoint(d)}
-                onMouseLeave={() => setHoveredPoint(null)}
+            {/* 1. Lime-Green Area Fill for Cashback (USD) - Only rendered when not empty */}
+            {!isEmpty && (
+              <path
+                d={cashbackAreaPath}
+                fill="url(#cashbackAreaGrad)"
               />
-            );
-          })}
+            )}
 
-          {/* X-Axis Points (Days 1..31 or Mon..Sun or Jan..Dec) */}
-          {currentData.map((d, idx) => {
-            const centerX = getPointCenterX(idx);
-            const isHovered = hoveredPoint?.label === d.label;
+            {/* 2. Lime-Green Smooth Spline Stroke for Cashback (USD) - Only rendered when not empty */}
+            {!isEmpty && (
+              <path
+                d={cashbackSpline}
+                fill="none"
+                stroke="#A3E635"
+                strokeWidth="2.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
 
-            return (
-              <text
-                key={`x-point-${d.label}-${idx}`}
-                x={centerX}
-                y="292"
-                textAnchor="middle"
-                className={`text-[11px] font-mono transition-colors ${
-                  isHovered
-                    ? 'fill-[#0b1c30] font-black text-[12px]'
-                    : 'fill-slate-500 font-medium'
-                }`}
-              >
-                {d.label}
-              </text>
-            );
-          })}
-        </svg>
+            {/* 3. Vibrant Hot-Pink / Magenta Line Spline for Trading Volume (Lots) */}
+            {/* When empty, draws horizontal baseline across full width matching Image 1 */}
+            <path
+              d={isEmpty ? `M ${plotLeft} ${plotBottom} L ${plotRight} ${plotBottom}` : volumeSpline}
+              fill="none"
+              stroke="#FD02B0"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
 
-        {/* ─── CHART LEGEND (Matching Top Performers - Dropdown Open.jpg) ─── */}
-        <div className="flex items-center justify-center gap-7 pt-2 text-xs font-normal text-slate-700">
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-2.5 rounded-[2px] bg-[#BEF226] border border-[#a3e635]/60" />
-            <span className="text-[12px] sm:text-[13px] text-slate-700">Cashback (USD)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-[2.5px] rounded-full bg-[#FD02B0]" />
-            <span className="text-[12px] sm:text-[13px] text-slate-700">Trading Volume (Lots)</span>
+            {/* Transparent Hitboxes for all points to enable hover tooltips */}
+            {!isEmpty &&
+              currentData.map((d, idx) => {
+                const centerX = getPointCenterX(idx);
+                return (
+                  <rect
+                    key={`point-hitbox-${d.label}-${idx}`}
+                    x={centerX - slotWidth / 2}
+                    y={plotTop}
+                    width={slotWidth}
+                    height={plotHeight + 35}
+                    fill="transparent"
+                    className="cursor-pointer"
+                    onMouseEnter={() => setHoveredPoint(d)}
+                    onMouseLeave={() => setHoveredPoint(null)}
+                  />
+                );
+              })}
+
+            {/* X-Axis Points (Days 1..31 or Mon..Sun or Jan..Dec) */}
+            {currentData.map((d, idx) => {
+              const centerX = getPointCenterX(idx);
+              const isHovered = hoveredPoint?.label === d.label;
+
+              return (
+                <text
+                  key={`x-point-${d.label}-${idx}`}
+                  x={centerX}
+                  y="292"
+                  textAnchor="middle"
+                  className={`text-[11px] font-mono transition-colors ${
+                    isHovered
+                      ? 'fill-[#0b1c30] font-black text-[12px]'
+                      : 'fill-slate-500 font-medium'
+                  }`}
+                >
+                  {d.label}
+                </text>
+              );
+            })}
+          </svg>
+
+          {/* ─── CHART LEGEND (Matching Image 1) ─── */}
+          <div className="flex items-center justify-center gap-7 pt-2 text-xs font-normal text-slate-700">
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-2.5 rounded-[2px] bg-[#BEF226] border border-[#a3e635]/60" />
+              <span className="text-[12px] sm:text-[13px] text-slate-700 font-medium">Cashback (USD)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-[2.5px] rounded-full bg-[#FD02B0]" />
+              <span className="text-[12px] sm:text-[13px] text-slate-700 font-medium">Trading Volume (Lots)</span>
+            </div>
           </div>
         </div>
       </div>

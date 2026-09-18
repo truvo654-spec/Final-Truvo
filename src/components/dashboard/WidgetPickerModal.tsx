@@ -458,6 +458,161 @@ export const WidgetPickerModal: React.FC<WidgetPickerModalProps> = ({
               </button>
             </div>
           </div>
+
+          {/* ════════════ 6. INSTRUMENT ANALYSIS ════════════ */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-extrabold text-base text-[#0b1c30]">
+                Instrument Analysis<span className="text-[#FD02B0]">.</span>
+              </h3>
+              <span className="text-xs font-semibold text-slate-400">
+                Full Width (Size 3)
+              </span>
+            </div>
+
+            <div className="rounded-2xl border border-indigo-200/90 bg-white overflow-hidden shadow-2xs hover:border-indigo-400 transition-all">
+              <div className="bg-gradient-to-r from-[#5338F5] via-[#482DEF] to-[#3B22D4] p-3.5 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center p-1.5 shrink-0">
+                    <svg viewBox="0 0 36 36" fill="none" className="w-full h-full">
+                      <rect x="4" y="20" width="5" height="12" rx="1.5" fill="#FD02B0" />
+                      <rect x="11" y="14" width="5" height="18" rx="1.5" fill="#38BDF8" />
+                      <rect x="18" y="10" width="5" height="22" rx="1.5" fill="#818CF8" />
+                      <rect x="25" y="6" width="5" height="26" rx="1.5" fill="#BEF226" />
+                      <path
+                        d="M 5 20 Q 12 12, 19 14 T 30 6"
+                        stroke="#BEF226"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-sm flex items-center gap-1">
+                      <span>Crypto</span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="text-[10px] text-white/80">
+                      $200.5T <span className="text-[#BEF226] font-bold">+0.45%</span> . Activity +$4.15
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[10px] px-2.5 py-0.5 rounded-full border border-white/40 bg-white/10 text-white font-medium">
+                  By watchlist ⌵
+                </div>
+              </div>
+
+              <div className="p-3 divide-y divide-slate-100 text-[11px]">
+                <div className="flex justify-between items-center py-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-slate-800 text-white text-[9px] font-black flex items-center justify-center">JPM</span>
+                    <span className="font-bold text-slate-800">JPM</span>
+                  </div>
+                  <span className="font-mono font-bold">$77,204.00</span>
+                  <span className="text-emerald-600 font-bold font-mono">+0.85% ↗</span>
+                  <span className="font-mono text-slate-500">+$2.0T</span>
+                </div>
+                <div className="flex justify-between items-center py-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center">₿</span>
+                    <span className="font-bold text-slate-800">BTC</span>
+                  </div>
+                  <span className="font-mono font-bold">$77,204.00</span>
+                  <span className="text-emerald-600 font-bold font-mono">+0.85% ↗</span>
+                  <span className="font-mono text-slate-500">+$2.0T</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-slate-50/60 border-t border-slate-100">
+                <span className="text-xs font-bold text-slate-500">Size 3 (Full Width)</span>
+                <button
+                  onClick={() => {
+                    onSelectWidget('instrument-analysis', 3);
+                    onClose();
+                  }}
+                  className="px-5 py-1.5 rounded-full bg-[#5945F1] text-white hover:bg-[#4335C4] font-bold text-xs transition-colors cursor-pointer shadow-xs"
+                >
+                  Add Widget
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ════════════ 7. PORTFOLIO POWER-UP (MISSION CARD) ════════════ */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-extrabold text-base text-[#0b1c30]">
+                Portfolio Power-Up (Missions)<span className="text-[#FD02B0]">.</span>
+              </h3>
+              <span className="text-xs font-semibold text-slate-400">
+                Full Width (Size 3)
+              </span>
+            </div>
+
+            <div className="rounded-2xl border border-indigo-200/90 bg-white overflow-hidden shadow-2xs hover:border-indigo-400 transition-all">
+              <div className="bg-gradient-to-r from-[#5338F5] via-[#482DEF] to-[#3B22D4] p-3.5 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center p-1.5 shrink-0">
+                    <svg viewBox="0 0 36 36" fill="none" className="w-full h-full">
+                      <rect x="6" y="18" width="5" height="13" rx="1.5" fill="#BEF226" />
+                      <rect x="15" y="12" width="5" height="19" rx="1.5" fill="#BEF226" />
+                      <rect x="24" y="8" width="5" height="23" rx="1.5" fill="#BEF226" />
+                      <path
+                        d="M 6 22 L 15 15 L 21 19 L 29 8"
+                        stroke="#BEF226"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-sm">Portfolio Power-Up</div>
+                    <div className="text-[10px] text-white/80 flex items-center gap-2 mt-0.5">
+                      <span className="bg-[#180E6B]/75 px-2 py-0.5 rounded-full">⌛ 5 Days</span>
+                      <span className="bg-[#180E6B]/75 px-2 py-0.5 rounded-full">💎 +15 Pts</span>
+                      <span className="bg-[#180E6B]/75 px-2 py-0.5 rounded-full">💱 +25 Credits</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[10px] px-2.5 py-0.5 rounded-xl border border-white/40 bg-white/20 text-white font-bold">
+                  1/3 Completed
+                </div>
+              </div>
+
+              <div className="p-3 divide-y divide-slate-100 text-[11px] space-y-2">
+                <div className="flex justify-between items-center pt-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-full border border-slate-300 inline-block shrink-0" />
+                    <span className="font-semibold text-slate-700">Adjust allocations so no single stock exceeds 30%.</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full border border-indigo-200 text-[#5945F1] text-[10px] font-bold">Add Asset</span>
+                </div>
+                <div className="flex justify-between items-center pt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[9px] font-bold shrink-0">✓</span>
+                    <span className="font-bold text-emerald-600">Rebalance Your Holdings</span>
+                  </div>
+                  <span className="text-[10px] text-emerald-600 font-bold">Done</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-slate-50/60 border-t border-slate-100">
+                <span className="text-xs font-bold text-slate-500">Size 3 (Full Width)</span>
+                <button
+                  onClick={() => {
+                    onSelectWidget('mission-card', 3);
+                    onClose();
+                  }}
+                  className="px-5 py-1.5 rounded-full bg-[#5945F1] text-white hover:bg-[#4335C4] font-bold text-xs transition-colors cursor-pointer shadow-xs"
+                >
+                  Add Widget
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
