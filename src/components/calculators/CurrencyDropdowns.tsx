@@ -49,39 +49,40 @@ export interface PairItem {
   code: string;
   baseFlag: string;
   quoteFlag: string;
+  name?: string;
 }
 
 export const CURRENCY_PAIRS: PairItem[] = [
-  { code: 'AUD/CAD', baseFlag: '🇦🇺', quoteFlag: '🇨🇦' },
-  { code: 'AUD/CHF', baseFlag: '🇦🇺', quoteFlag: '🇨🇭' },
-  { code: 'AUD/JPY', baseFlag: '🇦🇺', quoteFlag: '🇯🇵' },
-  { code: 'AUD/NZD', baseFlag: '🇦🇺', quoteFlag: '🇳🇿' },
-  { code: 'AUD/USD', baseFlag: '🇦🇺', quoteFlag: '🇺🇸' },
-  { code: 'CAD/CHF', baseFlag: '🇨🇦', quoteFlag: '🇨🇭' },
-  { code: 'CAD/JPY', baseFlag: '🇨🇦', quoteFlag: '🇯🇵' },
-  { code: 'CHF/JPY', baseFlag: '🇨🇭', quoteFlag: '🇯🇵' },
-  { code: 'EUR/AUD', baseFlag: '🇪🇺', quoteFlag: '🇦🇺' },
-  { code: 'EUR/CAD', baseFlag: '🇪🇺', quoteFlag: '🇨🇦' },
-  { code: 'EUR/CHF', baseFlag: '🇪🇺', quoteFlag: '🇨🇭' },
-  { code: 'EUR/GBP', baseFlag: '🇪🇺', quoteFlag: '🇬🇧' },
-  { code: 'EUR/JPY', baseFlag: '🇪🇺', quoteFlag: '🇯🇵' },
-  { code: 'EUR/USD', baseFlag: '🇪🇺', quoteFlag: '🇺🇸' },
-  { code: 'GBP/AUD', baseFlag: '🇬🇧', quoteFlag: '🇦🇺' },
-  { code: 'GBP/CAD', baseFlag: '🇬🇧', quoteFlag: '🇨🇦' },
-  { code: 'GBP/CHF', baseFlag: '🇬🇧', quoteFlag: '🇨🇭' },
-  { code: 'GBP/JPY', baseFlag: '🇬🇧', quoteFlag: '🇯🇵' },
-  { code: 'GBP/NZD', baseFlag: '🇬🇧', quoteFlag: '🇳🇿' },
-  { code: 'GBP/USD', baseFlag: '🇬🇧', quoteFlag: '🇺🇸' },
-  { code: 'NZD/CAD', baseFlag: '🇳🇿', quoteFlag: '🇨🇦' },
-  { code: 'NZD/CHF', baseFlag: '🇳🇿', quoteFlag: '🇨🇭' },
-  { code: 'NZD/JPY', baseFlag: '🇳🇿', quoteFlag: '🇯🇵' },
-  { code: 'NZD/USD', baseFlag: '🇳🇿', quoteFlag: '🇺🇸' },
-  { code: 'USD/CAD', baseFlag: '🇺🇸', quoteFlag: '🇨🇦' },
-  { code: 'USD/CHF', baseFlag: '🇺🇸', quoteFlag: '🇨🇭' },
-  { code: 'USD/JPY', baseFlag: '🇺🇸', quoteFlag: '🇯🇵' },
-  { code: 'XAU/USD', baseFlag: '🪙', quoteFlag: '🇺🇸' },
-  { code: 'BTC/USD', baseFlag: '₿', quoteFlag: '🇺🇸' },
-  { code: 'ETH/USD', baseFlag: '♦️', quoteFlag: '🇺🇸' },
+  { code: 'AUD/CAD', baseFlag: '🇦🇺', quoteFlag: '🇨🇦', name: 'Australian Dollar / Canadian Dollar' },
+  { code: 'AUD/CHF', baseFlag: '🇦🇺', quoteFlag: '🇨🇭', name: 'Australian Dollar / Swiss Franc' },
+  { code: 'AUD/JPY', baseFlag: '🇦🇺', quoteFlag: '🇯🇵', name: 'Australian Dollar / Japanese Yen' },
+  { code: 'AUD/NZD', baseFlag: '🇦🇺', quoteFlag: '🇳🇿', name: 'Australian Dollar / New Zealand Dollar' },
+  { code: 'AUD/USD', baseFlag: '🇦🇺', quoteFlag: '🇺🇸', name: 'Australian Dollar / US Dollar' },
+  { code: 'CAD/CHF', baseFlag: '🇨🇦', quoteFlag: '🇨🇭', name: 'Canadian Dollar / Swiss Franc' },
+  { code: 'CAD/JPY', baseFlag: '🇨🇦', quoteFlag: '🇯🇵', name: 'Canadian Dollar / Japanese Yen' },
+  { code: 'CHF/JPY', baseFlag: '🇨🇭', quoteFlag: '🇯🇵', name: 'Swiss Franc / Japanese Yen' },
+  { code: 'EUR/AUD', baseFlag: '🇪🇺', quoteFlag: '🇦🇺', name: 'Euro / Australian Dollar' },
+  { code: 'EUR/CAD', baseFlag: '🇪🇺', quoteFlag: '🇨🇦', name: 'Euro / Canadian Dollar' },
+  { code: 'EUR/CHF', baseFlag: '🇪🇺', quoteFlag: '🇨🇭', name: 'Euro / Swiss Franc' },
+  { code: 'EUR/GBP', baseFlag: '🇪🇺', quoteFlag: '🇬🇧', name: 'Euro / British Pound' },
+  { code: 'EUR/JPY', baseFlag: '🇪🇺', quoteFlag: '🇯🇵', name: 'Euro / Japanese Yen' },
+  { code: 'EUR/USD', baseFlag: '🇪🇺', quoteFlag: '🇺🇸', name: 'Euro / US Dollar' },
+  { code: 'GBP/AUD', baseFlag: '🇬🇧', quoteFlag: '🇦🇺', name: 'British Pound / Australian Dollar' },
+  { code: 'GBP/CAD', baseFlag: '🇬🇧', quoteFlag: '🇨🇦', name: 'British Pound / Canadian Dollar' },
+  { code: 'GBP/CHF', baseFlag: '🇬🇧', quoteFlag: '🇨🇭', name: 'British Pound / Swiss Franc' },
+  { code: 'GBP/JPY', baseFlag: '🇬🇧', quoteFlag: '🇯🇵', name: 'British Pound / Japanese Yen' },
+  { code: 'GBP/NZD', baseFlag: '🇬🇧', quoteFlag: '🇳🇿', name: 'British Pound / New Zealand Dollar' },
+  { code: 'GBP/USD', baseFlag: '🇬🇧', quoteFlag: '🇺🇸', name: 'British Pound / US Dollar' },
+  { code: 'NZD/CAD', baseFlag: '🇳🇿', quoteFlag: '🇨🇦', name: 'New Zealand Dollar / Canadian Dollar' },
+  { code: 'NZD/CHF', baseFlag: '🇳🇿', quoteFlag: '🇨🇭', name: 'New Zealand Dollar / Swiss Franc' },
+  { code: 'NZD/JPY', baseFlag: '🇳🇿', quoteFlag: '🇯🇵', name: 'New Zealand Dollar / Japanese Yen' },
+  { code: 'NZD/USD', baseFlag: '🇳🇿', quoteFlag: '🇺🇸', name: 'New Zealand Dollar / US Dollar' },
+  { code: 'USD/CAD', baseFlag: '🇺🇸', quoteFlag: '🇨🇦', name: 'US Dollar / Canadian Dollar' },
+  { code: 'USD/CHF', baseFlag: '🇺🇸', quoteFlag: '🇨🇭', name: 'US Dollar / Swiss Franc' },
+  { code: 'USD/JPY', baseFlag: '🇺🇸', quoteFlag: '🇯🇵', name: 'US Dollar / Japanese Yen' },
+  { code: 'XAU/USD', baseFlag: '🪙', quoteFlag: '🇺🇸', name: 'Gold / US Dollar' },
+  { code: 'BTC/USD', baseFlag: '₿', quoteFlag: '🇺🇸', name: 'Bitcoin / US Dollar' },
+  { code: 'ETH/USD', baseFlag: '♦️', quoteFlag: '🇺🇸', name: 'Ethereum / US Dollar' },
 ];
 
 export interface AccountCurrencyDropdownProps {
@@ -242,7 +243,9 @@ export const CurrencyPairDropdown: React.FC<CurrencyPairDropdownProps> = ({
   const filteredItems = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return CURRENCY_PAIRS;
-    return CURRENCY_PAIRS.filter((p) => p.code.toLowerCase().includes(term));
+    return CURRENCY_PAIRS.filter(
+      (p) => p.code.toLowerCase().includes(term) || (p.name && p.name.toLowerCase().includes(term))
+    );
   }, [searchTerm]);
 
   useEffect(() => {
@@ -317,17 +320,24 @@ export const CurrencyPairDropdown: React.FC<CurrencyPairDropdownProps> = ({
                       onChange(item.code);
                       setIsOpen(false);
                     }}
-                    className={`px-3.5 py-2 flex items-center gap-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-[#280786] transition-colors ${
+                    className={`px-3.5 py-2 flex items-center justify-between gap-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-[#280786] transition-colors ${
                       isSelected ? 'bg-indigo-50/60 dark:bg-[#2e0988]' : ''
                     }`}
                   >
-                    <div className="flex -space-x-1 items-center">
-                      <span className="text-base leading-none">{item.baseFlag}</span>
-                      <span className="text-base leading-none">{item.quoteFlag}</span>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex -space-x-1 items-center shrink-0">
+                        <span className="text-base leading-none">{item.baseFlag}</span>
+                        <span className="text-base leading-none">{item.quoteFlag}</span>
+                      </div>
+                      <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-white shrink-0">
+                        {item.code}
+                      </span>
                     </div>
-                    <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-white">
-                      {item.code}
-                    </span>
+                    {item.name && (
+                      <span className="text-xs text-slate-400 dark:text-slate-400 truncate max-w-[200px] sm:max-w-none text-right">
+                        {item.name}
+                      </span>
+                    )}
                   </div>
                 );
               })

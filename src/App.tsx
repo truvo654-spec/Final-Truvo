@@ -72,6 +72,8 @@ import { DashboardTourOverlay, TourStepId } from './components/onboarding/Dashbo
 import { ErrorPageView, Error404Page, Error500Page, Error503Page } from './components/errors';
 import { Sparkles, Trophy, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { pathToState, tabToPath, getRouteMeta } from './router';
+import { Breadcrumbs } from './components/navigation/Breadcrumbs';
 
 const KNOWN_APP_TABS = new Set([
   'terms-and-conditions',
@@ -220,12 +222,20 @@ export default function App() {
     handleUpdateUserProfile({ avatar: newAvatar });
   };
 
+  // Initial Route Resolution from Browser URL
+  const [initialRoute] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.pathname) {
+      return pathToState(window.location.pathname);
+    }
+    return { tab: 'dashboard' };
+  });
+
   const [brokers, setBrokers] = useState<Broker[]>(INITIAL_BROKERS);
   const [signals, setSignals] = useState<MarketSignal[]>(INITIAL_SIGNALS);
   const [quickSteps, setQuickSteps] = useState(QUICK_START_STEPS);
   const [missions, setMissions] = useState<Mission[]>(INITIAL_MISSIONS);
   const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>(INITIAL_ACTIVITY_LOGS);
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [activeTab, setActiveTab] = useState<string>(() => initialRoute.tab);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Community state
@@ -238,10 +248,30 @@ export default function App() {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [selectedBrokerForConnect, setSelectedBrokerForConnect] = useState<Broker | null>(null);
   const [connectReturnTab, setConnectReturnTab] = useState<string>('dashboard');
-  const [selectedBrokerForDetail, setSelectedBrokerForDetail] = useState<Broker>(brokers[0] || INITIAL_BROKERS[0]);
+  const [selectedBrokerForDetail, setSelectedBrokerForDetail] = useState<Broker>(() => {
+    if (initialRoute.brokerId) {
+      const match = INITIAL_BROKERS.find(
+        (b) =>
+          b.id.toLowerCase() === initialRoute.brokerId?.toLowerCase() ||
+          b.name.toLowerCase() === initialRoute.brokerId?.toLowerCase()
+      );
+      if (match) return match;
+    }
+    return INITIAL_BROKERS[0];
+  });
   const [comparisonInitialBroker, setComparisonInitialBroker] = useState<Broker | null>(null);
   const [isViewPlanOpen, setIsViewPlanOpen] = useState(false);
-  const [selectedSignal, setSelectedSignal] = useState<MarketSignal | null>(null);
+  const [selectedSignal, setSelectedSignal] = useState<MarketSignal | null>(() => {
+    if (initialRoute.signalId) {
+      const match = INITIAL_SIGNALS.find(
+        (s) =>
+          s.id.toLowerCase() === initialRoute.signalId?.toLowerCase() ||
+          s.ticker.toLowerCase().replace('/', '') === initialRoute.signalId?.toLowerCase()
+      );
+      if (match) return match;
+    }
+    return null;
+  });
   const [isSignalModalOpen, setIsSignalModalOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [isActivityLogModalOpen, setIsActivityLogModalOpen] = useState(false);
@@ -349,6 +379,61 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab]);
+
+  // ─── Browser URL and Routing Synchronization ───
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    const targetPath = tabToPath(activeTab, {
+      brokerId:
+        activeTab === 'broker-detail' || activeTab === 'broker-rebate-table'
+          ? selectedBrokerForDetail?.id || selectedBrokerForDetail?.name?.toLowerCase()
+          : undefined,
+      signalId:
+        activeTab === 'signal-detail'
+          ? selectedSignal?.id || selectedSignal?.ticker?.toLowerCase().replace('/', '')
+          : undefined,
+    });
+
+    if (currentPath !== targetPath) {
+      window.history.pushState({ tab: activeTab }, '', targetPath);
+    }
+
+    const meta = getRouteMeta(activeTab);
+    if (meta?.title) {
+      document.title = meta.title;
+    }
+  }, [activeTab, selectedBrokerForDetail?.id, selectedBrokerForDetail?.name, selectedSignal?.id]);
+
+  // Handle Browser Back / Forward buttons (popstate)
+  useEffect(() => {
+    const handlePopState = () => {
+      const res = pathToState(window.location.pathname);
+      setActiveTab(res.tab);
+      if (res.brokerId) {
+        const found = brokers.find(
+          (b) =>
+            b.id.toLowerCase() === res.brokerId?.toLowerCase() ||
+            b.name.toLowerCase() === res.brokerId?.toLowerCase()
+        );
+        if (found) setSelectedBrokerForDetail(found);
+      }
+      if (res.signalId) {
+        const foundSig = signals.find(
+          (s) =>
+            s.id.toLowerCase() === res.signalId?.toLowerCase() ||
+            s.ticker.toLowerCase().replace('/', '') === res.signalId?.toLowerCase()
+        );
+        if (foundSig) setSelectedSignal(foundSig);
+      }
+      const meta = getRouteMeta(res.tab);
+      if (meta?.title) {
+        document.title = meta.title;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [brokers, signals]);
 
   // Global Keyboard Shortcut: Cmd+K / Ctrl+K opens Search Modal
   useEffect(() => {
@@ -697,6 +782,38 @@ export default function App() {
           ? 'p-0 space-y-0 pt-[84px]'
           : 'px-4 sm:px-8 md:px-[56px] pt-[100px] pb-12 space-y-6'
       }`}>
+        {/* Navigation Breadcrumbs & Hierarchy Path Indicator */}
+        {!(
+          activeTab === 'about' ||
+          activeTab === 'contact-us' ||
+          activeTab === 'contact' ||
+          activeTab === 'landing' ||
+          activeTab === 'home' ||
+          activeTab === '404' ||
+          activeTab === 'not-found' ||
+          activeTab === '500' ||
+          activeTab === 'server-error' ||
+          activeTab === '503' ||
+          activeTab === 'maintenance' ||
+          activeTab === 'service-unavailable' ||
+          (!isLoggedIn && activeTab === 'dashboard') ||
+          (!isLoggedIn && activeTab === 'member-plan')
+        ) && (
+          <div className="mb-2">
+            <Breadcrumbs
+              activeTab={activeTab}
+              onNavigateToTab={setActiveTab}
+              customLabel={
+                activeTab === 'broker-detail'
+                  ? selectedBrokerForDetail?.name
+                  : activeTab === 'signal-detail'
+                  ? selectedSignal?.ticker
+                  : undefined
+              }
+            />
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}

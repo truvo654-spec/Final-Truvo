@@ -19,23 +19,30 @@ export const BrokersMatchingPreferences: React.FC<BrokersMatchingPreferencesProp
   onOpenBrokerComparison,
   onSelectBrokerDetail,
 }) => {
+  const isPositionSize = activeTool === 'position-size';
+
   // Matched brokers data tailored to replicate the provided designs with 100% precision
   const matchedBrokers = [
     {
       id: 'hfm',
       name: 'HFM',
-      accountType: activeTool === 'stop-out' || activeTool === 'margin' ? 'Micro | 1:888' : 'ECN | Raw spread',
+      accountType: isPositionSize
+        ? 'Nano—Standard'
+        : activeTool === 'stop-out' || activeTool === 'margin'
+        ? 'Micro | 1:888'
+        : 'ECN | Raw spread',
       badge: {
         type: 'star',
         label: 'Best match',
       },
       verified: true,
       metrics: {
-        maxLeverage: '500:1',
+        maxLeverage: isPositionSize ? '1:400' : '500:1',
         marginReq: activeTool === 'stop-out' || activeTool === 'margin' ? '0.11%' : '0.2%',
         minDeposit: activeTool === 'stop-out' || activeTool === 'margin' ? '$5' : '$200',
         stopOutLevel: '20%',
         marginNeeded: '~$11.25',
+        stepSize: '0.01 lots',
       },
       bottomPill: activeTool === 'stop-out' || activeTool === 'margin' 
         ? 'Margin needed ~$11.25' 
@@ -54,18 +61,23 @@ export const BrokersMatchingPreferences: React.FC<BrokersMatchingPreferencesProp
     {
       id: 'exness',
       name: 'Exness',
-      accountType: activeTool === 'stop-out' || activeTool === 'margin' ? 'Micro | 1:888' : 'ECN | Raw spread',
+      accountType: isPositionSize
+        ? 'Nano—Standard'
+        : activeTool === 'stop-out' || activeTool === 'margin'
+        ? 'Micro | 1:888'
+        : 'ECN | Raw spread',
       badge: {
-        type: 'thumb',
+        type: isPositionSize ? 'star' : 'thumb',
         label: 'Low margin',
       },
       verified: true,
       metrics: {
-        maxLeverage: '200:1',
+        maxLeverage: isPositionSize ? '1:400' : '200:1',
         marginReq: activeTool === 'stop-out' || activeTool === 'margin' ? '0.11%' : '0.5%',
         minDeposit: activeTool === 'stop-out' || activeTool === 'margin' ? '$5' : '$200',
         stopOutLevel: '20%',
         marginNeeded: '~$11.25',
+        stepSize: '0.01 lots',
       },
       bottomPill: activeTool === 'stop-out' || activeTool === 'margin' 
         ? 'Margin needed ~$11.25' 
@@ -81,18 +93,23 @@ export const BrokersMatchingPreferences: React.FC<BrokersMatchingPreferencesProp
     {
       id: 'fxpro',
       name: 'FxPro',
-      accountType: activeTool === 'stop-out' || activeTool === 'margin' ? 'Micro | 1:888' : 'ECN | Raw spread',
+      accountType: isPositionSize
+        ? 'Nano—Standard'
+        : activeTool === 'stop-out' || activeTool === 'margin'
+        ? 'Micro | 1:888'
+        : 'ECN | Raw spread',
       badge: {
-        type: 'thumb',
+        type: isPositionSize ? 'star' : 'thumb',
         label: 'Low margin',
       },
-      verified: activeTool === 'margin' ? false : true,
+      verified: isPositionSize ? false : activeTool === 'margin' ? false : true,
       metrics: {
-        maxLeverage: activeTool === 'margin' ? '1:888' : '100:1',
+        maxLeverage: isPositionSize ? '1:400' : activeTool === 'margin' ? '1:888' : '100:1',
         marginReq: activeTool === 'stop-out' || activeTool === 'margin' ? '0.11%' : '1%',
         minDeposit: activeTool === 'stop-out' || activeTool === 'margin' ? '$5' : '$200',
         stopOutLevel: '20%',
         marginNeeded: activeTool === 'stop-out' || activeTool === 'margin' ? '~$11.25' : '~$15.00',
+        stepSize: '0.01 lots',
       },
       bottomPill: activeTool === 'stop-out' || activeTool === 'margin' 
         ? 'Margin needed ~$11.25' 
@@ -207,6 +224,22 @@ export const BrokersMatchingPreferences: React.FC<BrokersMatchingPreferencesProp
                     </span>
                   </div>
                 </div>
+              ) : isPositionSize ? (
+                /* Position Size metrics layout (Matching D07 and D05) */
+                <div className="w-44 text-xs space-y-1 shrink-0 text-right">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-[#8A7AF6]">Min. deposit</span>
+                    <span className="text-emerald-500 dark:text-emerald-400 font-bold">{item.metrics.minDeposit}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-[#8A7AF6]">Max leverage</span>
+                    <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">{item.metrics.maxLeverage}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 dark:text-[#8A7AF6]">Step size</span>
+                    <span className="text-slate-900 dark:text-white font-medium">{item.metrics.stepSize || '0.01 lots'}</span>
+                  </div>
+                </div>
               ) : isDetailedMarginView ? (
                 /* Detail divider layout (Broker Card Suggestion) */
                 <div className="w-44 text-xs space-y-1 shrink-0">
@@ -260,7 +293,7 @@ export const BrokersMatchingPreferences: React.FC<BrokersMatchingPreferencesProp
                     type="button"
                     onClick={() => handleBrokerDetailClick(item.id || item.name)}
                     className={
-                      isDetailedMarginView
+                      isDetailedMarginView || isPositionSize
                         ? "px-3 py-1 rounded-lg border border-indigo-200 dark:border-[#3410D5] text-[#5945F1] dark:text-[#ABA1F8] hover:bg-indigo-50 dark:hover:bg-[#230674] text-xs font-semibold cursor-pointer transition-colors"
                         : "text-[#5945F1] dark:text-[#ABA1F8] hover:underline font-semibold text-xs sm:text-sm cursor-pointer transition-colors"
                     }

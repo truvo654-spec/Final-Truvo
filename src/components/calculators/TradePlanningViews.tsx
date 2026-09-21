@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronDown, Plus, Minus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { AccountCurrencyDropdown, CurrencyPairDropdown } from './CurrencyDropdowns';
 
 interface SharedPlanningProps {
   onReset?: () => void;
@@ -82,7 +83,7 @@ const SLTP_FAQS = [
 // ─────────────────────────────────────────────────────────────
 // 1. POSITION SIZE CALCULATOR VIEW
 // ─────────────────────────────────────────────────────────────
-export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onReset, onSave }) => {
+export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onReset }) => {
   const [accountBalance, setAccountBalance] = useState('1,000');
   const [accountCurrency, setAccountCurrency] = useState('USD');
   const [currencyPair, setCurrencyPair] = useState('EUR/USD');
@@ -96,7 +97,7 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
     const rawSL = parseFloat(stopLossPips) || 0;
 
     // Default reference state matching screenshot
-    if (accountBalance === '1,000' && riskPercent === '1' && stopLossPips === '50') {
+    if ((accountBalance === '1,000' || !accountBalance) && (riskPercent === '1' || !riskPercent) && (stopLossPips === '50' || !stopLossPips)) {
       return {
         riskAmount: '20.00',
         standardLot: '0.07',
@@ -132,10 +133,10 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Title & Subtitle */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#5945F1] dark:text-[#ABA1F8]">
+        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-[#5945F1] dark:text-[#ABA1F8]">
           Position Size Calculator
         </h1>
-        <p className="text-sm text-slate-500 dark:text-[#CCC6FB] mt-1">
+        <p className="text-sm text-slate-500 dark:text-[#CCC6FB] mt-1 font-medium">
           Set clearer exits with risk and reward in mind
         </p>
       </div>
@@ -144,8 +145,8 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Row 1: Account Balance */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-900 dark:text-white block">
+          <div className="space-y-2">
+            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
               Account Balance
             </label>
             <input
@@ -153,60 +154,31 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
               value={accountBalance}
               onChange={(e) => setAccountBalance(e.target.value)}
               placeholder="1,000"
-              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1]"
+              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] transition-colors"
             />
           </div>
 
-          {/* Row 1: Account Currency */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-900 dark:text-white block">
-              Account Currency
-            </label>
-            <div className="relative">
-              <select
-                value={accountCurrency}
-                onChange={(e) => setAccountCurrency(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="AUD">AUD</option>
-                <option value="CAD">CAD</option>
-                <option value="JPY">JPY</option>
-                <option value="CHF">CHF</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+          {/* Row 1: Account Currency Dropdown */}
+          <div className="relative z-20">
+            <AccountCurrencyDropdown
+              value={accountCurrency}
+              onChange={setAccountCurrency}
+              label="Account Currency"
+            />
           </div>
 
           {/* Row 2: Currency Pair (Full width across 2 columns) */}
-          <div className="sm:col-span-2 space-y-1.5">
-            <label className="text-xs font-semibold text-slate-900 dark:text-white block">
-              Currency Pair
-            </label>
-            <div className="relative">
-              <select
-                value={currencyPair}
-                onChange={(e) => setCurrencyPair(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="EUR/USD">EUR/USD</option>
-                <option value="GBP/USD">GBP/USD</option>
-                <option value="USD/JPY">USD/JPY</option>
-                <option value="AUD/USD">AUD/USD</option>
-                <option value="USD/CAD">USD/CAD</option>
-                <option value="USD/CHF">USD/CHF</option>
-                <option value="EUR/GBP">EUR/GBP</option>
-                <option value="XAU/USD">XAU/USD (Gold)</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+          <div className="sm:col-span-2 relative z-10">
+            <CurrencyPairDropdown
+              value={currencyPair}
+              onChange={setCurrencyPair}
+              label="Currency Pair"
+            />
           </div>
 
           {/* Row 3: Risk % */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-900 dark:text-white block">
+          <div className="space-y-2">
+            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
               Risk %
             </label>
             <input
@@ -214,13 +186,13 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
               value={riskPercent}
               onChange={(e) => setRiskPercent(e.target.value)}
               placeholder="1"
-              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1]"
+              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] transition-colors"
             />
           </div>
 
           {/* Row 3: Stop Loss in Pips */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-900 dark:text-white block">
+          <div className="space-y-2">
+            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
               Stop Loss in Pips
             </label>
             <input
@@ -228,35 +200,28 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
               value={stopLossPips}
               onChange={(e) => setStopLossPips(e.target.value)}
               placeholder="50"
-              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1]"
+              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] transition-colors"
             />
           </div>
         </div>
 
-        {/* Action Buttons: Reset & Save */}
-        <div className="flex items-center justify-center gap-3 pt-3">
+        {/* Centered Reset Button (Matching Screenshots) */}
+        <div className="flex justify-center pt-2">
           <button
             type="button"
             onClick={handleReset}
-            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
+            className="px-8 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
           >
             Reset
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
-          >
-            Save
           </button>
         </div>
       </div>
 
-      {/* Calculation Results Card (Magenta Border) */}
-      <div className="rounded-2xl border-2 border-[#E500A4] bg-white dark:bg-[#170345] p-6 sm:p-7 space-y-4 shadow-xs">
+      {/* Calculation Results Card (Magenta Border #FD02B0) */}
+      <div className="rounded-2xl border-2 border-[#FD02B0] bg-white dark:bg-[#170345] p-6 space-y-3 shadow-xs">
         <h3 className="text-sm font-bold tracking-tight">
           <span className="text-[#5945F1] dark:text-[#ABA1F8]">Calculation Result</span>
-          <span className="text-[#E500A4]">s</span>
+          <span className="text-[#FD02B0]">s</span>
         </h3>
 
         <div className="grid grid-cols-2 gap-6 text-center py-2">
@@ -279,20 +244,20 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
           </div>
         </div>
 
-        <div className="text-center text-xs text-slate-500 dark:text-[#CCC6FB] pt-2 font-medium">
+        <div className="text-center text-xs text-slate-500 dark:text-[#CCC6FB] pt-1 font-medium">
           Mini Lots: {calculations.miniLot} | Micro Lots: {calculations.microLot}
         </div>
       </div>
 
       {/* Disclaimer */}
-      <p className="text-xs text-slate-500 dark:text-[#8A7AF6] leading-relaxed">
-        <span className="font-bold text-slate-700 dark:text-[#CCC6FB]">Disclaimer:</span> This
+      <p className="text-[11px] sm:text-xs text-slate-400 dark:text-[#8A7AF6] leading-relaxed">
+        <span className="font-bold text-slate-600 dark:text-[#CCC6FB]">Disclaimer:</span> This
         calculator provides estimates for guidance only. Actual results may vary due to market
         conditions, spreads, execution, and trading costs. Consider professional advice before
         trading.
       </p>
 
-      {/* How It Works Section */}
+      {/* How Position Size Calculator Works */}
       <div className="space-y-3 pt-2">
         <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
           How Position Size Calculator Works
@@ -320,13 +285,13 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
       </div>
 
       {/* Key Benefits */}
-      <div className="space-y-2 pt-2">
+      <div className="space-y-3 pt-2">
         <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
           Key Benefits
         </h2>
-        <ul className="space-y-2 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed">
+        <ul className="text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] space-y-2.5 leading-relaxed">
           <li className="flex items-start gap-2">
-            <span className="text-slate-400">•</span>
+            <span className="text-slate-400 font-bold">•</span>
             <div>
               <strong className="text-slate-800 dark:text-white font-semibold">
                 Enforces Strict Account Discipline:
@@ -336,7 +301,7 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
             </div>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-slate-400">•</span>
+            <span className="text-slate-400 font-bold">•</span>
             <div>
               <strong className="text-slate-800 dark:text-white font-semibold">
                 Adapts Volatility to Sizes:
@@ -346,7 +311,7 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
             </div>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-slate-400">•</span>
+            <span className="text-slate-400 font-bold">•</span>
             <div>
               <strong className="text-slate-800 dark:text-white font-semibold">
                 Minimizes Emotional Trading:
@@ -358,8 +323,8 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
         </ul>
       </div>
 
-      {/* FAQ Section */}
-      <div className="space-y-3 pt-3">
+      {/* Position Size Calculator FAQ */}
+      <div className="space-y-3 pt-2">
         <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
           Position Size Calculator FAQ
         </h2>
@@ -369,34 +334,23 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
             return (
               <div
                 key={idx}
-                className="rounded-xl border border-slate-100 dark:border-[#230674] bg-[#fbfbff] dark:bg-[#170345] overflow-hidden"
+                className="border-b border-slate-100 dark:border-[#230674] pb-3"
               >
                 <button
                   type="button"
                   onClick={() => setOpenFaq(isOpen ? null : idx)}
-                  className="w-full px-4 py-3.5 flex items-center justify-between text-left cursor-pointer group"
+                  className="w-full flex items-center justify-between py-2 text-left text-xs sm:text-sm font-semibold text-slate-800 dark:text-white hover:text-[#5945F1] dark:hover:text-[#ABA1F8] transition-colors cursor-pointer"
                 >
-                  <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-white group-hover:text-[#5945F1] transition-colors">
-                    {faq.q}
-                  </span>
-                  <span className="text-[#5945F1] dark:text-[#ABA1F8] shrink-0 ml-3">
-                    {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  <span>{faq.q}</span>
+                  <span className="text-lg font-bold text-[#5945F1] dark:text-[#ABA1F8] shrink-0 ml-2">
+                    {isOpen ? '−' : '+'}
                   </span>
                 </button>
-                <AnimatePresence>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="px-4 pb-3.5 text-xs text-slate-600 dark:text-[#CCC6FB] leading-relaxed border-t border-slate-100/80 dark:border-[#230674] pt-2">
-                        {faq.a}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {isOpen && (
+                  <p className="text-xs text-slate-600 dark:text-[#CCC6FB] pt-1.5 leading-relaxed animate-in fade-in duration-150">
+                    {faq.a}
+                  </p>
+                )}
               </div>
             );
           })}
