@@ -1529,7 +1529,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
                     <div
                       className="absolute -right-4 -bottom-16 w-80 h-72 rounded-t-full pointer-events-none"
                       style={{
-                        backgroundColor: '#c6f831',
+                        backgroundColor: '#CAEB0E',
                       }}
                     />
 
@@ -1539,7 +1539,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
                         <MissionChartBadge />
 
                         <div>
-                          <h3 className="text-xl sm:text-2xl font-bold tracking-tight font-display text-[#FE01B1]">
+                          <h3 className="text-xl sm:text-2xl font-bold tracking-tight font-display text-slate-900">
                             7-Day Explorer
                           </h3>
                           <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-lg">

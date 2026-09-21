@@ -136,7 +136,8 @@ export const MoreConnectedBrokersBanner: React.FC<MoreConnectedBrokersBannerProp
 }) => {
   return (
     <div
-      id="more-connected-brokers-banner"
+      id="tour-brokers-section"
+      data-banner-id="more-connected-brokers-banner"
       className={`w-full p-[1.5px] rounded-3xl bg-gradient-to-r from-[#5945F1] via-[#A855F7] to-[#FD02B0] shadow-2xs ${className}`}
     >
       <div className="w-full rounded-[22.5px] bg-white p-5 sm:p-7 md:p-8 space-y-6">

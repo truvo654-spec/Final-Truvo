@@ -67,6 +67,8 @@ import { CashbackLedgerModal } from './components/CashbackLedgerModal';
 import { BrokerComparisonModal } from './components/BrokerComparisonModal';
 import { SearchModal } from './components/SearchModal';
 import { AuthModal } from './components/AuthModal';
+import { WelcomeOnboardingModal } from './components/onboarding/WelcomeOnboardingModal';
+import { DashboardTourOverlay, TourStepId } from './components/onboarding/DashboardTourOverlay';
 import { ErrorPageView, Error404Page, Error500Page, Error503Page } from './components/errors';
 import { Sparkles, Trophy, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -261,6 +263,47 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'signup' | 'signin'>('signup');
 
+  // Onboarding Flow State (2-Step Modal + 4-Step Interactive Dashboard Walkthrough)
+  const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
+  const [isDashboardTourActive, setIsDashboardTourActive] = useState(false);
+  const [dashboardTourStep, setDashboardTourStep] = useState<TourStepId>(1);
+
+  // Auto-launch onboarding on first-time visit (if not completed before)
+  useEffect(() => {
+    try {
+      const hasCompleted = localStorage.getItem('marketsyde_onboarding_completed');
+      if (!hasCompleted) {
+        const timer = setTimeout(() => {
+          setIsOnboardingModalOpen(true);
+        }, 700);
+        return () => clearTimeout(timer);
+      }
+    } catch (e) {}
+  }, []);
+
+  const handleStartOnboarding = () => {
+    setActiveTab('dashboard');
+    setDashboardTourStep(1);
+    setIsOnboardingModalOpen(true);
+  };
+
+  const handleWelcomeComplete = () => {
+    setIsOnboardingModalOpen(false);
+    setActiveTab('dashboard');
+    setDashboardTourStep(1);
+    setTimeout(() => {
+      setIsDashboardTourActive(true);
+    }, 350);
+  };
+
+  const handleFinishTour = () => {
+    setIsDashboardTourActive(false);
+    try {
+      localStorage.setItem('marketsyde_onboarding_completed', 'true');
+    } catch (e) {}
+    showToast('✨ Onboarding tour completed! Happy trading.');
+  };
+
   const handleAuthSuccess = (email?: string, name?: string) => {
     setIsLoggedIn(true);
     try {
@@ -276,6 +319,16 @@ export default function App() {
       }));
     }
     showToast('🎉 Welcome to MarketSyde! You are now signed in.');
+
+    // Launch onboarding walkthrough if first time
+    try {
+      const hasCompleted = localStorage.getItem('marketsyde_onboarding_completed');
+      if (!hasCompleted) {
+        setTimeout(() => {
+          setIsDashboardTourActive(true);
+        }, 400);
+      }
+    } catch {}
 
     // If currently on broker-detail, immediately navigate to Connect to MarketSyde (D12_Connect to MarketSyde.png)
     if (activeTab === 'broker-detail') {
@@ -573,6 +626,9 @@ export default function App() {
           setIsAuthModalOpen(true);
         }}
         onSignOut={handleSignOut}
+        onStartTour={handleStartOnboarding}
+        isTourActive={isDashboardTourActive}
+        tourStep={dashboardTourStep}
       />
 
       {/* Floating Toast Notification with Spring Physics */}
@@ -728,6 +784,7 @@ export default function App() {
               onOpenSearchModal={() => setIsSearchModalOpen(true)}
               onShowToast={showToast}
               onSelectLevelScenario={handleSelectLevelScenario}
+              onStartTour={handleStartOnboarding}
             />
           )
         )}
@@ -1437,6 +1494,43 @@ export default function App() {
         onSuccess={handleAuthSuccess}
         onShowToast={showToast}
         onNavigateToTab={setActiveTab}
+        onFinishOnboarding={() => {
+          setActiveTab('dashboard');
+          setTimeout(() => {
+            setIsDashboardTourActive(true);
+          }, 350);
+        }}
+      />
+
+      {/* ─── 1. POP-UP ONBOARDING MODAL (D08 "You're in." & D10 "Trade more. Earn more.") ─── */}
+      <WelcomeOnboardingModal
+        isOpen={isOnboardingModalOpen}
+        onClose={() => {
+          setIsOnboardingModalOpen(false);
+          try {
+            localStorage.setItem('marketsyde_onboarding_completed', 'true');
+          } catch (e) {}
+        }}
+        onComplete={handleWelcomeComplete}
+      />
+
+      {/* ─── 2. DASHBOARD GUIDED WALKTHROUGH TOUR (4 Steps + Volt-Lime Broker Callout) ─── */}
+      <DashboardTourOverlay
+        isActive={isDashboardTourActive}
+        user={user}
+        currentStep={dashboardTourStep}
+        onStepChange={setDashboardTourStep}
+        onClose={() => {
+          setIsDashboardTourActive(false);
+          try {
+            localStorage.setItem('marketsyde_onboarding_completed', 'true');
+          } catch (e) {}
+        }}
+        onFinish={handleFinishTour}
+        onNavigateToBrokers={() => {
+          setActiveTab('brokers');
+          showToast('Browse all broker deals!');
+        }}
       />
     </div>
   );

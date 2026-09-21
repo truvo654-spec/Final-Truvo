@@ -8,6 +8,7 @@ interface AuthModalProps {
   onSuccess: (email?: string, name?: string) => void;
   onShowToast?: (msg: string) => void;
   onNavigateToTab?: (tab: string) => void;
+  onFinishOnboarding?: () => void;
 }
 
 type AuthStep = 'form' | 'verify-email' | 'link-expired' | 'onboarding-1' | 'onboarding-2';
@@ -167,6 +168,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onSuccess,
   onShowToast,
   onNavigateToTab,
+  onFinishOnboarding,
 }) => {
   const [mode, setMode] = useState<'signup' | 'signin'>(initialMode);
   const [step, setStep] = useState<AuthStep>('form');
@@ -279,6 +281,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleFinishOnboarding = () => {
     onShowToast?.('🎉 Welcome to MarketSyde! Everything is ready.');
     onClose();
+    if (onFinishOnboarding) {
+      onFinishOnboarding();
+    }
   };
 
   return (

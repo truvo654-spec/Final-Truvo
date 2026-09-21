@@ -23,6 +23,7 @@ import {
   Clock,
   Sun,
   Moon,
+  Sparkles,
 } from 'lucide-react';
 import { InteractiveBrokersGraphic } from './submenu/InteractiveBrokersGraphic';
 import { InteractiveTradeGraphic } from './submenu/InteractiveTradeGraphic';
@@ -57,6 +58,9 @@ interface HeaderProps {
   onOpenSignIn?: () => void;
   onOpenSignUp?: () => void;
   onSignOut?: () => void;
+  onStartTour?: () => void;
+  isTourActive?: boolean;
+  tourStep?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -81,6 +85,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSignIn,
   onOpenSignUp,
   onSignOut,
+  onStartTour,
+  isTourActive,
+  tourStep,
 }) => {
   const [activeHoverMenu, setActiveHoverMenu] = useState<'trade' | 'brokers' | 'community' | 'company' | null>(null);
   const [hoveredBrokerOption, setHoveredBrokerOption] = useState<'brokers' | 'broker-comparison' | null>(null);
@@ -154,6 +161,15 @@ export const Header: React.FC<HeaderProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isProfileMenuOpen]);
+
+  // Synchronize profile dropdown menu with Dashboard Interactive Tour step 1
+  useEffect(() => {
+    if (isTourActive && tourStep === 1) {
+      setIsProfileMenuOpen(true);
+    } else if (isTourActive && tourStep && tourStep > 1) {
+      setIsProfileMenuOpen(false);
+    }
+  }, [isTourActive, tourStep]);
 
   const handleMouseEnter = (menu: 'trade' | 'brokers' | 'community' | 'company') => {
     if (closeTimeoutRef.current) {
@@ -366,8 +382,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* User Profile Pill & Dropdown Menu (if logged in) OR Guest Buttons (if not logged in) */}
           {isLoggedIn ? (
-            <div className="relative" ref={profileMenuRef}>
+            <div id="tour-profile-menu-container" className="relative" ref={profileMenuRef}>
               <button
+                id="tour-profile-button"
                 onClick={() => {
                   setIsProfileMenuOpen((prev) => !prev);
                   handleCloseImmediately();
@@ -433,6 +450,7 @@ export const Header: React.FC<HeaderProps> = ({
             <AnimatePresence>
               {isProfileMenuOpen && (
                 <motion.div
+                  id="tour-profile-dropdown"
                   initial={{ opacity: 0, y: 12, scale: 0.94 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.96 }}
@@ -825,6 +843,23 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                     <span className="w-5 h-5 rounded-md bg-[#5945F1] text-white text-[11px] font-bold flex items-center justify-center shrink-0">
                       2
+                    </span>
+                  </button>
+
+                  {/* Guided Tour */}
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      onStartTour?.();
+                    }}
+                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-slate-800 hover:bg-slate-50 hover:text-[#5945F1] transition-colors text-left group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <Sparkles className="w-4 h-4 text-[#FD02B0] group-hover:text-[#5945F1] stroke-[1.8] shrink-0" />
+                      <span className="text-[13.5px] font-medium leading-none">Guided Tour</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#5945F1] bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                      Interactive
                     </span>
                   </button>
                 </div>

@@ -63,6 +63,7 @@ interface ReferenceDashboardProps {
   onSelectLevelScenario?: (scenarioId: LevelScenarioId) => void;
   missions?: Mission[];
   onUpdateMissions?: (missions: Mission[]) => void;
+  onStartTour?: () => void;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -577,6 +578,7 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
   onSelectLevelScenario,
   missions,
   onUpdateMissions,
+  onStartTour,
 }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1D' | '1W' | '1M' | 'All'>('1M');
   const [connectedPage, setConnectedPage] = useState<number>(1);
@@ -938,6 +940,7 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
           onSelectLevelScenario={onSelectLevelScenario}
           missions={missions}
           onUpdateMissions={onUpdateMissions}
+          onStartTour={onStartTour}
         />
       )}
 

@@ -73,6 +73,7 @@ interface EmptyStateDashboardViewProps {
   initialState?: DashboardStateType;
   missions?: Mission[];
   onUpdateMissions?: (missions: Mission[]) => void;
+  onStartTour?: () => void;
 }
 
 /**
@@ -451,6 +452,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
   initialState,
   missions,
   onUpdateMissions,
+  onStartTour,
 }) => {
   // Read state from localStorage or initial state
   const [dashboardState, setDashboardState] = useState<DashboardStateType>(() => {
@@ -646,15 +648,30 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
             {/* ── LEFT TOP CARD: Quick Start Guide vs Your Connected Account ── */}
             {dashboardState === 'empty' ? (
-              <div className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 sm:p-6 shadow-2xs flex flex-col justify-between interactive-card">
+              <div id="tour-quick-start-card" className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 sm:p-6 shadow-2xs flex flex-col justify-between interactive-card">
                 <div>
-                  <h3 className="font-display font-extrabold text-xl sm:text-[22px] text-[#5240F2] tracking-tight flex items-baseline">
-                    <span>Quick Start Guide</span>
-                    <span className="w-1.5 h-1.5 rounded-[1px] bg-[#E11D89] ml-0.5 inline-block self-end mb-1"></span>
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-                    Turn your trading into cashback, insights and rewards.
-                  </p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-display font-extrabold text-xl sm:text-[22px] text-[#5240F2] tracking-tight flex items-baseline">
+                        <span>Quick Start Guide</span>
+                        <span className="w-1.5 h-1.5 rounded-[1px] bg-[#E11D89] ml-0.5 inline-block self-end mb-1"></span>
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
+                        Turn your trading into cashback, insights and rewards.
+                      </p>
+                    </div>
+                    {onStartTour && (
+                      <button
+                        type="button"
+                        onClick={onStartTour}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#5945F1] bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/70 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 shrink-0"
+                        title="Start Interactive Guided Tour"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-[#FD02B0]" />
+                        <span>Take Tour</span>
+                      </button>
+                    )}
+                  </div>
 
                   {/* 4 Steps Stepper Row matching design screenshot */}
                   <div className="relative mt-7 mb-2">
@@ -957,7 +974,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
             )}
 
             {/* ── RIGHT TOP CARD: Your Level Card (md:col-span-4) ── */}
-            <div className="md:col-span-4 rounded-2xl bg-[#5945F1] p-5 text-white flex flex-col justify-between shadow-xs relative overflow-hidden interactive-card group">
+            <div id="tour-rookie-level-card" className="md:col-span-4 rounded-2xl bg-[#5945F1] p-5 text-white flex flex-col justify-between shadow-xs relative overflow-hidden interactive-card group">
               <div>
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-semibold text-white/80">
@@ -1047,7 +1064,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
           <InstrumentAnalysisWidget onNavigateToTab={onNavigateToTab} />
 
           {/* ─── ROW 2: Your Stats / Your Performance Card ─── */}
-          <div className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5 interactive-card">
+          <div id="tour-your-stats-card" className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5 interactive-card">
             {/* Header: Title & Timeframe Filters */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
               <h2 className="font-display text-lg sm:text-xl font-normal text-slate-700 tracking-tight">
