@@ -3,6 +3,7 @@ import { Broker, UserProfile } from '../../../types';
 import { ShieldCheck, ChevronDown } from 'lucide-react';
 import { BrokerComparisonCard } from '../BrokerComparisonCard';
 import { CashbackEligibilitySection } from './CashbackEligibilitySection';
+import { TabSub } from '../../common/TabSub';
 
 interface BrokerCashbackTabContentProps {
   broker: Broker;
@@ -107,28 +108,14 @@ export const BrokerCashbackTabContent: React.FC<BrokerCashbackTabContentProps> =
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Controls: Account Type Pills, Member Level, Number of Lot */}
           <div className="lg:col-span-7 space-y-4">
-            {/* Account Type Pills */}
+            {/* Account Type Pills using TabSub */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700">Account Type</label>
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                {ACCOUNT_TYPES.map((type) => {
-                  const isSelected = selectedAccount === type;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setSelectedAccount(type)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#EEF2FF] text-[#5945F1] font-bold shadow-2xs'
-                          : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:border-slate-300'
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  );
-                })}
-              </div>
+              <TabSub
+                tabs={ACCOUNT_TYPES as unknown as string[]}
+                activeTab={selectedAccount}
+                onChange={(tab) => setSelectedAccount(tab)}
+              />
             </div>
 
             {/* Inputs Grid: Member Level & Number of Lot */}

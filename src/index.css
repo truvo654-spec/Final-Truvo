@@ -649,4 +649,19 @@ div.mt-2.space-y-1 > p.px-2.pb-1::after {
   }
 }
 
+/* Custom slim dark scrollbar for search dropdown matching Dropdown List (1).png */
+.dropdown-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.dropdown-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dropdown-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+.dropdown-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #1e293b;
+}
+
 

@@ -2,9 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { MarketSignal, Broker, UserProfile } from '../types';
 import { REFERENCE_SIGNALS } from '../data/signalsReferenceData';
 import { TabMain, TabMainItem } from './common/TabMain';
+import { SignalCreditUnlockModal } from './signals/SignalCreditUnlockModal';
+import { InsufficientCreditModal } from './signals/InsufficientCreditModal';
+import { SignalUnlockedToast } from './signals/SignalUnlockedToast';
+import { SignalFilterPopover } from './signals/SignalFilterPopover';
+import { SignalSearchDropdown } from './signals/SignalSearchDropdown';
 import {
   Search,
-  SlidersHorizontal,
+  Filter,
   Clock,
   Hourglass,
   ArrowRight,
@@ -21,6 +26,7 @@ import {
   DollarSign,
   ShieldCheck,
   Sparkles,
+  Coins,
 } from 'lucide-react';
 
 interface TradingSignalsPageProps {
@@ -33,6 +39,9 @@ interface TradingSignalsPageProps {
   onOpenBrokerComparison: () => void;
   onNavigateToBrokers: () => void;
   onSimulateTradeCashback: (brokerName: string, lotSize: number, rebateAmount: number) => void;
+  onSpendCredits?: (amount: number, reason: string) => boolean;
+  onClaimBonusCredits?: (amount: number) => void;
+  onSetUserCredits?: (amount: number) => void;
 }
 
 export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
@@ -45,17 +54,98 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
   onOpenBrokerComparison,
   onNavigateToBrokers,
   onSimulateTradeCashback,
+  onSpendCredits,
+  onClaimBonusCredits,
+  onSetUserCredits,
 }) => {
   // Category filter state
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [showFilterDropdown, setShowFilterDropdown] = useState<boolean>(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState<boolean>(false);
 
-  // Advanced filters inside dropdown
-  const [minConfidenceFilter, setMinConfidenceFilter] = useState<number>(0);
-  const [actionFilter, setActionFilter] = useState<'ALL' | 'BUY' | 'SELL'>('ALL');
-  const [accessFilter, setAccessFilter] = useState<'ALL' | 'UNLOCKED' | 'LOCKED'>('ALL');
+  // Credit Unlock Modal state, Insufficient credit scenarios & Toast
+  const [unlockTargetSignal, setUnlockTargetSignal] = useState<MarketSignal | null>(null);
+  const [isInsufficientCreditModalOpen, setIsInsufficientCreditModalOpen] = useState<boolean>(false);
+  const [insufficientCreditTargetSignal, setInsufficientCreditTargetSignal] = useState<MarketSignal | null>(null);
+  const [isUnlockedToastVisible, setIsUnlockedToastVisible] = useState<boolean>(false);
+
+  const [unlockedSignalIds, setUnlockedSignalIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('marketsyde_unlocked_signals');
+      return saved ? new Set(JSON.parse(saved)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
+
+  const handlePromptUnlock = (sig: MarketSignal) => {
+    // If user has less than 200 credits, open the InsufficientCreditModal directly
+    // Scenario 1: 0 credits -> "Wallet feeling light?"
+    // Scenario 2: some credits (<200) -> "Missing syde credits"
+    if (user.sydeCredits < 200) {
+      setInsufficientCreditTargetSignal(sig);
+      setIsInsufficientCreditModalOpen(true);
+    } else {
+      setUnlockTargetSignal(sig);
+    }
+  };
+
+  const handleUnlockSignal = (sig: MarketSignal, cost: number) => {
+    if (user.sydeCredits < cost) {
+      setInsufficientCreditTargetSignal(sig);
+      setIsInsufficientCreditModalOpen(true);
+      return;
+    }
+    if (onSpendCredits) {
+      const ok = onSpendCredits(cost, `Unlocked ${sig.name || sig.ticker} (${sig.confidence}% Confidence)`);
+      if (!ok) return;
+    }
+    setUnlockedSignalIds((prev) => {
+      const next = new Set(prev);
+      next.add(sig.id);
+      try {
+        localStorage.setItem('marketsyde_unlocked_signals', JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+    // Show green toast notification matching Trading Signals; Desktop; Signal Unlocked.png
+    setIsUnlockedToastVisible(true);
+  };
+
+  const handleShowMeCredits = () => {
+    setIsInsufficientCreditModalOpen(false);
+    if (onClaimBonusCredits) {
+      onClaimBonusCredits(300);
+    }
+    if (insufficientCreditTargetSignal) {
+      setUnlockTargetSignal(insufficientCreditTargetSignal);
+    }
+  };
+
+  // Filter states matching Broker Filter.png & Dropdown List.png
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('All');
+  const [selectedConfidence, setSelectedConfidence] = useState<string>('All');
+  const [selectedSort, setSelectedSort] = useState<string>('Highest Confidence');
+
+  // Active filter detection matching Dashboard_Trading Signals_Desktop_Max_Filter_6.png
+  const hasActiveFilter = Boolean(
+    searchQuery.trim() !== '' ||
+    selectedCategory !== 'All' ||
+    selectedPeriod !== 'All' ||
+    selectedConfidence !== 'All' ||
+    selectedSort !== 'Highest Confidence'
+  );
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('All');
+    setSelectedPeriod('All');
+    setSelectedConfidence('All');
+    setSelectedSort('Highest Confidence');
+    setCurrentPage(1);
+  };
 
   // Quick Trade Simulator Modal State
   const [tradeModalBroker, setTradeModalBroker] = useState<string | null>(null);
@@ -75,19 +165,9 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
     return Array.from(map.values());
   }, [initialSignals]);
 
-  // Categories list matching reference: All 99, Forex, Indices, Stocks, Commodities, Cryptos
-  const categories: TabMainItem<string>[] = [
-    { id: 'All', label: 'All', count: 99 },
-    { id: 'Forex', label: 'Forex', count: 42 },
-    { id: 'Indices', label: 'Indices', count: 18 },
-    { id: 'Stocks', label: 'Stocks', count: 16 },
-    { id: 'Commodities', label: 'Commodities', count: 12 },
-    { id: 'Cryptos', label: 'Cryptos', count: 11 },
-  ];
-
-  // Filtered signals logic
+  // Filtered signals logic matching Category, Search, Period, Confidence and Sort
   const filteredSignals = useMemo(() => {
-    return allAvailableSignals.filter((sig) => {
+    const filtered = allAvailableSignals.filter((sig) => {
       // Category match
       if (selectedCategory !== 'All') {
         if (selectedCategory === 'Cryptos') {
@@ -112,18 +192,62 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
         if (!matchesTicker && !matchesName && !matchesAnalysis) return false;
       }
 
-      // Dropdown filters
-      if (minConfidenceFilter > 0 && sig.confidence < minConfidenceFilter) {
-        return false;
+      // Period filter (Scalping: 5m-15m, Intraday: 15m-1H, Swing: 4H-1D, Position: 1D-1W, Investment: 1W-1M)
+      if (selectedPeriod !== 'All') {
+        const p = (sig.period || sig.timeframe || '').toLowerCase();
+        if (selectedPeriod === 'Scalping') {
+          if (!p.includes('5m') && !p.includes('15m') && !p.includes('scalp')) return false;
+        } else if (selectedPeriod === 'Intraday') {
+          if (!p.includes('15m') && !p.includes('30m') && !p.includes('1h') && !p.includes('intra')) return false;
+        } else if (selectedPeriod === 'Swing') {
+          if (!p.includes('4h') && !p.includes('1d') && !p.includes('swing')) return false;
+        } else if (selectedPeriod === 'Position') {
+          if (!p.includes('1d') && !p.includes('1w') && !p.includes('pos')) return false;
+        } else if (selectedPeriod === 'Investment') {
+          if (!p.includes('1w') && !p.includes('1m') && !p.includes('invest')) return false;
+        }
       }
-      if (actionFilter === 'BUY' && sig.action !== 'BUY') return false;
-      if (actionFilter === 'SELL' && sig.action !== 'SELL') return false;
-      if (accessFilter === 'UNLOCKED' && sig.minLevel && sig.minLevel > user.tierLevel) return false;
-      if (accessFilter === 'LOCKED' && (!sig.minLevel || sig.minLevel <= user.tierLevel)) return false;
+
+      // Confidence filter (e.g. 90%+, 80%+, 70%+)
+      if (selectedConfidence !== 'All') {
+        const minConf = parseInt(selectedConfidence.replace('%+', ''), 10);
+        if (!isNaN(minConf) && sig.confidence < minConf) {
+          return false;
+        }
+      }
 
       return true;
     });
-  }, [allAvailableSignals, selectedCategory, searchQuery, minConfidenceFilter, actionFilter, accessFilter, user.tierLevel]);
+
+    // Sort by selection
+    const sorted = [...filtered];
+    if (selectedSort === 'Highest Confidence') {
+      sorted.sort((a, b) => b.confidence - a.confidence);
+    } else if (selectedSort === 'Lowest Confidence') {
+      sorted.sort((a, b) => a.confidence - b.confidence);
+    } else if (selectedSort === 'Risk/Reward Ratio') {
+      const parseRR = (rr: string) => {
+        const parts = rr.split(':');
+        return parts.length === 2 ? parseFloat(parts[1]) || 0 : 0;
+      };
+      sorted.sort((a, b) => parseRR(b.riskReward) - parseRR(a.riskReward));
+    } else if (selectedSort === 'Newest First') {
+      sorted.sort((a, b) => (a.timestamp.includes('m') ? -1 : 1));
+    }
+
+    return sorted;
+  }, [allAvailableSignals, selectedCategory, searchQuery, selectedPeriod, selectedConfidence, selectedSort]);
+
+  // Categories list matching reference: All 99, Forex, Indices, Stocks, Commodities, Cryptos
+  // When filters are applied (e.g. 0 match), "All" reflects the filtered count like in the mockup
+  const categories: TabMainItem<string>[] = useMemo(() => [
+    { id: 'All', label: 'All', count: hasActiveFilter ? filteredSignals.length : 99 },
+    { id: 'Forex', label: 'Forex', count: 42 },
+    { id: 'Indices', label: 'Indices', count: 18 },
+    { id: 'Stocks', label: 'Stocks', count: 16 },
+    { id: 'Commodities', label: 'Commodities', count: 12 },
+    { id: 'Cryptos', label: 'Cryptos', count: 11 },
+  ], [hasActiveFilter, filteredSignals.length]);
 
   // Split into Top 8 (Rows 1 & 2) and Bottom 8 (Rows 3 & 4) for pagination page 1
   const displayedSignals = useMemo(() => {
@@ -297,259 +421,301 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
 
       {/* ─── 3. SUB-BAR (ACTIVE SIGNALS COUNT + SEARCH & FILTER) ─── */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-b border-slate-100 pb-4">
-        <div className="text-sm text-slate-600">
-          <span className="font-bold text-[#0b1c30]">99 active signals</span>
-          <span className="mx-2 text-slate-400">·</span>
-          <span className="text-slate-500">Updated 2m ago</span>
+        {/* Left: 0 of 99 active signals · Updated 1s ago (Exact match to Dashboard_Trading Signals_Desktop_Max_Filter_6.png) */}
+        <div className="flex items-center gap-2 text-sm sm:text-base text-slate-800">
+          <span className="font-semibold text-[#0b1c30]">
+            {hasActiveFilter
+              ? `${filteredSignals.length} of 99 active signals`
+              : '99 active signals'}
+          </span>
+          <span className="text-slate-400">·</span>
+          <span className="text-slate-500">
+            {hasActiveFilter ? 'Updated 1s  ago' : 'Updated 2m  ago'}
+          </span>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto relative">
-          <div className="relative flex-1 sm:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* Right: Search Input + Filter Funnel Button (Exact match to image.png & Dashboard_Trading Signals_Desktop_Max_Filter_6.png) */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto relative">
+          <div className="relative flex-1 sm:w-80">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search Signals"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5030e5]/30 focus:border-[#5030e5] text-slate-800 placeholder-slate-400 shadow-2xs"
+              onFocus={() => setShowSearchDropdown(true)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSearchDropdown(true);
+              }}
+              className="w-full pl-10 pr-3 py-2 text-sm bg-white dark:bg-[#15093f] border border-[#D4D2FB] dark:border-[#382285] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5338F5]/20 focus:border-[#5338F5] text-slate-800 dark:text-slate-100 placeholder-slate-400 shadow-2xs"
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowSearchDropdown(false);
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
               >
                 ✕
               </button>
             )}
+
+            {/* Autocomplete Search Dropdown matching Dropdown List (1).png */}
+            {showSearchDropdown && (
+              <SignalSearchDropdown
+                query={searchQuery}
+                onSelect={(ticker) => {
+                  setSearchQuery(ticker);
+                  setShowSearchDropdown(false);
+                  setCurrentPage(1);
+                }}
+                onClose={() => setShowSearchDropdown(false)}
+              />
+            )}
           </div>
 
-          {/* Filter Popover Toggle */}
+          {/* Filter Popover Button & Dropdown with Pink Filter Indicator Dot */}
           <div className="relative">
             <button
-              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-              className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all ${
-                showFilterDropdown || minConfidenceFilter > 0 || actionFilter !== 'ALL' || accessFilter !== 'ALL'
-                  ? 'border-[#5030e5] bg-[#5030e5]/10 text-[#5030e5]'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 shadow-2xs'
+              type="button"
+              onClick={() => setShowFilterDropdown((prev) => !prev)}
+              className={`relative w-10 h-10 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                showFilterDropdown || hasActiveFilter
+                  ? 'border-[#5338F5] bg-[#5338F5]/5 text-[#5338F5]'
+                  : 'border-[#D4D2FB] dark:border-[#382285] bg-white dark:bg-[#15093f] text-[#5338F5] hover:bg-slate-50 dark:hover:bg-[#1d0d54]'
               }`}
               title="Filter Options"
             >
-              <SlidersHorizontal className="w-4 h-4" />
+              <Filter className="w-4 h-4 text-[#5338F5]" />
+              {/* Pink dot indicating active filter from Dashboard_Trading Signals_Desktop_Max_Filter_6.png */}
+              {hasActiveFilter && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#FD02B0] rounded-full ring-2 ring-white dark:ring-[#15093f]" />
+              )}
             </button>
 
-            {/* Dropdown Menu */}
-            {showFilterDropdown && (
-              <div className="absolute right-0 top-11 z-30 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <span className="font-bold text-xs text-[#0b1c30]">Signal Filters</span>
-                  <button
-                    onClick={() => {
-                      setMinConfidenceFilter(0);
-                      setActionFilter('ALL');
-                      setAccessFilter('ALL');
-                    }}
-                    className="text-[11px] text-[#5030e5] hover:underline font-semibold"
-                  >
-                    Reset All
-                  </button>
-                </div>
-
-                {/* Min Confidence */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-600">
-                    <span>Min Confidence:</span>
-                    <span className="font-bold text-[#5030e5]">
-                      {minConfidenceFilter > 0 ? `${minConfidenceFilter}%+` : 'Any'}
-                    </span>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {[0, 70, 80, 90].map((val) => (
-                      <button
-                        key={val}
-                        onClick={() => setMinConfidenceFilter(val)}
-                        className={`flex-1 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                          minConfidenceFilter === val
-                            ? 'bg-[#5030e5] text-white border-[#5030e5]'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {val === 0 ? 'All' : `${val}%`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Action Filter */}
-                <div className="space-y-1.5">
-                  <span className="text-xs text-slate-600">Direction:</span>
-                  <div className="flex gap-1.5">
-                    {(['ALL', 'BUY', 'SELL'] as const).map((act) => (
-                      <button
-                        key={act}
-                        onClick={() => setActionFilter(act)}
-                        className={`flex-1 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                          actionFilter === act
-                            ? 'bg-[#5030e5] text-white border-[#5030e5]'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {act}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Access Level Filter */}
-                <div className="space-y-1.5">
-                  <span className="text-xs text-slate-600">Access Tier:</span>
-                  <div className="flex gap-1.5">
-                    {(['ALL', 'UNLOCKED', 'LOCKED'] as const).map((acc) => (
-                      <button
-                        key={acc}
-                        onClick={() => setAccessFilter(acc)}
-                        className={`flex-1 py-1 rounded-lg text-xs font-semibold border transition-all ${
-                          accessFilter === acc
-                            ? 'bg-[#5030e5] text-white border-[#5030e5]'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {acc}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Popover Filter Card matching Broker Filter.png and Dropdown List.png */}
+            <SignalFilterPopover
+              isOpen={showFilterDropdown}
+              onClose={() => setShowFilterDropdown(false)}
+              selectedPeriod={selectedPeriod}
+              onSelectPeriod={(p) => {
+                setSelectedPeriod(p);
+                setCurrentPage(1);
+              }}
+              selectedConfidence={selectedConfidence}
+              onSelectConfidence={(c) => {
+                setSelectedConfidence(c);
+                setCurrentPage(1);
+              }}
+              selectedSort={selectedSort}
+              onSelectSort={(s) => {
+                setSelectedSort(s);
+                setCurrentPage(1);
+              }}
+            />
           </div>
         </div>
       </div>
 
       {/* ─── 4. MAIN CONTENT (4-COL GRID + RIGHT SIDEBAR) ─── */}
       <div className="flex flex-col xl:flex-row items-start gap-6">
-        {/* LEFT COLUMN: SIGNALS GRID (4 CARDS PER ROW) */}
+        {/* LEFT COLUMN: SIGNALS GRID OR MATCH NOT FOUND STATE */}
         <div className="flex-1 min-w-0 w-full space-y-5">
-          {/* Top 8 Cards (Rows 1 & 2) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-            {topSignals.map((sig) => (
-              <SignalCard
-                key={sig.id}
-                signal={sig}
-                userTierLevel={user.tierLevel}
-                onSelectSignal={onSelectSignal}
-                onUpgradePrompt={onUpgradePrompt}
-                renderAssetIcon={renderAssetIcon}
-              />
-            ))}
-          </div>
+          {filteredSignals.length === 0 ? (
+            /* Match Not Found Empty State (Exact match to Dashboard_Trading Signals_Desktop_Max_Filter_6.png) */
+            <div className="w-full bg-white dark:bg-[#15093f] rounded-3xl border border-[#D4D2FB] dark:border-[#382285] min-h-[520px] flex flex-col items-center justify-center p-8 sm:p-12 text-center shadow-2xs">
+              {/* 3D Glass Magnifying Glass with Center Magenta Cross Badge */}
+              <div className="mb-4 relative flex items-center justify-center">
+                <svg width="112" height="112" viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg" className="filter drop-shadow-md">
+                  <defs>
+                    <linearGradient id="handle3D" x1="60" y1="60" x2="98" y2="98" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#6366F1" />
+                      <stop offset="40%" stopColor="#4338CA" />
+                      <stop offset="100%" stopColor="#312E81" />
+                    </linearGradient>
+                    <linearGradient id="rim3D" x1="15" y1="15" x2="70" y2="70" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#A78BFA" />
+                      <stop offset="30%" stopColor="#60A5FA" />
+                      <stop offset="70%" stopColor="#818CF8" />
+                      <stop offset="100%" stopColor="#C084FC" />
+                    </linearGradient>
+                    <radialGradient id="lensGlass" cx="42" cy="42" r="30" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+                      <stop offset="60%" stopColor="#EEF2FF" stopOpacity="0.55" />
+                      <stop offset="100%" stopColor="#E0E7FF" stopOpacity="0.3" />
+                    </radialGradient>
+                    <linearGradient id="crossBadge" x1="30" y1="30" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#FD02B0" />
+                      <stop offset="100%" stopColor="#8B5CF6" />
+                    </linearGradient>
+                    <filter id="shadowGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="#6366F1" floodOpacity="0.25" />
+                    </filter>
+                  </defs>
 
-          {/* ─── MIDDLE BANNER: "Your Account Are Ready." ─── */}
-          <div className="bg-gradient-to-r from-purple-50/70 via-white to-purple-50/40 border border-purple-200/70 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
-            <div className="flex items-center gap-3.5">
-              {/* Illustrated 3D pouch/wallet graphic */}
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#5030e5] to-[#7c3aed] flex items-center justify-center text-white shadow-md shrink-0 relative">
-                <DollarSign className="w-6 h-6 text-[#bef226]" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#bef226] border-2 border-white" />
+                  {/* Handle with 3D curve */}
+                  <rect x="62" y="58" width="13" height="40" rx="6.5" transform="rotate(-45 62 58)" fill="url(#handle3D)" filter="url(#shadowGlow)" />
+                  <rect x="64.5" y="60.5" width="4" height="34" rx="2" transform="rotate(-45 64.5 60.5)" fill="#A5B4FC" opacity="0.6" />
+
+                  {/* Metallic/Iridescent Rim */}
+                  <circle cx="42" cy="42" r="30" fill="url(#lensGlass)" stroke="url(#rim3D)" strokeWidth="7" filter="url(#shadowGlow)" />
+                  
+                  {/* Specular gloss curves */}
+                  <path d="M 21 36 A 23 23 0 0 1 36 21" stroke="white" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
+                  <path d="M 48 63 A 23 23 0 0 0 63 48" stroke="#84CC16" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+
+                  {/* Center Magenta Badge with Cross */}
+                  <circle cx="42" cy="42" r="14" fill="url(#crossBadge)" />
+                  <path d="M 37 37 L 47 47 M 47 37 L 37 47" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
               </div>
 
-              <div>
-                <h3 className="font-bold text-base sm:text-lg text-[#0b1c30] flex items-center gap-1.5">
-                  Your Account Are Ready
-                  <span className="inline-block w-2 h-2 rounded-full bg-[#bef226]" />
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Trade these assets now to get your cashback.
-                </p>
-              </div>
+              {/* Message */}
+              <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base font-normal mb-5">
+                No signals matched your filter
+              </p>
+
+              {/* Action Button */}
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="bg-[#5338F5] hover:bg-[#4326cf] active:scale-[0.99] text-white font-medium text-sm px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer"
+              >
+                Show Recommended Signals
+              </button>
             </div>
+          ) : (
+            <>
+              {/* Top 8 Cards (Rows 1 & 2) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                {topSignals.map((sig) => (
+                  <SignalCard
+                    key={sig.id}
+                    signal={sig}
+                    userTierLevel={user.tierLevel}
+                    isUnlockedByCredit={unlockedSignalIds.has(sig.id)}
+                    onSelectSignal={onSelectSignal}
+                    onUpgradePrompt={onUpgradePrompt}
+                    onUnlockPrompt={handlePromptUnlock}
+                    renderAssetIcon={renderAssetIcon}
+                  />
+                ))}
+              </div>
 
-            <button
-              onClick={() => setTradeModalBroker('HFM')}
-              className="w-full sm:w-auto bg-[#5030e5] hover:bg-[#4326cf] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 group cursor-pointer"
-            >
-              <span>Trade Now</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          </div>
+              {/* ─── MIDDLE BANNER: "Your Account Are Ready." ─── */}
+              <div className="bg-gradient-to-r from-purple-50/70 via-white to-purple-50/40 border border-purple-200/70 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+                <div className="flex items-center gap-3.5">
+                  {/* Illustrated 3D pouch/wallet graphic */}
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#5030e5] to-[#7c3aed] flex items-center justify-center text-white shadow-md shrink-0 relative">
+                    <DollarSign className="w-6 h-6 text-[#bef226]" />
+                    <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#bef226] border-2 border-white" />
+                  </div>
 
-          {/* Bottom 8 Cards (Rows 3 & 4) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-            {bottomSignals.map((sig) => (
-              <SignalCard
-                key={sig.id}
-                signal={sig}
-                userTierLevel={user.tierLevel}
-                onSelectSignal={onSelectSignal}
-                onUpgradePrompt={onUpgradePrompt}
-                renderAssetIcon={renderAssetIcon}
-              />
-            ))}
-          </div>
+                  <div>
+                    <h3 className="font-bold text-base sm:text-lg text-[#0b1c30] flex items-center gap-1.5">
+                      Your Account Are Ready
+                      <span className="inline-block w-2 h-2 rounded-full bg-[#bef226]" />
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Trade these assets now to get your cashback.
+                    </p>
+                  </div>
+                </div>
 
-          {/* ─── PAGINATION BAR ─── */}
-          <div className="flex items-center justify-center gap-1.5 pt-4">
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 flex items-center justify-center text-xs disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
-            >
-              <ChevronsLeft className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 flex items-center justify-center text-xs disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
+                <button
+                  onClick={() => setTradeModalBroker('HFM')}
+                  className="w-full sm:w-auto bg-[#5030e5] hover:bg-[#4326cf] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 group cursor-pointer"
+                >
+                  <span>Trade Now</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
 
-            {/* Page numbers */}
-            <button
-              onClick={() => setCurrentPage(1)}
-              className={`w-8 h-8 rounded-lg border text-xs font-bold transition-all ${
-                currentPage === 1
-                  ? 'border-[#5030e5] text-[#5030e5] bg-white shadow-2xs'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              1
-            </button>
-            <button
-              onClick={() => setCurrentPage(2)}
-              className={`w-8 h-8 rounded-lg border text-xs font-bold transition-all ${
-                currentPage === 2
-                  ? 'border-[#5030e5] text-[#5030e5] bg-white shadow-2xs'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              2
-            </button>
-            <span className="text-slate-400 text-xs px-1 select-none">...</span>
-            <button
-              onClick={() => setCurrentPage(20)}
-              className={`w-8 h-8 rounded-lg border text-xs font-bold transition-all ${
-                currentPage === 20
-                  ? 'border-[#5030e5] text-[#5030e5] bg-white shadow-2xs'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              20
-            </button>
+              {/* Bottom 8 Cards (Rows 3 & 4) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                {bottomSignals.map((sig) => (
+                  <SignalCard
+                    key={sig.id}
+                    signal={sig}
+                    userTierLevel={user.tierLevel}
+                    isUnlockedByCredit={unlockedSignalIds.has(sig.id)}
+                    onSelectSignal={onSelectSignal}
+                    onUpgradePrompt={onUpgradePrompt}
+                    onUnlockPrompt={handlePromptUnlock}
+                    renderAssetIcon={renderAssetIcon}
+                  />
+                ))}
+              </div>
 
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(20, p + 1))}
-              disabled={currentPage === 20}
-              className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 flex items-center justify-center text-xs disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setCurrentPage(20)}
-              disabled={currentPage === 20}
-              className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 flex items-center justify-center text-xs disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
-            >
-              <ChevronsRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+              {/* ─── PAGINATION BAR ─── */}
+              <div className="flex items-center justify-center gap-1.5 pt-4">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 flex items-center justify-center text-xs disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                >
+                  <ChevronsLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 flex items-center justify-center text-xs disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Page numbers */}
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  className={`w-8 h-8 rounded-lg border text-xs font-bold transition-all ${
+                    currentPage === 1
+                      ? 'border-[#5030e5] text-[#5030e5] bg-white shadow-2xs'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  1
+                </button>
+                <button
+                  onClick={() => setCurrentPage(2)}
+                  className={`w-8 h-8 rounded-lg border text-xs font-bold transition-all ${
+                    currentPage === 2
+                      ? 'border-[#5030e5] text-[#5030e5] bg-white shadow-2xs'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  2
+                </button>
+                <span className="text-slate-400 text-xs px-1 select-none">...</span>
+                <button
+                  onClick={() => setCurrentPage(20)}
+                  className={`w-8 h-8 rounded-lg border text-xs font-bold transition-all ${
+                    currentPage === 20
+                      ? 'border-[#5030e5] text-[#5030e5] bg-white shadow-2xs'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  20
+                </button>
+
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(20, p + 1))}
+                  disabled={currentPage === 20}
+                  className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 flex items-center justify-center text-xs disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(20)}
+                  disabled={currentPage === 20}
+                  className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 flex items-center justify-center text-xs disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs"
+                >
+                  <ChevronsRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* RIGHT COLUMN: 3 STACKED CARDS (Fixed 300px on XL, Sticky on scroll) */}
@@ -1026,6 +1192,78 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
           </div>
         </div>
       )}
+
+      {/* ─── MODAL: Credit Unlock Signal Modal (Exact match to Trading Signals; Desktop; Unlocking Modal.png) ─── */}
+      <SignalCreditUnlockModal
+        isOpen={Boolean(unlockTargetSignal)}
+        signal={unlockTargetSignal}
+        userCredits={user.sydeCredits}
+        cost={200}
+        onClose={() => setUnlockTargetSignal(null)}
+        onUnlock={handleUnlockSignal}
+        onClaimBonusCredits={onClaimBonusCredits}
+        onInsufficientCredits={(_credits, _cost) => {
+          setInsufficientCreditTargetSignal(unlockTargetSignal);
+          setUnlockTargetSignal(null);
+          setIsInsufficientCreditModalOpen(true);
+        }}
+      />
+
+      {/* ─── MODAL: Insufficient Credits Modal (2 Scenarios from Dashboard_Trading Signals_Desktop_Beginner (2) & (3).png) ─── */}
+      <InsufficientCreditModal
+        isOpen={isInsufficientCreditModalOpen}
+        userCredits={user.sydeCredits}
+        cost={200}
+        onClose={() => setIsInsufficientCreditModalOpen(false)}
+        onShowMe={handleShowMeCredits}
+      />
+
+      {/* ─── TOAST: Signal Unlocked Toast Notification (Exact match to Trading Signals; Desktop; Signal Unlocked.png) ─── */}
+      <SignalUnlockedToast
+        isVisible={isUnlockedToastVisible}
+        onDismiss={() => setIsUnlockedToastVisible(false)}
+        message="Trading Signal Unlocked!"
+      />
+
+      {/* Discreet floating scenario tester for quick review */}
+      {onSetUserCredits && (
+        <div className="fixed bottom-4 left-4 z-40 bg-white/95 dark:bg-[#15093f]/95 backdrop-blur-sm border border-purple-200/90 dark:border-purple-800 rounded-full px-3 py-1.5 shadow-md flex items-center gap-2 text-xs">
+          <Coins className="w-3.5 h-3.5 text-[#5338F5]" />
+          <span className="font-bold text-slate-700 dark:text-slate-200">{user.sydeCredits} crd</span>
+          <span className="text-slate-300">|</span>
+          <span className="text-[11px] text-slate-500 font-medium">Test:</span>
+          <button
+            type="button"
+            onClick={() => onSetUserCredits(1000)}
+            className={`text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors cursor-pointer ${
+              user.sydeCredits >= 200 ? 'bg-[#5338F5] text-white' : 'text-purple-700 hover:bg-purple-100'
+            }`}
+            title="1000 credits (Can unlock)"
+          >
+            1K
+          </button>
+          <button
+            type="button"
+            onClick={() => onSetUserCredits(160)}
+            className={`text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors cursor-pointer ${
+              user.sydeCredits > 0 && user.sydeCredits < 200 ? 'bg-[#FD02B0] text-white' : 'text-pink-600 hover:bg-pink-100'
+            }`}
+            title="160 credits (Missing 40 credits)"
+          >
+            160
+          </button>
+          <button
+            type="button"
+            onClick={() => onSetUserCredits(0)}
+            className={`text-[11px] px-2 py-0.5 rounded-full font-bold transition-colors cursor-pointer ${
+              user.sydeCredits === 0 ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-200'
+            }`}
+            title="0 credits (Empty wallet)"
+          >
+            0
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -1034,19 +1272,23 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
 interface SignalCardProps {
   signal: MarketSignal;
   userTierLevel: number;
+  isUnlockedByCredit?: boolean;
   onSelectSignal: (sig: MarketSignal) => void;
   onUpgradePrompt: () => void;
+  onUnlockPrompt: (sig: MarketSignal) => void;
   renderAssetIcon: (sig: MarketSignal) => React.ReactNode;
 }
 
 const SignalCard: React.FC<SignalCardProps> = ({
   signal,
   userTierLevel,
+  isUnlockedByCredit = false,
   onSelectSignal,
   onUpgradePrompt,
+  onUnlockPrompt,
   renderAssetIcon,
 }) => {
-  const isLocked = Boolean(signal.minLevel && signal.minLevel > userTierLevel);
+  const isLocked = Boolean(signal.minLevel && signal.minLevel > userTierLevel && !isUnlockedByCredit);
   const isBuy = signal.action === 'BUY';
 
   // Format price helper exactly matching reference design
@@ -1065,7 +1307,7 @@ const SignalCard: React.FC<SignalCardProps> = ({
     <div
       onClick={() => {
         if (isLocked) {
-          onUpgradePrompt();
+          onUnlockPrompt(signal);
         } else {
           onSelectSignal(signal);
         }
@@ -1157,7 +1399,7 @@ const SignalCard: React.FC<SignalCardProps> = ({
             <div
               onClick={(e) => {
                 e.stopPropagation();
-                onUpgradePrompt();
+                onUnlockPrompt(signal);
               }}
               className="w-full py-2.5 flex items-center justify-center gap-2 text-[#5338F5] hover:text-[#4326cf] font-bold text-sm sm:text-[15px] transition-colors cursor-pointer select-none"
             >
@@ -1175,10 +1417,17 @@ const SignalCard: React.FC<SignalCardProps> = ({
                 <Clock className="w-3.5 h-3.5 text-[#5338F5] stroke-[2]" />
                 <span>{signal.period || '30m period'}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
-                <Hourglass className="w-3.5 h-3.5 text-emerald-600 stroke-[2]" />
-                <span>{signal.validity || 'valid for 12m'}</span>
-              </div>
+              {isUnlockedByCredit ? (
+                <div className="flex items-center gap-1 text-[#FD02B0] font-bold text-[11px] bg-pink-50 dark:bg-pink-950/40 px-2 py-0.5 rounded-full border border-pink-200 dark:border-pink-800 shadow-2xs">
+                  <Sparkles className="w-3 h-3 text-[#FD02B0]" />
+                  <span>Unlocked 24h</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                  <Hourglass className="w-3.5 h-3.5 text-emerald-600 stroke-[2]" />
+                  <span>{signal.validity || 'valid for 12m'}</span>
+                </div>
+              )}
             </div>
 
             {/* Buy / Sell Button: EXACT UI MATCH to Card 1 & Card 3 */}

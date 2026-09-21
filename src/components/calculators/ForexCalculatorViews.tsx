@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { CurrencyPairDropdown } from './CurrencyPairDropdown';
 
 interface SharedViewProps {
   currencyPair: string;
@@ -11,7 +12,7 @@ interface SharedViewProps {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 1. SPREAD CALCULATOR VIEW
+// 1. SPREAD CALCULATOR VIEW (Matching D05 Screenshot)
 // ─────────────────────────────────────────────────────────────
 interface SpreadViewProps extends SharedViewProps {
   askPrice: string;
@@ -20,6 +21,34 @@ interface SpreadViewProps extends SharedViewProps {
   setBidPrice: (val: string) => void;
   spreadInPip: string;
 }
+
+const SPREAD_FAQS = [
+  {
+    question: 'What is the fundamental definition of a spread?',
+    answer:
+      'The spread represents the difference between the ask (buy) price and bid (sell) price of a currency pair. It is the primary transaction cost paid directly to the broker to execute a trade.',
+  },
+  {
+    question: 'Why do broker spreads widen during major news events?',
+    answer:
+      'During high-impact macroeconomic releases, market liquidity suddenly thins as tier-1 banks pull orders, causing bid-ask spreads to widen until equilibrium returns.',
+  },
+  {
+    question: 'How do variable spreads differ from fixed spread models?',
+    answer:
+      'Variable spreads fluctuate dynamically with real-time interbank market conditions and can be as low as 0.0 pips, whereas fixed spreads remain constant regardless of market liquidity.',
+  },
+  {
+    question: 'Can this tracking tool handle multi-asset commodities or indices?',
+    answer:
+      'Yes, you can evaluate spreads across major forex pairs, precious metals like Gold (XAU/USD), and equity index contracts with equivalent pip calculation precision.',
+  },
+  {
+    question: 'How can I actively recover my transactional spread expenses?',
+    answer:
+      'Traders can join forex rebate and cashback programs to earn back a portion of each spread or commission paid on every closed lot, reducing overall transaction friction.',
+  },
+];
 
 export const SpreadCalculatorView: React.FC<SpreadViewProps> = ({
   currencyPair,
@@ -32,13 +61,15 @@ export const SpreadCalculatorView: React.FC<SpreadViewProps> = ({
   onReset,
   onSave,
 }) => {
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Title & Subtitle */}
+      {/* Title & Subtitle (Exact D05 format: Spread Calculato in purple, r in pink) */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight flex items-center gap-1.5">
-          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Spread</span>
-          <span className="text-[#FD02B0]">Calculator</span>
+        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight flex items-center gap-0.5">
+          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Spread Calculato</span>
+          <span className="text-[#FD02B0]">r</span>
         </h1>
         <p className="text-sm text-slate-500 dark:text-[#CCC6FB] mt-1">
           See what spreads cost before you place a trade
@@ -48,28 +79,13 @@ export const SpreadCalculatorView: React.FC<SpreadViewProps> = ({
       {/* Inputs Card */}
       <div className="bg-white dark:bg-[#170345] rounded-3xl p-6 sm:p-7 border border-slate-100 dark:border-[#230674] shadow-xs space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {/* Currency Pair (Full width row) */}
-          <div className="sm:col-span-2 space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Currency Pair
-            </label>
-            <div className="relative">
-              <select
-                value={currencyPair}
-                onChange={(e) => setCurrencyPair(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="EUR/USD">EUR/USD</option>
-                <option value="GBP/USD">GBP/USD</option>
-                <option value="USD/JPY">USD/JPY</option>
-                <option value="AUD/USD">AUD/USD</option>
-                <option value="USD/CAD">USD/CAD</option>
-                <option value="USD/CHF">USD/CHF</option>
-                <option value="EUR/GBP">EUR/GBP</option>
-                <option value="XAU/USD">XAU/USD (Gold)</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
+          {/* Currency Pair with Custom Searchable Flag Dropdown (Matches D05) */}
+          <div className="sm:col-span-2">
+            <CurrencyPairDropdown
+              value={currencyPair}
+              onChange={(pair) => setCurrencyPair(pair)}
+              label="Currency Pair"
+            />
           </div>
 
           {/* Ask Price */}
@@ -101,24 +117,19 @@ export const SpreadCalculatorView: React.FC<SpreadViewProps> = ({
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex items-center justify-center gap-3 pt-3">
+        {/* Centered Reset Button (Matching D03/D05) */}
+        <div className="flex items-center justify-center gap-3 pt-2">
           <button
+            type="button"
             onClick={onReset}
-            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
+            className="px-8 py-2 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#170345] hover:bg-slate-50 dark:hover:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
           >
             Reset
-          </button>
-          <button
-            onClick={onSave}
-            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
-          >
-            Save
           </button>
         </div>
       </div>
 
-      {/* Results Card */}
+      {/* Results Card (Exact D05 layout with pink border) */}
       <div className="bg-white dark:bg-[#170345] rounded-3xl p-6 sm:p-7 border-2 border-[#FD02B0] shadow-xs space-y-4">
         <h3 className="text-sm font-bold tracking-tight">
           <span className="text-[#5945F1] dark:text-[#ABA1F8]">Calculation Result</span>
@@ -144,7 +155,7 @@ export const SpreadCalculatorView: React.FC<SpreadViewProps> = ({
         conditions, spreads, execution, and trading costs. Consider professional advice before trading.
       </p>
 
-      {/* Educational Section */}
+      {/* Educational Section (Matches D05) */}
       <div className="space-y-4 pt-2">
         <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
           How Spread Calculator Works
@@ -155,6 +166,7 @@ export const SpreadCalculatorView: React.FC<SpreadViewProps> = ({
           size, then shows the estimated spread cost in your account currency.
         </p>
 
+        {/* Formula Box */}
         <div className="bg-[#f8fafc] dark:bg-[#230674] rounded-2xl p-5 border border-slate-200/80 dark:border-[#3410D5] space-y-3">
           <div className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white">
             Spread Cost = (Ask Price - Bid Price) * Lot Volume * Contract Size
@@ -163,6 +175,60 @@ export const SpreadCalculatorView: React.FC<SpreadViewProps> = ({
             <div className="font-semibold text-slate-700 dark:text-[#ABA1F8]">Where:</div>
             <div>• Ask Price = The market purchase price</div>
             <div>• Bid Price = The market liquidation selling price</div>
+          </div>
+        </div>
+
+        {/* Key Benefits */}
+        <div className="space-y-2 pt-2">
+          <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
+            Key Benefits
+          </h3>
+          <ul className="text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] space-y-2 leading-relaxed">
+            <li>
+              • <span className="font-semibold text-slate-800 dark:text-white">Exposes Total Transaction Costs:</span> Reveals the hidden baseline expense of your market entry to keep trading costs fully visible.
+            </li>
+            <li>
+              • <span className="font-semibold text-slate-800 dark:text-white">Simplifies Broker Comparison:</span> Enables you to audit competing platforms by testing their dynamic bid-ask intervals inside a single portal.
+            </li>
+            <li>
+              • <span className="font-semibold text-slate-800 dark:text-white">Increases Break-Even Accuracy:</span> Defines the exact price distance an asset must move in your direction before your trade prints net profits.
+            </li>
+          </ul>
+        </div>
+
+        {/* Spread Calculator FAQ */}
+        <div className="space-y-3 pt-3">
+          <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+            Spread Calculator FAQ
+          </h3>
+          <div className="space-y-2.5">
+            {SPREAD_FAQS.map((item, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div
+                  key={idx}
+                  className="bg-white dark:bg-[#170345] rounded-2xl border border-slate-100 dark:border-[#230674] overflow-hidden transition-all"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(isOpen ? null : idx)}
+                    className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-slate-50/50 dark:hover:bg-[#230674]/40 transition-all cursor-pointer"
+                  >
+                    <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white pr-4">
+                      {item.question}
+                    </span>
+                    <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold text-lg shrink-0">
+                      {isOpen ? '−' : '+'}
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed border-t border-slate-100 dark:border-[#230674] pt-3">
+                      {item.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -744,398 +810,16 @@ export const RebateCalculatorView: React.FC<RebateViewProps> = ({
 // ─────────────────────────────────────────────────────────────
 // 5. VOLATILITY CALCULATOR VIEW
 // ─────────────────────────────────────────────────────────────
-interface VolatilityViewProps extends SharedViewProps {
-  volatilityHigh: string;
-  setVolatilityHigh: (val: string) => void;
-  volatilityLow: string;
-  setVolatilityLow: (val: string) => void;
-  dailyVolatility: string;
-  expectedRange: string;
-}
-
-export const VolatilityCalculatorView: React.FC<VolatilityViewProps> = ({
-  currencyPair,
-  setCurrencyPair,
-  accountCurrency,
-  setAccountCurrency,
-  volatilityHigh,
-  setVolatilityHigh,
-  volatilityLow,
-  setVolatilityLow,
-  dailyVolatility,
-  expectedRange,
-  onReset,
-  onSave,
-}) => {
-  return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Title & Subtitle */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight flex items-center gap-1.5">
-          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Volatility</span>
-          <span className="text-[#FD02B0]">Calculator</span>
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-[#CCC6FB] mt-1">
-          Measure market volatility and expected daily trading range
-        </p>
-      </div>
-
-      {/* Inputs Card */}
-      <div className="bg-white dark:bg-[#170345] rounded-3xl p-6 sm:p-7 border border-slate-100 dark:border-[#230674] shadow-xs space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {/* Account Currency */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Account Currency
-            </label>
-            <div className="relative">
-              <select
-                value={accountCurrency}
-                onChange={(e) => setAccountCurrency(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="AUD">AUD</option>
-                <option value="CAD">CAD</option>
-                <option value="JPY">JPY</option>
-                <option value="CHF">CHF</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Currency Pair */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Currency Pair
-            </label>
-            <div className="relative">
-              <select
-                value={currencyPair}
-                onChange={(e) => setCurrencyPair(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="EUR/USD">EUR/USD</option>
-                <option value="GBP/USD">GBP/USD</option>
-                <option value="USD/JPY">USD/JPY</option>
-                <option value="AUD/USD">AUD/USD</option>
-                <option value="USD/CAD">USD/CAD</option>
-                <option value="USD/CHF">USD/CHF</option>
-                <option value="EUR/GBP">EUR/GBP</option>
-                <option value="XAU/USD">XAU/USD (Gold)</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* High Price */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              High Price
-            </label>
-            <input
-              type="text"
-              value={volatilityHigh}
-              onChange={(e) => setVolatilityHigh(e.target.value)}
-              placeholder="1.0920"
-              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1]"
-            />
-          </div>
-
-          {/* Low Price */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Low Price
-            </label>
-            <input
-              type="text"
-              value={volatilityLow}
-              onChange={(e) => setVolatilityLow(e.target.value)}
-              placeholder="1.0815"
-              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1]"
-            />
-          </div>
-        </div>
-
-        {/* Buttons */}
-        <div className="flex items-center justify-center gap-3 pt-3">
-          <button
-            onClick={onReset}
-            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
-          >
-            Reset
-          </button>
-          <button
-            onClick={onSave}
-            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-
-      {/* Results Card */}
-      <div className="bg-white dark:bg-[#170345] rounded-3xl p-6 sm:p-7 border-2 border-[#FD02B0] shadow-xs space-y-4">
-        <h3 className="text-sm font-bold tracking-tight">
-          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Calculation Result</span>
-          <span className="text-[#FD02B0]">s</span>
-        </h3>
-
-        <div className="flex items-center justify-center gap-16 sm:gap-28 py-3">
-          <div className="text-center space-y-1">
-            <div className="text-xs font-semibold text-slate-500 dark:text-[#CCC6FB]">
-              Daily Volatility
-            </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {dailyVolatility}
-            </div>
-          </div>
-
-          <div className="text-center space-y-1">
-            <div className="text-xs font-semibold text-slate-500 dark:text-[#CCC6FB]">
-              Expected Range
-            </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {expectedRange}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Disclaimer */}
-      <p className="text-[11px] sm:text-xs text-slate-400 dark:text-[#8A7AF6] leading-relaxed">
-        <span className="font-bold text-slate-600 dark:text-[#CCC6FB]">Disclaimer:</span> This
-        calculator provides estimates for guidance only. Actual results may vary due to market
-        conditions, spreads, execution, and trading costs. Consider professional advice before trading.
-      </p>
-
-      {/* Educational Section */}
-      <div className="space-y-4 pt-2">
-        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-          How Volatility Calculator Works
-        </h2>
-        <p className="text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed">
-          Our Volatility Calculator measures currency pair price fluctuations and average historical movements over specific trading cycles. By analyzing historical pip ranges, traders can assess market risk, set realistic take-profit and stop-loss targets, and dynamically adjust position sizing to prevailing market conditions.
-        </p>
-
-        <div className="bg-[#f8fafc] dark:bg-[#230674] rounded-2xl p-5 border border-slate-200/80 dark:border-[#3410D5] space-y-3">
-          <div className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white">
-            Volatility (%) = ((High Price - Low Price) / Low Price) * 100
-          </div>
-          <div className="text-xs text-slate-600 dark:text-[#CCC6FB] space-y-1.5 leading-relaxed">
-            <div className="font-semibold text-slate-700 dark:text-[#ABA1F8]">Formula Parameters:</div>
-            <div>• Pip Range = (High Price - Low Price) * Pip Multiplier</div>
-            <div>• High Price = Highest recorded price within the evaluation cycle</div>
-            <div>• Low Price = Lowest recorded price within the evaluation cycle</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+export { VolatilityCalculatorDetailView as VolatilityCalculatorView } from './VolatilityCalculatorDetailView';
+export type {
+  VolatilityCalculatorDetailViewProps as VolatilityViewProps,
+  VolatilityCalculationResults,
+} from './VolatilityCalculatorDetailView';
 
 // ─────────────────────────────────────────────────────────────
 // 6. LEVERAGE CALCULATOR VIEW
 // ─────────────────────────────────────────────────────────────
-interface LeverageViewProps extends SharedViewProps {
-  marginInput: string;
-  setMarginInput: (val: string) => void;
-  positionSizeInput: string;
-  setPositionSizeInput: (val: string) => void;
-  value: number;
-  ratio: string;
-}
+export { LeverageCalculatorDetailView as LeverageCalculatorView } from './LeverageCalculatorDetailView';
+export type { LeverageCalculatorDetailViewProps as LeverageViewProps } from './LeverageCalculatorDetailView';
 
-export const LeverageCalculatorView: React.FC<LeverageViewProps> = ({
-  currencyPair,
-  setCurrencyPair,
-  accountCurrency,
-  setAccountCurrency,
-  marginInput,
-  setMarginInput,
-  positionSizeInput,
-  setPositionSizeInput,
-  value,
-  ratio,
-  onReset,
-  onSave,
-}) => {
-  return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Title & Subtitle */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight flex items-center gap-0.5">
-          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Leverag</span>
-          <span className="text-[#FD02B0]">e</span>
-          <span className="text-[#FD02B0] ml-1.5">Calculator</span>
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-[#CCC6FB] mt-1">
-          Determine safe leverage with advance risk assessment
-        </p>
-      </div>
 
-      {/* Interactive Form Card */}
-      <div className="bg-white dark:bg-[#170345] rounded-3xl p-6 sm:p-7 border border-slate-100 dark:border-[#230674] shadow-xs space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {/* Account Currency Dropdown */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Account Currency
-            </label>
-            <div className="relative">
-              <select
-                value={accountCurrency}
-                onChange={(e) => setAccountCurrency(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="AUD">AUD</option>
-                <option value="CAD">CAD</option>
-                <option value="JPY">JPY</option>
-                <option value="CHF">CHF</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Currency Pair Dropdown */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Currency Pair
-            </label>
-            <div className="relative">
-              <select
-                value={currencyPair}
-                onChange={(e) => setCurrencyPair(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="EUR/USD">EUR/USD</option>
-                <option value="GBP/USD">GBP/USD</option>
-                <option value="USD/JPY">USD/JPY</option>
-                <option value="AUD/USD">AUD/USD</option>
-                <option value="USD/CAD">USD/CAD</option>
-                <option value="USD/CHF">USD/CHF</option>
-                <option value="EUR/GBP">EUR/GBP</option>
-                <option value="XAU/USD">XAU/USD (Gold)</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Margin Input */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Margin
-            </label>
-            <input
-              type="number"
-              value={marginInput}
-              onChange={(e) => setMarginInput(e.target.value)}
-              placeholder="100"
-              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1]"
-            />
-          </div>
-
-          {/* Position Size Input */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Position Size
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={positionSizeInput}
-              onChange={(e) => setPositionSizeInput(e.target.value)}
-              placeholder="0.01"
-              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1]"
-            />
-          </div>
-        </div>
-
-        {/* Action Buttons: Reset & Save */}
-        <div className="flex items-center justify-center gap-3 pt-3">
-          <button
-            onClick={onReset}
-            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
-          >
-            Reset
-          </button>
-          <button
-            onClick={onSave}
-            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
-          >
-            Save
-          </button>
-        </div>
-      </div>
-
-      {/* Calculation Results Card (Vibrant Hot-Pink Magenta Border) */}
-      <div className="bg-white dark:bg-[#170345] rounded-3xl p-6 sm:p-7 border-2 border-[#FD02B0] shadow-xs space-y-4">
-        <h3 className="text-sm font-bold tracking-tight">
-          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Calculation Result</span>
-          <span className="text-[#FD02B0]">s</span>
-        </h3>
-
-        <div className="flex items-center justify-center gap-16 sm:gap-28 py-3">
-          <div className="text-center space-y-1">
-            <div className="text-xs font-semibold text-slate-500 dark:text-[#CCC6FB]">
-              Value
-            </div>
-            <div className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              ${value.toFixed(2)}
-            </div>
-          </div>
-
-          <div className="text-center space-y-1">
-            <div className="text-xs font-semibold text-slate-500 dark:text-[#CCC6FB]">
-              Leverage
-            </div>
-            <div className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {ratio}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Disclaimer Text */}
-      <p className="text-[11px] sm:text-xs text-slate-400 dark:text-[#8A7AF6] leading-relaxed">
-        <span className="font-bold text-slate-600 dark:text-[#CCC6FB]">Disclaimer:</span> This
-        calculator provides estimates for guidance only. Actual results may vary due to market
-        conditions, spreads, execution, and trading costs. Consider professional advice before
-        trading.
-      </p>
-
-      {/* Educational Content: How Leverage Calculator Works */}
-      <div className="space-y-4 pt-2">
-        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-          How Leverage Calculator Works
-        </h2>
-
-        <p className="text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed">
-          Our Forex Leverage Calculator evaluates your real account exposure by comparing your total
-          transactional position size against your available account capital equity. By selecting
-          your target asset pair and inputting your desired lot volume, the software demonstrates
-          exactly how much buying power you command. This interactive analysis allows you to gauge
-          whether your structural risk profile aligns safely with your specific capital preservation
-          thresholds.
-        </p>
-
-        {/* Formula & Breakdown Callout Box */}
-        <div className="bg-[#f8fafc] dark:bg-[#230674] rounded-2xl p-5 border border-slate-200/80 dark:border-[#3410D5] space-y-3">
-          <div className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white">
-            Leverage Ratio = Total Position Value / Account Equity
-          </div>
-          <div className="text-xs text-slate-600 dark:text-[#CCC6FB] space-y-1.5 leading-relaxed">
-            <div className="font-semibold text-slate-700 dark:text-[#ABA1F8]">Where:</div>
-            <div>• Total Position Value = Lot Size * Contract Size * Current Base Price</div>
-            <div>• Account Equity = Net deposits plus or minus open floating PnL (Margin allocated)</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};

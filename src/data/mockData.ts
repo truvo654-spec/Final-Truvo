@@ -26,7 +26,7 @@ export const INITIAL_USER: UserProfile = {
   tierLevel: 1,
   currentPoints: 50,
   maxPoints: 100,
-  sydeCredits: 150,
+  sydeCredits: 1000,
   lastWeekCredits: 75,
   perks: ['Standard Cashback Rate', '70% - 74% Signal Confidence', 'Broker Comparisons', 'Table Analysis'],
   boostPercentage: 0,

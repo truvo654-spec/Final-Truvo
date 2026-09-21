@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Broker, UserProfile, MarketSignal } from '../../types';
 import {
   Search,
@@ -39,7 +39,7 @@ interface BrokerCompareSpecs {
   score: number;
   verified: boolean;
   isTopPick?: boolean;
-  logoType: 'hfm' | 'exness' | 'xm' | 'icmarkets' | 'pepperstone' | 'fxpro' | 'tickmill' | 'eightcap' | 'default';
+  logoType: string;
   logoBg: string;
   logoText: string;
   // Cashback & Income
@@ -424,9 +424,471 @@ const COMPARISON_BROKERS: BrokerCompareSpecs[] = [
     tradingSessions: '24/5',
     negativeBalanceProt: 'Yes',
   },
+  {
+    id: 'fpmarkets',
+    name: 'FP Markets',
+    score: 9.70,
+    verified: true,
+    logoType: 'fpmarkets',
+    logoBg: '#0A1C30',
+    logoText: 'FP',
+    highestCashback: '$2.50/Lot',
+    monthlyEst: '$125/mo',
+    rebatePaid: 'Daily',
+    pairsEligible: 'All majors',
+    spreadType: 'Raw / Standard',
+    lowestAvgSpread: '0.0 pips',
+    standardSpread: '1.1 pips',
+    commissionRaw: '$6 RT/lot',
+    totalCostPerLot: '$6–10',
+    slippage: 'Low',
+    pipValuePerLot: '$10',
+    accountTypes: '2 types',
+    minDeposit: '$100',
+    maxLeverage: '1:500',
+    minLotSize: '0.01',
+    instruments: '10000+',
+    tradingPlatforms: ['MT4', 'MT5', 'cTrader', 'IRESS'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~38 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'High',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.8%',
+    marginCallLevel: '100%',
+    stopOutLevel: '50%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'Yes',
+    copyTrading: 'Yes',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
+  {
+    id: 'vantage',
+    name: 'Vantage',
+    score: 9.68,
+    verified: true,
+    logoType: 'vantage',
+    logoBg: '#081E28',
+    logoText: 'V',
+    highestCashback: '$2.50/Lot',
+    monthlyEst: '$125/mo',
+    rebatePaid: 'Daily',
+    pairsEligible: 'All majors',
+    spreadType: 'Raw / STP / Pro',
+    lowestAvgSpread: '0.0 pips',
+    standardSpread: '1.2 pips',
+    commissionRaw: '$6 RT/lot',
+    totalCostPerLot: '$6–11',
+    slippage: 'Low',
+    pipValuePerLot: '$10',
+    accountTypes: '3 types',
+    minDeposit: '$50',
+    maxLeverage: '1:1000',
+    minLotSize: '0.01',
+    instruments: '1000+',
+    tradingPlatforms: ['MT4', 'MT5', 'TradingView', 'ProTrader'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~35 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'High',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.7%',
+    marginCallLevel: '80%',
+    stopOutLevel: '50%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'Yes',
+    copyTrading: 'Yes',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
+  {
+    id: 'axi',
+    name: 'Axi',
+    score: 9.65,
+    verified: false,
+    logoType: 'axi',
+    logoBg: '#E31B23',
+    logoText: 'axi',
+    highestCashback: '$2.00/Lot',
+    monthlyEst: '$100/mo',
+    rebatePaid: 'Daily',
+    pairsEligible: 'All majors',
+    spreadType: 'Pro / Standard',
+    lowestAvgSpread: '0.1 pips',
+    standardSpread: '1.2 pips',
+    commissionRaw: '$7 RT/lot',
+    totalCostPerLot: '$7–11',
+    slippage: 'Low',
+    pipValuePerLot: '$10',
+    accountTypes: '2 types',
+    minDeposit: '$0',
+    maxLeverage: '1:500',
+    minLotSize: '0.01',
+    instruments: '300+',
+    tradingPlatforms: ['MT4'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~45 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'High',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.5%',
+    marginCallLevel: '100%',
+    stopOutLevel: '20%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'Yes',
+    copyTrading: 'Yes',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
+  {
+    id: 'avatrade',
+    name: 'AvaTrade',
+    score: 9.60,
+    verified: true,
+    logoType: 'avatrade',
+    logoBg: '#FFFFFF',
+    logoText: 'AVA',
+    highestCashback: '$2.00/Lot',
+    monthlyEst: '$100/mo',
+    rebatePaid: 'Monthly',
+    pairsEligible: 'All majors',
+    spreadType: 'Fixed / Floating',
+    lowestAvgSpread: '0.9 pips',
+    standardSpread: '1.4 pips',
+    commissionRaw: 'None',
+    totalCostPerLot: '$9–14',
+    slippage: 'Low',
+    pipValuePerLot: '$10',
+    accountTypes: '3 types',
+    minDeposit: '$100',
+    maxLeverage: '1:400',
+    minLotSize: '0.01',
+    instruments: '1250+',
+    tradingPlatforms: ['MT4', 'MT5', 'AvaTradeGO', 'WebTrader'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~50 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'Standard',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.4%',
+    marginCallLevel: '100%',
+    stopOutLevel: '50%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'Yes',
+    copyTrading: 'Yes',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
+  {
+    id: 'ig',
+    name: 'IG',
+    score: 9.80,
+    verified: true,
+    logoType: 'ig',
+    logoBg: '#D9222A',
+    logoText: 'IG',
+    highestCashback: '$2.50/Lot',
+    monthlyEst: '$125/mo',
+    rebatePaid: 'Monthly',
+    pairsEligible: 'All majors',
+    spreadType: 'DMA / Standard',
+    lowestAvgSpread: '0.6 pips',
+    standardSpread: '1.0 pips',
+    commissionRaw: 'None',
+    totalCostPerLot: '$6–10',
+    slippage: 'Very low',
+    pipValuePerLot: '$10',
+    accountTypes: '2 types',
+    minDeposit: '$250',
+    maxLeverage: '1:200',
+    minLotSize: '0.01',
+    instruments: '17000+',
+    tradingPlatforms: ['IG Platform', 'MT4', 'L2 Dealer', 'ProRealTime'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~25 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'Ultra high',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.9%',
+    marginCallLevel: '100%',
+    stopOutLevel: '50%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'Partial',
+    copyTrading: 'No',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
+  {
+    id: 'oanda',
+    name: 'OANDA',
+    score: 9.62,
+    verified: true,
+    logoType: 'oanda',
+    logoBg: '#111111',
+    logoText: 'OANDA',
+    highestCashback: '$2.00/Lot',
+    monthlyEst: '$100/mo',
+    rebatePaid: 'Daily',
+    pairsEligible: 'All majors',
+    spreadType: 'Core / Spread-only',
+    lowestAvgSpread: '0.3 pips',
+    standardSpread: '1.2 pips',
+    commissionRaw: '$5 RT/lot',
+    totalCostPerLot: '$8–12',
+    slippage: 'Low',
+    pipValuePerLot: '$10',
+    accountTypes: '2 types',
+    minDeposit: '$0',
+    maxLeverage: '1:200',
+    minLotSize: '0.01',
+    instruments: '70+',
+    tradingPlatforms: ['OANDA Trade', 'MT4', 'TradingView'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~35 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'High',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.6%',
+    marginCallLevel: '100%',
+    stopOutLevel: '50%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'No',
+    copyTrading: 'No',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
+  {
+    id: 'capital',
+    name: 'Capital.com',
+    score: 9.64,
+    verified: true,
+    logoType: 'capital',
+    logoBg: '#181818',
+    logoText: 'C.',
+    highestCashback: '$2.20/Lot',
+    monthlyEst: '$110/mo',
+    rebatePaid: 'Daily',
+    pairsEligible: 'All majors',
+    spreadType: 'Zero Commission',
+    lowestAvgSpread: '0.6 pips',
+    standardSpread: '1.1 pips',
+    commissionRaw: 'None',
+    totalCostPerLot: '$6–11',
+    slippage: 'Low',
+    pipValuePerLot: '$10',
+    accountTypes: '3 types',
+    minDeposit: '$20',
+    maxLeverage: '1:500',
+    minLotSize: '0.01',
+    instruments: '3000+',
+    tradingPlatforms: ['Capital Web', 'MT4', 'TradingView'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~30 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'High',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.7%',
+    marginCallLevel: '100%',
+    stopOutLevel: '50%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'No',
+    copyTrading: 'No',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
+  {
+    id: 'deriv',
+    name: 'Deriv',
+    score: 9.58,
+    verified: false,
+    logoType: 'deriv',
+    logoBg: '#FF444F',
+    logoText: 'd',
+    highestCashback: '$2.00/Lot',
+    monthlyEst: '$100/mo',
+    rebatePaid: 'Daily',
+    pairsEligible: 'All majors',
+    spreadType: 'Standard / Raw',
+    lowestAvgSpread: '0.5 pips',
+    standardSpread: '1.2 pips',
+    commissionRaw: 'None',
+    totalCostPerLot: '$7–12',
+    slippage: 'Low',
+    pipValuePerLot: '$10',
+    accountTypes: '3 types',
+    minDeposit: '$5',
+    maxLeverage: '1:1000',
+    minLotSize: '0.01',
+    instruments: '100+',
+    tradingPlatforms: ['Deriv MT5', 'Deriv X', 'Deriv Trader'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~40 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'Standard',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.5%',
+    marginCallLevel: '100%',
+    stopOutLevel: '50%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'Yes',
+    copyTrading: 'Yes',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
+  {
+    id: 'octa',
+    name: 'Octa',
+    score: 9.60,
+    verified: false,
+    logoType: 'octa',
+    logoBg: '#0057FF',
+    logoText: 'OCTA',
+    highestCashback: '$2.50/Lot',
+    monthlyEst: '$125/mo',
+    rebatePaid: 'Daily',
+    pairsEligible: 'All majors',
+    spreadType: 'Floating',
+    lowestAvgSpread: '0.6 pips',
+    standardSpread: '1.2 pips',
+    commissionRaw: 'None',
+    totalCostPerLot: '$6–12',
+    slippage: 'Medium',
+    pipValuePerLot: '$10',
+    accountTypes: '2 types',
+    minDeposit: '$25',
+    maxLeverage: '1:1000',
+    minLotSize: '0.01',
+    instruments: '230+',
+    tradingPlatforms: ['MT4', 'MT5', 'OctaTrader'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~40 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'Standard',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.3%',
+    marginCallLevel: '25%',
+    stopOutLevel: '15%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'Yes',
+    copyTrading: 'Yes',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
+  {
+    id: 'justmarkets',
+    name: 'JustMarkets',
+    score: 9.55,
+    verified: false,
+    logoType: 'justmarkets',
+    logoBg: '#0062FF',
+    logoText: 'JM',
+    highestCashback: '$2.50/Lot',
+    monthlyEst: '$125/mo',
+    rebatePaid: 'Daily',
+    pairsEligible: 'All majors',
+    spreadType: 'Raw / Standard / Pro',
+    lowestAvgSpread: '0.0 pips',
+    standardSpread: '1.2 pips',
+    commissionRaw: '$6 RT/lot',
+    totalCostPerLot: '$6–12',
+    slippage: 'Medium',
+    pipValuePerLot: '$10',
+    accountTypes: '4 types',
+    minDeposit: '$1',
+    maxLeverage: '1:3000',
+    minLotSize: '0.01',
+    instruments: '170+',
+    tradingPlatforms: ['MT4', 'MT5'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~45 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'Standard',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.2%',
+    marginCallLevel: '40%',
+    stopOutLevel: '20%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'Yes',
+    copyTrading: 'Yes',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
+  {
+    id: 'atfx',
+    name: 'ATFX',
+    score: 9.58,
+    verified: false,
+    logoType: 'atfx',
+    logoBg: '#0A1B3A',
+    logoText: 'ATFX',
+    highestCashback: '$2.00/Lot',
+    monthlyEst: '$100/mo',
+    rebatePaid: 'Daily',
+    pairsEligible: 'All majors',
+    spreadType: 'Edge / Standard',
+    lowestAvgSpread: '0.6 pips',
+    standardSpread: '1.3 pips',
+    commissionRaw: 'None',
+    totalCostPerLot: '$6–13',
+    slippage: 'Low',
+    pipValuePerLot: '$10',
+    accountTypes: '3 types',
+    minDeposit: '$100',
+    maxLeverage: '1:400',
+    minLotSize: '0.01',
+    instruments: '300+',
+    tradingPlatforms: ['MT4', 'ATFX Web'],
+    accountCurrency: 'Multi',
+    executionSpeed: '~40 ms',
+    priceLevels: '5 decimal',
+    entryPrecision: 'Standard',
+    minSlDistance: '0 pips',
+    slFillAccuracy: '~99.4%',
+    marginCallLevel: '100%',
+    stopOutLevel: '50%',
+    marginBuffer: 'Yes',
+    scalping: 'Yes',
+    hedging: 'Yes',
+    eaAlgoSupport: 'Yes',
+    swapFreeOption: 'Yes',
+    copyTrading: 'Yes',
+    tradingSessions: '24/5',
+    negativeBalanceProt: 'Yes',
+  },
 ];
 
-// 19 Complete searchable brokers list matching D03/D05/D07 dropdown
+// 19 Complete searchable brokers list matching 02_Search_Focus State.png dropdown
 const ALL_SEARCHABLE_BROKERS = [
   { id: 'hfm', name: 'HFM', logoType: 'hfm' },
   { id: 'xm', name: 'XM', logoType: 'xm' },
@@ -435,18 +897,37 @@ const ALL_SEARCHABLE_BROKERS = [
   { id: 'pepperstone', name: 'Pepperstone', logoType: 'pepperstone' },
   { id: 'fxpro', name: 'FxPro', logoType: 'fxpro' },
   { id: 'tickmill', name: 'Tickmill', logoType: 'tickmill' },
-  { id: 'fpmarkets', name: 'FP Markets', logoType: 'default' },
-  { id: 'vantage', name: 'Vantage', logoType: 'default' },
+  { id: 'fpmarkets', name: 'FP Markets', logoType: 'fpmarkets' },
+  { id: 'vantage', name: 'Vantage', logoType: 'vantage' },
   { id: 'eightcap', name: 'Eightcap', logoType: 'eightcap' },
-  { id: 'axi', name: 'Axi', logoType: 'default' },
-  { id: 'avatrade', name: 'AvaTrade', logoType: 'default' },
-  { id: 'ig', name: 'IG', logoType: 'default' },
-  { id: 'oanda', name: 'OANDA', logoType: 'default' },
-  { id: 'capital', name: 'Capital.com', logoType: 'default' },
-  { id: 'deriv', name: 'Deriv', logoType: 'default' },
-  { id: 'octa', name: 'Octa', logoType: 'default' },
-  { id: 'justmarkets', name: 'JustMarkets', logoType: 'default' },
-  { id: 'atfx', name: 'ATFX', logoType: 'default' },
+  { id: 'axi', name: 'Axi', logoType: 'axi' },
+  { id: 'avatrade', name: 'AvaTrade', logoType: 'avatrade' },
+  { id: 'ig', name: 'IG', logoType: 'ig' },
+  { id: 'oanda', name: 'OANDA', logoType: 'oanda' },
+  { id: 'capital', name: 'Capital.com', logoType: 'capital' },
+  { id: 'deriv', name: 'Deriv', logoType: 'deriv' },
+  { id: 'octa', name: 'Octa', logoType: 'octa' },
+  { id: 'justmarkets', name: 'JustMarkets', logoType: 'justmarkets' },
+  { id: 'atfx', name: 'ATFX', logoType: 'atfx' },
+];
+
+// 6 Popular brokers displayed in Empty State matching 01_Search_Empty State.png
+const POPULAR_EMPTY_STATE_BROKERS = [
+  // Column 1 (Slot 0)
+  [
+    { id: 'xm', name: 'XM', logoType: 'xm', score: '9.75', verified: true },
+    { id: 'fxpro', name: 'FxPro', logoType: 'fxpro', score: '9.75', verified: false },
+  ],
+  // Column 2 (Slot 1)
+  [
+    { id: 'icmarkets', name: 'IC Markets', logoType: 'icmarkets', score: '9.75', verified: false },
+    { id: 'tickmill', name: 'Tickmill', logoType: 'tickmill', score: '9.75', verified: false },
+  ],
+  // Column 3 (Slot 2)
+  [
+    { id: 'pepperstone', name: 'Pepperstone', logoType: 'pepperstone', score: '9.75', verified: false },
+    { id: 'eightcap', name: 'Eightcap', logoType: 'eightcap', score: '9.75', verified: false },
+  ],
 ];
 
 export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
@@ -489,19 +970,20 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
   };
 
   // Up to 3 slots
-  // Default to empty state or initialBroker if provided from card Compare button
+  // Default to empty state [null, null, null] matching 01_Search_Empty State.png
+  // or initialBroker if navigated with a specific broker
   const [selectedSlotIds, setSelectedSlotIds] = useState<(string | null)[]>(() => {
     if (initialBroker) {
       const resolved = resolveComparisonBrokerId(initialBroker);
       if (resolved) {
-        return [resolved, resolved === 'hfm' ? 'exness' : 'hfm', null];
+        return [resolved, null, null];
       }
     }
-    return ['hfm', 'exness', null];
+    return [null, null, null];
   });
 
   // Keep slots in sync if initialBroker changes (e.g. user goes back to brokers and clicks Compare on XM)
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialBroker) {
       const resolved = resolveComparisonBrokerId(initialBroker);
       if (resolved) {
@@ -512,7 +994,6 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
           if (emptyIdx !== -1) {
             next[emptyIdx] = resolved;
           } else {
-            // Replace slot 0
             next[0] = resolved;
           }
           return next;
@@ -525,6 +1006,29 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
   // Active dropdown open slot index: 0, 1, 2, or null
   const [activeDropdownSlot, setActiveDropdownSlot] = useState<number | null>(null);
   const [dropdownSearch, setDropdownSearch] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside and Escape key listener to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setActiveDropdownSlot(null);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setActiveDropdownSlot(null);
+      }
+    }
+    if (activeDropdownSlot !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeDropdownSlot]);
 
   // Selected specs objects for the 3 slots
   const slot1Broker = useMemo(
@@ -542,45 +1046,45 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
 
   const selectedCount = [slot1Broker, slot2Broker, slot3Broker].filter(Boolean).length;
 
-  // Render logo badge
+  // Render logo badge for all 19 brokers
   const renderBrokerLogo = (logoType: string, name: string, sizeClass = 'w-10 h-10') => {
     switch (logoType) {
       case 'hfm':
         return (
-          <div className={`${sizeClass} rounded-xl bg-black flex flex-col items-center justify-center p-1 shrink-0 shadow-2xs`}>
-            <span className="text-white font-extrabold text-[11px] tracking-wider leading-none">HFM</span>
-            <div className="h-[2px] w-5 bg-red-600 my-0.5" />
-            <span className="text-[5px] text-white font-bold tracking-tighter uppercase leading-none">MARKETS</span>
+          <div className={`${sizeClass} rounded-xl bg-black flex flex-col items-center justify-center p-0.5 shrink-0 shadow-2xs`}>
+            <span className="text-white font-extrabold text-[10px] tracking-wider leading-none">HFM</span>
+            <div className="h-[1.5px] w-4 bg-red-600 my-0.5" />
+            <span className="text-[4px] text-white font-bold tracking-tighter uppercase leading-none">MARKETS</span>
           </div>
         );
       case 'exness':
         return (
-          <div className={`${sizeClass} rounded-xl bg-[#FCD303] flex items-center justify-center text-black font-black text-lg shrink-0 shadow-2xs`}>
+          <div className={`${sizeClass} rounded-xl bg-[#FCD303] flex items-center justify-center text-black font-black text-sm shrink-0 shadow-2xs`}>
             ex
           </div>
         );
       case 'xm':
         return (
-          <div className={`${sizeClass} rounded-xl bg-black flex items-center justify-center text-white font-black text-sm shrink-0 shadow-2xs`}>
+          <div className={`${sizeClass} rounded-xl bg-black flex items-center justify-center text-white font-black text-xs shrink-0 shadow-2xs`}>
             XM
           </div>
         );
       case 'icmarkets':
         return (
           <div className={`${sizeClass} rounded-xl bg-black flex flex-col items-center justify-center p-0.5 text-white shrink-0 shadow-2xs`}>
-            <div className="flex items-end gap-0.5 h-2.5 mb-0.5">
-              <span className="w-0.5 h-1.5 bg-[#00E575] rounded-xs" />
-              <span className="w-0.5 h-2.5 bg-[#00E575] rounded-xs" />
+            <div className="flex items-end gap-0.5 h-2 mb-0.5">
+              <span className="w-0.5 h-1 bg-[#00E575] rounded-xs" />
               <span className="w-0.5 h-2 bg-[#00E575] rounded-xs" />
-              <span className="text-white font-black text-[7.5px] ml-0.5 leading-none">IC</span>
+              <span className="w-0.5 h-1.5 bg-[#00E575] rounded-xs" />
+              <span className="text-white font-black text-[7px] ml-0.5 leading-none">IC</span>
             </div>
-            <span className="text-[5.5px] font-bold text-white tracking-tight leading-none">Markets</span>
+            <span className="text-[5px] font-bold text-white tracking-tight leading-none">Markets</span>
           </div>
         );
       case 'pepperstone':
         return (
           <div className={`${sizeClass} rounded-xl bg-[#0066FF] flex items-center justify-center text-white shrink-0 shadow-2xs`}>
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
               <path d="M6 3h7a5 5 0 0 1 5 5 5 5 0 0 1-5 5H9v8H6V3zm3 3v4h4a2 2 0 0 0 2-2 2 2 0 0 0-2-2H9z" />
             </svg>
           </div>
@@ -588,22 +1092,88 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
       case 'fxpro':
         return (
           <div className={`${sizeClass} rounded-xl bg-[#DC2626] flex flex-col items-center justify-center p-0.5 text-white shrink-0 shadow-2xs`}>
-            <span className="text-white font-black text-[11px] tracking-tight leading-none">FxPro</span>
-            <span className="text-[4.5px] text-white/90 font-medium tracking-tighter leading-none mt-0.5">Trade Like a Pro</span>
+            <span className="text-white font-black text-[10px] tracking-tight leading-none">FxPro</span>
+            <span className="text-[4px] text-white/90 font-medium tracking-tighter leading-none mt-0.5">Trade Like a Pro</span>
           </div>
         );
       case 'tickmill':
         return (
           <div className={`${sizeClass} rounded-xl bg-[#1E1B18] flex items-center justify-center p-1 text-white shrink-0 shadow-2xs`}>
-            <div className="w-4 h-4 rounded-xs bg-[#DC2626] rotate-45 flex items-center justify-center">
-              <div className="w-2 h-2 rounded-xs bg-black rotate-45" />
+            <div className="w-3.5 h-3.5 rounded-xs bg-[#DC2626] rotate-45 flex items-center justify-center">
+              <div className="w-1.5 h-1.5 rounded-xs bg-black rotate-45" />
             </div>
           </div>
         );
       case 'eightcap':
         return (
-          <div className={`${sizeClass} rounded-xl bg-[#059669] flex items-center justify-center text-white font-black text-sm shrink-0 shadow-2xs`}>
+          <div className={`${sizeClass} rounded-xl bg-[#059669] flex items-center justify-center text-white font-black text-xs shrink-0 shadow-2xs`}>
             8
+          </div>
+        );
+      case 'fpmarkets':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#0A1C30] flex items-center justify-center text-white font-black text-xs shrink-0 shadow-2xs`}>
+            FP
+          </div>
+        );
+      case 'vantage':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#081E28] flex items-center justify-center text-[#00E575] font-black text-xs shrink-0 shadow-2xs`}>
+            V
+          </div>
+        );
+      case 'axi':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#E31B23] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-2xs lowercase`}>
+            axi
+          </div>
+        );
+      case 'avatrade':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#004B90] flex items-center justify-center text-white font-bold text-[9px] shrink-0 shadow-2xs`}>
+            AVA
+          </div>
+        );
+      case 'ig':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#D9222A] flex items-center justify-center text-white font-black text-xs shrink-0 shadow-2xs`}>
+            IG
+          </div>
+        );
+      case 'oanda':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#111111] flex items-center justify-center text-white font-black text-xs shrink-0 shadow-2xs`}>
+            O
+          </div>
+        );
+      case 'capital':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#181818] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-2xs`}>
+            C.
+          </div>
+        );
+      case 'deriv':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#FF444F] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-2xs`}>
+            d
+          </div>
+        );
+      case 'octa':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#0057FF] flex items-center justify-center text-white font-extrabold text-[8px] shrink-0 shadow-2xs`}>
+            OCTA
+          </div>
+        );
+      case 'justmarkets':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#0062FF] flex items-center justify-center text-white font-black text-xs shrink-0 shadow-2xs`}>
+            JM
+          </div>
+        );
+      case 'atfx':
+        return (
+          <div className={`${sizeClass} rounded-xl bg-[#0A1B3A] flex items-center justify-center text-white font-extrabold text-[8px] shrink-0 shadow-2xs`}>
+            ATFX
           </div>
         );
       default:
@@ -670,58 +1240,29 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
   };
 
   return (
-    <div className="w-full space-y-10 pb-16">
-      {/* ─── State Switcher Banner (Signed-In vs Not Signed-In Demo Controller) ─── */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-2.5 bg-white dark:bg-[#15023a] border border-indigo-100 dark:border-[#32137d] rounded-2xl shadow-2xs">
-        <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300">
-          <span className="w-2 h-2 rounded-full bg-[#CAEB0E] animate-pulse" />
-          <span className="font-semibold text-slate-800 dark:text-white">Broker Comparison State:</span>
-          <span className="hidden sm:inline text-slate-400">|</span>
-          <span className="text-slate-500">
-            Current view is demonstrating the{' '}
-            <strong className={isLoggedIn ? 'text-[#5945F1]' : 'text-[#FE01B1]'}>
-              {isLoggedIn ? 'Signed-In (Josh / Member)' : 'Not Signed-In (Guest)'}
-            </strong>{' '}
-            experience.
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-[#230674] rounded-xl shrink-0">
-          <button
-            onClick={() => onToggleAuthState?.(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-semibold transition-all cursor-pointer ${
-              isLoggedIn
-                ? 'bg-white dark:bg-[#5945F1] text-[#5945F1] dark:text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-            }`}
-            title="Switch to Signed-In state to test member experience"
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>Signed In</span>
-          </button>
-          <button
-            onClick={() => onToggleAuthState?.(false)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-semibold transition-all cursor-pointer ${
-              !isLoggedIn
-                ? 'bg-white dark:bg-[#FE01B1] text-[#FE01B1] dark:text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
-            }`}
-            title="Switch to Not Signed-In state to test guest/sign-up flow"
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Not Signed In</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ─── Hero Heading (Exact match to D02-D08: Compare CFD Brokers.) ─── */}
-      <div className="text-center max-w-3xl mx-auto pt-2 space-y-2.5">
-        <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold font-display tracking-tight text-[#5945F1]">
+    <div className="w-full space-y-8 pb-16">
+      {/* ─── Hero Heading (Exact match to 01_Search_Empty State.png: Compare CFD Brokers.) ─── */}
+      <div className="text-center max-w-3xl mx-auto pt-2 space-y-2">
+        <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold font-display tracking-tight text-[#5945F1]">
           Compare CFD Brokers<span className="text-[#FE01B1]">.</span>
         </h1>
-        <p className="text-sm sm:text-[15px] text-slate-500 font-normal leading-relaxed max-w-2xl mx-auto">
-          See trading conditions, platforms, regulation and cashback side by syde before making your decision.
+        <p className="text-sm sm:text-[15px] text-slate-500 dark:text-slate-400 font-normal leading-relaxed max-w-2xl mx-auto">
+          See trading conditions, platforms, regulation and cashback side by side before making your decision.
         </p>
+        {onToggleAuthState && (
+          <div className="flex justify-center pt-1">
+            <button
+              type="button"
+              onClick={() => onToggleAuthState(!isLoggedIn)}
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs"
+              title="Click to toggle between Signed In and Not Signed In (Guest) UI"
+            >
+              <span className={`w-2 h-2 rounded-full ${isLoggedIn ? 'bg-emerald-500' : 'bg-[#FE01B1]'}`} />
+              <span>Preview State: <strong>{isLoggedIn ? 'Signed In (Member)' : 'Not Signed In (Guest)'}</strong></span>
+              <span className="text-[10px] text-[#5945F1] dark:text-[#CAEB0E] font-bold underline ml-0.5">Switch</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ─── Main Comparison Arena + Right Sidebar Grid ─── */}
@@ -749,51 +1290,203 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
             </div>
           </div>
 
-          {/* If no broker is selected, or slots have popular broker chips underneath */}
-          {selectedCount < 3 && (
-            <div className="my-5 p-4 rounded-2xl bg-indigo-50/40 dark:bg-[#1f0956]/40 border border-indigo-100/60 dark:border-[#381691]/60">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#5945F1]" />
-                  <span>Popular Brokers to Compare:</span>
-                </span>
-                <span className="text-[11px] text-slate-400">Click to add to next available slot</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
-                {popularBrokers.slice(0, 6).map((pb) => (
-                  <button
-                    key={pb.id}
-                    onClick={() => {
-                      const nextEmptyIdx = selectedSlotIds.findIndex((s) => s === null);
-                      if (nextEmptyIdx !== -1) {
-                        handleSelectBrokerIntoSlot(nextEmptyIdx, pb.id);
-                      } else {
-                        handleSelectBrokerIntoSlot(0, pb.id);
-                      }
-                    }}
-                    className="p-2.5 rounded-xl bg-white dark:bg-[#180442] border border-slate-200/90 dark:border-[#31117a] hover:border-[#5945F1] hover:shadow-xs transition-all flex flex-col items-center text-center group cursor-pointer"
-                  >
-                    {renderBrokerLogo(pb.logoType, pb.name, 'w-8 h-8')}
-                    <div className="font-bold text-xs text-[#0b1c30] dark:text-white mt-1.5 leading-tight group-hover:text-[#5945F1]">
-                      {pb.name}
+          {/* ─── Comparison Content: Empty State vs Populated Rows ─── */}
+          {selectedCount === 0 ? (
+            /* Empty State Layout (Exact Match to 01_Search_Empty State.png) */
+            <div className="pt-4">
+              <div className="grid grid-cols-12 gap-3 sm:gap-4 items-start">
+                {/* Left Column: Category Pills & Row Labels */}
+                <div className="col-span-12 sm:col-span-3 lg:col-span-3">
+                  <div className="mb-2">
+                    <span className="inline-block bg-[#EEECFC] dark:bg-[#25095e] text-[#5945F1] dark:text-[#CAEB0E] text-xs font-bold px-3 py-1.5 rounded-lg">
+                      Cashback & Income
+                    </span>
+                  </div>
+                  <div className="h-[68px] flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Highest Cashback per Lot</span>
+                  </div>
+                  <div className="h-[68px] flex flex-col justify-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Monthly Est.</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                      (Can put a option to mention monthly avg trades and volume to identity the cashback income)
+                    </span>
+                  </div>
+                  <div className="h-10 flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Rebate paid</span>
+                  </div>
+                  <div className="h-10 flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Pairs eligible</span>
+                  </div>
+                  <div className="pt-4 mb-2">
+                    <span className="inline-block bg-[#EEECFC] dark:bg-[#25095e] text-[#5945F1] dark:text-[#CAEB0E] text-xs font-bold px-3 py-1.5 rounded-lg">
+                      Costs & Spreads
+                    </span>
+                  </div>
+                  <div className="h-10 flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Spread type</span>
+                  </div>
+                  <div className="h-10 flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Lowest avg spread</span>
+                  </div>
+                  <div className="h-10 flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Standard spread</span>
+                  </div>
+                  <div className="h-10 flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Commission (raw acct)</span>
+                  </div>
+                  <div className="h-10 flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Total cost / lot (est.)</span>
+                  </div>
+                  <div className="h-10 flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Slippage</span>
+                  </div>
+                  <div className="h-10 flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                    <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">Pip value / lot</span>
+                  </div>
+                </div>
+
+                {/* Right 3 Columns: 2 Cards per column at top, then matching horizontal lines */}
+                {[0, 1, 2].map((colIdx) => {
+                  const colCards = POPULAR_EMPTY_STATE_BROKERS[colIdx];
+                  return (
+                    <div key={colIdx} className="col-span-12 sm:col-span-3 lg:col-span-3">
+                      <div className="h-[29px] mb-2" /> {/* Spacer matching Cashback & Income pill */}
+                      {/* Card 1 */}
+                      <div className="h-[68px] flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectBrokerIntoSlot(colIdx, colCards[0].id)}
+                          className="w-full flex items-center gap-2.5 p-1 rounded-xl hover:bg-purple-50/60 dark:hover:bg-purple-950/30 transition-all text-left cursor-pointer group"
+                        >
+                          {renderBrokerLogo(colCards[0].logoType, colCards[0].name, 'w-10 h-10')}
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-sm text-[#0b1c30] dark:text-white group-hover:text-[#5945F1] transition-colors leading-tight truncate">
+                              {colCards[0].name}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                              <span>{colCards[0].score} Score</span>
+                              <Info className="w-3 h-3 text-slate-400 shrink-0" />
+                            </div>
+                            {colCards[0].verified && (
+                              <div className="mt-1">
+                                <span className="text-[9px] px-1.5 py-0.5 bg-[#CAEB0E] text-black font-bold rounded">
+                                  ✓ Verified
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* Card 2 */}
+                      <div className="h-[68px] flex items-center border-b border-slate-100 dark:border-[#28086a]">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectBrokerIntoSlot(colIdx, colCards[1].id)}
+                          className="w-full flex items-center gap-2.5 p-1 rounded-xl hover:bg-purple-50/60 dark:hover:bg-purple-950/30 transition-all text-left cursor-pointer group"
+                        >
+                          {renderBrokerLogo(colCards[1].logoType, colCards[1].name, 'w-10 h-10')}
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-sm text-[#0b1c30] dark:text-white group-hover:text-[#5945F1] transition-colors leading-tight truncate">
+                              {colCards[1].name}
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                              <span>{colCards[1].score} Score</span>
+                              <Info className="w-3 h-3 text-slate-400 shrink-0" />
+                            </div>
+                            {colCards[1].verified && (
+                              <div className="mt-1">
+                                <span className="text-[9px] px-1.5 py-0.5 bg-[#CAEB0E] text-black font-bold rounded">
+                                  ✓ Verified
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* Row 3: If not signed in and center column, show "Sign Up to Compare" button (D02_Broker Comparison_Empty State (1).png) */}
+                      <div className="h-10 flex items-center justify-center border-b border-slate-100 dark:border-[#28086a]">
+                        {!isLoggedIn && colIdx === 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onOpenSignUp) onOpenSignUp();
+                              else if (onOpenSignIn) onOpenSignIn();
+                            }}
+                            className="px-6 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4834e0] text-white text-xs sm:text-[13px] font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+                          >
+                            Sign Up to Compare
+                          </button>
+                        ) : null}
+                      </div>
+
+                      {/* Row 4: Pairs eligible empty row */}
+                      <div className="h-10 border-b border-slate-100 dark:border-[#28086a]" />
+
+                      {/* Costs & Spreads header spacer */}
+                      <div className="pt-4 mb-2 h-[29px]" />
+
+                      {/* Remaining 7 empty rows with horizontal dividers matching left specs rows */}
+                      <div className="h-10 border-b border-slate-100 dark:border-[#28086a]" />
+                      <div className="h-10 border-b border-slate-100 dark:border-[#28086a]" />
+                      <div className="h-10 border-b border-slate-100 dark:border-[#28086a]" />
+                      <div className="h-10 border-b border-slate-100 dark:border-[#28086a]" />
+                      <div className="h-10 border-b border-slate-100 dark:border-[#28086a]" />
+                      <div className="h-10 border-b border-slate-100 dark:border-[#28086a]" />
+                      <div className="h-10 border-b border-slate-100 dark:border-[#28086a]" />
                     </div>
-                    <div className="text-[10px] text-slate-400 flex items-center gap-0.5 mt-0.5">
-                      <span>{pb.score}</span>
-                      <Info className="w-2.5 h-2.5 text-slate-400" />
-                    </div>
-                    {pb.verified && (
-                      <span className="mt-1 text-[9px] px-1 py-0.5 bg-[#CAEB0E] text-black font-bold rounded">
-                        ✔ Verified
-                      </span>
-                    )}
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
-          )}
+          ) : (
+            <>
+              {/* If slots have popular broker chips underneath */}
+              {selectedCount < 3 && (
+                <div className="my-5 p-4 rounded-2xl bg-indigo-50/40 dark:bg-[#1f0956]/40 border border-indigo-100/60 dark:border-[#381691]/60">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#5945F1]" />
+                      <span>Popular Brokers to Compare:</span>
+                    </span>
+                    <span className="text-[11px] text-slate-400">Click to add to next available slot</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                    {popularBrokers.slice(0, 6).map((pb) => (
+                      <button
+                        key={pb.id}
+                        onClick={() => {
+                          const nextEmptyIdx = selectedSlotIds.findIndex((s) => s === null);
+                          if (nextEmptyIdx !== -1) {
+                            handleSelectBrokerIntoSlot(nextEmptyIdx, pb.id);
+                          } else {
+                            handleSelectBrokerIntoSlot(0, pb.id);
+                          }
+                        }}
+                        className="p-2.5 rounded-xl bg-white dark:bg-[#180442] border border-slate-200/90 dark:border-[#31117a] hover:border-[#5945F1] hover:shadow-xs transition-all flex flex-col items-center text-center group cursor-pointer"
+                      >
+                        {renderBrokerLogo(pb.logoType, pb.name, 'w-8 h-8')}
+                        <div className="font-bold text-xs text-[#0b1c30] dark:text-white mt-1.5 leading-tight group-hover:text-[#5945F1]">
+                          {pb.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400 flex items-center gap-0.5 mt-0.5">
+                          <span>{pb.score}</span>
+                          <Info className="w-2.5 h-2.5 text-slate-400" />
+                        </div>
+                        {pb.verified && (
+                          <span className="mt-1 text-[9px] px-1 py-0.5 bg-[#CAEB0E] text-black font-bold rounded">
+                            ✔ Verified
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* ─── Comparison Table Rows ─── */}
-          <div className="space-y-6 pt-2">
+              {/* ─── Comparison Table Rows ─── */}
+              <div className="space-y-6 pt-2">
             {/* 1. Cashback & Income */}
             <div>
               <div className="bg-[#EEECFC] dark:bg-[#25095e] text-[#5945F1] dark:text-[#CAEB0E] text-xs font-bold px-3.5 py-2 rounded-lg mb-2">
@@ -1012,204 +1705,292 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
 
         {/* ─── RIGHT: Sidebar Widgets (Fixed 300px on LG) (Sticky during scroll) ─── */}
         <aside className="w-full lg:w-[300px] lg:shrink-0 space-y-6 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
-          {/* Widget 1: Move up. Earn More. (Exact match to image.png) */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-[#15023a] border-2 border-[#FE01B1] shadow-xs relative overflow-hidden">
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="font-display font-black text-xl text-[#0b1c30] dark:text-white tracking-tight">
-                Move up. Earn More<span className="text-[#FE01B1]">.</span>
-              </h3>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
-              Keep trading to climb levels and boost cashback.
-            </p>
-
-            {/* Stepper Progress Bar (Exact match to image.png) */}
-            <div className="pt-4 pb-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  {/* Left Dot: Rookie with 'You' pill */}
-                  <div className="relative flex flex-col items-center">
-                    {/* Floating 'You' badge */}
-                    <div className="absolute -top-7 px-2.5 py-0.5 rounded-lg bg-[#5945F1] text-white text-[11px] font-bold shadow-xs whitespace-nowrap">
-                      You
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#5945F1] rotate-45" />
-                    </div>
-                    <div className="w-6 h-6 rounded-full bg-[#5945F1]" />
-                    <span className="text-[11px] font-bold text-[#FE01B1] mt-1.5">Rookie</span>
+          {!isLoggedIn ? (
+            <>
+              {/* ─── GUEST WIDGET 1: Helloo, Stranger! Join or Lose -> (Exact D02_Broker Comparison_Empty State (1).png) ─── */}
+              <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#15023a] border-2 border-[#5945F1] shadow-xs relative overflow-hidden">
+                <div className="flex items-center gap-3.5 mb-2.5">
+                  <div className="w-12 h-12 rounded-2xl bg-[#EEECFC] dark:bg-[#25105b] text-[#5945F1] flex items-center justify-center shrink-0 shadow-2xs">
+                    {/* Detective Hat & Glasses SVG */}
+                    <svg className="w-7 h-7 text-[#5945F1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 13h20" />
+                      <path d="M5 13c.4-4 2.2-7 7-7s6.6 3 7 7" />
+                      <path d="M8 9h8" />
+                      <circle cx="8" cy="17.5" r="2.5" fill="currentColor" fillOpacity="0.15" />
+                      <circle cx="16" cy="17.5" r="2.5" fill="currentColor" fillOpacity="0.15" />
+                      <path d="M10.5 17.5h3" />
+                      <path d="M5.5 17.5H4" />
+                      <path d="M18.5 17.5H20" />
+                    </svg>
                   </div>
-
-                  {/* Connecting Line */}
-                  <div className="w-8 sm:w-10 h-0.5 bg-slate-200 dark:bg-slate-700" />
-
-                  {/* Right Dot: Climber */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-6 h-6 rounded-full border-2 border-[#5945F1] bg-white dark:bg-[#15023a]" />
-                    <span className="text-[11px] font-bold text-[#5945F1] mt-1.5">Climber</span>
+                  <div>
+                    <h3 className="font-display font-black text-xl text-[#0b1c30] dark:text-white leading-tight">
+                      Helloo, <span className="text-[#5945F1]">Stranger!</span>
+                    </h3>
                   </div>
                 </div>
-
-                {/* Action button: View Plan */}
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-5 leading-relaxed font-medium">
+                  Sign up now to stop guessing and start trading with confidence.
+                </p>
                 <button
                   type="button"
-                  onClick={onOpenViewPlan}
-                  className="px-3.5 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4834df] text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
-                >
-                  View Plan
-                </button>
-              </div>
-            </div>
-
-            {/* If not logged in, showcase the guest prompt */}
-            {!isLoggedIn && (
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                <span className="text-slate-500 text-[11px]">Track your climb:</span>
-                <button
                   onClick={onOpenSignUp}
-                  className="text-[#FE01B1] hover:underline font-bold text-xs flex items-center gap-1 cursor-pointer"
+                  className="w-full py-3 px-4 bg-[#5945F1] hover:bg-[#4834e0] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
                 >
-                  <span>Sign Up Free</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <span>Join or Lose</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
-            )}
-          </div>
 
-          {/* Widget 2: Most Recent Signals. (Exact match to D02-D08) */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-[#15023a] border border-slate-200/80 dark:border-[#2f1073] shadow-xs">
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="font-display font-extrabold text-base text-[#0b1c30] dark:text-white">
-                Most Recent <span className="text-[#5945F1] dark:text-[#CAEB0E]">Signals</span>
-                <span className="text-[#FE01B1]">.</span>
-              </h3>
-              <button
-                onClick={onNavigateToSignals}
-                className="text-xs font-semibold text-slate-500 hover:text-[#5945F1] flex items-center gap-0.5 cursor-pointer"
-              >
-                <span>More</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-              View most recent signals for your trading
-            </p>
-
-            {/* Signal Items List */}
-            <div className="space-y-3">
-              {/* EUR/USD */}
-              <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">🇪🇺</span>
-                  <div>
-                    <div className="font-bold text-xs text-[#0b1c30] dark:text-white">EUR/USD</div>
-                    <div className="text-[11px] text-[#10B981] font-semibold">+0.33%</div>
-                  </div>
+              {/* ─── GUEST WIDGET 2: Connect. Trade. Trade. Earn. (Exact match to D02 screenshot) ─── */}
+              <div className="p-6 rounded-3xl bg-[#F8F9FC] dark:bg-[#16033e] border border-slate-200/80 dark:border-[#2f1073] shadow-xs">
+                <div className="font-display text-2xl font-black leading-tight tracking-tight mb-6">
+                  <span className="text-[#0b1c30] dark:text-white">Connect. </span>
+                  <span className="text-[#5945F1]">Trade.</span>
+                  <br />
+                  <span className="text-[#5945F1]">Trade. </span>
+                  <span className="text-[#FE01B1]">Earn.</span>
                 </div>
-                {/* Mini sparkline */}
-                <svg className="w-16 h-5 text-[#10B981] stroke-current fill-none stroke-[1.5]" viewBox="0 0 60 20">
-                  <path d="M0 15 Q15 5, 25 12 T45 8 T60 3" />
-                </svg>
-                <button
-                  onClick={onNavigateToSignals}
-                  className="px-3 py-1 bg-[#CAEB0E] hover:bg-[#b8d60d] text-black text-xs font-bold rounded-lg shadow-2xs cursor-pointer"
-                >
-                  Buy
-                </button>
-              </div>
 
-              {/* GOOGL */}
-              <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-bold text-blue-500">G</span>
+                <div className="space-y-4">
+                  {/* Step 01 */}
                   <div>
-                    <div className="font-bold text-xs text-[#0b1c30] dark:text-white">GOOGL</div>
-                    <div className="text-[11px] text-red-500 font-semibold">-0.11%</div>
-                  </div>
-                </div>
-                {/* Mini sparkline */}
-                <svg className="w-16 h-5 text-indigo-400 stroke-current fill-none stroke-[1.5]" viewBox="0 0 60 20">
-                  <path d="M0 5 Q15 15, 25 8 T45 14 T60 18" />
-                </svg>
-                <button
-                  onClick={onNavigateToSignals}
-                  className="px-3 py-1 bg-[#5945F1] hover:bg-[#4834e0] text-white text-xs font-bold rounded-lg shadow-2xs cursor-pointer"
-                >
-                  Sell
-                </button>
-              </div>
-
-              {/* BTC/USD - Premium Signal */}
-              <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-[10px] flex items-center justify-center">
-                    ₿
-                  </div>
-                  <div>
-                    <div className="font-bold text-xs text-[#0b1c30] dark:text-white">BTC/USD</div>
-                    <div className="text-[10px] text-[#FE01B1] font-bold flex items-center gap-1">
-                      <Gem className="w-2.5 h-2.5" />
-                      <span>Premium Signal</span>
+                    <div className="flex items-center gap-1.5 text-xs font-black text-[#5945F1] tracking-wider mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#5945F1] inline-block" />
+                      <span>0 1</span>
                     </div>
+                    <div className="font-bold text-sm text-[#0b1c30] dark:text-white mb-1">
+                      Choose your preferred broker
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                      Open a new broker account or connect an existing one, whichever works best for you.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-slate-200/70 dark:border-slate-800" />
+
+                  {/* Step 02 */}
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs font-black text-[#5945F1] tracking-wider mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#5945F1] inline-block" />
+                      <span>0 2</span>
+                    </div>
+                    <div className="font-bold text-sm text-[#0b1c30] dark:text-white mb-1">
+                      Keep trading as usual
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                      No new platforms, no new setup. Just keep trading through your broker account.
+                    </p>
+                  </div>
+
+                  <div className="border-t border-slate-200/70 dark:border-slate-800" />
+
+                  {/* Step 03 */}
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs font-black text-[#5945F1] tracking-wider mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#5945F1] inline-block" />
+                      <span>0 3</span>
+                    </div>
+                    <div className="font-bold text-sm text-[#0b1c30] dark:text-white mb-1">
+                      Get rebates
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                      Receive cashback automatically on every eligible trade.
+                    </p>
                   </div>
                 </div>
-                <button
-                  onClick={onOpenViewPlan}
-                  className="px-3 py-1 border border-[#FE01B1] text-[#FE01B1] hover:bg-[#FE01B1]/10 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                >
-                  Upgrade
-                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* ─── SIGNED-IN WIDGET 1: Move up. Earn More. (Exact match to image.png) ─── */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-[#15023a] border-2 border-[#FE01B1] shadow-xs relative overflow-hidden">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <h3 className="font-display font-black text-xl text-[#0b1c30] dark:text-white tracking-tight">
+                    Move up. Earn More<span className="text-[#FE01B1]">.</span>
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+                  Keep trading to climb levels and boost cashback.
+                </p>
+
+                {/* Stepper Progress Bar (Exact match to image.png) */}
+                <div className="pt-4 pb-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      {/* Left Dot: Rookie with 'You' pill */}
+                      <div className="relative flex flex-col items-center">
+                        {/* Floating 'You' badge */}
+                        <div className="absolute -top-7 px-2.5 py-0.5 rounded-lg bg-[#5945F1] text-white text-[11px] font-bold shadow-xs whitespace-nowrap">
+                          You
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#5945F1] rotate-45" />
+                        </div>
+                        <div className="w-6 h-6 rounded-full bg-[#5945F1]" />
+                        <span className="text-[11px] font-bold text-[#FE01B1] mt-1.5">Rookie</span>
+                      </div>
+
+                      {/* Connecting Line */}
+                      <div className="w-8 sm:w-10 h-0.5 bg-slate-200 dark:bg-slate-700" />
+
+                      {/* Right Dot: Climber */}
+                      <div className="flex flex-col items-center">
+                        <div className="w-6 h-6 rounded-full border-2 border-[#5945F1] bg-white dark:bg-[#15023a]" />
+                        <span className="text-[11px] font-bold text-[#5945F1] mt-1.5">Climber</span>
+                      </div>
+                    </div>
+
+                    {/* Action button: View Plan */}
+                    <button
+                      type="button"
+                      onClick={onOpenViewPlan}
+                      className="px-3.5 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4834df] text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+                    >
+                      View Plan
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {/* S&P 500 */}
-              <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-red-600 text-white font-bold text-[9px] flex items-center justify-center">
-                    500
-                  </div>
-                  <div>
-                    <div className="font-bold text-xs text-[#0b1c30] dark:text-white">S&P 500</div>
-                    <div className="text-[11px] text-[#10B981] font-semibold">+0.44%</div>
-                  </div>
+              {/* ─── SIGNED-IN WIDGET 2: Most Recent Signals. (Exact match to D02-D08) ─── */}
+              <div className="p-5 rounded-3xl bg-white dark:bg-[#15023a] border border-slate-200/80 dark:border-[#2f1073] shadow-xs">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-display font-extrabold text-base text-[#0b1c30] dark:text-white">
+                    Most Recent <span className="text-[#5945F1] dark:text-[#CAEB0E]">Signals</span>
+                    <span className="text-[#FE01B1]">.</span>
+                  </h3>
+                  <button
+                    onClick={onNavigateToSignals}
+                    className="text-xs font-semibold text-slate-500 hover:text-[#5945F1] flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <span>More</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
-                {/* Mini sparkline */}
-                <svg className="w-16 h-5 text-[#10B981] stroke-current fill-none stroke-[1.5]" viewBox="0 0 60 20">
-                  <path d="M0 16 Q15 10, 30 14 T60 2" />
-                </svg>
-                <button
-                  onClick={onNavigateToSignals}
-                  className="px-3 py-1 bg-[#CAEB0E] hover:bg-[#b8d60d] text-black text-xs font-bold rounded-lg shadow-2xs cursor-pointer"
-                >
-                  Buy
-                </button>
-              </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                  View most recent signals for your trading
+                </p>
 
-              {/* XAU/USD */}
-              <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-amber-400 text-white font-bold text-[10px] flex items-center justify-center">
-                    🪙
+                {/* Signal Items List */}
+                <div className="space-y-3">
+                  {/* EUR/USD */}
+                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🇪🇺</span>
+                      <div>
+                        <div className="font-bold text-xs text-[#0b1c30] dark:text-white">EUR/USD</div>
+                        <div className="text-[11px] text-[#10B981] font-semibold">+0.33%</div>
+                      </div>
+                    </div>
+                    {/* Mini sparkline */}
+                    <svg className="w-16 h-5 text-[#10B981] stroke-current fill-none stroke-[1.5]" viewBox="0 0 60 20">
+                      <path d="M0 15 Q15 5, 25 12 T45 8 T60 3" />
+                    </svg>
+                    <button
+                      onClick={onNavigateToSignals}
+                      className="px-3 py-1 bg-[#CAEB0E] hover:bg-[#b8d60d] text-black text-xs font-bold rounded-lg shadow-2xs cursor-pointer"
+                    >
+                      Buy
+                    </button>
                   </div>
-                  <div>
-                    <div className="font-bold text-xs text-[#0b1c30] dark:text-white">XAU/USD</div>
-                    <div className="text-[11px] text-[#10B981] font-semibold">+0.24%</div>
+
+                  {/* GOOGL */}
+                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-bold text-blue-500">G</span>
+                      <div>
+                        <div className="font-bold text-xs text-[#0b1c30] dark:text-white">GOOGL</div>
+                        <div className="text-[11px] text-red-500 font-semibold">-0.11%</div>
+                      </div>
+                    </div>
+                    {/* Mini sparkline */}
+                    <svg className="w-16 h-5 text-indigo-400 stroke-current fill-none stroke-[1.5]" viewBox="0 0 60 20">
+                      <path d="M0 5 Q15 15, 25 8 T45 14 T60 18" />
+                    </svg>
+                    <button
+                      onClick={onNavigateToSignals}
+                      className="px-3 py-1 bg-[#5945F1] hover:bg-[#4834e0] text-white text-xs font-bold rounded-lg shadow-2xs cursor-pointer"
+                    >
+                      Sell
+                    </button>
+                  </div>
+
+                  {/* BTC/USD - Premium Signal */}
+                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-[10px] flex items-center justify-center">
+                        ₿
+                      </div>
+                      <div>
+                        <div className="font-bold text-xs text-[#0b1c30] dark:text-white">BTC/USD</div>
+                        <div className="text-[10px] text-[#FE01B1] font-bold flex items-center gap-1">
+                          <Gem className="w-2.5 h-2.5" />
+                          <span>Premium Signal</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onOpenViewPlan}
+                      className="px-3 py-1 border border-[#FE01B1] text-[#FE01B1] hover:bg-[#FE01B1]/10 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Upgrade
+                    </button>
+                  </div>
+
+                  {/* S&P 500 */}
+                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-red-600 text-white font-bold text-[9px] flex items-center justify-center">
+                        500
+                      </div>
+                      <div>
+                        <div className="font-bold text-xs text-[#0b1c30] dark:text-white">S&P 500</div>
+                        <div className="text-[11px] text-[#10B981] font-semibold">+0.44%</div>
+                      </div>
+                    </div>
+                    {/* Mini sparkline */}
+                    <svg className="w-16 h-5 text-[#10B981] stroke-current fill-none stroke-[1.5]" viewBox="0 0 60 20">
+                      <path d="M0 16 Q15 10, 30 14 T60 2" />
+                    </svg>
+                    <button
+                      onClick={onNavigateToSignals}
+                      className="px-3 py-1 bg-[#CAEB0E] hover:bg-[#b8d60d] text-black text-xs font-bold rounded-lg shadow-2xs cursor-pointer"
+                    >
+                      Buy
+                    </button>
+                  </div>
+
+                  {/* XAU/USD */}
+                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-amber-400 text-white font-bold text-[10px] flex items-center justify-center">
+                        🪙
+                      </div>
+                      <div>
+                        <div className="font-bold text-xs text-[#0b1c30] dark:text-white">XAU/USD</div>
+                        <div className="text-[11px] text-[#10B981] font-semibold">+0.24%</div>
+                      </div>
+                    </div>
+                    {/* Mini sparkline */}
+                    <svg className="w-16 h-5 text-[#10B981] stroke-current fill-none stroke-[1.5]" viewBox="0 0 60 20">
+                      <path d="M0 12 Q20 4, 35 10 T60 4" />
+                    </svg>
+                    <button
+                      onClick={onNavigateToSignals}
+                      className="px-3 py-1 bg-[#CAEB0E] hover:bg-[#b8d60d] text-black text-xs font-bold rounded-lg shadow-2xs cursor-pointer"
+                    >
+                      Buy
+                    </button>
                   </div>
                 </div>
-                {/* Mini sparkline */}
-                <svg className="w-16 h-5 text-[#10B981] stroke-current fill-none stroke-[1.5]" viewBox="0 0 60 20">
-                  <path d="M0 12 Q20 4, 35 10 T60 4" />
-                </svg>
-                <button
-                  onClick={onNavigateToSignals}
-                  className="px-3 py-1 bg-[#CAEB0E] hover:bg-[#b8d60d] text-black text-xs font-bold rounded-lg shadow-2xs cursor-pointer"
-                >
-                  Buy
-                </button>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </aside>
       </div>
 
@@ -1324,27 +2105,39 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
   // Helper to render top of each slot
   function renderSlotTop(slotIdx: number, broker: BrokerCompareSpecs | null) {
     if (!broker) {
-      // Empty slot with "Select a Broker" dropdown button
+      // Empty slot with "Select a Broker" dropdown button matching 01_Search_Empty State.png
       return (
-        <div className="bg-[#f4f6fb] dark:bg-[#1a0747] rounded-2xl p-4 border border-slate-200/70 dark:border-[#321278] text-left">
-          <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">Select a Broker</div>
-          <button
-            onClick={() => setActiveDropdownSlot(activeDropdownSlot === slotIdx ? null : slotIdx)}
-            className="w-full flex items-center justify-between px-3 py-2 bg-white dark:bg-[#120233] border border-slate-200 dark:border-[#3a1885] rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:border-[#5945F1] transition-all shadow-2xs cursor-pointer"
-          >
-            <span>Select Broker</span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-          </button>
+        <div className="bg-[#f5f7fb] dark:bg-[#1a0747] rounded-2xl p-4 border border-slate-200/80 dark:border-[#321278] text-left relative">
+          <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 mb-2">
+            Select a Broker
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveDropdownSlot(activeDropdownSlot === slotIdx ? null : slotIdx);
+                setDropdownSearch('');
+              }}
+              className="w-full flex items-center justify-between px-3.5 py-2 bg-white dark:bg-[#120233] border border-slate-200 dark:border-[#3a1885] rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:border-[#5945F1] transition-all shadow-2xs cursor-pointer"
+            >
+              <span>Select Broker</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                  activeDropdownSlot === slotIdx ? 'rotate-180 text-[#5945F1]' : ''
+                }`}
+              />
+            </button>
 
-          {/* Searchable Dropdown Popup */}
-          {activeDropdownSlot === slotIdx && renderDropdownPopup(slotIdx)}
+            {/* Searchable Dropdown Popup matching 02_Search_Focus State.png */}
+            {activeDropdownSlot === slotIdx && renderDropdownPopup(slotIdx)}
+          </div>
         </div>
       );
     }
 
     // Populated slot card with logo, score, verified badge, remove X, and Connect Now button
     return (
-      <div className="bg-[#f4f6fb] dark:bg-[#1a0747] rounded-2xl p-4 border border-slate-200/70 dark:border-[#321278] text-left space-y-3">
+      <div className="bg-[#f5f7fb] dark:bg-[#1a0747] rounded-2xl p-4 border border-slate-200/80 dark:border-[#321278] text-left space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-start gap-2.5">
             {renderBrokerLogo(broker.logoType, broker.name, 'w-11 h-11')}
@@ -1384,42 +2177,61 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
     );
   }
 
-  // Render searchable dropdown popup
+  // Render searchable dropdown popup (Exact match to 02_Search_Focus State.png)
   function renderDropdownPopup(slotIdx: number) {
     return (
-      <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-[#15023a] border border-slate-200 dark:border-[#3c178a] rounded-2xl shadow-2xl p-2.5 space-y-2 animate-in fade-in zoom-in-95 duration-150">
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+      <div
+        ref={dropdownRef}
+        className="absolute top-full left-0 mt-1.5 w-full min-w-[260px] bg-white dark:bg-[#15093f] border border-[#D4D2FB] dark:border-[#382285] rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      >
+        {/* Search header matching 02_Search_Focus State.png */}
+        <div className="relative border-b border-slate-100 dark:border-slate-800 px-3 py-2 bg-slate-50/50 dark:bg-[#180946]/50">
+          <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search..."
             value={dropdownSearch}
             onChange={(e) => setDropdownSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-[#200754] border border-slate-200 dark:border-[#381682] focus:outline-hidden focus:border-[#5945F1] dark:text-white"
+            className="w-full pl-7 pr-2 py-1 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none bg-transparent"
             autoFocus
           />
         </div>
 
-        <div className="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-          {filteredSearchBrokers.map((b) => {
-            const isAlreadySelected = selectedSlotIds.includes(b.id);
-            return (
-              <button
-                key={b.id}
-                disabled={isAlreadySelected}
-                onClick={() => handleSelectBrokerIntoSlot(slotIdx, b.id)}
-                className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left text-xs transition-colors cursor-pointer ${
-                  isAlreadySelected
-                    ? 'opacity-40 cursor-not-allowed bg-slate-50 dark:bg-[#1a0747]'
-                    : 'hover:bg-indigo-50/70 dark:hover:bg-[#23085c] text-slate-800 dark:text-white'
-                }`}
-              >
-                {renderBrokerLogo(b.logoType, b.name, 'w-6 h-6')}
-                <span className="font-medium flex-1 truncate">{b.name}</span>
-                {isAlreadySelected && <span className="text-[10px] text-slate-400">Added</span>}
-              </button>
-            );
-          })}
+        {/* Scrollable list of brokers with logos */}
+        <div className="max-h-[340px] overflow-y-auto py-1.5 custom-scrollbar divide-y divide-slate-50 dark:divide-slate-800/40">
+          {filteredSearchBrokers.length === 0 ? (
+            <div className="p-4 text-center text-xs text-slate-400">No brokers found</div>
+          ) : (
+            filteredSearchBrokers.map((b) => {
+              const isAlreadySelected = selectedSlotIds.includes(b.id);
+              return (
+                <button
+                  key={b.id}
+                  disabled={isAlreadySelected}
+                  onClick={() => handleSelectBrokerIntoSlot(slotIdx, b.id)}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 text-left cursor-pointer transition-colors group ${
+                    isAlreadySelected
+                      ? 'opacity-40 cursor-not-allowed bg-slate-50/70 dark:bg-[#1a0747]'
+                      : 'hover:bg-purple-50/70 dark:hover:bg-purple-950/40'
+                  }`}
+                >
+                  {renderBrokerLogo(b.logoType, b.name, 'w-6 h-6')}
+                  <span
+                    className={`text-[13px] font-semibold flex-1 truncate ${
+                      isAlreadySelected
+                        ? 'text-slate-400'
+                        : 'text-[#0b1c30] dark:text-slate-100 group-hover:text-[#5338F5]'
+                    }`}
+                  >
+                    {b.name}
+                  </span>
+                  {isAlreadySelected && (
+                    <span className="text-[10px] text-slate-400 font-medium shrink-0">Added</span>
+                  )}
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
     );

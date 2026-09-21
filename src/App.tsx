@@ -445,6 +445,35 @@ export default function App() {
     handleRewardPointsAndCredits(25, 5, 'Trader Level Progress');
   };
 
+  // Gamification: Deduct credits for feature unlock
+  const handleSpendCredits = (amount: number, reason: string): boolean => {
+    if (user.sydeCredits < amount) {
+      showToast(`⚠️ Insufficient Syde Credits (Required: ${amount} 🪙)`);
+      return false;
+    }
+    setUser((prev) => {
+      const nextCredits = prev.sydeCredits - amount;
+      const updated = { ...prev, sydeCredits: nextCredits };
+      try {
+        localStorage.setItem('marketsyde_user_profile', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    const newLogItem: ActivityLogItem = {
+      id: `act-${Date.now()}`,
+      title: reason || 'Credit Unlock',
+      description: `Unlocked premium trading signal telemetry for 24h`,
+      pointsChange: 0,
+      creditsChange: -amount,
+      timestamp: 'Just now',
+      type: 'credits',
+      category: 'Bonus',
+    };
+    setActivityLogs((prev) => [newLogItem, ...prev]);
+    showToast(`🔓 Unlocked with ${amount} Syde Credits!`);
+    return true;
+  };
+
   // Trigger Earning Modals (Quest Complete, Mission Complete, Trade Complete)
   const handleTriggerEarningReward = (data: EarningRewardData) => {
     setEarningRewardModal(data);
@@ -956,6 +985,18 @@ export default function App() {
               }));
               handleRewardPoints(Math.round(lotSize * 15), `Live Trade via ${brokerName}`);
               showToast(`🎉 +$${rebateAmount.toFixed(2)} Cashback earned via ${brokerName}!`);
+            }}
+            onSpendCredits={handleSpendCredits}
+            onClaimBonusCredits={(amount) => handleRewardPointsAndCredits(0, amount, 'Credit Bonus Claim')}
+            onSetUserCredits={(credits) => {
+              setUser((prev) => {
+                const updated = { ...prev, sydeCredits: credits };
+                try {
+                  localStorage.setItem('marketsyde_user_profile', JSON.stringify(updated));
+                } catch {}
+                return updated;
+              });
+              showToast(`🪙 Syde Credits set to ${credits} for scenario testing`);
             }}
           />
         )}
