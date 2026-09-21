@@ -176,7 +176,7 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
                 <option value="JPY">JPY</option>
                 <option value="CHF">CHF</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -200,7 +200,7 @@ export const PositionSizeCalculatorView: React.FC<SharedPlanningProps> = ({ onRe
                 <option value="EUR/GBP">EUR/GBP</option>
                 <option value="XAU/USD">XAU/USD (Gold)</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -511,7 +511,7 @@ export const StopOutCalculatorView: React.FC<SharedPlanningProps> = ({ onReset, 
                 <option value="GBP">GBP</option>
                 <option value="AUD">AUD</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -530,7 +530,7 @@ export const StopOutCalculatorView: React.FC<SharedPlanningProps> = ({ onReset, 
                 <option value="GBP/USD">GBP/USD</option>
                 <option value="USD/JPY">USD/JPY</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -551,7 +551,7 @@ export const StopOutCalculatorView: React.FC<SharedPlanningProps> = ({ onReset, 
                 <option value="1:400">1:400</option>
                 <option value="1:500">1:500</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -887,7 +887,7 @@ export const StopLossTakeProfitCalculatorView: React.FC<SharedPlanningProps> = (
                 <option value="GBP">GBP</option>
                 <option value="AUD">AUD</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -906,7 +906,7 @@ export const StopLossTakeProfitCalculatorView: React.FC<SharedPlanningProps> = (
                 <option value="GBP/USD">GBP/USD</option>
                 <option value="USD/JPY">USD/JPY</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 

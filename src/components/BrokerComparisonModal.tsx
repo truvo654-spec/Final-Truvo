@@ -271,9 +271,10 @@ export const BrokerComparisonModal: React.FC<BrokerComparisonModalProps> = ({
                       onSelectBrokerDetail(brokerA);
                       onClose();
                     }}
-                    className="text-[10px] text-[#5945F1] hover:underline font-bold mt-1 cursor-pointer block"
+                    className="text-[11px] text-[#5945F1] hover:underline font-bold mt-1 cursor-pointer inline-flex items-center gap-1"
                   >
-                    View Broker Profile →
+                    <span>View Details</span>
+                    <ArrowRight className="w-3 h-3" />
                   </button>
                 )}
               </div>
@@ -304,9 +305,10 @@ export const BrokerComparisonModal: React.FC<BrokerComparisonModalProps> = ({
                       onSelectBrokerDetail(brokerB);
                       onClose();
                     }}
-                    className="text-[10px] text-[#5945F1] hover:underline font-bold mt-1 cursor-pointer block"
+                    className="text-[11px] text-[#5945F1] hover:underline font-bold mt-1 cursor-pointer inline-flex items-center gap-1"
                   >
-                    View Broker Profile →
+                    <span>View Details</span>
+                    <ArrowRight className="w-3 h-3" />
                   </button>
                 )}
               </div>

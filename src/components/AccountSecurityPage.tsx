@@ -9,6 +9,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { UserProfile } from '../types';
+import { BorderBeam } from './ui/BorderBeam';
+
 
 interface AccountSecurityPageProps {
   user: UserProfile;
@@ -254,7 +256,13 @@ export const AccountSecurityPage: React.FC<AccountSecurityPageProps> = ({
           </div>
 
           {/* Card 2: Pick up where you left off */}
-          <div className="rounded-2xl p-5 bg-[#f8fafc] border border-slate-200/90 shadow-2xs space-y-4">
+          <div className="rounded-2xl p-5 bg-[#f8fafc] dark:bg-[#170345] border border-slate-200/90 dark:border-indigo-950/70 shadow-2xs space-y-4 relative overflow-hidden">
+            <BorderBeam
+              borderWidth={1.5}
+              duration={8}
+              colorFrom="#5945F1"
+              colorTo="#FD02B0"
+            />
             <div>
               <div
                 onClick={onNavigateToBrokers}

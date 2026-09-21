@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronDown, Search, Plus, Minus } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 
 interface CurrencyItem {
   code: string;
@@ -237,7 +237,7 @@ export const LeverageCalculatorDetailView: React.FC<LeverageCalculatorDetailView
                 setIsCurrencyOpen(!isCurrencyOpen);
                 setIsPairOpen(false);
               }}
-              className={`w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border ${
+              className={`relative w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border ${
                 isCurrencyOpen
                   ? 'border-[#5945F1] ring-1 ring-[#5945F1]'
                   : 'border-slate-200 dark:border-[#3410D5]'
@@ -245,7 +245,7 @@ export const LeverageCalculatorDetailView: React.FC<LeverageCalculatorDetailView
             >
               <span>{accountCurrency}</span>
               <ChevronDown
-                className={`w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none transition-transform duration-200 ${
+                className={`w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-transform duration-200 ${
                   isCurrencyOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -333,7 +333,7 @@ export const LeverageCalculatorDetailView: React.FC<LeverageCalculatorDetailView
                 setIsPairOpen(!isPairOpen);
                 setIsCurrencyOpen(false);
               }}
-              className={`w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border ${
+              className={`relative w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border ${
                 isPairOpen
                   ? 'border-[#5945F1] ring-1 ring-[#5945F1]'
                   : 'border-slate-200 dark:border-[#3410D5]'
@@ -341,7 +341,7 @@ export const LeverageCalculatorDetailView: React.FC<LeverageCalculatorDetailView
             >
               <span>{currencyPair}</span>
               <ChevronDown
-                className={`w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none transition-transform duration-200 ${
+                className={`w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-transform duration-200 ${
                   isPairOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -508,8 +508,8 @@ export const LeverageCalculatorDetailView: React.FC<LeverageCalculatorDetailView
           </div>
           <div className="text-xs text-slate-600 dark:text-[#CCC6FB] space-y-1.5 leading-relaxed">
             <div className="font-semibold text-slate-700 dark:text-[#ABA1F8]">Where:</div>
-            <div>• Total Position Value = Lot Size * Contract Size * Current Base Price</div>
-            <div>• Account Equity = Net deposits plus or minus open floating profits or losses</div>
+            <div>Total Position Value = Lot Size * Contract Size * Current Base Price</div>
+            <div>Account Equity = Net deposits plus or minus open floating profits or losses</div>
           </div>
         </div>
       </div>
@@ -520,9 +520,9 @@ export const LeverageCalculatorDetailView: React.FC<LeverageCalculatorDetailView
           Key Benefits
         </h2>
 
-        <ul className="space-y-2.5 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed">
-          <li className="flex items-start gap-2">
-            <span className="text-slate-400 mt-0.5">•</span>
+        <ul className="list-none p-0 m-0 space-y-2.5 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed">
+          <li className="flex items-start gap-2.5">
+            <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
             <div>
               <span className="font-semibold text-slate-800 dark:text-white">
                 Visualizes Absolute Risk Exposure:
@@ -531,8 +531,8 @@ export const LeverageCalculatorDetailView: React.FC<LeverageCalculatorDetailView
               traps.
             </div>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="text-slate-400 mt-0.5">•</span>
+          <li className="flex items-start gap-2.5">
+            <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
             <div>
               <span className="font-semibold text-slate-800 dark:text-white">
                 Optimizes Buying Power Allocation:
@@ -541,8 +541,8 @@ export const LeverageCalculatorDetailView: React.FC<LeverageCalculatorDetailView
               actual account gearing.
             </div>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="text-slate-400 mt-0.5">•</span>
+          <li className="flex items-start gap-2.5">
+            <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
             <div>
               <span className="font-semibold text-slate-800 dark:text-white">
                 Maximizes Strategy Alignment:
@@ -556,31 +556,34 @@ export const LeverageCalculatorDetailView: React.FC<LeverageCalculatorDetailView
 
       {/* Leverage Calculator FAQ */}
       <div className="space-y-3 pt-4">
-        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+        <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
           Leverage Calculator FAQ
-        </h2>
+        </h3>
 
-        <div className="divide-y divide-slate-100 dark:divide-[#28086a] border-t border-b border-slate-100 dark:border-[#28086a]">
-          {FAQ_ITEMS.map((faq, idx) => {
+        <div className="space-y-2.5">
+          {FAQ_ITEMS.map((item, idx) => {
             const isOpen = openFaqIndex === idx;
             return (
-              <div key={idx} className="py-3.5">
+              <div
+                key={idx}
+                className="bg-white dark:bg-[#170345] rounded-2xl border border-slate-100 dark:border-[#230674] overflow-hidden transition-all"
+              >
                 <button
                   type="button"
                   onClick={() => toggleFaq(idx)}
-                  className="w-full flex items-center justify-between text-left gap-4 cursor-pointer group"
+                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-slate-50/50 dark:hover:bg-[#230674]/40 transition-all cursor-pointer"
                 >
-                  <span className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white group-hover:text-[#5945F1] dark:group-hover:text-[#ABA1F8] transition-colors">
-                    {faq.question}
+                  <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white pr-4">
+                    {item.question}
                   </span>
-                  <span className="text-[#5945F1] dark:text-[#ABA1F8] shrink-0 font-bold">
-                    {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold text-lg shrink-0">
+                    {isOpen ? '−' : '+'}
                   </span>
                 </button>
                 {isOpen && (
-                  <p className="mt-2.5 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed animate-in fade-in-50 duration-150">
-                    {faq.answer}
-                  </p>
+                  <div className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed border-t border-slate-100 dark:border-[#230674] pt-3">
+                    {item.answer}
+                  </div>
                 )}
               </div>
             );

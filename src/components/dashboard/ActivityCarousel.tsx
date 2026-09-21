@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { BorderBeam } from '../ui/BorderBeam';
 
 interface ActivityCarouselProps {
+
   onNavigateToTab: (tab: string) => void;
   onConnectBroker?: (brokerName: string) => void;
   onSelectBrokerDetail?: (brokerName: string) => void;
@@ -61,8 +63,14 @@ export const ActivityCarousel: React.FC<ActivityCarouselProps> = ({
       aria-label="Activity Carousel"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      className={`relative rounded-2xl p-[2px] bg-gradient-to-r from-[#5945F1] via-[#c084fc] to-[#FD02B0] shadow-2xs group transition-all ${className}`}
+      className={`relative rounded-2xl p-[2px] bg-gradient-to-r from-[#5945F1]/30 via-[#c084fc]/30 to-[#FD02B0]/30 shadow-2xs group transition-all overflow-hidden ${className}`}
     >
+      <BorderBeam
+        borderWidth={2.5}
+        duration={7}
+        colorFrom="#5945F1"
+        colorTo="#FD02B0"
+      />
       <div className="bg-white rounded-[14px] p-3.5 sm:p-4 relative overflow-hidden">
         {/* Slide 1: Next Milestone (UPS Next Milestone.png) */}
         {currentSlide === 0 && (

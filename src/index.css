@@ -664,4 +664,21 @@ div.mt-2.space-y-1 > p.px-2.pb-1::after {
   background: #1e293b;
 }
 
+/* Animated Border Beam Engine */
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes border-beam-spin {
+  from {
+    --angle: 0deg;
+  }
+  to {
+    --angle: 360deg;
+  }
+}
+
+
 

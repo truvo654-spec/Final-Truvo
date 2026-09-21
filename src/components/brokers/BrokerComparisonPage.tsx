@@ -1270,22 +1270,22 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
         {/* ─── LEFT: 3-Slot Comparison Matrix ─── */}
         <div className="flex-1 min-w-0 w-full bg-white dark:bg-[#120233] border border-slate-200/80 dark:border-[#2f1073] rounded-3xl p-4 sm:p-6 shadow-2xs">
           {/* Top 3 Columns: Dropdown Slots */}
-          <div className="grid grid-cols-12 gap-3 sm:gap-4 items-start pb-6 border-b border-slate-100 dark:border-[#270868]">
-            {/* Blank offset matching left label column */}
-            <div className="hidden sm:block sm:col-span-3 lg:col-span-3" />
+          <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 pb-6 border-b border-slate-100 dark:border-[#270868]">
+            {/* Blank offset matching left label column (Fixed 260px) */}
+            <div className="hidden sm:block w-[260px] min-w-[260px] max-w-[260px] shrink-0" />
 
             {/* Slot 1 */}
-            <div className="col-span-12 sm:col-span-3 lg:col-span-3 relative">
+            <div className="w-full sm:flex-1 sm:min-w-0 relative">
               {renderSlotTop(0, slot1Broker)}
             </div>
 
             {/* Slot 2 */}
-            <div className="col-span-12 sm:col-span-3 lg:col-span-3 relative">
+            <div className="w-full sm:flex-1 sm:min-w-0 relative">
               {renderSlotTop(1, slot2Broker)}
             </div>
 
             {/* Slot 3 */}
-            <div className="col-span-12 sm:col-span-3 lg:col-span-3 relative">
+            <div className="w-full sm:flex-1 sm:min-w-0 relative">
               {renderSlotTop(2, slot3Broker)}
             </div>
           </div>
@@ -1294,9 +1294,9 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
           {selectedCount === 0 ? (
             /* Empty State Layout (Exact Match to 01_Search_Empty State.png) */
             <div className="pt-4">
-              <div className="grid grid-cols-12 gap-3 sm:gap-4 items-start">
-                {/* Left Column: Category Pills & Row Labels */}
-                <div className="col-span-12 sm:col-span-3 lg:col-span-3">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
+                {/* Left Column: Category Pills & Row Labels (Fixed 260px) */}
+                <div className="w-full sm:w-[260px] sm:min-w-[260px] sm:max-w-[260px] shrink-0">
                   <div className="mb-2">
                     <span className="inline-block bg-[#EEECFC] dark:bg-[#25095e] text-[#5945F1] dark:text-[#CAEB0E] text-xs font-bold px-3 py-1.5 rounded-lg">
                       Cashback & Income
@@ -1349,7 +1349,7 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
                 {[0, 1, 2].map((colIdx) => {
                   const colCards = POPULAR_EMPTY_STATE_BROKERS[colIdx];
                   return (
-                    <div key={colIdx} className="col-span-12 sm:col-span-3 lg:col-span-3">
+                    <div key={colIdx} className="w-full sm:flex-1 sm:min-w-0">
                       <div className="h-[29px] mb-2" /> {/* Spacer matching Cashback & Income pill */}
                       {/* Card 1 */}
                       <div className="h-[68px] flex items-center border-b border-slate-100 dark:border-[#28086a]">
@@ -1662,9 +1662,9 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
             </div>
 
             {/* Bottom View Profile Action Buttons */}
-            <div className="grid grid-cols-12 gap-3 sm:gap-4 pt-4">
-              <div className="hidden sm:block sm:col-span-3 lg:col-span-3" />
-              <div className="col-span-12 sm:col-span-3 lg:col-span-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
+              <div className="hidden sm:block w-[260px] min-w-[260px] max-w-[260px] shrink-0" />
+              <div className="w-full sm:flex-1 sm:min-w-0">
                 {slot1Broker && (
                   <button
                     onClick={() => {
@@ -1673,11 +1673,11 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
                     }}
                     className="w-full py-2.5 px-3 rounded-xl border border-indigo-200 dark:border-indigo-800 text-[#5945F1] dark:text-[#CAEB0E] font-semibold text-xs hover:bg-indigo-50/50 dark:hover:bg-indigo-950/40 transition-colors text-center cursor-pointer shadow-2xs"
                   >
-                    View {slot1Broker.name} Profile
+                    View {slot1Broker.name} Details
                   </button>
                 )}
               </div>
-              <div className="col-span-12 sm:col-span-3 lg:col-span-3">
+              <div className="w-full sm:flex-1 sm:min-w-0">
                 {slot2Broker && (
                   <button
                     onClick={() => {
@@ -1686,11 +1686,11 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
                     }}
                     className="w-full py-2.5 px-3 rounded-xl border border-indigo-200 dark:border-indigo-800 text-[#5945F1] dark:text-[#CAEB0E] font-semibold text-xs hover:bg-indigo-50/50 dark:hover:bg-indigo-950/40 transition-colors text-center cursor-pointer shadow-2xs"
                   >
-                    View {slot2Broker.name} Profile
+                    View {slot2Broker.name} Details
                   </button>
                 )}
               </div>
-              <div className="col-span-12 sm:col-span-3 lg:col-span-3">
+              <div className="w-full sm:flex-1 sm:min-w-0">
                 {slot3Broker && (
                   <button
                     onClick={() => {
@@ -1699,7 +1699,7 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
                     }}
                     className="w-full py-2.5 px-3 rounded-xl border border-indigo-200 dark:border-indigo-800 text-[#5945F1] dark:text-[#CAEB0E] font-semibold text-xs hover:bg-indigo-50/50 dark:hover:bg-indigo-950/40 transition-colors text-center cursor-pointer shadow-2xs"
                   >
-                    View {slot3Broker.name} Profile
+                    View {slot3Broker.name} Details
                   </button>
                 )}
               </div>
@@ -1709,8 +1709,8 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
           )}
         </div>
 
-        {/* ─── RIGHT: Sidebar Widgets (Fixed 300px on LG) (Sticky during scroll) ─── */}
-        <aside className="w-full lg:w-[300px] lg:shrink-0 space-y-6 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
+        {/* ─── RIGHT: Sidebar Widgets (Fixed 494px on LG) (Sticky during scroll) ─── */}
+        <aside className="w-full lg:w-[494px] lg:min-w-[494px] lg:max-w-[494px] lg:shrink-0 space-y-6 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto lg:overscroll-contain sidebar-scrollbar">
           {!isLoggedIn ? (
             <>
               {/* ─── GUEST WIDGET 1: Helloo, Stranger! Join or Lose -> (Exact D02_Broker Comparison_Empty State (1).png) ─── */}
@@ -2135,14 +2135,25 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
       );
     }
 
-    // Populated slot card with logo, score, verified badge, remove X, and Connect Now button
+    const matchedBroker =
+      brokers.find((b) => b.id.toLowerCase() === broker.id.toLowerCase()) ||
+      brokers.find((b) => b.name.toLowerCase().includes(broker.name.toLowerCase())) ||
+      brokers[0];
+
+    // Populated slot card with logo, score, verified badge, remove X, and View Details / Connect Now buttons
     return (
       <div className="bg-[#f5f7fb] dark:bg-[#1a0747] rounded-2xl p-4 border border-slate-200/80 dark:border-[#321278] text-left space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-start gap-2.5">
+          <div
+            onClick={() => onSelectBrokerDetail(matchedBroker)}
+            className="flex items-start gap-2.5 cursor-pointer group"
+            title={`View ${broker.name} details`}
+          >
             {renderBrokerLogo(broker.logoType, broker.name, 'w-11 h-11')}
             <div>
-              <div className="font-bold text-sm text-[#0b1c30] dark:text-white leading-tight">{broker.name}</div>
+              <div className="font-bold text-sm text-[#0b1c30] dark:text-white leading-tight group-hover:text-[#5945F1] dark:group-hover:text-[#ABA1F8] transition-colors">
+                {broker.name}
+              </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                 <span>{broker.score} Score</span>
                 <Info className="w-3 h-3 text-slate-400" />
@@ -2166,13 +2177,23 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
           </button>
         </div>
 
-        {/* Connect Now Button */}
-        <button
-          onClick={() => handleConnectNow(broker)}
-          className="w-full py-2.5 bg-[#5945F1] hover:bg-[#4834e0] text-white font-bold text-xs rounded-xl shadow-xs transition-colors text-center cursor-pointer block"
-        >
-          Connect Now
-        </button>
+        {/* Action Buttons: View Details & Connect Now */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onSelectBrokerDetail(matchedBroker)}
+            className="flex-1 py-2 px-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800 hover:border-[#5945F1] text-[#5945F1] dark:text-[#CAEB0E] hover:bg-indigo-50/70 dark:hover:bg-indigo-950/40 text-xs font-semibold transition-colors text-center cursor-pointer shadow-2xs"
+          >
+            View Details
+          </button>
+          <button
+            type="button"
+            onClick={() => handleConnectNow(broker)}
+            className="flex-1 py-2 px-2.5 bg-[#5945F1] hover:bg-[#4834e0] text-white font-bold text-xs rounded-xl shadow-xs transition-colors text-center cursor-pointer"
+          >
+            Connect Now
+          </button>
+        </div>
       </div>
     );
   }
@@ -2246,25 +2267,25 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
     val3?: React.ReactNode
   ) {
     return (
-      <div className="grid grid-cols-12 gap-3 sm:gap-4 py-3 items-center">
-        {/* Label (col-span-3) */}
-        <div className="col-span-12 sm:col-span-3 lg:col-span-3">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 py-3 items-center">
+        {/* Label (Fixed 260px) */}
+        <div className="w-full sm:w-[260px] sm:min-w-[260px] sm:max-w-[260px] shrink-0">
           <div className="font-semibold text-slate-700 dark:text-slate-300">{label}</div>
           {sublabel && <div className="text-[10px] text-slate-400 mt-0.5 leading-snug">{sublabel}</div>}
         </div>
 
         {/* Slot 1 Value */}
-        <div className="col-span-4 sm:col-span-3 lg:col-span-3 text-slate-800 dark:text-slate-200">
+        <div className="w-full sm:flex-1 sm:min-w-0 text-slate-800 dark:text-slate-200">
           {val1 !== undefined ? val1 : <span className="text-slate-300 dark:text-slate-600">—</span>}
         </div>
 
         {/* Slot 2 Value */}
-        <div className="col-span-4 sm:col-span-3 lg:col-span-3 text-slate-800 dark:text-slate-200">
+        <div className="w-full sm:flex-1 sm:min-w-0 text-slate-800 dark:text-slate-200">
           {val2 !== undefined ? val2 : <span className="text-slate-300 dark:text-slate-600">—</span>}
         </div>
 
         {/* Slot 3 Value */}
-        <div className="col-span-4 sm:col-span-3 lg:col-span-3 text-slate-800 dark:text-slate-200">
+        <div className="w-full sm:flex-1 sm:min-w-0 text-slate-800 dark:text-slate-200">
           {val3 !== undefined ? val3 : <span className="text-slate-300 dark:text-slate-600">—</span>}
         </div>
       </div>

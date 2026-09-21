@@ -428,6 +428,59 @@ export const PerformanceComboChart: React.FC<PerformanceComboChartProps> = ({
               strokeLinejoin="round"
             />
 
+            {/* Live real-time pulsing beacons on latest data points */}
+            {!isEmpty && cashbackPoints.length > 0 && (
+              <g className="pointer-events-none">
+                {/* Lime beacon on Cashback latest point */}
+                {(() => {
+                  const pt = cashbackPoints[cashbackPoints.length - 1];
+                  return (
+                    <g key="cashback-latest-beacon">
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r="8"
+                        fill="#BEF226"
+                        className="animate-ping opacity-50 origin-center"
+                      />
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r="4.5"
+                        fill="#A3E635"
+                        stroke="#ffffff"
+                        strokeWidth="2"
+                      />
+                    </g>
+                  );
+                })()}
+
+                {/* Hot pink beacon on Volume latest point */}
+                {(() => {
+                  const pt = volumePoints[volumePoints.length - 1];
+                  return (
+                    <g key="volume-latest-beacon">
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r="7"
+                        fill="#FD02B0"
+                        className="animate-ping opacity-50 origin-center"
+                      />
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r="4"
+                        fill="#FD02B0"
+                        stroke="#ffffff"
+                        strokeWidth="1.8"
+                      />
+                    </g>
+                  );
+                })()}
+              </g>
+            )}
+
             {/* Transparent Hitboxes for all points to enable hover tooltips */}
             {!isEmpty &&
               currentData.map((d, idx) => {

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import {
   Plus,
   Trash2,
@@ -16,7 +17,10 @@ import { DashboardSlot } from '../../types/dashboardWidgets';
 import { UserProfile, MarketSignal, Broker, Mission } from '../../types';
 import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
 import { MissionCardWidget } from './MissionCardWidget';
+import { LiveInteractiveSparkline } from './LiveInteractiveSparkline';
+import { BorderBeam } from '../ui/BorderBeam';
 import { getNextTierInfo, LEVEL_SCENARIOS, LevelScenarioId } from '../../data/levelScenarios';
+
 
 interface CustomizableWidgetProps {
   slot: DashboardSlot;
@@ -108,24 +112,25 @@ function TierMascotIcon({ tierLevel = 1 }: { tierLevel?: number }) {
 }
 
 /**
- * Mini Sparkline
+ * Mini Sparkline (Upgraded with LiveInteractiveSparkline)
  */
-function MiniSparkline({ trend, color }: { trend: 'up' | 'down'; color: string }) {
-  const points =
-    trend === 'up'
-      ? '0,16 6,14 12,15 18,10 24,11 30,7 36,9 42,4 48,2'
-      : '0,4 6,7 12,5 18,11 24,9 30,13 36,12 42,16 48,18';
+function MiniSparkline({
+  trend,
+  color,
+  isTicked = false,
+}: {
+  trend: 'up' | 'down';
+  color: string;
+  isTicked?: boolean;
+}) {
   return (
-    <svg width="48" height="20" className="shrink-0 overflow-visible">
-      <polyline
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={points}
-      />
-    </svg>
+    <LiveInteractiveSparkline
+      trend={trend}
+      color={color}
+      isTicked={isTicked}
+      width={46}
+      height={18}
+    />
   );
 }
 
@@ -145,6 +150,32 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
   missions,
   onUpdateMissions,
 }) => {
+  // Live auto-interactive signal ticker
+  const [tickedSignalTicker, setTickedSignalTicker] = useState<string | null>(null);
+  const [signalLiveDeltas, setSignalLiveDeltas] = useState<Record<string, number>>({
+    'EUR/USD': 0,
+    'S&P 500': 0,
+  });
+
+  useEffect(() => {
+    if (slot.type !== 'most-recent-signals') return;
+    const interval = setInterval(() => {
+      const keys = ['EUR/USD', 'S&P 500'];
+      const picked = keys[Math.floor(Math.random() * keys.length)];
+      setTickedSignalTicker(picked);
+      setSignalLiveDeltas((prev) => {
+        const delta = (Math.random() > 0.4 ? 1 : -1) * +(Math.random() * 0.04 + 0.01).toFixed(2);
+        return {
+          ...prev,
+          [picked]: +((prev[picked] || 0) + delta).toFixed(2),
+        };
+      });
+      const timer = setTimeout(() => setTickedSignalTicker(null), 950);
+      return () => clearTimeout(timer);
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [slot.type]);
+
   // Current user tier points & next tier calculation
   const currentPoints = user.currentPoints ?? 50;
   const maxPoints = user.maxPoints || 100;
@@ -357,25 +388,44 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
 
             <div className="space-y-2.5 pt-2">
               {/* Signal 1: EUR/USD */}
-              <div
-                onClick={() => {
-                  const s = signals.find((i) => i.ticker === 'EUR/USD') || signals[0];
-                  if (s) onSelectSignal(s);
-                }}
-                className="p-2 rounded-xl bg-slate-50/70 hover:bg-slate-100 border border-slate-100 flex items-center justify-between transition-colors cursor-pointer text-xs"
-              >
-                <div className="flex items-center gap-1.5 font-bold text-[#0b1c30]">
-                  <span>🇪🇺</span>
-                  <span>EUR/USD</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MiniSparkline trend="up" color="#16a34a" />
-                  <span className="font-bold text-emerald-600 font-mono">+0.33%</span>
-                  <span className="px-2 py-0.5 rounded bg-[#CAEB0E] text-slate-950 font-black text-[10px]">
-                    Buy
-                  </span>
-                </div>
-              </div>
+              {(() => {
+                const isTicked = tickedSignalTicker === 'EUR/USD';
+                const val = +(0.33 + (signalLiveDeltas['EUR/USD'] || 0)).toFixed(2);
+                const isPos = val >= 0;
+                return (
+                  <div
+                    onClick={() => {
+                      const s = signals.find((i) => i.ticker === 'EUR/USD') || signals[0];
+                      if (s) onSelectSignal(s);
+                    }}
+                    className={`p-2 rounded-xl border flex items-center justify-between transition-all cursor-pointer text-xs ${
+                      isTicked
+                        ? 'bg-emerald-50/70 border-emerald-300 ring-1 ring-emerald-200'
+                        : 'bg-slate-50/70 hover:bg-slate-100 border-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-[#0b1c30]">
+                      <span>🇪🇺</span>
+                      <span>EUR/USD</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MiniSparkline trend={isPos ? 'up' : 'down'} color={isPos ? '#16a34a' : '#ef4444'} isTicked={isTicked} />
+                      <motion.span
+                        animate={isTicked ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+                        className={`font-bold font-mono ${isPos ? 'text-emerald-600' : 'text-rose-500'}`}
+                      >
+                        {isPos ? '+' : ''}{val.toFixed(2)}%
+                      </motion.span>
+                      <motion.span
+                        animate={isTicked ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+                        className="px-2 py-0.5 rounded bg-[#CAEB0E] text-slate-950 font-black text-[10px]"
+                      >
+                        Buy
+                      </motion.span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Signal 2: BTC/USD */}
               <div
@@ -401,27 +451,46 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
               </div>
 
               {/* Signal 3: S&P 500 */}
-              <div
-                onClick={() => {
-                  const s = signals.find((i) => i.ticker.includes('S&P') || i.ticker.includes('500')) || signals[1];
-                  if (s) onSelectSignal(s);
-                }}
-                className="p-2 rounded-xl bg-slate-50/70 hover:bg-slate-100 border border-slate-100 flex items-center justify-between transition-colors cursor-pointer text-xs"
-              >
-                <div className="flex items-center gap-1.5 font-bold text-[#0b1c30]">
-                  <span className="w-4 h-4 rounded-full bg-[#E11928] text-white flex items-center justify-center text-[7px] font-black">
-                    500
-                  </span>
-                  <span>S&P 500</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MiniSparkline trend="down" color="#5945F1" />
-                  <span className="font-bold text-[#5945F1] font-mono">-0.11%</span>
-                  <span className="px-2 py-0.5 rounded bg-[#5945F1] text-white font-black text-[10px]">
-                    Sell
-                  </span>
-                </div>
-              </div>
+              {(() => {
+                const isTicked = tickedSignalTicker === 'S&P 500';
+                const val = +(-0.11 + (signalLiveDeltas['S&P 500'] || 0)).toFixed(2);
+                const isPos = val >= 0;
+                return (
+                  <div
+                    onClick={() => {
+                      const s = signals.find((i) => i.ticker.includes('S&P') || i.ticker.includes('500')) || signals[1];
+                      if (s) onSelectSignal(s);
+                    }}
+                    className={`p-2 rounded-xl border flex items-center justify-between transition-all cursor-pointer text-xs ${
+                      isTicked
+                        ? 'bg-rose-50/70 border-rose-300 ring-1 ring-rose-200'
+                        : 'bg-slate-50/70 hover:bg-slate-100 border-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-[#0b1c30]">
+                      <span className="w-4 h-4 rounded-full bg-[#E11928] text-white flex items-center justify-center text-[7px] font-black">
+                        500
+                      </span>
+                      <span>S&P 500</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MiniSparkline trend={isPos ? 'up' : 'down'} color={isPos ? '#16a34a' : '#ef4444'} isTicked={isTicked} />
+                      <motion.span
+                        animate={isTicked ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+                        className={`font-bold font-mono ${isPos ? 'text-emerald-600' : 'text-[#5945F1]'}`}
+                      >
+                        {isPos ? '+' : ''}{val.toFixed(2)}%
+                      </motion.span>
+                      <motion.span
+                        animate={isTicked ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+                        className="px-2 py-0.5 rounded bg-[#5945F1] text-white font-black text-[10px]"
+                      >
+                        Sell
+                      </motion.span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -511,7 +580,13 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
 
       {/* ─── 6. CONNECTED BROKERS HUB ─── */}
       {slot.type === 'connected-brokers' && (
-        <div className="bg-gradient-to-r from-purple-50/40 via-white to-pink-50/40 rounded-2xl p-5 flex flex-col justify-between h-full space-y-3">
+        <div className="bg-gradient-to-r from-purple-50/40 via-white to-pink-50/40 dark:from-[#170345] dark:to-[#170345] rounded-2xl p-5 flex flex-col justify-between h-full space-y-3 relative overflow-hidden border border-indigo-100/70 dark:border-indigo-950/70">
+          <BorderBeam
+            borderWidth={1.5}
+            duration={8}
+            colorFrom="#5945F1"
+            colorTo="#FD02B0"
+          />
           <div>
             <h3 className="font-display font-extrabold text-base text-[#5945F1]">
               More Connected Brokers. More Opportunities.

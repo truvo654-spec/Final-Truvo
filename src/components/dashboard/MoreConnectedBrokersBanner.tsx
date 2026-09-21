@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check } from 'lucide-react';
+import { BorderBeam } from '../ui/BorderBeam';
 
 export interface MoreConnectedBrokersBannerProps {
   onConnectBroker?: (brokerName: string) => void;
@@ -138,9 +139,15 @@ export const MoreConnectedBrokersBanner: React.FC<MoreConnectedBrokersBannerProp
     <div
       id="tour-brokers-section"
       data-banner-id="more-connected-brokers-banner"
-      className={`w-full p-[1.5px] rounded-3xl bg-gradient-to-r from-[#5945F1] via-[#A855F7] to-[#FD02B0] shadow-2xs ${className}`}
+      className={`w-full p-[2px] rounded-3xl bg-gradient-to-r from-[#5945F1]/30 via-[#A855F7]/30 to-[#FD02B0]/30 shadow-2xs relative overflow-hidden ${className}`}
     >
-      <div className="w-full rounded-[22.5px] bg-white p-5 sm:p-7 md:p-8 space-y-6">
+      <BorderBeam
+        borderWidth={2.5}
+        duration={10}
+        colorFrom="#5945F1"
+        colorTo="#FD02B0"
+      />
+      <div className="w-full rounded-[22px] bg-white dark:bg-[#170345] p-5 sm:p-7 md:p-8 space-y-6">
         {/* ─── TITLE & SUBTITLE (1:1 with Small Banner 3.png) ─── */}
         <div className="text-center space-y-1.5">
           <h2 className="font-display font-extrabold text-xl sm:text-2xl md:text-[28px] leading-tight tracking-tight">

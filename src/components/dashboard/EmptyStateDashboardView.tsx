@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import {
   UserProfile,
   Broker,
@@ -47,7 +48,10 @@ import { ConnectionUnavailablePopup } from './ConnectionUnavailablePopup';
 import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
 import { MissionCardWidget } from './MissionCardWidget';
 import { CommunityWidget } from './CommunityWidget';
+import { LiveInteractiveSparkline } from './LiveInteractiveSparkline';
+import { BorderBeam } from '../ui/BorderBeam';
 import { getNextTierInfo, LEVEL_SCENARIOS, LevelScenarioId } from '../../data/levelScenarios';
+
 
 export type DashboardStateType =
   | 'empty'
@@ -363,8 +367,12 @@ function TopPerformersDonutChart({
   }
 
   return (
-    <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
-      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90 transform">
+    <motion.div
+      animate={{ rotate: [-90, -85, -90] }}
+      transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+      className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0"
+    >
+      <svg viewBox="0 0 100 100" className="w-full h-full transform">
         <circle cx="50" cy="50" r="36" fill="none" stroke="#f8fafc" strokeWidth="14" />
         {/* Lime Green segment (36%) */}
         <circle
@@ -411,29 +419,30 @@ function TopPerformersDonutChart({
           strokeDashoffset="-194"
         />
       </svg>
-    </div>
+    </motion.div>
   );
 }
 
 /**
- * Mini Sparkline SVG
+ * Mini Sparkline SVG (Upgraded to LiveInteractiveSparkline with live pulse and animations)
  */
-function MiniSparkline({ trend, color }: { trend: 'up' | 'down'; color: string }) {
-  const points =
-    trend === 'up' ? '0,14 8,11 16,13 24,7 32,9 40,2' : '0,2 8,6 16,4 24,11 32,9 40,14';
+function MiniSparkline({
+  trend,
+  color,
+  isTicked = false,
+}: {
+  trend: 'up' | 'down';
+  color: string;
+  isTicked?: boolean;
+}) {
   return (
-    <div className="w-10 h-4 flex items-center shrink-0">
-      <svg viewBox="0 0 40 16" className="w-full h-full overflow-visible">
-        <polyline
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          points={points}
-        />
-      </svg>
-    </div>
+    <LiveInteractiveSparkline
+      trend={trend}
+      color={color}
+      isTicked={isTicked}
+      width={42}
+      height={18}
+    />
   );
 }
 
@@ -484,6 +493,38 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
   const [isConnectionUnavailableOpen, setIsConnectionUnavailableOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Live real-time auto-interactive ticker for Most Recent Signals
+  const [tickedSignalTicker, setTickedSignalTicker] = useState<string | null>(null);
+  const [signalLiveDeltas, setSignalLiveDeltas] = useState<Record<string, number>>({
+    'EUR/USD': 0,
+    'GOOGL': 0,
+    'S&P 500': 0,
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const keys = ['EUR/USD', 'GOOGL', 'S&P 500'];
+      const picked = keys[Math.floor(Math.random() * keys.length)];
+      setTickedSignalTicker(picked);
+
+      setSignalLiveDeltas((prev) => {
+        const delta = (Math.random() > 0.4 ? 1 : -1) * +(Math.random() * 0.04 + 0.01).toFixed(2);
+        return {
+          ...prev,
+          [picked]: +((prev[picked] || 0) + delta).toFixed(2),
+        };
+      });
+
+      const timer = setTimeout(() => {
+        setTickedSignalTicker(null);
+      }, 950);
+
+      return () => clearTimeout(timer);
+    }, 2800);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -648,7 +689,13 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
             {/* ── LEFT TOP CARD: Quick Start Guide vs Your Connected Account ── */}
             {dashboardState === 'empty' ? (
-              <div id="tour-quick-start-card" className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 sm:p-6 shadow-2xs flex flex-col justify-between interactive-card">
+              <div id="tour-quick-start-card" className="md:col-span-8 rounded-2xl bg-white dark:bg-[#170345] border border-[#f0abfc]/70 dark:border-pink-900/50 p-5 sm:p-6 shadow-2xs flex flex-col justify-between interactive-card relative overflow-hidden">
+                <BorderBeam
+                  borderWidth={1.8}
+                  duration={8}
+                  colorFrom="#5945F1"
+                  colorTo="#FD02B0"
+                />
                 <div>
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -771,7 +818,13 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
               />
             ) : (
               /* Your Connected Account Card (Matches Images 02, 03, 04, 05) */
-              <div className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 shadow-2xs flex flex-col justify-between space-y-4 interactive-card">
+              <div className="md:col-span-8 rounded-2xl bg-white dark:bg-[#170345] border border-[#f0abfc]/70 dark:border-pink-900/50 p-5 shadow-2xs flex flex-col justify-between space-y-4 interactive-card relative overflow-hidden">
+                <BorderBeam
+                  borderWidth={1.8}
+                  duration={8}
+                  colorFrom="#5945F1"
+                  colorTo="#FD02B0"
+                />
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div>
                     <h3 className="font-display font-extrabold text-xl text-[#0b1c30] tracking-tight">
@@ -1732,55 +1785,111 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                 </button>
               </div>
 
-              {/* Signal Items List */}
+              {/* Signal Items List with Live Interactive Ticks */}
               <div className="space-y-2.5 pt-1">
                 {/* 1. EUR/USD */}
-                <div
-                  onClick={() => {
-                    const s = signals.find((item) => item.ticker === 'EUR/USD') || signals[0];
-                    if (s) onSelectSignal(s);
-                  }}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 hover:bg-slate-100/90 border border-slate-100/80 transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">🇪🇺</span>
-                    <div>
-                      <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">EUR/USD</div>
-                      <div className="text-[11px] text-[#10B981] font-bold font-mono">+0.33%</div>
+                {(() => {
+                  const isTicked = tickedSignalTicker === 'EUR/USD';
+                  const val = +(0.33 + (signalLiveDeltas['EUR/USD'] || 0)).toFixed(2);
+                  const isPos = val >= 0;
+                  return (
+                    <div
+                      onClick={() => {
+                        const s = signals.find((item) => item.ticker === 'EUR/USD') || signals[0];
+                        if (s) onSelectSignal(s);
+                      }}
+                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer group ${
+                        isTicked
+                          ? 'bg-emerald-50/60 border-emerald-300 ring-1 ring-emerald-200'
+                          : 'bg-slate-50/70 hover:bg-slate-100/90 border-slate-100/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">🇪🇺</span>
+                        <div>
+                          <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">
+                            EUR/USD
+                          </div>
+                          <motion.div
+                            animate={
+                              isTicked
+                                ? { scale: [1, 1.15, 1] }
+                                : { scale: [1, 1.02, 1] }
+                            }
+                            transition={{ duration: isTicked ? 0.45 : 2.5, repeat: isTicked ? 0 : Infinity }}
+                            className={`text-[11px] font-bold font-mono inline-flex items-center gap-0.5 ${
+                              isPos ? 'text-[#10B981]' : 'text-rose-500'
+                            }`}
+                          >
+                            <span>{isPos ? '+' : ''}{val.toFixed(2)}%</span>
+                          </motion.div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MiniSparkline trend={isPos ? 'up' : 'down'} color={isPos ? '#16a34a' : '#ef4444'} isTicked={isTicked} />
+                        <motion.span
+                          animate={isTicked ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+                          className="px-2.5 py-0.5 bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 text-[10px] font-black rounded-lg shadow-2xs"
+                        >
+                          Buy
+                        </motion.span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MiniSparkline trend="up" color="#16a34a" />
-                    <span className="px-2.5 py-0.5 bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 text-[10px] font-black rounded-lg shadow-2xs">
-                      Buy
-                    </span>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 {/* 2. GOOGL */}
-                <div
-                  onClick={() => {
-                    const s = signals.find((item) => item.ticker === 'GOOGL') || signals[1];
-                    if (s) onSelectSignal(s);
-                  }}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 hover:bg-slate-100/90 border border-slate-100/80 transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black shadow-2xs text-[#4285F4]">
-                      G
+                {(() => {
+                  const isTicked = tickedSignalTicker === 'GOOGL';
+                  const val = +(-0.11 + (signalLiveDeltas['GOOGL'] || 0)).toFixed(2);
+                  const isPos = val >= 0;
+                  return (
+                    <div
+                      onClick={() => {
+                        const s = signals.find((item) => item.ticker === 'GOOGL') || signals[1];
+                        if (s) onSelectSignal(s);
+                      }}
+                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer group ${
+                        isTicked
+                          ? 'bg-rose-50/60 border-rose-300 ring-1 ring-rose-200'
+                          : 'bg-slate-50/70 hover:bg-slate-100/90 border-slate-100/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black shadow-2xs text-[#4285F4]">
+                          G
+                        </div>
+                        <div>
+                          <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">
+                            GOOGL
+                          </div>
+                          <motion.div
+                            animate={
+                              isTicked
+                                ? { scale: [1, 1.15, 1] }
+                                : { scale: [1, 1.02, 1] }
+                            }
+                            transition={{ duration: isTicked ? 0.45 : 2.5, repeat: isTicked ? 0 : Infinity }}
+                            className={`text-[11px] font-bold font-mono inline-flex items-center gap-0.5 ${
+                              isPos ? 'text-[#10B981]' : 'text-red-500'
+                            }`}
+                          >
+                            <span>{isPos ? '+' : ''}{val.toFixed(2)}%</span>
+                          </motion.div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MiniSparkline trend={isPos ? 'up' : 'down'} color={isPos ? '#16a34a' : '#ef4444'} isTicked={isTicked} />
+                        <motion.span
+                          animate={isTicked ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+                          className="px-2.5 py-0.5 bg-[#5945F1] text-white text-[10px] font-black rounded-lg shadow-2xs"
+                        >
+                          Sell
+                        </motion.span>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">GOOGL</div>
-                      <div className="text-[11px] text-red-500 font-bold font-mono">-0.11%</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MiniSparkline trend="down" color="#ef4444" />
-                    <span className="px-2.5 py-0.5 bg-[#5945F1] text-white text-[10px] font-black rounded-lg shadow-2xs">
-                      Sell
-                    </span>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 {/* 3. BTC/USD */}
                 <div
@@ -1814,29 +1923,57 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                 </div>
 
                 {/* 4. S&P 500 */}
-                <div
-                  onClick={() => {
-                    const s = signals.find((item) => item.ticker.includes('S&P') || item.ticker.includes('500')) || signals[2];
-                    if (s) onSelectSignal(s);
-                  }}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 hover:bg-slate-100/90 border border-slate-100/80 transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-[#E11928] text-white font-black text-[8px] flex items-center justify-center shadow-2xs shrink-0">
-                      500
+                {(() => {
+                  const isTicked = tickedSignalTicker === 'S&P 500';
+                  const val = +(0.44 + (signalLiveDeltas['S&P 500'] || 0)).toFixed(2);
+                  const isPos = val >= 0;
+                  return (
+                    <div
+                      onClick={() => {
+                        const s = signals.find((item) => item.ticker.includes('S&P') || item.ticker.includes('500')) || signals[2];
+                        if (s) onSelectSignal(s);
+                      }}
+                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer group ${
+                        isTicked
+                          ? 'bg-emerald-50/60 border-emerald-300 ring-1 ring-emerald-200'
+                          : 'bg-slate-50/70 hover:bg-slate-100/90 border-slate-100/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-[#E11928] text-white font-black text-[8px] flex items-center justify-center shadow-2xs shrink-0">
+                          500
+                        </div>
+                        <div>
+                          <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">
+                            S&P 500
+                          </div>
+                          <motion.div
+                            animate={
+                              isTicked
+                                ? { scale: [1, 1.15, 1] }
+                                : { scale: [1, 1.02, 1] }
+                            }
+                            transition={{ duration: isTicked ? 0.45 : 2.5, repeat: isTicked ? 0 : Infinity }}
+                            className={`text-[11px] font-bold font-mono inline-flex items-center gap-0.5 ${
+                              isPos ? 'text-[#10B981]' : 'text-rose-500'
+                            }`}
+                          >
+                            <span>{isPos ? '+' : ''}{val.toFixed(2)}%</span>
+                          </motion.div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MiniSparkline trend={isPos ? 'up' : 'down'} color={isPos ? '#16a34a' : '#ef4444'} isTicked={isTicked} />
+                        <motion.span
+                          animate={isTicked ? { scale: [1, 1.12, 1] } : { scale: 1 }}
+                          className="px-2.5 py-0.5 bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 text-[10px] font-black rounded-lg shadow-2xs"
+                        >
+                          Buy
+                        </motion.span>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">S&P 500</div>
-                      <div className="text-[11px] text-[#10B981] font-bold font-mono">+0.44%</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MiniSparkline trend="up" color="#16a34a" />
-                    <span className="px-2.5 py-0.5 bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 text-[10px] font-black rounded-lg shadow-2xs">
-                      Buy
-                    </span>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
               <button

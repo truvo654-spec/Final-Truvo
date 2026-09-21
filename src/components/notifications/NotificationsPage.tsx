@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { TabMain } from '../common/TabMain';
 import { Broker } from '../../types';
+import { BorderBeam } from '../ui/BorderBeam';
+
 
 export interface NotificationItem {
   id: string;
@@ -712,7 +714,13 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
             </div>
 
             {/* Widget 2: Pick up where you left off. (Matches Screenshot 1:1) */}
-            <div className="rounded-2xl p-5 bg-[#f8fafc] dark:bg-[#100726] border border-slate-200/90 dark:border-indigo-950/70 shadow-2xs space-y-4">
+            <div className="rounded-2xl p-5 bg-[#f8fafc] dark:bg-[#100726] border border-slate-200/90 dark:border-indigo-950/70 shadow-2xs space-y-4 relative overflow-hidden">
+              <BorderBeam
+                borderWidth={1.5}
+                duration={8}
+                colorFrom="#5945F1"
+                colorTo="#FD02B0"
+              />
               <div>
                 <div
                   onClick={onNavigateToBrokers}

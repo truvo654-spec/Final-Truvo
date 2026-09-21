@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { ConnectionDeniedPopup } from './ConnectionDeniedPopup';
 import { ConnectionUnavailablePopup } from './ConnectionUnavailablePopup';
+import { BorderBeam } from '../ui/BorderBeam';
+
 
 export type ConnectedAccountStatus =
   | 'pending'
@@ -57,7 +59,13 @@ export const ConnectedAccountStepperCard: React.FC<ConnectedAccountStepperCardPr
 
   return (
     <>
-      <div className="md:col-span-8 rounded-2xl bg-white border border-[#f0abfc]/90 p-5 sm:p-6 shadow-2xs flex flex-col justify-between interactive-card">
+      <div className="md:col-span-8 rounded-2xl bg-white dark:bg-[#170345] border border-[#f0abfc]/70 dark:border-pink-900/50 p-5 sm:p-6 shadow-2xs flex flex-col justify-between interactive-card relative overflow-hidden">
+        <BorderBeam
+          borderWidth={1.8}
+          duration={8}
+          colorFrom="#5945F1"
+          colorTo="#FD02B0"
+        />
         <div>
           {/* Header with Title & Action Buttons */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">

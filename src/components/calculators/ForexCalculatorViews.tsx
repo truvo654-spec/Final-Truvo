@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { CurrencyPairDropdown } from './CurrencyPairDropdown';
+import {
+  AccountCurrencyDropdown,
+  CurrencyPairDropdown,
+  LeverageDropdown,
+  RebateLotCurrencyDropdown,
+} from './CurrencyDropdowns';
 
 interface SharedViewProps {
   currencyPair: string;
@@ -173,25 +178,34 @@ export const SpreadCalculatorView: React.FC<SpreadViewProps> = ({
           </div>
           <div className="text-xs text-slate-600 dark:text-[#CCC6FB] space-y-1.5 leading-relaxed">
             <div className="font-semibold text-slate-700 dark:text-[#ABA1F8]">Where:</div>
-            <div>• Ask Price = The market purchase price</div>
-            <div>• Bid Price = The market liquidation selling price</div>
+            <div>Ask Price = The market purchase price</div>
+            <div>Bid Price = The market liquidation selling price</div>
           </div>
         </div>
 
         {/* Key Benefits */}
-        <div className="space-y-2 pt-2">
+        <div className="space-y-3 pt-2">
           <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
             Key Benefits
           </h3>
-          <ul className="text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] space-y-2 leading-relaxed">
-            <li>
-              • <span className="font-semibold text-slate-800 dark:text-white">Exposes Total Transaction Costs:</span> Reveals the hidden baseline expense of your market entry to keep trading costs fully visible.
+          <ul className="list-none p-0 m-0 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] space-y-2.5 leading-relaxed">
+            <li className="flex items-start gap-2.5">
+              <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
+              <p>
+                <span className="font-semibold text-slate-800 dark:text-white">Exposes Total Transaction Costs:</span> Reveals the hidden baseline expense of your market entry to keep trading costs fully visible.
+              </p>
             </li>
-            <li>
-              • <span className="font-semibold text-slate-800 dark:text-white">Simplifies Broker Comparison:</span> Enables you to audit competing platforms by testing their dynamic bid-ask intervals inside a single portal.
+            <li className="flex items-start gap-2.5">
+              <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
+              <p>
+                <span className="font-semibold text-slate-800 dark:text-white">Simplifies Broker Comparison:</span> Enables you to audit competing platforms by testing their dynamic bid-ask intervals inside a single portal.
+              </p>
             </li>
-            <li>
-              • <span className="font-semibold text-slate-800 dark:text-white">Increases Break-Even Accuracy:</span> Defines the exact price distance an asset must move in your direction before your trade prints net profits.
+            <li className="flex items-start gap-2.5">
+              <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
+              <p>
+                <span className="font-semibold text-slate-800 dark:text-white">Increases Break-Even Accuracy:</span> Defines the exact price distance an asset must move in your direction before your trade prints net profits.
+              </p>
             </li>
           </ul>
         </div>
@@ -247,6 +261,34 @@ interface PipViewProps extends SharedViewProps {
   pipValue: string;
 }
 
+const PIP_FAQS = [
+  {
+    question: 'What does a pip represent in currency trading?',
+    answer:
+      'A pip (percentage in point) measures the smallest standard price change made by an exchange rate. For most currency pairs, one pip equals 0.0001 (or 0.01 for JPY pairs). It serves as the baseline unit for measuring market movement and calculating profit or loss.',
+  },
+  {
+    question: 'Why does pip valuation vary across different currency pairs?',
+    answer:
+      'Pip value depends on whether your account currency is the base or quote currency, as well as the live market exchange rate and contract size. When the quote currency differs from your account denomination, conversion exchange rates dynamically change each pip’s value.',
+  },
+  {
+    question: 'Does my choice of leverage change my value per pip?',
+    answer:
+      'No. Leverage reduces the initial margin required to open and maintain a position, but it has no impact on pip valuation. The monetary worth of each pip movement depends entirely on trade volume (lot size) and contract specifications.',
+  },
+  {
+    question: 'What is a fractional pip or pipette inside this application?',
+    answer:
+      'A pipette (fractional pip) equals one-tenth of a standard pip (0.00001 for non-JPY pairs, or 0.001 for JPY pairs). Brokers use pipettes to provide tighter pricing spreads and more accurate quotes.',
+  },
+  {
+    question: 'How do standard lot sizes alter my underlying pip cost structure?',
+    answer:
+      'Standard lots (100,000 units) yield approximately $10 per pip for USD-quoted pairs, mini lots (10,000 units) yield ~$1 per pip, and micro lots (1,000 units) yield ~$0.10 per pip.',
+  },
+];
+
 export const PipCalculatorView: React.FC<PipViewProps> = ({
   currencyPair,
   setCurrencyPair,
@@ -258,15 +300,20 @@ export const PipCalculatorView: React.FC<PipViewProps> = ({
   setPositionSize,
   pipValue,
   onReset,
-  onSave,
 }) => {
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  const toggleFaq = (idx: number) => {
+    setOpenFaqIndex(openFaqIndex === idx ? null : idx);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Title & Subtitle */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight flex items-center gap-1.5">
-          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Pip</span>
-          <span className="text-[#FD02B0]">Calculator</span>
+        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight flex items-center">
+          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Pip Calculat</span>
+          <span className="text-[#FD02B0]">or</span>
         </h1>
         <p className="text-sm text-slate-500 dark:text-[#CCC6FB] mt-1">
           Measure pip value before placing your trade
@@ -281,22 +328,10 @@ export const PipCalculatorView: React.FC<PipViewProps> = ({
             <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
               Account Currency
             </label>
-            <div className="relative">
-              <select
-                value={accountCurrency}
-                onChange={(e) => setAccountCurrency(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="AUD">AUD</option>
-                <option value="CAD">CAD</option>
-                <option value="JPY">JPY</option>
-                <option value="CHF">CHF</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
+            <AccountCurrencyDropdown
+              value={accountCurrency}
+              onChange={setAccountCurrency}
+            />
           </div>
 
           {/* Currency Pair */}
@@ -304,23 +339,10 @@ export const PipCalculatorView: React.FC<PipViewProps> = ({
             <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
               Currency Pair
             </label>
-            <div className="relative">
-              <select
-                value={currencyPair}
-                onChange={(e) => setCurrencyPair(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="EUR/USD">EUR/USD</option>
-                <option value="GBP/USD">GBP/USD</option>
-                <option value="USD/JPY">USD/JPY</option>
-                <option value="AUD/USD">AUD/USD</option>
-                <option value="USD/CAD">USD/CAD</option>
-                <option value="USD/CHF">USD/CHF</option>
-                <option value="EUR/GBP">EUR/GBP</option>
-                <option value="XAU/USD">XAU/USD (Gold)</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
+            <CurrencyPairDropdown
+              value={currencyPair}
+              onChange={setCurrencyPair}
+            />
           </div>
 
           {/* Pip Amount */}
@@ -353,19 +375,14 @@ export const PipCalculatorView: React.FC<PipViewProps> = ({
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex items-center justify-center gap-3 pt-3">
+        {/* Reset Button */}
+        <div className="flex items-center justify-center pt-2">
           <button
+            type="button"
             onClick={onReset}
-            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
+            className="px-7 py-2 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
           >
             Reset
-          </button>
-          <button
-            onClick={onSave}
-            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
-          >
-            Save
           </button>
         </div>
       </div>
@@ -377,13 +394,13 @@ export const PipCalculatorView: React.FC<PipViewProps> = ({
           <span className="text-[#FD02B0]">s</span>
         </h3>
 
-        <div className="flex items-center justify-center py-3">
+        <div className="flex items-center justify-center py-2">
           <div className="text-center space-y-1">
             <div className="text-xs font-semibold text-slate-500 dark:text-[#CCC6FB]">
               Pip Value
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {pipValue}
+              {pipValue && !pipValue.startsWith('$') ? `$ ${pipValue}` : pipValue || '$ 6.06'}
             </div>
           </div>
         </div>
@@ -412,9 +429,72 @@ export const PipCalculatorView: React.FC<PipViewProps> = ({
           </div>
           <div className="text-xs text-slate-600 dark:text-[#CCC6FB] space-y-1.5 leading-relaxed">
             <div className="font-semibold text-slate-700 dark:text-[#ABA1F8]">Where:</div>
-            <div>• One Pip = 0.0001 for most pairs, 0.01 for JPY cross assets</div>
-            <div>• Exchange Rate = Current price relative to your account base currency</div>
+            <div>One Pip = 0.0001 for most pairs, 0.01 for JPY cross assets</div>
+            <div>Exchange Rate = Current price relative to your account base currency</div>
           </div>
+        </div>
+      </div>
+
+      {/* Key Benefits */}
+      <div className="space-y-3 pt-2">
+        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+          Key Benefits
+        </h3>
+        <ul className="list-none p-0 m-0 space-y-2.5 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed">
+          <li className="flex items-start gap-2.5">
+            <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
+            <span>
+              <strong className="text-slate-800 dark:text-white font-semibold">Improves risk planning:</strong> Converts pip movement into account-currency value so you can size trades with more control.
+            </span>
+          </li>
+          <li className="flex items-start gap-2.5">
+            <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
+            <span>
+              <strong className="text-slate-800 dark:text-white font-semibold">Clarifies lot-size impact:</strong> Shows how standard, mini, and micro lots change the value of each pip.
+            </span>
+          </li>
+          <li className="flex items-start gap-2.5">
+            <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
+            <span>
+              <strong className="text-slate-800 dark:text-white font-semibold">Supports faster position decisions:</strong> Helps you understand potential gains or losses before adjusting trade volume.
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      {/* Pip Calculator FAQ */}
+      <div className="space-y-3 pt-3">
+        <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+          Pip Calculator FAQ
+        </h3>
+        <div className="space-y-2.5">
+          {PIP_FAQS.map((faq, idx) => {
+            const isOpen = openFaqIndex === idx;
+            return (
+              <div
+                key={idx}
+                className="rounded-2xl border border-slate-100 dark:border-[#230674] bg-white dark:bg-[#170345] overflow-hidden shadow-2xs transition-all"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full px-5 py-4 flex items-center justify-between text-left cursor-pointer hover:bg-slate-50/70 dark:hover:bg-[#230674]/50 transition-colors"
+                >
+                  <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-white pr-4">
+                    {faq.question}
+                  </span>
+                  <span className="text-base font-bold text-[#5945F1] dark:text-[#ABA1F8] flex-shrink-0 w-6 text-right">
+                    {isOpen ? '−' : '+'}
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="px-5 pb-4 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed border-t border-slate-50 dark:border-[#230674] pt-3">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -422,7 +502,7 @@ export const PipCalculatorView: React.FC<PipViewProps> = ({
 };
 
 // ─────────────────────────────────────────────────────────────
-// 3. MARGIN CALCULATOR VIEW
+// 3. MARGIN CALCULATOR VIEW (Matching D04, D05, D07, D09 Designs)
 // ─────────────────────────────────────────────────────────────
 interface MarginViewProps extends SharedViewProps {
   leverage: string;
@@ -431,6 +511,34 @@ interface MarginViewProps extends SharedViewProps {
   setPositionSize: (val: string) => void;
   marginValue: string;
 }
+
+const MARGIN_FAQS = [
+  {
+    question: 'What is the purpose of required margin in forex?',
+    answer:
+      'Required margin acts as a good-faith deposit or collateral held by your broker to keep your leveraged trade open. It is not a fee or transaction cost, but rather a portion of your account equity allocated to protect against adverse market movements while the position is active.',
+  },
+  {
+    question: 'How does high leverage change my required margin layout?',
+    answer:
+      'Higher leverage significantly reduces the initial margin required to open a position. For instance, trading 1 standard lot (100,000 units) at 1:100 leverage requires $1,000 margin, whereas at 1:500 leverage it requires only $200 margin. However, while higher leverage lowers collateral demands, it amplifies profit and loss exposure relative to your equity.',
+  },
+  {
+    question: 'What happens if my account equity falls below the margin requirement?',
+    answer:
+      "If floating losses reduce your account equity below the broker's maintenance margin requirement, you will receive a Margin Call warning. If equity continues dropping to the broker's Stop Out level (commonly 20% to 50%), the broker will automatically liquidate active trades starting from the most unprofitable to prevent negative balance.",
+  },
+  {
+    question: 'Does this software tool factor in floating profits when checking margin?',
+    answer:
+      'The Margin Calculator computes initial required margin based on entry lot size, contract specifications, and leverage. While active, your broker continuously calculates Free Margin (Equity minus Used Margin), meaning floating profits increase available free margin while floating losses decrease it.',
+  },
+  {
+    question: 'Is margin calculated the same way for commodities like gold?',
+    answer:
+      'The core formula remains the same, but contract specifications differ. For forex currencies, 1 standard lot equals 100,000 units of the base currency. For commodities such as Gold (XAU/USD), 1 standard lot represents 100 troy ounces, and leverage tiers or margin percentages may be governed by specific commodity asset rules.',
+  },
+];
 
 export const MarginCalculatorView: React.FC<MarginViewProps> = ({
   currencyPair,
@@ -443,15 +551,16 @@ export const MarginCalculatorView: React.FC<MarginViewProps> = ({
   setPositionSize,
   marginValue,
   onReset,
-  onSave,
 }) => {
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Title & Subtitle */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight flex items-center gap-1.5">
-          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Margin</span>
-          <span className="text-[#FD02B0]">Calculator</span>
+        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight flex items-center">
+          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Margin Calculat</span>
+          <span className="text-[#FD02B0]">or</span>
         </h1>
         <p className="text-sm text-slate-500 dark:text-[#CCC6FB] mt-1">
           Calculate required margin before you trade
@@ -461,76 +570,28 @@ export const MarginCalculatorView: React.FC<MarginViewProps> = ({
       {/* Inputs Card */}
       <div className="bg-white dark:bg-[#170345] rounded-3xl p-6 sm:p-7 border border-slate-100 dark:border-[#230674] shadow-xs space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {/* Account Currency */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Account Currency
-            </label>
-            <div className="relative">
-              <select
-                value={accountCurrency}
-                onChange={(e) => setAccountCurrency(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="AUD">AUD</option>
-                <option value="CAD">CAD</option>
-                <option value="JPY">JPY</option>
-                <option value="CHF">CHF</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
-          </div>
+          {/* Account Currency Dropdown (Matches D05) */}
+          <AccountCurrencyDropdown
+            value={accountCurrency}
+            onChange={setAccountCurrency}
+            label="Account Currency"
+          />
 
-          {/* Currency Pair */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Currency Pair
-            </label>
-            <div className="relative">
-              <select
-                value={currencyPair}
-                onChange={(e) => setCurrencyPair(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="EUR/USD">EUR/USD</option>
-                <option value="GBP/USD">GBP/USD</option>
-                <option value="USD/JPY">USD/JPY</option>
-                <option value="AUD/USD">AUD/USD</option>
-                <option value="USD/CAD">USD/CAD</option>
-                <option value="USD/CHF">USD/CHF</option>
-                <option value="EUR/GBP">EUR/GBP</option>
-                <option value="XAU/USD">XAU/USD (Gold)</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
-          </div>
+          {/* Currency Pair Dropdown (Matches D07) */}
+          <CurrencyPairDropdown
+            value={currencyPair}
+            onChange={setCurrencyPair}
+            label="Currency Pair"
+          />
 
-          {/* Leverage */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Leverage
-            </label>
-            <div className="relative">
-              <select
-                value={leverage}
-                onChange={(e) => setLeverage(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="1:50">1:50</option>
-                <option value="1:100">1:100</option>
-                <option value="1:200">1:200</option>
-                <option value="1:500">1:500</option>
-                <option value="1:1000">1:1000</option>
-                <option value="1:2000">1:2000</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
-          </div>
+          {/* Leverage Dropdown (Matches D09) */}
+          <LeverageDropdown
+            value={leverage}
+            onChange={setLeverage}
+            label="Leverage"
+          />
 
-          {/* Position Size */}
+          {/* Position Size Input */}
           <div className="space-y-2">
             <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
               Position Size
@@ -546,24 +607,19 @@ export const MarginCalculatorView: React.FC<MarginViewProps> = ({
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex items-center justify-center gap-3 pt-3">
+        {/* Reset Button (Exact Match to D04) */}
+        <div className="flex items-center justify-center pt-2">
           <button
+            type="button"
             onClick={onReset}
-            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
+            className="px-8 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
           >
             Reset
-          </button>
-          <button
-            onClick={onSave}
-            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
-          >
-            Save
           </button>
         </div>
       </div>
 
-      {/* Results Card */}
+      {/* Results Card (Exact Match to D04) */}
       <div className="bg-white dark:bg-[#170345] rounded-3xl p-6 sm:p-7 border-2 border-[#FD02B0] shadow-xs space-y-4">
         <h3 className="text-sm font-bold tracking-tight">
           <span className="text-[#5945F1] dark:text-[#ABA1F8]">Calculation Result</span>
@@ -589,7 +645,7 @@ export const MarginCalculatorView: React.FC<MarginViewProps> = ({
         conditions, spreads, execution, and trading costs. Consider professional advice before trading.
       </p>
 
-      {/* Educational Section */}
+      {/* Educational Section (Exact Match to D04) */}
       <div className="space-y-4 pt-2">
         <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
           How Margin Calculator Works
@@ -598,6 +654,7 @@ export const MarginCalculatorView: React.FC<MarginViewProps> = ({
           Our Margin Calculator determines the exact amount of collateral required to safely open and maintain a leveraged trading position. By processing your asset pair, account leverage tier, and position size, the utility displays your locked capital requirements instantly. This safeguards your portfolio by ensuring you preserve sufficient free margin to absorb market fluctuations.
         </p>
 
+        {/* Formula Box */}
         <div className="bg-[#f8fafc] dark:bg-[#230674] rounded-2xl p-5 border border-slate-200/80 dark:border-[#3410D5] space-y-3">
           <div className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white">
             Required Margin = (Position Volume * Contract Size * Base Asset Price) / Leverage Ratio
@@ -608,14 +665,105 @@ export const MarginCalculatorView: React.FC<MarginViewProps> = ({
             <div>• Leverage Ratio = The explicit leverage tier applied to the trading account</div>
           </div>
         </div>
+
+        {/* Key Benefits */}
+        <div className="space-y-3 pt-2">
+          <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
+            Key Benefits
+          </h3>
+          <ul className="list-none p-0 m-0 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] space-y-2.5 leading-relaxed">
+            <li className="flex items-start gap-2.5">
+              <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
+              <p>
+                <span className="font-semibold text-slate-800 dark:text-white">Prevents Accidental Margin Calls:</span> Displays the precise asset allocation requirements needed before entry to ensure your account balance remains safe.
+              </p>
+            </li>
+            <li className="flex items-start gap-2.5">
+              <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
+              <p>
+                <span className="font-semibold text-slate-800 dark:text-white">Optimizes Position Sizing:</span> Helps you map multi-position trade setups without lock-up or over-allocating your free margin balance.
+              </p>
+            </li>
+            <li className="flex items-start gap-2.5">
+              <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold mt-0.5">–</span>
+              <p>
+                <span className="font-semibold text-slate-800 dark:text-white">Clarifies Leverage Impact:</span> Shows exactly how changing your account leverage structures alters your capital requirements.
+              </p>
+            </li>
+          </ul>
+        </div>
+
+        {/* Margin Calculator FAQ Accordions */}
+        <div className="space-y-3 pt-3">
+          <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+            Margin Calculator FAQ
+          </h3>
+          <div className="space-y-2.5">
+            {MARGIN_FAQS.map((item, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div
+                  key={idx}
+                  className="bg-white dark:bg-[#170345] rounded-2xl border border-slate-100 dark:border-[#230674] overflow-hidden transition-all"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(isOpen ? null : idx)}
+                    className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-slate-50/50 dark:hover:bg-[#230674]/40 transition-all cursor-pointer"
+                  >
+                    <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white pr-4">
+                      {item.question}
+                    </span>
+                    <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold text-lg shrink-0">
+                      {isOpen ? '−' : '+'}
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] leading-relaxed border-t border-slate-100 dark:border-[#230674] pt-3">
+                      {item.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
 // ─────────────────────────────────────────────────────────────
-// 4. REBATE CALCULATOR VIEW
+// 4. REBATE CALCULATOR VIEW (Matching D04, D05, D07, D10 Screenshots)
 // ─────────────────────────────────────────────────────────────
+const REBATE_FAQS = [
+  {
+    question: 'How do forex cashback rebates actually function?',
+    answer:
+      'Forex cashback rebates are paid from a portion of the transaction spread or commission that your broker shares with us for referring trading volume, which we pass directly back into your trading wallet.',
+  },
+  {
+    question: 'Can I collect rebates on losing trades or just winning setups?',
+    answer:
+      'Yes, rebates are earned on every single closed trade regardless of whether the position results in a profit or loss, as cashback is calculated strictly on executed lot volume.',
+  },
+  {
+    question: 'Does using a rebate link widen my broker spread settings?',
+    answer:
+      'No. Your trading conditions, spreads, commissions, and execution speeds remain 100% identical to regular retail accounts. The broker shares their existing revenue with us.',
+  },
+  {
+    question: 'How often are these rebate accumulations calculated and distributed?',
+    answer:
+      'Depending on your selected broker, rebate calculations are updated daily or weekly and distributed directly into your platform balance or preferred withdrawal method automatically.',
+  },
+  {
+    question: 'Can I use this calculation tool across multiple broker systems?',
+    answer:
+      'Yes! You can compare projected rebate yields across all partner brokers in our database to find the highest cashback rate for your preferred instruments and trading style.',
+  },
+];
+
 interface RebateViewProps extends SharedViewProps {
   rebatePerLot: string;
   setRebatePerLot: (val: string) => void;
@@ -639,138 +787,107 @@ export const RebateCalculatorView: React.FC<RebateViewProps> = ({
   setPositionSize,
   rebateValue,
   onReset,
-  onSave,
 }) => {
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  const toggleFaq = (index: number) => {
+    setOpenFaqIndex((prev) => (prev === index ? null : index));
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Title & Subtitle */}
+      {/* Title & Subtitle matching D04 */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight flex items-center gap-1.5">
-          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Rebate</span>
-          <span className="text-[#FD02B0]">Calculator</span>
+        <h1 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight flex items-center">
+          <span className="text-[#5945F1] dark:text-[#ABA1F8]">Rebate Calculato</span>
+          <span className="text-[#FD02B0]">r</span>
         </h1>
-        <p className="text-sm text-slate-500 dark:text-[#CCC6FB] mt-1">
+        <p className="text-sm text-slate-500 dark:text-[#CCC6FB] mt-1 font-medium">
           See how much cashback your trades can earn
         </p>
       </div>
 
-      {/* Inputs Card */}
-      <div className="bg-white dark:bg-[#170345] rounded-3xl p-6 sm:p-7 border border-slate-100 dark:border-[#230674] shadow-xs space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {/* Account Currency */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Account Currency
-            </label>
-            <div className="relative">
-              <select
-                value={accountCurrency}
-                onChange={(e) => setAccountCurrency(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="AUD">AUD</option>
-                <option value="CAD">CAD</option>
-                <option value="JPY">JPY</option>
-                <option value="CHF">CHF</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
-          </div>
+      {/* Inputs Form */}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Account Currency Dropdown (Matches D05) */}
+          <AccountCurrencyDropdown
+            value={accountCurrency}
+            onChange={setAccountCurrency}
+            label="Account Currency"
+          />
 
-          {/* Currency Pair */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Currency Pair
-            </label>
-            <div className="relative">
-              <select
-                value={currencyPair}
-                onChange={(e) => setCurrencyPair(e.target.value)}
-                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
-              >
-                <option value="EUR/USD">EUR/USD</option>
-                <option value="GBP/USD">GBP/USD</option>
-                <option value="USD/JPY">USD/JPY</option>
-                <option value="AUD/USD">AUD/USD</option>
-                <option value="USD/CAD">USD/CAD</option>
-                <option value="USD/CHF">USD/CHF</option>
-                <option value="EUR/GBP">EUR/GBP</option>
-                <option value="XAU/USD">XAU/USD (Gold)</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
-            </div>
-          </div>
+          {/* Currency Pair Dropdown (Matches D07) */}
+          <CurrencyPairDropdown
+            value={currencyPair}
+            onChange={setCurrencyPair}
+            label="Currency Pair"
+          />
+        </div>
 
-          {/* Rebate Per Lot with embedded currency picker */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Rebate Per Lot
-            </label>
-            <div className="relative flex items-center">
-              <input
-                type="number"
-                step="0.5"
-                value={rebatePerLot}
-                onChange={(e) => setRebatePerLot(e.target.value)}
-                placeholder="2"
-                className="w-full h-11 pl-3.5 pr-20 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1]"
-              />
-              <div className="absolute right-1.5 top-1.5 bottom-1.5 flex items-center bg-slate-100 dark:bg-[#1E0560] rounded-lg px-2 text-xs font-semibold text-slate-700 dark:text-[#ABA1F8]">
-                <span>{rebateCurrency}</span>
-                <ChevronDown className="w-3.5 h-3.5 ml-1 text-slate-400" />
-              </div>
-            </div>
-          </div>
-
-          {/* Position Size */}
-          <div className="space-y-2">
-            <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
-              Position Size
-            </label>
+        {/* Rebate Per Lot with embedded currency picker (Matches D10) */}
+        <div className="space-y-2">
+          <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
+            Rebate Per Lot
+          </label>
+          <div className="relative flex items-center">
             <input
               type="number"
-              step="0.01"
-              value={positionSize}
-              onChange={(e) => setPositionSize(e.target.value)}
-              placeholder="0.01"
-              className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1]"
+              step="0.5"
+              value={rebatePerLot}
+              onChange={(e) => setRebatePerLot(e.target.value)}
+              placeholder="2"
+              className="w-full h-11 pl-3.5 pr-28 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] transition-colors"
             />
+            <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
+              <RebateLotCurrencyDropdown
+                value={rebateCurrency}
+                onChange={setRebateCurrency}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex items-center justify-center gap-3 pt-3">
+        {/* Position Size */}
+        <div className="space-y-2">
+          <label className="text-xs sm:text-[13px] font-semibold text-slate-800 dark:text-white block">
+            Position Size
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            value={positionSize}
+            onChange={(e) => setPositionSize(e.target.value)}
+            placeholder="0.01"
+            className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] transition-colors"
+          />
+        </div>
+
+        {/* Centered Reset Button (Matching D04) */}
+        <div className="flex justify-center pt-2">
           <button
+            type="button"
             onClick={onReset}
-            className="px-6 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
+            className="px-8 py-2.5 rounded-xl border border-indigo-200/90 dark:border-[#3410D5] bg-white dark:bg-[#230674] hover:bg-slate-50 dark:hover:bg-[#2E0AA3] text-[#5945F1] dark:text-[#ABA1F8] font-semibold text-sm transition-all cursor-pointer shadow-2xs"
           >
             Reset
-          </button>
-          <button
-            onClick={onSave}
-            className="px-7 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-sm transition-all cursor-pointer shadow-xs"
-          >
-            Save
           </button>
         </div>
       </div>
 
-      {/* Results Card */}
-      <div className="bg-white dark:bg-[#170345] rounded-3xl p-6 sm:p-7 border-2 border-[#FD02B0] shadow-xs space-y-4">
+      {/* Calculation Results Card (Matching D04 with pink accent border) */}
+      <div className="rounded-2xl border border-[#FD02B0] bg-white dark:bg-[#170345] p-6 space-y-3 shadow-xs">
         <h3 className="text-sm font-bold tracking-tight">
           <span className="text-[#5945F1] dark:text-[#ABA1F8]">Calculation Result</span>
           <span className="text-[#FD02B0]">s</span>
         </h3>
 
-        <div className="flex items-center justify-center py-3">
+        <div className="flex items-center justify-center py-2">
           <div className="text-center space-y-1">
             <div className="text-xs font-semibold text-slate-500 dark:text-[#CCC6FB]">
               Rebate
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {rebateValue}
             </div>
           </div>
@@ -779,13 +896,11 @@ export const RebateCalculatorView: React.FC<RebateViewProps> = ({
 
       {/* Disclaimer */}
       <p className="text-[11px] sm:text-xs text-slate-400 dark:text-[#8A7AF6] leading-relaxed">
-        <span className="font-bold text-slate-600 dark:text-[#CCC6FB]">Disclaimer:</span> This
-        calculator provides estimates for guidance only. Actual results may vary due to market
-        conditions, spreads, execution, and trading costs. Consider professional advice before trading.
+        <span className="font-bold text-slate-600 dark:text-[#CCC6FB]">Disclaimer:</span> This calculator provides estimates for guidance only. Actual results may vary due to market conditions, spreads, execution, and trading costs. Consider professional advice before trading.
       </p>
 
-      {/* Educational Section */}
-      <div className="space-y-4 pt-2">
+      {/* How Rebate Calculator Works */}
+      <div className="space-y-3 pt-2">
         <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
           How Rebate Calculator Works
         </h2>
@@ -800,7 +915,66 @@ export const RebateCalculatorView: React.FC<RebateViewProps> = ({
           <div className="text-xs text-slate-600 dark:text-[#CCC6FB] space-y-1.5 leading-relaxed">
             <div className="font-semibold text-slate-700 dark:text-[#ABA1F8]">Where:</div>
             <div>• Lot Volume = The standard size of each transaction</div>
+            <div>• Rebate Rate = The fixed cash award allocated per standard lot traded</div>
           </div>
+        </div>
+      </div>
+
+      {/* Key Benefits */}
+      <div className="space-y-3 pt-2">
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+          Key Benefits
+        </h2>
+        <ul className="text-xs sm:text-[13px] text-slate-600 dark:text-[#CCC6FB] space-y-2.5 leading-relaxed">
+          <li className="flex items-start gap-2">
+            <span className="text-[#5945F1] font-bold">•</span>
+            <span>
+              <strong className="text-slate-800 dark:text-white">Visualizes Hidden Revenue Pipelines:</strong> Quantifies your secondary cash returns to ensure all volume performance bonuses are fully tracked.
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-[#5945F1] font-bold">•</span>
+            <span>
+              <strong className="text-slate-800 dark:text-white">Lowers Net Transaction Costs:</strong> Lowers your overall execution expenses by subtracting your rebate cash directly from raw spread fees.
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-[#5945F1] font-bold">•</span>
+            <span>
+              <strong className="text-slate-800 dark:text-white">Boosts Scalping Strategy Returns:</strong> Tracks accumulated micro earnings for high frequency traders to improve long term strategy performance.
+            </span>
+          </li>
+        </ul>
+      </div>
+
+      {/* Rebate Calculator FAQ */}
+      <div className="space-y-3 pt-2">
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+          Rebate Calculator FAQ
+        </h2>
+        <div className="space-y-2">
+          {REBATE_FAQS.map((faq, idx) => (
+            <div
+              key={idx}
+              className="border-b border-slate-100 dark:border-[#230674] pb-3"
+            >
+              <button
+                type="button"
+                onClick={() => toggleFaq(idx)}
+                className="w-full flex items-center justify-between py-2 text-left text-xs sm:text-sm font-semibold text-slate-800 dark:text-white hover:text-[#5945F1] dark:hover:text-[#ABA1F8] transition-colors cursor-pointer"
+              >
+                <span>{faq.question}</span>
+                <span className="text-lg font-bold text-[#5945F1] dark:text-[#ABA1F8] shrink-0 ml-2">
+                  {openFaqIndex === idx ? '−' : '+'}
+                </span>
+              </button>
+              {openFaqIndex === idx && (
+                <p className="text-xs text-slate-600 dark:text-[#CCC6FB] pt-1.5 leading-relaxed animate-in fade-in duration-150">
+                  {faq.answer}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>

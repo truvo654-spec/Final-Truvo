@@ -555,7 +555,7 @@ export const PivotPointCalculatorView: React.FC<SharedTechnicalProps> = ({ onRes
                 <option value="1W">1W</option>
                 <option value="1M">1M</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -576,7 +576,7 @@ export const PivotPointCalculatorView: React.FC<SharedTechnicalProps> = ({ onRes
                 <option value="AUD/USD">AUD/USD</option>
                 <option value="USD/CAD">USD/CAD</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 

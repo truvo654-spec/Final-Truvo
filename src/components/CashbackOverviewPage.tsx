@@ -21,6 +21,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { UserProfile, Broker, MarketSignal } from '../types';
+import { BorderBeam } from './ui/BorderBeam';
+
 
 export type CashbackScenario =
   | '01-empty'
@@ -1235,7 +1237,13 @@ export const CashbackOverviewPage: React.FC<CashbackOverviewPageProps> = ({
 
       {/* ─── MORE CONNECTED BROKERS (Shown in Scenarios 02, 03, 04, 03a, 03b) ─── */}
       {activeScenario !== '01-empty' && (
-        <div className="rounded-3xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-2xs space-y-6">
+        <div className="rounded-3xl bg-white dark:bg-[#170345] border border-slate-200/90 dark:border-indigo-950/70 p-6 sm:p-8 shadow-2xs space-y-6 relative overflow-hidden">
+          <BorderBeam
+            borderWidth={2}
+            duration={10}
+            colorFrom="#5945F1"
+            colorTo="#FD02B0"
+          />
           <div className="text-center space-y-1">
             <h3 className="font-display font-black text-xl text-[#0b1c30]">
               More Connected Brokers. More Opportunitie<span className="text-[#FD02B0]">s</span>.

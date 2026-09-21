@@ -12,8 +12,10 @@ import {
   Scale,
   Sparkles,
 } from 'lucide-react';
+import { BorderBeam } from '../ui/BorderBeam';
 
 interface BrokerListPageProps {
+
   brokers: Broker[];
   user: UserProfile;
   onSelectBrokerDetail: (broker: Broker) => void;
@@ -458,7 +460,13 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
           </div>
 
           {/* 2. PICK UP WHERE YOU LEFT OFF CARD */}
-          <div className="bg-[#f8fafc] rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
+          <div className="bg-[#f8fafc] dark:bg-[#170345] rounded-2xl border border-slate-200/90 dark:border-indigo-950/70 p-5 shadow-xs space-y-4 relative overflow-hidden">
+            <BorderBeam
+              borderWidth={1.5}
+              duration={8}
+              colorFrom="#5945F1"
+              colorTo="#FD02B0"
+            />
             <div>
               <div className="flex items-center justify-between">
                 <h3 className="font-display font-black text-lg text-[#0b1c30] tracking-tight">

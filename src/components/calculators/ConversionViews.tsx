@@ -115,7 +115,7 @@ export const TradingTimezoneConverterView: React.FC<SharedConversionProps> = ({
               <option value="GMT+10">GMT +10:00: Sydney, Melbourne</option>
               <option value="GMT+1">GMT +01:00: Frankfurt, Paris, Berlin</option>
             </select>
-            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
@@ -466,7 +466,7 @@ export const CurrencyConverterView: React.FC<SharedConversionProps> = ({ onReset
                 <option value="GBP">GBP</option>
                 <option value="JPY">JPY</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
         </div>
@@ -511,7 +511,7 @@ export const CurrencyConverterView: React.FC<SharedConversionProps> = ({ onReset
                 <option value="GBP">GBP</option>
                 <option value="JPY">JPY</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
         </div>

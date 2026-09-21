@@ -1277,6 +1277,10 @@ export default function App() {
               setIsConnectModalOpen(true);
             }}
             onOpenBrokerComparison={() => setIsBrokerComparisonOpen(true)}
+            onSelectBrokerDetail={(broker) => {
+              setSelectedBrokerForDetail(broker);
+              setActiveTab('broker-detail');
+            }}
             onSelectSignal={(sig) => {
               setSelectedSignal(sig);
               setIsSignalModalOpen(true);

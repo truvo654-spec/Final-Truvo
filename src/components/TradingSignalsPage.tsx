@@ -7,7 +7,9 @@ import { InsufficientCreditModal } from './signals/InsufficientCreditModal';
 import { SignalUnlockedToast } from './signals/SignalUnlockedToast';
 import { SignalFilterPopover } from './signals/SignalFilterPopover';
 import { SignalSearchDropdown } from './signals/SignalSearchDropdown';
+import { BorderBeam } from './ui/BorderBeam';
 import {
+
   Search,
   Filter,
   Clock,
@@ -768,7 +770,13 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
           </div>
 
           {/* Card 2: Pick up where you left off. */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs space-y-3.5">
+          <div className="bg-white dark:bg-[#170345] rounded-2xl border border-slate-200/90 dark:border-indigo-950/70 p-5 shadow-2xs space-y-3.5 relative overflow-hidden">
+            <BorderBeam
+              borderWidth={1.5}
+              duration={8}
+              colorFrom="#5945F1"
+              colorTo="#FD02B0"
+            />
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-sm text-[#0b1c30]">
                 Pick up where you left off

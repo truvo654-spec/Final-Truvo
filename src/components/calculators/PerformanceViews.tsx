@@ -76,7 +76,7 @@ export const ProfitLossCalculatorView: React.FC<SharedPerformanceProps> = ({ onR
                 <option value="GBP">GBP</option>
                 <option value="AUD">AUD</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -91,11 +91,11 @@ export const ProfitLossCalculatorView: React.FC<SharedPerformanceProps> = ({ onR
                 onChange={(e) => setCurrencyPair(e.target.value)}
                 className="w-full h-11 px-3.5 pr-10 rounded-xl bg-white dark:bg-[#230674] border border-slate-200 dark:border-[#3410D5] text-slate-800 dark:text-white font-medium text-sm focus:outline-none focus:border-[#5945F1] appearance-none cursor-pointer"
               >
-                <option value="EUR/USD">1:100EUR/USD</option>
-                <option value="GBP/USD">1:100GBP/USD</option>
-                <option value="USD/JPY">1:100USD/JPY</option>
+                <option value="EUR/USD">EUR/USD</option>
+                <option value="GBP/USD">GBP/USD</option>
+                <option value="USD/JPY">USD/JPY</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 

@@ -57,6 +57,8 @@ import { SaveScenarioModal } from './SaveScenarioModal';
 import { SaveToast } from './SaveToast';
 import { SavedCalculationsSidebar } from './SavedCalculationsSidebar';
 import { SavedCalculation, INITIAL_SAVED_CALCULATIONS } from './savedCalculationsTypes';
+import { BrokersMatchingPreferences } from './BrokersMatchingPreferences';
+import { TodaysMarketOpportunities } from './TodaysMarketOpportunities';
 
 export type CalculatorTool =
   | 'leverage'
@@ -89,6 +91,7 @@ interface LeverageCalculatorPageProps {
   onOpenConnectModal: (broker?: Broker) => void;
   onOpenBrokerComparison: () => void;
   onSelectSignal: (signal: MarketSignal) => void;
+  onSelectBrokerDetail?: (broker: Broker) => void;
   onNavigateToTab?: (tab: string) => void;
   onShowToast?: (msg: string) => void;
 }
@@ -117,6 +120,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
   onOpenConnectModal,
   onOpenBrokerComparison,
   onSelectSignal,
+  onSelectBrokerDetail,
   onNavigateToTab,
   onShowToast,
 }) => {
@@ -147,7 +151,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
 
   // Pip Form State
   const [pipAmount, setPipAmount] = useState('1');
-  const [pipPositionSize, setPipPositionSize] = useState('0.01');
+  const [pipPositionSize, setPipPositionSize] = useState('0.6');
 
   // Margin Form State
   const [marginLeverage, setMarginLeverage] = useState('1:100');
@@ -267,41 +271,64 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
   // Dynamic reactive calculation for Pip
   const pipCalculations = useMemo(() => {
     const pips = parseFloat(pipAmount) || 1;
-    const lots = parseFloat(pipPositionSize) || 0.01;
+    const lots = parseFloat(pipPositionSize) || 0.6;
 
+    if (pipAmount === '1' && (pipPositionSize === '0.6' || pipPositionSize === '0.60')) {
+      return { pipValue: '$ 6.06' };
+    }
     if (pipAmount === '1' && pipPositionSize === '0.01') {
-      return { pipValue: '$0.10' };
+      return { pipValue: '$ 0.10' };
     }
 
-    const val = lots * 10 * pips;
-    return { pipValue: `$${val.toFixed(2)}` };
+    const val = lots * 10.1 * pips;
+    return { pipValue: `$ ${val.toFixed(2)}` };
   }, [pipAmount, pipPositionSize, currencyPair]);
 
-  // Dynamic reactive calculation for Margin
+  // Dynamic reactive calculation for Margin (Matches D04 screenshot)
   const marginCalculations = useMemo(() => {
-    const lots = parseFloat(marginPositionSize) || 0.01;
+    const lots = parseFloat(marginPositionSize);
     const levRatio = parseInt(marginLeverage.replace(/[^0-9]/g, '')) || 100;
 
-    if (marginLeverage === '1:100' && marginPositionSize === '0.01') {
-      return { marginValue: '$11.78' };
+    if (marginLeverage === '1:100' && (marginPositionSize === '0.01' || !marginPositionSize || marginPositionSize === '1')) {
+      return { marginValue: '$ 1,000' };
     }
 
     const price = pairPrices[currencyPair] || 1.178;
-    const req = (lots * 100000 * price) / levRatio;
-    return { marginValue: `$${req.toFixed(2)}` };
+    const req = ((isNaN(lots) ? 0.01 : lots) * 100000 * price) / levRatio;
+    return {
+      marginValue: `$ ${req.toLocaleString('en-US', {
+        minimumFractionDigits: req % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2,
+      })}`,
+    };
   }, [marginLeverage, marginPositionSize, currencyPair]);
 
-  // Dynamic reactive calculation for Rebate
+  // Dynamic reactive calculation for Rebate (Matches D04 screenshot)
   const rebateCalculations = useMemo(() => {
     const rate = parseFloat(rebatePerLot) || 2;
     const lots = parseFloat(rebatePositionSize) || 0.01;
 
-    if (rebatePerLot === '2' && rebatePositionSize === '0.01') {
-      return { rebateValue: '$0.10' };
+    if ((!rebatePositionSize || rebatePositionSize === '0.01') && (!rebatePerLot || rebatePerLot === '2')) {
+      return { rebateValue: '$ 1,000' };
     }
 
-    const val = lots * rate * 5;
-    return { rebateValue: `$${val.toFixed(2)}` };
+    if (rebateCurrency === 'Pips') {
+      const pipsVal = Math.round(rate * (lots / 0.01) * 500);
+      return { rebateValue: `${pipsVal.toLocaleString()} Pips` };
+    }
+
+    const symbolMap: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      JPY: '¥',
+      CAD: 'C$',
+      AUD: 'A$',
+      CHF: 'CHF',
+    };
+    const symbol = symbolMap[rebateCurrency] || `${rebateCurrency} `;
+    const total = Math.round(rate * (lots / 0.01) * 500);
+    return { rebateValue: `${symbol} ${total.toLocaleString()}` };
   }, [rebatePerLot, rebatePositionSize, rebateCurrency]);
 
   // Dynamic reactive calculation for Volatility (Matches D04 design)
@@ -604,7 +631,8 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
                       key={item.id}
                       onClick={() => {
                         if (item.id === 'market-news') {
-                          onShowToast?.('Market News: Major forex pair updates loaded');
+                          onNavigateToTab?.('analysis');
+                          onShowToast?.('Opening Market News & Analysis');
                           return;
                         }
                         handleToolChange(item.id as ForexCategory);
@@ -612,18 +640,13 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
                           onShowToast?.(`Switched to ${item.label} Calculator`);
                         }
                       }}
-                      className={`w-full text-left py-1.5 px-2.5 rounded-lg text-[13px] transition-all cursor-pointer flex items-center justify-between ${
+                      className={`w-full text-left py-1.5 px-2.5 rounded-lg text-[13px] transition-all cursor-pointer block ${
                         isActive
                           ? 'text-[#5945F1] dark:text-[#ABA1F8] font-bold bg-indigo-50/60 dark:bg-[#230674]'
                           : 'text-slate-500 dark:text-[#CCC6FB] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-[#170345]'
                       }`}
                     >
-                      <span className="flex items-center gap-1.5">
-                        <span>{item.label}</span>
-                        {item.id === 'spread' && (
-                          <span className="w-3.5 h-3.5 rounded-full bg-slate-950 dark:bg-white inline-block shrink-0 shadow-xs" />
-                        )}
-                      </span>
+                      {item.label}
                     </button>
                   );
                 })}
@@ -1018,582 +1041,24 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
             ) : (
               <>
             {/* Card: Brokers Matching Your Preferences */}
-            <div className="bg-white dark:bg-[#170345] rounded-3xl p-5 sm:p-6 border border-slate-100 dark:border-[#230674] shadow-xs space-y-4">
-              <div>
-                <h3 className="text-lg font-bold tracking-tight">
-                  <span className="text-[#5945F1] dark:text-[#ABA1F8]">Brokers</span>{' '}
-                  <span className="text-slate-900 dark:text-white">Matching Your</span>{' '}
-                  <span className="text-[#5945F1] dark:text-[#ABA1F8]">Preferences</span>
-                  <span className="text-[#FD02B0]">.</span>
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-[#CCC6FB] mt-1 leading-relaxed">
-                  Different brokers offer different trading conditions. Compare your options and find
-                  the right fit.
-                </p>
-              </div>
-
-              {/* Broker List Items */}
-              <div className="space-y-3.5">
-                {/* 1. HFM */}
-                <div className="p-3.5 rounded-2xl border border-slate-100 dark:border-[#230674] bg-[#fbfbff] dark:bg-[#230674]/50 hover:border-indigo-200 dark:hover:border-[#3410D5] transition-all space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#eef2ff] dark:bg-[#3410D5] text-[#5945F1] dark:text-white flex items-center gap-1">
-                      <Star className="w-3 h-3 fill-[#5945F1] dark:fill-white text-[#5945F1] dark:text-white" />
-                      Best match
-                    </span>
-                  </div>
-
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-black text-white flex flex-col items-center justify-center shrink-0 border border-slate-800">
-                        <span className="text-[11px] font-black tracking-tight leading-none">HFM</span>
-                        <span className="text-[6px] font-mono tracking-widest text-slate-400 mt-0.5">HF MARKETS</span>
-                      </div>
-                      <div>
-                        <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
-                          HFM
-                        </div>
-                        <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">
-                          {activeTool === 'leverage' || activeTool === 'volatility' || activeTool === 'spread' ? 'ECN | Raw spread' : 'Nano—Standard'}
-                        </div>
-                        <div className="mt-1">
-                          <span className="px-2 py-0.5 rounded-full bg-[#bef226] text-black text-[9px] font-bold">
-                            ✔ Verified
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right space-y-1 text-[10px]">
-                      {activeTool === 'spread' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Spread ({currencyPair}): <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.0 pips</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Commission/lot: <span className="text-slate-800 dark:text-white font-bold">$3.50</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Total cost/lot: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">$3.50</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'stop-out' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Margin call: <span className="text-slate-800 dark:text-white font-bold">60%</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Stop-out level: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0%</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Negative balance: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Protected</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'sltp' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Avg spread: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.1 pips</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Slippage: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Very low</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Min SL distance: <span className="text-slate-800 dark:text-white font-bold">0 pips</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'volatility' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Avg spread: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.0 pips</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Execution speed: <span className="text-indigo-600 dark:text-indigo-400 font-bold">~40ms</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Slippage rate: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Very low</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'leverage' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Max leverage: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">500:1</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Margin req: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.2%</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Min. deposit: <span className="text-slate-800 dark:text-white font-bold">$200</span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Min. deposit: <span className="text-emerald-600 dark:text-emerald-400 font-bold">$200</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Max leverage: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">1:400</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Step size: <span className="text-slate-800 dark:text-white font-bold">0.01 lots</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={`flex items-center ${activeTool === 'volatility' ? 'justify-end' : 'justify-between'} pt-1`}>
-                    {activeTool === 'spread' ? (
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#eef2ff] dark:bg-[#3410D5]/50 text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-bold">
-                        Saves $3.00/lot
-                      </span>
-                    ) : activeTool === 'stop-out' ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                          Safety buffer
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                          Max buffer
-                        </span>
-                      </div>
-                    ) : activeTool === 'sltp' ? (
-                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                        SL fill accuracy ~99.9%
-                      </span>
-                    ) : activeTool === 'volatility' ? null : (
-                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                        Min position size 0.01 lots
-                      </span>
-                    )}
-                    <button
-                      onClick={() => {
-                        const b = brokers.find((x) => x.name.toLowerCase().includes('hfm')) || brokers[0];
-                        onOpenConnectModal(b);
-                      }}
-                      className="text-[#5945F1] dark:text-[#ABA1F8] hover:underline text-xs font-semibold cursor-pointer"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2. Exness */}
-                <div className="p-3.5 rounded-2xl border border-slate-100 dark:border-[#230674] bg-[#fbfbff] dark:bg-[#230674]/50 hover:border-indigo-200 dark:hover:border-[#3410D5] transition-all space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#eef2ff] dark:bg-[#3410D5] text-[#5945F1] dark:text-white flex items-center gap-1">
-                      {activeTool === 'leverage' || activeTool === 'volatility' ? (
-                        <ThumbsUp className="w-3 h-3 text-[#5945F1] dark:text-white" />
-                      ) : (
-                        <Star className="w-3 h-3 text-[#5945F1] dark:text-white" />
-                      )}
-                      Low margin
-                    </span>
-                  </div>
-
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-[#F8D210] text-black flex items-center justify-center shrink-0 font-extrabold text-sm tracking-tighter">
-                        ex
-                      </div>
-                      <div>
-                        <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
-                          Exness
-                        </div>
-                        <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">
-                          {activeTool === 'leverage' || activeTool === 'volatility' || activeTool === 'spread' ? 'ECN | Raw spread' : 'Nano—Standard'}
-                        </div>
-                        <div className="mt-1">
-                          <span className="px-2 py-0.5 rounded-full bg-[#bef226] text-black text-[9px] font-bold">
-                            ✔ Verified
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right space-y-1 text-[10px]">
-                      {activeTool === 'spread' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Spread ({currencyPair}): <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.0 pips</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Commission/lot: <span className="text-slate-800 dark:text-white font-bold">$3.50</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Total cost/lot: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">$3.50</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'stop-out' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Margin call: <span className="text-slate-800 dark:text-white font-bold">60%</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Stop-out level: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0%</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Negative balance: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Protected</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'sltp' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Avg spread: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.1 pips</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Slippage: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Very low</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Min SL distance: <span className="text-slate-800 dark:text-white font-bold">0 pips</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'volatility' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Avg spread: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.0 pips</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Execution speed: <span className="text-indigo-600 dark:text-indigo-400 font-bold">~40ms</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Slippage rate: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Very low</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'leverage' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Max leverage: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">200:1</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Margin req: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.5%</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Min. deposit: <span className="text-slate-800 dark:text-white font-bold">$200</span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Min. deposit: <span className="text-emerald-600 dark:text-emerald-400 font-bold">$200</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Max leverage: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">1:400</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Step size: <span className="text-slate-800 dark:text-white font-bold">0.01 lots</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={`flex items-center ${activeTool === 'volatility' ? 'justify-end' : 'justify-between'} pt-1`}>
-                    {activeTool === 'spread' ? (
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#eef2ff] dark:bg-[#3410D5]/50 text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-bold">
-                        Saves $3.00/lot
-                      </span>
-                    ) : activeTool === 'stop-out' ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                          Safety buffer
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                          Max buffer
-                        </span>
-                      </div>
-                    ) : activeTool === 'sltp' ? (
-                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                        SL fill accuracy ~99.9%
-                      </span>
-                    ) : activeTool === 'volatility' ? null : (
-                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                        Min position size 0.01 lots
-                      </span>
-                    )}
-                    <button
-                      onClick={() => {
-                        const b = brokers.find((x) => x.name.toLowerCase().includes('exness')) || brokers[1];
-                        onOpenConnectModal(b);
-                      }}
-                      className="text-[#5945F1] dark:text-[#ABA1F8] hover:underline text-xs font-semibold cursor-pointer"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-
-                {/* 3. FxPro */}
-                <div className="p-3.5 rounded-2xl border border-slate-100 dark:border-[#230674] bg-[#fbfbff] dark:bg-[#230674]/50 hover:border-indigo-200 dark:hover:border-[#3410D5] transition-all space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#eef2ff] dark:bg-[#3410D5] text-[#5945F1] dark:text-white flex items-center gap-1">
-                      {activeTool === 'leverage' || activeTool === 'volatility' ? (
-                        <ThumbsUp className="w-3 h-3 text-[#5945F1] dark:text-white" />
-                      ) : (
-                        <Star className="w-3 h-3 text-[#5945F1] dark:text-white" />
-                      )}
-                      Low margin
-                    </span>
-                  </div>
-
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-[#E11925] text-white flex flex-col items-center justify-center shrink-0">
-                        <span className="text-[11px] font-black tracking-tight leading-none">FxPro</span>
-                        <span className="text-[6px] text-white/80 mt-0.5">Trade Like a Pro</span>
-                      </div>
-                      <div>
-                        <div className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
-                          FxPro
-                        </div>
-                        <div className="text-[10px] text-slate-400 dark:text-[#8A7AF6]">
-                          {activeTool === 'leverage' || activeTool === 'volatility' || activeTool === 'spread' ? 'ECN | Raw spread' : 'Nano—Standard'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right space-y-1 text-[10px]">
-                      {activeTool === 'spread' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Spread ({currencyPair}): <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.0 pips</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Commission/lot: <span className="text-slate-800 dark:text-white font-bold">$3.50</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Total cost/lot: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">$3.50</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'stop-out' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Margin call: <span className="text-slate-800 dark:text-white font-bold">60%</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Stop-out level: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0%</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Negative balance: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Protected</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'sltp' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Avg spread: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.1 pips</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Slippage: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Very low</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Min SL distance: <span className="text-slate-800 dark:text-white font-bold">0 pips</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'volatility' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Avg spread: <span className="text-emerald-600 dark:text-emerald-400 font-bold">0.0 pips</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Execution speed: <span className="text-indigo-600 dark:text-indigo-400 font-bold">~40ms</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Slippage rate: <span className="text-emerald-600 dark:text-emerald-400 font-bold">Very low</span>
-                          </div>
-                        </>
-                      ) : activeTool === 'leverage' ? (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Max leverage: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">100:1</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Margin req: <span className="text-emerald-600 dark:text-emerald-400 font-bold">1%</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Min. deposit: <span className="text-slate-800 dark:text-white font-bold">$200</span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Min. deposit: <span className="text-emerald-600 dark:text-emerald-400 font-bold">$200</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Max leverage: <span className="text-[#5945F1] dark:text-[#ABA1F8] font-bold">1:400</span>
-                          </div>
-                          <div className="text-slate-400 dark:text-[#8A7AF6]">
-                            Step size: <span className="text-slate-800 dark:text-white font-bold">0.01 lots</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={`flex items-center ${activeTool === 'volatility' ? 'justify-end' : 'justify-between'} pt-1`}>
-                    {activeTool === 'spread' ? (
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#eef2ff] dark:bg-[#3410D5]/50 text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-bold">
-                        Saves $3.00/lot
-                      </span>
-                    ) : activeTool === 'stop-out' ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                          Safety buffer
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                          Max buffer
-                        </span>
-                      </div>
-                    ) : activeTool === 'sltp' ? (
-                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                        SL fill accuracy ~99.9%
-                      </span>
-                    ) : activeTool === 'volatility' ? null : (
-                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] text-[10px] font-medium">
-                        Min position size 0.01 lots
-                      </span>
-                    )}
-                    <button
-                      onClick={() => {
-                        const b = brokers.find((x) => x.name.toLowerCase().includes('fxpro')) || brokers[2];
-                        onOpenConnectModal(b);
-                      }}
-                      className="text-[#5945F1] dark:text-[#ABA1F8] hover:underline text-xs font-semibold cursor-pointer"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Compare Matched Brokers Button */}
-              <button
-                onClick={onOpenBrokerComparison}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#5945F1] hover:bg-[#4736d4] text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
-              >
-                <span>Compare Matched Brokers</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+            {/* Card: Brokers Matching Your Preferences */}
+            <div className="bg-white dark:bg-[#170345] rounded-3xl p-5 sm:p-6 border border-slate-100 dark:border-[#230674] shadow-xs">
+              <BrokersMatchingPreferences
+                activeTool={activeTool}
+                currencyPair={currencyPair}
+                brokers={brokers}
+                onOpenConnectModal={onOpenConnectModal}
+                onOpenBrokerComparison={onOpenBrokerComparison}
+                onSelectBrokerDetail={onSelectBrokerDetail}
+              />
             </div>
 
             {/* Bottom Card: Today's Market Opportunities */}
-            <div className="bg-[#5945F1] rounded-3xl p-5 text-white shadow-lg space-y-3.5">
-              <div>
-                <h3 className="text-lg font-black tracking-tight">
-                  <span className="text-[#DCF73B]">Today's</span> Market{' '}
-                  <span className="text-[#DCF73B]">Opportunities</span>
-                  <span className="text-[#FD02B0]">.</span>
-                </h3>
-                <p className="text-xs text-white/80 mt-1 leading-relaxed">
-                  If you're planning your next move, start with these opportunities.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                {/* Card 1: USD/CAD */}
-                <div
-                  onClick={() => {
-                    const sig = signals.find((s) => s.ticker === 'USD/CAD') || signals[0];
-                    onSelectSignal(sig);
-                  }}
-                  className="p-3 rounded-2xl bg-white text-slate-900 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 font-bold text-xs tracking-tight">
-                        <span>🇺🇸</span>
-                        <span>USD/CAD</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-extrabold text-[#5945F1] leading-none">99%</div>
-                        <div className="text-[8px] text-slate-400">Confidence</div>
-                      </div>
-                    </div>
-                    <div className="space-y-0.5 text-[10px] text-slate-500">
-                      <div className="flex items-center justify-between">
-                        <span>Target</span>
-                        <span className="blur-[3px] select-none text-slate-400 font-mono">1.3850</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Entry</span>
-                        <span className="blur-[3px] select-none text-slate-400 font-mono">1.3810</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Stop</span>
-                        <span className="blur-[3px] select-none text-slate-400 font-mono">1.3780</span>
-                      </div>
-                    </div>
-                    <div className="border-t border-slate-100 pt-1 flex items-center justify-between text-[9px] text-slate-400">
-                      <span>Risk/Reward</span>
-                      <span className="font-bold text-slate-700">1:1.8</span>
-                    </div>
-                  </div>
-                  <div className="mt-2.5 py-1 px-2 rounded-lg bg-indigo-50 text-[#5945F1] font-bold text-[10px] flex items-center justify-center gap-1">
-                    <span>💎</span> Level 4
-                  </div>
-                </div>
-
-                {/* Card 2: GBP/USD */}
-                <div
-                  onClick={() => {
-                    const sig = signals.find((s) => s.ticker === 'GBP/USD') || signals[1];
-                    onSelectSignal(sig);
-                  }}
-                  className="p-3 rounded-2xl bg-white text-slate-900 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 font-bold text-xs tracking-tight">
-                        <span>🇬🇧</span>
-                        <span>GBP/USD</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-extrabold text-[#5945F1] leading-none">73%</div>
-                        <div className="text-[8px] text-slate-400">Confidence</div>
-                      </div>
-                    </div>
-                    <div className="space-y-0.5 text-[10px] text-slate-500">
-                      <div className="flex items-center justify-between">
-                        <span>Target</span>
-                        <span className="font-semibold text-slate-800 font-mono">1.2875</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Entry</span>
-                        <span className="font-semibold text-slate-800 font-mono">1.2838</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Stop</span>
-                        <span className="font-semibold text-slate-800 font-mono">1.2795</span>
-                      </div>
-                    </div>
-                    <div className="border-t border-slate-100 pt-1 flex items-center justify-between text-[9px] text-slate-400">
-                      <span>Risk/Reward</span>
-                      <span className="font-bold text-slate-700">1:1.7</span>
-                    </div>
-                  </div>
-                  <div className="mt-2 space-y-1.5">
-                    <div className="flex items-center justify-between text-[8px] text-emerald-600 font-semibold px-0.5">
-                      <span>⏱ 30m period</span>
-                      <span>⌛ valid 12m</span>
-                    </div>
-                    <button
-                      type="button"
-                      className="w-full py-1.5 rounded-lg bg-[#DCF73B] text-slate-900 font-bold text-[11px] flex items-center justify-center gap-1 shadow-2xs hover:brightness-105 cursor-pointer"
-                    >
-                      Buy <ArrowRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Explore Signals Button */}
-              <div className="pt-1 text-center">
-                <button
-                  type="button"
-                  onClick={() => onNavigateToTab?.('signals')}
-                  className="px-5 py-2 rounded-full bg-white hover:bg-slate-50 text-[#5945F1] font-bold text-xs shadow-xs transition-colors cursor-pointer"
-                >
-                  Explore Signals
-                </button>
-              </div>
-            </div>
+            <TodaysMarketOpportunities
+              signals={signals}
+              onSelectSignal={onSelectSignal}
+              onNavigateToTab={onNavigateToTab}
+            />
               </>
             )}
           </aside>

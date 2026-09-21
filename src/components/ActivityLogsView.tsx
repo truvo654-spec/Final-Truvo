@@ -443,7 +443,7 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({
                     <option value="Expirations">Expirations</option>
                     <option value="Conversions">Conversions</option>
                   </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
@@ -464,7 +464,7 @@ export const ActivityLogsView: React.FC<ActivityLogsViewProps> = ({
                     <option value="Points Only">Points Only</option>
                     <option value="Credits Only">Credits Only</option>
                   </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
