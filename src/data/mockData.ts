@@ -1153,7 +1153,7 @@ export const INITIAL_MISSIONS: Mission[] = [
       },
       {
         id: 'task-asset-class',
-        title: 'Adjust allocations so no single stock exceeds 30%.',
+        title: 'Diversify into an Unexplored Sector',
         description: "Buy into a sector you haven't invested in yet.",
         completed: false,
         actionLabel: 'Add Asset',
@@ -1161,10 +1161,10 @@ export const INITIAL_MISSIONS: Mission[] = [
       },
       {
         id: 'task-stop-loss',
-        title: 'Adjust allocations so no single stock exceeds 30%.',
-        description: "Buy into a sector you haven't invested in yet.",
+        title: 'Set a Stop-Loss Order',
+        description: 'Protect a position by placing a stop-loss trigger.',
         completed: false,
-        actionLabel: 'Add Asset',
+        actionLabel: 'Set Position',
         category: 'stoploss',
       },
     ],

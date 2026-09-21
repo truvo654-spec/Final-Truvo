@@ -20,6 +20,69 @@ interface MissionCardWidgetProps {
   onRewardClaimed?: (points: number, credits: number, reason?: string) => void;
 }
 
+interface MissionThemeStyles {
+  containerBg: string;
+  glowGradient: string;
+  badgeBg: string;
+  iconBarColor: string;
+  numberColor: string;
+  actionBtnBorder: string;
+  actionBtnText: string;
+  actionBtnHoverBg: string;
+  hoverTaskText: string;
+  hoverCheckboxBorder: string;
+  dotActive: string;
+  suffixColor: string;
+}
+
+const THEME_STYLES: Record<'purple' | 'pink' | 'lime', MissionThemeStyles> = {
+  purple: {
+    containerBg: 'bg-[#5136EE]',
+    glowGradient:
+      'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(139, 92, 246, 0.25) 45%, transparent 70%)',
+    badgeBg: 'bg-[#180E6B]/75 border-white/15',
+    iconBarColor: '#BEF226',
+    numberColor: 'text-[#5136EE]',
+    actionBtnBorder: 'border-indigo-200',
+    actionBtnText: 'text-[#5136EE]',
+    actionBtnHoverBg: 'hover:bg-indigo-50',
+    hoverTaskText: 'group-hover:text-[#5136EE]',
+    hoverCheckboxBorder: 'group-hover:border-[#5136EE]',
+    dotActive: 'bg-[#5136EE]',
+    suffixColor: '#BEF226',
+  },
+  pink: {
+    containerBg: 'bg-gradient-to-br from-[#FF007A] via-[#E11D74] to-[#B90C5C]',
+    glowGradient:
+      'radial-gradient(circle, rgba(255, 255, 255, 0.45) 0%, rgba(254, 1, 177, 0.3) 45%, transparent 70%)',
+    badgeBg: 'bg-[#6B0033]/80 border-white/20',
+    iconBarColor: '#FFDE59',
+    numberColor: 'text-[#E11D74]',
+    actionBtnBorder: 'border-pink-200',
+    actionBtnText: 'text-[#E11D74]',
+    actionBtnHoverBg: 'hover:bg-pink-50',
+    hoverTaskText: 'group-hover:text-[#E11D74]',
+    hoverCheckboxBorder: 'group-hover:border-[#E11D74]',
+    dotActive: 'bg-[#FF007A]',
+    suffixColor: '#FFDE59',
+  },
+  lime: {
+    containerBg: 'bg-gradient-to-br from-[#166534] via-[#15803D] to-[#14532D]',
+    glowGradient:
+      'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(198, 248, 49, 0.3) 45%, transparent 70%)',
+    badgeBg: 'bg-[#0B3D1D]/85 border-white/20',
+    iconBarColor: '#C6F831',
+    numberColor: 'text-[#15803D]',
+    actionBtnBorder: 'border-emerald-200',
+    actionBtnText: 'text-[#15803D]',
+    actionBtnHoverBg: 'hover:bg-emerald-50',
+    hoverTaskText: 'group-hover:text-[#15803D]',
+    hoverCheckboxBorder: 'group-hover:border-[#15803D]',
+    dotActive: 'bg-[#15803D]',
+    suffixColor: '#C6F831',
+  },
+};
+
 export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
   className = '',
   size = 3,
@@ -127,6 +190,12 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
   const completedCount = currentMission.tasks.filter((t) => t.completed).length;
   const totalCount = currentMission.tasks.length;
 
+  const missionThemeKey: 'purple' | 'pink' | 'lime' =
+    currentMission.theme && THEME_STYLES[currentMission.theme]
+      ? currentMission.theme
+      : 'purple';
+  const currentTheme = THEME_STYLES[missionThemeKey];
+
   // Limit shown tasks to first 3 so cards stay uniform in height
   const displayedTasks = currentMission.tasks.slice(0, 3);
 
@@ -137,14 +206,15 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* ─── MAIN PURPLE CARD CONTAINER (Matching Mission Card Widget.png) ─── */}
-      <div className="relative w-full rounded-2xl sm:rounded-3xl bg-[#5136EE] overflow-hidden p-4 sm:p-5 md:p-6 text-white shadow-md transition-all">
+      {/* ─── DYNAMIC MISSION CARD CONTAINER (Colors change per mission) ─── */}
+      <div
+        className={`relative w-full rounded-2xl sm:rounded-3xl ${currentTheme.containerBg} overflow-hidden p-4 sm:p-5 md:p-6 text-white shadow-md transition-all duration-500`}
+      >
         {/* Subtle curved ambient highlight dome on the right */}
         <div
-          className="absolute -right-8 -top-8 w-80 sm:w-96 h-full rounded-full pointer-events-none opacity-35"
+          className="absolute -right-8 -top-8 w-80 sm:w-96 h-full rounded-full pointer-events-none opacity-35 transition-all duration-500"
           style={{
-            background:
-              'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(139, 92, 246, 0.2) 45%, transparent 70%)',
+            background: currentTheme.glowGradient,
           }}
         />
 
@@ -163,21 +233,21 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               {/* Left Column: 3D Glossy Vector Chart Icon + Title & Badges */}
               <div className="flex items-start gap-3.5 sm:gap-4 min-w-0">
-                {/* 3D Glassy Icon with Lime Bars and Trend Arrow */}
+                {/* 3D Glassy Icon with Bars and Trend Arrow matching mission theme */}
                 <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/15 border border-white/25 shadow-inner backdrop-blur-md flex items-center justify-center p-2.5 shrink-0 mt-0.5">
                   <svg
                     viewBox="0 0 36 36"
                     fill="none"
                     className="w-full h-full drop-shadow-xs"
                   >
-                    {/* 3 Bars in Neon Lime */}
-                    <rect x="6" y="18" width="5" height="13" rx="1.5" fill="#BEF226" />
-                    <rect x="15" y="12" width="5" height="19" rx="1.5" fill="#BEF226" />
-                    <rect x="24" y="8" width="5" height="23" rx="1.5" fill="#BEF226" />
+                    {/* 3 Bars in theme accent color */}
+                    <rect x="6" y="18" width="5" height="13" rx="1.5" fill={currentTheme.iconBarColor} />
+                    <rect x="15" y="12" width="5" height="19" rx="1.5" fill={currentTheme.iconBarColor} />
+                    <rect x="24" y="8" width="5" height="23" rx="1.5" fill={currentTheme.iconBarColor} />
                     {/* Neon Trend Line & Arrow */}
                     <path
                       d="M 6 22 L 15 15 L 21 19 L 29 8"
-                      stroke="#BEF226"
+                      stroke={currentTheme.iconBarColor}
                       strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -185,7 +255,7 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
                     />
                     <path
                       d="M 24 8 H 29 V 13"
-                      stroke="#BEF226"
+                      stroke={currentTheme.iconBarColor}
                       strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -199,6 +269,14 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
                   <div>
                     <h3 className="font-display font-black text-xl sm:text-[22px] text-white tracking-tight leading-tight truncate">
                       {currentMission.title}
+                      {currentMission.coloredSuffix && (
+                        <>
+                          {' '}
+                          <span style={{ color: currentTheme.suffixColor }}>
+                            {currentMission.coloredSuffix.text}
+                          </span>
+                        </>
+                      )}
                     </h3>
                     <p className="text-white/85 text-xs sm:text-[13px] font-normal mt-0.5 leading-snug line-clamp-1">
                       {currentMission.subtitle}
@@ -208,7 +286,7 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
                   {/* Badges Row: Expires, Points, Credits */}
                   <div className="flex items-center gap-2 pt-1 flex-wrap">
                     {/* Expiration badge */}
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#180E6B]/75 text-white text-[11px] sm:text-xs font-semibold border border-white/15 backdrop-blur-xs shadow-2xs">
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${currentTheme.badgeBg} text-white text-[11px] sm:text-xs font-semibold backdrop-blur-xs shadow-2xs`}>
                       <span className="text-xs">⌛</span>
                       <span>
                         {currentMission.expiresIn ||
@@ -217,13 +295,13 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
                     </div>
 
                     {/* Points badge */}
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#180E6B]/75 text-white text-[11px] sm:text-xs font-semibold border border-white/15 backdrop-blur-xs shadow-2xs">
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${currentTheme.badgeBg} text-white text-[11px] sm:text-xs font-semibold backdrop-blur-xs shadow-2xs`}>
                       <span className="text-xs">💎</span>
                       <span>+{currentMission.rewardPoints} Points</span>
                     </div>
 
                     {/* Credits badge */}
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#180E6B]/75 text-white text-[11px] sm:text-xs font-semibold border border-white/15 backdrop-blur-xs shadow-2xs">
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${currentTheme.badgeBg} text-white text-[11px] sm:text-xs font-semibold backdrop-blur-xs shadow-2xs`}>
                       <span className="text-xs">🪙</span>
                       <span>+{currentMission.rewardCredits} Credits</span>
                     </div>
@@ -235,7 +313,7 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
               <div className="flex items-center gap-2.5 self-end md:self-auto shrink-0">
                 {/* 1/3 Completed Pill matching image */}
                 <div className="inline-flex items-center overflow-hidden rounded-xl border border-white/35 bg-white/85 backdrop-blur-xs text-xs sm:text-[13px] shadow-2xs">
-                  <div className="px-3 py-1.5 bg-white/95 text-[#5338ec] font-mono font-bold border-r border-slate-200/80">
+                  <div className={`px-3 py-1.5 bg-white/95 ${currentTheme.numberColor} font-mono font-bold border-r border-slate-200/80`}>
                     {completedCount}/{totalCount}
                   </div>
                   <div className="px-3 py-1.5 text-slate-600 font-semibold">
@@ -276,7 +354,7 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
                             <Check className="w-3 h-3 stroke-[3.5]" />
                           </div>
                         ) : (
-                          <div className="w-5 h-5 rounded-full bg-[#edf2f7] border border-slate-200/80 group-hover:border-indigo-400 shrink-0 transition-colors" />
+                          <div className={`w-5 h-5 rounded-full bg-[#edf2f7] border border-slate-200/80 ${currentTheme.hoverCheckboxBorder} shrink-0 transition-colors`} />
                         )}
 
                         <div className="min-w-0">
@@ -284,7 +362,7 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
                             className={`text-xs sm:text-sm font-semibold truncate ${
                               task.completed
                                 ? 'text-[#16a34a]'
-                                : 'text-slate-900 group-hover:text-[#5338ec] transition-colors'
+                                : `text-slate-900 ${currentTheme.hoverTaskText} transition-colors`
                             }`}
                           >
                             {task.title}
@@ -300,7 +378,7 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
                         <button
                           type="button"
                           onClick={(e) => handleTaskAction(task, e)}
-                          className="rounded-lg border border-indigo-200 bg-white text-[#5338ec] hover:bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
+                          className={`rounded-lg border ${currentTheme.actionBtnBorder} bg-white ${currentTheme.actionBtnText} ${currentTheme.actionBtnHoverBg} px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer`}
                         >
                           {task.actionLabel || 'Add Asset'}
                         </button>
@@ -327,20 +405,27 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
         </button>
 
         <div className="flex items-center gap-1.5">
-          {missionsList.map((m, idx) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => goToSlide(idx)}
-              className={`transition-all duration-300 rounded-full cursor-pointer ${
-                idx === safeIndex
-                  ? 'w-2.5 h-2.5 bg-[#5338ec]'
-                  : 'w-2 h-2 bg-indigo-200 hover:bg-indigo-300'
-              }`}
-              title={m.title}
-              aria-label={`Go to ${m.title}`}
-            />
-          ))}
+          {missionsList.map((m, idx) => {
+            const isCurrent = idx === safeIndex;
+            const mTheme =
+              m.theme && THEME_STYLES[m.theme]
+                ? THEME_STYLES[m.theme]
+                : THEME_STYLES.purple;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => goToSlide(idx)}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  isCurrent
+                    ? `w-2.5 h-2.5 ${mTheme.dotActive} shadow-xs scale-110`
+                    : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+                }`}
+                title={m.title}
+                aria-label={`Go to ${m.title}`}
+              />
+            );
+          })}
         </div>
 
         <button
