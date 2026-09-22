@@ -45,7 +45,7 @@ interface TradingSignalsPageProps {
   onSpendCredits?: (amount: number, reason: string) => boolean;
   onClaimBonusCredits?: (amount: number) => void;
   onSetUserCredits?: (amount: number) => void;
-  onLeadToVisitorPage?: () => void;
+  onLeadToVisitorPage?: (signal?: MarketSignal) => void;
 }
 
 export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
@@ -1299,7 +1299,7 @@ interface SignalCardProps {
   onSelectSignal: (sig: MarketSignal) => void;
   onUpgradePrompt: () => void;
   onUnlockPrompt: (sig: MarketSignal) => void;
-  onLeadToVisitorPage?: () => void;
+  onLeadToVisitorPage?: (signal?: MarketSignal) => void;
   renderAssetIcon: (sig: MarketSignal) => React.ReactNode;
 }
 
@@ -1332,8 +1332,10 @@ const SignalCard: React.FC<SignalCardProps> = ({
   return (
     <div
       onClick={() => {
-        if (!isLoggedIn && onLeadToVisitorPage) {
-          onLeadToVisitorPage();
+        if (!isLoggedIn) {
+          if (onLeadToVisitorPage) {
+            onLeadToVisitorPage(signal);
+          }
         } else if (isLocked) {
           onUnlockPrompt(signal);
         } else {
@@ -1463,8 +1465,10 @@ const SignalCard: React.FC<SignalCardProps> = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                if (!isLoggedIn && onLeadToVisitorPage) {
-                  onLeadToVisitorPage();
+                if (!isLoggedIn) {
+                  if (onLeadToVisitorPage) {
+                    onLeadToVisitorPage(signal);
+                  }
                 } else {
                   onSelectSignal(signal);
                 }

@@ -93,6 +93,7 @@ const KNOWN_APP_TABS = new Set([
   'broker-detail',
   'broker-rebate-table',
   'signals',
+  'visitor-signals',
   'signal-detail',
   'instrument-analysis',
   'profile',
@@ -314,6 +315,39 @@ export default function App() {
     } catch (e) {}
   }, []);
 
+  // Guard: If user is signed in and visits visitor-signals, redirect to the clicked signal or signals dashboard
+  useEffect(() => {
+    if (isLoggedIn && activeTab === 'visitor-signals') {
+      let target: MarketSignal | null = null;
+      try {
+        const pendingSignalId = localStorage.getItem('marketsyde_pending_signal_id');
+        if (pendingSignalId) {
+          target =
+            signals.find(
+              (s) =>
+                s.id === pendingSignalId ||
+                s.ticker.toLowerCase() === pendingSignalId.toLowerCase() ||
+                s.ticker.replace('/', '').toLowerCase() === pendingSignalId.replace('/', '').toLowerCase()
+            ) || null;
+        }
+      } catch {}
+
+      if (!target && selectedSignal) {
+        target = selectedSignal;
+      }
+
+      if (target) {
+        setSelectedSignal(target);
+        setActiveTab('signal-detail');
+        try {
+          localStorage.removeItem('marketsyde_pending_signal_id');
+        } catch {}
+      } else {
+        setActiveTab('signals');
+      }
+    }
+  }, [isLoggedIn, activeTab, selectedSignal, signals]);
+
   const handleStartOnboarding = () => {
     setActiveTab('dashboard');
     setDashboardTourStep(1);
@@ -362,6 +396,39 @@ export default function App() {
         }, 400);
       }
     } catch {}
+
+    // If user clicked or selected a signal before signing in, or signed in from visitor signals:
+    let targetSignal: MarketSignal | null = null;
+    try {
+      const pendingSignalId = localStorage.getItem('marketsyde_pending_signal_id');
+      if (pendingSignalId) {
+        targetSignal =
+          signals.find(
+            (s) =>
+              s.id === pendingSignalId ||
+              s.ticker.toLowerCase() === pendingSignalId.toLowerCase() ||
+              s.ticker.replace('/', '').toLowerCase() === pendingSignalId.replace('/', '').toLowerCase()
+          ) || null;
+      }
+    } catch {}
+
+    if (!targetSignal && selectedSignal) {
+      targetSignal = selectedSignal;
+    }
+
+    if (targetSignal) {
+      setSelectedSignal(targetSignal);
+      setActiveTab('signal-detail');
+      try {
+        localStorage.removeItem('marketsyde_pending_signal_id');
+      } catch {}
+      return;
+    }
+
+    if (activeTab === 'visitor-signals') {
+      setActiveTab('signals');
+      return;
+    }
 
     // If currently on broker-detail, immediately navigate to Connect to MarketSyde (D12_Connect to MarketSyde.png)
     if (activeTab === 'broker-detail') {
@@ -772,6 +839,7 @@ export default function App() {
         activeTab === 'landing' ||
         activeTab === 'home' ||
         activeTab === 'instrument-analysis' ||
+        activeTab === 'visitor-signals' ||
         activeTab === '404' ||
         activeTab === 'not-found' ||
         activeTab === '500' ||
@@ -1059,12 +1127,30 @@ export default function App() {
             signals={signals}
             brokers={brokers}
             isLoggedIn={isLoggedIn}
-            onLeadToVisitorPage={() => {
-              setActiveTab('visitor-signals');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+            onLeadToVisitorPage={(clickedSig) => {
+              if (clickedSig) {
+                setSelectedSignal(clickedSig);
+                try {
+                  localStorage.setItem('marketsyde_pending_signal_id', clickedSig.id);
+                } catch {}
+              }
+              if (isLoggedIn) {
+                if (clickedSig) {
+                  setSelectedSignal(clickedSig);
+                  setActiveTab('signal-detail');
+                } else {
+                  setActiveTab('signals');
+                }
+              } else {
+                setActiveTab('visitor-signals');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
             }}
             onSelectSignal={(sig) => {
               setSelectedSignal(sig);
+              try {
+                localStorage.setItem('marketsyde_pending_signal_id', sig.id);
+              } catch {}
               setActiveTab('signal-detail');
             }}
             onUpgradePrompt={() => setActiveTab('member-plan')}
@@ -1108,6 +1194,21 @@ export default function App() {
             }}
             onOpenSignIn={() => {
               setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+            }}
+            onSelectSignalForAuth={(pair) => {
+              const matched = signals.find(
+                (s) =>
+                  s.ticker.toLowerCase() === pair.toLowerCase() ||
+                  s.ticker.replace('/', '').toLowerCase() === pair.replace('/', '').toLowerCase()
+              );
+              if (matched) {
+                setSelectedSignal(matched);
+                try {
+                  localStorage.setItem('marketsyde_pending_signal_id', matched.id);
+                } catch {}
+              }
+              setAuthModalMode('signup');
               setIsAuthModalOpen(true);
             }}
             onNavigateToTab={setActiveTab}

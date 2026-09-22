@@ -16,12 +16,14 @@ interface TradingSignalsVisitorPageProps {
   onOpenSignUp?: () => void;
   onOpenSignIn?: () => void;
   onNavigateToTab?: (tab: string) => void;
+  onSelectSignalForAuth?: (pair: string) => void;
 }
 
 export const TradingSignalsVisitorPage: React.FC<TradingSignalsVisitorPageProps> = ({
   onOpenSignUp,
   onOpenSignIn,
   onNavigateToTab,
+  onSelectSignalForAuth,
 }) => {
   // FAQ accordion state
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -183,7 +185,13 @@ export const TradingSignalsVisitorPage: React.FC<TradingSignalsVisitorPageProps>
             {sampleSignals.map((item, idx) => (
               <div
                 key={idx}
-                onClick={onOpenSignUp}
+                onClick={() => {
+                  if (onSelectSignalForAuth) {
+                    onSelectSignalForAuth(item.pair);
+                  } else if (onOpenSignUp) {
+                    onOpenSignUp();
+                  }
+                }}
                 className="shrink-0 w-44 bg-white/90 backdrop-blur-md rounded-2xl p-3 border border-slate-200/90 shadow-2xs relative group cursor-pointer hover:border-[#5945F1]/50 transition-all hover:scale-102 select-none"
               >
                 {/* Header with pair and badge */}
@@ -239,7 +247,9 @@ export const TradingSignalsVisitorPage: React.FC<TradingSignalsVisitorPageProps>
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (onOpenSignUp) {
+                    if (onSelectSignalForAuth) {
+                      onSelectSignalForAuth(item.pair);
+                    } else if (onOpenSignUp) {
                       onOpenSignUp();
                     }
                   }}

@@ -17,6 +17,7 @@ import {
   Info,
   ChevronRight,
   ArrowLeft,
+  Lock,
 } from 'lucide-react';
 
 interface TradingSignalDetailPageProps {
@@ -97,6 +98,9 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
   const [selectedTradeBrokerName, setSelectedTradeBrokerName] = useState<string>('XM');
   const [tradeLotSize, setTradeLotSize] = useState<string>('1.0');
   const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'technical'>('overview');
+  const [techTimeframe, setTechTimeframe] = useState<'5m' | '15m' | '30m' | '1H' | '4H' | '1D'>('1H');
+  const [pivotMethod, setPivotMethod] = useState<'Classic' | 'Fibonacci' | 'Camarilla' | 'Woodie'>('Classic');
+  const [sidebarCardMode, setSidebarCardMode] = useState<'auto' | 'connected' | 'recent'>('auto');
 
   // Agreement modal state (first entry requires scrolling to activate "I Accept")
   const [isAgreementModalOpen, setIsAgreementModalOpen] = useState<boolean>(() => {
@@ -1081,7 +1085,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                     </span>
                   </div>
 
-                  {/* Preference Card with Resistance, Pivot, Support Levels */}
+                  {/* Preference Card with Resistance, Pivot, Support Levels (Exact match to design screenshot) */}
                   <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 space-y-4 shadow-xs">
                     {/* RESISTANCE SECTION */}
                     <div className="grid grid-cols-12 gap-4 items-center">
@@ -1090,40 +1094,48 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                           RESISTANCE
                         </span>
                       </div>
-                      <div className="col-span-12 sm:col-span-9 space-y-2.5">
+                      <div className="col-span-12 sm:col-span-9 space-y-3">
                         {/* Row 1 */}
                         <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                            <span className="font-extrabold text-rose-500">173.20</span>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200 shrink-0" />
+                            <span className="font-extrabold text-rose-500 text-sm">173.20</span>
                             <span className="text-slate-500 font-medium">Resistance</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                           </div>
                         </div>
+
+                        {/* Connecting track line between rows */}
+                        <div className="ml-[4px] -my-1.5 w-0.5 h-2.5 bg-rose-200" />
+
                         {/* Row 2 */}
                         <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                            <span className="font-extrabold text-rose-500">172.80</span>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200 shrink-0" />
+                            <span className="font-extrabold text-rose-500 text-sm">172.80</span>
                             <span className="text-slate-500 font-medium">Resistance</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                           </div>
                         </div>
+
+                        {/* Connecting track line between rows */}
+                        <div className="ml-[4px] -my-1.5 w-0.5 h-2.5 bg-rose-200" />
+
                         {/* Row 3 */}
                         <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-                            <span className="font-extrabold text-rose-500">172.10</span>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-200 shrink-0" />
+                            <span className="font-extrabold text-rose-500 text-sm">172.10</span>
                             <span className="text-slate-500 font-medium">Resistance</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                           </div>
                         </div>
@@ -1131,7 +1143,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                     </div>
 
                     {/* Dashed Separator */}
-                    <div className="border-b border-dashed border-slate-200" />
+                    <div className="border-b border-dashed border-slate-200 my-1" />
 
                     {/* PIVOT SECTION */}
                     <div className="grid grid-cols-12 gap-4 items-center">
@@ -1141,16 +1153,16 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                         </span>
                       </div>
                       <div className="col-span-12 sm:col-span-9">
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="w-2 h-2 rounded-full bg-slate-900 shrink-0" />
-                          <span className="font-extrabold text-slate-900">173.20</span>
+                        <div className="flex items-center gap-2.5 text-xs">
+                          <span className="w-2.5 h-2.5 rounded-full bg-slate-900 ring-2 ring-slate-300 shrink-0" />
+                          <span className="font-extrabold text-slate-900 text-sm">171.35</span>
                           <span className="text-slate-500 font-medium">Pivot</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Dashed Separator */}
-                    <div className="border-b border-dashed border-slate-200" />
+                    <div className="border-b border-dashed border-slate-200 my-1" />
 
                     {/* SUPPORT SECTION */}
                     <div className="grid grid-cols-12 gap-4 items-center">
@@ -1159,38 +1171,46 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                           SUPPORT
                         </span>
                       </div>
-                      <div className="col-span-12 sm:col-span-9 space-y-2.5">
+                      <div className="col-span-12 sm:col-span-9 space-y-3">
                         {/* Row 1 */}
                         <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                            <span className="font-extrabold text-emerald-600">173.20</span>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shrink-0" />
+                            <span className="font-extrabold text-emerald-600 text-sm">170.90</span>
                             <span className="text-slate-500 font-medium">Support</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                           </div>
                         </div>
+
+                        {/* Connecting track line between rows */}
+                        <div className="ml-[4px] -my-1.5 w-0.5 h-2.5 bg-emerald-200" />
+
                         {/* Row 2 */}
                         <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                            <span className="font-extrabold text-emerald-600">172.80</span>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shrink-0" />
+                            <span className="font-extrabold text-emerald-600 text-sm">170.40</span>
                             <span className="text-slate-500 font-medium">Support</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                           </div>
                         </div>
+
+                        {/* Connecting track line between rows */}
+                        <div className="ml-[4px] -my-1.5 w-0.5 h-2.5 bg-emerald-200" />
+
                         {/* Row 3 */}
                         <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                            <span className="font-extrabold text-emerald-600">172.10</span>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200 shrink-0" />
+                            <span className="font-extrabold text-emerald-600 text-sm">169.85</span>
                             <span className="text-slate-500 font-medium">Support</span>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-800" />
@@ -1241,86 +1261,496 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
               </div>
             )}
 
-            {/* TAB 2: TECHNICAL (Interactive Oscillators, Moving Averages, Pivot Levels) */}
+            {/* TAB 2: TECHNICAL (Exact match to Trading Signals_Detail Page_Technical Tab.png) */}
             {activeDetailTab === 'technical' && (
-              <div className="space-y-4 pt-1">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-[#0b1c30]">
-                    Technical Analysis & Key Pivot Levels
-                  </h2>
-                  <span className="text-xs text-indigo-700 font-semibold bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
-                    Live Multi-Timeframe Scan
+              <div className="space-y-6 pt-1">
+                {/* 1. Timeframe Filter Row & Update Time */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-1.5 bg-slate-100/90 p-1 rounded-xl">
+                    {(['5m', '15m', '30m', '1H', '4H', '1D'] as const).map((tf) => (
+                      <button
+                        key={tf}
+                        onClick={() => setTechTimeframe(tf)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          techTimeframe === tf
+                            ? 'bg-[#5945F1] text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                        }`}
+                      >
+                        {tf}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-xs text-slate-400 font-normal">
+                    Update 2 min ago
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Indicators Table */}
-                  <div className="bg-[#f8fafc] p-4 rounded-xl border border-slate-200/80 space-y-2.5">
-                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
-                      Oscillators & Moving Averages
-                    </span>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between py-1 border-b border-slate-200/60">
-                        <span className="text-slate-500">Relative Strength Index (RSI 14)</span>
-                        <span className="font-bold text-[#0b1c30]">58.4 (Neutral Bullish)</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200/60">
-                        <span className="text-slate-500">MACD Histogram (12, 26, 9)</span>
-                        <span className="font-bold text-emerald-600">+0.12 (Bullish Crossover)</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200/60">
-                        <span className="text-slate-500">20 Exponential MA (30m)</span>
-                        <span className="font-bold text-[#5945F1]">171.42 (Price Above EMA)</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200/60">
-                        <span className="text-slate-500">50 Simple MA (4H)</span>
-                        <span className="font-bold text-[#0b1c30]">170.95 (Dynamic Support)</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200/60">
-                        <span className="text-slate-500">200 Simple MA (Daily)</span>
-                        <span className="font-bold text-[#0b1c30]">169.80 (Long-Term Bullish)</span>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <span className="text-slate-500">Average True Range (ATR 14)</span>
-                        <span className="font-bold text-[#0b1c30]">0.85 JPY (Normal Volatility)</span>
-                      </div>
+                {/* 2. Market Sentiment Bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-extrabold text-[#0b1c30]">Market Sentiment</span>
+                    <span className="font-bold text-emerald-600">Bullish</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full overflow-hidden flex bg-slate-100">
+                    <div className="bg-emerald-500 h-full rounded-l-full" style={{ width: '70%' }} />
+                    <div className="bg-amber-500 h-full rounded-r-full" style={{ width: '30%' }} />
+                  </div>
+                </div>
+
+                {/* 3. Trend Indicator Bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-extrabold text-[#0b1c30]">Trend Indicator</span>
+                    <span className="font-bold text-emerald-600">Strong Buy</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full overflow-hidden flex bg-slate-100">
+                    <div className="bg-emerald-500 h-full rounded-l-full" style={{ width: '85%' }} />
+                    <div className="bg-amber-500 h-full rounded-r-full" style={{ width: '15%' }} />
+                  </div>
+                </div>
+
+                {/* 4. Technical Indicators Table (Exact items from screenshot) */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200/80 bg-slate-50/50">
+                        <th className="py-3 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-[#5945F1] w-2/5">
+                          Name
+                        </th>
+                        <th className="py-3 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-[#5945F1] w-2/5">
+                          Value
+                        </th>
+                        <th className="py-3 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-[#5945F1] w-1/5 text-right sm:text-left">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-800">
+                      {/* Row 1: Bollinger Bands */}
+                      <tr className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                          Bollinger Bands
+                        </td>
+                        <td className="py-3 px-4 sm:px-6">
+                          <div className="flex items-center gap-4 sm:gap-6">
+                            <div>
+                              <span className="text-[10px] text-slate-400 block font-medium leading-none mb-0.5">Upper</span>
+                              <span className="font-semibold text-slate-900 text-xs sm:text-sm">172.32</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 block font-medium leading-none mb-0.5">Middle</span>
+                              <span className="font-semibold text-slate-900 text-xs sm:text-sm">171.45</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 block font-medium leading-none mb-0.5">Lower</span>
+                              <span className="font-semibold text-slate-900 text-xs sm:text-sm">170.58</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                          Buy
+                        </td>
+                      </tr>
+
+                      {/* Row 2: Parabolic SAR */}
+                      <tr className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                          Parabolic SAR
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                          170.92
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                          Buy
+                        </td>
+                      </tr>
+
+                      {/* Row 3: Standard Deviation */}
+                      <tr className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                          Standard Deviation
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                          0.64
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-600 text-right sm:text-left">
+                          Moderate Volatility
+                        </td>
+                      </tr>
+
+                      {/* Row 4: Average Directional Index (ADX 14) */}
+                      <tr className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                          Average Directional Index (ADX 14)
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                          31.6
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                          Buy
+                        </td>
+                      </tr>
+
+                      {/* Row 5: Ichimoku Cloud */}
+                      <tr className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                          Ichimoku Cloud
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                          Price Above Cloud
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                          Buy
+                        </td>
+                      </tr>
+
+                      {/* Row 6: Donchian Channel */}
+                      <tr className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                          Donchian Channel
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                          Upper Breakout
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                          Buy
+                        </td>
+                      </tr>
+
+                      {/* Row 7: Keltner Channel */}
+                      <tr className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                          Keltner Channel
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                          Bullish Expansion
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                          Buy
+                        </td>
+                      </tr>
+
+                      {/* Row 8: ATR (14) */}
+                      <tr className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                          ATR (14)
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                          0.82
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-600 text-right sm:text-left">
+                          High Volatility
+                        </td>
+                      </tr>
+
+                      {/* Row 9: Supertrend */}
+                      <tr className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                          Supertrend
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                          Bullish
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                          Buy
+                        </td>
+                      </tr>
+
+                      {/* Row 10: VWAP */}
+                      <tr className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                          VWAP
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                          Above VWAP
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                          Buy
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 5. Oscillators Section */}
+                <div className="space-y-3 pt-2">
+                  <div className="space-y-2">
+                    <h3 className="text-base font-extrabold text-[#0b1c30]">
+                      Oscillators
+                    </h3>
+                    <div className="w-full h-2 rounded-full overflow-hidden flex bg-slate-100">
+                      <div className="bg-emerald-500 h-full rounded-l-full" style={{ width: '45%' }} />
+                      <div className="bg-amber-500 h-full" style={{ width: '45%' }} />
+                      <div className="bg-rose-500 h-full rounded-r-full" style={{ width: '10%' }} />
                     </div>
                   </div>
 
-                  {/* Pivot Points Table */}
-                  <div className="bg-[#f8fafc] p-4 rounded-xl border border-slate-200/80 space-y-2.5">
-                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
-                      Standard Pivot & Fibonacci Levels
-                    </span>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between py-1 border-b border-slate-200/60">
-                        <span className="text-slate-500">Resistance 2 (R2 - Extended Target)</span>
-                        <span className="font-bold text-rose-600">172.80</span>
+                  <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200/80 bg-slate-50/50">
+                          <th className="py-3 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-[#5945F1] w-2/5">
+                            Name
+                          </th>
+                          <th className="py-3 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-[#5945F1] w-2/5">
+                            Value
+                          </th>
+                          <th className="py-3 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-[#5945F1] w-1/5 text-right sm:text-left">
+                            Signal
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-800">
+                        {/* 1. RSI */}
+                        <tr className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                            Relative Strength Index (14)
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                            67.2
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-bold text-rose-500 text-right sm:text-left">
+                            Sell
+                          </td>
+                        </tr>
+
+                        {/* 2. Stochastic */}
+                        <tr className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                            Stochastic %K
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                            81.4
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                            Buy
+                          </td>
+                        </tr>
+
+                        {/* 3. Commodity Channel Index */}
+                        <tr className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                            Commodity Channel Index (20)
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                            102.8
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                            Buy
+                          </td>
+                        </tr>
+
+                        {/* 4. Average Directional Index */}
+                        <tr className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                            Average Directional Index (14)
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                            31.6
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                            Buy
+                          </td>
+                        </tr>
+
+                        {/* 5. MACD */}
+                        <tr className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                            MACD (12,26)
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                            0.42
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                            Buy
+                          </td>
+                        </tr>
+
+                        {/* 6. Momentum */}
+                        <tr className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                            Momentum (10)
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                            1.18
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                            Buy
+                          </td>
+                        </tr>
+
+                        {/* 7. Williams %R */}
+                        <tr className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                            Williams %R
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                            -18.3
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                            Buy
+                          </td>
+                        </tr>
+
+                        {/* 8. Bull/Bear Power */}
+                        <tr className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                            Bull/Bear Power
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                            0.88
+                          </td>
+                          <td className="py-3 px-4 sm:px-6 font-bold text-emerald-600 text-right sm:text-left">
+                            Buy
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 6. Moving Averages Section (Side-by-side SMA & EMA tables) */}
+                <div className="space-y-3 pt-2">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-base font-extrabold text-[#0b1c30]">Moving Averages</span>
+                      <span className="font-bold text-emerald-600">Strong Buy</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full overflow-hidden flex bg-slate-100">
+                      <div className="bg-emerald-500 h-full rounded-l-full" style={{ width: '88%' }} />
+                      <div className="bg-amber-500 h-full rounded-r-full" style={{ width: '12%' }} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Left: Simple Moving Averages (SMA) */}
+                    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+                      <div className="px-4 py-2.5 bg-slate-50/60 border-b border-slate-100">
+                        <span className="font-bold text-xs text-[#0b1c30]">
+                          Simple Moving Averages (SMA)
+                        </span>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200/60">
-                        <span className="text-slate-500">Resistance 1 (R1 - Breakout Level)</span>
-                        <span className="font-bold text-rose-500">172.10</span>
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-100 bg-slate-50/20 text-xs font-semibold text-[#5945F1]">
+                            <th className="py-2.5 px-4">Period</th>
+                            <th className="py-2.5 px-4">Bonus</th>
+                            <th className="py-2.5 px-4 text-right sm:text-left">Standard</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
+                          {[
+                            { period: 'SMA 10', bonus: '171.18', standard: 'Buy' },
+                            { period: 'SMA 20', bonus: '170.84', standard: 'Buy' },
+                            { period: 'SMA 50', bonus: '170.05', standard: 'Buy' },
+                            { period: 'SMA 100', bonus: '169.10', standard: 'Buy' },
+                            { period: 'SMA 200', bonus: '168.02', standard: 'Buy' },
+                          ].map((row) => (
+                            <tr key={row.period} className="hover:bg-slate-50/50">
+                              <td className="py-2 px-4 font-semibold text-[#0b1c30]">{row.period}</td>
+                              <td className="py-2 px-4 font-medium text-slate-800">{row.bonus}</td>
+                              <td className="py-2 px-4 font-bold text-emerald-600 text-right sm:text-left">{row.standard}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Right: Exponential Moving Averages (EMA) */}
+                    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+                      <div className="px-4 py-2.5 bg-slate-50/60 border-b border-slate-100">
+                        <span className="font-bold text-xs text-[#0b1c30]">
+                          Exponential Moving Averages (EMA)
+                        </span>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200/60">
-                        <span className="text-slate-500">Central Pivot Point (PP)</span>
-                        <span className="font-bold text-indigo-700">171.35</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200/60">
-                        <span className="text-slate-500">Support 1 (S1 - Week Low Defense)</span>
-                        <span className="font-bold text-emerald-600">170.90</span>
-                      </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200/60">
-                        <span className="text-slate-500">Support 2 (S2 - Major Liquidity Floor)</span>
-                        <span className="font-bold text-emerald-700">170.20</span>
-                      </div>
-                      <div className="flex justify-between py-1">
-                        <span className="text-slate-500">Institutional Order Flow Bias</span>
-                        <span className="font-bold text-emerald-600">64% Net Buy Pressure</span>
-                      </div>
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-100 bg-slate-50/20 text-xs font-semibold text-[#5945F1]">
+                            <th className="py-2.5 px-4">Period</th>
+                            <th className="py-2.5 px-4">Bonus</th>
+                            <th className="py-2.5 px-4 text-right sm:text-left">Standard</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
+                          {[
+                            { period: 'EMA 10', bonus: '171.32', standard: 'Buy' },
+                            { period: 'EMA 20', bonus: '170.96', standard: 'Buy' },
+                            { period: 'EMA 50', bonus: '170.21', standard: 'Buy' },
+                            { period: 'EMA 100', bonus: '169.42', standard: 'Buy' },
+                            { period: 'EMA 200', bonus: '168.34', standard: 'Buy' },
+                          ].map((row) => (
+                            <tr key={row.period} className="hover:bg-slate-50/50">
+                              <td className="py-2 px-4 font-semibold text-[#0b1c30]">{row.period}</td>
+                              <td className="py-2 px-4 font-medium text-slate-800">{row.bonus}</td>
+                              <td className="py-2 px-4 font-bold text-emerald-600 text-right sm:text-left">{row.standard}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
-                <div className="border-b border-slate-200/80 pt-4" />
+
+                {/* 7. Pivot Points Section */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-extrabold text-[#0b1c30]">
+                      Pivot Points
+                    </h3>
+                    <div className="relative">
+                      <select
+                        value={pivotMethod}
+                        onChange={(e) => setPivotMethod(e.target.value as any)}
+                        className="appearance-none bg-white border border-slate-200/90 rounded-xl px-3 py-1.5 pr-8 text-xs font-semibold text-[#0b1c30] shadow-2xs hover:border-[#5945F1] focus:outline-none focus:ring-1 focus:ring-[#5945F1] cursor-pointer"
+                      >
+                        <option value="Classic">Classic</option>
+                        <option value="Fibonacci">Fibonacci</option>
+                        <option value="Camarilla">Camarilla</option>
+                        <option value="Woodie">Woodie</option>
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200/80 bg-slate-50/50 text-xs sm:text-sm font-semibold text-[#5945F1]">
+                          <th className="py-3 px-4 sm:px-6 w-1/2">Level</th>
+                          <th className="py-3 px-4 sm:px-6 w-1/2">Bonus</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-800">
+                        {[
+                          { level: 'Resistance 3 (R3)', bonus: '173.20' },
+                          { level: 'Resistance 2 (R2)', bonus: '172.80' },
+                          { level: 'Resistance 1 (R1)', bonus: '172.10' },
+                          { level: 'Pivot Point (PP)', bonus: '171.45' },
+                          { level: 'Support 1 (S1)', bonus: '170.90' },
+                          { level: 'Support 2 (S2)', bonus: '170.40' },
+                          { level: 'Support 3 (S3)', bonus: '169.85' },
+                        ].map((row) => (
+                          <tr key={row.level} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="py-3 px-4 sm:px-6 font-semibold text-[#0b1c30]">
+                              {row.level}
+                            </td>
+                            <td className="py-3 px-4 sm:px-6 font-medium text-slate-800">
+                              {row.bonus}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Disclaimer note */}
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-normal pt-1">
+                    Technical data is derived from real-time market feeds and may change rapidly. Always use proper risk management.
+                  </p>
+                </div>
+
+                <div className="border-b border-slate-200/80 pt-2" />
               </div>
             )}
           </div>
@@ -1369,98 +1799,305 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
             </div>
           </div>
 
-          {/* Card 2: Connect & Ready to Trade!. */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 space-y-4 shadow-xs">
-            <div>
-              <h3 className="text-base font-bold text-[#0b1c30]">
-                <span className="text-[#5945F1]">Connect</span> & Ready to Trade!<span className="text-[#FD02B0]">.</span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Your accounts are connected. Time to make those trades pay you back!
-              </p>
+          {/* Card 2: Connect & Ready to Trade! OR Most Recent Signals (Dynamic based on tab) */}
+          {activeDetailTab === 'overview' && sidebarCardMode !== 'recent' ? (
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-[#0b1c30]">
+                    <span className="text-[#5945F1]">Connect</span> & Ready to Trade!<span className="text-[#FD02B0]">.</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Your accounts are connected. Time to make those trades pay you back!
+                  </p>
+                </div>
+              </div>
+
+              {/* Connected Brokers List */}
+              <div className="space-y-3 pt-1">
+                {/* 1. HFM */}
+                <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center p-1.5 shrink-0">
+                      <span className="text-white font-extrabold text-xs tracking-wider">HFM</span>
+                    </div>
+                    <div>
+                      <div className="text-xs">
+                        <span className="font-bold text-[#5945F1] text-sm">$3.80</span>
+                        <span className="text-slate-400 font-medium ml-1">Max./lot</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-medium">Premium, Pro</div>
+                      <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span>Connected</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsPlaceTradeModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#5945F1] hover:bg-[#4935e0] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  >
+                    Trade
+                  </button>
+                </div>
+
+                {/* 2. Eightcap */}
+                <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#00b159] flex items-center justify-center p-1.5 shrink-0">
+                      <span className="text-white font-black text-xs lowercase">eightcap</span>
+                    </div>
+                    <div>
+                      <div className="text-xs">
+                        <span className="font-bold text-[#5945F1] text-sm">$3.25</span>
+                        <span className="text-slate-400 font-medium ml-1">Max./lot</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-medium">Standard</div>
+                      <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span>Connected</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsPlaceTradeModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#5945F1] hover:bg-[#4935e0] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  >
+                    Trade
+                  </button>
+                </div>
+
+                {/* 3. IG */}
+                <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#e01a22] flex items-center justify-center p-1.5 shrink-0">
+                      <span className="text-white font-black text-sm tracking-wider">IG</span>
+                    </div>
+                    <div>
+                      <div className="text-xs">
+                        <span className="font-bold text-[#5945F1] text-sm">$2.40</span>
+                        <span className="text-slate-400 font-medium ml-1">Max./lot</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-medium">Standard</div>
+                      <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span>Connected</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsPlaceTradeModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#5945F1] hover:bg-[#4935e0] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  >
+                    Trade
+                  </button>
+                </div>
+              </div>
             </div>
-
-            {/* Connected Brokers List */}
-            <div className="space-y-3 pt-1">
-              {/* 1. HFM */}
-              <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center p-1.5 shrink-0">
-                    <span className="text-white font-extrabold text-xs tracking-wider">HFM</span>
-                  </div>
-                  <div>
-                    <div className="text-xs">
-                      <span className="font-bold text-[#5945F1] text-sm">$3.80</span>
-                      <span className="text-slate-400 font-medium ml-1">Max./lot</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-medium">Premium, Pro</div>
-                    <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <span>Connected</span>
-                    </div>
-                  </div>
+          ) : (
+            /* Technical Tab Sidebar: Most Recent Signals (Exact match to screenshot) */
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 space-y-3.5 shadow-xs">
+              <div>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-[#0b1c30]">
+                    <span>Most Recent Signals</span><span className="text-[#FD02B0]">.</span>
+                  </h3>
+                  <button
+                    onClick={onBackToSignals}
+                    className="text-xs text-[#5945F1] font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <span>More</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsPlaceTradeModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-lg bg-[#5945F1] hover:bg-[#4935e0] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
-                >
-                  Trade
-                </button>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  View most recent signals for your trading
+                </p>
               </div>
 
-              {/* 2. Eightcap */}
-              <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#00b159] flex items-center justify-center p-1.5 shrink-0">
-                    <span className="text-white font-black text-xs lowercase">eightcap</span>
-                  </div>
-                  <div>
-                    <div className="text-xs">
-                      <span className="font-bold text-[#5945F1] text-sm">$3.25</span>
-                      <span className="text-slate-400 font-medium ml-1">Max./lot</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-medium">Standard</div>
-                    <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <span>Connected</span>
+              {/* Signals List */}
+              <div className="space-y-2.5 pt-1">
+                {/* 1. EUR/USD */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {renderDualFlag('EUR/USD')}
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#0b1c30] truncate">
+                        EUR/USD
+                      </div>
+                      <div className="text-[11px] font-semibold text-emerald-600">
+                        +0.42%
+                      </div>
                     </div>
                   </div>
-                </div>
-                <button
-                  onClick={() => setIsPlaceTradeModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-lg bg-[#5945F1] hover:bg-[#4935e0] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
-                >
-                  Trade
-                </button>
-              </div>
 
-              {/* 3. IG */}
-              <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#e01a22] flex items-center justify-center p-1.5 shrink-0">
-                    <span className="text-white font-black text-sm tracking-wider">IG</span>
+                  {/* Sparkline */}
+                  <div className="hidden sm:block w-16 h-6 px-1 shrink-0">
+                    <svg className="w-full h-full" viewBox="0 0 64 20">
+                      <path
+                        d="M 0 16 Q 16 18, 32 8 T 64 4"
+                        fill="none"
+                        stroke="#10B981"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
                   </div>
-                  <div>
-                    <div className="text-xs">
-                      <span className="font-bold text-[#5945F1] text-sm">$2.40</span>
-                      <span className="text-slate-400 font-medium ml-1">Max./lot</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-medium">Standard</div>
-                    <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <span>Connected</span>
-                    </div>
-                  </div>
+
+                  <button
+                    onClick={() => setIsPlaceTradeModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#CAEB0E] hover:bg-[#bce000] text-slate-950 font-extrabold text-xs transition-all shadow-xs cursor-pointer whitespace-nowrap"
+                  >
+                    Buy
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsPlaceTradeModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-lg bg-[#5945F1] hover:bg-[#4935e0] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
-                >
-                  Trade
-                </button>
+
+                {/* 2. GOOGL */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {renderDualFlag('GOOGL')}
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#0b1c30] truncate">
+                        GOOGL
+                      </div>
+                      <div className="text-[11px] font-semibold text-rose-500">
+                        -0.18%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sparkline */}
+                  <div className="hidden sm:block w-16 h-6 px-1 shrink-0">
+                    <svg className="w-full h-full" viewBox="0 0 64 20">
+                      <path
+                        d="M 0 4 Q 16 2, 32 12 T 64 16"
+                        fill="none"
+                        stroke="#EF4444"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+
+                  <button
+                    onClick={() => setIsPlaceTradeModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#5945F1] hover:bg-[#4935e0] text-white font-bold text-xs transition-all shadow-xs cursor-pointer whitespace-nowrap"
+                  >
+                    Sell
+                  </button>
+                </div>
+
+                {/* 3. BTC/USD */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {renderDualFlag('BTC/USD')}
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#0b1c30] truncate">
+                        BTC/USD
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-indigo-600 font-semibold">
+                        <Lock className="w-2.5 h-2.5" />
+                        <span>Premium Signal</span>
+                        <HelpCircle className="w-2.5 h-2.5 text-slate-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sparkline */}
+                  <div className="hidden sm:block w-16 h-6 px-1 shrink-0">
+                    <svg className="w-full h-full" viewBox="0 0 64 20">
+                      <path
+                        d="M 0 14 Q 16 6, 32 10 T 64 4"
+                        fill="none"
+                        stroke="#5945F1"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+
+                  <button
+                    onClick={() => onOpenViewPlan ? onOpenViewPlan() : onShowToast('Upgrade to unlock premium signal')}
+                    className="px-3 py-1.5 rounded-lg border border-[#5945F1] text-[#5945F1] hover:bg-indigo-50 font-bold text-xs transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    Upgrade
+                  </button>
+                </div>
+
+                {/* 4. S&P 500 */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {renderDualFlag('S&P 500')}
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#0b1c30] truncate">
+                        S&P 500
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-indigo-600 font-semibold">
+                        <Lock className="w-2.5 h-2.5" />
+                        <span>Premium Signal</span>
+                        <HelpCircle className="w-2.5 h-2.5 text-slate-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sparkline */}
+                  <div className="hidden sm:block w-16 h-6 px-1 shrink-0">
+                    <svg className="w-full h-full" viewBox="0 0 64 20">
+                      <path
+                        d="M 0 12 Q 16 14, 32 8 T 64 6"
+                        fill="none"
+                        stroke="#5945F1"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+
+                  <button
+                    onClick={() => onOpenViewPlan ? onOpenViewPlan() : onShowToast('Upgrade to unlock premium signal')}
+                    className="px-3 py-1.5 rounded-lg border border-[#5945F1] text-[#5945F1] hover:bg-indigo-50 font-bold text-xs transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    Upgrade
+                  </button>
+                </div>
+
+                {/* 5. XAU/USD */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {renderDualFlag('XAU/USD')}
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#0b1c30] truncate">
+                        XAU/USD
+                      </div>
+                      <div className="text-[11px] font-semibold text-emerald-600">
+                        +0.65%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sparkline */}
+                  <div className="hidden sm:block w-16 h-6 px-1 shrink-0">
+                    <svg className="w-full h-full" viewBox="0 0 64 20">
+                      <path
+                        d="M 0 18 Q 16 16, 32 6 T 64 2"
+                        fill="none"
+                        stroke="#10B981"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+
+                  <button
+                    onClick={() => setIsPlaceTradeModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#CAEB0E] hover:bg-[#bce000] text-slate-950 font-extrabold text-xs transition-all shadow-xs cursor-pointer whitespace-nowrap"
+                  >
+                    Buy
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </aside>
       </div>
 
