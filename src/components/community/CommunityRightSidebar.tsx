@@ -1,0 +1,167 @@
+import React, { useState } from 'react';
+import {
+  Flame,
+  ChevronRight,
+  Info,
+  Play,
+  ArrowUpRight,
+  TrendingUp,
+} from 'lucide-react';
+import {
+  TOP_INFLUENCERS,
+  OTHER_INFLUENCERS,
+} from '../../data/communityData';
+import { CommunityInfluencer } from '../../types';
+
+interface CommunityRightSidebarProps {
+  mode?: 'default' | 'profile';
+  onSelectInfluencer?: (influencer: CommunityInfluencer) => void;
+  onOpenHotTopic?: () => void;
+  onShowToast?: (msg: string) => void;
+}
+
+export const CommunityRightSidebar: React.FC<CommunityRightSidebarProps> = ({
+  mode = 'default',
+  onSelectInfluencer,
+  onOpenHotTopic,
+  onShowToast,
+}) => {
+  const [influencerTab, setInfluencerTab] = useState<'social' | 'trending'>('social');
+  return (
+    <div className="space-y-4 w-full">
+      {/* ─── 1. HOT TOPIC WIDGET ─── */}
+      <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 text-[#0b1c30] shadow-xs hover:border-[#cbd5e1] hover:shadow-sm transition-all relative overflow-hidden">
+        <div className="flex items-center justify-between mb-2">
+          <button
+            onClick={onOpenHotTopic}
+            className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 hover:text-amber-700 transition-colors"
+          >
+            <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+            <span>Hot Topic</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+          <span className="text-[10px] bg-rose-50 text-rose-600 border border-rose-200 px-1.5 py-0.5 rounded font-mono font-bold animate-pulse">
+            LIVE DISCUSS
+          </span>
+        </div>
+
+        <h4
+          onClick={onOpenHotTopic}
+          className="text-sm font-semibold text-[#0b1c30] hover:text-[#5338ec] cursor-pointer line-clamp-2 mb-3 leading-snug transition-colors"
+        >
+          $115M wiped out in an hour on Iran news. Does BTC hold $75K or hit $70K?
+        </h4>
+
+        <div className="flex items-center justify-between pt-1">
+          <div className="inline-flex items-center gap-1.5 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg px-2.5 py-1 text-xs font-medium">
+            <span className="text-amber-500 font-bold">₿</span>
+            <span className="text-[#0b1c30] font-semibold">BTC</span>
+            <span className="text-emerald-600 font-mono text-[11px] font-semibold">+1.34%</span>
+          </div>
+
+          <button
+            onClick={onOpenHotTopic}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold bg-[#f1f5f9] hover:bg-[#5338ec] text-[#0b1c30] hover:text-white px-3 py-1.5 rounded-xl transition-all"
+          >
+            <Play className="w-3 h-3 fill-current" />
+            <span>Check it out</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ─── 2. TOP INFLUENCERS / OTHER INFLUENCERS ─── */}
+      <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 text-[#0b1c30] shadow-xs">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <h4 className="text-sm font-bold text-[#0b1c30]">
+              {mode === 'profile' ? 'Other Influencers' : 'Top Influencers'}
+            </h4>
+            <div className="group relative">
+              <Info className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-600" />
+              <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block w-48 p-2 rounded-lg bg-[#0b1c30] text-white text-[10px] z-30 shadow-lg">
+                Ranked according to social influence algorithm, sentiment volume, and verified alpha call accuracy.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {mode !== 'profile' && (
+          <div className="flex items-center p-1 bg-[#f1f5f9] border border-slate-200 rounded-xl mb-3 text-xs">
+            <button
+              onClick={() => setInfluencerTab('social')}
+              className={`flex-1 py-1 px-2 rounded-lg font-medium transition-all ${
+                influencerTab === 'social'
+                  ? 'bg-white text-[#5338ec] font-bold shadow-xs'
+                  : 'text-[#474556] hover:text-[#0b1c30]'
+              }`}
+            >
+              Social Influence
+            </button>
+            <button
+              onClick={() => setInfluencerTab('trending')}
+              className={`flex-1 py-1 px-2 rounded-lg font-medium transition-all ${
+                influencerTab === 'trending'
+                  ? 'bg-white text-[#5338ec] font-bold shadow-xs'
+                  : 'text-[#474556] hover:text-[#0b1c30]'
+              }`}
+            >
+              Trending
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          {(mode === 'profile' ? OTHER_INFLUENCERS : TOP_INFLUENCERS).map((inf, idx) => {
+            const contentTypes = ['New Post', 'New Video', 'New Event', 'New Article'];
+            const contentType = contentTypes[idx % contentTypes.length];
+            const likeCount = Math.round(inf.influenceScore * 0.82) + idx * 7;
+            const shareCount = Math.round(inf.influenceScore * 0.19) + idx * 3;
+            return (
+              <div
+                key={inf.id}
+                onClick={() => onSelectInfluencer?.(inf)}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-[#f8fafc] transition-colors cursor-pointer group"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-[11px] font-mono text-slate-400 w-4 text-center">
+                    {inf.rank || idx + 1}
+                  </span>
+                  <div className="relative shrink-0">
+                    <img
+                      src={inf.avatar}
+                      alt={inf.name}
+                      className="w-7 h-7 rounded-full object-cover border border-slate-200"
+                    />
+                    {inf.verified && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-blue-500 border border-white flex items-center justify-center text-[7px] text-white">
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-[#0b1c30] group-hover:text-[#5338ec] truncate transition-colors">
+                      {inf.name}
+                    </p>
+                    <p className="text-[10px] text-[#474556] font-mono">
+                      {influencerTab === 'social'
+                        ? `♥ ${likeCount} Like · ↗ ${shareCount} Share`
+                        : `+${(4.2 + (idx * 1.7) % 8.4).toFixed(1)}% followers this week`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <span
+                    className="inline-block rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700"
+                  >
+                    {contentType}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};

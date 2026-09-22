@@ -1,0 +1,8 @@
+{
+  "name": "Remix MarketSyde - Smart Trader Cashback & Intelligence",
+  "description": "Turn your trading into cashback, insights and rewards with MarketSyde's automated broker cashback tracking and high-conviction market signals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
