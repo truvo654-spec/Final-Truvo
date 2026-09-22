@@ -109,24 +109,24 @@ export const TradingSignalsVisitorPage: React.FC<TradingSignalsVisitorPageProps>
 
   const faqs = [
     {
-      q: "Why can't I see the live signals on this page?",
-      a: "Live signals are intelligence — and intelligence loses its edge the moment it's public. They're delivered exclusively inside the Members Area to registered traders, so the people acting on them are on the inside, not the outside.",
+      q: "Why can't I see the live signals without signing in?",
+      a: "Because high-win-rate market alpha isn't free WiFi at a coffee shop. Real alpha loses its edge the second it gets dumped publicly. Create an account, join the guild, and grab the loot from the inside.",
     },
     {
-      q: 'Where do the signals come from?',
-      a: 'Signals are generated through a rigorous hybrid methodology combining institutional-grade algorithmic quant models, multi-timeframe price action analysis, and veteran proprietary trader oversight.',
+      q: 'Where do these signals actually come from?',
+      a: 'A battle-hardened hybrid setup: quantitative algorithmic math engines + multi-timeframe price action + veteran prop traders who have survived every black swan imaginable.',
     },
     {
-      q: 'Do you guarantee profits?',
-      a: 'No reputable financial platform guarantees trading profits. MarketSyde provides quantified edge, disciplined risk-to-reward frameworks, and transparent confidence metrics to significantly improve trade execution.',
+      q: 'Do you guarantee 100% infinite money profits?',
+      a: 'If any platform promises you guaranteed risk-free riches, run fast. We provide statistical edge, disciplined risk-to-reward setups, and transparent confidence ratings so you stop gambling like an NPC.',
     },
     {
-      q: 'Is it really free to start?',
-      a: 'Yes, absolutely. You can create a free account, explore the platform, access foundational signals, and earn Syde Points and Credits through daily engagement and trading volume.',
+      q: 'Is it really free, or is there a hidden paywall trap?',
+      a: 'Free to jump into the arena. No sneaky credit card traps. You can inspect foundational signals, connect your broker guild, and earn Syde Points and cash rebates just by trading.',
     },
     {
-      q: 'How will I know when a new signal drops?',
-      a: 'Members receive real-time notifications via browser alerts, telegram webhook sync, and direct dashboard flash radars with entry, stop-loss, and multi-tier take-profit levels.',
+      q: 'How will I know when a hot signal drops?',
+      a: 'Instant real-time alerts straight to your dashboard radar, sound alerts, and telegram webhooks so you never get left holding bags while everyone else is cashing out.',
     },
   ];
 
@@ -139,9 +139,9 @@ export const TradingSignalsVisitorPage: React.FC<TradingSignalsVisitorPageProps>
       <section className="relative w-full pt-16 pb-12 px-4 sm:px-6 md:px-12 flex flex-col items-center text-center">
         <div className="max-w-4xl mx-auto space-y-4">
           <h1 className="font-display text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-[#0b1c30] leading-[1.1]">
-            You're <span className="text-[#0b1c30]">one step from seeing</span>
+            Stop trading blind. <span className="text-[#0b1c30]">You're one click from</span>
             <br />
-            <span className="text-[#5945F1]">Live Opportunities.</span>
+            <span className="text-[#5945F1]">Institutional-Grade Alpha.</span>
           </h1>
 
           {/* Key Stat Badges with neon yellow dots */}
@@ -149,17 +149,17 @@ export const TradingSignalsVisitorPage: React.FC<TradingSignalsVisitorPageProps>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#bef226]" />
               <span className="font-bold text-slate-900">1,200+</span>
-              <span className="text-slate-500 font-normal">Instruments</span>
+              <span className="text-slate-500 font-normal">Instruments Tracked</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#bef226]" />
-              <span className="font-bold text-slate-900">70% up</span>
-              <span className="text-slate-500 font-normal">confidence rates</span>
+              <span className="font-bold text-slate-900">70%+</span>
+              <span className="text-slate-500 font-normal">Confidence Filter</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#bef226]" />
               <span className="font-bold text-slate-900">24/7</span>
-              <span className="text-slate-500 font-normal">Real-time alert</span>
+              <span className="text-slate-500 font-normal">Zero Sleeping Bots</span>
             </div>
           </div>
 
@@ -169,7 +169,7 @@ export const TradingSignalsVisitorPage: React.FC<TradingSignalsVisitorPageProps>
               onClick={onOpenSignUp}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-[#bef226] hover:bg-[#aee619] text-black font-extrabold text-sm sm:text-base shadow-sm hover:shadow-md transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
             >
-              <span>Sign Up and Unlock Signals</span>
+              <span>Unlock Signals & Grab Cashback</span>
               <ArrowRight className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>

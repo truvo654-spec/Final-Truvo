@@ -646,22 +646,22 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
             <div>
               <h1 className="font-display text-2xl sm:text-3xl lg:text-[32px] font-extrabold tracking-tight leading-tight">
                 <span>👋 </span>
-                <span className="text-[#5945F1]">Welcome, </span>
+                <span className="text-[#5945F1]">Welcome to the Arena, </span>
                 <span className="text-[#FD02B0]">{user.username}!</span>
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-                Look alive. The market won't wait, and we'd hate for you to miss what's next.
+                Trading without cashback is like leaving free loot on the dungeon floor. Let's fix that.
               </p>
             </div>
           ) : (
             <div>
               <h1 className="font-display text-2xl sm:text-3xl lg:text-[32px] font-extrabold tracking-tight leading-tight">
-                <span>🥳 </span>
-                <span className="text-[#5945F1]">Oh look, you’re back</span>
+                <span>⚡ </span>
+                <span className="text-[#5945F1]">Look who's back in the raid</span>
                 <span className="text-[#FD02B0]">!</span>
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-                The market kept moving. Good thing you did too.
+                Markets never sleep and neither does your cashback pipeline. Ready for the next run?
               </p>
             </div>
           )}
@@ -700,11 +700,11 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="font-display font-extrabold text-xl sm:text-[22px] text-[#5240F2] tracking-tight flex items-baseline">
-                        <span>Quick Start Guide</span>
+                        <span>Starter Questline</span>
                         <span className="w-1.5 h-1.5 rounded-[1px] bg-[#E11D89] ml-0.5 inline-block self-end mb-1"></span>
                       </h3>
                       <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-                        Turn your trading into cashback, insights and rewards.
+                        4 quick moves. Connect, trade your usual setup, and harvest passive cashback loot.
                       </p>
                     </div>
                     {onStartTour && (
@@ -715,7 +715,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                         title="Start Interactive Guided Tour"
                       >
                         <Sparkles className="w-3.5 h-3.5 text-[#FD02B0]" />
-                        <span>Take Tour</span>
+                        <span>Tutorial Mode</span>
                       </button>
                     )}
                   </div>
@@ -730,7 +730,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
 
                     {/* Steps Container */}
                     <div className="grid grid-cols-4 relative z-10">
-                      {/* Step 1: Choose Broker (Active) */}
+                      {/* Step 1: Pick Your Guild (Active) */}
                       <div
                         onClick={() => onNavigateToTab('brokers')}
                         className="flex flex-col items-center text-center cursor-pointer group px-1"
@@ -739,14 +739,14 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                           <UserPlus className="w-5 h-5 stroke-[2.2]" />
                         </div>
                         <div className="font-bold text-xs sm:text-[13px] text-[#5240F2] mt-3">
-                          Choose Broker
+                          Pick Your Guild
                         </div>
                         <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                          Choose yours, or find a better one here
+                          Choose your broker or hunt down higher rebate loot
                         </div>
                       </div>
 
-                      {/* Step 2: Link Trading Account */}
+                      {/* Step 2: Link Account */}
                       <div
                         onClick={() => onNavigateToTab('brokers')}
                         className="flex flex-col items-center text-center cursor-pointer group px-1"
@@ -755,10 +755,10 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                           <Link2 className="w-5 h-5 stroke-[2.2]" />
                         </div>
                         <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
-                          Link Trading Account
+                          Sync Account
                         </div>
                         <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                          Connect your account to start tracking
+                          Plug in your ID so the loot knows where to land
                         </div>
                       </div>
 
@@ -768,10 +768,10 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                           <CandlestickChart className="w-5 h-5 stroke-[2.2]" />
                         </div>
                         <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
-                          Trade as Usual
+                          Play Your Game
                         </div>
                         <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                          Keep trading normally on your platform
+                          Execute your regular setups on MT4/MT5/cTrader
                         </div>
                       </div>
 
@@ -781,10 +781,10 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                           <DollarSign className="w-5 h-5 stroke-[2.2]" />
                         </div>
                         <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
-                          Earn Cashback
+                          Harvest Cashback
                         </div>
                         <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                          Get paid to trade. Automatically
+                          Loot drops automatically per lot. Cha-ching!
                         </div>
                       </div>
                     </div>
@@ -1121,7 +1121,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
             {/* Header: Title & Timeframe Filters */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
               <h2 className="font-display text-lg sm:text-xl font-normal text-slate-700 tracking-tight">
-                Your Stats: <span className="text-[#0b1c30] font-black">March 2026</span>
+                Loot Ledger: <span className="text-[#0b1c30] font-black">March 2026</span>
               </h2>
 
               <div className="flex items-center gap-2.5 flex-wrap">
@@ -1173,7 +1173,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                   <LimeCalendarIcon className="w-11 h-11" />
                   <div>
                     <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
-                      ACTIVE STREAK
+                      COMBO STREAK
                     </div>
                     <div className="text-2xl font-black font-display text-[#0b1c30] leading-tight">
                       {dashboardState === 'active-performance'
@@ -1184,10 +1184,10 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                     </div>
                     <div className="text-xs text-slate-400 mt-0.5 font-normal">
                       {dashboardState === 'active-performance'
-                        ? 'Track your consistency'
+                        ? '12-day streak! You are on fire 🔥'
                         : dashboardState === 'first-trade'
-                        ? 'First day of your streak!'
-                        : 'Start trading to build streak'}
+                        ? 'Combo started! Day 1 logged.'
+                        : 'Wow, such empty. Do you even trade?'}
                     </div>
                   </div>
                 </div>
@@ -1268,10 +1268,10 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
 
                 <p className="text-xs text-slate-400 leading-relaxed pt-1.5 max-w-[240px]">
                   {dashboardState === 'active-performance'
-                    ? 'Your cashback earned during the selected period will appear here.'
+                    ? 'Cashback loot secured during this cycle. Cha-ching!'
                     : dashboardState === 'first-trade'
-                    ? 'Cashback earned from your first trade with HFM.'
-                    : 'Connect a broker to start earning cashback automatically.'}
+                    ? 'First loot secured! Day 1 cashback dropped from HFM.'
+                    : 'Zero trades = zero loot. Connect a broker and stop leaving cash on the table.'}
                 </p>
               </div>
 
@@ -1279,7 +1279,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
               <div className="space-y-2 p-1.5 relative">
                 <div className="flex items-center justify-between gap-2 relative">
                   <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
-                    TOP 3 PERFORMERS
+                    TOP LOOT CARRIERS
                   </div>
 
                   {isPerformanceActive ? (
@@ -1466,9 +1466,9 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
                       <TrendingUp className="w-5 h-5 stroke-[1.8]" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-700">No performance data yet</div>
+                      <div className="text-xs font-bold text-slate-700">No loot logged yet</div>
                       <div className="text-[11px] text-slate-400 leading-snug mt-0.5">
-                        Your top earning assets and brokers will appear here once you trade.
+                        Your highest-yielding assets and brokers will flex their numbers right here.
                       </div>
                     </div>
                   </div>
@@ -1523,36 +1523,36 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
               isFirstTrade={dashboardState === 'first-trade'}
               emptyStateTitle={
                 dashboardState === 'empty'
-                  ? 'No Performance Recorded Yet'
+                  ? 'The Arena Is Quiet'
                   : dashboardState === 'pending'
-                  ? 'Broker Review in Progress'
+                  ? 'Guild Verification in Progress'
                   : dashboardState === 'approved'
-                  ? 'Ready for Your First Trade'
+                  ? 'Weapons Armed. First Raid Ready.'
                   : dashboardState === 'rejected'
-                  ? 'Connection Denied'
-                  : 'Account Archived'
+                  ? 'Link Broken — Connection Denied'
+                  : 'Account Archived by Broker'
               }
               emptyStateDescription={
                 dashboardState === 'empty'
-                  ? 'Connect a broker and place your first trade to plot daily cashback earnings and volume in real time.'
+                  ? 'Your charts are sleeping. Connect a broker, take your first position, and watch the cashback radar light up.'
                   : dashboardState === 'pending'
-                  ? 'Your linked account (HFM • 1100012001) is awaiting review. Charts will activate once approved.'
+                  ? 'Your broker (HFM • 1100012001) is doing paperwork. Sit tight, we ping them constantly so you don’t have to.'
                   : dashboardState === 'approved'
-                  ? 'Your account is approved! Place your first trade with your broker to start earning cashback.'
+                  ? 'Green light! Your broker is connected. Execute a trade to trigger your first cashback drop.'
                   : dashboardState === 'rejected'
-                  ? 'Your broker connection could not be verified under Marketsyde. Please reconnect or link another broker.'
-                  : 'Your broker has archived this account due to inactivity. Re-link an active account to resume.'
+                  ? 'Broker rejected the link. We have clear troubleshooting steps ready so you can fix it in 60 seconds.'
+                  : 'Your broker archived this account due to inactivity. Re-sync an active account to keep collecting cashback.'
               }
               emptyStateCtaText={
                 dashboardState === 'empty'
-                  ? 'Connect Broker'
+                  ? 'Join a Guild'
                   : dashboardState === 'pending'
-                  ? 'Check Broker Status'
+                  ? 'Check Status'
                   : dashboardState === 'approved'
-                  ? 'Trade Now'
+                  ? 'Launch Signal Terminal'
                   : dashboardState === 'rejected'
-                  ? 'Reconnect Account'
-                  : 'Connect New Brokers'
+                  ? 'Fix Connection'
+                  : 'Sync Active Broker'
               }
               onEmptyStateCtaClick={
                 dashboardState === 'empty'

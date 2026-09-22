@@ -1635,8 +1635,8 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                         <thead>
                           <tr className="border-b border-slate-100 bg-slate-50/20 text-xs font-semibold text-[#5945F1]">
                             <th className="py-2.5 px-4">Period</th>
-                            <th className="py-2.5 px-4">Bonus</th>
-                            <th className="py-2.5 px-4 text-right sm:text-left">Standard</th>
+                            <th className="py-2.5 px-4">Value</th>
+                            <th className="py-2.5 px-4 text-right sm:text-left">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
@@ -1668,8 +1668,8 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                         <thead>
                           <tr className="border-b border-slate-100 bg-slate-50/20 text-xs font-semibold text-[#5945F1]">
                             <th className="py-2.5 px-4">Period</th>
-                            <th className="py-2.5 px-4">Bonus</th>
-                            <th className="py-2.5 px-4 text-right sm:text-left">Standard</th>
+                            <th className="py-2.5 px-4">Value</th>
+                            <th className="py-2.5 px-4 text-right sm:text-left">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-xs text-slate-800">
@@ -1718,7 +1718,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                       <thead>
                         <tr className="border-b border-slate-200/80 bg-slate-50/50 text-xs sm:text-sm font-semibold text-[#5945F1]">
                           <th className="py-3 px-4 sm:px-6 w-1/2">Level</th>
-                          <th className="py-3 px-4 sm:px-6 w-1/2">Bonus</th>
+                          <th className="py-3 px-4 sm:px-6 w-1/2">Value</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-xs sm:text-sm text-slate-800">
@@ -1782,10 +1782,10 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-[#0b1c30]">
-                    You're Connected. Nice!
+                    Guild Linked. GG!
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Start trading to get cashback
+                    Deploy your trades to drop cashback loot
                   </p>
                 </div>
               </div>
@@ -1805,10 +1805,10 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-bold text-[#0b1c30]">
-                    <span className="text-[#5945F1]">Connect</span> & Ready to Trade!<span className="text-[#FD02B0]">.</span>
+                    <span className="text-[#5945F1]">Locked & Loaded</span> for Trades<span className="text-[#FD02B0]">.</span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Your accounts are connected. Time to make those trades pay you back!
+                    Your brokers are synced. Every lot you punch drops rebate loot into your pouch.
                   </p>
                 </div>
               </div>
@@ -2448,7 +2448,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                 {/* Footer divider + Connect Another Broker */}
                 <div className="border-t border-slate-100 pt-3 space-y-2.5">
                   <p className="text-xs text-slate-500 text-center font-normal">
-                    Want to connect more brokers?
+                    Hunting for higher rebate spreads?
                   </p>
                   <button
                     onClick={() => {
@@ -2457,7 +2457,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                     }}
                     className="w-full py-2.5 rounded-xl border border-[#5945F1] text-[#5945F1] hover:bg-indigo-50/60 font-bold text-xs transition-colors cursor-pointer text-center"
                   >
-                    Connect Another Broker
+                    Connect Another Guild
                   </button>
                 </div>
               </div>
@@ -2465,7 +2465,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
               /* ─── SCENARIO 2: NOT Connected to Any Brokers ─── */
               <div className="py-8 px-4 flex flex-col items-center justify-center text-center space-y-6 animate-in fade-in duration-150">
                 <p className="text-xs text-slate-500 font-normal">
-                  You haven't connected to any brokers.
+                  No brokers connected yet. You can’t claim cashback loot without a linked account!
                 </p>
                 <button
                   onClick={() => {
@@ -2474,7 +2474,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                   }}
                   className="w-full py-2.5 rounded-xl border border-[#5945F1] text-[#5945F1] hover:bg-indigo-50/60 font-bold text-xs transition-colors cursor-pointer text-center"
                 >
-                  Connect now
+                  Link Your Broker
                 </button>
               </div>
             )}

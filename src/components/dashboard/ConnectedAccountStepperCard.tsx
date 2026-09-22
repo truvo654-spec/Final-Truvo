@@ -71,12 +71,12 @@ export const ConnectedAccountStepperCard: React.FC<ConnectedAccountStepperCardPr
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
               <h3 className="font-display font-extrabold text-xl sm:text-[22px] text-[#5240F2] tracking-tight">
-                {isPending ? 'Activation Pending' : 'Your Connected Account'}
+                {isPending ? 'Verification Loading Screen ⏳' : 'Guild Link Online ⚡'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
                 {isPending
-                  ? 'Give your broker 2–3 business days to review'
-                  : 'Greedy? Take your pick and make your next move.'}
+                  ? 'Your broker is doing paperwork at dial-up speed. Sit tight while we ping them relentlessly.'
+                  : 'Greedy for more loot? Link another guild and hoard multi-broker rebates like a boss.'}
               </p>
             </div>
 
@@ -88,7 +88,7 @@ export const ConnectedAccountStepperCard: React.FC<ConnectedAccountStepperCardPr
                 onClick={() => onNavigateToTab('brokers')}
                 className="px-4 py-1.5 rounded-xl bg-[#5240F2] hover:bg-[#4335C4] text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95 cursor-pointer"
               >
-                <span>Explore Brokers</span>
+                <span>Browse Guilds</span>
                 <ArrowRight className="w-4 h-4 stroke-[2.2]" />
               </button>
 
@@ -99,7 +99,7 @@ export const ConnectedAccountStepperCard: React.FC<ConnectedAccountStepperCardPr
                 className="px-4 py-1.5 rounded-xl bg-white hover:bg-indigo-50/60 border border-[#5240F2] text-[#5240F2] text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-transform active:scale-95 cursor-pointer"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
-                <span>Add More Account</span>
+                <span>Link Another Account</span>
               </button>
             </div>
           </div>
@@ -182,7 +182,7 @@ export const ConnectedAccountStepperCard: React.FC<ConnectedAccountStepperCardPr
                     <UserPlus className="w-5 h-5 stroke-[2.2]" />
                   </div>
                   <div className="font-semibold text-xs sm:text-[13px] text-[#5240F2] mt-3">
-                    Broker Chosen
+                    Guild Chosen
                   </div>
                 </div>
 
@@ -203,10 +203,10 @@ export const ConnectedAccountStepperCard: React.FC<ConnectedAccountStepperCardPr
                         </div>
                       </div>
                       <div className="font-bold text-xs sm:text-[13px] text-[#5240F2] mt-3">
-                        Link Trading Account
+                        Sync Account
                       </div>
                       <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                        Earn cashback on trades
+                        Broker's thinking... don't panic
                       </div>
                       <button
                         type="button"
@@ -229,7 +229,7 @@ export const ConnectedAccountStepperCard: React.FC<ConnectedAccountStepperCardPr
                         <Link2 className="w-5 h-5 stroke-[2.2]" />
                       </div>
                       <div className="font-semibold text-xs sm:text-[13px] text-[#5240F2] mt-3">
-                        Link Trading Account
+                        Account Synced
                       </div>
                     </>
                   )}
@@ -244,10 +244,10 @@ export const ConnectedAccountStepperCard: React.FC<ConnectedAccountStepperCardPr
                         <CandlestickChart className="w-5 h-5 stroke-[2.2]" />
                       </div>
                       <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
-                        Trade as Usual
+                        Raid the Market
                       </div>
                       <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                        Keep trading normally on your platform
+                        Unlocks right after verification
                       </div>
                     </>
                   ) : isRejected ? (
@@ -323,10 +323,10 @@ export const ConnectedAccountStepperCard: React.FC<ConnectedAccountStepperCardPr
                         </div>
                       </div>
                       <div className="font-bold text-xs sm:text-[13px] text-[#5240F2] mt-3">
-                        Trade as Usual
+                        Raid the Market
                       </div>
                       <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                        All set. Make your move
+                        Ready to roll. Make your move!
                       </div>
                       <button
                         type="button"
@@ -350,10 +350,10 @@ export const ConnectedAccountStepperCard: React.FC<ConnectedAccountStepperCardPr
                     <DollarSign className="w-5 h-5 stroke-[2.2]" />
                   </div>
                   <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
-                    Earn Cashback
+                    Harvest Cashback
                   </div>
                   <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                    Get paid to trade. Automatically
+                    Loot drops per lot, automatically
                   </div>
                 </div>
               </div>
