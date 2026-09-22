@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Home, RotateCcw, CloudOff, Unplug } from 'lucide-react';
+import { useTone } from '../../context/ToneContext';
 
 export type ErrorType = '404' | '500' | '503';
 
@@ -19,6 +20,7 @@ export const ErrorPageView: React.FC<ErrorPageProps> = ({
   const [currentType, setCurrentType] = useState<ErrorType>(type);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
+  const { copy } = useTone();
 
   // Sync internal state if prop changes
   React.useEffect(() => {
@@ -136,39 +138,29 @@ export const ErrorPageView: React.FC<ErrorPageProps> = ({
       <h1 className="text-2xl sm:text-3xl md:text-[38px] lg:text-[40px] font-bold text-[#5945F1] tracking-tight leading-tight">
         {currentType === '404' && (
           <>
-            Well, this is awkward<span className="text-[#ec4899]">.</span>
+            {copy.errorPages['404'].headline.replace(/\.$/, '')}
+            <span className="text-[#ec4899]">.</span>
           </>
         )}
         {currentType === '500' && (
           <>
-            It&apos;s not you, It&apos;s entirely us<span className="text-[#ec4899]">.</span>
+            {copy.errorPages['500'].headline.replace(/\.$/, '')}
+            <span className="text-[#ec4899]">.</span>
           </>
         )}
         {currentType === '503' && (
           <>
-            We&apos;re down. Everything is fine. Mostly<span className="text-[#ec4899]">.</span>
+            {copy.errorPages['503'].headline.replace(/\.$/, '')}
+            <span className="text-[#ec4899]">.</span>
           </>
         )}
       </h1>
 
-      {/* ─── DESCRIPTIONS (Exact Copy from Screenshots) ─── */}
+      {/* ─── DESCRIPTIONS ─── */}
       <div className="text-slate-600 dark:text-slate-400 text-sm sm:text-[15px] max-w-xl mx-auto mt-4 leading-relaxed font-normal">
-        {currentType === '404' && (
-          <p>
-            Either you made a typo, or we hid this page because we&apos;re exclusive like that,
-            <br className="hidden sm:inline" /> Let&apos;s pretend this never happened and get you back to safety.
-          </p>
-        )}
-        {currentType === '500' && (
-          <p>
-            Our servers just had a minor existential crisis. A bunch of ones and zeros are currently fighting for their lives, but our team is on it (or just turning it off and on again).
-          </p>
-        )}
-        {currentType === '503' && (
-          <p>
-            We&apos;re currently injecting the system with fresh code and a lot of caffeine. We&apos;re temporarily offline, meaning you&apos;ll have to find another way to procrastinate for a few minutes.
-          </p>
-        )}
+        {currentType === '404' && <p>{copy.errorPages['404'].description}</p>}
+        {currentType === '500' && <p>{copy.errorPages['500'].description}</p>}
+        {currentType === '503' && <p>{copy.errorPages['503'].description}</p>}
       </div>
 
       {/* ─── ACTION BUTTONS ─── */}
@@ -180,7 +172,7 @@ export const ErrorPageView: React.FC<ErrorPageProps> = ({
             onClick={onNavigateHome}
             className="px-6 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4834e0] active:scale-98 text-white text-sm font-semibold inline-flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
           >
-            <span>Take Me Home</span>
+            <span>{copy.errorPages['404'].cta}</span>
             <Home className="w-4 h-4 stroke-[2.2]" />
           </button>
         )}
@@ -194,7 +186,7 @@ export const ErrorPageView: React.FC<ErrorPageProps> = ({
               disabled={isRefreshing}
               className="px-5 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-white dark:bg-[#150d30] hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 text-[#5945F1] dark:text-[#a594fd] active:scale-98 text-sm font-semibold inline-flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer disabled:opacity-60"
             >
-              <span>Try Refreshing</span>
+              <span>{copy.errorPages['500'].ctaPrimary}</span>
               <RotateCcw className={`w-4 h-4 stroke-[2.2] ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
 
@@ -203,7 +195,7 @@ export const ErrorPageView: React.FC<ErrorPageProps> = ({
               onClick={onNavigateHome}
               className="px-5 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4834e0] active:scale-98 text-white text-sm font-semibold inline-flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
             >
-              <span>Escape to Homepage</span>
+              <span>{copy.errorPages['500'].ctaSecondary}</span>
               <Home className="w-4 h-4 stroke-[2.2]" />
             </button>
           </>
@@ -217,7 +209,7 @@ export const ErrorPageView: React.FC<ErrorPageProps> = ({
             disabled={isRefreshing}
             className="px-6 py-2.5 rounded-xl bg-[#5945F1] hover:bg-[#4834e0] active:scale-98 text-white text-sm font-semibold inline-flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-60"
           >
-            <span>Check Again</span>
+            <span>{copy.errorPages['503'].cta}</span>
             <RotateCcw className={`w-4 h-4 stroke-[2.2] ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
         )}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTone } from '../context/ToneContext';
 import {
   ArrowLeft,
   ChevronRight,
@@ -59,6 +60,7 @@ export const CashbackOverviewPage: React.FC<CashbackOverviewPageProps> = ({
 }) => {
   // Scenario state: Allows user to test all 6 reference images
   const [activeScenario, setActiveScenario] = useState<CashbackScenario>('01-empty');
+  const { copy } = useTone();
 
   // Sub-tabs for connected accounts card (Active vs Archived)
   const [accountTab, setAccountTab] = useState<'active' | 'archived'>('active');
@@ -296,7 +298,7 @@ export const CashbackOverviewPage: React.FC<CashbackOverviewPageProps> = ({
       {/* ─── PAGE TITLE ─── */}
       <div>
         <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-black tracking-tight font-display text-[#0b1c30]">
-          Cashback Overview
+          {copy.pageTitles.cashbackOverview}
         </h1>
       </div>
 

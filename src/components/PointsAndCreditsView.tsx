@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { useTone } from '../context/ToneContext';
 import { UserProfile, Mission, ActivityLogItem, MarketSignal } from '../types';
 import {
   Sparkles,
@@ -568,6 +569,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
 }) => {
   // Tabs for mission filtering
   const [missionFilter, setMissionFilter] = useState<'all' | 'active' | 'available'>('all');
+  const { copy } = useTone();
 
   // Accordion expanded state for missions
   const [expandedMissions, setExpandedMissions] = useState<Record<string, boolean>>({
@@ -801,12 +803,11 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
       {/* ─── Hero Heading ─── */}
       <div className="text-center max-w-2xl mx-auto pt-0 space-y-2">
         <h1 className="font-display text-3xl sm:text-4xl lg:text-[44px] font-extrabold tracking-tight">
-          <span className="text-[#5945F1]">Mission, Points </span>
-          <span className="text-[#FE01B1]">& Credits</span>
+          <span className="text-[#5945F1]">{copy.pageTitles.pointsCredits}</span>
           <span className="text-[#c6f831] font-extrabold inline-block">.</span>
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">
-          Everything you’ve earned so far, plus what you’re currently missing out on.
+          {copy.pageSubtitles.pointsCredits}
         </p>
 
         {/* Interactive Earning Modals Trigger Row */}

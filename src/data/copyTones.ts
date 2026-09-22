@@ -53,6 +53,22 @@ export interface ToneCopy {
     signals: string;
     wallet: string;
   };
+  errorPages: {
+    '404': { headline: string; description: string; cta: string };
+    '500': { headline: string; description: string; ctaPrimary: string; ctaSecondary: string };
+    '503': { headline: string; description: string; cta: string };
+  };
+  pageTitles: {
+    cashbackOverview: string;
+    pointsCredits: string;
+    brokerComparison: string;
+    memberPlan: string;
+  };
+  pageSubtitles: {
+    pointsCredits: string;
+    brokerComparison: string;
+    memberPlan: string;
+  };
 }
 
 export const COPY_TONES: Record<CopyTone, ToneCopy> = {
@@ -119,6 +135,38 @@ export const COPY_TONES: Record<CopyTone, ToneCopy> = {
       signals: 'Trading Signals',
       wallet: 'Wallet',
     },
+    errorPages: {
+      '404': {
+        headline: 'Well, this is awkward.',
+        description:
+          "Either you made a typo, or we hid this page because we're exclusive like that. Let's pretend this never happened and get you back to safety.",
+        cta: 'Take Me Home',
+      },
+      '500': {
+        headline: "It's not you, It's entirely us.",
+        description:
+          'Our servers just had a minor existential crisis. A bunch of ones and zeros are currently fighting for their lives, but our team is on it (or just turning it off and on again).',
+        ctaPrimary: 'Try Refreshing',
+        ctaSecondary: 'Escape to Homepage',
+      },
+      '503': {
+        headline: "We're down. Everything is fine. Mostly.",
+        description:
+          "We're currently injecting the system with fresh code and a lot of caffeine. We're temporarily offline, meaning you'll have to find another way to procrastinate for a few minutes.",
+        cta: 'Check Again',
+      },
+    },
+    pageTitles: {
+      cashbackOverview: 'Cashback Overview',
+      pointsCredits: 'Mission, Points & Credits',
+      brokerComparison: 'Compare CFD Brokers',
+      memberPlan: 'Member Plan',
+    },
+    pageSubtitles: {
+      pointsCredits: "Everything you've earned so far, plus what you're currently missing out on.",
+      brokerComparison: 'Compare cashback rates, spreads, and perks side by side before you connect.',
+      memberPlan: 'See your current tier, perks, and what it takes to level up.',
+    },
   },
   cheekyGamer: {
     greetingSubtitle: () =>
@@ -183,6 +231,38 @@ export const COPY_TONES: Record<CopyTone, ToneCopy> = {
       leaderboard: 'Hall of Flame',
       signals: 'Intel Drops',
       wallet: 'Loot Stash',
+    },
+    errorPages: {
+      '404': {
+        headline: '404: This Page Rage-Quit.',
+        description:
+          "Even we don't know where it went. Maybe it rage-quit, maybe it's farming XP somewhere else. Either way, let's get you back to base.",
+        cta: 'Back to Base',
+      },
+      '500': {
+        headline: 'Server Down. Send Help (and Snacks).',
+        description:
+          "Our servers took critical damage and are currently respawning. Our engineers are on it — no loot was lost, we promise.",
+        ctaPrimary: 'Try Again',
+        ctaSecondary: 'Retreat to Base',
+      },
+      '503': {
+        headline: 'Down for Maintenance. Back Soon, Probably.',
+        description:
+          "We're patching the game (i.e. the platform). Grab a snack, stretch your legs — we'll be back online before you know it.",
+        cta: 'Check Again',
+      },
+    },
+    pageTitles: {
+      cashbackOverview: 'Your Loot Ledger',
+      pointsCredits: 'Quests, XP & Credits',
+      brokerComparison: 'Broker Showdown',
+      memberPlan: 'Your Rank & Perks',
+    },
+    pageSubtitles: {
+      pointsCredits: "Everything you've looted so far, plus what you're sleeping on.",
+      brokerComparison: 'Stack cashback rates, spreads, and perks head-to-head before you recruit one.',
+      memberPlan: 'Your current rank, your perks, and what it takes to level up.',
     },
   },
 };

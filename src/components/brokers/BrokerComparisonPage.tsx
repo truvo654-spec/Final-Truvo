@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useTone } from '../../context/ToneContext';
 import { Broker, UserProfile, MarketSignal } from '../../types';
 import {
   Search,
@@ -945,6 +946,7 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
   onNavigateToSignals,
   onShowToast,
 }) => {
+  const { copy } = useTone();
   // Helper to resolve any broker object or string ID to COMPARISON_BROKERS ID
   const resolveComparisonBrokerId = (b: Broker | string | null | undefined): string | null => {
     if (!b) return null;
@@ -1244,10 +1246,10 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
       {/* ─── Hero Heading (Exact match to 01_Search_Empty State.png: Compare CFD Brokers.) ─── */}
       <div className="text-center max-w-3xl mx-auto pt-2 space-y-2">
         <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold font-display tracking-tight text-[#5945F1]">
-          Compare CFD Brokers<span className="text-[#FE01B1]">.</span>
+          {copy.pageTitles.brokerComparison}<span className="text-[#FE01B1]">.</span>
         </h1>
         <p className="text-sm sm:text-[15px] text-slate-500 dark:text-slate-400 font-normal leading-relaxed max-w-2xl mx-auto">
-          See trading conditions, platforms, regulation and cashback side by side before making your decision.
+          {copy.pageSubtitles.brokerComparison}
         </p>
         {onToggleAuthState && (
           <div className="flex justify-center pt-1">
