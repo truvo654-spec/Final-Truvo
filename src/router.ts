@@ -311,6 +311,13 @@ export const ROUTE_REGISTRY: Record<string, RouteItem> = {
   },
 
   // Company
+  demo: {
+    path: '/demo',
+    tab: 'demo',
+    title: 'Platform Demo Hub | MarketSyde',
+    category: 'Demo',
+    breadcrumbs: ['MarketSyde', 'Demo'],
+  },
   about: {
     path: '/about',
     tab: 'about',
@@ -538,6 +545,9 @@ export function pathToState(rawPath: string): RouteResolution {
   }
 
   // 9. Company & Legal
+  if (pathname === '/demo') {
+    return { tab: 'demo' };
+  }
   if (pathname === '/about') {
     return { tab: 'about' };
   }

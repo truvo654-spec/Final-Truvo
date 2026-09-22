@@ -44,10 +44,12 @@ import { ActivityLogsView } from './components/ActivityLogsView';
 import { AboutUsPage } from './components/AboutUsPage';
 import { ContactUsPage } from './components/ContactUsPage';
 import { PublicLandingPage } from './components/PublicLandingPage';
+import { DemoCenterPage } from './components/demo/DemoCenterPage';
 import { CashbackOverviewPage } from './components/CashbackOverviewPage';
 import { ConnectToTruvoPage } from './components/ConnectToTruvoPage';
 import { ActiveTradingAccountsPage } from './components/dashboard/ActiveTradingAccountsPage';
 import { TradingSignalsPage } from './components/TradingSignalsPage';
+import { TradingSignalsVisitorPage } from './components/TradingSignalsVisitorPage';
 import { TradingSignalDetailPage } from './components/signals/TradingSignalDetailPage';
 import { InstrumentAnalysisPage } from './components/InstrumentAnalysisPage';
 import { ProfilePage } from './components/ProfilePage';
@@ -124,6 +126,7 @@ const KNOWN_APP_TABS = new Set([
   'conversion-calculator',
   'calculators',
   'leaderboard',
+  'demo',
   'about',
   'contact-us',
   'contact',
@@ -782,38 +785,6 @@ export default function App() {
           ? 'p-0 space-y-0 pt-[84px]'
           : 'px-4 sm:px-8 md:px-[56px] pt-[100px] pb-12 space-y-6'
       }`}>
-        {/* Navigation Breadcrumbs & Hierarchy Path Indicator */}
-        {!(
-          activeTab === 'about' ||
-          activeTab === 'contact-us' ||
-          activeTab === 'contact' ||
-          activeTab === 'landing' ||
-          activeTab === 'home' ||
-          activeTab === '404' ||
-          activeTab === 'not-found' ||
-          activeTab === '500' ||
-          activeTab === 'server-error' ||
-          activeTab === '503' ||
-          activeTab === 'maintenance' ||
-          activeTab === 'service-unavailable' ||
-          (!isLoggedIn && activeTab === 'dashboard') ||
-          (!isLoggedIn && activeTab === 'member-plan')
-        ) && (
-          <div className="mb-2">
-            <Breadcrumbs
-              activeTab={activeTab}
-              onNavigateToTab={setActiveTab}
-              customLabel={
-                activeTab === 'broker-detail'
-                  ? selectedBrokerForDetail?.name
-                  : activeTab === 'signal-detail'
-                  ? selectedSignal?.ticker
-                  : undefined
-              }
-            />
-          </div>
-        )}
-
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -958,6 +929,11 @@ export default function App() {
           <BrokerListPage
             brokers={brokers}
             user={user}
+            isLoggedIn={isLoggedIn}
+            onOpenSignIn={() => {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+            }}
             onSelectBrokerDetail={(broker) => {
               setSelectedBrokerForDetail(broker);
               setActiveTab('broker-detail');
@@ -1082,6 +1058,11 @@ export default function App() {
             user={user}
             signals={signals}
             brokers={brokers}
+            isLoggedIn={isLoggedIn}
+            onLeadToVisitorPage={() => {
+              setActiveTab('visitor-signals');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             onSelectSignal={(sig) => {
               setSelectedSignal(sig);
               setActiveTab('signal-detail');
@@ -1115,6 +1096,21 @@ export default function App() {
               });
               showToast(`🪙 Syde Credits set to ${credits} for scenario testing`);
             }}
+          />
+        )}
+
+        {/* ─── TAB: Visitor Trading Signals Landing Page (Visitor Page_Desktop.png) ─── */}
+        {activeTab === 'visitor-signals' && (
+          <TradingSignalsVisitorPage
+            onOpenSignUp={() => {
+              setAuthModalMode('signup');
+              setIsAuthModalOpen(true);
+            }}
+            onOpenSignIn={() => {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+            }}
+            onNavigateToTab={setActiveTab}
           />
         )}
 
@@ -1451,6 +1447,45 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* ─── TAB: Demo Center Hub (User Requested "Demo" in Nav Bar) ─── */}
+        {activeTab === 'demo' && (
+          <DemoCenterPage
+            user={user}
+            brokers={brokers}
+            signals={signals}
+            isLoggedIn={isLoggedIn}
+            onToggleAuthState={(loggedIn) => {
+              setIsLoggedIn(loggedIn);
+              try {
+                localStorage.setItem('marketsyde_is_logged_in', String(loggedIn));
+              } catch {}
+            }}
+            onSelectLevelScenario={handleSelectLevelScenario}
+            onAddDemoPoints={handleAddDemoPoints}
+            onResetDemoData={() => {
+              try {
+                localStorage.removeItem('marketsyde_user_profile');
+                localStorage.removeItem('marketsyde_unlocked_signals');
+              } catch {}
+              setUser(INITIAL_USER);
+            }}
+            onNavigateToTab={(tab) => {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenSignIn={() => {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+            }}
+            onOpenSignUp={() => {
+              setAuthModalMode('signup');
+              setIsAuthModalOpen(true);
+            }}
+            onShowToast={showToast}
+          />
+        )}
+
         {/* ─── TAB: About Us Page (Exact replica of Reference Design) ─── */}
         {activeTab === 'about' && (
           <AboutUsPage

@@ -4,14 +4,18 @@ import { Sparkles, Lock, ArrowUpRight, ArrowDownRight, Compass, ShieldAlert } fr
 
 interface SignalsListProps {
   signals: MarketSignal[];
+  isLoggedIn?: boolean;
   onSelectSignal: (signal: MarketSignal) => void;
   onUpgradePrompt: () => void;
+  onLeadToVisitorPage?: () => void;
 }
 
 export const SignalsList: React.FC<SignalsListProps> = ({
   signals,
+  isLoggedIn = true,
   onSelectSignal,
   onUpgradePrompt,
+  onLeadToVisitorPage,
 }) => {
   const [filterClass, setFilterClass] = useState<string>('All');
 
@@ -85,7 +89,9 @@ export const SignalsList: React.FC<SignalsListProps> = ({
                 key={signal.id}
                 className="py-3.5 px-2 hover:bg-[#f8fafc] rounded-xl transition-colors flex items-center justify-between gap-4 cursor-pointer group"
                 onClick={() => {
-                  if (signal.action === 'UPGRADE') {
+                  if (!isLoggedIn && onLeadToVisitorPage) {
+                    onLeadToVisitorPage();
+                  } else if (signal.action === 'UPGRADE') {
                     onUpgradePrompt();
                   } else {
                     onSelectSignal(signal);
@@ -169,7 +175,11 @@ export const SignalsList: React.FC<SignalsListProps> = ({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onSelectSignal(signal);
+                        if (!isLoggedIn && onLeadToVisitorPage) {
+                          onLeadToVisitorPage();
+                        } else {
+                          onSelectSignal(signal);
+                        }
                       }}
                       className="h-[28px] px-3.5 rounded-full bg-[#c6f831] hover:bg-[#b5e723] text-[#0f172a] font-bold text-xs flex items-center gap-1 shadow-xs transition-transform active:scale-95 whitespace-nowrap"
                     >
@@ -183,7 +193,11 @@ export const SignalsList: React.FC<SignalsListProps> = ({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onSelectSignal(signal);
+                        if (!isLoggedIn && onLeadToVisitorPage) {
+                          onLeadToVisitorPage();
+                        } else {
+                          onSelectSignal(signal);
+                        }
                       }}
                       className="h-[28px] px-3.5 rounded-full bg-[#5338ec] hover:bg-[#4338ca] text-white font-bold text-xs flex items-center gap-1 shadow-xs transition-transform active:scale-95 whitespace-nowrap"
                     >
@@ -216,7 +230,13 @@ export const SignalsList: React.FC<SignalsListProps> = ({
       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-[#474556]">
         <span>Click any signal row to reveal entry, TP1/TP2, and invalidation stop loss.</span>
         <button
-          onClick={() => onSelectSignal(signals[0])}
+          onClick={() => {
+            if (!isLoggedIn && onLeadToVisitorPage) {
+              onLeadToVisitorPage();
+            } else {
+              onSelectSignal(signals[0]);
+            }
+          }}
           className="font-bold text-[#5338ec] hover:underline"
         >
           View Setup Details

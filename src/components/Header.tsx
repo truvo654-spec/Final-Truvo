@@ -242,7 +242,7 @@ export const Header: React.FC<HeaderProps> = ({
                   handleCloseImmediately();
                 }}
                 className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
-                  activeHoverMenu === 'trade' || activeTab === 'dashboard' || activeTab === 'signals' || activeTab === 'signal-detail' || activeTab === 'instrument-analysis'
+                  activeHoverMenu === 'trade' || activeTab === 'dashboard' || activeTab === 'signals' || activeTab === 'visitor-signals' || activeTab === 'signal-detail' || activeTab === 'instrument-analysis'
                     ? 'text-[#5945F1] font-semibold'
                     : 'text-slate-800 hover:text-[#5945F1]'
                 }`}

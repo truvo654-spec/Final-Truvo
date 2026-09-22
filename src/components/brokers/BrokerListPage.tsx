@@ -15,9 +15,10 @@ import {
 import { BorderBeam } from '../ui/BorderBeam';
 
 interface BrokerListPageProps {
-
   brokers: Broker[];
   user: UserProfile;
+  isLoggedIn?: boolean;
+  onOpenSignIn?: () => void;
   onSelectBrokerDetail: (broker: Broker) => void;
   onConnectBroker: (broker: Broker) => void;
   onOpenComparison?: (broker?: Broker) => void;
@@ -28,6 +29,8 @@ interface BrokerListPageProps {
 export const BrokerListPage: React.FC<BrokerListPageProps> = ({
   brokers,
   user,
+  isLoggedIn = false,
+  onOpenSignIn,
   onSelectBrokerDetail,
   onConnectBroker,
   onOpenComparison,
@@ -369,11 +372,19 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onConnectBroker(broker);
+                          if (!isLoggedIn) {
+                            if (onOpenSignIn) {
+                              onOpenSignIn();
+                            } else {
+                              onShowToast?.('Please sign in to connect a broker account');
+                            }
+                          } else {
+                            onConnectBroker(broker);
+                          }
                         }}
                         className="px-5 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4834df] text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
                       >
-                        Trade Now
+                        {isLoggedIn ? 'Trade Now' : 'Connect'}
                       </button>
 
                       <button

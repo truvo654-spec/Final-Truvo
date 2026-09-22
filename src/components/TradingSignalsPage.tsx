@@ -35,6 +35,7 @@ interface TradingSignalsPageProps {
   user: UserProfile;
   signals: MarketSignal[];
   brokers: Broker[];
+  isLoggedIn?: boolean;
   onSelectSignal: (signal: MarketSignal) => void;
   onUpgradePrompt: () => void;
   onOpenConnectModal: (broker?: Broker) => void;
@@ -44,12 +45,14 @@ interface TradingSignalsPageProps {
   onSpendCredits?: (amount: number, reason: string) => boolean;
   onClaimBonusCredits?: (amount: number) => void;
   onSetUserCredits?: (amount: number) => void;
+  onLeadToVisitorPage?: () => void;
 }
 
 export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
   user,
   signals: initialSignals,
   brokers,
+  isLoggedIn = true,
   onSelectSignal,
   onUpgradePrompt,
   onOpenConnectModal,
@@ -59,6 +62,7 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
   onSpendCredits,
   onClaimBonusCredits,
   onSetUserCredits,
+  onLeadToVisitorPage,
 }) => {
   // Category filter state
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -598,9 +602,11 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
                     signal={sig}
                     userTierLevel={user.tierLevel}
                     isUnlockedByCredit={unlockedSignalIds.has(sig.id)}
+                    isLoggedIn={isLoggedIn}
                     onSelectSignal={onSelectSignal}
                     onUpgradePrompt={onUpgradePrompt}
                     onUnlockPrompt={handlePromptUnlock}
+                    onLeadToVisitorPage={onLeadToVisitorPage}
                     renderAssetIcon={renderAssetIcon}
                   />
                 ))}
@@ -627,7 +633,13 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
                 </div>
 
                 <button
-                  onClick={() => setTradeModalBroker('HFM')}
+                  onClick={() => {
+                    if (!isLoggedIn && onLeadToVisitorPage) {
+                      onLeadToVisitorPage();
+                    } else {
+                      setTradeModalBroker('HFM');
+                    }
+                  }}
                   className="w-full sm:w-auto bg-[#5030e5] hover:bg-[#4326cf] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 group cursor-pointer"
                 >
                   <span>Trade Now</span>
@@ -643,9 +655,11 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
                     signal={sig}
                     userTierLevel={user.tierLevel}
                     isUnlockedByCredit={unlockedSignalIds.has(sig.id)}
+                    isLoggedIn={isLoggedIn}
                     onSelectSignal={onSelectSignal}
                     onUpgradePrompt={onUpgradePrompt}
                     onUnlockPrompt={handlePromptUnlock}
+                    onLeadToVisitorPage={onLeadToVisitorPage}
                     renderAssetIcon={renderAssetIcon}
                   />
                 ))}
@@ -1281,9 +1295,11 @@ interface SignalCardProps {
   signal: MarketSignal;
   userTierLevel: number;
   isUnlockedByCredit?: boolean;
+  isLoggedIn?: boolean;
   onSelectSignal: (sig: MarketSignal) => void;
   onUpgradePrompt: () => void;
   onUnlockPrompt: (sig: MarketSignal) => void;
+  onLeadToVisitorPage?: () => void;
   renderAssetIcon: (sig: MarketSignal) => React.ReactNode;
 }
 
@@ -1291,9 +1307,11 @@ const SignalCard: React.FC<SignalCardProps> = ({
   signal,
   userTierLevel,
   isUnlockedByCredit = false,
+  isLoggedIn = true,
   onSelectSignal,
   onUpgradePrompt,
   onUnlockPrompt,
+  onLeadToVisitorPage,
   renderAssetIcon,
 }) => {
   const isLocked = Boolean(signal.minLevel && signal.minLevel > userTierLevel && !isUnlockedByCredit);
@@ -1314,7 +1332,9 @@ const SignalCard: React.FC<SignalCardProps> = ({
   return (
     <div
       onClick={() => {
-        if (isLocked) {
+        if (!isLoggedIn && onLeadToVisitorPage) {
+          onLeadToVisitorPage();
+        } else if (isLocked) {
           onUnlockPrompt(signal);
         } else {
           onSelectSignal(signal);
@@ -1443,7 +1463,11 @@ const SignalCard: React.FC<SignalCardProps> = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onSelectSignal(signal);
+                if (!isLoggedIn && onLeadToVisitorPage) {
+                  onLeadToVisitorPage();
+                } else {
+                  onSelectSignal(signal);
+                }
               }}
               className="w-full py-2.5 px-4 rounded-xl border border-indigo-200/90 bg-white hover:bg-slate-50/80 active:scale-[0.99] transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-2 group/btn"
             >

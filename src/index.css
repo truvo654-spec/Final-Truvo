@@ -680,5 +680,35 @@ div.mt-2.space-y-1 > p.px-2.pb-1::after {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   Platform-Wide Button Icon Removal (for buttons with text + icons)
+   Removes icons from all buttons that contain text content
+   EXCEPT dropdown / select arrow indicators (as explicitly requested)
+   ══════════════════════════════════════════════════════════════════ */
+button[data-has-text-btn="true"] svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+[role="button"][data-has-text-btn="true"] svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+svg[data-btn-has-text-icon="true"] {
+  display: none !important;
+}
+
+/* Immediate CSS pseudo-class selector rule for buttons with text content */
+button:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+button:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > span > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+button:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > div > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+[role="button"]:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+[role="button"]:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > span > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+[role="button"]:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > div > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up) {
+  display: none !important;
+}
+
+/* Ensure all native select dropdowns without absolute Chevron icon have a clean dropdown arrow */
+select:not(.appearance-none) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.25rem !important;
+}
+
 
 

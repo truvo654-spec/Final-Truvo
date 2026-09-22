@@ -161,7 +161,7 @@ export const BrokersMatchingPreferences: React.FC<BrokersMatchingPreferencesProp
         {matchedBrokers.map((item) => (
           <div
             key={item.id}
-            className="rounded-2xl border border-indigo-100/90 dark:border-[#3410D5] bg-white dark:bg-[#1A044D] p-4 sm:p-5 shadow-xs hover:border-indigo-200 dark:hover:border-[#5945F1] transition-all space-y-3.5"
+            className="rounded-2xl border border-slate-200/80 dark:border-[#3410D5] bg-[#F0F3F7] dark:bg-[#1A044D] p-4 sm:p-5 shadow-xs hover:border-indigo-200 dark:hover:border-[#5945F1] transition-all space-y-3.5"
           >
             {/* Top Badge */}
             <div className="flex items-center justify-between">

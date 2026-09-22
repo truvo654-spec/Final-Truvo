@@ -618,23 +618,17 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
               <div className="pl-9 pr-2 space-y-1 py-0.5">
                 {[
                   { id: 'leverage', label: 'Leverage' },
-                  { id: 'market-news', label: 'Market News' },
+                  { id: 'volatility', label: 'Volatility' },
                   { id: 'spread', label: 'Spread' },
                   { id: 'pips', label: 'Pips' },
                   { id: 'margin', label: 'Margin' },
                   { id: 'rebate', label: 'Rebate' },
-                  { id: 'volatility', label: 'Volatility' },
                 ].map((item) => {
                   const isActive = activeTool === item.id;
                   return (
                     <button
                       key={item.id}
                       onClick={() => {
-                        if (item.id === 'market-news') {
-                          onNavigateToTab?.('analysis');
-                          onShowToast?.('Opening Market News & Analysis');
-                          return;
-                        }
                         handleToolChange(item.id as ForexCategory);
                         if (item.id !== 'leverage') {
                           onShowToast?.(`Switched to ${item.label} Calculator`);
