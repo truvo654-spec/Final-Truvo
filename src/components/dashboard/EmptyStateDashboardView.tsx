@@ -1596,12 +1596,14 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
           aria-label="Dashboard Sidebar"
           className="w-full lg:w-[300px] lg:shrink-0 space-y-5 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
-          {/* ── CARD 0: Activity Carousel (Auto-slides every 4s, 1:1 with UPS Next Milestone & UPS Pick up where you left off) ── */}
-          <ActivityCarousel
-            onNavigateToTab={onNavigateToTab}
-            onConnectBroker={handleConnectBrokerAction}
-            onSelectBrokerDetail={handleCardClick}
-          />
+          {/* ── CARD 0: Activity Carousel (Hidden from empty through first-trade; shown once the account is fully active) ── */}
+          {dashboardState === 'active-performance' && (
+            <ActivityCarousel
+              onNavigateToTab={onNavigateToTab}
+              onConnectBroker={handleConnectBrokerAction}
+              onSelectBrokerDetail={handleCardClick}
+            />
+          )}
 
           {/* ── CARD 1: Your Winning Signals (Shown in State 4 & 5 matching Images 04 & 05) ── */}
           {isPerformanceActive && (
