@@ -43,6 +43,7 @@ import { CreditEarningGuideView } from './components/CreditEarningGuideView';
 import { ActivityLogsView } from './components/ActivityLogsView';
 import { AboutUsPage } from './components/AboutUsPage';
 import { ContactUsPage } from './components/ContactUsPage';
+import { DemoPage } from './components/DemoPage';
 import { PublicLandingPage } from './components/PublicLandingPage';
 import { CashbackOverviewPage } from './components/CashbackOverviewPage';
 import { ConnectToTruvoPage } from './components/ConnectToTruvoPage';
@@ -85,6 +86,7 @@ const KNOWN_APP_TABS = new Set([
   'dashboard',
   'landing',
   'home',
+  'demo',
   'brokers',
   'broker-comparison',
   'member-plan',
@@ -1452,6 +1454,8 @@ export default function App() {
           </div>
         )}
         {/* ─── TAB: About Us Page (Exact replica of Reference Design) ─── */}
+        {activeTab === 'demo' && <DemoPage />}
+
         {activeTab === 'about' && (
           <AboutUsPage
             onOpenSignUp={() => {

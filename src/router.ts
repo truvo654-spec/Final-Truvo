@@ -36,6 +36,13 @@ export const ROUTE_REGISTRY: Record<string, RouteItem> = {
     category: 'Home',
     breadcrumbs: ['MarketSyde', 'Home'],
   },
+  demo: {
+    path: '/demo',
+    tab: 'demo',
+    title: 'Demo | MarketSyde',
+    category: 'Demo',
+    breadcrumbs: ['MarketSyde', 'Demo'],
+  },
   // Trade - Signals & Analysis
   signals: {
     path: '/trade/signals',
@@ -402,6 +409,9 @@ export function pathToState(rawPath: string): RouteResolution {
   }
   if (pathname === '/home' || pathname === '/landing') {
     return { tab: 'landing' };
+  }
+  if (pathname === '/demo') {
+    return { tab: 'demo' };
   }
 
   // 2. Trade hierarchy

@@ -297,6 +297,21 @@ export const Header: React.FC<HeaderProps> = ({
               Member Plan
             </button>
 
+            {/* Demo Link (Direct text link, NO chevron) */}
+            <button
+              onClick={() => {
+                setActiveTab('demo');
+                handleCloseImmediately();
+              }}
+              className={`transition-colors py-1 cursor-pointer font-medium text-sm ${
+                activeTab === 'demo'
+                  ? 'text-[#0b1c30] font-bold'
+                  : 'text-slate-800 hover:text-[#5945F1]'
+              }`}
+            >
+              Demo
+            </button>
+
             {/* Community Dropdown Trigger */}
             <div
               className="relative py-4"
@@ -1826,6 +1841,17 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             Member Plan
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('demo');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'demo' ? 'text-[#0b1c30] font-bold' : 'text-[#5338ec]'
+            }`}
+          >
+            Demo
           </button>
 
           {/* Company Modals Triggers in Mobile Drawer */}
