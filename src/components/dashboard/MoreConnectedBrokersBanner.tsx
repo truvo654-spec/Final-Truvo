@@ -6,6 +6,8 @@ export interface MoreConnectedBrokersBannerProps {
   onConnectBroker?: (brokerName: string) => void;
   onNavigateToTab?: (tab: string) => void;
   className?: string;
+  titleOverride?: React.ReactNode;
+  subtitleOverride?: string;
 }
 
 interface BrokerItem {
@@ -134,6 +136,8 @@ export const MoreConnectedBrokersBanner: React.FC<MoreConnectedBrokersBannerProp
   onConnectBroker,
   onNavigateToTab,
   className = '',
+  titleOverride,
+  subtitleOverride,
 }) => {
   return (
     <div
@@ -151,13 +155,17 @@ export const MoreConnectedBrokersBanner: React.FC<MoreConnectedBrokersBannerProp
         {/* ─── TITLE & SUBTITLE (1:1 with Small Banner 3.png) ─── */}
         <div className="text-center space-y-1.5">
           <h2 className="font-display font-extrabold text-xl sm:text-2xl md:text-[28px] leading-tight tracking-tight">
-            <span className="text-[#5945F1]">More Connected Brokers</span>
-            <span className="text-[#FACC15]">.</span>
-            <span className="text-[#5945F1]"> More Opportunitie</span>
-            <span className="text-[#FD02B0]">s.</span>
+            {titleOverride ?? (
+              <>
+                <span className="text-[#5945F1]">More Connected Brokers</span>
+                <span className="text-[#FACC15]">.</span>
+                <span className="text-[#5945F1]"> More Opportunitie</span>
+                <span className="text-[#FD02B0]">s.</span>
+              </>
+            )}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto font-normal">
-            Connect more broker partners and give your trades more ways to earn cashback.
+            {subtitleOverride ?? 'Connect more broker partners and give your trades more ways to earn cashback.'}
           </p>
         </div>
 

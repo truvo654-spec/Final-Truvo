@@ -644,7 +644,7 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
       )}
 
       {/* ─── TOP GREETING HEADER ─── */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-3 sm:gap-4">
         <div>
           {dashboardState === 'empty' ? (
             <div>
@@ -673,13 +673,16 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
 
         <div className="flex items-center gap-2 shrink-0 pt-1">
           {/* ─── LANGUAGE / TONE SWITCHER ─── */}
-          <div className="hidden sm:flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/80">
+          <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1 border border-slate-200/80">
+            <span className="hidden md:inline text-[10px] font-bold text-slate-400 uppercase tracking-wide pl-1.5 pr-0.5">
+              Tone
+            </span>
             {(Object.keys(TONE_LABELS) as CopyTone[]).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setTone(t)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
                   tone === t
                     ? 'bg-white text-[#0b1c30] shadow-xs'
                     : 'text-slate-500 hover:text-slate-700'
@@ -1168,6 +1171,8 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
             onConnectBroker={handleConnectBrokerAction}
             onNavigateToTab={onNavigateToTab}
             className="w-full"
+            titleOverride={copy.moreBrokersTitle}
+            subtitleOverride={copy.moreBrokersSubtitle}
           />
         </div>
       </div>

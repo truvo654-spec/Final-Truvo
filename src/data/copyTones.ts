@@ -43,6 +43,8 @@ interface ToneCopy {
     PromoSlideCopy
   >;
   addWidgetsCta: string;
+  moreBrokersTitle: string;
+  moreBrokersSubtitle: string;
 }
 
 export const COPY_TONES: Record<CopyTone, ToneCopy> = {
@@ -99,6 +101,8 @@ export const COPY_TONES: Record<CopyTone, ToneCopy> = {
       },
     },
     addWidgetsCta: '+ Add widgets',
+    moreBrokersTitle: 'More Connected Brokers. More Opportunities.',
+    moreBrokersSubtitle: 'Connect more broker partners and give your trades more ways to earn cashback.',
   },
   cheekyGamer: {
     greetingSubtitle: () =>
@@ -154,5 +158,7 @@ export const COPY_TONES: Record<CopyTone, ToneCopy> = {
       },
     },
     addWidgetsCta: '+ Customize Your Base',
+    moreBrokersTitle: 'More Squad Members. More Loot Drops.',
+    moreBrokersSubtitle: 'Recruit more broker partners and give every trade more ways to pay you back.',
   },
 };
