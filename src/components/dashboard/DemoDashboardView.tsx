@@ -48,6 +48,7 @@ import { ConnectionUnavailablePopup } from './ConnectionUnavailablePopup';
 import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
 import { MissionCardWidget } from './MissionCardWidget';
 import { PromotionWidget } from './PromotionWidget';
+import { COPY_TONES, CopyTone, TONE_LABELS } from '../../data/copyTones';
 import { LiveInteractiveSparkline } from './LiveInteractiveSparkline';
 import { BorderBeam } from '../ui/BorderBeam';
 import { getNextTierInfo, LEVEL_SCENARIOS, LevelScenarioId } from '../../data/levelScenarios';
@@ -480,46 +481,37 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
 
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1D' | '1W' | '1M' | 'All'>('1M');
   const [isQuickStartOpen, setIsQuickStartOpen] = useState(false);
+  const [tone, setTone] = useState<CopyTone>('default');
+  const copy = COPY_TONES[tone];
   const [completedQuickStartIds, setCompletedQuickStartIds] = useState<Set<string>>(new Set());
 
   // Steps for the Quick Start checklist — mirrors the original Quick Start Guide content.
   // Clicking a step's CTA marks it done (checkbox flips to a checkmark) and navigates onward.
   const QUICK_START_STEPS_BASE = [
     {
-      id: 'choose-broker',
-      title: 'Choose Broker',
-      description: 'Choose yours, or find a better one here',
+      id: 'choose-broker' as const,
       icon: UserPlus,
-      cta: 'Choose',
       onClick: () => onNavigateToTab('brokers'),
     },
     {
-      id: 'link-account',
-      title: 'Link Trading Account',
-      description: 'Connect your account to start tracking',
+      id: 'link-account' as const,
       icon: Link2,
-      cta: 'Link',
       onClick: () => onNavigateToTab('brokers'),
     },
     {
-      id: 'trade-usual',
-      title: 'Trade as Usual',
-      description: 'Keep trading normally on your platform',
+      id: 'trade-usual' as const,
       icon: CandlestickChart,
-      cta: 'Trade',
       onClick: () => onNavigateToTab('signals'),
     },
     {
-      id: 'earn-cashback',
-      title: 'Earn Cashback',
-      description: 'Get paid to trade. Automatically',
+      id: 'earn-cashback' as const,
       icon: DollarSign,
-      cta: 'View',
       onClick: () => onNavigateToTab('cashback-overview'),
     },
   ];
   const QUICK_START_STEPS = QUICK_START_STEPS_BASE.map((step) => ({
     ...step,
+    ...copy.quickStartSteps[step.id],
     completed: completedQuickStartIds.has(step.id),
   }));
   const completedQuickStartCount = QUICK_START_STEPS.filter((s) => s.completed).length;
@@ -662,7 +654,7 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
                 <span className="text-[#FD02B0]">{user.username}!</span>
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-                Look alive. The market won't wait, and we'd hate for you to miss what's next.
+                {copy.greetingSubtitle(user.username)}
               </p>
             </div>
           ) : (
@@ -673,14 +665,32 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
                 <span className="text-[#FD02B0]">!</span>
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-                The market kept moving. Good thing you did too.
+                {copy.returningGreetingSubtitle}
               </p>
             </div>
           )}
         </div>
 
-        {onEnterCustomizeMode && (
-          <div className="flex items-center gap-2 shrink-0 pt-1">
+        <div className="flex items-center gap-2 shrink-0 pt-1">
+          {/* ─── LANGUAGE / TONE SWITCHER ─── */}
+          <div className="hidden sm:flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200/80">
+            {(Object.keys(TONE_LABELS) as CopyTone[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTone(t)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                  tone === t
+                    ? 'bg-white text-[#0b1c30] shadow-xs'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {TONE_LABELS[t]}
+              </button>
+            ))}
+          </div>
+
+          {onEnterCustomizeMode && (
             <button
               onClick={onEnterCustomizeMode}
               className="px-3 py-1.5 rounded-xl border border-indigo-100/90 bg-white hover:bg-indigo-50 text-[#5945F1] flex items-center gap-2 shadow-2xs transition-all cursor-pointer hover:border-indigo-300 font-bold text-xs"
@@ -689,8 +699,8 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
               <Pencil className="w-3.5 h-3.5 stroke-[2]" />
               <span className="hidden sm:inline">Customize</span>
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* ─── QUICK START ACCORDION (Full width, below greeting; collapsible, shows per-step completion) ─── */}
@@ -722,7 +732,7 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
               </div>
             </div>
             <span className="text-sm sm:text-base font-medium text-slate-700 truncate">
-              Start trading in a few steps
+              {copy.quickStartBarLabel}
             </span>
           </div>
 
@@ -836,7 +846,7 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
                 <LimeWalletIcon className="w-11 h-11" />
                 <div>
                   <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
-                    CUMULATIVE CASHBACK
+                    {copy.yourCashbackLabel}
                   </div>
                   <div className="text-3xl sm:text-4xl font-black font-display text-[#0b1c30] leading-tight mt-1">
                     {dashboardState === 'active-performance'
@@ -872,7 +882,7 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
                   ? 'Your cashback earned during the selected period will appear here.'
                   : dashboardState === 'first-trade'
                   ? 'Cashback earned from your first trade with HFM.'
-                  : 'Connect a broker to start earning cashback automatically.'}
+                  : copy.yourCashbackEmptyDescription}
               </p>
             </div>
             </div>
@@ -887,17 +897,17 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
                   colorTo="#FD02B0"
                 />
                 <h3 className="font-display font-extrabold text-xl sm:text-[22px] text-[#0b1c30] tracking-tight">
-                  Choose a Broker
+                  {copy.chooseBrokerTitle}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-[220px]">
-                  Start trading with a connected broker.
+                  {copy.chooseBrokerSubtitle}
                 </p>
                 <button
                   type="button"
                   onClick={() => onNavigateToTab('brokers')}
                   className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#5945F1] hover:bg-[#4834e0] text-white text-sm font-bold px-5 py-2.5 shadow-xs transition-all cursor-pointer active:scale-95"
                 >
-                  <span>Choose Broker</span>
+                  <span>{copy.chooseBrokerCta}</span>
                 </button>
               </div>
             ) : dashboardState === 'pending' ||
@@ -1137,7 +1147,7 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
           </div>
 
           {/* ─── PROMOTIONS CAROUSEL (Matching reference layout: two promo banners with countdown timers) ─── */}
-          <PromotionWidget />
+          <PromotionWidget tone={tone} />
 
           {/* ─── MISSION CARD WIDGET (Left, widened for readability) + INSTRUMENT ANALYSIS WIDGET (Right) ─── */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">

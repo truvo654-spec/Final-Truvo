@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Coins, Users, Flame, Gift, Play, Pause } from 'lucide-react';
+import { COPY_TONES, CopyTone } from '../../data/copyTones';
 
 interface PromoSlide {
-  id: string;
+  id: 'double-cashback-weekend' | 'referral-bonus' | 'streak-challenge' | 'new-broker-welcome';
   title: string;
   description: string;
   theme: 'ink' | 'violet' | 'magenta' | 'deep';
@@ -203,48 +204,55 @@ function PromoGraphic({ slide }: { slide: PromoSlide }) {
   );
 }
 
-const PromoCard = React.forwardRef<HTMLDivElement, { slide: PromoSlide }>(({ slide }, ref) => {
-  const { days, hours, minutes, seconds } = useCountdown(slide.targetDate);
-  const bgClass = THEME_BG[slide.theme];
+const PromoCard = React.forwardRef<HTMLDivElement, { slide: PromoSlide; tone: CopyTone }>(
+  ({ slide, tone }, ref) => {
+    const { days, hours, minutes, seconds } = useCountdown(slide.targetDate);
+    const bgClass = THEME_BG[slide.theme];
+    const toneCopy = COPY_TONES[tone].promoSlides[slide.id];
 
-  return (
-    <div
-      ref={ref}
-      className={`relative overflow-hidden rounded-2xl ${bgClass} p-6 sm:p-8 min-h-[290px] sm:min-h-[340px] h-full flex items-center justify-between gap-4 shadow-2xs interactive-card`}
-    >
-      {/* Decorative glow */}
-      <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+    return (
+      <div
+        ref={ref}
+        className={`relative overflow-hidden rounded-2xl ${bgClass} p-6 sm:p-8 min-h-[290px] sm:min-h-[340px] h-full flex items-center justify-between gap-4 shadow-2xs interactive-card`}
+      >
+        {/* Decorative glow */}
+        <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-white/5 blur-2xl pointer-events-none" />
 
-      <div className="relative z-10 min-w-0 flex-1">
-        <h3 className="font-display text-base sm:text-xl font-extrabold text-white leading-snug">
-          {slide.title}
-        </h3>
-        <p className="text-[11px] sm:text-sm text-white/55 mt-2 leading-snug line-clamp-2">
-          {slide.description}
-        </p>
+        <div className="relative z-10 min-w-0 flex-1">
+          <h3 className="font-display text-base sm:text-xl font-extrabold text-white leading-snug">
+            {toneCopy.title}
+          </h3>
+          <p className="text-[11px] sm:text-sm text-white/55 mt-2 leading-snug line-clamp-2">
+            {toneCopy.description}
+          </p>
 
-        <div className="flex items-center gap-2 sm:gap-3 mt-6 sm:mt-8">
-          <CountdownBlock value={days} label="Days" />
-          <span className="text-white/25 font-bold text-sm pb-3">:</span>
-          <CountdownBlock value={hours} label="Hours" />
-          <span className="text-white/25 font-bold text-sm pb-3">:</span>
-          <CountdownBlock value={minutes} label="Min" />
-          <span className="text-white/25 font-bold text-sm pb-3">:</span>
-          <CountdownBlock value={seconds} label="Sec" />
+          <div className="flex items-center gap-2 sm:gap-3 mt-6 sm:mt-8">
+            <CountdownBlock value={days} label="Days" />
+            <span className="text-white/25 font-bold text-sm pb-3">:</span>
+            <CountdownBlock value={hours} label="Hours" />
+            <span className="text-white/25 font-bold text-sm pb-3">:</span>
+            <CountdownBlock value={minutes} label="Min" />
+            <span className="text-white/25 font-bold text-sm pb-3">:</span>
+            <CountdownBlock value={seconds} label="Sec" />
+          </div>
         </div>
-      </div>
 
-      <PromoGraphic slide={slide} />
-    </div>
-  );
-});
+        <PromoGraphic slide={slide} />
+      </div>
+    );
+  }
+);
 PromoCard.displayName = 'PromoCard';
 
 interface PromotionWidgetProps {
   slides?: PromoSlide[];
+  tone?: CopyTone;
 }
 
-export const PromotionWidget: React.FC<PromotionWidgetProps> = ({ slides = PROMO_SLIDES }) => {
+export const PromotionWidget: React.FC<PromotionWidgetProps> = ({
+  slides = PROMO_SLIDES,
+  tone = 'default',
+}) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -322,7 +330,7 @@ export const PromotionWidget: React.FC<PromotionWidgetProps> = ({ slides = PROMO
             }}
             className="snap-start shrink-0 w-[88%] sm:w-[46%]"
           >
-            <PromoCard slide={slide} />
+            <PromoCard slide={slide} tone={tone} />
           </div>
         ))}
       </div>
