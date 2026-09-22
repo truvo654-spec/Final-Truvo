@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import { InteractiveBrokersGraphic } from './submenu/InteractiveBrokersGraphic';
 import { InteractiveTradeGraphic } from './submenu/InteractiveTradeGraphic';
+import { useTone } from '../context/ToneContext';
+import { TONE_LABELS, CopyTone } from '../data/copyTones';
 import { InteractiveCommunityGraphic } from './submenu/InteractiveCommunityGraphic';
 import { InteractiveCompanyGraphic } from './submenu/InteractiveCompanyGraphic';
 import { InteractiveCompanySubmenuGraphic } from './submenu/InteractiveCompanySubmenuGraphic';
@@ -103,6 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { theme, setTheme, toggleTheme } = useTheme();
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const { tone, setTone, copy } = useTone();
 
   const activeTradeFeature: 'signals' | 'analysis' | 'calculators' | 'converters' =
     hoveredTradeOption ||
@@ -314,7 +317,7 @@ export const Header: React.FC<HeaderProps> = ({
                     : 'text-slate-800 hover:text-[#5945F1]'
                 }`}
               >
-                <span>Community</span>
+                <span>{copy.navLabels.community}</span>
                 <ChevronDown
                   className={`w-3.5 h-3.5 transition-transform duration-200 stroke-[2] ${
                     activeHoverMenu === 'community' ? 'rotate-180 text-[#5945F1]' : 'text-slate-700'
@@ -368,6 +371,25 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Search Input & User Profile Pill - Exactly matching Total Nav Bar.png */}
         <div className="flex items-center gap-3 sm:gap-3.5">
+          {/* ─── GLOBAL LANGUAGE / TONE SWITCHER (applies platform-wide) ─── */}
+          <div className="hidden lg:flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-slate-200/80 shrink-0">
+            {(Object.keys(TONE_LABELS) as CopyTone[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTone(t)}
+                title={`Switch platform tone to ${TONE_LABELS[t]}`}
+                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  tone === t
+                    ? 'bg-white text-[#0b1c30] shadow-xs'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {TONE_LABELS[t]}
+              </button>
+            ))}
+          </div>
+
           {/* Search Input Box */}
           <div className="hidden md:flex items-center relative">
             <div
@@ -1665,7 +1687,7 @@ export const Header: React.FC<HeaderProps> = ({
               activeTab === 'dashboard' ? 'text-[#5338ec]' : 'text-slate-700'
             }`}
           >
-            Dashboard
+            {copy.navLabels.dashboard}
           </button>
           <button
             onClick={() => {
@@ -1744,7 +1766,7 @@ export const Header: React.FC<HeaderProps> = ({
               activeTab === 'leaderboard' ? 'text-[#5338ec]' : 'text-slate-700'
             }`}
           >
-            Leaderboard
+            {copy.navLabels.leaderboard}
           </button>
           <button
             onClick={() => {

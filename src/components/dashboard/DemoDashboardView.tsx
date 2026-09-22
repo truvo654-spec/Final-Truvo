@@ -49,6 +49,7 @@ import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
 import { MissionCardWidget } from './MissionCardWidget';
 import { PromotionWidget } from './PromotionWidget';
 import { COPY_TONES, CopyTone, TONE_LABELS } from '../../data/copyTones';
+import { useTone } from '../../context/ToneContext';
 import { LiveInteractiveSparkline } from './LiveInteractiveSparkline';
 import { BorderBeam } from '../ui/BorderBeam';
 import { getNextTierInfo, LEVEL_SCENARIOS, LevelScenarioId } from '../../data/levelScenarios';
@@ -481,8 +482,7 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
 
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1D' | '1W' | '1M' | 'All'>('1M');
   const [isQuickStartOpen, setIsQuickStartOpen] = useState(false);
-  const [tone, setTone] = useState<CopyTone>('default');
-  const copy = COPY_TONES[tone];
+  const { tone, setTone, copy } = useTone();
   const [completedQuickStartIds, setCompletedQuickStartIds] = useState<Set<string>>(new Set());
 
   // Steps for the Quick Start checklist — mirrors the original Quick Start Guide content.

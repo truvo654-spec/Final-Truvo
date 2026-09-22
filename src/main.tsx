@@ -3,11 +3,14 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { ThemeProvider } from './theme/ThemeContext';
+import { ToneProvider } from './context/ToneContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <App />
+      <ToneProvider>
+        <App />
+      </ToneProvider>
     </ThemeProvider>
   </StrictMode>,
 );

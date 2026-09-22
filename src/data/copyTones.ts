@@ -24,7 +24,7 @@ interface PromoSlideCopy {
   description: string;
 }
 
-interface ToneCopy {
+export interface ToneCopy {
   greetingSubtitle: (name: string) => string;
   returningGreetingSubtitle: string;
   quickStartBarLabel: string;
@@ -45,6 +45,14 @@ interface ToneCopy {
   addWidgetsCta: string;
   moreBrokersTitle: string;
   moreBrokersSubtitle: string;
+  navLabels: {
+    dashboard: string;
+    brokers: string;
+    community: string;
+    leaderboard: string;
+    signals: string;
+    wallet: string;
+  };
 }
 
 export const COPY_TONES: Record<CopyTone, ToneCopy> = {
@@ -103,6 +111,14 @@ export const COPY_TONES: Record<CopyTone, ToneCopy> = {
     addWidgetsCta: '+ Add widgets',
     moreBrokersTitle: 'More Connected Brokers. More Opportunities.',
     moreBrokersSubtitle: 'Connect more broker partners and give your trades more ways to earn cashback.',
+    navLabels: {
+      dashboard: 'Dashboard',
+      brokers: 'Broker Directory',
+      community: 'Community',
+      leaderboard: 'Leaderboard',
+      signals: 'Trading Signals',
+      wallet: 'Wallet',
+    },
   },
   cheekyGamer: {
     greetingSubtitle: () =>
@@ -160,5 +176,13 @@ export const COPY_TONES: Record<CopyTone, ToneCopy> = {
     addWidgetsCta: '+ Customize Your Base',
     moreBrokersTitle: 'More Squad Members. More Loot Drops.',
     moreBrokersSubtitle: 'Recruit more broker partners and give every trade more ways to pay you back.',
+    navLabels: {
+      dashboard: 'Your Base',
+      brokers: 'Broker Roster',
+      community: 'The Guild',
+      leaderboard: 'Hall of Flame',
+      signals: 'Intel Drops',
+      wallet: 'Loot Stash',
+    },
   },
 };
