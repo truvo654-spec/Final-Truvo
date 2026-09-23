@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTone } from '../context/ToneContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Minus, Check, Send } from 'lucide-react';
 
@@ -135,6 +136,7 @@ export const ContactUsPage: React.FC<ContactUsPageProps> = ({
   onShowToast,
   onNavigateToTab,
 }) => {
+  const { copy } = useTone();
   // Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -190,9 +192,9 @@ export const ContactUsPage: React.FC<ContactUsPageProps> = ({
 
         {/* Subtitle */}
         <p className="text-base sm:text-lg md:text-xl text-slate-800 dark:text-slate-200">
-          Have a question or need help?{' '}
+          {copy.contactUs.subtitle}{' '}
           <strong className="font-bold text-slate-900 dark:text-white">
-            Hit us up. We're around.
+            {copy.contactUs.subtitleBold}
           </strong>
         </p>
       </section>

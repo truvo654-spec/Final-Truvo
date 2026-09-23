@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTone } from '../../context/ToneContext';
 import { UserProfile } from '../../types';
 import { Gem, ArrowRight, Sparkles, Check, ChevronRight, UserCheck, Eye } from 'lucide-react';
 import { LevelScenarioId } from '../../data/levelScenarios';
@@ -27,6 +28,7 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
   onToggleLogin,
   onSelectLevelScenario,
 }) => {
+  const { copy } = useTone();
   // Allow toggling between Guest mode and Member mode for preview/testing
   const [viewModeOverride, setViewModeOverride] = useState<'guest' | 'member' | null>(null);
 
@@ -181,13 +183,13 @@ export const MembershipPlanPage: React.FC<MembershipPlanPageProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-10">
           {/* Giant "Get More." with hot pink dot */}
           <div className="font-display text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter text-[#5945F1] leading-none select-none">
-            Get More<span className="text-[#FE01B1]">.</span>
+            {copy.memberPlanHero.bigWord}<span className="text-[#FE01B1]">.</span>
           </div>
 
           {/* Right Description */}
           <div className="text-slate-600 font-medium text-base sm:text-lg max-w-xl leading-snug">
-            <p>The higher your level, the better the cashback, perks, and rewards.</p>
-            <p className="font-bold text-[#0b1c30] mt-1">Simple as that.</p>
+            <p>{copy.memberPlanHero.descriptionLine1}</p>
+            <p className="font-bold text-[#0b1c30] mt-1">{copy.memberPlanHero.descriptionLine2}</p>
           </div>
         </div>
       </div>

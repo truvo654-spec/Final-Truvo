@@ -69,6 +69,15 @@ export interface ToneCopy {
     brokerComparison: string;
     memberPlan: string;
   };
+  memberPlanHero: {
+    bigWord: string;
+    descriptionLine1: string;
+    descriptionLine2: string;
+  };
+  contactUs: {
+    subtitle: string;
+    subtitleBold: string;
+  };
 }
 
 export const COPY_TONES: Record<CopyTone, ToneCopy> = {
@@ -167,6 +176,15 @@ export const COPY_TONES: Record<CopyTone, ToneCopy> = {
       brokerComparison: 'Compare cashback rates, spreads, and perks side by side before you connect.',
       memberPlan: 'See your current tier, perks, and what it takes to level up.',
     },
+    memberPlanHero: {
+      bigWord: 'Get More',
+      descriptionLine1: 'The higher your level, the better the cashback, perks, and rewards.',
+      descriptionLine2: 'Simple as that.',
+    },
+    contactUs: {
+      subtitle: 'Have a question or need help?',
+      subtitleBold: "Hit us up. We're around.",
+    },
   },
   cheekyGamer: {
     greetingSubtitle: () =>
@@ -263,6 +281,15 @@ export const COPY_TONES: Record<CopyTone, ToneCopy> = {
       pointsCredits: "Everything you've looted so far, plus what you're sleeping on.",
       brokerComparison: 'Stack cashback rates, spreads, and perks head-to-head before you recruit one.',
       memberPlan: 'Your current rank, your perks, and what it takes to level up.',
+    },
+    memberPlanHero: {
+      bigWord: 'Level Up',
+      descriptionLine1: 'The higher your rank, the fatter the loot drops and perks.',
+      descriptionLine2: "It's basically a cheat code, except it's legal.",
+    },
+    contactUs: {
+      subtitle: 'Stuck? Confused? Just bored?',
+      subtitleBold: "Hit us up. We don't bite (usually).",
     },
   },
 };
