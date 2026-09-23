@@ -72,6 +72,7 @@ import { AuthModal } from './components/AuthModal';
 import { WelcomeOnboardingModal } from './components/onboarding/WelcomeOnboardingModal';
 import { DashboardTourOverlay, TourStepId } from './components/onboarding/DashboardTourOverlay';
 import { ErrorPageView, Error404Page, Error500Page, Error503Page } from './components/errors';
+import { PlaceholderDemoPage } from './components/PlaceholderDemoPage';
 import { Sparkles, Trophy, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pathToState, tabToPath, getRouteMeta } from './router';
@@ -88,6 +89,8 @@ const KNOWN_APP_TABS = new Set([
   'landing',
   'home',
   'demo',
+  'demo-2',
+  'demo-3',
   'brokers',
   'broker-comparison',
   'member-plan',
@@ -793,6 +796,8 @@ export default function App() {
           activeTab === 'landing' ||
           activeTab === 'home' ||
           activeTab === 'demo' ||
+          activeTab === 'demo-2' ||
+          activeTab === 'demo-3' ||
           activeTab === '404' ||
           activeTab === 'not-found' ||
           activeTab === '500' ||
@@ -968,6 +973,26 @@ export default function App() {
             }}
             onSelectLevelScenario={handleSelectLevelScenario}
             onStartTour={handleStartOnboarding}
+          />
+        )}
+
+        {/* ─── TAB: Demo 2 (placeholder — swap for a real build later) ─── */}
+        {activeTab === 'demo-2' && (
+          <PlaceholderDemoPage
+            title="Demo 2"
+            description="This is placeholder space for the second demo variant. Drop the real Demo 2 experience in here whenever it's ready."
+            onNavigateHome={() => setActiveTab('dashboard')}
+            onNavigateToDemo1={() => setActiveTab('demo')}
+          />
+        )}
+
+        {/* ─── TAB: Demo 3 (placeholder — swap for a real build later) ─── */}
+        {activeTab === 'demo-3' && (
+          <PlaceholderDemoPage
+            title="Demo 3"
+            description="This is placeholder space for the third demo variant. Drop the real Demo 3 experience in here whenever it's ready."
+            onNavigateHome={() => setActiveTab('dashboard')}
+            onNavigateToDemo1={() => setActiveTab('demo')}
           />
         )}
 

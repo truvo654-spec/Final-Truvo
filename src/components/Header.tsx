@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
   isTourActive,
   tourStep,
 }) => {
-  const [activeHoverMenu, setActiveHoverMenu] = useState<'trade' | 'brokers' | 'community' | 'company' | null>(null);
+  const [activeHoverMenu, setActiveHoverMenu] = useState<'trade' | 'brokers' | 'community' | 'company' | 'demo' | null>(null);
   const [hoveredBrokerOption, setHoveredBrokerOption] = useState<'brokers' | 'broker-comparison' | null>(null);
   const [hoveredTradeOption, setHoveredTradeOption] = useState<'signals' | 'analysis' | 'calculators' | 'converters' | null>(null);
   const [hoveredCommunityOption, setHoveredCommunityOption] = useState<string | null>(null);
@@ -174,7 +174,7 @@ export const Header: React.FC<HeaderProps> = ({
     }
   }, [isTourActive, tourStep]);
 
-  const handleMouseEnter = (menu: 'trade' | 'brokers' | 'community' | 'company') => {
+  const handleMouseEnter = (menu: 'trade' | 'brokers' | 'community' | 'company' | 'demo') => {
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
@@ -326,20 +326,72 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
-            {/* Demo Link (Direct text link, NO chevron, same style as Member Plan) */}
-            <button
-              onClick={() => {
-                setActiveTab('demo');
-                handleCloseImmediately();
-              }}
-              className={`transition-colors py-1 cursor-pointer font-medium text-sm ${
-                activeTab === 'demo'
-                  ? 'text-[#0b1c30] font-bold'
-                  : 'text-slate-800 hover:text-[#5945F1]'
-              }`}
+            {/* Demo Dropdown Trigger */}
+            <div
+              className="relative py-4"
+              onMouseEnter={() => handleMouseEnter('demo')}
+              onMouseLeave={handleMouseLeave}
             >
-              Demo
-            </button>
+              <button
+                onClick={() => {
+                  setActiveTab('demo');
+                  handleCloseImmediately();
+                }}
+                className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
+                  activeHoverMenu === 'demo' || activeTab === 'demo' || activeTab === 'demo-2' || activeTab === 'demo-3'
+                    ? 'text-[#5945F1] font-semibold'
+                    : 'text-slate-800 hover:text-[#5945F1]'
+                }`}
+              >
+                <span>Demo</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 stroke-[2] ${
+                    activeHoverMenu === 'demo' ? 'rotate-180 text-[#5945F1]' : 'text-slate-700'
+                  }`}
+                />
+              </button>
+
+              {/* Demo Dropdown Panel — anchored directly under the Demo trigger */}
+              {activeHoverMenu === 'demo' && (
+                <div className="absolute top-full left-0 pt-2 z-50 animate-in fade-in zoom-in-98 duration-150">
+                  {/* Bridging shield to prevent flicker on mouse travel */}
+                  <div className="absolute -top-1 left-0 right-0 h-3 bg-transparent" />
+
+                  <div className="w-56 bg-white rounded-2xl p-2 shadow-2xl border border-slate-200/90 relative overflow-hidden">
+                    {[
+                      { id: 'demo', label: 'Demo 1', desc: 'Current demo dashboard' },
+                      { id: 'demo-2', label: 'Demo 2', desc: 'Preview build' },
+                      { id: 'demo-3', label: 'Demo 3', desc: 'Preview build' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          handleCloseImmediately();
+                        }}
+                        className={`w-full flex items-center justify-between gap-2 text-left px-3.5 py-2.5 rounded-xl transition-all cursor-pointer group ${
+                          activeTab === item.id ? 'bg-indigo-50/80' : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <div>
+                          <div
+                            className={`font-bold text-sm leading-tight transition-colors ${
+                              activeTab === item.id ? 'text-[#5945F1]' : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                            }`}
+                          >
+                            {item.label}
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">{item.desc}</div>
+                        </div>
+                        {activeTab === item.id && (
+                          <div className="w-2 h-2 rounded-full bg-[#5945F1] shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Company Dropdown Trigger */}
             <div
@@ -1610,6 +1662,8 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
         )}
+
+        {/* Demo Dropdown Panel (moved next to trigger — see closing bracket comment above) */}
       </div>
 
       {/* Mobile Drawer Navigation */}
@@ -1864,6 +1918,46 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Member Plan
           </button>
+
+          {/* Demo Triggers in Mobile Drawer */}
+          <div className="pt-2 border-t border-slate-100 flex flex-col space-y-1">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
+              Demo
+            </span>
+            <button
+              onClick={() => {
+                setActiveTab('demo');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full py-1.5 text-left text-sm font-semibold ${
+                activeTab === 'demo' ? 'text-[#5338ec]' : 'text-slate-700 hover:text-[#5338ec]'
+              }`}
+            >
+              Demo 1
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('demo-2');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full py-1.5 text-left text-sm font-semibold ${
+                activeTab === 'demo-2' ? 'text-[#5338ec]' : 'text-slate-700 hover:text-[#5338ec]'
+              }`}
+            >
+              Demo 2
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('demo-3');
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full py-1.5 text-left text-sm font-semibold ${
+                activeTab === 'demo-3' ? 'text-[#5338ec]' : 'text-slate-700 hover:text-[#5338ec]'
+              }`}
+            >
+              Demo 3
+            </button>
+          </div>
 
           {/* Company Modals Triggers in Mobile Drawer */}
           <div className="pt-2 border-t border-slate-100 flex flex-col space-y-1">
