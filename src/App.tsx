@@ -28,6 +28,7 @@ import { Header } from './components/Header';
 import { ReferenceDashboard } from './components/ReferenceDashboard';
 import { EmptyStateDashboardView } from './components/dashboard/EmptyStateDashboardView';
 import { DemoDashboardView } from './components/dashboard/DemoDashboardView';
+import { Demo2DashboardView } from './components/dashboard/Demo2DashboardView';
 import { DashboardBentoGrid } from './components/DashboardBentoGrid';
 import { BrokerDirectory } from './components/BrokerDirectory';
 import { BrokerListPage } from './components/brokers/BrokerListPage';
@@ -72,7 +73,6 @@ import { AuthModal } from './components/AuthModal';
 import { WelcomeOnboardingModal } from './components/onboarding/WelcomeOnboardingModal';
 import { DashboardTourOverlay, TourStepId } from './components/onboarding/DashboardTourOverlay';
 import { ErrorPageView, Error404Page, Error500Page, Error503Page } from './components/errors';
-import { PlaceholderDemoPage } from './components/PlaceholderDemoPage';
 import { Sparkles, Trophy, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { pathToState, tabToPath, getRouteMeta } from './router';
@@ -976,23 +976,70 @@ export default function App() {
           />
         )}
 
-        {/* ─── TAB: Demo 2 (placeholder — swap for a real build later) ─── */}
+        {/* ─── TAB: Demo 2 (Binance-inspired home layout, built from real dashboard widgets) ─── */}
         {activeTab === 'demo-2' && (
-          <PlaceholderDemoPage
-            title="Demo 2"
-            description="This is placeholder space for the second demo variant. Drop the real Demo 2 experience in here whenever it's ready."
-            onNavigateHome={() => setActiveTab('dashboard')}
-            onNavigateToDemo1={() => setActiveTab('demo')}
+          <Demo2DashboardView
+            user={user}
+            signals={signals}
+            brokers={brokers}
+            missions={missions}
+            onUpdateMissions={setMissions}
+            quickSteps={quickSteps}
+            onStepClick={handleStepClick}
+            onToggleStep={handleToggleStep}
+            onSelectLevelScenario={handleSelectLevelScenario}
+            showCashbackInsteadOfLevel
+            compactProfile
+            onOpenConnectModal={(broker) => {
+              setSelectedBrokerForConnect(broker || brokers[0]);
+              setIsConnectModalOpen(true);
+            }}
+            onOpenLedger={() => setIsLedgerOpen(true)}
+            onNavigateToTab={setActiveTab}
+            onNavigateToConnectBroker={(broker) => {
+              if (broker) setSelectedBrokerForConnect(broker);
+              setActiveTab('connect-to-truvo');
+            }}
+            onSelectSignal={(sig) => {
+              setSelectedSignal(sig);
+              setIsSignalModalOpen(true);
+            }}
+            onShowToast={showToast}
           />
         )}
 
-        {/* ─── TAB: Demo 3 (placeholder — swap for a real build later) ─── */}
+        {/* ─── TAB: Demo 3 (Bybit-inspired home layout, built from real dashboard widgets) ─── */}
         {activeTab === 'demo-3' && (
-          <PlaceholderDemoPage
-            title="Demo 3"
-            description="This is placeholder space for the third demo variant. Drop the real Demo 3 experience in here whenever it's ready."
-            onNavigateHome={() => setActiveTab('dashboard')}
-            onNavigateToDemo1={() => setActiveTab('demo')}
+          <Demo2DashboardView
+            user={user}
+            signals={signals}
+            brokers={brokers}
+            missions={missions}
+            onUpdateMissions={setMissions}
+            quickSteps={quickSteps}
+            onStepClick={handleStepClick}
+            onToggleStep={handleToggleStep}
+            onSelectLevelScenario={handleSelectLevelScenario}
+            showCashbackInsteadOfLevel
+            showCashbackInGetStarted={false}
+            compactProfile
+            communityBesideMarkets
+            getStartedStepperStyle
+            onOpenConnectModal={(broker) => {
+              setSelectedBrokerForConnect(broker || brokers[0]);
+              setIsConnectModalOpen(true);
+            }}
+            onOpenLedger={() => setIsLedgerOpen(true)}
+            onNavigateToTab={setActiveTab}
+            onNavigateToConnectBroker={(broker) => {
+              if (broker) setSelectedBrokerForConnect(broker);
+              setActiveTab('connect-to-truvo');
+            }}
+            onSelectSignal={(sig) => {
+              setSelectedSignal(sig);
+              setIsSignalModalOpen(true);
+            }}
+            onShowToast={showToast}
           />
         )}
 

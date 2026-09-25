@@ -48,7 +48,6 @@ import { ConnectionUnavailablePopup } from './ConnectionUnavailablePopup';
 import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
 import { MissionCardWidget } from './MissionCardWidget';
 import { PromotionWidget } from './PromotionWidget';
-import { COPY_TONES, CopyTone, TONE_LABELS } from '../../data/copyTones';
 import { useTone } from '../../context/ToneContext';
 import { LiveInteractiveSparkline } from './LiveInteractiveSparkline';
 import { BorderBeam } from '../ui/BorderBeam';
@@ -482,7 +481,7 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
 
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1D' | '1W' | '1M' | 'All'>('1M');
   const [isQuickStartOpen, setIsQuickStartOpen] = useState(false);
-  const { tone, setTone, copy } = useTone();
+  const { tone, copy } = useTone();
   const [completedQuickStartIds, setCompletedQuickStartIds] = useState<Set<string>>(new Set());
 
   // Steps for the Quick Start checklist — mirrors the original Quick Start Guide content.
@@ -672,27 +671,6 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0 pt-1">
-          {/* ─── LANGUAGE / TONE SWITCHER ─── */}
-          <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1 border border-slate-200/80">
-            <span className="hidden md:inline text-[10px] font-bold text-slate-400 uppercase tracking-wide pl-1.5 pr-0.5">
-              Tone
-            </span>
-            {(Object.keys(TONE_LABELS) as CopyTone[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTone(t)}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  tone === t
-                    ? 'bg-white text-[#0b1c30] shadow-xs'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {TONE_LABELS[t]}
-              </button>
-            ))}
-          </div>
-
           {onEnterCustomizeMode && (
             <button
               onClick={onEnterCustomizeMode}
@@ -912,6 +890,34 @@ export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
                 >
                   <span>{copy.chooseBrokerCta}</span>
                 </button>
+
+                {/* Broker logo stack */}
+                <div className="mt-5 flex items-center">
+                  {brokers.slice(0, 4).map((broker, index) => {
+                    const stackColors = ['#5945F1', '#F97316', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6'];
+                    return (
+                      <div
+                        key={broker.id}
+                        title={broker.name}
+                        className="w-9 h-9 rounded-full border-2 border-white shadow-2xs flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                        style={{
+                          backgroundColor: stackColors[index % stackColors.length],
+                          marginLeft: index > 0 ? '-10px' : 0,
+                        }}
+                      >
+                        {broker.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    );
+                  })}
+                  {brokers.length > 4 && (
+                    <div
+                      className="flex w-9 h-9 items-center justify-center rounded-full border-2 border-white shadow-2xs bg-white text-[10px] font-bold text-slate-500 shrink-0"
+                      style={{ marginLeft: '-10px' }}
+                    >
+                      +{brokers.length - 4}
+                    </div>
+                  )}
+                </div>
               </div>
             ) : dashboardState === 'pending' ||
               dashboardState === 'approved' ||

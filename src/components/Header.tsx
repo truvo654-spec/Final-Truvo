@@ -28,7 +28,6 @@ import {
 import { InteractiveBrokersGraphic } from './submenu/InteractiveBrokersGraphic';
 import { InteractiveTradeGraphic } from './submenu/InteractiveTradeGraphic';
 import { useTone } from '../context/ToneContext';
-import { TONE_LABELS, CopyTone } from '../data/copyTones';
 import { InteractiveCommunityGraphic } from './submenu/InteractiveCommunityGraphic';
 import { InteractiveCompanyGraphic } from './submenu/InteractiveCompanyGraphic';
 import { InteractiveCompanySubmenuGraphic } from './submenu/InteractiveCompanySubmenuGraphic';
@@ -105,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { theme, setTheme, toggleTheme } = useTheme();
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const { tone, setTone, copy } = useTone();
+  const { copy } = useTone();
 
   const activeTradeFeature: 'signals' | 'analysis' | 'calculators' | 'converters' =
     hoveredTradeOption ||
@@ -360,8 +359,8 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="w-56 bg-white rounded-2xl p-2 shadow-2xl border border-slate-200/90 relative overflow-hidden">
                     {[
                       { id: 'demo', label: 'Demo 1', desc: 'Current demo dashboard' },
-                      { id: 'demo-2', label: 'Demo 2', desc: 'Preview build' },
-                      { id: 'demo-3', label: 'Demo 3', desc: 'Preview build' },
+                      { id: 'demo-2', label: 'Demo 2', desc: 'Binance-style home layout' },
+                      { id: 'demo-3', label: 'Demo 3', desc: 'Same as Demo 2' },
                     ].map((item) => (
                       <button
                         key={item.id}
@@ -381,7 +380,6 @@ export const Header: React.FC<HeaderProps> = ({
                           >
                             {item.label}
                           </div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">{item.desc}</div>
                         </div>
                         {activeTab === item.id && (
                           <div className="w-2 h-2 rounded-full bg-[#5945F1] shrink-0" />
@@ -423,25 +421,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Search Input & User Profile Pill - Exactly matching Total Nav Bar.png */}
         <div className="flex items-center gap-3 sm:gap-3.5">
-          {/* ─── GLOBAL LANGUAGE / TONE SWITCHER (applies platform-wide) ─── */}
-          <div className="hidden lg:flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-slate-200/80 shrink-0">
-            {(Object.keys(TONE_LABELS) as CopyTone[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTone(t)}
-                title={`Switch platform tone to ${TONE_LABELS[t]}`}
-                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  tone === t
-                    ? 'bg-white text-[#0b1c30] shadow-xs'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {TONE_LABELS[t]}
-              </button>
-            ))}
-          </div>
-
           {/* Search Input Box */}
           <div className="hidden md:flex items-center relative">
             <div
