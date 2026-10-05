@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Search, Lock, Check, X, Clock, Bookmark, BookmarkCheck, ShieldCheck } from 'lucide-react';
 import { Broker } from '../../types';
-import { PROMOTIONS, Promotion, PromoAsset } from '../../data/promotionsData';
+import { PROMOTIONS, Promotion, PromoAsset, PromoType, PROMO_TYPES } from '../../data/promotionsData';
 import { PLAN_RANK, planFromTier, PLAN_LABEL, PillTabs } from '../portfolio/portfolioUi';
 
 type Tab = 'all' | 'drops' | 'mine';
@@ -48,6 +48,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   const [tab, setTab] = useState<Tab>('all');
   const [search, setSearch] = useState('');
   const [assets, setAssets] = useState<PromoAsset[]>([]);
+  const [types, setTypes] = useState<PromoType[]>([]);
   const [eligibleOnly, setEligibleOnly] = useState(false);
   const [sort, setSort] = useState<Sort>('ending');
   const [claimed, setClaimed] = useState<string[]>([]);
@@ -64,18 +65,37 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
     return { ok: true };
   };
 
-  const list = useMemo(() => {
+  /** One predicate for every filter, so the type counts always match what you would get. */
+  const passes = (p: Promotion, skipType: boolean) => {
     const q = search.trim().toLowerCase();
-    return PROMOTIONS.filter((p) => {
-      if (tab === 'drops' && !p.premiumDrop) return false;
-      if (tab === 'mine' && !claimed.includes(p.id) && !saved.includes(p.id)) return false;
-      if (assets.length && !p.assets.some((a) => assets.includes(a))) return false;
-      if (eligibleOnly && !status(p).ok) return false;
-      if (q && !(p.title.toLowerCase().includes(q) || p.brokerName.toLowerCase().includes(q) || p.kind.toLowerCase().includes(q))) return false;
-      return true;
-    }).sort((a, b) => (sort === 'ending' ? a.endsInDays - b.endsInDays : sort === 'newest' ? a.addedDaysAgo - b.addedDaysAgo : a.brokerName.localeCompare(b.brokerName)));
+    if (tab === 'drops' && !p.premiumDrop) return false;
+    if (tab === 'mine' && !claimed.includes(p.id) && !saved.includes(p.id)) return false;
+    if (!skipType && types.length && !types.includes(p.type)) return false;
+    if (assets.length && !p.assets.some((a) => assets.includes(a))) return false;
+    if (eligibleOnly && !status(p).ok) return false;
+    if (q && !(p.title.toLowerCase().includes(q) || p.brokerName.toLowerCase().includes(q) || p.kind.toLowerCase().includes(q))) return false;
+    return true;
+  };
+
+  const list = useMemo(() => {
+    return PROMOTIONS.filter((p) => passes(p, false)).sort((a, b) => (sort === 'ending' ? a.endsInDays - b.endsInDays : sort === 'newest' ? a.addedDaysAgo - b.addedDaysAgo : a.brokerName.localeCompare(b.brokerName)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, search, assets, eligibleOnly, sort, claimed, saved, rank, brokers]);
+  }, [tab, search, assets, types, eligibleOnly, sort, claimed, saved, rank, brokers]);
+
+  const typeCounts = useMemo(() => {
+    const out = {} as Record<PromoType, number>;
+    PROMO_TYPES.forEach((t) => (out[t.id] = PROMOTIONS.filter((p) => p.type === t.id && passes(p, true)).length));
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, search, assets, eligibleOnly, claimed, saved, rank, brokers]);
+
+  const activeFilters = types.length + assets.length + (eligibleOnly ? 1 : 0) + (search.trim() ? 1 : 0);
+  const clearFilters = () => {
+    setTypes([]);
+    setAssets([]);
+    setEligibleOnly(false);
+    setSearch('');
+  };
 
   const eligibleCount = PROMOTIONS.filter((p) => status(p).ok).length;
   const toggle = <T,>(arr: T[], v: T, set: (a: T[]) => void) => set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -115,23 +135,55 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
         <PillTabs options={tabs} value={tab} onChange={setTab} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search broker or offer" className="w-full border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
+      <div className="space-y-3 mb-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search broker or offer" className="w-full border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
+          </div>
+          <label className="flex items-center gap-2 text-xs font-semibold text-[#474556] cursor-pointer">
+            <input type="checkbox" checked={eligibleOnly} onChange={(e) => setEligibleOnly(e.target.checked)} className="rounded border-slate-300 text-[#5338ec] focus:ring-[#5338ec]" />
+            Only what I can take now
+          </label>
+          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="ml-auto text-xs font-semibold border border-slate-200 rounded-full px-3.5 py-2 bg-white">
+            <option value="ending">Ending soon</option>
+            <option value="newest">Newest</option>
+            <option value="broker">Broker A–Z</option>
+          </select>
         </div>
-        {ASSETS.map((a) => (
-          <button key={a} onClick={() => toggle(assets, a, setAssets)} className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${assets.includes(a) ? 'bg-[#5338ec] border-[#5338ec] text-white' : 'bg-white border-slate-200 text-[#474556] hover:border-[#5338ec]'}`}>{a}</button>
-        ))}
-        <label className="flex items-center gap-2 text-xs font-semibold text-[#474556] ml-2 cursor-pointer">
-          <input type="checkbox" checked={eligibleOnly} onChange={(e) => setEligibleOnly(e.target.checked)} className="rounded border-slate-300 text-[#5338ec] focus:ring-[#5338ec]" />
-          Only what I can take now
-        </label>
-        <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="ml-auto text-xs font-semibold border border-slate-200 rounded-full px-3.5 py-2 bg-white">
-          <option value="ending">Ending soon</option>
-          <option value="newest">Newest</option>
-          <option value="broker">Broker A–Z</option>
-        </select>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-[#94a3b8] w-14 shrink-0">Type</span>
+          <button onClick={() => setTypes([])} className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${types.length === 0 ? 'bg-[#5338ec] border-[#5338ec] text-white' : 'bg-white border-slate-200 text-[#474556] hover:border-[#5338ec]'}`}>
+            All types
+          </button>
+          {PROMO_TYPES.map((t) => {
+            const on = types.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                title={t.hint}
+                aria-pressed={on}
+                onClick={() => toggle(types, t.id, setTypes)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? 'bg-[#5338ec] border-[#5338ec] text-white' : 'bg-white border-slate-200 text-[#474556] hover:border-[#5338ec]'} ${!on && typeCounts[t.id] === 0 ? 'opacity-50' : ''}`}
+              >
+                {t.label} <span className={`ml-1 font-mono ${on ? 'text-white/80' : 'text-[#94a3b8]'}`}>{typeCounts[t.id]}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-[#94a3b8] w-14 shrink-0">Asset</span>
+          {ASSETS.map((a) => (
+            <button key={a} onClick={() => toggle(assets, a, setAssets)} className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${assets.includes(a) ? 'bg-[#5338ec] border-[#5338ec] text-white' : 'bg-white border-slate-200 text-[#474556] hover:border-[#5338ec]'}`}>{a}</button>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-[#474556]">
+          <span>Showing <span className="font-bold text-[#0b1c30]">{list.length}</span> of {PROMOTIONS.length} offers</span>
+          {activeFilters > 0 && <button onClick={clearFilters} className="font-semibold text-[#5338ec] hover:underline">Clear filters</button>}
+        </div>
       </div>
 
       {tab === 'drops' && rank < 2 && (
@@ -197,6 +249,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
           <div className="text-center py-16">
             <p className="text-sm font-semibold text-[#0b1c30] mb-1">{tab === 'mine' ? 'Nothing here yet' : 'No offers match'}</p>
             <p className="text-xs text-[#474556]">{tab === 'mine' ? 'Take or save an offer and it shows up here.' : 'Try fewer filters or turn off “Only what I can take now”.'}</p>
+            {tab !== 'mine' && activeFilters > 0 && <button onClick={clearFilters} className="mt-3 text-xs font-bold text-[#5338ec] hover:underline">Clear filters</button>}
           </div>
         )}
       </div>
