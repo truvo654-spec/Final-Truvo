@@ -91,8 +91,8 @@ export const Header: React.FC<HeaderProps> = ({
   tourStep,
 }) => {
   const [activeHoverMenu, setActiveHoverMenu] = useState<'trade' | 'brokers' | 'knowledge' | 'community' | 'company' | null>(null);
-  const [hoveredBrokerOption, setHoveredBrokerOption] = useState<'brokers' | 'broker-comparison' | null>(null);
-  const [hoveredTradeOption, setHoveredTradeOption] = useState<'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | null>(null);
+  const [hoveredBrokerOption, setHoveredBrokerOption] = useState<'brokers' | 'broker-comparison' | 'promotions' | null>(null);
+  const [hoveredTradeOption, setHoveredTradeOption] = useState<'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | 'advisors' | 'alerts' | 'ai' | null>(null);
   const [hoveredKnowledgeOption, setHoveredKnowledgeOption] = useState<'news' | 'education-hub' | null>(null);
   const [hoveredCommunityOption, setHoveredCommunityOption] = useState<string | null>(null);
   const [hoveredCompanyOption, setHoveredCompanyOption] = useState<'about' | 'contact' | null>(null);
@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  const activeTradeFeature: 'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' =
+  const activeTradeFeature: 'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | 'advisors' | 'alerts' | 'ai' =
     hoveredTradeOption ||
     (activeTab === 'signals' || activeTab === 'signal-detail'
       ? 'signals'
@@ -118,6 +118,12 @@ export const Header: React.FC<HeaderProps> = ({
       ? 'portfolio'
       : activeTab === 'trading-journal'
       ? 'journal'
+      : activeTab === 'expert-advisors'
+      ? 'advisors'
+      : activeTab === 'alerts'
+      ? 'alerts'
+      : activeTab === 'ai-companion'
+      ? 'ai'
       : [
           'timezone-converter',
           'trading-timezone-converter',
@@ -148,9 +154,9 @@ export const Header: React.FC<HeaderProps> = ({
       ? 'calculators'
       : 'signals');
 
-  const activeBrokerFeature: 'brokers' | 'broker-comparison' =
+  const activeBrokerFeature: 'brokers' | 'broker-comparison' | 'promotions' =
     hoveredBrokerOption ||
-    (activeTab === 'broker-comparison' ? 'broker-comparison' : 'brokers');
+    (activeTab === 'broker-comparison' ? 'broker-comparison' : activeTab === 'promotions' ? 'promotions' : 'brokers');
 
   const activeCompanyFeature: 'about' | 'contact' =
     hoveredCompanyOption || 'about';
@@ -1034,6 +1040,10 @@ export const Header: React.FC<HeaderProps> = ({
                     }
                     handleCloseImmediately();
                   }}
+                  onOpenPromotions={() => {
+                    setActiveTab('promotions');
+                    handleCloseImmediately();
+                  }}
                 />
               </div>
 
@@ -1107,15 +1117,16 @@ export const Header: React.FC<HeaderProps> = ({
                     setActiveTab('promotions');
                     handleCloseImmediately();
                   }}
+                  onMouseEnter={() => setHoveredBrokerOption('promotions')}
                   className="group flex items-start text-left transition-all cursor-pointer w-full"
                 >
                   <div className="flex items-start gap-3">
-                    {activeTab === 'promotions' ? (
+                    {activeBrokerFeature === 'promotions' ? (
                       <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
                     ) : null}
                     <div>
                       <div className={`font-bold text-base transition-colors leading-tight ${
-                        activeTab === 'promotions' ? 'text-[#5945F1]' : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                        activeBrokerFeature === 'promotions' ? 'text-[#5945F1]' : 'text-[#0b1c30] group-hover:text-[#5945F1]'
                       }`}>
                         Promotions &amp; Bonuses
                       </div>
@@ -1195,6 +1206,19 @@ export const Header: React.FC<HeaderProps> = ({
                   }}
                   onSelectJournal={() => {
                     setActiveTab('trading-journal');
+                    handleCloseImmediately();
+                  }}
+                
+                  onSelectAdvisors={() => {
+                    setActiveTab('expert-advisors');
+                    handleCloseImmediately();
+                  }}
+                  onSelectAlerts={() => {
+                    setActiveTab('alerts');
+                    handleCloseImmediately();
+                  }}
+                  onSelectAi={() => {
+                    setActiveTab('ai-companion');
                     handleCloseImmediately();
                   }}
                 />
@@ -1301,15 +1325,16 @@ export const Header: React.FC<HeaderProps> = ({
                           setActiveTab('expert-advisors');
                           handleCloseImmediately();
                         }}
+                        onMouseEnter={() => setHoveredTradeOption('advisors')}
                         className="group flex items-start text-left transition-all cursor-pointer w-full"
                       >
                         <div className="flex items-start gap-2.5">
-                          {activeTab === 'expert-advisors' ? (
+                          {activeTradeFeature === 'advisors' ? (
                             <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-0.5 shadow-xs" />
                           ) : null}
                           <div>
                             <div className={`font-bold text-base transition-colors leading-tight ${
-                              activeTab === 'expert-advisors' ? 'text-[#5945F1]' : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                              activeTradeFeature === 'advisors' ? 'text-[#5945F1]' : 'text-[#0b1c30] group-hover:text-[#5945F1]'
                             }`}>
                               Expert Advisors
                             </div>
@@ -1530,9 +1555,12 @@ export const Header: React.FC<HeaderProps> = ({
                       </ul>
                     </div>
 
-                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div
+                      className="space-y-2 pt-2 border-t border-slate-100"
+                      onMouseEnter={() => setHoveredTradeOption('alerts')}
+                    >
                       <div className="flex items-center gap-2 cursor-pointer group">
-                        {activeTab === 'alerts' ? (
+                        {activeTradeFeature === 'alerts' ? (
                           <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 shadow-xs" />
                         ) : null}
                         <button
@@ -1571,9 +1599,12 @@ export const Header: React.FC<HeaderProps> = ({
                       </ul>
                     </div>
 
-                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div
+                      className="space-y-2 pt-2 border-t border-slate-100"
+                      onMouseEnter={() => setHoveredTradeOption('ai')}
+                    >
                       <div className="flex items-center gap-2 cursor-pointer group">
-                        {activeTab === 'ai-companion' ? (
+                        {activeTradeFeature === 'ai' ? (
                           <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 shadow-xs" />
                         ) : null}
                         <button

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, Calculator, DollarSign, TrendingUp, ArrowLeftRight, Clock, BarChart2, Activity, Compass, LineChart, Calendar, Wallet, BookOpen, Star } from 'lucide-react';
+import { Target, Calculator, DollarSign, TrendingUp, ArrowLeftRight, Clock, BarChart2, Activity, Compass, LineChart, Calendar, Wallet, BookOpen, Star, Bot, BellRing, Sparkles } from 'lucide-react';
 import { CalculatorType } from '../calculators/TradingCalculatorsModal';
 
-export type TradeFeatureVariant = 'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal';
+export type TradeFeatureVariant = 'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | 'advisors' | 'alerts' | 'ai';
 
 interface InteractiveTradeGraphicProps {
   variant?: TradeFeatureVariant;
@@ -14,6 +14,9 @@ interface InteractiveTradeGraphicProps {
   onSelectCalendar?: () => void;
   onSelectPortfolio?: () => void;
   onSelectJournal?: () => void;
+  onSelectAdvisors?: () => void;
+  onSelectAlerts?: () => void;
+  onSelectAi?: () => void;
 }
 
 export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = ({
@@ -25,6 +28,9 @@ export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = (
   onSelectCalendar,
   onSelectPortfolio,
   onSelectJournal,
+  onSelectAdvisors,
+  onSelectAlerts,
+  onSelectAi,
 }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [hoveredIcon, setHoveredIcon] = useState<string | null>(null);
@@ -626,6 +632,134 @@ export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = (
 
               <div className="absolute -bottom-2 -right-2 bg-[#FD02B0] group-hover:bg-[#e0009d] text-white text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg transition-transform group-hover:scale-105">
                 REVIEW
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {variant === 'advisors' && (
+          <motion.div
+            key="advisors"
+            initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+            animate={{ opacity: 1, scale: 1, rotateX: tilt.y, rotateY: tilt.x - 6 }}
+            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="relative cursor-pointer"
+            onClick={onSelectAdvisors}
+          >
+            <div className="w-48 sm:w-52 rounded-3xl bg-[#0f1115] border border-white/10 p-4 sm:p-5 shadow-2xl relative overflow-visible transform -rotate-6 transition-transform duration-300 hover:rotate-0 group">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-white shadow-xs" />
+                <span className="text-[11px] font-bold tracking-widest text-white/90 uppercase font-mono">ADVISORS</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#bef226] to-[#8fc10e] flex items-center justify-center shadow-md shrink-0">
+                  <Bot className="w-5 h-5 text-black stroke-[2.2]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base sm:text-lg font-black text-white leading-tight tracking-tight">Steady Majors</span>
+                  <span className="text-xs font-bold text-emerald-400">MT5 · vetted</span>
+                </div>
+              </div>
+
+              <svg viewBox="0 0 120 36" className="w-full h-9 mb-1">
+                <polyline points="0,30 14,27 26,29 40,21 54,23 68,15 82,17 96,10 108,12 120,6" fill="none" stroke="#bef226" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">+2.1%</span>
+                <span className="text-xs text-white/70 font-medium">per month</span>
+              </div>
+
+              <div className="absolute -bottom-2 -right-2 bg-[#10b981] group-hover:bg-[#059669] text-white text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg transition-transform group-hover:scale-105">
+                VETTED
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {variant === 'alerts' && (
+          <motion.div
+            key="alerts"
+            initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+            animate={{ opacity: 1, scale: 1, rotateX: tilt.y, rotateY: tilt.x - 6 }}
+            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="relative cursor-pointer"
+            onClick={onSelectAlerts}
+          >
+            <div className="w-48 sm:w-52 rounded-3xl bg-[#0f1115] border border-white/10 p-4 sm:p-5 shadow-2xl relative overflow-visible transform -rotate-6 transition-transform duration-300 hover:rotate-0 group">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-white shadow-xs" />
+                <span className="text-[11px] font-bold tracking-widest text-white/90 uppercase font-mono">ALERTS</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FD02B0] to-[#a3006f] flex items-center justify-center shadow-md shrink-0">
+                  <BellRing className="w-5 h-5 text-white stroke-[2.2]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base sm:text-lg font-black text-white leading-tight tracking-tight">XAU/USD</span>
+                  <span className="text-xs font-bold text-white/60">above 2,700</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold text-white/80">In-app</span>
+                <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold text-white/80">Email</span>
+                <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold text-white/80">SMS</span>
+              </div>
+
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">3</span>
+                <span className="text-xs text-white/70 font-medium">active alerts</span>
+              </div>
+
+              <div className="absolute -bottom-2 -right-2 bg-[#FD02B0] group-hover:bg-[#e0009d] text-white text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg transition-transform group-hover:scale-105">
+                SET
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {variant === 'ai' && (
+          <motion.div
+            key="ai"
+            initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+            animate={{ opacity: 1, scale: 1, rotateX: tilt.y, rotateY: tilt.x - 6 }}
+            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="relative cursor-pointer"
+            onClick={onSelectAi}
+          >
+            <div className="w-48 sm:w-52 rounded-3xl bg-[#0f1115] border border-white/10 p-4 sm:p-5 shadow-2xl relative overflow-visible transform -rotate-6 transition-transform duration-300 hover:rotate-0 group">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-white shadow-xs" />
+                <span className="text-[11px] font-bold tracking-widest text-white/90 uppercase font-mono">COMPANION</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7c6ef0] to-[#5945F1] flex items-center justify-center shadow-md shrink-0">
+                  <Sparkles className="w-5 h-5 text-white stroke-[2.2]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base sm:text-lg font-black text-white leading-tight tracking-tight">Your briefing</span>
+                  <span className="text-xs font-bold text-emerald-400">ready</span>
+                </div>
+              </div>
+
+              <div className="bg-white/10 rounded-xl rounded-bl-sm px-3 py-2 mb-2">
+                <span className="text-[11px] text-white/85 leading-snug block">3 stories and 2 releases to know before the open.</span>
+              </div>
+
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">1 min</span>
+                <span className="text-xs text-white/70 font-medium">to catch up</span>
+              </div>
+
+              <div className="absolute -bottom-2 -right-2 bg-[#bef226] group-hover:bg-[#aee019] text-black text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg transition-transform group-hover:scale-105">
+                ASK
               </div>
             </div>
           </motion.div>
