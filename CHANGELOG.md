@@ -2,6 +2,82 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.41] - 2026-10-05
+### Reverted
+- Restored the pre-API local-demo calendar and Summary, Forecast, Consensus, and Alerts indicator detail experience, including populated holiday demo content.
+- Removed the latest Acuity API/streaming integration, event-route controls, and Corporate / Economic filter; preserved earlier calendar filters and instrument links.
+- Saved the removed update in a local rollback backup so it remains recoverable.
+
+## [1.0.39] - 2026-10-05
+### Added
+- Added Acuity API-shaped event metadata to calendar demo events and surfaced the payload on reusable indicator detail pages.
+
+## [1.0.38] - 2026-10-05
+### Added
+- Added populated Australia S&P Global Composite PMI sample content with historical statistics, components, related indicators, forecasts, consensus context, and news.
+
+## [1.0.37] - 2026-10-05
+### Added
+- Added a reusable Economic Indicator Detail feature with shared data across Summary, Forecast, Consensus, and Alerts views.
+- Added structured analytical commentary, historical/forecast data, consensus comparison, components, related indicators, methodology, news, and alert management.
+
+## [1.0.36] - 2026-10-05
+### Changed
+- Removed the Last, Previous, Forecast, and Unit snapshot cards from event detail pages.
+
+## [1.0.35] - 2026-10-05
+### Changed
+- Removed the detail-page tag row and instrument/market/country/category summary cards per the requested layout.
+
+## [1.0.34] - 2026-10-05
+### Changed
+- Added category-specific content for Forecast, Consensus, Alerts, Unit, and indicator description sections.
+
+## [1.0.33] - 2026-10-05
+### Added
+- Expanded event detail pages with Summary, Forecast, Consensus, and Alerts tabs.
+- Added historical data visualization, indicator context, related indicators, and release snapshots.
+
+## [1.0.32] - 2026-10-05
+### Added
+- Added a linked instrument-symbol tag and instrument context summary to event detail pages.
+- Instrument tags navigate directly to the corresponding Instrument Analysis detail view.
+
+## [1.0.31] - 2026-10-05
+### Added
+- Added a dedicated instrument search field to filter calendar events by symbol, country, market type, or event title.
+
+## [1.0.30] - 2026-10-05
+### Changed
+- Event titles now open a full-page event detail view with a back-to-calendar action.
+- Preserved event actions and related content from the previous detail modal.
+
+## [1.0.29] - 2026-10-05
+### Added
+- Made calendar currency tags clickable and connected them to Instrument Analysis detail pages.
+- Added fallback instrument detail data for symbols without a dedicated mock instrument record.
+
+## [1.0.28] - 2026-10-05
+### Added
+- Made the calendar filter columns sortable by drag and drop.
+
+## [1.0.27] - 2026-10-05
+### Added
+- Added a Market Type filter with All Markets, Forex, Indices, Stocks, Commodities, and Crypto options.
+
+## [1.0.26] - 2026-10-05
+### Changed
+- Expanded the Category filter with the full reference taxonomy and mapped each label to the existing calendar event data.
+
+## [1.0.25] - 2026-10-05
+### Changed
+- Refined the Category filter menu to match the reference dropdown style with compact, full-width text rows.
+
+## [1.0.24] - 2026-10-05
+### Changed
+- Replaced the expanded Economic Calendar filter panel with a compact, column-based filter bar matching the provided reference style.
+- Added dropdown menus for date range, impact, countries, category, and timezone filters while preserving existing filtering behavior.
+
 ## [0.66.0] - 2026-09-15
 ### Added
 - **TabMain Component (`src/components/common/TabMain.tsx` & `src/components/TabMain.tsx`)**:

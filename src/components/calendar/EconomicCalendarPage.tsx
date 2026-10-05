@@ -10,7 +10,8 @@ import {
   BellRing,
   Sparkles,
   Volume2,
-  SlidersHorizontal,
+  Globe2,
+  BarChart3,
   Plus,
   Minus,
   ArrowRight,
@@ -23,6 +24,7 @@ import {
   CALENDAR_TIMEZONES,
   CALENDAR_COUNTRIES,
   CALENDAR_CATEGORIES,
+  CALENDAR_CATEGORY_MATCHES,
   CALENDAR_FAQ,
   HOLIDAYS,
   EARNINGS,
@@ -39,6 +41,11 @@ import { CalendarSidePanel, SidePanel } from './CalendarSidePanel';
 
 type PageTab = 'calendar' | 'holidays' | 'earnings' | 'dividends' | 'ipo';
 type RangeId = 'yesterday' | 'today' | 'tomorrow' | 'week' | 'nextweek' | 'custom';
+type FilterMenu = 'range' | 'impact' | 'countries' | 'marketType' | 'category' | 'timezone' | null;
+type FilterId = Exclude<FilterMenu, null>;
+type MarketType = 'All Markets' | 'Forex' | 'Indices' | 'Stocks' | 'Commodities' | 'Crypto';
+
+const DEFAULT_FILTER_ORDER: FilterId[] = ['range', 'impact', 'countries', 'marketType', 'category', 'timezone'];
 
 interface EconomicCalendarPageProps {
   events?: EconomicEvent[];
@@ -48,6 +55,7 @@ interface EconomicCalendarPageProps {
   isBroker?: boolean;
   onNavigateToArticle?: (articleId: string) => void;
   onNavigateToSignal?: (ticker: string) => void;
+  onNavigateToInstrument?: (symbol: string) => void;
   onNavigateToTab?: (tab: string) => void;
   onOpenConnectModal?: (broker?: Broker) => void;
   onUpgradePrompt: () => void;
@@ -97,6 +105,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   isBroker = false,
   onNavigateToArticle,
   onNavigateToSignal,
+  onNavigateToInstrument,
   onNavigateToTab,
   onOpenConnectModal,
   onUpgradePrompt,
@@ -135,10 +144,14 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   const [tz, setTz] = useState(7);
   const [displayMode, setDisplayMode] = useState<'all' | 'remaining'>('all');
   const [search, setSearch] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [instrumentQuery, setInstrumentQuery] = useState('');
+  const [openFilter, setOpenFilter] = useState<FilterMenu>(null);
+  const [filterOrder, setFilterOrder] = useState<FilterId[]>(DEFAULT_FILTER_ORDER);
+  const [draggingFilter, setDraggingFilter] = useState<FilterId | null>(null);
   const [impSel, setImpSel] = useState<Record<number, boolean>>({ 1: true, 2: true, 3: true });
   const [countrySel, setCountrySel] = useState<string[]>([]);
-  const [catSel, setCatSel] = useState<EventCategory[]>([]);
+  const [marketType, setMarketType] = useState<MarketType>('All Markets');
+  const [catSel, setCatSel] = useState<string[]>([]);
   const [watchedIds, setWatchedIds] = useState<Record<string, boolean>>({});
   const [alerts, setAlerts] = useState<Record<string, number>>({});
   const [selectedEvent, setSelectedEvent] = useState<EconomicEvent | null>(null);
@@ -185,7 +198,10 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
         if (k < rangeFrom || k > rangeTo) return false;
         if (!impSel[IMPACT_STARS[e.impact]]) return false;
         if (countrySel.length && !countrySel.includes(e.currency)) return false;
-        if (catSel.length && !catSel.includes(e.category)) return false;
+        if (marketType !== 'All Markets' && e.assetClass !== (marketType === 'Commodities' ? 'Commodity' : marketType)) return false;
+        if (catSel.length && !catSel.some((label) => CALENDAR_CATEGORY_MATCHES[label as keyof typeof CALENDAR_CATEGORY_MATCHES]?.includes(e.category))) return false;
+        const instrumentSearch = instrumentQuery.trim().toLowerCase();
+        if (instrumentSearch && ![e.currency, e.country, e.assetClass, e.title].some((value) => value.toLowerCase().includes(instrumentSearch))) return false;
         if (q && !(e.title.toLowerCase().includes(q) || e.country.toLowerCase().includes(q) || e.currency.toLowerCase().includes(q))) return false;
         if (displayMode === 'remaining' && !e.allDay && eventMs(e) <= NOW_MS && k === todayKey) return false;
         return true;
@@ -198,7 +214,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
         return eventMs(a) - eventMs(b);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, search, rangeFrom, rangeTo, impSel, countrySel, catSel, displayMode, tz, NOW_MS]);
+  }, [events, search, instrumentQuery, rangeFrom, rangeTo, impSel, countrySel, marketType, catSel, displayMode, tz, NOW_MS]);
 
   const groups = useMemo(() => {
     const map = new Map<string, EconomicEvent[]>();
@@ -263,12 +279,24 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   }
 
   const activeFilterCount =
-    (Object.values(impSel).filter(Boolean).length < 3 ? 1 : 0) + (countrySel.length ? 1 : 0) + (catSel.length ? 1 : 0);
+    (Object.values(impSel).filter(Boolean).length < 3 ? 1 : 0) + (countrySel.length ? 1 : 0) + (marketType !== 'All Markets' ? 1 : 0) + (catSel.length ? 1 : 0);
 
   const resetFilters = () => {
     setImpSel({ 1: true, 2: true, 3: true });
     setCountrySel([]);
+    setMarketType('All Markets');
     setCatSel([]);
+    setInstrumentQuery('');
+  };
+
+  const reorderFilters = (target: FilterId) => {
+    if (!draggingFilter || draggingFilter === target) return;
+    setFilterOrder((current) => {
+      const next = current.filter((id) => id !== draggingFilter);
+      const targetIndex = next.indexOf(target);
+      next.splice(targetIndex, 0, draggingFilter);
+      return next;
+    });
   };
 
   const actualClass = (e: EconomicEvent) => {
@@ -415,46 +443,120 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
               </div>
             )}
 
-            {/* Range pills + Show filters */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="flex flex-wrap items-center gap-2">
-                {rangePills.map((p) => (
+            {/* Compact column-based filters */}
+            <div className="relative z-20 flex flex-wrap items-center border border-[#d6d8df] bg-white mb-4 overflow-visible">
+              {[
+                { id: 'range' as const, icon: CalendarIcon, label: 'Recent', active: range !== 'today' },
+                { id: 'impact' as const, icon: Star, label: 'Impact', active: activeFilterCount > 0 && Object.values(impSel).filter(Boolean).length < 3 },
+                { id: 'countries' as const, icon: Globe2, label: 'Countries', active: countrySel.length > 0 },
+                { id: 'marketType' as const, icon: BarChart3, label: 'Market Type', active: marketType !== 'All Markets' },
+                { id: 'category' as const, icon: BarChart3, label: 'Category', active: catSel.length > 0 },
+                { id: 'timezone' as const, icon: Clock, label: tzLabel, active: false },
+              ].sort((a, b) => filterOrder.indexOf(a.id) - filterOrder.indexOf(b.id)).map(({ id, icon: Icon, label, active }) => (
+                <div
+                  key={id}
+                  draggable
+                  onDragStart={() => setDraggingFilter(id)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => { reorderFilters(id); setDraggingFilter(null); }}
+                  onDragEnd={() => setDraggingFilter(null)}
+                  title="Drag to reorder filters"
+                  className={`relative cursor-grab active:cursor-grabbing ${draggingFilter === id ? 'opacity-50' : ''}`}
+                >
                   <button
-                    key={p.id}
-                    onClick={() => setRange(p.id)}
-                    className={`px-5 py-2.5 rounded-full text-sm font-semibold border transition-colors ${
-                      range === p.id
-                        ? 'border-[#5338ec] text-[#5338ec] bg-white'
-                        : 'border-transparent bg-[#f1f5f9] text-[#0b1c30] hover:bg-[#e8ecf3]'
+                    onClick={() => setOpenFilter((current) => current === id ? null : id)}
+                    className={`flex items-center gap-1.5 h-9 px-3 border-r border-[#d6d8df] text-xs font-semibold whitespace-nowrap transition-colors ${
+                      active ? 'text-[#5338ec] bg-[#f8f7ff]' : 'text-[#26364a] hover:bg-[#f8fafc]'
                     }`}
                   >
-                    {p.label}
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{label}</span>
+                    {active && <span className="w-1.5 h-1.5 rounded-full bg-[#5338ec]" />}
+                    <ChevronDown className={`w-3.5 h-3.5 text-[#64748b] transition-transform ${openFilter === id ? 'rotate-180' : ''}`} />
                   </button>
-                ))}
-                <button
-                  onClick={() => setRange('custom')}
-                  className={`flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-semibold border transition-colors ${
-                    range === 'custom'
-                      ? 'border-[#5338ec] text-[#5338ec] bg-white'
-                      : 'border-transparent bg-[#f1f5f9] text-[#0b1c30] hover:bg-[#e8ecf3]'
-                  }`}
-                >
-                  <CalendarIcon className="w-4 h-4" /> Custom dates
-                </button>
+
+                  {openFilter === id && id === 'range' && (
+                    <div className="absolute left-0 top-full mt-1 w-44 rounded-lg border border-[#d6d8df] bg-white p-1.5 shadow-lg">
+                      {rangePills.map((p) => (
+                        <button key={p.id} onClick={() => { setRange(p.id); setOpenFilter(null); }} className={`block w-full rounded-md px-3 py-2 text-left text-xs font-semibold ${range === p.id ? 'bg-[#eef0fe] text-[#5338ec]' : 'text-[#26364a] hover:bg-slate-50'}`}>
+                          {p.label}
+                        </button>
+                      ))}
+                      <button onClick={() => { setRange('custom'); setOpenFilter(null); }} className={`block w-full rounded-md px-3 py-2 text-left text-xs font-semibold ${range === 'custom' ? 'bg-[#eef0fe] text-[#5338ec]' : 'text-[#26364a] hover:bg-slate-50'}`}>
+                        Custom dates
+                      </button>
+                    </div>
+                  )}
+
+                  {openFilter === id && id === 'impact' && (
+                    <div className="absolute left-0 top-full mt-1 w-40 rounded-lg border border-[#d6d8df] bg-white p-1.5 shadow-lg">
+                      {[1, 2, 3].map((n) => (
+                        <button key={n} onClick={() => toggleIn(Object.values(impSel).filter(Boolean).map((_, i) => i + 1), n, (next) => setImpSel({ 1: next.includes(1), 2: next.includes(2), 3: next.includes(3) }))} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-[#26364a] hover:bg-slate-50">
+                          <span className={`flex ${impSel[n] ? 'text-[#5338ec]' : 'text-slate-300'}`}>{Array.from({ length: n }).map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}</span>
+                          {n === 1 ? 'Low' : n === 2 ? 'Medium' : 'High'}
+                          {impSel[n] && <span className="ml-auto text-[#5338ec]">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {openFilter === id && id === 'countries' && (
+                    <div className="absolute left-0 top-full mt-1 w-56 rounded-lg border border-[#d6d8df] bg-white p-1.5 shadow-lg">
+                      <button onClick={() => setCountrySel([])} className={`block w-full rounded-md px-3 py-2 text-left text-xs font-semibold ${countrySel.length === 0 ? 'bg-[#eef0fe] text-[#5338ec]' : 'text-[#26364a] hover:bg-slate-50'}`}>All countries</button>
+                      <div className="max-h-64 overflow-y-auto">
+                        {CALENDAR_COUNTRIES.map((c) => (
+                          <button key={c.code} onClick={() => toggleIn(countrySel, c.code, setCountrySel)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-semibold text-[#26364a] hover:bg-slate-50">
+                            <span>{c.flag}</span><span>{c.code}</span>{countrySel.includes(c.code) && <span className="ml-auto text-[#5338ec]">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {openFilter === id && id === 'category' && (
+                    <div className="absolute left-0 top-full mt-1 w-48 rounded-none border border-[#cbd5e1] bg-white py-1 shadow-md">
+                      <button onClick={() => setCatSel([])} className={`block w-full px-3.5 py-1.5 text-left text-sm ${catSel.length === 0 ? 'font-semibold text-[#5338ec]' : 'text-[#26364a] hover:bg-[#f8fafc]'}`}>All Events</button>
+                      <div className="max-h-64 overflow-y-auto">
+                        {CALENDAR_CATEGORIES.map((c) => (
+                          <button key={c} onClick={() => toggleIn(catSel, c, setCatSel)} className={`block w-full px-3.5 py-1.5 text-left text-sm ${catSel.includes(c) ? 'font-semibold text-[#5338ec]' : 'text-[#26364a] hover:bg-[#f8fafc]'}`}>
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {openFilter === id && id === 'marketType' && (
+                    <div className="absolute left-0 top-full mt-1 w-44 rounded-none border border-[#cbd5e1] bg-white py-1 shadow-md">
+                      {(['All Markets', 'Forex', 'Indices', 'Stocks', 'Commodities', 'Crypto'] as MarketType[]).map((option) => (
+                        <button key={option} onClick={() => { setMarketType(option); setOpenFilter(null); }} className={`block w-full px-3.5 py-1.5 text-left text-sm ${marketType === option ? 'font-semibold text-[#5338ec]' : 'text-[#26364a] hover:bg-[#f8fafc]'}`}>
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {openFilter === id && id === 'timezone' && (
+                    <div className="absolute right-0 top-full mt-1 w-36 rounded-lg border border-[#d6d8df] bg-white p-1.5 shadow-lg">
+                      {CALENDAR_TIMEZONES.map((t) => (
+                        <button key={t.label} onClick={() => { setTz(t.offset); setOpenFilter(null); }} className={`block w-full rounded-md px-3 py-2 text-left text-xs font-semibold ${tz === t.offset ? 'bg-[#eef0fe] text-[#5338ec]' : 'text-[#26364a] hover:bg-slate-50'}`}>{t.label}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {activeFilterCount > 0 && <button onClick={resetFilters} className="ml-2 flex items-center gap-1 px-2 text-[11px] font-semibold text-slate-500 hover:text-[#5338ec]"><X className="w-3 h-3" /> Reset</button>}
+              <div className="relative ml-auto flex min-w-[190px] flex-1 items-center border-l border-[#d6d8df] sm:max-w-[250px]">
+                <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-slate-400" />
+                <input
+                  value={instrumentQuery}
+                  onChange={(event) => setInstrumentQuery(event.target.value)}
+                  placeholder="Search instruments"
+                  aria-label="Search instruments"
+                  className="h-9 w-full bg-transparent pl-8 pr-8 text-xs font-semibold text-[#26364a] outline-none placeholder:font-normal placeholder:text-slate-400"
+                />
+                {instrumentQuery && <button onClick={() => setInstrumentQuery('')} aria-label="Clear instrument search" className="absolute right-2 text-slate-400 hover:text-[#5338ec]"><X className="h-3.5 w-3.5" /></button>}
               </div>
-              <button
-                onClick={() => setShowFilters((v) => !v)}
-                className="flex items-center gap-1.5 border border-[#5338ec]/30 hover:border-[#5338ec] text-[#5338ec] text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                {showFilters ? 'Hide Filters' : 'Show Filters'}
-                {activeFilterCount > 0 && (
-                  <span className="w-5 h-5 rounded-full bg-[#5338ec] text-white text-[11px] flex items-center justify-center font-bold">
-                    {activeFilterCount}
-                  </span>
-                )}
-                <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-              </button>
             </div>
 
             {range === 'custom' && (
@@ -467,69 +569,6 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                   To
                   <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2 text-sm" />
                 </label>
-              </div>
-            )}
-
-            {showFilters && (
-              <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5 mb-5 space-y-5">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">Importance</p>
-                  <div className="flex gap-2">
-                    {[1, 2, 3].map((n) => (
-                      <button
-                        key={n}
-                        onClick={() => setImpSel((p) => ({ ...p, [n]: !p[n] }))}
-                        className={`flex items-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                          impSel[n] ? 'bg-[#EEF0FE] border-[#5338ec] text-[#5338ec]' : 'bg-white border-slate-200 text-slate-400'
-                        }`}
-                      >
-                        {Array.from({ length: n }).map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-current" />
-                        ))}
-                        {n === 1 ? 'Low' : n === 2 ? 'Medium' : 'High'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">
-                    Countries {countrySel.length === 0 && <span className="normal-case font-medium text-[#94a3b8]">(all)</span>}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {CALENDAR_COUNTRIES.map((c) => (
-                      <button
-                        key={c.code}
-                        onClick={() => toggleIn(countrySel, c.code, setCountrySel)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                          countrySel.includes(c.code) ? 'bg-[#5338ec] border-[#5338ec] text-white' : 'bg-white border-slate-200 text-[#474556] hover:border-[#5338ec]'
-                        }`}
-                      >
-                        {c.flag} {c.code}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">
-                    Category {catSel.length === 0 && <span className="normal-case font-medium text-[#94a3b8]">(all)</span>}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {CALENDAR_CATEGORIES.map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => toggleIn(catSel, c, setCatSel)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                          catSel.includes(c) ? 'bg-[#5338ec] border-[#5338ec] text-white' : 'bg-white border-slate-200 text-[#474556] hover:border-[#5338ec]'
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <button onClick={resetFilters} className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-rose-500">
-                  <X className="w-3.5 h-3.5" /> Reset filters
-                </button>
               </div>
             )}
 
@@ -598,7 +637,13 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                               <span className="text-sm text-[#0b1c30]">{e.allDay ? 'All Day' : hhmmOf(eventMs(e), tz)}</span>
                               <span className="flex items-center gap-1.5 text-sm text-[#0b1c30]">
                                 <span className="text-base leading-none">{e.countryFlag}</span>
-                                {e.currency}
+                                <button
+                                  onClick={(event) => { event.stopPropagation(); onNavigateToInstrument?.(e.currency); }}
+                                  className="font-semibold text-[#0b1c30] underline decoration-transparent underline-offset-2 hover:text-[#5338ec] hover:decoration-current transition-colors"
+                                  title={`Open ${e.currency} instrument details`}
+                                >
+                                  {e.currency}
+                                </button>
                               </span>
                               <span className="flex items-center gap-2 text-sm text-[#0b1c30] min-w-0">
                                 <span className="truncate">{e.title}</span>
@@ -849,8 +894,13 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
           onSetAlert={(lead) => setAlert(selectedEvent.id, lead)}
           onNavigateToArticle={onNavigateToArticle}
           onNavigateToSignal={onNavigateToSignal}
+          onNavigateToInstrument={(symbol) => {
+            setSelectedEvent(null);
+            onNavigateToInstrument?.(symbol);
+          }}
           onUpgradePrompt={onUpgradePrompt}
           onShowToast={onShowToast}
+          fullPage
         />
       )}
     </div>

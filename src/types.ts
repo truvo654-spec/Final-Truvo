@@ -387,6 +387,24 @@ export type EventImpact = 'Low' | 'Medium' | 'High';
 export type EventCategory = 'Central Bank' | 'Employment' | 'Inflation' | 'GDP' | 'Trade' | 'Housing' | 'Sentiment' | 'PMI' | 'Speech' | 'Holiday';
 export type EventTimeframe = 'today' | 'week' | 'month';
 
+export interface AcuityEconomicEventDetails {
+  source: 'Acuity';
+  eventId: string;
+  occurrenceId: string;
+  countryCode: string;
+  countryName: string;
+  currencyId: string;
+  eventTypeId: string;
+  eventTypeDescription: string;
+  potency: number;
+  potencySymbol: string;
+  description: string;
+  eventTime?: 'BMO' | 'AMC' | 'NA';
+  assetIds?: number[];
+  assetTickers?: string[];
+  isLatest?: boolean;
+}
+
 export interface EconomicEvent {
   id: string;
   title: string;
@@ -411,6 +429,7 @@ export interface EconomicEvent {
   relatedArticleId?: string;
   relatedSignalTicker?: string;
   aiPrediction?: string;
+  acuity?: AcuityEconomicEventDetails;
 }
 
 export interface EventNote {

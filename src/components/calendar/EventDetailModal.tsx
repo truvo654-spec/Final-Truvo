@@ -1,8 +1,39 @@
 import React, { useState } from 'react';
-import { X, Bell, Star, Sparkles, Lock, Newspaper, Activity, Megaphone } from 'lucide-react';
+import { X, ArrowLeft, Bell, Star, Sparkles, Lock, Newspaper, Activity, Megaphone } from 'lucide-react';
 import { EconomicEvent, EventNote } from '../../types';
 import { NEWS_ARTICLES } from '../../data/newsData';
-import { IMPACT_STYLES } from '../../data/economicCalendarData';
+import { EconomicIndicatorDetailPage } from './EconomicIndicatorDetailPage';
+
+const CATEGORY_DETAIL_COPY: Record<string, { unit: string; forecast: string; consensus: string; alerts: string; description: string }> = {
+  Holiday: {
+    unit: 'Market holiday',
+    forecast: 'There is no numerical forecast for a market holiday. Use the closure to plan liquidity, spreads, and execution windows for the related currency.',
+    consensus: 'Holiday schedules are confirmed by the relevant market calendar rather than an analyst consensus. Check the local session and reopening time before trading.',
+    alerts: 'Set a reminder before the closure so you can review open positions, reduce unexpected overnight exposure, and prepare for thinner liquidity in the related currency.',
+    description: 'A market holiday changes trading hours and can reduce liquidity or widen spreads. This event is linked to the local calendar for the selected country and instrument.',
+  },
+  PMI: {
+    unit: 'Index points',
+    forecast: 'PMI forecasts reflect expectations for private-sector activity. Readings above 50 generally indicate expansion, while readings below 50 indicate contraction.',
+    consensus: 'Compare the release with the consensus estimate and the previous month. A surprise in new orders, employment, or prices can move the related currency quickly.',
+    alerts: 'Set an alert before the release to review the expected direction, the previous reading, and any connected currency or market signal.',
+    description: 'A Purchasing Managers’ Index tracks business activity, orders, employment, and prices across the manufacturing and services economy.',
+  },
+  Inflation: {
+    unit: 'Price change',
+    forecast: 'Inflation forecasts help traders assess the path of purchasing power and the likely direction of interest-rate expectations.',
+    consensus: 'The most important comparison is actual versus forecast, followed by the trend from the previous release. A surprise can reprice bonds and currencies.',
+    alerts: 'Set an alert before the release to review rate-sensitive positions and prepare for volatility around the publication time.',
+    description: 'Inflation releases measure changes in consumer or producer prices and are closely watched for their effect on monetary-policy expectations.',
+  },
+  Employment: {
+    unit: 'Labour indicator',
+    forecast: 'Employment forecasts summarize expected changes in jobs, wages, participation, or unemployment conditions.',
+    consensus: 'Compare the actual result with the estimate and watch revisions to the previous period for confirmation of the labour-market trend.',
+    alerts: 'Set an alert before the release to review currency exposure and potential volatility in rate-sensitive instruments.',
+    description: 'Employment data shows the health of the labour market and can influence household spending, inflation, and central-bank decisions.',
+  },
+};
 
 interface EventDetailModalProps {
   event: EconomicEvent;
@@ -18,8 +49,10 @@ interface EventDetailModalProps {
   onSetAlert: (leadTimeMinutes: number | null) => void;
   onNavigateToArticle?: (articleId: string) => void;
   onNavigateToSignal?: (ticker: string) => void;
+  onNavigateToInstrument?: (symbol: string) => void;
   onUpgradePrompt: () => void;
   onShowToast: (msg: string) => void;
+  fullPage?: boolean;
 }
 
 const ALERT_OPTIONS = [
@@ -43,13 +76,41 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   onSetAlert,
   onNavigateToArticle,
   onNavigateToSignal,
+  onNavigateToInstrument,
   onUpgradePrompt,
   onShowToast,
+  fullPage = false,
 }) => {
   const [noteDraft, setNoteDraft] = useState('');
   const [brokerTagDraft, setBrokerTagDraft] = useState('');
-  const impactStyle = IMPACT_STYLES[event.impact];
+  const [detailTab, setDetailTab] = useState<'Summary' | 'Forecast' | 'Consensus' | 'Alerts'>('Summary');
+  const categoryCopy = CATEGORY_DETAIL_COPY[event.category] || {
+    unit: 'Release value',
+    forecast: `Forecast context for this ${event.category.toLowerCase()} release is based on the published estimate and the previous reading.`,
+    consensus: `Compare the actual value with the forecast and previous ${event.category.toLowerCase()} reading to identify a meaningful surprise.`,
+    alerts: `Set a reminder before this ${event.category.toLowerCase()} release to review related positions and market conditions.`,
+    description: `This ${event.category.toLowerCase()} release provides scheduled information about ${event.country} conditions and may affect the ${event.currency} market.`,
+  };
   const relatedArticle = event.relatedArticleId ? NEWS_ARTICLES.find((a) => a.id === event.relatedArticleId) : null;
+
+  if (fullPage) {
+    return (
+      <EconomicIndicatorDetailPage
+        event={event}
+        whenLabel={whenLabel}
+        isWatched={isWatched}
+        alertLeadTime={alertLeadTime}
+        hasAiAccess={hasAiAccess}
+        onClose={onClose}
+        onToggleWatch={onToggleWatch}
+        onSetAlert={onSetAlert}
+        onNavigateToArticle={onNavigateToArticle}
+        onNavigateToInstrument={onNavigateToInstrument}
+        onUpgradePrompt={onUpgradePrompt}
+        onShowToast={onShowToast}
+      />
+    );
+  }
 
   const trendPoints = event.historicalTrend;
   const sparkline = (() => {
@@ -67,27 +128,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   })();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div className="bg-white border border-[#e2e8f0] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto text-[#0b1c30] shadow-2xl p-6 relative">
+    <div className={fullPage ? 'fixed inset-0 z-50 overflow-y-auto bg-[#f8fafc]' : 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs'}>
+      <div className={fullPage ? 'min-h-full w-full bg-[#f8fafc] text-[#0b1c30]' : 'bg-white border border-[#e2e8f0] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto text-[#0b1c30] shadow-2xl p-6 relative'}>
+        {fullPage && <div className="h-16 border-b border-[#e2e8f0] bg-white"><div className="max-w-5xl mx-auto flex h-full items-center px-4 sm:px-8"><button onClick={onClose} className="flex items-center gap-2 text-sm font-semibold text-[#475569] hover:text-[#5338ec]"><ArrowLeft className="w-4 h-4" /> Back to Economic Calendar</button></div></div>}
+        <div className={fullPage ? 'max-w-5xl mx-auto px-4 py-8 sm:px-8 sm:py-10' : ''}>
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition-colors"
+          className={fullPage ? 'hidden' : 'absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition-colors'}
           aria-label="Close"
         >
           <X className="w-4 h-4" />
         </button>
-
-        <div className="flex items-center gap-2 flex-wrap mb-3">
-          <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold ${impactStyle.chip}`}>
-            {event.impact} impact
-          </span>
-          <span className="px-2.5 py-0.5 rounded-md bg-[#EEF0FE] text-[#5338ec] text-xs font-semibold">
-            {event.category}
-          </span>
-          <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-xs font-semibold">
-            {event.assetClass}
-          </span>
-        </div>
 
         <h2 className="text-xl sm:text-2xl font-display font-bold text-[#0b1c30] leading-snug mb-1">
           {event.title}
@@ -95,6 +146,41 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         <p className="text-sm text-[#474556] mb-5">
           {event.countryFlag} {event.country} · {whenLabel}
         </p>
+
+        {fullPage && (
+          <>
+            <div className="flex items-center gap-6 border-b border-[#e2e8f0] mb-5 overflow-x-auto">
+              {(['Summary', 'Forecast', 'Consensus', 'Alerts'] as const).map((tab) => (
+                <button key={tab} onClick={() => setDetailTab(tab)} className={`pb-3 text-sm font-semibold whitespace-nowrap border-b-2 ${detailTab === tab ? 'text-[#5338ec] border-[#5338ec]' : 'text-[#475569] border-transparent hover:text-[#5338ec]'}`}>
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {detailTab === 'Forecast' && <div className="rounded-xl border border-[#e2e8f0] bg-white p-4 mb-5 text-sm leading-relaxed text-[#475569]">{categoryCopy.forecast}</div>}
+            {detailTab === 'Consensus' && <div className="rounded-xl border border-[#e2e8f0] bg-white p-4 mb-5 text-sm leading-relaxed text-[#475569]">{categoryCopy.consensus}</div>}
+            {detailTab === 'Alerts' && <div className="rounded-xl border border-[#e2e8f0] bg-white p-4 mb-5 text-sm leading-relaxed text-[#475569]">{categoryCopy.alerts}</div>}
+
+            <div className="rounded-xl border border-[#e2e8f0] bg-white overflow-hidden mb-5">
+              <div className="flex items-center justify-between border-b border-[#e2e8f0] px-4 py-3">
+                <p className="text-sm font-bold text-[#0b1c30]">Historical data</p>
+                <div className="flex items-center gap-3 text-xs font-semibold text-[#475569]"><span className="text-[#5338ec]">6M</span><span>1Y</span><span>2Y</span><span>3Y</span><button className="border-l border-[#e2e8f0] pl-3 hover:text-[#5338ec]">Compare +</button></div>
+              </div>
+              <div className="h-44 px-4 py-5">
+                {trendPoints && trendPoints.length > 1 ? (
+                  <div className="flex h-full items-end gap-2 sm:gap-4">
+                    {trendPoints.map((value, index) => {
+                      const min = Math.min(...trendPoints);
+                      const max = Math.max(...trendPoints);
+                      const height = `${Math.max(12, ((value - min) / (max - min || 1)) * 82 + 18)}%`;
+                      return <div key={`${value}-${index}`} className="flex h-full flex-1 flex-col items-center justify-end gap-1"><div className="w-full max-w-10 rounded-t-sm bg-[#5b84bd]" style={{ height }} title={`${value}`} /><span className="text-[10px] text-slate-400">{index === trendPoints.length - 1 ? 'Now' : `-${trendPoints.length - index - 1}`}</span></div>;
+                    })}
+                  </div>
+                ) : <div className="flex h-full items-center justify-center text-sm text-slate-400">Historical series is not available for this event.</div>}
+              </div>
+            </div>
+          </>
+        )}
 
         {(event.forecast || event.previous || event.actual) && (
           <div className="grid grid-cols-3 gap-3 mb-5">
@@ -125,6 +211,19 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         )}
 
         <p className="text-sm text-[#0b1c30] leading-relaxed mb-5">{event.summary}</p>
+
+        {fullPage && (
+          <div className="grid gap-5 lg:grid-cols-2 mb-5">
+            <section className="rounded-xl border border-[#e2e8f0] bg-white overflow-hidden">
+              <h3 className="border-b border-[#e2e8f0] px-4 py-3 text-sm font-bold text-[#0b1c30]">About this indicator</h3>
+              <p className="p-4 text-sm leading-relaxed text-[#475569]">{categoryCopy.description}</p>
+            </section>
+            <section className="rounded-xl border border-[#e2e8f0] bg-white overflow-hidden">
+              <h3 className="border-b border-[#e2e8f0] px-4 py-3 text-sm font-bold text-[#0b1c30]">Related indicators</h3>
+              <div className="divide-y divide-[#f1f5f9]">{[`${event.country} ${event.category}`, `${event.assetClass} market`, `${event.currency} outlook`].map((item) => <button key={item} onClick={() => onNavigateToInstrument?.(event.currency)} className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-[#334155] hover:bg-[#f8fafc]">{item}<span className="text-[#5338ec]">›</span></button>)}</div>
+            </section>
+          </div>
+        )}
 
         {/* Actions: watch + alert */}
         <div className="flex flex-wrap items-center gap-2 mb-5">
@@ -270,6 +369,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

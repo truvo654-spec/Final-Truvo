@@ -269,6 +269,7 @@ export default function App() {
   const [communityChallenges, setCommunityChallenges] = useState<CommunityChallenge[]>(COMMUNITY_CHALLENGES);
   const [topContributors, setTopContributors] = useState<TopContributor[]>(TOP_CONTRIBUTORS);
   const [selectedInstrumentForCommunity, setSelectedInstrumentForCommunity] = useState<string | null>(null);
+  const [selectedInstrumentSymbol, setSelectedInstrumentSymbol] = useState<string | null>(null);
 
   // Modals state
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
@@ -1301,6 +1302,11 @@ export default function App() {
               }
             }}
             onNavigateToSignal={(ticker) => handleSelectSignalByTicker(ticker)}
+            onNavigateToInstrument={(symbol) => {
+              setSelectedInstrumentSymbol(symbol);
+              setActiveTab('instrument-analysis');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             onNavigateToTab={(tab) => {
               setActiveTab(tab);
               window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1414,6 +1420,7 @@ export default function App() {
         {/* ─── TAB: Instrument Analysis (Deep Technical Telemetry, Key Levels & Multi-Asset Structure) ─── */}
         {activeTab === 'instrument-analysis' && (
           <InstrumentAnalysisPage
+            initialInstrumentSymbol={selectedInstrumentSymbol}
             user={user}
             signals={signals}
             brokers={brokers}

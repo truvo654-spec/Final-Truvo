@@ -59,6 +59,7 @@ interface InstrumentAnalysisPageProps {
   onOpenConnectModal: (broker?: Broker) => void;
   onOpenCalculator?: (type: string) => void;
   onNavigateToTab?: (tab: string, subTab?: string, symbol?: string) => void;
+  initialInstrumentSymbol?: string | null;
   onShareToCommunity?: (symbol: string, name: string) => void;
   onShowToast?: (msg: string) => void;
   onOpenViewPlan?: () => void;
@@ -76,6 +77,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
   onOpenConnectModal,
   onOpenCalculator,
   onNavigateToTab,
+  initialInstrumentSymbol,
   onShareToCommunity,
   onShowToast,
   onOpenViewPlan,
@@ -144,6 +146,36 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
   // View tab state (Table | Heatmap | Scatter | Correlation)
   const [activeViewTab, setActiveViewTab] = useState<'table' | 'heatmap' | 'scatter' | 'correlation'>('table');
   const [selectedDetailInstrument, setSelectedDetailInstrument] = useState<Instrument | null>(null);
+  const initialSymbolHandledRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!initialInstrumentSymbol || initialSymbolHandledRef.current === initialInstrumentSymbol) return;
+    initialSymbolHandledRef.current = initialInstrumentSymbol;
+    const normalized = initialInstrumentSymbol.toUpperCase();
+    const matched = instruments.find((instrument) =>
+      instrument.symbol.toUpperCase() === normalized ||
+      instrument.symbol.toUpperCase().startsWith(`${normalized}/`) ||
+      instrument.symbol.toUpperCase().endsWith(`/${normalized}`)
+    );
+    setSelectedDetailInstrument(matched || {
+      symbol: normalized,
+      name: `${normalized} Market Instrument`,
+      market: 'Forex',
+      sector: 'Major',
+      primaryMarket: 'FX Spot',
+      subSector: 'Currency Markets',
+      price: 1,
+      change: 0,
+      volume: 0,
+      rvol: 1,
+      rsi: 50,
+      return1m: 0,
+      marketCap: 0,
+      sentiment: 50,
+      signal: 'NEUTRAL',
+      confidence: 50,
+    });
+  }, [initialInstrumentSymbol]);
 
   // Hovered row for Trade button & Mini Modal popover
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);

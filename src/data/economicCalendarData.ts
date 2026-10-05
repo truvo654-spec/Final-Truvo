@@ -22,17 +22,39 @@ export const CALENDAR_TIMEZONES = [
   { label: 'GMT-4:00', offset: -4 },
 ];
 
-export const CALENDAR_CATEGORIES: EventCategory[] = [
-  'Central Bank',
-  'Employment',
-  'Inflation',
-  'GDP',
-  'PMI',
-  'Trade',
-  'Housing',
-  'Sentiment',
-  'Speech',
-];
+export const CALENDAR_CATEGORIES = [
+  'Interest Rate',
+  'Prices & Inflation',
+  'Labour Market',
+  'GDP Growth',
+  'Foreign Trade',
+  'Government',
+  'Business Confidence',
+  'Consumer Sentiment',
+  'Housing Market',
+  'Bond Auctions',
+  'Energy',
+  'Holidays',
+  'Earnings',
+] as const;
+
+// Display labels follow the calendar reference taxonomy while these mappings
+// keep filtering compatible with the event categories in the demo dataset.
+export const CALENDAR_CATEGORY_MATCHES: Record<(typeof CALENDAR_CATEGORIES)[number], EventCategory[]> = {
+  'Interest Rate': ['Central Bank'],
+  'Prices & Inflation': ['Inflation'],
+  'Labour Market': ['Employment'],
+  'GDP Growth': ['GDP'],
+  'Foreign Trade': ['Trade'],
+  Government: ['Speech'],
+  'Business Confidence': ['Sentiment'],
+  'Consumer Sentiment': ['Sentiment'],
+  'Housing Market': ['Housing'],
+  'Bond Auctions': ['Trade'],
+  Energy: ['Trade'],
+  Holidays: ['Holiday'],
+  Earnings: ['GDP'],
+};
 
 const CUR: Record<string, { country: string; flag: string; region: string }> = {
   USD: { country: 'United States', flag: '🇺🇸', region: 'US' },
@@ -68,6 +90,31 @@ type Row = {
 
 const impOf = (n: 1 | 2 | 3): EventImpact => (n === 3 ? 'High' : n === 2 ? 'Medium' : 'Low');
 
+const COUNTRY_CODE_BY_CURRENCY: Record<string, string> = {
+  USD: 'US', EUR: 'EMU', GBP: 'GB', JPY: 'JP', CNY: 'CN', AUD: 'AU', NZD: 'NZ', KRW: 'KR', SGD: 'SG', THB: 'TH', IDR: 'ID', MYR: 'MY', INR: 'IN', CAD: 'CA',
+};
+
+const acuityDetails = (id: string, at: string, cur: string, meta: { country: string }, category: EventCategory, title: string, impact: 1 | 2 | 3, summary: string, eventTime: 'BMO' | 'AMC' | 'NA' = 'NA', relatedTicker?: string) => {
+  const countryCode = COUNTRY_CODE_BY_CURRENCY[cur] || cur;
+  return {
+    source: 'Acuity' as const,
+    eventId: `acuity_${countryCode}_${category.toLowerCase().replace(/\s+/g, '-')}_${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
+    occurrenceId: id,
+    countryCode,
+    countryName: meta.country,
+    currencyId: cur,
+    eventTypeId: `type_${category.toLowerCase().replace(/\s+/g, '-')}`,
+    eventTypeDescription: category === 'Holiday' ? 'Holidays' : category,
+    potency: impact,
+    potencySymbol: impact === 3 ? 'H' : impact === 2 ? 'M' : 'L',
+    description: summary,
+    eventTime,
+    assetIds: relatedTicker ? [relatedTicker.length * 10] : [],
+    assetTickers: relatedTicker ? [relatedTicker] : [],
+    isLatest: true,
+  };
+};
+
 const summaryFor = (r: Row, country: string) =>
   r.cat === 'Speech'
     ? `${r.title.replace(' Speaks', '')} delivers remarks. The headline risk is tone: a change from recent guidance can move ${r.cur} quickly.`
@@ -76,8 +123,10 @@ const summaryFor = (r: Row, country: string) =>
 const build = (rows: Row[]): EconomicEvent[] =>
   rows.map((r, i) => {
     const meta = CUR[r.cur];
+    const id = `evt_${r.at.slice(0, 10).replace(/-/g, '')}_${i}`;
+    const summary = summaryFor(r, meta.country);
     return {
-      id: `evt_${r.at.slice(0, 10).replace(/-/g, '')}_${i}`,
+      id,
       title: r.title,
       country: meta.country,
       countryFlag: meta.flag,
@@ -91,16 +140,19 @@ const build = (rows: Row[]): EconomicEvent[] =>
       forecast: r.f,
       previous: r.p,
       actual: r.a,
-      summary: summaryFor(r, meta.country),
+      summary,
       historicalTrend: [],
+      acuity: acuityDetails(id, r.at, r.cur, meta, r.cat, r.title, r.imp, summary, r.speech ? 'NA' : 'NA', r.extra?.relatedSignalTicker),
       ...r.extra,
     } as EconomicEvent;
   });
 
 const holiday = (date: string, cur: string, title: string): EconomicEvent => {
   const meta = CUR[cur];
+  const id = `hol_${date.replace(/-/g, '')}_${cur}`;
+  const summary = `${meta.country} markets are closed or trade on reduced hours. Expect thinner liquidity in ${cur} pairs.`;
   return {
-    id: `hol_${date.replace(/-/g, '')}_${cur}`,
+    id,
     title,
     country: meta.country,
     countryFlag: meta.flag,
@@ -112,8 +164,9 @@ const holiday = (date: string, cur: string, title: string): EconomicEvent => {
     at: `${date}T00:00:00+07:00`,
     date,
     allDay: true,
-    summary: `${meta.country} markets are closed or trade on reduced hours. Expect thinner liquidity in ${cur} pairs.`,
+    summary,
     historicalTrend: [],
+    acuity: acuityDetails(id, `${date}T00:00:00+07:00`, cur, meta, 'Holiday', title, 1, summary),
   };
 };
 
