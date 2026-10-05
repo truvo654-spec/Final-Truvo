@@ -26,6 +26,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { InteractiveBrokersGraphic } from './submenu/InteractiveBrokersGraphic';
+import { FEATURE_FLAGS } from '../config/featureFlags';
 import { InteractiveTradeGraphic } from './submenu/InteractiveTradeGraphic';
 import { InteractiveCommunityGraphic } from './submenu/InteractiveCommunityGraphic';
 import { InteractiveCompanyGraphic } from './submenu/InteractiveCompanyGraphic';
@@ -1320,7 +1321,8 @@ export const Header: React.FC<HeaderProps> = ({
                       </button>
 
                       {/* 4. Expert Advisors */}
-                      <button
+                      {FEATURE_FLAGS.expertAdvisors && (
+<button
                         onClick={() => {
                           setActiveTab('expert-advisors');
                           handleCloseImmediately();
@@ -1344,6 +1346,7 @@ export const Header: React.FC<HeaderProps> = ({
                           </div>
                         </div>
                       </button>
+)}
                     </div>
                   </div>
 
@@ -1464,7 +1467,8 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
 
                     {/* Section 3: Portfolio Tracker */}
-                    <div
+                    {FEATURE_FLAGS.portfolioTracker && (
+<div
                       className="space-y-2 pt-2 border-t border-slate-100"
                       onMouseEnter={() => setHoveredTradeOption('portfolio')}
                     >
@@ -1508,6 +1512,7 @@ export const Header: React.FC<HeaderProps> = ({
                         </li>
                       </ul>
                     </div>
+)}
 
                     {/* Section 4: Trading Journal */}
                     <div
@@ -1555,7 +1560,8 @@ export const Header: React.FC<HeaderProps> = ({
                       </ul>
                     </div>
 
-                    <div
+                    {FEATURE_FLAGS.priceAlerts && (
+<div
                       className="space-y-2 pt-2 border-t border-slate-100"
                       onMouseEnter={() => setHoveredTradeOption('alerts')}
                     >
@@ -1598,8 +1604,10 @@ export const Header: React.FC<HeaderProps> = ({
                         </li>
                       </ul>
                     </div>
+)}
 
-                    <div
+                    {FEATURE_FLAGS.aiCompanion && (
+<div
                       className="space-y-2 pt-2 border-t border-slate-100"
                       onMouseEnter={() => setHoveredTradeOption('ai')}
                     >
@@ -1642,6 +1650,7 @@ export const Header: React.FC<HeaderProps> = ({
                         </li>
                       </ul>
                     </div>
+)}
                   </div>
                 </div>
               </div>
@@ -2110,7 +2119,8 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Instrument Analysis
           </button>
-          <button
+          {FEATURE_FLAGS.portfolioTracker && (
+<button
             onClick={() => {
               setActiveTab('portfolio-tracker');
               setMobileMenuOpen(false);
@@ -2121,6 +2131,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Portfolio Tracker
           </button>
+)}
           <button
             onClick={() => {
               setActiveTab('trading-journal');
@@ -2132,7 +2143,8 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Trading Journal
           </button>
-          <button
+          {FEATURE_FLAGS.expertAdvisors && (
+<button
             onClick={() => {
               setActiveTab('expert-advisors');
               setMobileMenuOpen(false);
@@ -2143,7 +2155,9 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Expert Advisors
           </button>
-          <button
+)}
+          {FEATURE_FLAGS.priceAlerts && (
+<button
             onClick={() => {
               setActiveTab('alerts');
               setMobileMenuOpen(false);
@@ -2154,7 +2168,9 @@ export const Header: React.FC<HeaderProps> = ({
           >
             Price Alerts
           </button>
-          <button
+)}
+          {FEATURE_FLAGS.aiCompanion && (
+<button
             onClick={() => {
               setActiveTab('ai-companion');
               setMobileMenuOpen(false);
@@ -2165,6 +2181,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             AI Companion
           </button>
+)}
           <button
             onClick={() => {
               setActiveTab('promotions');

@@ -5,6 +5,7 @@ import { COURSES } from '../../data/educationData';
 import { COMMUNITY_TOPICS } from '../../data/communityData';
 import { totalSeries, tradeStats, tradesInRange, isClosed, sliceSeries } from '../portfolio/portfolioMath';
 import { Sparkline } from '../portfolio/PortfolioCharts';
+import { FEATURE_FLAGS } from '../../config/featureFlags';
 
 type Mode = 'portfolio' | 'learn' | 'signals' | 'discuss';
 
@@ -141,9 +142,11 @@ export const PortfolioSnapshotWidget: React.FC<PortfolioSnapshotWidgetProps> = (
 
       <div className="px-5 py-3 border-t border-[#f1f5f9] flex items-center justify-between">
         <span className="text-[11px] text-[#94a3b8]">Updated from your connected accounts</span>
-        <button onClick={() => onNavigateToTab('portfolio-tracker')} className="text-xs font-bold text-[#5338ec] hover:underline">
-          Open Portfolio Tracker →
-        </button>
+        {FEATURE_FLAGS.portfolioTracker && (
+          <button onClick={() => onNavigateToTab('portfolio-tracker')} className="text-xs font-bold text-[#5338ec] hover:underline">
+            Open Portfolio Tracker →
+          </button>
+        )}
       </div>
     </div>
   );
