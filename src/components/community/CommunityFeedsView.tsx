@@ -19,6 +19,12 @@ import {
   Filter,
   LineChart,
   ChevronDown,
+  Image as ImageIcon,
+  Smile,
+  ThumbsUp,
+  MoreHorizontal,
+  ShieldCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   TokenMarketItem,
@@ -119,6 +125,8 @@ export const CommunityFeedsView: React.FC<CommunityFeedsViewProps> = ({
   const [authorSubscriptions, setAuthorSubscriptions] = useState<Record<string, boolean>>({});
   const [donatedPosts, setDonatedPosts] = useState<Record<string, boolean>>({});
   const [commentVotes, setCommentVotes] = useState<Record<string, 'agree' | 'disagree' | undefined>>({});
+  const [commentLikes, setCommentLikes] = useState<Record<string, boolean>>({});
+  const [commentSort, setCommentSort] = useState<Record<string, 'top' | 'newest'>>({});
   const [showOnlyFollowing, setShowOnlyFollowing] = useState(false);
   const [claimedBonuses, setClaimedBonuses] = useState<Record<string, boolean>>({});
   const claimBonus = (postId: string, action: string) => {
@@ -206,139 +214,9 @@ export const CommunityFeedsView: React.FC<CommunityFeedsViewProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full">
-      {/* ─── LEFT COLUMN: TOKEN MARKET LIST (3 cols) ─── */}
-      <div className="lg:col-span-3 space-y-3">
-        <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 text-[#0b1c30] shadow-xs">
-          <div className="text-xs text-[#474556] font-semibold mb-2.5">
-            Showing Posts of:
-          </div>
-
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 p-1 bg-[#f1f5f9] border border-slate-200 rounded-xl mb-3 text-xs">
-            <button
-              onClick={() => {
-                setTokenFilterTab('trending');
-                setSelectedTokenSymbol(null);
-              }}
-              className={`flex-1 py-1 px-2 rounded-lg font-medium transition-all ${
-                tokenFilterTab === 'trending'
-                  ? 'bg-white text-[#5338ec] font-bold shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30]'
-              }`}
-            >
-              Trending
-            </button>
-            <button
-              onClick={() => {
-                setTokenFilterTab('gainers');
-                setSelectedTokenSymbol(null);
-              }}
-              className={`flex-1 py-1 px-2 rounded-lg font-medium transition-all ${
-                tokenFilterTab === 'gainers'
-                  ? 'bg-white text-[#5338ec] font-bold shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30]'
-              }`}
-            >
-              Top gain
-            </button>
-            <button
-              onClick={() => {
-                setTokenFilterTab('losers');
-                setSelectedTokenSymbol(null);
-              }}
-              className={`flex-1 py-1 px-2 rounded-lg font-medium transition-all ${
-                tokenFilterTab === 'losers'
-                  ? 'bg-white text-[#5338ec] font-bold shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30]'
-              }`}
-            >
-              Top loser
-            </button>
-          </div>
-          <div className="mb-3 flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 p-1 text-[10px]">
-            <span className="px-1 text-slate-400">Period</span>
-            {['1D', '1W', '1M', '1Y'].map((duration) => (
-              <button key={duration} onClick={() => setTokenDuration(duration)} className={`rounded-md px-2 py-1 font-semibold ${tokenDuration === duration ? 'bg-violet-600 text-white' : 'text-slate-500 hover:bg-violet-50'}`}>{duration}</button>
-            ))}
-          </div>
-          {/* Table Header */}
-          <div className="grid grid-cols-12 text-[10px] text-[#474556] font-semibold uppercase tracking-wider pb-2 border-b border-[#e2e8f0] px-1">
-            <div className="col-span-2">#</div>
-            <div className="col-span-6">Token / MC</div>
-            <div className="col-span-4 text-right">Price / Chg</div>
-          </div>
-
-          {/* Token Rows */}
-          <div className="divide-y divide-[#f1f5f9] max-h-[620px] overflow-y-auto pr-1">
-            {syncedTokens
-              .filter((token) => tokenFilterTab === 'trending' || (tokenFilterTab === 'gainers' ? token.change24h >= 0 : token.change24h < 0))
-              .filter((token) => assetFilter === 'All' || token.category === assetFilter)
-              .sort((a, b) => tokenFilterTab === 'losers' ? a.change24h - b.change24h : b.change24h - a.change24h)
-              .map((token) => {
-              const isSelected = selectedTokenSymbol === token.symbol;
-              const isPositive = token.change24h >= 0;
-              return (
-                <div
-                  key={token.id}
-                  onClick={() =>
-                    setSelectedTokenSymbol(isSelected ? null : token.symbol)
-                  }
-                  className={`grid grid-cols-12 items-center py-2 px-1 text-xs hover:bg-[#f8fafc] rounded-lg cursor-pointer transition-colors ${
-                    isSelected ? 'bg-[#ede9fe] border border-[#5338ec]/50' : ''
-                  }`}
-                >
-                  <div className="col-span-2 font-mono text-[11px] text-slate-400">
-                    {token.rank}
-                  </div>
-                  <div className="col-span-6 min-w-0 pr-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm">{token.icon}</span>
-                      <div className="truncate">
-                        <span className="font-bold text-[#0b1c30] text-xs block leading-tight truncate">
-                          {token.symbol}
-                        </span>
-                        <span className="text-[10px] text-[#474556] font-mono block">
-                          {token.marketCap}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-span-4 text-right">
-                    <div className="font-mono text-[#0b1c30] font-semibold text-xs leading-tight">
-                      {token.price}
-                    </div>
-                    <div
-                      className={`text-[10px] font-mono font-medium ${
-                        isPositive ? 'text-emerald-600' : 'text-rose-600'
-                      }`}
-                    >
-                      {isPositive ? `+${(token.change24h * ({ '1D': 1, '1W': 1.8, '1M': 3.2, '1Y': 6.5 }[tokenDuration] ?? 1)).toFixed(2)}%` : `${(token.change24h * ({ '1D': 1, '1W': 1.8, '1M': 3.2, '1Y': 6.5 }[tokenDuration] ?? 1)).toFixed(2)}%`}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {selectedTokenSymbol && (
-            <div className="mt-2.5 pt-2 border-t border-[#e2e8f0] flex items-center justify-between">
-              <span className="text-xs text-[#0b1c30]">
-                Filtered by <strong className="text-[#5338ec]">{selectedTokenSymbol}</strong>
-              </span>
-              <button
-                onClick={() => setSelectedTokenSymbol(null)}
-                className="text-[11px] text-[#5338ec] hover:underline font-semibold"
-              >
-                Clear
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
+    <div className="space-y-5 w-full">
       {/* ─── CENTER COLUMN: TRENDING POSTS FEED (9 cols) ─── */}
-      <div className="lg:col-span-9 space-y-4">
+      <div className="space-y-4">
         {/* Top Header Controls */}
         <div className="bg-white border border-[#e2e8f0] rounded-2xl p-3.5 text-[#0b1c30] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">
@@ -428,7 +306,7 @@ export const CommunityFeedsView: React.FC<CommunityFeedsViewProps> = ({
         </div>
 
         {/* Posts List */}
-        <div className="community-feed-list space-y-4 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
+        <div className="community-feed-list space-y-4">
           {sortedPosts.length === 0 ? (
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-12 text-center text-[#474556] shadow-xs">
               <Sparkles className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-50" />
@@ -765,67 +643,183 @@ export const CommunityFeedsView: React.FC<CommunityFeedsViewProps> = ({
 
                   {/* Expandable Comments Section */}
                   {isCommentsOpen && (
-                    <div className="mt-3 pt-3 border-t border-[#f1f5f9] space-y-3">
+                    <div className="mt-4 pt-4 border-t border-[#f1f5f9]">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-bold text-[#0b1c30]">
+                          Comments <span className="text-[#94a3b8] font-semibold">{post.commentsCount || 0}</span>
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCommentSort((prev) => ({
+                              ...prev,
+                              [post.id]: prev[post.id] === 'newest' ? 'top' : 'newest',
+                            }))
+                          }
+                          className="flex items-center gap-1 text-xs font-semibold text-[#474556] hover:text-[#0b1c30] transition-colors"
+                        >
+                          {(commentSort[post.id] || 'top') === 'top' ? 'Top' : 'Newest'}
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Composer */}
+                      <div className="flex items-center gap-2.5 mb-5">
+                        <img
+                          src={user.avatar}
+                          alt={user.username}
+                          className="w-9 h-9 rounded-full object-cover shrink-0"
+                        />
+                        <div className="flex-1 flex items-center gap-2 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3 py-2">
+                          <input
+                            type="text"
+                            value={newCommentText[post.id] || ''}
+                            onChange={(e) =>
+                              setNewCommentText((prev) => ({
+                                ...prev,
+                                [post.id]: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCommentSubmit(post.id);
+                            }}
+                            placeholder="What are your thoughts?"
+                            className="flex-1 min-w-0 bg-transparent text-sm text-[#0b1c30] placeholder-slate-400 focus:outline-none"
+                          />
+                          <ImageIcon className="w-4 h-4 text-slate-400 shrink-0" />
+                          <Smile className="w-4 h-4 text-slate-400 shrink-0" />
+                        </div>
+                        <button
+                          onClick={() => handleCommentSubmit(post.id)}
+                          className="flex items-center gap-1.5 bg-gradient-to-r from-[#5338ec] to-[#7c6ef0] hover:brightness-105 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shrink-0"
+                        >
+                          Send
+                        </button>
+                      </div>
+
                       {post.comments && post.comments.length > 0 && (
-                        <div className="space-y-2">
-                          {post.comments.map((comment) => (
-                            <div
-                              key={comment.id}
-                              className="bg-[#f8fafc] border border-[#e2e8f0] rounded-xl p-2.5 text-xs flex items-start gap-2"
-                            >
-                              <img
-                                src={comment.avatar}
-                                alt={comment.author}
-                                className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
-                              />
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between">
-                                  <button
-                                    type="button"
-                                    onClick={() => onSelectInfluencerByHandle(`@${comment.author.toLowerCase().replace(/\s+/g, '')}`)}
-                                    className="font-semibold text-[#5338ec] hover:underline"
-                                  >
-                                    {comment.author}
-                                  </button>
-                                  <span className="text-[10px] text-slate-400 font-mono">
-                                    {comment.time}
-                                  </span>
-                                </div>
-                                <p className="text-[#474556] mt-0.5">{comment.text}</p>
-                                <div className="mt-1.5 flex items-center gap-2 text-[10px]">
-                                  <button type="button" onClick={() => setCommentVotes((prev) => ({ ...prev, [comment.id]: prev[comment.id] === 'agree' ? undefined : 'agree' }))} className={commentVotes[comment.id] === 'agree' ? 'font-semibold text-emerald-600' : 'text-slate-400 hover:text-emerald-600'}>Agree · {commentVotes[comment.id] === 'agree' ? 1 : 0}</button>
-                                  <button type="button" onClick={() => setCommentVotes((prev) => ({ ...prev, [comment.id]: prev[comment.id] === 'disagree' ? undefined : 'disagree' }))} className={commentVotes[comment.id] === 'disagree' ? 'font-semibold text-rose-500' : 'text-slate-400 hover:text-rose-500'}>Disagree · {commentVotes[comment.id] === 'disagree' ? 1 : 0}</button>
+                        <div className="space-y-5">
+                          {(commentSort[post.id] === 'newest'
+                            ? [...post.comments].reverse()
+                            : post.comments
+                          ).map((comment) => (
+                            <div key={comment.id}>
+                              <div className="flex items-start gap-2.5">
+                                <img
+                                  src={comment.avatar}
+                                  alt={comment.author}
+                                  className="w-9 h-9 rounded-full object-cover shrink-0"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <button
+                                      type="button"
+                                      onClick={() => onSelectInfluencerByHandle(`@${comment.author.toLowerCase().replace(/\s+/g, '')}`)}
+                                      className="font-bold text-sm text-[#0b1c30] hover:text-[#5338ec] transition-colors"
+                                    >
+                                      {comment.author}
+                                    </button>
+                                    {comment.verified && (
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-sky-500 fill-sky-500" />
+                                    )}
+                                    {comment.badge && (
+                                      <span className="flex items-center gap-1 text-xs font-bold text-[#5338ec]">
+                                        <ShieldCheck className="w-3.5 h-3.5" /> {comment.badge}
+                                      </span>
+                                    )}
+                                    <span className="text-xs text-[#94a3b8]">· {comment.time}</span>
+                                  </div>
+                                  <p className="text-sm text-[#474556] leading-relaxed mt-0.5">{comment.text}</p>
+
+                                  {comment.chartSnippet && (
+                                    <img
+                                      src={comment.chartSnippet}
+                                      alt="Chart"
+                                      className="mt-2 w-full max-w-sm rounded-xl border border-slate-200"
+                                    />
+                                  )}
+
+                                  <div className="flex items-center gap-4 mt-2 text-xs text-[#94a3b8] font-semibold">
+                                    <button
+                                      type="button"
+                                      onClick={() => setCommentLikes((prev) => ({ ...prev, [comment.id]: !prev[comment.id] }))}
+                                      className={`flex items-center gap-1 transition-colors ${
+                                        commentLikes[comment.id] ? 'text-[#5338ec]' : 'hover:text-[#5338ec]'
+                                      }`}
+                                    >
+                                      <ThumbsUp className={`w-3.5 h-3.5 ${commentLikes[comment.id] ? 'fill-current' : ''}`} />
+                                      {(comment.likes || 0) + (commentLikes[comment.id] ? 1 : 0)}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setNewCommentText((prev) => ({ ...prev, [post.id]: `@${comment.author} ` }))
+                                      }
+                                      className="hover:text-[#0b1c30] transition-colors"
+                                    >
+                                      Reply
+                                    </button>
+                                    <button type="button" className="hover:text-[#0b1c30] transition-colors">
+                                      <MoreHorizontal className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
+
+                              {/* Nested replies */}
+                              {comment.replies && comment.replies.length > 0 && (
+                                <div className="pl-11 mt-3 space-y-3 border-l-2 border-[#f1f5f9] ml-4">
+                                  {comment.replies.map((reply) => (
+                                    <div key={reply.id} className="flex items-start gap-2.5 pl-3">
+                                      <img
+                                        src={reply.avatar}
+                                        alt={reply.author}
+                                        className="w-7 h-7 rounded-full object-cover shrink-0"
+                                      />
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-bold text-sm text-[#0b1c30]">{reply.author}</span>
+                                          {reply.verified && (
+                                            <CheckCircle2 className="w-3.5 h-3.5 text-sky-500 fill-sky-500" />
+                                          )}
+                                          <span className="text-xs text-[#94a3b8]">· {reply.time}</span>
+                                        </div>
+                                        <p className="text-sm text-[#474556] leading-relaxed mt-0.5">{reply.text}</p>
+                                        <div className="flex items-center gap-4 mt-2 text-xs text-[#94a3b8] font-semibold">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setCommentLikes((prev) => ({ ...prev, [reply.id]: !prev[reply.id] }))
+                                            }
+                                            className={`flex items-center gap-1 transition-colors ${
+                                              commentLikes[reply.id] ? 'text-[#5338ec]' : 'hover:text-[#5338ec]'
+                                            }`}
+                                          >
+                                            <ThumbsUp className={`w-3.5 h-3.5 ${commentLikes[reply.id] ? 'fill-current' : ''}`} />
+                                            {(reply.likes || 0) + (commentLikes[reply.id] ? 1 : 0)}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setNewCommentText((prev) => ({ ...prev, [post.id]: `@${reply.author} ` }))
+                                            }
+                                            className="hover:text-[#0b1c30] transition-colors"
+                                          >
+                                            Reply
+                                          </button>
+                                          <button type="button" className="hover:text-[#0b1c30] transition-colors">
+                                            <MoreHorizontal className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
                       )}
-
-                      {/* Add Comment Input */}
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={newCommentText[post.id] || ''}
-                          onChange={(e) =>
-                            setNewCommentText((prev) => ({
-                              ...prev,
-                              [post.id]: e.target.value,
-                            }))
-                          }
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleCommentSubmit(post.id);
-                          }}
-                          placeholder="Write a comment or share your take..."
-                          className="flex-1 bg-[#f8fafc] border border-[#e2e8f0] rounded-xl px-3 py-1.5 text-xs text-[#0b1c30] placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#5338ec]"
-                        />
-                        <button
-                          onClick={() => handleCommentSubmit(post.id)}
-                          className="bg-[#5338ec] hover:bg-[#4326d8] text-white p-2 rounded-xl text-xs transition-colors shrink-0"
-                        >
-                          <Send className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
                     </div>
                   )}
                 </article>

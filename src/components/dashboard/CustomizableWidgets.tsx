@@ -17,6 +17,7 @@ import { DashboardSlot } from '../../types/dashboardWidgets';
 import { UserProfile, MarketSignal, Broker, Mission } from '../../types';
 import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
 import { MissionCardWidget } from './MissionCardWidget';
+import { PortfolioSnapshotWidget } from './PortfolioSnapshotWidget';
 import { LiveInteractiveSparkline } from './LiveInteractiveSparkline';
 import { BorderBeam } from '../ui/BorderBeam';
 import { getNextTierInfo, LEVEL_SCENARIOS, LevelScenarioId } from '../../data/levelScenarios';
@@ -624,6 +625,18 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
           <InstrumentAnalysisWidget
             size={slot.size}
             onNavigateToTab={onNavigateToTab}
+          />
+        </div>
+      )}
+
+      {/* ─── 9. PORTFOLIO SNAPSHOT (Portfolio + Learn + Signals + Discuss) ─── */}
+      {slot.type === 'portfolio-snapshot' && (
+        <div className="w-full h-full">
+          <PortfolioSnapshotWidget
+            size={slot.size}
+            signals={signals}
+            onNavigateToTab={onNavigateToTab}
+            onSelectSignal={onSelectSignal}
           />
         </div>
       )}

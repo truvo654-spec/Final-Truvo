@@ -1058,6 +1058,41 @@ export const INITIAL_COMMUNITY_POSTS: CommunityPost[] = [
     commentsCount: 16,
     comments: [],
   },
+  {
+    id: 'post_jpy_1',
+    author: {
+      name: 'YenWatcher',
+      handle: '@yen_watcher',
+      avatar: '🎌',
+      tier: 'Player',
+      verified: true,
+      winRate: '71.3%',
+    },
+    timestamp: '26 mins ago',
+    category: 'Discussion',
+    ticker: 'USD/JPY',
+    side: 'SELL',
+    entryPrice: 155.20,
+    targetPrice: 153.80,
+    stopLoss: 155.90,
+    projectedRebate: '+$6.20 / lot (HFM Zero)',
+    title: 'USD/JPY at 155 again — is this the intervention zone?',
+    content: 'Third test of 155 this quarter. MOF jawboning is getting louder but no confirmed spot intervention yet. Keeping size small until we see an actual print, but the risk/reward on a fade here is decent with a tight stop above 155.90.',
+    tags: ['JPY', 'Forex', 'BankOfJapan'],
+    likes: 38,
+    hasLiked: false,
+    commentsCount: 9,
+    comments: [
+      {
+        id: 'c_jpy_1',
+        author: 'MacroAlpha',
+        avatar: '🦅',
+        tier: 'Player',
+        time: '18 mins ago',
+        text: 'Last two interventions both came after a weekly close through this level, not intraday. Worth watching Friday.',
+      },
+    ],
+  },
 ];
 
 export const COMMUNITY_CHALLENGES: CommunityChallenge[] = [

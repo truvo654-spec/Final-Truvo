@@ -182,6 +182,11 @@ export interface CommunityComment {
   tier: string;
   time: string;
   text: string;
+  verified?: boolean;
+  badge?: string;
+  likes?: number;
+  chartSnippet?: string;
+  replies?: CommunityComment[];
 }
 
 export interface PostReaction {
@@ -329,6 +334,266 @@ export interface CommunityArticle {
   date: string;
   readTime?: string;
   content?: string;
+}
+
+export type NewsSentiment = 'Bullish' | 'Bearish' | 'Neutral';
+export type NewsTier = 'public' | 'basic' | 'intermediate' | 'premium';
+export type AdvisorLabel = 'Critical' | 'Long-term' | 'Temporary Noise';
+
+export interface NewsAdvisorPick {
+  advisorName: string;
+  advisorAvatar: string;
+  label: AdvisorLabel;
+  commentary: string;
+  lessonTitle?: string;
+  lessonDuration?: string;
+  lessonDate?: string;
+}
+
+export interface NewsArticle {
+  id: string;
+  source: string;
+  sourceAvatar: string;
+  assetClass: 'Forex' | 'Crypto' | 'Commodity' | 'Indices' | 'Stocks';
+  tags: string[];
+  headline: string;
+  excerpt: string;
+  content: string[];
+  expertSummary?: string;
+  thumbnail: string;
+  heroImage: string;
+  sentiment: NewsSentiment;
+  timestamp: string;
+  readTime: string;
+  claps: number;
+  commentsCount: number;
+  minTier: NewsTier;
+  followedTopic?: string;
+  advisorPick?: NewsAdvisorPick;
+}
+
+export interface NewsComment {
+  id: string;
+  articleId: string;
+  author: string;
+  avatar: string;
+  date: string;
+  text: string;
+  claps: number;
+  repliesCount: number;
+}
+
+export type EventImpact = 'Low' | 'Medium' | 'High';
+export type EventCategory = 'Central Bank' | 'Employment' | 'Inflation' | 'GDP' | 'Trade' | 'Housing' | 'Sentiment' | 'PMI' | 'Speech' | 'Holiday';
+export type EventTimeframe = 'today' | 'week' | 'month';
+
+export interface EconomicEvent {
+  id: string;
+  title: string;
+  country: string;
+  countryFlag: string;
+  currency: string;
+  region: string;
+  assetClass: 'Forex' | 'Crypto' | 'Commodity' | 'Indices' | 'Stocks';
+  category: EventCategory;
+  impact: EventImpact;
+  /** ISO timestamp with offset, e.g. 2026-10-05T05:00:00+07:00. Ignored for all-day rows. */
+  at: string;
+  /** YYYY-MM-DD, only for all-day rows (holidays). */
+  date?: string;
+  allDay?: boolean;
+  hasSpeech?: boolean;
+  forecast?: string;
+  previous?: string;
+  actual?: string;
+  summary: string;
+  historicalTrend: number[];
+  relatedArticleId?: string;
+  relatedSignalTicker?: string;
+  aiPrediction?: string;
+}
+
+export interface EventNote {
+  id: string;
+  eventId: string;
+  advisorName: string;
+  advisorAvatar: string;
+  text: string;
+}
+
+export interface EventAlert {
+  id: string;
+  eventId: string;
+  leadTimeMinutes: number;
+}
+
+export interface BrokerEventTag {
+  id: string;
+  eventId: string;
+  brokerName: string;
+  message: string;
+}
+
+export type CourseLevel = 'Beginner' | 'Intermediate' | 'Advanced';
+export type CourseFormat = 'Video' | 'Article' | 'PDF' | 'Quiz';
+export type LearningPlan = 'Free' | 'Basic' | 'Advanced' | 'Elite';
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+}
+
+export interface CourseLesson {
+  id: string;
+  title: string;
+  format: CourseFormat;
+  durationMinutes: number;
+  isPremium: boolean;
+  videoDurationLabel?: string;
+  articleContent?: string[];
+  quizQuestions?: QuizQuestion[];
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  level: CourseLevel;
+  thumbnail: string;
+  instructorName: string;
+  instructorAvatar: string;
+  isAdvisorContent: boolean;
+  brokerBranding?: string;
+  requiredPlan: LearningPlan;
+  pointsReward: number;
+  lessons: CourseLesson[];
+  enrolledCount: number;
+  rating: number;
+}
+
+export interface Certificate {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  trackName: string;
+  issuedDate: string;
+}
+
+export type LiveClassStatus = 'live' | 'upcoming' | 'replay';
+export type LiveClassHostType = 'Advisor' | 'Broker' | 'MarketSyde';
+
+export interface LiveClass {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  hostName: string;
+  hostAvatar: string;
+  hostType: LiveClassHostType;
+  status: LiveClassStatus;
+  scheduledLabel: string;
+  attendeeCount: number;
+  requiredPlan: LearningPlan;
+}
+
+export type TradeInputMethod = 'manual' | 'api';
+export type TradeOutcome = 'win' | 'loss' | 'neutral';
+export type PortfolioAssetClass = 'Forex' | 'Crypto' | 'Stocks' | 'Commodity' | 'Indices';
+
+export interface PortfolioTrade {
+  id: string;
+  broker: string;
+  inputMethod: TradeInputMethod;
+  assetClass: PortfolioAssetClass;
+  symbol: string;
+  direction: 'BUY' | 'SELL';
+  entryPrice: number;
+  exitPrice: number | null;
+  size: number;
+  pnl: number;
+  isRealized: boolean;
+  outcome: TradeOutcome;
+  riskTag?: 'high-risk' | 'high-reward' | 'low-risk';
+  strategyTag?: string;
+  riskRewardRatio?: number;
+  openedAt: string;
+  closedAt: string | null;
+  analystNote?: string;
+  /** Signal confidence (0-100) when the trade came from a MarketSyde signal. */
+  confidence?: number;
+}
+
+export interface PortfolioGoal {
+  id: string;
+  label: string;
+  type: 'growth' | 'drawdown-limit';
+  targetValue: number;
+  currentValue: number;
+  unit: '%' | '$';
+}
+
+export interface PortfolioBalancePoint {
+  label: string;
+  balance: number;
+}
+
+export interface PortfolioSnapshot {
+  totalBalance: number;
+  freeMargin: number;
+  marginUsagePct: number;
+  realizedPnl: number;
+  unrealizedPnl: number;
+  activeTradesCount: number;
+  winRate: number;
+  connectedBrokersCount: number;
+}
+
+export type JournalEmotion = 'Confident' | 'Calm' | 'Anxious' | 'FOMO' | 'Greedy' | 'Frustrated' | 'Bored';
+export type JournalOutcome = 'win' | 'loss' | 'breakeven' | 'open';
+
+export interface JournalEntry {
+  id: string;
+  date: string;
+  symbol: string;
+  assetClass: PortfolioAssetClass;
+  direction: 'BUY' | 'SELL';
+  entryPrice: number;
+  exitPrice: number | null;
+  size: number;
+  pnl: number;
+  rMultiple: number | null;
+  outcome: JournalOutcome;
+  strategy: string;
+  tags: string[];
+  setupNotes: string;
+  emotionBefore: JournalEmotion;
+  emotionAfter: JournalEmotion;
+  followedPlan: boolean;
+  checklistDone: string[];
+  mistakes: string[];
+  lessons: string;
+  rating: number;
+  screenshot?: string;
+  linkedTradeId?: string;
+  source: 'portfolio' | 'manual';
+}
+
+export interface JournalChecklistItem {
+  id: string;
+  label: string;
+}
+
+export interface JournalWeeklyReview {
+  id: string;
+  weekLabel: string;
+  bestTrade: string;
+  biggestLesson: string;
+  focusNextWeek: string;
+  entriesCount: number;
+  netPnl: number;
 }
 
 export interface CommunityInfluencer {

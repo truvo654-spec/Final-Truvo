@@ -22,6 +22,7 @@ import {
   TopContributor,
   Mission,
   ActivityLogItem,
+  NewsArticle,
 } from './types';
 import { LEVEL_SCENARIOS, LevelScenarioId, applyLevelScenarioToUser, getTierForPoints } from './data/levelScenarios';
 import { Header } from './components/Header';
@@ -49,6 +50,17 @@ import { CashbackOverviewPage } from './components/CashbackOverviewPage';
 import { ConnectToTruvoPage } from './components/ConnectToTruvoPage';
 import { ActiveTradingAccountsPage } from './components/dashboard/ActiveTradingAccountsPage';
 import { TradingSignalsPage } from './components/TradingSignalsPage';
+import { NewsListPage } from './components/news/NewsListPage';
+import { NewsDetailPage } from './components/news/NewsDetailPage';
+import { canAccessNews, NEWS_ARTICLES } from './data/newsData';
+import { EconomicCalendarPage } from './components/calendar/EconomicCalendarPage';
+import { EducationHubPage } from './components/education/EducationHubPage';
+import { PortfolioTrackerPage } from './components/portfolio/PortfolioTrackerPage';
+import { TradingJournalPage } from './components/journal/TradingJournalPage';
+import { PromotionsPage } from './components/promotions/PromotionsPage';
+import { ExpertAdvisorsPage } from './components/advisors/ExpertAdvisorsPage';
+import { AlertsPage } from './components/alerts/AlertsPage';
+import { AiCompanionPage } from './components/ai/AiCompanionPage';
 import { TradingSignalsVisitorPage } from './components/TradingSignalsVisitorPage';
 import { TradingSignalDetailPage } from './components/signals/TradingSignalDetailPage';
 import { InstrumentAnalysisPage } from './components/InstrumentAnalysisPage';
@@ -96,6 +108,16 @@ const KNOWN_APP_TABS = new Set([
   'visitor-signals',
   'signal-detail',
   'instrument-analysis',
+  'news',
+  'news-detail',
+  'economic-calendar',
+  'education-hub',
+  'portfolio-tracker',
+  'trading-journal',
+  'promotions',
+  'expert-advisors',
+  'alerts',
+  'ai-companion',
   'profile',
   'account-security',
   'notifications',
@@ -277,6 +299,7 @@ export default function App() {
     return null;
   });
   const [isSignalModalOpen, setIsSignalModalOpen] = useState(false);
+  const [selectedNewsArticle, setSelectedNewsArticle] = useState<NewsArticle | null>(null);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [isActivityLogModalOpen, setIsActivityLogModalOpen] = useState(false);
   const [isBrokerComparisonOpen, setIsBrokerComparisonOpen] = useState(false);
@@ -1235,6 +1258,159 @@ export default function App() {
           />
         )}
 
+        {/* ─── TAB: Market News ─── */}
+        {activeTab === 'news' && (
+          <NewsListPage
+            isLoggedIn={isLoggedIn}
+            userTierLevel={user.tierLevel}
+            onSelectArticle={(article) => {
+              setSelectedNewsArticle(article);
+              setActiveTab('news-detail');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
+            onShowToast={showToast}
+          />
+        )}
+
+        {activeTab === 'news-detail' && selectedNewsArticle && (
+          <NewsDetailPage
+            article={selectedNewsArticle}
+            isLoggedIn={isLoggedIn}
+            hasAccess={canAccessNews(selectedNewsArticle, user.tierLevel, isLoggedIn)}
+            isAdvisor={false}
+            onBack={() => setActiveTab('news')}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: Economic Calendar ─── */}
+        {activeTab === 'economic-calendar' && (
+          <EconomicCalendarPage
+            userTierLevel={user.tierLevel}
+            isLoggedIn={isLoggedIn}
+            isAdvisor={false}
+            isBroker={false}
+            onNavigateToArticle={(articleId) => {
+              const found = NEWS_ARTICLES.find((a) => a.id === articleId);
+              if (found) {
+                setSelectedNewsArticle(found);
+                setActiveTab('news-detail');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            onNavigateToSignal={(ticker) => handleSelectSignalByTicker(ticker)}
+            onNavigateToTab={(tab) => {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenConnectModal={() => {
+              setSelectedBrokerForConnect(brokers.find((b) => !b.connected) || brokers[0]);
+              setIsConnectModalOpen(true);
+            }}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: Education Hub ─── */}
+        {activeTab === 'education-hub' && (
+          <EducationHubPage
+            userTierLevel={user.tierLevel}
+            isLoggedIn={isLoggedIn}
+            isAdvisor={false}
+            isBroker={false}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: Promotions & Bonuses ─── */}
+        {activeTab === 'promotions' && (
+          <PromotionsPage
+            userTierLevel={user.tierLevel}
+            isLoggedIn={isLoggedIn}
+            brokers={brokers}
+            onOpenConnectModal={(b) => {
+              setSelectedBrokerForConnect(b || brokers.find((x) => !x.connected) || brokers[0]);
+              setIsConnectModalOpen(true);
+            }}
+            onNavigateToTab={(tab) => {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: Expert Advisors ─── */}
+        {activeTab === 'expert-advisors' && (
+          <ExpertAdvisorsPage
+            userTierLevel={user.tierLevel}
+            isLoggedIn={isLoggedIn}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: Price Alerts ─── */}
+        {activeTab === 'alerts' && (
+          <AlertsPage
+            userTierLevel={user.tierLevel}
+            isLoggedIn={isLoggedIn}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: AI Companion ─── */}
+        {activeTab === 'ai-companion' && (
+          <AiCompanionPage
+            user={user}
+            brokers={brokers}
+            signals={signals}
+            onNavigateToTab={(tab) => {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onSelectSignal={(sig) => handleSelectSignalByTicker(sig.ticker)}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: Trading Journal ─── */}
+        {activeTab === 'trading-journal' && (
+          <TradingJournalPage
+            userTierLevel={user.tierLevel}
+            isLoggedIn={isLoggedIn}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: Portfolio Tracker ─── */}
+        {activeTab === 'portfolio-tracker' && (
+          <PortfolioTrackerPage
+            userTierLevel={user.tierLevel}
+            isLoggedIn={isLoggedIn}
+            isAdvisor={false}
+            isBroker={false}
+            onNavigateToTab={(tab) => {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onNavigateToSignal={(ticker) => handleSelectSignalByTicker(ticker)}
+            onOpenConnectModal={() => {
+              setSelectedBrokerForConnect(brokers.find((b) => !b.connected) || brokers[0]);
+              setIsConnectModalOpen(true);
+            }}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
+            onShowToast={showToast}
+          />
+        )}
+
         {/* ─── TAB: Instrument Analysis (Deep Technical Telemetry, Key Levels & Multi-Asset Structure) ─── */}
         {activeTab === 'instrument-analysis' && (
           <InstrumentAnalysisPage
@@ -1782,6 +1958,14 @@ export default function App() {
           setActiveTab('broker-detail');
         }}
         onShowToast={showToast}
+        communityPosts={communityPosts}
+        onSelectNewsArticle={(article) => {
+          setSelectedNewsArticle(article);
+          setActiveTab('news-detail');
+        }}
+        onSelectCourse={() => {
+          setActiveTab('education-hub');
+        }}
       />
 
       {/* ─── AUTH MODAL (SIGN UP / SIGN IN / VERIFY / ONBOARDING FLOWS) ─── */}

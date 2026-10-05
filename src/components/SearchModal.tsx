@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Broker,
   MarketSignal,
+  NewsArticle,
+  Course,
+  CommunityPost,
 } from '../types';
 import {
   Search,
@@ -22,7 +25,14 @@ import {
   TrendingUp,
   Clock,
   Coins,
+  Newspaper,
+  GraduationCap,
+  Flame,
+  Lock,
 } from 'lucide-react';
+import { NEWS_ARTICLES } from '../data/newsData';
+import { COURSES } from '../data/educationData';
+import { INITIAL_COMMUNITY_POSTS } from '../data/mockData';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -37,6 +47,11 @@ interface SearchModalProps {
   onNavigateToTab: (tab: string) => void;
   onSelectBrokerDetail?: (broker: Broker) => void;
   onShowToast?: (msg: string) => void;
+  newsArticles?: NewsArticle[];
+  courses?: Course[];
+  communityPosts?: CommunityPost[];
+  onSelectNewsArticle?: (article: NewsArticle) => void;
+  onSelectCourse?: (course: Course) => void;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -493,7 +508,10 @@ type SearchCategoryTab =
   | 'trading-calculators'
   | 'converter-calculators'
   | 'brokers'
-  | 'broker-comparison';
+  | 'broker-comparison'
+  | 'news'
+  | 'education-hub'
+  | 'community';
 
 export const SearchModal: React.FC<SearchModalProps> = ({
   isOpen,
@@ -508,6 +526,11 @@ export const SearchModal: React.FC<SearchModalProps> = ({
   onNavigateToTab,
   onSelectBrokerDetail,
   onShowToast,
+  newsArticles = NEWS_ARTICLES,
+  courses = COURSES,
+  communityPosts = INITIAL_COMMUNITY_POSTS,
+  onSelectNewsArticle,
+  onSelectCourse,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<SearchCategoryTab>('all');
@@ -959,13 +982,75 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     query.includes('compound') ||
     query.includes('position');
 
-  // Any match across signals, brokers, calculators, or general terms
+  // Known domain matches: Knowledge Hub (Market News + Education) and Community
+  const isNewsSearch =
+    query.includes('news') ||
+    query.includes('article') ||
+    query.includes('headline') ||
+    query.includes('cpi') ||
+    query.includes('fed') ||
+    query.includes('ecb') ||
+    query.includes('nfp') ||
+    query.includes('payroll');
+
+  const isEducationSearch =
+    query.includes('course') ||
+    query.includes('learn') ||
+    query.includes('lesson') ||
+    query.includes('certificate') ||
+    query.includes('quiz') ||
+    query.includes('webinar') ||
+    query.includes('class') ||
+    query.includes('education');
+
+  const isCommunitySearch =
+    query.includes('community') ||
+    query.includes('post') ||
+    query.includes('discussion') ||
+    query.includes('challenge') ||
+    query.includes('forum') ||
+    query.includes('alpha');
+
+  // Real substring matches against the actual data (not just keyword buckets)
+  const filteredNews = newsArticles.filter(
+    (a) =>
+      !hasQuery ||
+      a.headline.toLowerCase().includes(query) ||
+      a.excerpt.toLowerCase().includes(query) ||
+      a.source.toLowerCase().includes(query) ||
+      a.assetClass.toLowerCase().includes(query) ||
+      a.tags.some((t) => t.toLowerCase().includes(query))
+  );
+
+  const filteredCourses = courses.filter(
+    (c) =>
+      !hasQuery ||
+      c.title.toLowerCase().includes(query) ||
+      c.summary.toLowerCase().includes(query) ||
+      c.category.toLowerCase().includes(query) ||
+      c.instructorName.toLowerCase().includes(query)
+  );
+
+  const filteredCommunityPosts = communityPosts.filter(
+    (p) =>
+      !hasQuery ||
+      p.title.toLowerCase().includes(query) ||
+      p.content.toLowerCase().includes(query) ||
+      p.author.name.toLowerCase().includes(query) ||
+      p.category?.toLowerCase().includes(query) ||
+      p.ticker?.toLowerCase().includes(query)
+  );
+
+  // Any match across signals, brokers, calculators, knowledge hub, community, or general terms
   const hasMatches =
     !hasQuery ||
     isJpySearch ||
     isSignalSearch ||
     isBrokerSearch ||
     isCalcSearch ||
+    isNewsSearch ||
+    isEducationSearch ||
+    isCommunitySearch ||
     signals.some(
       (s) =>
         s.ticker.toLowerCase().includes(query) ||
@@ -976,7 +1061,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({
       (b) =>
         b.name.toLowerCase().includes(query) ||
         b.regulation?.toLowerCase().includes(query)
-    );
+    ) ||
+    filteredNews.length > 0 ||
+    filteredCourses.length > 0 ||
+    filteredCommunityPosts.length > 0;
 
   // Scenario 3: No Results Found (e.g. "Hamburger", "pizza", "xyz123")
   const isNoResults = hasQuery && !hasMatches;
@@ -993,6 +1081,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     activeTab === 'all' || activeTab === 'trading-calculators';
   const showConverterCalculators = activeTab === 'converter-calculators';
   const showBrokerComparison = activeTab === 'broker-comparison';
+  const showNewsSection = activeTab === 'all' || activeTab === 'news';
+  const showEducationSection = activeTab === 'all' || activeTab === 'education-hub';
+  const showCommunitySection = activeTab === 'all' || activeTab === 'community';
 
   return (
     <div
@@ -1130,6 +1221,51 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                   <span>Broker Comparison</span>
                   <span className="px-2 py-0.5 rounded-full bg-[#5945F1] text-white text-[10px] sm:text-[11px] font-bold">
                     25
+                  </span>
+                </button>
+
+                {/* Tab 7: Market News */}
+                <button
+                  onClick={() => setActiveTab('news')}
+                  className={`pb-1 cursor-pointer transition-all relative flex items-center gap-1.5 whitespace-nowrap ${
+                    activeTab === 'news'
+                      ? 'text-[#0b1c30] font-bold after:content-[""] after:absolute after:bottom-[-13px] after:left-0 after:right-0 after:h-[2.5px] after:bg-[#5945F1] after:rounded-full'
+                      : 'text-slate-600 hover:text-[#5945F1]'
+                  }`}
+                >
+                  <span>Market News</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#5945F1] text-white text-[10px] sm:text-[11px] font-bold">
+                    {filteredNews.length}
+                  </span>
+                </button>
+
+                {/* Tab 8: Education Hub */}
+                <button
+                  onClick={() => setActiveTab('education-hub')}
+                  className={`pb-1 cursor-pointer transition-all relative flex items-center gap-1.5 whitespace-nowrap ${
+                    activeTab === 'education-hub'
+                      ? 'text-[#0b1c30] font-bold after:content-[""] after:absolute after:bottom-[-13px] after:left-0 after:right-0 after:h-[2.5px] after:bg-[#5945F1] after:rounded-full'
+                      : 'text-slate-600 hover:text-[#5945F1]'
+                  }`}
+                >
+                  <span>Education Hub</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#5945F1] text-white text-[10px] sm:text-[11px] font-bold">
+                    {filteredCourses.length}
+                  </span>
+                </button>
+
+                {/* Tab 9: Community */}
+                <button
+                  onClick={() => setActiveTab('community')}
+                  className={`pb-1 cursor-pointer transition-all relative flex items-center gap-1.5 whitespace-nowrap ${
+                    activeTab === 'community'
+                      ? 'text-[#0b1c30] font-bold after:content-[""] after:absolute after:bottom-[-13px] after:left-0 after:right-0 after:h-[2.5px] after:bg-[#5945F1] after:rounded-full'
+                      : 'text-slate-600 hover:text-[#5945F1]'
+                  }`}
+                >
+                  <span>Community</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#5945F1] text-white text-[10px] sm:text-[11px] font-bold">
+                    {filteredCommunityPosts.length}
                   </span>
                 </button>
               </div>
@@ -1792,6 +1928,147 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                                   {calc.desc}
                                 </div>
                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 5. Market News preview (Knowledge Hub) */}
+                    {showNewsSection && filteredNews.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between pb-3">
+                          <h3 className="font-display font-semibold text-base sm:text-lg text-[#0b1c30]">
+                            Market News
+                          </h3>
+                          <button
+                            onClick={() => setActiveTab('news')}
+                            className="text-xs sm:text-sm font-semibold text-slate-700 hover:text-[#5945F1] transition-colors flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span>More</span>
+                            <ChevronRight className="w-4 h-4 stroke-[2]" />
+                          </button>
+                        </div>
+                        <div className="divide-y divide-slate-100">
+                          {filteredNews.slice(0, 3).map((article) => (
+                            <div
+                              key={article.id}
+                              onClick={() => {
+                                if (onSelectNewsArticle) onSelectNewsArticle(article);
+                                else onNavigateToTab('news');
+                                onClose();
+                              }}
+                              className="py-3 flex items-center gap-3 hover:bg-slate-50/80 px-2 rounded-xl transition-colors cursor-pointer group"
+                            >
+                              <div className="w-9 h-9 rounded-full bg-[#ECEAFE] text-[#5945F1] flex items-center justify-center shrink-0">
+                                <Newspaper className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-bold text-sm text-[#0b1c30] group-hover:text-[#5945F1] transition-colors truncate">
+                                  {article.headline}
+                                </div>
+                                <div className="text-xs text-slate-400 font-medium truncate">
+                                  {article.source} · {article.timestamp}
+                                </div>
+                              </div>
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-semibold shrink-0">
+                                {article.assetClass}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 6. Education Hub preview (Knowledge Hub) */}
+                    {showEducationSection && filteredCourses.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between pb-3">
+                          <h3 className="font-display font-semibold text-base sm:text-lg text-[#0b1c30]">
+                            Education Hub
+                          </h3>
+                          <button
+                            onClick={() => setActiveTab('education-hub')}
+                            className="text-xs sm:text-sm font-semibold text-slate-700 hover:text-[#5945F1] transition-colors flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span>More</span>
+                            <ChevronRight className="w-4 h-4 stroke-[2]" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                          {filteredCourses.slice(0, 3).map((course) => (
+                            <div
+                              key={course.id}
+                              onClick={() => {
+                                if (onSelectCourse) onSelectCourse(course);
+                                else onNavigateToTab('education-hub');
+                                onClose();
+                              }}
+                              className="border border-slate-200/90 rounded-2xl p-3.5 bg-white hover:border-[#5945F1] hover:shadow-xs transition-all cursor-pointer flex items-center gap-3 group"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-[#CAEB0E] text-[#323B01] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                                <GraduationCap className="w-5 h-5" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-sm text-[#0b1c30] group-hover:text-[#5945F1] transition-colors leading-tight line-clamp-2">
+                                  {course.title}
+                                </div>
+                                <div className="text-[11px] text-slate-400 font-medium mt-0.5">
+                                  {course.level} · {course.requiredPlan}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 7. Community preview */}
+                    {showCommunitySection && filteredCommunityPosts.length > 0 && (
+                      <div>
+                        <div className="flex items-center justify-between pb-3">
+                          <h3 className="font-display font-semibold text-base sm:text-lg text-[#0b1c30]">
+                            Community
+                          </h3>
+                          <button
+                            onClick={() => {
+                              onNavigateToTab('community');
+                              onClose();
+                            }}
+                            className="text-xs sm:text-sm font-semibold text-slate-700 hover:text-[#5945F1] transition-colors flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <span>More</span>
+                            <ChevronRight className="w-4 h-4 stroke-[2]" />
+                          </button>
+                        </div>
+                        <div className="divide-y divide-slate-100">
+                          {filteredCommunityPosts.slice(0, 3).map((post) => (
+                            <div
+                              key={post.id}
+                              onClick={() => {
+                                onNavigateToTab('community');
+                                onClose();
+                              }}
+                              className="py-3 flex items-center gap-3 hover:bg-slate-50/80 px-2 rounded-xl transition-colors cursor-pointer group"
+                            >
+                              <img
+                                src={post.author.avatar}
+                                alt={post.author.name}
+                                className="w-9 h-9 rounded-full object-cover shrink-0 border border-slate-200"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="font-bold text-sm text-[#0b1c30] group-hover:text-[#5945F1] transition-colors truncate">
+                                  {post.title}
+                                </div>
+                                <div className="text-xs text-slate-400 font-medium truncate">
+                                  {post.author.name} · {post.timestamp}
+                                </div>
+                              </div>
+                              {post.category && (
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-semibold shrink-0">
+                                  {post.category}
+                                </span>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -2470,6 +2747,217 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       <button className="px-5 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4d3ad8] text-white text-xs sm:text-sm font-bold shrink-0 shadow-sm cursor-pointer transition-colors">
                         Launch Comparison
                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ════════════ TAB: MARKET NEWS (Knowledge Hub) ════════════ */}
+                {activeTab === 'news' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium pb-2">
+                      <span className="text-slate-700">
+                        Result in <strong className="text-[#0b1c30] font-bold">'Market News'</strong>
+                      </span>
+                      <span className="text-slate-300 mx-1">|</span>
+                      <button
+                        onClick={() => {
+                          onNavigateToTab('news');
+                          onClose();
+                        }}
+                        className="text-slate-500 hover:text-[#5945F1] transition-colors flex items-center gap-0.5 cursor-pointer font-medium"
+                      >
+                        <span>Results ({filteredNews.length})</span>
+                        <ChevronRight className="w-3.5 h-3.5 stroke-[2]" />
+                      </button>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                      {filteredNews.map((article) => (
+                        <div
+                          key={article.id}
+                          onClick={() => {
+                            if (onSelectNewsArticle) onSelectNewsArticle(article);
+                            else onNavigateToTab('news');
+                            onClose();
+                          }}
+                          className="py-3.5 flex items-center gap-3.5 hover:bg-slate-50/80 px-2 rounded-xl transition-colors cursor-pointer group"
+                        >
+                          <img
+                            src={article.thumbnail}
+                            alt={article.headline}
+                            className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-200"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-sm text-[#0b1c30] group-hover:text-[#5945F1] transition-colors leading-tight line-clamp-1">
+                              {article.headline}
+                            </div>
+                            <div className="text-xs text-slate-400 font-medium mt-0.5 truncate">
+                              {article.source} · {article.timestamp}
+                            </div>
+                          </div>
+                          <div className="hidden sm:flex items-center gap-2 shrink-0">
+                            <span className="px-2 py-0.5 rounded-md bg-[#ECEAFE] text-[#5945F1] text-[10px] font-semibold">
+                              {article.assetClass}
+                            </span>
+                            <span
+                              className={`flex items-center gap-1 text-[11px] font-bold ${
+                                article.sentiment === 'Bullish'
+                                  ? 'text-emerald-600'
+                                  : article.sentiment === 'Bearish'
+                                  ? 'text-rose-600'
+                                  : 'text-slate-500'
+                              }`}
+                            >
+                              {article.sentiment === 'Bullish' ? (
+                                <TrendingUp className="w-3.5 h-3.5" />
+                              ) : article.sentiment === 'Bearish' ? (
+                                <TrendingDown className="w-3.5 h-3.5" />
+                              ) : null}
+                              {article.sentiment}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+
+                      {filteredNews.length === 0 && (
+                        <div className="py-10 text-center text-sm text-slate-400">
+                          No news articles match this search yet.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ════════════ TAB: EDUCATION HUB (Knowledge Hub) ════════════ */}
+                {activeTab === 'education-hub' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium pb-2">
+                      <span className="text-slate-700">
+                        Result in <strong className="text-[#0b1c30] font-bold">'Education Hub'</strong>
+                      </span>
+                      <span className="text-slate-300 mx-1">|</span>
+                      <button
+                        onClick={() => {
+                          onNavigateToTab('education-hub');
+                          onClose();
+                        }}
+                        className="text-slate-500 hover:text-[#5945F1] transition-colors flex items-center gap-0.5 cursor-pointer font-medium"
+                      >
+                        <span>Results ({filteredCourses.length})</span>
+                        <ChevronRight className="w-3.5 h-3.5 stroke-[2]" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredCourses.map((course) => (
+                        <div
+                          key={course.id}
+                          onClick={() => {
+                            if (onSelectCourse) onSelectCourse(course);
+                            else onNavigateToTab('education-hub');
+                            onClose();
+                          }}
+                          className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-2xs hover:shadow-xs hover:border-slate-300 transition-all cursor-pointer group"
+                        >
+                          <div className="aspect-video w-full overflow-hidden relative">
+                            <img
+                              src={course.thumbnail}
+                              alt={course.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                            {course.requiredPlan !== 'Free' && (
+                              <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/50 text-white text-[9px] font-bold uppercase tracking-wide flex items-center gap-1">
+                                <Lock className="w-2.5 h-2.5" /> {course.requiredPlan}
+                              </span>
+                            )}
+                          </div>
+                          <div className="p-3.5">
+                            <div className="font-bold text-sm text-[#0b1c30] group-hover:text-[#5945F1] transition-colors leading-tight line-clamp-2">
+                              {course.title}
+                            </div>
+                            <div className="text-xs text-slate-400 font-medium mt-1">
+                              {course.category} · {course.level}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {filteredCourses.length === 0 && (
+                        <div className="col-span-full py-10 text-center text-sm text-slate-400">
+                          No courses match this search yet.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ════════════ TAB: COMMUNITY ════════════ */}
+                {activeTab === 'community' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-1.5 text-xs sm:text-sm font-medium pb-2">
+                      <span className="text-slate-700">
+                        Result in <strong className="text-[#0b1c30] font-bold">'Community'</strong>
+                      </span>
+                      <span className="text-slate-300 mx-1">|</span>
+                      <button
+                        onClick={() => {
+                          onNavigateToTab('community');
+                          onClose();
+                        }}
+                        className="text-slate-500 hover:text-[#5945F1] transition-colors flex items-center gap-0.5 cursor-pointer font-medium"
+                      >
+                        <span>Results ({filteredCommunityPosts.length})</span>
+                        <ChevronRight className="w-3.5 h-3.5 stroke-[2]" />
+                      </button>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                      {filteredCommunityPosts.map((post) => (
+                        <div
+                          key={post.id}
+                          onClick={() => {
+                            onNavigateToTab('community');
+                            onClose();
+                          }}
+                          className="py-3.5 flex items-center gap-3.5 hover:bg-slate-50/80 px-2 rounded-xl transition-colors cursor-pointer group"
+                        >
+                          <img
+                            src={post.author.avatar}
+                            alt={post.author.name}
+                            className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium mb-0.5">
+                              <span className="font-semibold text-slate-600">{post.author.name}</span>
+                              <span>· {post.timestamp}</span>
+                            </div>
+                            <div className="font-bold text-sm text-[#0b1c30] group-hover:text-[#5945F1] transition-colors leading-tight line-clamp-1">
+                              {post.title}
+                            </div>
+                            <div className="text-xs text-slate-400 font-medium mt-0.5 line-clamp-1">
+                              {post.content}
+                            </div>
+                          </div>
+                          <div className="hidden sm:flex items-center gap-2 shrink-0">
+                            {post.category && (
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-semibold">
+                                {post.category}
+                              </span>
+                            )}
+                            {post.ticker && (
+                              <span className="flex items-center gap-1 text-[11px] font-bold text-[#5945F1]">
+                                <Flame className="w-3.5 h-3.5" /> {post.ticker}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+
+                      {filteredCommunityPosts.length === 0 && (
+                        <div className="py-10 text-center text-sm text-slate-400">
+                          No community posts match this search yet.
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

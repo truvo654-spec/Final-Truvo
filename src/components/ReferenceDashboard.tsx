@@ -341,6 +341,12 @@ const DEFAULT_ROWS: DashboardRow[] = [
     ],
   },
   {
+    id: 'row-portfolio',
+    slots: [
+      { id: 'slot-portfolio', type: 'portfolio-snapshot', size: 3, title: 'Portfolio' },
+    ],
+  },
+  {
     id: 'row-3',
     slots: [
       { id: 'slot-3-1', type: 'mission-card', size: 3, title: 'Portfolio Power-Up' },

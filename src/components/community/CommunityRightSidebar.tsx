@@ -11,13 +11,19 @@ import {
   TOP_INFLUENCERS,
   OTHER_INFLUENCERS,
 } from '../../data/communityData';
-import { CommunityInfluencer } from '../../types';
+import { Broker, CommunityInfluencer } from '../../types';
+import { INITIAL_BROKERS } from '../../data/mockData';
+import { CommunityLeaderboardWidget } from './CommunityLeaderboardWidget';
+import { CommunityFeaturedCoursesWidget } from './CommunityFeaturedCoursesWidget';
+import { CommunityBrokerAdWidget } from './CommunityBrokerAdWidget';
 
 interface CommunityRightSidebarProps {
   mode?: 'default' | 'profile';
   onSelectInfluencer?: (influencer: CommunityInfluencer) => void;
   onOpenHotTopic?: () => void;
   onShowToast?: (msg: string) => void;
+  onNavigateToTab?: (tab: string) => void;
+  onOpenConnectModal?: (broker?: Broker) => void;
 }
 
 export const CommunityRightSidebar: React.FC<CommunityRightSidebarProps> = ({
@@ -25,10 +31,20 @@ export const CommunityRightSidebar: React.FC<CommunityRightSidebarProps> = ({
   onSelectInfluencer,
   onOpenHotTopic,
   onShowToast,
+  onNavigateToTab,
+  onOpenConnectModal,
 }) => {
   const [influencerTab, setInfluencerTab] = useState<'social' | 'trending'>('social');
+  const adBroker = INITIAL_BROKERS.find((b) => b.isTopPick) || INITIAL_BROKERS[0];
+
   return (
     <div className="space-y-4 w-full">
+      {/* ─── 0. WEEKLY LEADERBOARD WIDGET (Syde Credits) ─── */}
+      <CommunityLeaderboardWidget onNavigateToTab={onNavigateToTab} />
+
+      {/* ─── 0.5 BROKER ADS SECTION ─── */}
+      {adBroker && <CommunityBrokerAdWidget broker={adBroker} onOpenConnectModal={onOpenConnectModal} />}
+
       {/* ─── 1. HOT TOPIC WIDGET ─── */}
       <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 text-[#0b1c30] shadow-xs hover:border-[#cbd5e1] hover:shadow-sm transition-all relative overflow-hidden">
         <div className="flex items-center justify-between mb-2">
@@ -162,6 +178,9 @@ export const CommunityRightSidebar: React.FC<CommunityRightSidebarProps> = ({
           })}
         </div>
       </div>
+
+      {/* ─── 3. FEATURED COURSES (Education Hub) ─── */}
+      <CommunityFeaturedCoursesWidget onNavigateToTab={onNavigateToTab} />
     </div>
   );
 };

@@ -29,6 +29,7 @@ import { InteractiveBrokersGraphic } from './submenu/InteractiveBrokersGraphic';
 import { InteractiveTradeGraphic } from './submenu/InteractiveTradeGraphic';
 import { InteractiveCommunityGraphic } from './submenu/InteractiveCommunityGraphic';
 import { InteractiveCompanyGraphic } from './submenu/InteractiveCompanyGraphic';
+import { InteractiveKnowledgeGraphic } from './submenu/InteractiveKnowledgeGraphic';
 import { InteractiveCompanySubmenuGraphic } from './submenu/InteractiveCompanySubmenuGraphic';
 import { CompanyModals } from './CompanyModals';
 import { CalculatorType } from './calculators/TradingCalculatorsModal';
@@ -89,9 +90,10 @@ export const Header: React.FC<HeaderProps> = ({
   isTourActive,
   tourStep,
 }) => {
-  const [activeHoverMenu, setActiveHoverMenu] = useState<'trade' | 'brokers' | 'community' | 'company' | null>(null);
+  const [activeHoverMenu, setActiveHoverMenu] = useState<'trade' | 'brokers' | 'knowledge' | 'community' | 'company' | null>(null);
   const [hoveredBrokerOption, setHoveredBrokerOption] = useState<'brokers' | 'broker-comparison' | null>(null);
-  const [hoveredTradeOption, setHoveredTradeOption] = useState<'signals' | 'analysis' | 'calculators' | 'converters' | null>(null);
+  const [hoveredTradeOption, setHoveredTradeOption] = useState<'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | null>(null);
+  const [hoveredKnowledgeOption, setHoveredKnowledgeOption] = useState<'news' | 'education-hub' | null>(null);
   const [hoveredCommunityOption, setHoveredCommunityOption] = useState<string | null>(null);
   const [hoveredCompanyOption, setHoveredCompanyOption] = useState<'about' | 'contact' | null>(null);
   const [companyModal, setCompanyModal] = useState<{ isOpen: boolean; type: 'about' | 'contact' }>({
@@ -104,12 +106,18 @@ export const Header: React.FC<HeaderProps> = ({
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  const activeTradeFeature: 'signals' | 'analysis' | 'calculators' | 'converters' =
+  const activeTradeFeature: 'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' =
     hoveredTradeOption ||
     (activeTab === 'signals' || activeTab === 'signal-detail'
       ? 'signals'
       : activeTab === 'instrument-analysis'
       ? 'analysis'
+      : activeTab === 'economic-calendar'
+      ? 'calendar'
+      : activeTab === 'portfolio-tracker'
+      ? 'portfolio'
+      : activeTab === 'trading-journal'
+      ? 'journal'
       : [
           'timezone-converter',
           'trading-timezone-converter',
@@ -171,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
     }
   }, [isTourActive, tourStep]);
 
-  const handleMouseEnter = (menu: 'trade' | 'brokers' | 'community' | 'company') => {
+  const handleMouseEnter = (menu: 'trade' | 'brokers' | 'knowledge' | 'community' | 'company') => {
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
@@ -242,7 +250,7 @@ export const Header: React.FC<HeaderProps> = ({
                   handleCloseImmediately();
                 }}
                 className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
-                  activeHoverMenu === 'trade' || activeTab === 'dashboard' || activeTab === 'signals' || activeTab === 'visitor-signals' || activeTab === 'signal-detail' || activeTab === 'instrument-analysis'
+                  activeHoverMenu === 'trade' || activeTab === 'dashboard' || activeTab === 'signals' || activeTab === 'visitor-signals' || activeTab === 'signal-detail' || activeTab === 'instrument-analysis' || activeTab === 'portfolio-tracker' || activeTab === 'trading-journal' || activeTab === 'economic-calendar' || activeTab === 'expert-advisors' || activeTab === 'alerts' || activeTab === 'ai-companion'
                     ? 'text-[#5945F1] font-semibold'
                     : 'text-slate-800 hover:text-[#5945F1]'
                 }`}
@@ -268,7 +276,7 @@ export const Header: React.FC<HeaderProps> = ({
                   handleCloseImmediately();
                 }}
                 className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
-                  activeHoverMenu === 'brokers' || activeTab === 'brokers' || activeTab === 'broker-detail' || activeTab === 'broker-comparison'
+                  activeHoverMenu === 'brokers' || activeTab === 'brokers' || activeTab === 'broker-detail' || activeTab === 'broker-comparison' || activeTab === 'promotions'
                     ? 'text-[#5945F1] font-semibold'
                     : 'text-slate-800 hover:text-[#5945F1]'
                 }`}
@@ -277,6 +285,32 @@ export const Header: React.FC<HeaderProps> = ({
                 <ChevronDown
                   className={`w-3.5 h-3.5 transition-transform duration-200 stroke-[2] ${
                     activeHoverMenu === 'brokers' ? 'rotate-180 text-[#5945F1]' : 'text-slate-700'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Knowledge Hub Dropdown Trigger (merges Market News + Education Hub) */}
+            <div
+              className="relative py-4"
+              onMouseEnter={() => handleMouseEnter('knowledge')}
+              onMouseLeave={handleMouseLeave}
+            >
+              <button
+                onClick={() => {
+                  setActiveTab('news');
+                  handleCloseImmediately();
+                }}
+                className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
+                  activeHoverMenu === 'knowledge' || activeTab === 'news' || activeTab === 'news-detail' || activeTab === 'education-hub'
+                    ? 'text-[#5945F1] font-semibold'
+                    : 'text-slate-800 hover:text-[#5945F1]'
+                }`}
+              >
+                <span>Knowledge Hub</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 stroke-[2] ${
+                    activeHoverMenu === 'knowledge' ? 'rotate-180 text-[#5945F1]' : 'text-slate-700'
                   }`}
                 />
               </button>
@@ -1066,6 +1100,31 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   </div>
                 </button>
+
+                {/* 3. Promotions & Bonuses */}
+                <button
+                  onClick={() => {
+                    setActiveTab('promotions');
+                    handleCloseImmediately();
+                  }}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full"
+                >
+                  <div className="flex items-start gap-3">
+                    {activeTab === 'promotions' ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div className={`font-bold text-base transition-colors leading-tight ${
+                        activeTab === 'promotions' ? 'text-[#5945F1]' : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                      }`}>
+                        Promotions &amp; Bonuses
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        Broker offers filtered by what you are actually eligible for.
+                      </div>
+                    </div>
+                  </div>
+                </button>
               </div>
             </div>
           </div>
@@ -1123,6 +1182,19 @@ export const Header: React.FC<HeaderProps> = ({
                     } else {
                       setActiveTab('cashback-overview');
                     }
+                    handleCloseImmediately();
+                  }}
+                
+                  onSelectCalendar={() => {
+                    setActiveTab('economic-calendar');
+                    handleCloseImmediately();
+                  }}
+                  onSelectPortfolio={() => {
+                    setActiveTab('portfolio-tracker');
+                    handleCloseImmediately();
+                  }}
+                  onSelectJournal={() => {
+                    setActiveTab('trading-journal');
                     handleCloseImmediately();
                   }}
                 />
@@ -1190,6 +1262,59 @@ export const Header: React.FC<HeaderProps> = ({
                             </div>
                             <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
                               Deep technical breakdown, key levels, and asset telemetry.
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* 3. Economic Calendar */}
+                      <button
+                        onClick={() => {
+                          setActiveTab('economic-calendar');
+                          handleCloseImmediately();
+                        }}
+                        onMouseEnter={() => setHoveredTradeOption('calendar')}
+                        className="group flex items-start text-left transition-all cursor-pointer w-full"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          {activeTradeFeature === 'calendar' ? (
+                            <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-0.5 shadow-xs" />
+                          ) : null}
+                          <div>
+                            <div className={`font-bold text-base transition-colors leading-tight ${
+                              activeTradeFeature === 'calendar'
+                                ? 'text-[#5945F1]'
+                                : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                            }`}>
+                              Economic Calendar
+                            </div>
+                            <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                              Upcoming events, impact levels, and the signals they move.
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* 4. Expert Advisors */}
+                      <button
+                        onClick={() => {
+                          setActiveTab('expert-advisors');
+                          handleCloseImmediately();
+                        }}
+                        className="group flex items-start text-left transition-all cursor-pointer w-full"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          {activeTab === 'expert-advisors' ? (
+                            <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-0.5 shadow-xs" />
+                          ) : null}
+                          <div>
+                            <div className={`font-bold text-base transition-colors leading-tight ${
+                              activeTab === 'expert-advisors' ? 'text-[#5945F1]' : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                            }`}>
+                              Expert Advisors
+                            </div>
+                            <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                              Vetted, versioned and performance-tracked EAs.
                             </div>
                           </div>
                         </div>
@@ -1312,6 +1437,180 @@ export const Header: React.FC<HeaderProps> = ({
                         </li>
                       </ul>
                     </div>
+
+                    {/* Section 3: Portfolio Tracker */}
+                    <div
+                      className="space-y-2 pt-2 border-t border-slate-100"
+                      onMouseEnter={() => setHoveredTradeOption('portfolio')}
+                    >
+                      <div className="flex items-center gap-2 cursor-pointer group">
+                        {(activeTradeFeature === 'portfolio') ? (
+                          <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 shadow-xs" />
+                        ) : null}
+                        <button
+                          onClick={() => {
+                            setActiveTab('portfolio-tracker');
+                            handleCloseImmediately();
+                          }}
+                          className="font-bold text-base text-[#0b1c30] group-hover:text-[#5945F1] transition-colors text-left cursor-pointer"
+                        >
+                          Portfolio Tracker
+                        </button>
+                      </div>
+
+                      <ul className="space-y-1.5 pl-3 text-xs">
+                        <li>
+                          <button
+                            onClick={() => {
+                              setActiveTab('portfolio-tracker');
+                              handleCloseImmediately();
+                            }}
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
+                          >
+                            <span className="text-slate-400">•</span> Balances &amp; P&amp;L Overview
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            onClick={() => {
+                              setActiveTab('portfolio-tracker');
+                              handleCloseImmediately();
+                            }}
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
+                          >
+                            <span className="text-slate-400">•</span> Log a Manual Trade
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+
+                    {/* Section 4: Trading Journal */}
+                    <div
+                      className="space-y-2 pt-2 border-t border-slate-100"
+                      onMouseEnter={() => setHoveredTradeOption('journal')}
+                    >
+                      <div className="flex items-center gap-2 cursor-pointer group">
+                        {(activeTradeFeature === 'journal') ? (
+                          <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 shadow-xs" />
+                        ) : null}
+                        <button
+                          onClick={() => {
+                            setActiveTab('trading-journal');
+                            handleCloseImmediately();
+                          }}
+                          className="font-bold text-base text-[#0b1c30] group-hover:text-[#5945F1] transition-colors text-left cursor-pointer"
+                        >
+                          Trading Journal
+                        </button>
+                      </div>
+
+                      <ul className="space-y-1.5 pl-3 text-xs">
+                        <li>
+                          <button
+                            onClick={() => {
+                              setActiveTab('trading-journal');
+                              handleCloseImmediately();
+                            }}
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
+                          >
+                            <span className="text-slate-400">•</span> Journal Entries &amp; Insights
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            onClick={() => {
+                              setActiveTab('trading-journal');
+                              handleCloseImmediately();
+                            }}
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
+                          >
+                            <span className="text-slate-400">•</span> Playbook &amp; Weekly Review
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                      <div className="flex items-center gap-2 cursor-pointer group">
+                        {activeTab === 'alerts' ? (
+                          <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 shadow-xs" />
+                        ) : null}
+                        <button
+                          onClick={() => {
+                            setActiveTab('alerts');
+                            handleCloseImmediately();
+                          }}
+                          className="font-bold text-base text-[#0b1c30] group-hover:text-[#5945F1] transition-colors text-left cursor-pointer"
+                        >
+                          Price Alerts
+                        </button>
+                      </div>
+                      <ul className="space-y-1.5 pl-3 text-xs">
+                        <li>
+                          <button
+                            onClick={() => {
+                              setActiveTab('alerts');
+                              handleCloseImmediately();
+                            }}
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
+                          >
+                            <span className="text-slate-400">•</span> Price, news &amp; volatility triggers
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            onClick={() => {
+                              setActiveTab('alerts');
+                              handleCloseImmediately();
+                            }}
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
+                          >
+                            <span className="text-slate-400">•</span> Manage your alerts
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                      <div className="flex items-center gap-2 cursor-pointer group">
+                        {activeTab === 'ai-companion' ? (
+                          <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 shadow-xs" />
+                        ) : null}
+                        <button
+                          onClick={() => {
+                            setActiveTab('ai-companion');
+                            handleCloseImmediately();
+                          }}
+                          className="font-bold text-base text-[#0b1c30] group-hover:text-[#5945F1] transition-colors text-left cursor-pointer"
+                        >
+                          AI Companion
+                        </button>
+                      </div>
+                      <ul className="space-y-1.5 pl-3 text-xs">
+                        <li>
+                          <button
+                            onClick={() => {
+                              setActiveTab('ai-companion');
+                              handleCloseImmediately();
+                            }}
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
+                          >
+                            <span className="text-slate-400">•</span> Broker matching &amp; learning help
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            onClick={() => {
+                              setActiveTab('ai-companion');
+                              handleCloseImmediately();
+                            }}
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
+                          >
+                            <span className="text-slate-400">•</span> Daily market briefing
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1322,6 +1621,112 @@ export const Header: React.FC<HeaderProps> = ({
         {/* ─────────────────────────────────────────────────────────────
             HOVER MEGA MENU: COMMUNITY (MOVED FROM FORMER COMPANY MENU)
            ───────────────────────────────────────────────────────────── */}
+        {/* ─────────────────────────────────────────────────────────────
+            HOVER MEGA MENU: KNOWLEDGE HUB (Market News + Education Hub)
+           ───────────────────────────────────────────────────────────── */}
+        {activeHoverMenu === 'knowledge' && (
+          <div
+            className="absolute top-full left-0 right-0 pt-2 z-50 flex justify-center animate-in fade-in zoom-in-98 duration-150"
+            onMouseEnter={() => handleMouseEnter('knowledge')}
+            onMouseLeave={handleMouseLeave}
+          >
+            {/* Bridging shield */}
+            <div className="absolute -top-3 left-0 right-0 h-4 bg-transparent" />
+
+            <div className="w-full max-w-[940px] bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200/90 relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+              {/* Soft Lavender / Periwinkle Curved Backdrop (Left ~54% of container) */}
+              <div className="absolute inset-y-0 left-0 w-full md:w-[54%] bg-[#eff2fe] rounded-r-none md:rounded-r-[130px] pointer-events-none" />
+
+              {/* Left Feature Illustration Banner */}
+              <div className="w-full md:w-[54%] flex items-center justify-between relative z-10 pl-2 pr-2 shrink-0">
+                <div className="flex flex-col space-y-1 select-none z-10 pl-1 sm:pl-3 shrink-0">
+                  <span className="text-xs sm:text-[13px] font-bold tracking-wider text-[#5945F1] uppercase font-display">
+                    EVERYTHING YOU
+                  </span>
+                  <div className="text-xs sm:text-[13px] tracking-wider text-[#5945F1] uppercase font-display">
+                    <span className="font-bold">NEED TO </span>
+                    <span className="font-black">KNOW,</span>
+                  </div>
+                  <span className="text-sm sm:text-base font-black tracking-wider text-[#5945F1] uppercase font-display">
+                    IN ONE PLACE.
+                  </span>
+                </div>
+
+                <InteractiveKnowledgeGraphic />
+              </div>
+
+              {/* Right Menu Options */}
+              <div className="w-full md:w-[46%] flex flex-col justify-center space-y-7 pl-4 sm:pl-8 pr-4 relative z-10">
+                {/* 1. Market News */}
+                <button
+                  onClick={() => {
+                    setActiveTab('news');
+                    handleCloseImmediately();
+                  }}
+                  onMouseEnter={() => setHoveredKnowledgeOption('news')}
+                  onMouseLeave={() => setHoveredKnowledgeOption(null)}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full"
+                >
+                  <div className="flex items-start gap-3">
+                    {(hoveredKnowledgeOption === 'news' ||
+                      (!hoveredKnowledgeOption && (activeTab === 'news' || activeTab === 'news-detail'))) ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div
+                        className={`font-bold text-base transition-colors leading-tight ${
+                          hoveredKnowledgeOption === 'news' ||
+                          (!hoveredKnowledgeOption && (activeTab === 'news' || activeTab === 'news-detail'))
+                            ? 'text-[#5945F1]'
+                            : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                        }`}
+                      >
+                        Market News
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        Real-time coverage from Acuity, Reuters and Dow Jones, tagged by asset class.
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                {/* 2. Education Hub */}
+                <button
+                  onClick={() => {
+                    setActiveTab('education-hub');
+                    handleCloseImmediately();
+                  }}
+                  onMouseEnter={() => setHoveredKnowledgeOption('education-hub')}
+                  onMouseLeave={() => setHoveredKnowledgeOption(null)}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full"
+                >
+                  <div className="flex items-start gap-3">
+                    {(hoveredKnowledgeOption === 'education-hub' ||
+                      (!hoveredKnowledgeOption && activeTab === 'education-hub')) ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div
+                        className={`font-bold text-base transition-colors leading-tight ${
+                          hoveredKnowledgeOption === 'education-hub' ||
+                          (!hoveredKnowledgeOption && activeTab === 'education-hub')
+                            ? 'text-[#5945F1]'
+                            : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                        }`}
+                      >
+                        Education Hub
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        Courses, live classes and certificates — earn points as you learn.
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeHoverMenu === 'community' && (
           <div
             className="absolute top-full left-0 right-0 pt-2 z-50 flex justify-center animate-in fade-in zoom-in-98 duration-150"
@@ -1676,6 +2081,72 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button
             onClick={() => {
+              setActiveTab('portfolio-tracker');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'portfolio-tracker' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            Portfolio Tracker
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('trading-journal');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'trading-journal' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            Trading Journal
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('expert-advisors');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'expert-advisors' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            Expert Advisors
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('alerts');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'alerts' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            Price Alerts
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('ai-companion');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'ai-companion' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            AI Companion
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('promotions');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'promotions' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            Promotions &amp; Bonuses
+          </button>
+          <button
+            onClick={() => {
               setActiveTab('brokers');
               setMobileMenuOpen(false);
             }}
@@ -1697,6 +2168,39 @@ export const Header: React.FC<HeaderProps> = ({
             className="w-full py-2 text-left text-sm font-semibold text-slate-700 hover:text-[#5338ec]"
           >
             Broker Comparison
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('news');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'news' || activeTab === 'news-detail' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            Market News
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('education-hub');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'education-hub' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            Education Hub
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('economic-calendar');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'economic-calendar' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            Economic Calendar
           </button>
           <button
             onClick={() => {

@@ -14,6 +14,10 @@ import {
   CheckCircle2,
   X,
   Search,
+  Home,
+  Hash,
+  Film,
+  FileText,
 } from 'lucide-react';
 import {
   CommunitySubTab,
@@ -33,9 +37,22 @@ import {
 import { CommunityFeedsView } from './CommunityFeedsView';
 import { CommunityTopicsView } from './CommunityTopicsView';
 import { CommunityArticlesView } from './CommunityArticlesView';
+import { CommunityArticlesTabView } from './CommunityArticlesTabView';
 import { CommunityMyPageView } from './CommunityMyPageView';
+import { CommunityMyPageTabView } from './CommunityMyPageTabView';
 import { CommunityProfileView } from './CommunityProfileView';
 import { CommunityRightSidebar } from './CommunityRightSidebar';
+import { CommunityLeftSidebar } from './CommunityLeftSidebar';
+import { CommunityTopicsSidebar } from './CommunityTopicsSidebar';
+import { CommunityPostComposer } from './CommunityPostComposer';
+import { CommunityStoriesRow } from './CommunityStoriesRow';
+import { CommunityLeaderboardWidget } from './CommunityLeaderboardWidget';
+import { CommunityBrokerAdWidget } from './CommunityBrokerAdWidget';
+import { CommunityFeaturedCoursesWidget } from './CommunityFeaturedCoursesWidget';
+import { CommunitySignalsWidget } from './CommunitySignalsWidget';
+import { CommunityNewsWidget } from './CommunityNewsWidget';
+import { INITIAL_BROKERS } from '../../data/mockData';
+import { CommunityTrendingPostsView } from './CommunityTrendingPostsView';
 import { CreateCommunityPostModal } from './CreateCommunityPostModal';
 
 interface CommunityPageProps {
@@ -75,6 +92,8 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
   const [showCommunityDirectory, setShowCommunityDirectory] = useState(false);
   const [lastGlobalBonusAt, setLastGlobalBonusAt] = useState(0);
   const [topicReactions, setTopicReactions] = useState<Record<string, { likes: number; agrees: number; disagrees: number; comments: number }>>({});
+  const [feedTypeFilter, setFeedTypeFilter] = useState<'for-you' | 'latest' | 'following' | 'trending'>('for-you');
+  const feedAdBroker = INITIAL_BROKERS.find((b) => b.isTopPick) || INITIAL_BROKERS[0];
 
   const reactToTopic = (topicId: string, reaction: 'likes' | 'agrees' | 'disagrees' | 'comments') => {
     setTopicReactions((current) => ({
@@ -235,89 +254,47 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
         </div>
       )}
 
-      {/* ─── SUB-MENU NAVIGATION BAR ─── */}
-      <div className="bg-white border border-[#e2e8f0] rounded-2xl p-2 sm:p-2.5 shadow-xs">
+      {/* ─── SUB-MENU NAVIGATION BAR (fully pill-shaped, matching reference design) ─── */}
+      <div className="bg-white border border-[#e2e8f0] rounded-full p-2 sm:p-2.5 shadow-xs">
         <div className="flex items-center justify-between gap-3">
-          {/* Left Sub-Menu Tabs */}
-          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-1">
-            {/* Feeds Tab */}
-            <button
-              onClick={() => {
-                setActiveSubTab('feeds');
-                setSelectedInfluencer(null);
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeSubTab === 'feeds'
-                  ? 'bg-[#5338ec] text-white shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9]'
-              }`}
-            >
-              <span>Feeds</span>
-            </button>
-
-            {/* Topics Tab */}
-            <button
-              onClick={() => {
-                setActiveSubTab('topics');
-                setSelectedInfluencer(null);
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeSubTab === 'topics'
-                  ? 'bg-[#5338ec] text-white shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9]'
-              }`}
-            >
-              <span>Topics</span>
-            </button>
-
-            {/* Media Tab */}
-            <button
-              onClick={() => {
-                setActiveSubTab('media');
-                setSelectedInfluencer(null);
-              }}
-              className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9] transition-all flex items-center gap-1.5"
-            >
-              <span>Media</span>
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-            </button>
-
-            {/* Articles Tab */}
-            <button
-              onClick={() => {
-                setActiveSubTab('articles');
-                setSelectedInfluencer(null);
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeSubTab === 'articles'
-                  ? 'bg-[#5338ec] text-white shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9]'
-              }`}
-            >
-              <span>Articles</span>
-            </button>
-
-            {/* My Page Tab */}
-            <button
-              onClick={() => {
-                setActiveSubTab('my-page');
-                setSelectedInfluencer(null);
-              }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                activeSubTab === 'my-page'
-                  ? 'bg-[#5338ec] text-white shadow-xs'
-                  : 'text-[#474556] hover:text-[#0b1c30] hover:bg-[#f1f5f9]'
-              }`}
-            >
-              <span>My Page</span>
-            </button>
-
+          {/* Left Sub-Menu Tabs — one connected rounded-full pill */}
+          <div className="flex items-center gap-1 bg-[#f8fafc] rounded-full p-1 overflow-x-auto no-scrollbar">
+            {([
+              { id: 'feeds', label: 'Feed', icon: Home },
+              { id: 'topics', label: 'Topics', icon: Hash },
+              { id: 'media', label: 'Media', icon: Film },
+              { id: 'articles', label: 'Article', icon: FileText },
+              { id: 'my-page', label: 'My Page', icon: User },
+            ] as const).map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSubTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveSubTab(item.id);
+                    setSelectedInfluencer(null);
+                  }}
+                  className={`relative flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
+                    isActive
+                      ? 'bg-gradient-to-r from-[#5338ec] to-[#c026d3] text-white shadow-md'
+                      : 'text-[#474556] hover:text-[#0b1c30]'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                  {item.id === 'media' && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Right Notifications Button */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 sm:flex">
-              <Search className="h-3.5 w-3.5 text-slate-400" />
+          {/* Right: Search + Notifications */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="hidden items-center gap-2 rounded-full bg-[#f8fafc] px-4 py-2 sm:flex">
+              <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
               <input
                 value={communitySearch}
                 onChange={(event) => setCommunitySearch(event.target.value)}
@@ -336,12 +313,11 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
                 setIsNotificationsOpen(!isNotificationsOpen);
                 setUnreadNotifications(0);
               }}
-              className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f1f5f9] hover:bg-[#e2e8f0] border border-slate-200 text-xs font-semibold text-[#0b1c30] transition-colors"
+              className="relative flex items-center gap-2 px-4 py-2 rounded-full bg-[#EEF0FE] hover:bg-[#E0E3FC] text-xs font-bold text-[#0b1c30] transition-colors"
             >
-              <Bell className="w-3.5 h-3.5 text-[#5338ec]" />
               <span className="hidden sm:inline">Notifications</span>
               {unreadNotifications > 0 && (
-                <span className="w-4 h-4 rounded-full bg-[#5338ec] text-white text-[10px] flex items-center justify-center font-mono font-bold">
+                <span className="w-5 h-5 rounded-full bg-[#5338ec] text-white text-[11px] flex items-center justify-center font-mono font-bold shrink-0">
                   {unreadNotifications}
                 </span>
               )}
@@ -396,7 +372,46 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
         {/* SUB-VIEW 1: FEEDS */}
         {activeSubTab === 'feeds' && (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            <div className="xl:col-span-9">
+            <div className="hidden lg:block xl:col-span-3 space-y-5">
+              <CommunityLeftSidebar
+                onOpenTopics={() => setActiveSubTab('topics')}
+                onShowToast={showToast}
+              />
+              <CommunityTopicsSidebar
+                onOpenTopics={() => setActiveSubTab('topics')}
+                onShowToast={showToast}
+              />
+            </div>
+            <div className="xl:col-span-6 space-y-6">
+              <CommunityPostComposer
+                username={user.firstName || user.username}
+                avatar={user.avatar}
+                onOpenCreatePost={() => setIsCreateModalOpen(true)}
+              />
+              <CommunityStoriesRow
+                onOpenCreatePost={() => setIsCreateModalOpen(true)}
+                onShowToast={showToast}
+              />
+
+              <div className="flex items-center gap-5 border-b border-[#f1f5f9]">
+                {(['for-you', 'latest', 'following', 'trending'] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => {
+                      setFeedTypeFilter(f);
+                      if (f !== 'for-you') showToast(`Showing ${f === 'latest' ? 'latest' : f} posts`);
+                    }}
+                    className={`pb-2.5 text-sm font-bold capitalize transition-colors relative ${
+                      feedTypeFilter === f
+                        ? "text-[#5945F1] after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#5945F1]"
+                        : 'text-[#94a3b8] hover:text-[#0b1c30]'
+                    }`}
+                  >
+                    {f === 'for-you' ? 'For you' : f}
+                  </button>
+                ))}
+              </div>
+
               <CommunityFeedsView
                 posts={posts}
                 onToggleLike={handleToggleLike}
@@ -408,13 +423,16 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
                 user={user}
               />
             </div>
-            <div className="xl:col-span-3">
-              <CommunityRightSidebar
-                mode="default"
-                onSelectInfluencer={handleSelectInfluencer}
-                onOpenHotTopic={() => setActiveSubTab('topics')}
-                onShowToast={showToast}
+            <div className="xl:col-span-3 space-y-5">
+              <CommunitySignalsWidget
+                onSelectSignal={(sig) => onNavigateToTab?.('signal-detail', undefined, sig.ticker)}
+                onNavigateToTab={() => onNavigateToTab?.('signals')}
+                onUpgradePrompt={() => onNavigateToTab?.('member-plan')}
               />
+              <CommunityNewsWidget onSelectArticle={() => onNavigateToTab?.('news')} />
+              <CommunityLeaderboardWidget onNavigateToTab={onNavigateToTab} />
+              {feedAdBroker && <CommunityBrokerAdWidget broker={feedAdBroker} onOpenConnectModal={onOpenConnectModal} />}
+              <CommunityFeaturedCoursesWidget onNavigateToTab={onNavigateToTab} />
             </div>
           </div>
         )}
@@ -448,130 +466,21 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
 
         {/* SUB-VIEW 2: TOPICS */}
         {activeSubTab === 'topics' && (
-          <div className="overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white shadow-xs">
-            <div className="grid grid-cols-1 lg:grid-cols-[190px_1fr]">
-              <aside className="border-b border-[#e2e8f0] bg-slate-50/60 p-4 lg:border-b-0 lg:border-r">
-                <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Explore topics</p>
-                <div className="space-y-1 text-sm">
-                  <button type="button" className="w-full rounded-lg bg-violet-100 px-3 py-2 text-left font-semibold text-[#5338ec]">Home</button>
-                  <button type="button" className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-600 hover:bg-white">Popular</button>
-                  <button type="button" className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-600 hover:bg-white">Market News</button>
-                  <button type="button" onClick={() => showToast('Start a topic flow opened')} className="w-full rounded-lg px-3 py-2 text-left text-slate-600 hover:bg-white">＋ Start a topic</button>
-                  <button type="button" onClick={() => setShowCommunityDirectory((open) => !open)} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-[#5338ec] hover:bg-white">Community</button>
-                </div>
-                {showCommunityDirectory && <div className="mt-2 space-y-1 rounded-lg bg-white p-2"><p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-[#5338ec]">Community topics</p>{[['Stocks','Equity Lens'],['Stocks','Technical Traders'],['Crypto','Crypto Markets'],['Crypto','DeFi Builders'],['Forex','Macro & Geopolitics'],['Forex','Currency Traders'],['Commodities','Raw Materials'],['Indices','Global Index Monitor']].map(([market, name]) => <div key={`${market}-${name}`} className="flex items-center gap-1 rounded-md px-2 py-1.5 hover:bg-violet-50"><button type="button" onClick={() => showToast(`Opening ${name}`)} className="min-w-0 flex-1 text-left"><span className="block truncate text-[10px] font-semibold text-[#0b1c30]">{name}</span><span className="block text-[9px] text-slate-400">{market}</span></button><button type="button" onClick={() => { const credits = Math.floor(Math.random() * 101) + 50; showToast(`Joined ${name}. You received ${credits} free credits!`); }} className="shrink-0 rounded-full border border-[#5338ec] px-1.5 py-0.5 text-[8px] font-semibold text-[#5338ec]">Join</button></div>)}</div>}
-                <div className="mt-5 border-t border-[#e2e8f0] pt-4">
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Trending hashtags</p>
-                  <div className="flex flex-wrap gap-1.5">{['#BTC', '#Macro', '#Technical', '#Fundamental', '#Forex', '#Stocks', '#Crypto', '#Earnings'].map((tag) => <span key={tag} className="rounded-full bg-violet-50 px-2 py-1 text-[10px] font-semibold text-violet-700">{tag}</span>)}</div>
-                </div>
-                <div className="mt-5 border-t border-[#e2e8f0] pt-4">
-                  <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Recommended communities</p>
-                  <div className="space-y-3">{[
-                    ['CM', 'Crypto Markets', 'Digital assets, liquidity, and protocols', '58K members'],
-                    ['MG', 'Macro & Geopolitics', 'Rates, policy, and global risk', '49K members'],
-                    ['TT', 'Technical Traders', 'Charts, levels, and setups', '36K members'],
-                  ].map(([initials, name, description, members]) => <button type="button" key={name} onClick={() => showToast(`Opening ${name}`)} className="flex w-full items-start gap-2 text-left hover:opacity-80"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-600 text-[10px] font-bold text-white">{initials}</span><span className="min-w-0"><span className="block truncate text-[11px] font-bold text-[#0b1c30]">{name}</span><span className="block text-[10px] leading-snug text-slate-500">{description}</span><span className="block text-[10px] text-slate-400">{members}</span></span></button>)}</div>
-                  <button type="button" onClick={() => showToast('Showing all recommended communities')} className="mt-3 text-[10px] font-semibold text-[#5338ec]">See more communities</button>
-                </div>
-              </aside>
-              <div className="p-4">
-                {showCommunityDirectory && <section className="mb-4 rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-xs"><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-bold text-[#0b1c30]">Community Directory</h2><button type="button" onClick={() => setShowCommunityDirectory(false)} className="text-xs font-semibold text-[#5338ec]">Close</button></div><div className="space-y-1">{[
-                  ['Stocks', 'Equity Lens', 'Earnings, equities, and long-term investing', '42K members'],
-                  ['Stocks', 'Technical Traders', 'Charts, levels, and setups', '36K members'],
-                  ['Crypto', 'Crypto Markets', 'Digital assets, liquidity, and protocols', '58K members'],
-                  ['Crypto', 'DeFi Builders', 'Protocols, tokenomics, and on-chain research', '31K members'],
-                  ['Forex', 'Macro & Geopolitics', 'Rates, policy, and global risk', '49K members'],
-                  ['Forex', 'Currency Traders', 'FX strategy, pairs, and central banks', '25K members'],
-                  ['Commodities', 'Raw Materials', 'Gold, oil, copper, and supply chains', '21K members'],
-                  ['Indices', 'Global Index Monitor', 'Index breadth, sectors, and allocation', '18K members'],
-                ].map(([market, name, description, members]) => <button type="button" key={`${market}-${name}`} onClick={() => showToast(`Opening ${name}`)} className="flex w-full items-center gap-3 border-b border-slate-100 p-3 text-left last:border-0 hover:bg-slate-50"><span className="w-24 shrink-0 text-[10px] font-bold uppercase tracking-wide text-[#5338ec]">{market}</span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-[#0b1c30]">{name}</span><span className="block text-xs text-slate-500">{description}</span></span><span className="shrink-0 text-[10px] text-slate-400">{members}</span></button>)}</div></section>}
-                <section className="mb-4 overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white shadow-xs">
-                  <div className="grid grid-cols-1 items-center gap-4 p-4 md:grid-cols-[190px_1fr]">
-                    <div className="relative aspect-video overflow-hidden rounded-xl bg-slate-100">
-                      <img src={COMMUNITY_TOPICS[0]?.image} alt={COMMUNITY_TOPICS[0]?.title} className="h-full w-full object-cover" />
-                      <span className="absolute left-2 top-2 rounded-md bg-amber-500 px-2 py-1 text-[10px] font-bold uppercase text-slate-950">🔥 Hot discussion</span>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#5338ec]">Featured topic · Trending now</p>
-                      <h2 className="mt-2 text-lg font-bold leading-snug text-[#0b1c30]">{COMMUNITY_TOPICS[0]?.title}</h2>
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {COMMUNITY_TOPICS[0]?.tokens.map((token) => <span key={token.symbol} className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-[#0b1c30]">{token.symbol} <span className="text-emerald-600">+{token.change}%</span></span>)}
-                        <span className="text-[11px] text-slate-500">{COMMUNITY_TOPICS[0]?.answersCount} traders answered</span>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-                <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-3">
-                  {[
-                    ['Top post', 'BTC liquidity is holding while risk appetite returns.', '131 answers'],
-                    ['Reward pool', '$14,850 cashback pool is open for this week.', '+50 C available'],
-                    ['Technical discuss', 'Which level invalidates the current thesis?', '84 replies'],
-                  ].map(([label, title, meta]) => <article key={label} className="rounded-xl border border-[#e2e8f0] bg-slate-50/60 p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-[#5338ec]">{label}</p><h3 className="mt-1 line-clamp-2 text-xs font-bold text-[#0b1c30]">{title}</h3><p className="mt-2 text-[10px] text-slate-500">{meta}</p></article>)}
-                </div>
-                <section className="mb-5 divide-y divide-[#e2e8f0] overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white">
-                  {COMMUNITY_TOPICS.slice(0, 4).map((topic, index) => {
-                    const reactions = topicReactions[topic.id] ?? { likes: 0, agrees: 0, disagrees: 0, comments: 0 };
-                    return <article key={topic.id} className="p-3">
-                      <div className="flex items-start gap-3">
-                        <img src={topic.image} alt="" onError={(event) => { event.currentTarget.src = COMMUNITY_TOPICS[0].image; }} className="h-10 w-10 shrink-0 rounded-full bg-slate-100 object-cover" />
-                        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><h3 className="text-xs font-bold text-[#0b1c30]">{topic.title}</h3><span className="text-[10px] text-slate-400">· #{index + 1} trending</span></div><p className="mt-1 line-clamp-1 text-[11px] text-slate-500">{topic.description || 'Active market discussion from the community.'}</p><div className="mt-1 flex flex-wrap gap-1">{topic.tokens.slice(0, 3).map((token) => <span key={token.symbol} className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[9px] font-semibold text-violet-700">#{token.symbol}</span>)}</div></div>
-                        <button type="button" onClick={() => { const credits = Math.floor(Math.random() * 101) + 50; showToast(`Joined ${topic.title}. You received ${credits} free credits!`); }} className="shrink-0 rounded-full border border-[#5338ec] px-2.5 py-1 text-[10px] font-semibold text-[#5338ec]">{topic.answersCount > 100 ? 'Free to join' : `${topic.answersCount} credits · Join`}</button>
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2"><button type="button" onClick={() => reactToTopic(topic.id, 'comments')} className="rounded-full bg-slate-50 px-2.5 py-1 text-[10px] text-slate-600">💬 Comment {topic.answersCount + reactions.comments}</button><button type="button" onClick={() => reactToTopic(topic.id, 'agrees')} className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">Agree {reactions.agrees}</button><button type="button" onClick={() => reactToTopic(topic.id, 'disagrees')} className="rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-semibold text-rose-700">Disagree {reactions.disagrees}</button><button type="button" onClick={() => reactToTopic(topic.id, 'likes')} className="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700">♥ Like {reactions.likes}</button></div>
-                    </article>;
-                  })}
-                </section>
-                <section className="mb-5"><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-bold text-[#0b1c30]">All Hot Topics</h2><span className="text-[10px] font-mono text-slate-500">{COMMUNITY_TOPICS.length} Active Debates</span></div><div className="grid grid-cols-1 gap-3 md:grid-cols-2">{COMMUNITY_TOPICS.slice(0, 4).map((topic) => <article key={`card-${topic.id}`} className="rounded-2xl border border-[#e2e8f0] bg-white p-4 shadow-xs"><div className="flex items-start justify-between gap-2"><span className="rounded-md bg-violet-100 px-2.5 py-1 text-[11px] font-semibold text-[#5338ec]">{topic.category}</span><span className="text-xs font-mono text-slate-500">{topic.answersCount} Answers</span></div><h3 className="mt-3 line-clamp-2 text-sm font-semibold text-[#0b1c30]">{topic.title}</h3><div className="mt-3 flex flex-wrap gap-2">{topic.tokens.map((token) => <span key={`${topic.id}-${token.symbol}`} className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-[#0b1c30]">{token.symbol} <span className="text-emerald-600">+{token.change}%</span></span>)}</div><div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3"><span className="text-[11px] text-slate-400">Open for answers</span><button type="button" onClick={() => showToast(`Answering ${topic.title}`)} className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-[#0b1c30]">💬 Answer</button></div></article>)}</div></section>
-                <section className="mb-5">
-                  <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-bold text-[#0b1c30]">Trending Posts</h2><span className="text-[10px] text-slate-500">Popular first · generated feed</span></div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">{posts.slice(0, 4).map((post) => <article key={post.id} className="overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white shadow-xs"><div className="p-3"><div className="flex items-center gap-2"><img src={post.author.avatar} alt={post.author.name} className="h-7 w-7 rounded-full object-cover" /><div><p className="text-[11px] font-bold text-[#0b1c30]">{post.author.name}</p><p className="text-[9px] text-slate-400">{post.timestamp} · {post.category || 'Discussion'}</p></div></div><h3 className="mt-2 line-clamp-2 text-sm font-bold text-[#0b1c30]">{post.title}</h3><p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-500">{post.content}</p>{post.image && <img src={post.image} alt="" className="mt-3 h-28 w-full rounded-xl object-cover" />}<div className="mt-2 flex items-center gap-3 text-[10px] text-slate-500"><span>♥ {post.likes}</span><span>◌ {post.viewsCount || '1.2K'}</span><span>▢ {post.commentsCount}</span></div></div></article>)}</div>
-                </section>
-              </div>
-            </div>
-          </div>
+          <CommunityTrendingPostsView onShowToast={showToast} />
         )}
 
         {/* SUB-VIEW 3: ARTICLES */}
         {activeSubTab === 'articles' && (
-          <CommunityArticlesView
-            articles={COMMUNITY_ARTICLES}
-            onSelectAuthorByName={(name) => {
-              if (name === 'Crypto Adventure') {
-                handleSelectInfluencer(CRYPTO_ADVENTURE_PROFILE);
-              } else {
-                showToast(`Viewing publisher: ${name}`);
-              }
-            }}
-            onShowToast={showToast}
-          />
+          <CommunityArticlesTabView onShowToast={showToast} />
         )}
 
         {/* SUB-VIEW 4: MY PAGE */}
         {activeSubTab === 'my-page' && (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            <div className="xl:col-span-9">
-              <CommunityMyPageView
-                user={user}
-                userPosts={userPosts}
-                onOpenCreatePost={() => setIsCreateModalOpen(true)}
-                onUpdateUserProfile={onUpdateUserProfile}
-                onDeletePost={(postId) => {
-                  setUserPosts(userPosts.filter((p) => p.id !== postId));
-                  setPosts(posts.filter((p) => p.id !== postId));
-                  showToast('Post deleted');
-                }}
-                onShowToast={showToast}
-              />
-            </div>
-            <div className="xl:col-span-3">
-              <CommunityRightSidebar
-                mode="default"
-                onSelectInfluencer={handleSelectInfluencer}
-                onOpenHotTopic={() => setActiveSubTab('topics')}
-                onShowToast={showToast}
-              />
-            </div>
-          </div>
+          <CommunityMyPageTabView
+            user={user}
+            onShowToast={showToast}
+            onOpenConnectModal={onOpenConnectModal}
+          />
         )}
 
         {/* SUB-VIEW 5: PROFILE PAGE (Viewing another creator, e.g. Crypto Adventure) */}
@@ -601,6 +510,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
                 onSelectInfluencer={handleSelectInfluencer}
                 onOpenHotTopic={() => setActiveSubTab('topics')}
                 onShowToast={showToast}
+                onNavigateToTab={onNavigateToTab}
               />
             </div>
           </div>

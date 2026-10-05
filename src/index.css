@@ -712,3 +712,34 @@ select:not(.appearance-none) {
 
 
 
+
+/* ══════════════════════════════════════════════════════════════════
+   Dark-mode tokens for the newer pages (Portfolio, Journal, Calendar,
+   Promotions, Expert Advisors, Alerts, AI Companion). Maps the light
+   hex values those pages use onto the dark theme tokens above.
+   ══════════════════════════════════════════════════════════════════ */
+.dark .border-\[\#e2e8f0\],
+.dark .border-\[\#ECEEFA\] {
+  border-color: #230674;
+}
+.dark .border-\[\#f1f5f9\],
+.dark .divide-\[\#f1f5f9\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #230674;
+}
+.dark .text-\[\#474556\] {
+  color: #CCC6FB;
+}
+.dark .text-\[\#94a3b8\] {
+  color: #8A7AF6;
+}
+.dark .bg-\[\#F8F7FF\],
+.dark .bg-\[\#EEF0FE\],
+.dark .bg-\[\#fafbfe\],
+.dark .bg-\[\#fcfcfe\],
+.dark .bg-\[\#f1f5f9\] {
+  background-color: #230674;
+}
+.dark .hover\:bg-\[\#f8f9fc\]:hover,
+.dark .hover\:bg-\[\#F8F7FF\]:hover {
+  background-color: #2E0AA3;
+}

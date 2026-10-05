@@ -8,6 +8,7 @@ export type WidgetType =
   | 'market-clock'
   | 'instrument-analysis'
   | 'mission-card'
+  | 'portfolio-snapshot'
   | 'empty';
 
 export type WidgetSize = 1 | 2 | 3;

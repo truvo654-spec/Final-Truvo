@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, Calculator, DollarSign, TrendingUp, ArrowLeftRight, Clock, BarChart2, Activity, Compass, LineChart } from 'lucide-react';
+import { Target, Calculator, DollarSign, TrendingUp, ArrowLeftRight, Clock, BarChart2, Activity, Compass, LineChart, Calendar, Wallet, BookOpen, Star } from 'lucide-react';
 import { CalculatorType } from '../calculators/TradingCalculatorsModal';
 
-export type TradeFeatureVariant = 'signals' | 'analysis' | 'calculators' | 'converters';
+export type TradeFeatureVariant = 'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal';
 
 interface InteractiveTradeGraphicProps {
   variant?: TradeFeatureVariant;
@@ -11,6 +11,9 @@ interface InteractiveTradeGraphicProps {
   onSelectSignals?: () => void;
   onSelectAnalysis?: () => void;
   onSelectCashback?: () => void;
+  onSelectCalendar?: () => void;
+  onSelectPortfolio?: () => void;
+  onSelectJournal?: () => void;
 }
 
 export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = ({
@@ -19,6 +22,9 @@ export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = (
   onSelectSignals,
   onSelectAnalysis,
   onSelectCashback,
+  onSelectCalendar,
+  onSelectPortfolio,
+  onSelectJournal,
 }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [hoveredIcon, setHoveredIcon] = useState<string | null>(null);
@@ -474,6 +480,154 @@ export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = (
                 <BarChart2 className="w-5 h-5 text-[#5945F1] stroke-[2.2]" />
               </div>
             </motion.div>
+          </motion.div>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────────
+            VARIANT 5: ECONOMIC CALENDAR
+           ───────────────────────────────────────────────────────────── */}
+        {variant === 'calendar' && (
+          <motion.div
+            key="calendar"
+            initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+            animate={{ opacity: 1, scale: 1, rotateX: tilt.y, rotateY: tilt.x - 6 }}
+            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="relative cursor-pointer"
+            onClick={onSelectCalendar}
+          >
+            <div className="w-48 sm:w-52 rounded-3xl bg-[#0f1115] border border-white/10 p-4 sm:p-5 shadow-2xl relative overflow-visible transform -rotate-6 transition-transform duration-300 hover:rotate-0 group">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-white shadow-xs" />
+                <span className="text-[11px] font-bold tracking-widest text-white/90 uppercase font-mono">CALENDAR</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7c6ef0] to-[#5945F1] flex items-center justify-center shadow-md shrink-0">
+                  <Calendar className="w-5 h-5 text-white stroke-[2.2]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base sm:text-lg font-black text-white leading-tight tracking-tight">NFP</span>
+                  <span className="text-xs font-bold text-white/60 font-mono">14:30 GMT</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 mb-3">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider ml-1">High impact</span>
+              </div>
+
+              <div className="flex items-baseline gap-1 pt-1">
+                <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">180K</span>
+                <span className="text-xs text-white/70 font-medium">forecast</span>
+              </div>
+
+              <div className="absolute -bottom-2 -right-2 bg-[#bef226] group-hover:bg-[#aee019] text-black text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg transition-transform group-hover:scale-105">
+                REMIND
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────────
+            VARIANT 6: PORTFOLIO TRACKER
+           ───────────────────────────────────────────────────────────── */}
+        {variant === 'portfolio' && (
+          <motion.div
+            key="portfolio"
+            initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+            animate={{ opacity: 1, scale: 1, rotateX: tilt.y, rotateY: tilt.x - 6 }}
+            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="relative cursor-pointer"
+            onClick={onSelectPortfolio}
+          >
+            <div className="w-48 sm:w-52 rounded-3xl bg-[#0f1115] border border-white/10 p-4 sm:p-5 shadow-2xl relative overflow-visible transform -rotate-6 transition-transform duration-300 hover:rotate-0 group">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-white shadow-xs" />
+                <span className="text-[11px] font-bold tracking-widest text-white/90 uppercase font-mono">PORTFOLIO</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#bef226] to-[#8fc10e] flex items-center justify-center shadow-md shrink-0">
+                  <Wallet className="w-5 h-5 text-black stroke-[2.2]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base sm:text-lg font-black text-white leading-tight tracking-tight">$18,420</span>
+                  <span className="text-xs font-bold text-emerald-400">+$2,840 realized</span>
+                </div>
+              </div>
+
+              <svg viewBox="0 0 120 36" className="w-full h-9 mb-1">
+                <polyline
+                  points="0,30 12,26 24,28 36,20 48,22 60,14 72,16 84,9 96,12 108,5 120,7"
+                  fill="none"
+                  stroke="#bef226"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">64%</span>
+                <span className="text-xs text-white/70 font-medium">win rate</span>
+              </div>
+
+              <div className="absolute -bottom-2 -right-2 bg-[#10b981] group-hover:bg-[#059669] text-white text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg transition-transform group-hover:scale-105">
+                TRACK
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ─────────────────────────────────────────────────────────────
+            VARIANT 7: TRADING JOURNAL
+           ───────────────────────────────────────────────────────────── */}
+        {variant === 'journal' && (
+          <motion.div
+            key="journal"
+            initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+            animate={{ opacity: 1, scale: 1, rotateX: tilt.y, rotateY: tilt.x - 6 }}
+            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="relative cursor-pointer"
+            onClick={onSelectJournal}
+          >
+            <div className="w-48 sm:w-52 rounded-3xl bg-[#0f1115] border border-white/10 p-4 sm:p-5 shadow-2xl relative overflow-visible transform -rotate-6 transition-transform duration-300 hover:rotate-0 group">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-white shadow-xs" />
+                <span className="text-[11px] font-bold tracking-widest text-white/90 uppercase font-mono">JOURNAL</span>
+              </div>
+
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FD02B0] to-[#a3006f] flex items-center justify-center shadow-md shrink-0">
+                  <BookOpen className="w-5 h-5 text-white stroke-[2.2]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base sm:text-lg font-black text-white leading-tight tracking-tight">EUR/USD</span>
+                  <span className="text-xs font-bold text-emerald-400">Plan followed</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 mb-2">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star key={n} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                ))}
+                <span className="text-[10px] text-white/60 font-mono ml-1.5">Calm → Confident</span>
+              </div>
+
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">+2.4R</span>
+                <span className="text-xs text-white/70 font-medium">this trade</span>
+              </div>
+
+              <div className="absolute -bottom-2 -right-2 bg-[#FD02B0] group-hover:bg-[#e0009d] text-white text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg transition-transform group-hover:scale-105">
+                REVIEW
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

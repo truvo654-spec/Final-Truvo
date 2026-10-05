@@ -1,4 +1,11 @@
 import {
+  AVATAR_DANIEL_TAN,
+  AVATAR_PRIYA_SHAH,
+  AVATAR_MICHAEL_LI,
+  AVATAR_AVA_KIM,
+  CHART_BTC_4H,
+} from './communityDemoPostAssets';
+import {
   TokenMarketItem,
   CommunityPost,
   CommunityTopic,
@@ -152,6 +159,72 @@ export const TRENDING_TOKENS: TokenMarketItem[] = [
 ];
 
 export const INITIAL_FEED_POSTS: CommunityPost[] = [
+  {
+    id: 'post-feed-0',
+    author: {
+      name: 'Daniel Tan',
+      handle: '@danieltan',
+      avatar: AVATAR_DANIEL_TAN,
+      verified: true,
+      influenceScore: 96.4,
+    },
+    timestamp: '2h ago',
+    category: 'Discussion',
+    title: 'BTC showing strong structure on the 4H',
+    content:
+      "We're holding the higher low and looking like a breakout above this range. If volume continues, I'm watching the $110K – $112K zone next.",
+    image: CHART_BTC_4H,
+    tags: ['Bitcoin', 'TechnicalAnalysis'],
+    likes: 124,
+    hasLiked: false,
+    commentsCount: 32,
+    comments: [
+      {
+        id: 'c-dt-1',
+        author: 'Priya Shah',
+        avatar: AVATAR_PRIYA_SHAH,
+        tier: 'Advisor',
+        badge: 'Advisor',
+        verified: true,
+        time: '1h ago',
+        likes: 18,
+        text:
+          "I agree with the breakout idea, but I'd want to see stronger volume above $110K first. The momentum looks good, but we've been rejected around this area a few times.",
+        replies: [
+          {
+            id: 'c-dt-1-r1',
+            author: 'Daniel Tan',
+            avatar: AVATAR_DANIEL_TAN,
+            tier: 'Author',
+            verified: true,
+            time: '56m ago',
+            likes: 6,
+            text:
+              "Exactly. $110K is the confirmation level I'm watching too. If we get a clean daily close above that with volume, I'm looking at $118K next.",
+          },
+        ],
+      },
+      {
+        id: 'c-dt-2',
+        author: 'Michael Li',
+        avatar: AVATAR_MICHAEL_LI,
+        tier: 'Player',
+        time: '1h ago',
+        likes: 4,
+        text: 'Where would you place the invalidation level on this setup?',
+      },
+      {
+        id: 'c-dt-3',
+        author: 'Ava Kim',
+        avatar: AVATAR_AVA_KIM,
+        tier: 'Climber',
+        time: '2h ago',
+        likes: 9,
+        text: "Looks good! I'm also seeing a similar structure. Here's my view with EMA and volume.",
+        chartSnippet: CHART_BTC_4H,
+      },
+    ],
+  },
   {
     id: 'post-feed-1',
     author: {

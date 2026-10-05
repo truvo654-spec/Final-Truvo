@@ -613,6 +613,52 @@ export const WidgetPickerModal: React.FC<WidgetPickerModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* ════════════ 8. PORTFOLIO SNAPSHOT ════════════ */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-extrabold text-base text-[#0b1c30]">
+                Portfolio<span className="text-[#FD02B0]">.</span>
+              </h3>
+              <span className="text-xs font-semibold text-slate-400">Sizes 1, 2 or 3</span>
+            </div>
+
+            <div className="rounded-2xl border border-indigo-200/90 bg-white overflow-hidden shadow-2xs hover:border-indigo-400 transition-all">
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Total balance</span>
+                  <span className="text-[10px] font-bold text-slate-500">Portfolio · Learn · Signals · Discuss</span>
+                </div>
+                <div className="text-2xl font-extrabold font-mono text-[#0b1c30]">$18,420.50</div>
+                <svg viewBox="0 0 200 40" className="w-full h-10">
+                  <polyline points="0,32 20,28 40,30 60,20 80,22 100,14 120,18 140,9 160,12 180,6 200,8" fill="none" stroke="#5338ec" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <div className="grid grid-cols-3 gap-2 text-[10px]">
+                  <div className="bg-slate-50 rounded-lg p-2"><div className="text-slate-500">Realized</div><div className="font-mono font-bold text-emerald-600">+$3,722</div></div>
+                  <div className="bg-slate-50 rounded-lg p-2"><div className="text-slate-500">Win rate</div><div className="font-mono font-bold">60%</div></div>
+                  <div className="bg-slate-50 rounded-lg p-2"><div className="text-slate-500">Margin</div><div className="font-mono font-bold">19%</div></div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-slate-50/60 border-t border-slate-100">
+                <span className="text-xs font-bold text-slate-500">Choose a size</span>
+                <div className="flex items-center gap-2">
+                  {([1, 2, 3] as const).map((sz) => (
+                    <button
+                      key={sz}
+                      onClick={() => {
+                        onSelectWidget('portfolio-snapshot', sz);
+                        onClose();
+                      }}
+                      className="px-4 py-1.5 rounded-full border border-indigo-200 text-[#5945F1] hover:bg-indigo-50 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      Size {sz}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

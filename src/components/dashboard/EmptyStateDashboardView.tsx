@@ -47,6 +47,7 @@ import { ConnectionDeniedPopup } from './ConnectionDeniedPopup';
 import { ConnectionUnavailablePopup } from './ConnectionUnavailablePopup';
 import { InstrumentAnalysisWidget } from './InstrumentAnalysisWidget';
 import { MissionCardWidget } from './MissionCardWidget';
+import { PortfolioSnapshotWidget } from './PortfolioSnapshotWidget';
 import { CommunityWidget } from './CommunityWidget';
 import { LiveInteractiveSparkline } from './LiveInteractiveSparkline';
 import { BorderBeam } from '../ui/BorderBeam';
@@ -1115,6 +1116,14 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
 
           {/* ─── INSTRUMENT ANALYSIS WIDGET (Matching Widget, 3 coloumn.png) ─── */}
           <InstrumentAnalysisWidget onNavigateToTab={onNavigateToTab} />
+
+          {/* ─── PORTFOLIO SNAPSHOT: portfolio, learning, signals and discussions in one place ─── */}
+          <PortfolioSnapshotWidget
+            size={3}
+            signals={signals}
+            onNavigateToTab={onNavigateToTab}
+            onSelectSignal={(sg) => onSelectSignal?.(sg)}
+          />
 
           {/* ─── ROW 2: Your Stats / Your Performance Card ─── */}
           <div id="tour-your-stats-card" className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5 interactive-card">
