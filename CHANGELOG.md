@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.82] - 2026-10-06
+### Changed
+- Removed the duplicate Summary historical participation chart, range controls, projection legend, and sample-stat cards so Event Impact history is the single primary reaction visualization.
+
 ## [1.0.81] - 2026-10-06
 ### Fixed
 - Connected the Summary historical chart to its forecast series so the inspected chart renders both history and a dashed forecast path.
