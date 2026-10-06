@@ -164,6 +164,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   const [tz, setTz] = useState(7);
   const [displayMode, setDisplayMode] = useState<'all' | 'remaining'>('all');
   const [calendarView, setCalendarView] = useState<'visualization' | 'list'>('visualization');
+  const [expandedInstrumentGroup, setExpandedInstrumentGroup] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [instrumentQuery, setInstrumentQuery] = useState('');
   const [openFilter, setOpenFilter] = useState<FilterMenu>(null);
@@ -965,15 +966,27 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                   }, {})
                                 ) as [string, EconomicEvent[]][]).map(([currency, instrumentEvents]) => (
                                   <div key={currency} className="rounded-lg border border-white/10 bg-black/10 p-1.5">
-                                    <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
+                                    {(() => {
+                                      const instrumentGroupKey = `${day}:${market}:${currency}`;
+                                      const isExpanded = expandedInstrumentGroup === instrumentGroupKey;
+                                      return (
+                                        <>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedInstrumentGroup(isExpanded ? null : instrumentGroupKey)}
+                                      className={`mb-1.5 flex w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors ${
+                                        isExpanded ? 'bg-white/10' : 'hover:bg-white/5'
+                                      }`}
+                                      aria-expanded={isExpanded}
+                                    >
                                       <span className="text-[9px] font-bold uppercase tracking-wide text-white/60">
                                         {instrumentEvents[0].countryFlag} {currency}
                                       </span>
                                       <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/60">
                                         {instrumentEvents.length}
                                       </span>
-                                    </div>
-                                    <div className={timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'space-y-2'}>
+                                    </button>
+                                    <div className={isExpanded ? 'flex gap-2 overflow-x-auto pb-1' : timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'space-y-2'}>
                                       {instrumentEvents.map((event) => {
                                         const impactClass = event.impact === 'High'
                                           ? 'border-rose-400/40 bg-rose-400/10'
@@ -987,7 +1000,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                               setCalendarView('list');
                                               setSelectedEvent(event);
                                             }}
-                                            className={`relative w-full rounded-xl border p-2.5 text-left transition-colors hover:brightness-125 ${impactClass}`}
+                                            className={`relative w-full rounded-xl border p-2.5 text-left transition-colors hover:brightness-125 ${isExpanded ? 'min-w-[180px]' : ''} ${impactClass}`}
                                           >
                                             <div className="flex items-center justify-between gap-2">
                                               <span className={`rounded-full border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
@@ -1014,6 +1027,9 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                         );
                                       })}
                                     </div>
+                                        </>
+                                      );
+                                    })()}
                                   </div>
                                 ))}
                               </div>

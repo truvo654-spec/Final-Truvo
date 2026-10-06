@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.61] - 2026-10-06
+### Added
+- Added clickable instrument group headers/counts that expand the group into a horizontal detail-card strip for all active events.
+
 ## [1.0.60] - 2026-10-06
 ### Changed
 - Added per-instrument grouping and event-count badges inside each market category.
