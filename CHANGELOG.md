@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.54] - 2026-10-06
+### Changed
+- Reduced Economic Calendar sidebar padding, chart height, row spacing, and section gaps for a more compact layout.
+
 ## [1.0.53] - 2026-10-06
 ### Added
 - Added a shared two-week calendar range option so the Visualization timeline can extend beyond a single week.

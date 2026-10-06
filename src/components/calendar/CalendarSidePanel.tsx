@@ -147,11 +147,11 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
 
   return (
     <div className="bg-white border border-[#e2e8f0] rounded-2xl shadow-xs flex overflow-hidden">
-      <div className="flex-1 min-w-0 p-4">
+      <div className="flex-1 min-w-0 p-3">
         {/* ───── Markets ───── */}
         {panel === 'markets' && (
           <div>
-            <div className="flex items-center gap-4 border-b border-[#f1f5f9] mb-3 overflow-x-auto">
+            <div className="flex items-center gap-3 border-b border-[#f1f5f9] mb-2 overflow-x-auto">
               {MARKET_TABS.map((t) => (
                 <button
                   key={t}
@@ -159,7 +159,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
                     setMarketTab(t);
                     setSelectedSymbol(null);
                   }}
-                  className={`pb-2 text-sm font-semibold whitespace-nowrap relative transition-colors ${
+                  className={`pb-1.5 text-sm font-semibold whitespace-nowrap relative transition-colors ${
                     marketTab === t
                       ? "text-[#5338ec] after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#5338ec]"
                       : 'text-[#474556] hover:text-[#0b1c30]'
@@ -170,7 +170,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
               ))}
             </div>
 
-            <div className="flex items-center gap-3 mb-2 overflow-x-auto">
+            <div className="flex items-center gap-2.5 mb-1.5 overflow-x-auto">
               {PERIODS.map((p) => (
                 <button
                   key={p}
@@ -183,7 +183,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
             </div>
 
             {chart && selected && (
-              <div className="mb-3">
+              <div className="mb-2">
                 <div className="flex items-baseline justify-between mb-1">
                   <span className="text-xs font-bold text-[#0b1c30]">{selected.symbol}</span>
                   <span className={`text-xs font-bold font-mono ${chart.up ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -191,7 +191,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
                     {periodChange(selected.change, selected.return1m, period).toFixed(2)}%
                   </span>
                 </div>
-                <svg viewBox={`0 0 ${chart.w} ${chart.h}`} className="w-full h-28">
+                <svg viewBox={`0 0 ${chart.w} ${chart.h}`} className="w-full h-20">
                   <polygon points={chart.area} fill={chart.up ? 'rgba(16,185,129,0.10)' : 'rgba(244,63,94,0.10)'} />
                   <polyline points={chart.line} fill="none" stroke={chart.up ? '#10b981' : '#f43f5e'} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
                 </svg>
@@ -206,7 +206,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
                   <button
                     key={r.symbol}
                     onClick={() => setSelectedSymbol(r.symbol)}
-                    className={`w-full grid grid-cols-[1fr_auto_auto] items-center gap-3 px-2 py-2 text-left transition-colors ${active ? 'bg-[#F8F7FF]' : 'hover:bg-slate-50'}`}
+                    className={`w-full grid grid-cols-[1fr_auto_auto] items-center gap-2 px-2 py-1.5 text-left transition-colors ${active ? 'bg-[#F8F7FF]' : 'hover:bg-slate-50'}`}
                   >
                     <span className="text-xs font-bold text-[#0b1c30] truncate">{r.symbol}</span>
                     <span className="text-xs font-mono text-[#0b1c30]">{fmtPrice(r.price)}</span>
@@ -219,26 +219,26 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
               })}
             </div>
 
-            <div className="mt-5 pt-4 border-t border-[#f1f5f9]">
-              <p className="text-sm text-[#0b1c30] leading-snug mb-3">
+            <div className="mt-3 pt-3 border-t border-[#f1f5f9]">
+              <p className="text-sm text-[#0b1c30] leading-snug mb-2">
                 Join our learning challenges and earn rewards while you study.
               </p>
               <button
                 onClick={() => onNavigateToTab?.('education-hub')}
-                className="w-full bg-[#5338ec] hover:bg-[#4326d8] text-white text-sm font-bold py-2.5 rounded-xl transition-colors"
+                className="w-full bg-[#5338ec] hover:bg-[#4326d8] text-white text-sm font-bold py-2 rounded-xl transition-colors"
               >
                 Take the Challenge
               </button>
             </div>
 
-            <div className="mt-5">
+            <div className="mt-3">
               <button
                 onClick={() => onNavigateToTab?.('signals')}
-                className="flex items-center gap-1 text-sm font-bold text-[#0b1c30] hover:text-[#5338ec] mb-2 transition-colors"
+                className="flex items-center gap-1 text-sm font-bold text-[#0b1c30] hover:text-[#5338ec] mb-1.5 transition-colors"
               >
                 Market Movers <ChevronRight className="w-4 h-4" />
               </button>
-              <div className="flex items-center gap-4 border-b border-[#f1f5f9] mb-2">
+              <div className="flex items-center gap-3 border-b border-[#f1f5f9] mb-1">
                 {([
                   ['active', 'Most Active'],
                   ['gainers', 'Gainers %'],
@@ -247,7 +247,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
                   <button
                     key={id}
                     onClick={() => setMoversTab(id)}
-                    className={`pb-2 text-xs font-semibold relative transition-colors ${
+                    className={`pb-1.5 text-xs font-semibold relative transition-colors ${
                       moversTab === id
                         ? "text-[#5338ec] after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#5338ec]"
                         : 'text-[#474556]'
@@ -259,7 +259,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
               </div>
               <div className="divide-y divide-[#f1f5f9]">
                 {movers.map((m) => (
-                  <div key={m.symbol} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-1 py-2">
+                  <div key={m.symbol} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 px-1 py-1.5">
                     <span className="text-xs font-bold text-[#0b1c30]">{m.symbol}</span>
                     <span className="text-xs font-mono text-[#0b1c30]">{fmtPrice(m.price)}</span>
                     <span className={`text-xs font-bold font-mono w-16 text-right ${m.change >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -272,7 +272,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
             </div>
 
             {adBroker && (
-              <div className="mt-5 -mx-1">
+              <div className="mt-3 -mx-1">
                 <CommunityBrokerAdWidget broker={adBroker} onOpenConnectModal={onOpenConnectModal} />
               </div>
             )}
