@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.71] - 2026-10-06
+### Changed
+- Removed the `Other` option from the Market Type dropdown while retaining its illustrative events under All Markets.
+
 ## [1.0.70] - 2026-10-06
 ### Fixed
 - Made populated multi-event instrument groups display their dummy event cards immediately instead of hiding them until group selection.

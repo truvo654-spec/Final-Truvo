@@ -784,7 +784,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
 
                   {openFilter === id && id === 'marketType' && (
                     <div className="absolute left-0 top-full mt-1 w-44 rounded-none border border-[#cbd5e1] bg-white py-1 shadow-md">
-                      {(['All Markets', 'Forex', 'Indices', 'Stocks', 'Commodities', 'Crypto', 'Other'] as MarketType[]).map((option) => (
+                      {(['All Markets', 'Forex', 'Indices', 'Stocks', 'Commodities', 'Crypto'] as MarketType[]).map((option) => (
                         <button
                           key={option}
                           onClick={() => { setMarketType(option); setOpenFilter(null); }}
