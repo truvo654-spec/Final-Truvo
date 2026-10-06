@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.72] - 2026-10-06
+### Changed
+- Made each market-category header and event count clickable to apply that market type as the active calendar filter.
+
 ## [1.0.71] - 2026-10-06
 ### Changed
 - Removed the `Other` option from the Market Type dropdown while retaining its illustrative events under All Markets.

@@ -967,10 +967,15 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                           {dayEvents.length === 0 && <p className="rounded-lg border border-dashed border-white/10 px-2 py-5 text-center text-[10px] text-white/25">No events</p>}
                           {(Object.entries(marketGroups) as [string, EconomicEvent[]][]).map(([market, marketEvents]) => (
                             <section key={market} className="rounded-xl border border-white/10 bg-white/[0.025] p-1.5">
-                              <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
+                              <button
+                                type="button"
+                                onClick={() => setMarketType(market === 'Commodity' ? 'Commodities' : market as MarketType)}
+                                className="mb-1.5 flex w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors hover:bg-white/5"
+                                aria-label={`Filter calendar to ${market} events`}
+                              >
                                 <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">{market}</span>
                                 <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/60">{marketEvents.length}</span>
-                              </div>
+                              </button>
                               <div className="space-y-2">
                                 {(Object.entries(
                                   marketEvents.reduce<Record<string, EconomicEvent[]>>((groups, event) => {
