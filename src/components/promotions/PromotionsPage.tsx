@@ -10,7 +10,7 @@ import { LevelGateModal } from './LevelGateModal';
 import { promotionAlerts, useMyPromotionAlerts } from '../../data/promotionAlerts';
 
 type Tab = 'all' | 'drops' | 'mine';
-type Phase = 'live' | 'upcoming';
+type Phase = 'live' | 'upcoming' | 'mine';
 type Sort = 'soon' | 'newest' | 'broker';
 type Skip = 'type' | 'letter' | 'phase';
 
@@ -133,6 +133,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   const [open, setOpen] = useState<Promotion | null>(null);
   const [agree, setAgree] = useState(false);
 
+  const joinedAt = (id: string) => alerts.find((a) => a.kind === 'taken' && a.id === id)?.date;
   const connected = (p: Promotion) => p.source === 'platform' || !!brokers.find((b) => b.id === p.brokerId)?.connected;
   const inTab = (p: Promotion, t: Tab) => (t === 'all' ? p.source === 'broker' && !p.premiumDrop : t === 'drops' ? p.source === 'broker' && p.premiumDrop : p.source === 'platform');
   const isLive = (p: Promotion) => p.startsInDays === 0;
@@ -140,11 +141,16 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
 
   /** One predicate for every filter so each count matches what you would get. */
   const passes = (p: Promotion, skip: Skip[] = []) => {
-    if (!inTab(p, tab)) return false;
-    if (!skip.includes('phase') && (phase === 'live') !== isLive(p)) return false;
+    if (phase === 'mine') {
+      // My Promotion: every offer the member has joined, whichever tab it lives in
+      if (!taken.includes(p.id)) return false;
+    } else {
+      if (!inTab(p, tab)) return false;
+      if (!skip.includes('phase') && (phase === 'live') !== isLive(p)) return false;
+      if (eligibleOnly && !(p.minLevel <= level && isLive(p) && connected(p))) return false;
+    }
     if (!skip.includes('type') && types.length && !types.includes(p.type)) return false;
     if (!skip.includes('letter') && letter && first(p) !== letter) return false;
-    if (eligibleOnly && !(p.minLevel <= level && isLive(p) && connected(p))) return false;
     const q = search.trim().toLowerCase();
     if (q && !(p.title.toLowerCase().includes(q) || p.brokerName.toLowerCase().includes(q) || p.kind.toLowerCase().includes(q))) return false;
     return true;
@@ -153,6 +159,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   const list = PROMOTIONS.filter((p) => passes(p)).sort((a, b) => {
     if (sort === 'broker') return a.brokerName.localeCompare(b.brokerName);
     if (sort === 'newest') return a.addedDaysAgo - b.addedDaysAgo;
+    if (phase === 'mine') return taken.indexOf(a.id) - taken.indexOf(b.id); // most recently joined first
     return phase === 'upcoming' ? a.startsInDays - b.startsInDays : a.endsInDays - b.endsInDays;
   });
 
@@ -161,7 +168,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
     PROMO_TYPES.forEach((t) => (out[t.id] = PROMOTIONS.filter((p) => p.type === t.id && passes(p, ['type'])).length));
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, phase, search, letter, eligibleOnly, level, brokers]);
+  }, [tab, phase, search, letter, eligibleOnly, level, brokers, alerts]);
 
   const letters = useMemo(() => {
     const m = new Map<string, { brokers: Set<string>; n: number }>();
@@ -174,22 +181,26 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
     });
     return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, phase, search, types, eligibleOnly, level, brokers]);
+  }, [tab, phase, search, types, eligibleOnly, level, brokers, alerts]);
 
   const phaseCount = (ph: Phase) =>
     PROMOTIONS.filter((p) => {
-      if (!inTab(p, tab)) return false;
-      if ((ph === 'live') !== isLive(p)) return false;
+      if (ph === 'mine') {
+        if (!taken.includes(p.id)) return false;
+      } else {
+        if (!inTab(p, tab)) return false;
+        if ((ph === 'live') !== isLive(p)) return false;
+      }
       if (types.length && !types.includes(p.type)) return false;
       if (letter && first(p) !== letter) return false;
       const q = search.trim().toLowerCase();
       if (q && !(p.title.toLowerCase().includes(q) || p.brokerName.toLowerCase().includes(q) || p.kind.toLowerCase().includes(q))) return false;
-      return !eligibleOnly || (p.minLevel <= level && isLive(p) && connected(p));
+      return ph === 'mine' || !eligibleOnly || (p.minLevel <= level && isLive(p) && connected(p));
     }).length;
 
   const tabCount = (t: Tab) => PROMOTIONS.filter((p) => inTab(p, t)).length;
-  const openList = list.filter((p) => p.minLevel <= level);
-  const lockedList = list.filter((p) => p.minLevel > level);
+  const openList = phase === 'mine' ? list : list.filter((p) => p.minLevel <= level);
+  const lockedList = phase === 'mine' ? [] : list.filter((p) => p.minLevel > level);
 
   const activeFilters = types.length + (letter ? 1 : 0) + (eligibleOnly ? 1 : 0) + (search.trim() ? 1 : 0);
   const clearFilters = () => {
@@ -276,6 +287,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[#94a3b8] font-semibold mt-3">
             {p.source === 'broker' && <span>{p.accountTypes.join(', ')}</span>}
             {p.minDeposit > 0 && <span>Min deposit ${p.minDeposit}</span>}
+            {phase === 'mine' && joinedAt(p.id) && <span className="text-emerald-600">Joined {joinedAt(p.id)}</span>}
             {needsConn && (
               !isLoggedIn ? <span>Broker account needed</span>
               : connected(p) ? <span className="text-emerald-600">{p.brokerName} connected</span>
@@ -433,17 +445,17 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
           }}
         />
       </div>
-      <p className="text-xs text-[#94a3b8] mb-5">{TAB_INFO[tab].blurb}</p>
+      <p className="text-xs text-[#94a3b8] mb-5">{phase === 'mine' ? 'Promotions you have joined, from brokers and MarketSyde.' : TAB_INFO[tab].blurb}</p>
 
-      {/* Live / Upcoming */}
+      {/* Live / Upcoming / My Promotion */}
       <div className="flex items-center gap-6 border-b border-[#e2e8f0] mb-5">
-        {(['live', 'upcoming'] as Phase[]).map((ph) => (
+        {(['live', 'upcoming', 'mine'] as Phase[]).map((ph) => (
           <button
             key={ph}
             onClick={() => setPhase(ph)}
             className={`pb-3 -mb-px text-sm font-bold border-b-2 transition-colors ${phase === ph ? 'border-[#5338ec] text-[#5338ec]' : 'border-transparent text-[#474556] hover:text-[#0b1c30]'}`}
           >
-            {ph === 'live' ? 'Live' : 'Upcoming'} <span className="ml-1 font-mono text-xs opacity-70">{phaseCount(ph)}</span>
+            {ph === 'live' ? 'Live' : ph === 'upcoming' ? 'Upcoming' : 'My Promotion'} <span className="ml-1 font-mono text-xs opacity-70">{phaseCount(ph)}</span>
           </button>
         ))}
       </div>
@@ -519,19 +531,21 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
             )}
           </FilterDropdown>
 
+          {phase !== 'mine' && (
           <label className="flex items-center gap-2 text-xs font-semibold text-[#474556] cursor-pointer">
-            <input type="checkbox" checked={eligibleOnly} onChange={(e) => setEligibleOnly(e.target.checked)} className="rounded border-slate-300 text-[#5338ec] focus:ring-[#5338ec]" />
-            Only what I can take now
-          </label>
+              <input type="checkbox" checked={eligibleOnly} onChange={(e) => setEligibleOnly(e.target.checked)} className="rounded border-slate-300 text-[#5338ec] focus:ring-[#5338ec]" />
+              Only what I can take now
+            </label>
+          )}
           <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="ml-auto text-xs font-semibold border border-slate-200 rounded-full px-3.5 py-2 bg-white">
-            <option value="soon">{phase === 'upcoming' ? 'Starting soon' : 'Ending soon'}</option>
+            <option value="soon">{phase === 'mine' ? 'Recently joined' : phase === 'upcoming' ? 'Starting soon' : 'Ending soon'}</option>
             <option value="newest">Newest</option>
             <option value="broker">Broker A–Z</option>
           </select>
         </div>
 
         <div className="flex items-center justify-between text-xs text-[#474556]">
-          <span>Showing <span className="font-bold text-[#0b1c30]">{list.length}</span> {phase} offer{list.length === 1 ? '' : 's'}</span>
+          <span>Showing <span className="font-bold text-[#0b1c30]">{list.length}</span> {phase === 'mine' ? 'joined' : phase} {phase === 'mine' ? `promotion${list.length === 1 ? '' : 's'}` : `offer${list.length === 1 ? '' : 's'}`}</span>
           {activeFilters > 0 && <button onClick={clearFilters} className="font-semibold text-[#5338ec] hover:underline">Clear filters</button>}
         </div>
       </div>
@@ -557,10 +571,11 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
       {list.length === 0 && (
         <div className="text-center py-16 bg-white border border-[#e2e8f0] rounded-2xl">
           <p className="text-sm font-semibold text-[#0b1c30] mb-1">
-            {activeFilters > 0 ? 'No offers match these filters' : phase === 'live' ? 'Nothing live here right now' : 'Nothing upcoming here right now'}
+            {activeFilters > 0 ? 'No offers match these filters' : phase === 'mine' ? 'You have not joined any promotion yet' : phase === 'live' ? 'Nothing live here right now' : 'Nothing upcoming here right now'}
           </p>
-          <p className="text-xs text-[#474556]">{activeFilters > 0 ? 'Try fewer filters.' : 'Check the other tab.'}</p>
+          <p className="text-xs text-[#474556]">{activeFilters > 0 ? 'Try fewer filters.' : phase === 'mine' ? 'Join an offer from Live and it shows up here.' : 'Check the other tab.'}</p>
           {activeFilters > 0 && <button onClick={clearFilters} className="mt-3 text-xs font-bold text-[#5338ec] hover:underline">Clear filters</button>}
+          {activeFilters === 0 && phase === 'mine' && <button onClick={() => setPhase('live')} className="mt-3 text-xs font-bold text-[#5338ec] hover:underline">Browse live offers</button>}
         </div>
       )}
 
