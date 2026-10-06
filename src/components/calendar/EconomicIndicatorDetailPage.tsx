@@ -66,6 +66,7 @@ function ResearchChart({ historical, forecasts = [], unit, threshold }: { histor
 function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; asset: string }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedRangeIndex, setSelectedRangeIndex] = useState(0);
   const rows = indicator.consensusHistory.slice(-12);
   if (!rows.length) return <div className="bg-[#171821] p-5 text-sm text-slate-400">No numeric actual-versus-forecast history is available for this event type.</div>;
   const values = rows.flatMap((row) => [row.actual, row.consensus]);
@@ -119,7 +120,26 @@ function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; 
           {rows.map((row, index) => {
             const barHeight = Math.max(7, rangeValue(indicator.volatility[index % indicator.volatility.length]?.trueRange || '0') / maxTrueRange * 48);
             return <g key={`${row.referencePeriod}-${index}`}>
-              <rect x={x(index) - 5} y={202 - barHeight} width="10" height={barHeight} rx="2" fill="#f8fafc" />
+              <rect
+                x={x(index) - 5}
+                y={202 - barHeight}
+                width="10"
+                height={barHeight}
+                rx="2"
+                fill="#f8fafc"
+                opacity={selectedRangeIndex === index % indicator.volatility.length ? 1 : 0.72}
+                tabIndex={0}
+                role="button"
+                aria-label={`Select ${indicator.volatility[index % indicator.volatility.length]?.window} range`}
+                onClick={() => setSelectedRangeIndex(index % indicator.volatility.length)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSelectedRangeIndex(index % indicator.volatility.length);
+                  }
+                }}
+                className="cursor-pointer"
+              />
               <circle
                 cx={x(index)}
                 cy={y(row.actual)}
@@ -170,8 +190,9 @@ function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; 
       <div className="mt-1 flex justify-between text-[9px] text-slate-400"><span>Bearish {100 - indicator.sentiment.score}%</span><span>Bullish {indicator.sentiment.score}%</span></div>
       <p className="mt-1 text-[9px] text-slate-500">{indicator.sentiment.articleCount} related articles · {indicator.sentiment.window}</p>
       <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">1H / 1D / 1W / 1M · true range % / potential range %</p>
+      <p className="mt-1 text-[9px] font-semibold text-sky-300">Selected horizon: {indicator.volatility[selectedRangeIndex]?.window || '1H'} · click a chart bar to change</p>
       <p className="mt-1 text-[9px] text-slate-500">Market-unit proxy: {rangeUnit}; white = true range, blue = potential range.</p>
-      <div className="mt-2 space-y-2">{indicator.volatility.map((row) => { const width = Math.max(8, rangeValue(row.potentialRange) / maxPotentialRange * 100); return <div key={row.window}><div className="mb-1 flex justify-between text-[9px]"><span className="text-slate-400">{row.window}</span><span className="text-sky-300">{row.trueRange} / {row.potentialRange}</span></div><div className="h-1.5 rounded bg-white/10"><div className="h-full rounded bg-sky-400" style={{ width: `${width}%` }} /><div className="relative -mt-1.5 h-1.5 rounded bg-white" style={{ width: `${Math.max(6, rangeValue(row.trueRange) / maxPotentialRange * 100)}%` }} /></div><p className="mt-1 text-[9px] text-slate-500">≈ {rangeInMarketUnits(row.trueRange)} / {rangeInMarketUnits(row.potentialRange)}</p></div>; })}</div>
+      <div className="mt-2 space-y-2">{indicator.volatility.map((row, index) => { const width = Math.max(8, rangeValue(row.potentialRange) / maxPotentialRange * 100); return <div key={row.window} className={`rounded px-1 ${selectedRangeIndex === index ? 'bg-white/[0.06] ring-1 ring-sky-400/50' : ''}`}><div className="mb-1 flex justify-between text-[9px]"><span className="text-slate-400">{row.window}</span><span className="text-sky-300">{row.trueRange} / {row.potentialRange}</span></div><div className="h-1.5 rounded bg-white/10"><div className="h-full rounded bg-sky-400" style={{ width: `${width}%` }} /><div className="relative -mt-1.5 h-1.5 rounded bg-white" style={{ width: `${Math.max(6, rangeValue(row.trueRange) / maxPotentialRange * 100)}%` }} /></div><p className="mt-1 text-[9px] text-slate-500">≈ {rangeInMarketUnits(row.trueRange)} / {rangeInMarketUnits(row.potentialRange)}</p></div>; })}</div>
     </aside>
   </div>;
 }

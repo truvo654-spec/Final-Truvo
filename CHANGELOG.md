@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.94] - 2026-10-06
+### Added
+- Made chart true-range bars selectable to switch and highlight the 1H, 1D, 1W, or 1M horizon using the same market-unit conversion.
+
 ## [1.0.93] - 2026-10-06
 ### Added
 - Added hover, focus, and click interactions to event-impact chart points with market-aware reaction details.
