@@ -1401,6 +1401,21 @@ export default function App() {
               setAuthModalMode('signin');
               setIsAuthModalOpen(true);
             }}
+            onSignUp={() => {
+              setAuthModalMode('signup');
+              setIsAuthModalOpen(true);
+            }}
+            onOpenBrokerDetail={(broker) => {
+              setSelectedBrokerForDetail(broker);
+              setActiveTab('broker-detail');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenSignal={(ticker) => handleSelectSignalByTicker(ticker)}
+            onOpenInstrument={(symbol) => {
+              setSelectedInstrumentSymbol(symbol);
+              setActiveTab('instrument-analysis');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             onGoToMissions={() => {
               setActiveTab('dashboard');
               window.setTimeout(() => document.getElementById('mission-card-widget')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 700);

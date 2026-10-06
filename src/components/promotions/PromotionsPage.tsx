@@ -26,6 +26,10 @@ interface PromotionsPageProps {
   maxPoints: number;
   credits: number;
   onSignIn: () => void;
+  onSignUp: () => void;
+  onOpenBrokerDetail: (broker: Broker) => void;
+  onOpenSignal: (ticker: string) => void;
+  onOpenInstrument: (symbol: string) => void;
   onGoToMissions: () => void;
   onOpenNotifications: () => void;
   onOpenConnectModal: (broker?: Broker) => void;
@@ -103,6 +107,10 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   maxPoints,
   credits,
   onSignIn,
+  onSignUp,
+  onOpenBrokerDetail,
+  onOpenSignal,
+  onOpenInstrument,
   onGoToMissions,
   onOpenNotifications,
   onOpenConnectModal,
@@ -136,7 +144,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
     if (!skip.includes('phase') && (phase === 'live') !== isLive(p)) return false;
     if (!skip.includes('type') && types.length && !types.includes(p.type)) return false;
     if (!skip.includes('letter') && letter && first(p) !== letter) return false;
-    if (eligibleOnly && !(p.minLevel <= level && isLive(p) && (!p.requiresConnected || connected(p)))) return false;
+    if (eligibleOnly && !(p.minLevel <= level && isLive(p) && connected(p))) return false;
     const q = search.trim().toLowerCase();
     if (q && !(p.title.toLowerCase().includes(q) || p.brokerName.toLowerCase().includes(q) || p.kind.toLowerCase().includes(q))) return false;
     return true;
@@ -176,7 +184,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
       if (letter && first(p) !== letter) return false;
       const q = search.trim().toLowerCase();
       if (q && !(p.title.toLowerCase().includes(q) || p.brokerName.toLowerCase().includes(q) || p.kind.toLowerCase().includes(q))) return false;
-      return !eligibleOnly || (p.minLevel <= level && isLive(p) && (!p.requiresConnected || connected(p)));
+      return !eligibleOnly || (p.minLevel <= level && isLive(p) && connected(p));
     }).length;
 
   const tabCount = (t: Tab) => PROMOTIONS.filter((p) => inTab(p, t)).length;
@@ -194,17 +202,17 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
 
   /** What the button on each banner does. Order matters: sign in, then level, then connection. */
   const cta = (p: Promotion): { label: string; kind: CtaKind } => {
-    if (taken.includes(p.id)) return { label: p.type === 'contest' ? 'Joined ✓' : 'Taken ✓', kind: 'done' };
-    if (!isLoggedIn) return { label: isLive(p) ? 'Sign in to take this offer' : 'Sign in to get notified', kind: 'signin' };
+    if (taken.includes(p.id)) return { label: 'Joined ✓', kind: 'done' };
+    if (!isLoggedIn) return { label: 'Join MarketSyde', kind: 'join' };
     if (p.minLevel > level) return { label: `Reach Lv.${p.minLevel} to unlock`, kind: 'locked' };
     if (!isLive(p)) return notified.includes(p.id) ? { label: 'We will notify you ✓', kind: 'notifying' } : { label: 'Notify me', kind: 'notify' };
-    if (p.requiresConnected && !connected(p)) return { label: `Connect ${p.brokerName}`, kind: 'connect' };
-    return { label: p.source === 'platform' ? 'Claim' : p.type === 'contest' ? 'Join' : 'Take this offer', kind: 'take' };
+    if (p.source === 'broker' && !connected(p)) return { label: 'Connect broker', kind: 'connect' };
+    return { label: 'Join Promotion', kind: 'take' };
   };
 
   const act = (p: Promotion) => {
     const c = cta(p);
-    if (c.kind === 'signin') return onSignIn();
+    if (c.kind === 'join') return onSignUp();
     if (c.kind === 'locked') return setGate(p);
     if (c.kind === 'connect') return onOpenConnectModal(brokers.find((b) => b.id === p.brokerId));
     if (c.kind === 'notify') {
@@ -224,7 +232,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   const confirm = () => {
     if (!open || !agree) return;
     promotionAlerts.taken(open);
-    onShowToast(open.type === 'contest' ? `You joined “${open.title}”` : open.source === 'platform' ? `“${open.title}” claimed` : `“${open.title}” taken`);
+    onShowToast(`You joined “${open.title}”`);
     setOpen(null);
   };
 
@@ -240,7 +248,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
     const c = cta(p);
     const soon = p.endsInDays <= 7 && isLive(p);
     const isLocked = isLoggedIn ? p.minLevel > level : p.minLevel > 1;
-    const needsConn = p.source === 'broker' && p.requiresConnected;
+    const needsConn = p.source === 'broker';
     return (
       <div key={p.id} className="bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden flex flex-col">
         <div onClick={() => setDetailId(p.id)} className="relative h-44 p-5 flex flex-col justify-between overflow-hidden cursor-pointer" style={{ background: t.bg, color: t.ink, filter: isLocked ? 'saturate(0.45)' : undefined }}>
@@ -269,7 +277,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
             {p.source === 'broker' && <span>{p.accountTypes.join(', ')}</span>}
             {p.minDeposit > 0 && <span>Min deposit ${p.minDeposit}</span>}
             {needsConn && (
-              !isLoggedIn ? <span>Connected account needed</span>
+              !isLoggedIn ? <span>Broker account needed</span>
               : connected(p) ? <span className="text-emerald-600">{p.brokerName} connected</span>
               : <span className="text-amber-600">{p.brokerName} not connected</span>
             )}
@@ -284,7 +292,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
               disabled={c.kind === 'done'}
               className={`w-full text-sm font-bold rounded-xl py-2.5 transition-colors ${
                 c.kind === 'done' ? 'bg-emerald-50 text-emerald-700 cursor-default'
-                : c.kind === 'take' ? 'bg-[#5338ec] hover:bg-[#4326d8] text-white'
+                : c.kind === 'take' || c.kind === 'join' ? 'bg-[#5338ec] hover:bg-[#4326d8] text-white'
                 : c.kind === 'notifying' ? 'bg-[#EEF0FE] text-[#5338ec]'
                 : c.kind === 'locked' ? 'bg-slate-100 hover:bg-slate-200 text-[#0b1c30]'
                 : 'border border-[#5338ec]/40 hover:border-[#5338ec] text-[#5338ec]'
@@ -343,7 +351,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
               I have read the terms{open.source === 'broker' ? ` and understand this offer comes from ${open.brokerName}, not MarketSyde.` : '.'}
             </label>
             <button disabled={!agree} onClick={confirm} className="w-full bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
-              {open.type === 'contest' ? 'Join' : open.source === 'platform' ? 'Claim' : 'Take this offer'}
+              Join Promotion
             </button>
           </div>
         </div>
@@ -372,6 +380,15 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
           onLevelUp={onUpgradePrompt}
           onCompare={() => onNavigateToTab('broker-comparison')}
           onToast={onShowToast}
+          adBroker={findBroker(detail.brokerName) || brokers.find((b) => b.connected) || brokers[0]}
+          onViewAdBroker={() => {
+            const b = findBroker(detail.brokerName) || brokers.find((x) => x.connected) || brokers[0];
+            if (b) onOpenBrokerDetail(b);
+          }}
+          onOpenSignals={() => onNavigateToTab('signals')}
+          onOpenSignal={onOpenSignal}
+          onOpenAnalysis={() => onNavigateToTab('instrument-analysis')}
+          onOpenInstrument={onOpenInstrument}
           onViewBroker={(name, ph) => {
             setDetailId(null);
             setTab('all');

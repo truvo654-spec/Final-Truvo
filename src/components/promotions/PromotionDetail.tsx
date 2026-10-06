@@ -2,8 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Clock, ShieldCheck } from 'lucide-react';
 import { Promotion, PromoLevel, PROMO_LEVELS, PROMO_TYPES, PROMOTIONS } from '../../data/promotionsData';
 import { THEME, LEVEL_DOT, BannerArt } from './promotionArt';
+import { ShareModal } from './ShareModal';
+import { PromotionSidebar } from './PromotionSidebar';
+import { Broker } from '../../types';
 
-export type CtaKind = 'take' | 'connect' | 'notify' | 'done' | 'notifying' | 'signin' | 'locked';
+export type CtaKind = 'take' | 'connect' | 'notify' | 'done' | 'notifying' | 'join' | 'locked';
 
 interface PromotionDetailProps {
   promo: Promotion;
@@ -20,6 +23,13 @@ interface PromotionDetailProps {
   onCompare: () => void;
   onViewBroker: (name: string, phase: 'live' | 'upcoming') => void;
   onToast: (msg: string) => void;
+  /** Broker shown in the side ad (this offer's broker, or a featured one). */
+  adBroker?: Broker;
+  onViewAdBroker: () => void;
+  onOpenSignals: () => void;
+  onOpenSignal: (ticker: string) => void;
+  onOpenAnalysis: () => void;
+  onOpenInstrument: (symbol: string) => void;
 }
 
 /** Fixed "today" so sample dates stay stable (same day the rest of the demo uses). */
@@ -43,7 +53,7 @@ function howItWorks(p: Promotion): { title: string; text: string }[] {
   steps.push({ title: 'Check you can take it', text: `This offer is for Lv.${p.minLevel}${p.minLevel > 1 ? ' and above' : ''}. Your status is on the right.` });
   if (p.source === 'broker') {
     steps.push(
-      p.requiresConnected
+      (p.source === 'broker')
         ? { title: `Connect your ${who} account`, text: `Link the account to MarketSyde so we can see which trades count. It takes about a minute.` }
         : { title: `Use your ${who} account`, text: `Log in to your ${who} account, or open one through MarketSyde if you do not have one yet.` }
     );
@@ -80,7 +90,7 @@ function faqs(p: Promotion): { q: string; a: string }[] {
   if (p.type === 'fee') list.push({ q: 'Is every position covered?', a: 'Only positions that match the conditions and are opened while the offer is live.' });
   if (p.type === 'contest') list.push({ q: 'How is the winner decided?', a: 'The ranking rule is in the conditions. Results are final once the provider confirms them.' });
   list.push({ q: 'Can I combine it with other offers?', a: `Sometimes. ${who} decides, so check the conditions before you stack offers.` });
-  if (p.requiresConnected) list.push({ q: 'Why do I need to connect my account?', a: 'We can only match trades to the offer when the account is connected. You can disconnect any time.' });
+  if ((p.source === 'broker')) list.push({ q: 'Why do I need to connect my account?', a: 'We can only match trades to the offer when the account is connected. You can disconnect any time.' });
   list.push({ q: 'What if my level changes?', a: 'You keep what you already took. New offers follow your current level.' });
   return list;
 }
@@ -92,7 +102,7 @@ const Section: React.FC<{ id: string; title: string; children: React.ReactNode; 
   </section>
 );
 
-export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, level, connected, cta, isLoggedIn, onSignIn, onOpenNotifications, onAct, onBack, onOpen, onLevelUp, onCompare, onViewBroker, onToast }) => {
+export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, level, connected, cta, isLoggedIn, onSignIn, onOpenNotifications, onAct, onBack, onOpen, onLevelUp, onCompare, onViewBroker, onToast, adBroker, onViewAdBroker, onOpenSignals, onOpenSignal, onOpenAnalysis, onOpenInstrument }) => {
   const t = THEME[p.type];
   const typeLabel = PROMO_TYPES.find((x) => x.id === p.type)!.label;
   const live = p.startsInDays === 0;
@@ -106,25 +116,7 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
     setActive('overview');
   }, [p.id]);
 
-  /** Native share sheet when the browser has one, otherwise copy the link. */
-  const share = async () => {
-    const text = `${p.title}: ${p.value} ${p.valueNote}, on MarketSyde`;
-    const url = typeof window !== 'undefined' ? window.location.href : '';
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ title: p.title, text, url });
-        return;
-      } catch (e) {
-        if ((e as { name?: string })?.name === 'AbortError') return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(`${text}\n${url}`);
-      onToast('Link copied');
-    } catch {
-      onToast('Could not copy here. Copy the link from your address bar.');
-    }
-  };
+  const [shareOpen, setShareOpen] = useState(false);
 
   const go = (id: string) => {
     setActive(id);
@@ -171,7 +163,7 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
       ? { ok: true, title: 'Signed in', text: 'You can take offers and get notified.' }
       : { ok: false, title: 'Signed out', text: 'Sign in to take this offer or get notified.', action: { label: 'Sign in', run: onSignIn } },
     { ok: isLoggedIn ? levelOk : null, title: `Level ${p.minLevel}${p.minLevel > 1 ? '+' : ''}`, text: !isLoggedIn ? `Needs Lv.${p.minLevel}${p.minLevel > 1 ? ' or higher' : ''}.` : levelOk ? `You are Lv.${level} ${PROMO_LEVELS[level]}.` : `You are Lv.${level}. This opens at Lv.${p.minLevel}. Finish missions to level up.` },
-    p.requiresConnected
+    (p.source === 'broker')
       ? { ok: isLoggedIn ? connected : null, title: `${p.brokerName} account connected`, text: !isLoggedIn ? 'Needs a connected account.' : connected ? 'Connected.' : 'Not connected yet. Connect it to take this offer.' }
       : { ok: true, title: 'No connection needed', text: 'You can take this offer without linking an account.' },
     { ok: null, title: 'Region and account rules', text: `${sourceName(p)} may limit offers by country or account type. Check the conditions.` },
@@ -345,7 +337,7 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
               disabled={cta.kind === 'done'}
               className={`w-full text-sm font-bold rounded-xl py-3 transition-colors ${
                 cta.kind === 'done' ? 'bg-emerald-50 text-emerald-700 cursor-default'
-                : cta.kind === 'take' ? 'bg-[#5338ec] hover:bg-[#4326d8] text-white'
+                : cta.kind === 'take' || cta.kind === 'join' ? 'bg-[#5338ec] hover:bg-[#4326d8] text-white'
                 : cta.kind === 'notifying' ? 'bg-[#EEF0FE] text-[#5338ec]'
                 : cta.kind === 'locked' ? 'bg-slate-100 hover:bg-slate-200 text-[#0b1c30]'
                 : 'border border-[#5338ec]/40 hover:border-[#5338ec] text-[#5338ec]'
@@ -353,11 +345,17 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
             >
               {cta.label}
             </button>
+            {cta.kind === 'join' && (
+              <p className="text-xs text-[#474556] text-center mt-3">
+                Already a member?{' '}
+                <button onClick={onSignIn} className="font-bold text-[#5338ec] hover:underline">Log in</button>
+              </p>
+            )}
             {cta.kind === 'notifying' && (
               <button onClick={onOpenNotifications} className="w-full mt-2 text-xs font-semibold text-[#5338ec] hover:underline">View in Notifications › My Promotion</button>
             )}
             <button
-              onClick={share}
+              onClick={() => setShareOpen(true)}
               className="w-full mt-2.5 text-sm font-bold rounded-xl py-3 bg-white border border-slate-200 hover:border-[#5338ec] text-[#0b1c30] hover:text-[#5338ec] transition-colors"
             >
               Share
@@ -383,6 +381,16 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
             </ul>
             {isLoggedIn && !levelOk && <button onClick={onLevelUp} className="mt-4 w-full text-xs font-bold text-[#5338ec] hover:underline">See how to level up</button>}
           </div>
+
+          <PromotionSidebar
+            broker={adBroker}
+            brokerName={adBroker?.name ?? sourceName(p)}
+            onViewBroker={onViewAdBroker}
+            onOpenSignals={onOpenSignals}
+            onOpenSignal={onOpenSignal}
+            onOpenAnalysis={onOpenAnalysis}
+            onOpenInstrument={onOpenInstrument}
+          />
         </aside>
       </div>
 
@@ -419,6 +427,15 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
             })}
           </div>
         </section>
+      )}
+      {shareOpen && (
+        <ShareModal
+          title={p.title}
+          value={`${p.value} ${p.valueNote}`}
+          url={typeof window !== 'undefined' ? window.location.href : ''}
+          onClose={() => setShareOpen(false)}
+          onToast={onToast}
+        />
       )}
     </div>
   );
