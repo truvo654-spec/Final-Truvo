@@ -4,6 +4,8 @@ import { Broker } from '../../types';
 import { PROMOTIONS, Promotion, PromoType, PromoLevel, PROMO_TYPES, PROMO_LEVELS } from '../../data/promotionsData';
 import { PillTabs } from '../portfolio/portfolioUi';
 import { MoreConnectedBrokersBanner } from '../dashboard/MoreConnectedBrokersBanner';
+import { THEME, LEVEL_DOT, BannerArt } from './promotionArt';
+import { PromotionDetail } from './PromotionDetail';
 
 type Tab = 'all' | 'drops' | 'mine';
 type Phase = 'live' | 'upcoming';
@@ -24,70 +26,6 @@ const TAB_INFO: Record<Tab, { label: string; blurb: string }> = {
   all: { label: 'All offers', blurb: 'Offers from brokers, shown for your level.' },
   drops: { label: 'Premium drops', blurb: 'Broker exclusives that open up as your level grows.' },
   mine: { label: 'My offers', blurb: 'Promotions from MarketSyde on the platform.' },
-};
-
-/* ───────────── Banner artwork ───────────── */
-
-const THEME: Record<PromoType, { bg: string; ink: string; sub: string; art: string }> = {
-  cashback: { bg: '#CAEB0E', ink: '#0b1c30', sub: 'rgba(11,28,48,0.7)', art: '#0b1c30' },
-  deposit: { bg: '#5338ec', ink: '#ffffff', sub: 'rgba(255,255,255,0.78)', art: '#CAEB0E' },
-  spread: { bg: '#0b1c30', ink: '#ffffff', sub: 'rgba(255,255,255,0.7)', art: '#CAEB0E' },
-  fee: { bg: '#FD02B0', ink: '#ffffff', sub: 'rgba(255,255,255,0.85)', art: '#ffffff' },
-  contest: { bg: '#3410D5', ink: '#ffffff', sub: 'rgba(255,255,255,0.78)', art: '#FD02B0' },
-};
-
-const LEVEL_DOT: Record<PromoLevel, string> = { 1: '#94a3b8', 2: '#5338ec', 3: '#FD02B0', 4: '#CAEB0E' };
-
-const BannerArt: React.FC<{ type: PromoType; color: string }> = ({ type, color }) => {
-  const c = color;
-  return (
-    <svg viewBox="0 0 160 140" className="absolute right-2 bottom-1 w-40 h-36" fill="none" aria-hidden>
-      {type === 'cashback' && (
-        <g stroke={c} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
-          {[0, 1, 2].map((i) => (
-            <g key={i}>
-              <path d={`M48 ${112 - i * 24} v14 c0 8 19 14 42 14 s42 -6 42 -14 v-14`} />
-              <ellipse cx="90" cy={112 - i * 24} rx="42" ry="14" fill={i === 2 ? c : 'none'} fillOpacity={i === 2 ? 0.18 : 0} />
-            </g>
-          ))}
-          <path d="M90 28 v22 M82 36 h12 a6 6 0 0 1 0 12 h-12" strokeWidth="4" />
-        </g>
-      )}
-      {type === 'deposit' && (
-        <g>
-          <rect x="22" y="92" width="30" height="40" rx="6" fill={c} fillOpacity="0.45" />
-          <rect x="62" y="64" width="30" height="68" rx="6" fill={c} fillOpacity="0.7" />
-          <rect x="102" y="30" width="30" height="102" rx="6" fill={c} />
-          <path d="M30 70 L72 42 L96 20" stroke={c} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M82 18 h16 v16" stroke={c} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-        </g>
-      )}
-      {type === 'spread' && (
-        <g stroke={c} strokeWidth="5" strokeLinecap="round">
-          <path d="M10 34 L150 66" />
-          <path d="M10 118 L150 86" />
-          <circle cx="150" cy="66" r="7" fill={c} />
-          <circle cx="150" cy="86" r="7" fill={c} />
-          <path d="M84 62 v-22 m0 0 l-7 8 m7 -8 l7 8 M84 90 v22 m0 0 l-7 -8 m7 8 l7 -8" strokeWidth="4" />
-        </g>
-      )}
-      {type === 'fee' && (
-        <g stroke={c} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M28 40 h58 l46 46 -46 46 h-58 z" fill={c} fillOpacity="0.16" />
-          <circle cx="52" cy="86" r="8" />
-          <path d="M20 128 L136 28" strokeWidth="6" />
-        </g>
-      )}
-      {type === 'contest' && (
-        <g>
-          <rect x="22" y="84" width="34" height="48" rx="6" fill={c} fillOpacity="0.5" />
-          <rect x="63" y="56" width="34" height="76" rx="6" fill={c} />
-          <rect x="104" y="72" width="34" height="60" rx="6" fill={c} fillOpacity="0.7" />
-          <path d="M80 20 l5 10 11 1.6 -8 7.8 2 11 -10 -5.4 -10 5.4 2 -11 -8 -7.8 11 -1.6 z" fill={c} />
-        </g>
-      )}
-    </svg>
-  );
 };
 
 /* ───────────── Dropdown shell ───────────── */
@@ -162,6 +100,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   const [taken, setTaken] = useState<string[]>([]);
   const [notified, setNotified] = useState<string[]>([]);
   const [open, setOpen] = useState<Promotion | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [agree, setAgree] = useState(false);
 
   const connected = (p: Promotion) => p.source === 'platform' || !!brokers.find((b) => b.id === p.brokerId)?.connected;
@@ -265,6 +204,61 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   };
 
   const typeSummary = types.length === 0 ? 'All' : types.length === 1 ? PROMO_TYPES.find((t) => t.id === types[0])!.label : `${PROMO_TYPES.find((t) => t.id === types[0])!.label} +${types.length - 1}`;
+
+  const modal = (
+    <>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-[#e2e8f0] w-full max-w-md shadow-2xl p-6">
+            <div className="flex items-start justify-between mb-1">
+              <div>
+                <p className="text-xs font-semibold text-[#474556]">{open.source === 'platform' ? 'MarketSyde' : open.brokerName} · Lv.{open.minLevel}{open.minLevel > 1 ? '+' : ''}</p>
+                <h3 className="text-lg font-bold text-[#0b1c30]">{open.title}</h3>
+              </div>
+              <button onClick={() => setOpen(null)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100" aria-label="Close"><X className="w-4 h-4" /></button>
+            </div>
+            <p className="text-sm text-[#474556] mb-4">{open.summary}</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">Terms</p>
+            <ul className="space-y-1.5 mb-4">
+              {open.terms.map((x) => (
+                <li key={x} className="flex items-start gap-2 text-xs text-[#0b1c30]"><span className="text-[#5338ec] mt-0.5">•</span>{x}</li>
+              ))}
+            </ul>
+            <label className="flex items-start gap-2.5 text-xs text-[#0b1c30] cursor-pointer mb-5">
+              <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 rounded border-slate-300 text-[#5338ec] focus:ring-[#5338ec]" />
+              I have read the terms{open.source === 'broker' ? ` and understand this offer comes from ${open.brokerName}, not MarketSyde.` : '.'}
+            </label>
+            <button disabled={!agree} onClick={confirm} className="w-full bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+              {open.type === 'contest' ? 'Join' : open.source === 'platform' ? 'Claim' : 'Take this offer'}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  const detail = detailId ? PROMOTIONS.find((x) => x.id === detailId && x.minLevel <= level) ?? null : null;
+  if (detail) {
+    return (
+      <>
+        <PromotionDetail
+          promo={detail}
+          level={level}
+          connected={connected(detail)}
+          cta={cta(detail)}
+          onAct={() => act(detail)}
+          onBack={() => {
+            setDetailId(null);
+            window.scrollTo({ top: 0 });
+          }}
+          onOpen={(x) => setDetailId(x.id)}
+          onLevelUp={onUpgradePrompt}
+          onCompare={() => onNavigateToTab('broker-comparison')}
+        />
+        {modal}
+      </>
+    );
+  }
 
   return (
     <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
@@ -395,7 +389,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
           const soon = p.endsInDays <= 7 && isLive(p);
           return (
             <div key={p.id} className="bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden flex flex-col">
-              <div className="relative h-44 p-5 flex flex-col justify-between overflow-hidden" style={{ background: t.bg, color: t.ink }}>
+              <div onClick={() => setDetailId(p.id)} className="relative h-44 p-5 flex flex-col justify-between overflow-hidden cursor-pointer" style={{ background: t.bg, color: t.ink }}>
                 <div className="absolute -right-12 -bottom-16 w-60 h-60 rounded-full" style={{ background: 'rgba(255,255,255,0.10)' }} />
                 <BannerArt type={p.type} color={t.art} />
                 <div className="relative flex items-start justify-between gap-3">
@@ -415,7 +409,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
               </div>
 
               <div className="p-5 flex flex-col flex-1">
-                <h3 className="text-base font-bold text-[#0b1c30] leading-snug">{p.title}</h3>
+                <h3 onClick={() => setDetailId(p.id)} className="text-base font-bold text-[#0b1c30] leading-snug cursor-pointer hover:text-[#5338ec] transition-colors">{p.title}</h3>
                 <p className="text-sm text-[#474556] leading-relaxed mt-1 line-clamp-2">{p.summary}</p>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[#94a3b8] font-semibold mt-3">
                   {p.source === 'broker' && <span>{p.accountTypes.join(', ')}</span>}
@@ -438,6 +432,9 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
                     }`}
                   >
                     {c.label}
+                  </button>
+                  <button onClick={() => setDetailId(p.id)} className="w-full mt-2.5 text-xs font-semibold text-[#474556] hover:text-[#5338ec] transition-colors">
+                    View details and conditions
                   </button>
                 </div>
               </div>
@@ -483,33 +480,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
         />
       </div>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl border border-[#e2e8f0] w-full max-w-md shadow-2xl p-6">
-            <div className="flex items-start justify-between mb-1">
-              <div>
-                <p className="text-xs font-semibold text-[#474556]">{open.source === 'platform' ? 'MarketSyde' : open.brokerName} · Lv.{open.minLevel}{open.minLevel > 1 ? '+' : ''}</p>
-                <h3 className="text-lg font-bold text-[#0b1c30]">{open.title}</h3>
-              </div>
-              <button onClick={() => setOpen(null)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100" aria-label="Close"><X className="w-4 h-4" /></button>
-            </div>
-            <p className="text-sm text-[#474556] mb-4">{open.summary}</p>
-            <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">Terms</p>
-            <ul className="space-y-1.5 mb-4">
-              {open.terms.map((x) => (
-                <li key={x} className="flex items-start gap-2 text-xs text-[#0b1c30]"><span className="text-[#5338ec] mt-0.5">•</span>{x}</li>
-              ))}
-            </ul>
-            <label className="flex items-start gap-2.5 text-xs text-[#0b1c30] cursor-pointer mb-5">
-              <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 rounded border-slate-300 text-[#5338ec] focus:ring-[#5338ec]" />
-              I have read the terms{open.source === 'broker' ? ` and understand this offer comes from ${open.brokerName}, not MarketSyde.` : '.'}
-            </label>
-            <button disabled={!agree} onClick={confirm} className="w-full bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
-              {open.type === 'contest' ? 'Join' : open.source === 'platform' ? 'Claim' : 'Take this offer'}
-            </button>
-          </div>
-        </div>
-      )}
+      {modal}
     </div>
   );
 };
