@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.69] - 2026-10-06
+### Added
+- Added same-day illustrative Index, Stock, Commodity, and Crypto events with instrument tickers for immediate visibility in the default calendar view.
+
 ## [1.0.68] - 2026-10-06
 ### Changed
 - Reworded the event-detail demo notice as an introductory explanation of the available research sections.

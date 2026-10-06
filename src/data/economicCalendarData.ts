@@ -207,6 +207,70 @@ export const ECONOMIC_EVENTS: EconomicEvent[] = [
       at: '2026-10-05T21:45:00+07:00', cur: 'USD', title: 'S&P Global Services PMI (Sep)', imp: 2, cat: 'PMI', f: '55.4', p: '55.4',
       extra: { relatedSignalTicker: 'EUR/USD' },
     },
+    {
+      at: '2026-10-05T22:00:00+07:00', cur: 'USD', title: 'S&P 500 Futures Sentiment', imp: 2, cat: 'Sentiment', f: '0.4%', p: '0.2%',
+      extra: {
+        assetClass: 'Indices',
+        relatedSignalTicker: 'SPX',
+        summary: 'Illustrative index-futures sentiment snapshot for the S&P 500. This synthetic event demonstrates index-linked calendar cards in the current-day view.',
+      },
+    },
+    {
+      at: '2026-10-05T22:05:00+07:00', cur: 'USD', title: 'Nasdaq 100 Futures Sentiment', imp: 1, cat: 'Sentiment', f: '0.6%', p: '0.3%',
+      extra: {
+        assetClass: 'Indices',
+        relatedSignalTicker: 'NDX',
+        summary: 'Illustrative technology-index futures snapshot. Values are demo-only and intended to exercise grouped Indices cards and linked detail pages.',
+      },
+    },
+    {
+      at: '2026-10-05T22:15:00+07:00', cur: 'USD', title: 'Tesla Earnings Preview', imp: 2, cat: 'GDP', f: '0.72', p: '0.78',
+      extra: {
+        assetClass: 'Stocks',
+        relatedSignalTicker: 'TSLA',
+        summary: 'Illustrative single-stock earnings preview for Tesla. Synthetic EPS values demonstrate the Stocks market type without a live earnings provider.',
+      },
+    },
+    {
+      at: '2026-10-05T22:20:00+07:00', cur: 'USD', title: 'Microsoft Earnings Preview', imp: 2, cat: 'GDP', f: '3.95', p: '3.88',
+      extra: {
+        assetClass: 'Stocks',
+        relatedSignalTicker: 'MSFT',
+        summary: 'Illustrative single-stock earnings preview for Microsoft. This event is grouped with other Stocks instruments and opens the standard detail flow.',
+      },
+    },
+    {
+      at: '2026-10-05T22:30:00+07:00', cur: 'USD', title: 'WTI Crude Inventory Preview', imp: 3, cat: 'Trade', f: '-1.8M', p: '-0.9M',
+      extra: {
+        assetClass: 'Commodity',
+        relatedSignalTicker: 'WTI',
+        summary: 'Illustrative crude-oil inventory preview for WTI. Inventory surprises are commonly used to demonstrate commodity volatility and range metrics.',
+      },
+    },
+    {
+      at: '2026-10-05T22:35:00+07:00', cur: 'USD', title: 'Gold ETF Holdings Snapshot', imp: 1, cat: 'Trade', f: '875.2T', p: '873.9T',
+      extra: {
+        assetClass: 'Commodity',
+        relatedSignalTicker: 'XAU/USD',
+        summary: 'Illustrative gold ETF holdings snapshot. This synthetic release provides a second Commodity card for grouped instrument behavior.',
+      },
+    },
+    {
+      at: '2026-10-05T22:45:00+07:00', cur: 'USD', title: 'Bitcoin Funding Rate', imp: 2, cat: 'Trade', f: '0.012%', p: '0.009%',
+      extra: {
+        assetClass: 'Crypto',
+        relatedSignalTicker: 'BTC/USD',
+        summary: 'Illustrative perpetual-futures funding-rate snapshot for Bitcoin. Values are synthetic and demonstrate the Crypto event workflow.',
+      },
+    },
+    {
+      at: '2026-10-05T22:50:00+07:00', cur: 'USD', title: 'Ethereum Network Activity', imp: 1, cat: 'Trade', f: '1.24M', p: '1.19M',
+      extra: {
+        assetClass: 'Crypto',
+        relatedSignalTicker: 'ETH/USD',
+        summary: 'Illustrative Ethereum network-activity update. This second Crypto event demonstrates multi-card grouping and linked detail navigation.',
+      },
+    },
   ]),
 
   // ───────── Tuesday 6 Oct ─────────
