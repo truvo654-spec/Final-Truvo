@@ -347,6 +347,30 @@ export const ECONOMIC_EVENTS: EconomicEvent[] = [
         summary: 'Illustrative company earnings release for Bank of America. Values are demo-only and intentionally require no provider credentials.',
       },
     },
+    {
+      at: '2026-10-15T22:00:00+07:00', cur: 'USD', title: '10-Year Treasury Auction', imp: 2, cat: 'Trade', f: '4.12%', p: '4.09%',
+      extra: {
+        assetClass: 'Other',
+        relatedSignalTicker: 'US10Y',
+        summary: 'Illustrative sovereign-bond auction result. This Other-market event demonstrates rates and fixed-income calendar data without requiring a live auction feed.',
+      },
+    },
+    {
+      at: '2026-10-16T20:00:00+07:00', cur: 'USD', title: 'US Consumer Credit Update', imp: 1, cat: 'Trade', f: '18.4B', p: '16.9B',
+      extra: {
+        assetClass: 'Other',
+        relatedSignalTicker: 'US2Y',
+        summary: 'Synthetic fixed-income and credit-market update for the Other market group. Values are illustrative and are safe to replace with a real provider response later.',
+      },
+    },
+    {
+      at: '2026-10-16T21:00:00+07:00', cur: 'EUR', title: 'Eurozone Bond Spread Monitor', imp: 1, cat: 'Trade', f: '132bp', p: '135bp',
+      extra: {
+        assetClass: 'Other',
+        relatedSignalTicker: 'DE10Y',
+        summary: 'Illustrative sovereign-spread monitor event for the Other market group, included to exercise multi-card grouping and linked detail pages.',
+      },
+    },
     { at: '2026-10-15T11:30:00+07:00', cur: 'AUD', title: 'Employment Change (Sep)', imp: 3, cat: 'Employment', f: '25.0K', p: '47.5K' },
     { at: '2026-10-15T15:00:00+07:00', cur: 'MYR', title: 'GDP (YoY) (Q3, Advance)', imp: 2, cat: 'GDP', f: '4.6%', p: '4.4%' },
     { at: '2026-10-15T19:30:00+07:00', cur: 'USD', title: 'Retail Sales (MoM) (Sep)', imp: 2, cat: 'Sentiment', f: '0.3%', p: '0.1%', extra: { assetClass: 'Indices' } },

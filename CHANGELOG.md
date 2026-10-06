@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.67] - 2026-10-06
+### Added
+- Added an `Other` market type with illustrative bond, credit, and sovereign-spread events and filter support.
+
 ## [1.0.66] - 2026-10-06
 ### Added
 - Added deterministic Stocks earnings and Crypto flow demo events so every market-type filter has representative multi-event data.

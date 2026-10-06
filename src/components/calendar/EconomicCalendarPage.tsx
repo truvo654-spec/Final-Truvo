@@ -49,7 +49,7 @@ type PageTab = 'calendar' | 'holidays' | 'earnings' | 'dividends' | 'ipo';
 type RangeId = 'yesterday' | 'today' | 'tomorrow' | 'week' | 'nextweek' | 'twoweeks' | 'custom';
 type FilterMenu = 'range' | 'impact' | 'countries' | 'marketType' | 'category' | 'timezone' | null;
 type FilterId = Exclude<FilterMenu, null>;
-type MarketType = 'All Markets' | 'Forex' | 'Indices' | 'Stocks' | 'Commodities' | 'Crypto';
+type MarketType = 'All Markets' | 'Forex' | 'Indices' | 'Stocks' | 'Commodities' | 'Crypto' | 'Other';
 
 const DEFAULT_FILTER_ORDER: FilterId[] = ['range', 'impact', 'countries', 'marketType', 'category', 'timezone'];
 
@@ -784,7 +784,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
 
                   {openFilter === id && id === 'marketType' && (
                     <div className="absolute left-0 top-full mt-1 w-44 rounded-none border border-[#cbd5e1] bg-white py-1 shadow-md">
-                      {(['All Markets', 'Forex', 'Indices', 'Stocks', 'Commodities', 'Crypto'] as MarketType[]).map((option) => (
+                      {(['All Markets', 'Forex', 'Indices', 'Stocks', 'Commodities', 'Crypto', 'Other'] as MarketType[]).map((option) => (
                         <button
                           key={option}
                           onClick={() => { setMarketType(option); setOpenFilter(null); }}
