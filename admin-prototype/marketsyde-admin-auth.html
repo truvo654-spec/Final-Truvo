@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign in — MarketSyde Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #090119; --bg-elevated: #0D0322; --bg-card: #12082A; --bg-card-hover: #190F38;
+    --border: #404040; --border-strong: #545464; --border-accent: #CCC6FB;
+    --text: #FFFFFF; --text-muted: #D4D4D4; --text-faint: #596373;
+    --purple: #5945F1; --purple-soft: #ABA1F8; --lime: #CAEB0E; --cyan: #CCC6FB;
+    --radius-sm: 7px; --radius-md: 10px; --radius-lg: 14px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.18); --shadow-md: 0 12px 32px rgba(0,0,0,0.4);
+    --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body); background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+
+  .auth-shell { min-height: 100vh; padding: 12px; }
+  .auth-grid {
+    display: grid; grid-template-columns: 0.94fr 1.06fr; gap: 16px;
+    min-height: calc(100vh - 24px);
+  }
+  @media (max-width: 920px) {
+    .auth-grid { grid-template-columns: 1fr; }
+    .auth-visual { display: none; }
+  }
+
+  /* ---------- LEFT: visual panel ---------- */
+  .auth-visual {
+    background: var(--bg-elevated); border-radius: var(--radius-lg); border: 1px solid var(--border);
+    padding: 44px 36px 32px; display: flex; flex-direction: column; align-items: center;
+    position: relative; overflow: hidden;
+  }
+  .auth-brand { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; font-family: var(--font-display); margin-bottom: 30px; }
+  .auth-brand svg { width: 24px; height: 24px; stroke: var(--purple-soft); }
+
+  .auth-tiles { position: relative; width: 100%; max-width: 420px; display: grid; grid-template-columns: 1.55fr 1fr; gap: 8px; }
+  .auth-tile { position: relative; overflow: visible; border-radius: var(--radius-md); }
+  .auth-tile.big { grid-row: span 2; height: 250px; }
+  .auth-tile.small { height: 121px; }
+  .auth-tile.wide { grid-column: span 2; height: 120px; }
+  .auth-tile-inner {
+    width: 100%; height: 100%; border-radius: var(--radius-md); overflow: hidden; position: relative;
+    display: flex; align-items: center; justify-content: center; transition: opacity .7s ease;
+  }
+  .auth-tile-inner svg.feature-icon { width: 40px; height: 40px; stroke: rgba(255,255,255,0.92); position: relative; z-index: 2; }
+  .auth-tile-inner .feature-name {
+    position: absolute; bottom: 10px; left: 12px; right: 12px; z-index: 2;
+    font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.85); letter-spacing: 0.02em;
+  }
+  .auth-tile-inner::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.15); }
+  .focus-corner {
+    position: absolute; width: 16px; height: 16px; border-color: rgba(255,255,255,0.65);
+    opacity: 0; transition: all .5s ease; pointer-events: none; z-index: 3;
+  }
+  .auth-tile.active .focus-corner { opacity: 1; }
+  .fc-tl { top: -8px; left: -8px; border-top: 1px solid; border-left: 1px solid; }
+  .fc-tr { top: -8px; right: -8px; border-top: 1px solid; border-right: 1px solid; }
+  .fc-bl { bottom: -8px; left: -8px; border-bottom: 1px solid; border-left: 1px solid; }
+  .fc-br { bottom: -8px; right: -8px; border-bottom: 1px solid; border-right: 1px solid; }
+  .auth-tile:not(.active) .fc-tl { transform: translate(-8px,-8px); }
+  .auth-tile:not(.active) .fc-tr { transform: translate(8px,-8px); }
+  .auth-tile:not(.active) .fc-bl { transform: translate(-8px,8px); }
+  .auth-tile:not(.active) .fc-br { transform: translate(8px,8px); }
+
+  .auth-caption-box {
+    margin-top: 22px; width: 100%; max-width: 420px; border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-md); padding: 14px 16px;
+  }
+  .auth-caption-row { display: flex; align-items: flex-end; gap: 14px; }
+  .auth-caption-text { flex: 1; font-size: 11.5px; line-height: 1.5; color: var(--text-faint); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .auth-caption-text b { color: var(--text); font-weight: 600; font-family: var(--font-mono, monospace); }
+  .auth-caption-arrow {
+    width: 30px; height: 30px; border-radius: 999px; background: var(--purple); border: none;
+    display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; flex-shrink: 0;
+  }
+  .auth-caption-arrow svg { width: 15px; height: 15px; stroke: currentColor; }
+
+  .auth-tagline { margin-top: 26px; max-width: 290px; text-align: center; font-size: 19px; line-height: 1.25; color: var(--text); }
+  .auth-dots { margin-top: auto; display: flex; gap: 8px; padding-top: 26px; }
+  .auth-dot { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.3); border: none; cursor: pointer; transition: all .2s ease; padding: 0; }
+  .auth-dot.active { width: 36px; background: #fff; }
+  .auth-dot:not(.active) { width: 15px; }
+
+  /* ---------- RIGHT: form panel ---------- */
+  .auth-form-wrap { display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+  .auth-form-card { width: 100%; max-width: 420px; text-align: center; }
+  .auth-form-card h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; margin: 0 0 26px; font-family: var(--font-display); }
+
+  .auth-social-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+  .auth-social-btn {
+    height: 38px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
+    background: var(--bg-card); color: var(--text); display: flex; align-items: center; justify-content: center;
+    gap: 8px; font-size: 12.5px; cursor: pointer; font-family: inherit; transition: background .12s ease;
+  }
+  .auth-social-btn:hover { background: var(--bg-card-hover); }
+
+  .auth-divider { display: flex; align-items: center; gap: 12px; color: var(--text-faint); font-size: 12.5px; margin: 20px 0; }
+  .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .auth-fields { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+  .auth-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .auth-field {
+    height: 46px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
+    background: var(--bg-card); display: flex; align-items: center; justify-content: space-between; padding: 0 14px;
+  }
+  .auth-field input {
+    flex: 1; min-width: 0; background: none; border: none; outline: none;
+    color: var(--text-faint); font-size: 14px; font-family: inherit;
+  }
+  .auth-field-label { font-size: 13px; color: var(--text); flex-shrink: 0; margin-left: 10px; white-space: nowrap; }
+
+  .auth-checks { display: flex; flex-direction: column; gap: 9px; margin-top: 4px; font-size: 11.5px; line-height: 1.45; color: var(--text-faint); }
+  .auth-check-line { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+  .auth-checkbox { position: relative; width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+  .auth-checkbox input { opacity: 0; position: absolute; inset: 0; cursor: pointer; margin: 0; }
+  .auth-checkbox .box { position: absolute; inset: 0; border: 1px solid var(--border-strong); border-radius: 3px; background: var(--bg-card); pointer-events: none; }
+  .auth-checkbox input:checked ~ .box { background: var(--purple); border-color: var(--purple); }
+  .auth-checkbox svg { position: absolute; inset: 0; padding: 2px; opacity: 0; color: #fff; pointer-events: none; }
+  .auth-checkbox input:checked ~ svg { opacity: 1; }
+  .auth-checks a { color: var(--purple-soft); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+
+  .auth-submit {
+    margin-top: 18px; width: 100%; height: 47px; border-radius: var(--radius-sm); border: 1px solid var(--purple);
+    background: var(--purple); color: #fff; font-size: 14.5px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: background .12s ease;
+  }
+  .auth-submit:hover { background: #4a39d6; }
+  .auth-submit:active { transform: scale(0.99); }
+
+  .auth-row-between { display: flex; justify-content: flex-end; margin-top: -4px; }
+  .auth-forgot { font-size: 12px; color: var(--purple-soft); text-decoration: none; cursor: pointer; font-weight: 500; }
+  .auth-forgot:hover { text-decoration: underline; }
+
+  .auth-switch { margin-top: 20px; font-size: 12.5px; color: var(--text-faint); }
+  .auth-switch a { color: var(--purple-soft); text-decoration: none; font-weight: 600; cursor: pointer; }
+  .auth-switch a:hover { text-decoration: underline; }
+
+  .auth-field-error { border-color: #EF4444 !important; }
+  .auth-error-msg { font-size: 11.5px; color: #EF4444; margin-top: -6px; }
+
+  .auth-toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(16px);
+    background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    padding: 11px 18px; font-size: 13px; color: var(--text); box-shadow: var(--shadow-md);
+    opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease; z-index: 100;
+  }
+  .auth-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-tile-inner, .focus-corner, .auth-dot, .auth-toast { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="auth-shell">
+    <div class="auth-grid">
+
+      <!-- LEFT: visual panel -->
+      <div class="auth-visual">
+        <div class="auth-brand">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          MarketSyde Admin
+        </div>
+
+        <div class="auth-tiles" id="authTiles">
+          <div class="auth-tile big" data-idx="0">
+            <div class="auth-tile-inner" style="background: linear-gradient(135deg, #5945F1, #2d1f8a);">
+              <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h4l2 7 4-14 2 7h6"/></svg>
+              <span class="feature-name">Signal Intelligence</span>
+            </div>
+            <span class="focus-corner fc-tl"></span><span class="focus-corner fc-tr"></span>
+            <span class="focus-corner fc-bl"></span><span class="focus-corner fc-br"></span>
+          </div>
+          <div class="auth-tile small" data-idx="1">
+            <div class="auth-tile-inner" style="background: linear-gradient(135deg, #CAEB0E, #7C8F00);">
+              <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="#12082A" stroke-width="1.6"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16.5" cy="14.3" r="1.3" fill="#12082A"/></svg>
+              <span class="feature-name" style="color:#12082A;">Cashback Engine</span>
+            </div>
+            <span class="focus-corner fc-tl"></span><span class="focus-corner fc-tr"></span>
+            <span class="focus-corner fc-bl"></span><span class="focus-corner fc-br"></span>
+          </div>
+          <div class="auth-tile small" data-idx="3">
+            <div class="auth-tile-inner" style="background: linear-gradient(135deg, #ABA1F8, #5945F1);">
+              <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="9" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3 20c0-3 2.2-5 5-5s5 2 5 5"/><path d="M14 20c0-2.2 1.4-3.8 3-3.8s3 1.6 3 3.8"/></svg>
+              <span class="feature-name">Community Growth</span>
+            </div>
+            <span class="focus-corner fc-tl"></span><span class="focus-corner fc-tr"></span>
+            <span class="focus-corner fc-bl"></span><span class="focus-corner fc-br"></span>
+          </div>
+          <div class="auth-tile wide" data-idx="2">
+            <div class="auth-tile-inner" style="background: linear-gradient(135deg, #190F38, #4a39d6);">
+              <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6"/></svg>
+              <span class="feature-name">Broker Network</span>
+            </div>
+            <span class="focus-corner fc-tl"></span><span class="focus-corner fc-tr"></span>
+            <span class="focus-corner fc-bl"></span><span class="focus-corner fc-br"></span>
+          </div>
+        </div>
+
+        <div class="auth-caption-box">
+          <div class="auth-caption-row">
+            <p class="auth-caption-text" id="authCaptionText"><b>/dashboard</b> Monitor live trading signals with AI confidence scoring across every contributor tier.</p>
+            <button class="auth-caption-arrow" id="authCaptionNext" aria-label="Next feature">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <p class="auth-tagline">The control room behind every trader's edge</p>
+        <div class="auth-dots" id="authDots"></div>
+      </div>
+
+      <!-- RIGHT: form panel -->
+      <div class="auth-form-wrap">
+        <div class="auth-form-card">
+
+          <!-- SIGN IN -->
+          <div id="viewSignIn">
+            <h1>Sign in to Admin</h1>
+            <div class="auth-social-row">
+              <button class="auth-social-btn" data-sso="Google">
+                <svg width="14" height="14" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23Z" fill="#34A853"/><path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84Z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" fill="#EB4335"/></svg>
+                Sign in with Google
+              </button>
+              <button class="auth-social-btn" data-sso="Apple">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.54c-.03-3.02 2.47-4.47 2.58-4.54-1.41-2.06-3.6-2.34-4.38-2.37-1.86-.19-3.64 1.1-4.58 1.1-.95 0-2.42-1.07-3.98-1.04-2.05.03-3.94 1.19-4.99 3.02-2.13 3.69-.54 9.16 1.53 12.15 1.01 1.46 2.22 3.1 3.81 3.04 1.53-.06 2.11-.99 3.96-.99s2.37.99 3.99.96c1.65-.03 2.69-1.49 3.69-2.96 1.16-1.69 1.64-3.33 1.66-3.41-.04-.02-3.2-1.23-3.24-4.87ZM14.03 3.66c.84-1.02 1.41-2.43 1.25-3.84-1.21.05-2.68.81-3.55 1.83-.78.9-1.46 2.34-1.28 3.72 1.35.1 2.73-.69 3.58-1.71Z"/></svg>
+                Sign in with Apple
+              </button>
+            </div>
+            <div class="auth-divider">or</div>
+            <form class="auth-fields" id="formSignIn" novalidate>
+              <label class="auth-field" data-field>
+                <input type="email" value="admin@marketsyde.com" autocomplete="username">
+                <span class="auth-field-label">Email</span>
+              </label>
+              <label class="auth-field" data-field>
+                <input type="password" value="••••••••••••" autocomplete="current-password">
+                <span class="auth-field-label">Password</span>
+              </label>
+              <div class="auth-row-between"><a class="auth-forgot" id="forgotLink">Forgot password?</a></div>
+              <button class="auth-submit" type="submit">Sign in</button>
+            </form>
+            <p class="auth-switch">Don't have an account? <a id="toSignUp">Create one</a></p>
+          </div>
+
+          <!-- CREATE ACCOUNT -->
+          <div id="viewSignUp" style="display:none;">
+            <h1>Create an account</h1>
+            <div class="auth-social-row">
+              <button class="auth-social-btn" data-sso="Google">
+                <svg width="14" height="14" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23Z" fill="#34A853"/><path d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84Z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" fill="#EB4335"/></svg>
+                Sign up with Google
+              </button>
+              <button class="auth-social-btn" data-sso="Apple">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.54c-.03-3.02 2.47-4.47 2.58-4.54-1.41-2.06-3.6-2.34-4.38-2.37-1.86-.19-3.64 1.1-4.58 1.1-.95 0-2.42-1.07-3.98-1.04-2.05.03-3.94 1.19-4.99 3.02-2.13 3.69-.54 9.16 1.53 12.15 1.01 1.46 2.22 3.1 3.81 3.04 1.53-.06 2.11-.99 3.96-.99s2.37.99 3.99.96c1.65-.03 2.69-1.49 3.69-2.96 1.16-1.69 1.64-3.33 1.66-3.41-.04-.02-3.2-1.23-3.24-4.87ZM14.03 3.66c.84-1.02 1.41-2.43 1.25-3.84-1.21.05-2.68.81-3.55 1.83-.78.9-1.46 2.34-1.28 3.72 1.35.1 2.73-.69 3.58-1.71Z"/></svg>
+                Sign up with Apple
+              </button>
+            </div>
+            <div class="auth-divider">or</div>
+            <form class="auth-fields" id="formSignUp" novalidate>
+              <div class="auth-field-row">
+                <label class="auth-field" data-field>
+                  <input type="text" value="Wongsakorn" autocomplete="given-name">
+                  <span class="auth-field-label">First Name</span>
+                </label>
+                <label class="auth-field" data-field>
+                  <input type="text" value="Techaboontam" autocomplete="family-name">
+                  <span class="auth-field-label">Last Name</span>
+                </label>
+              </div>
+              <label class="auth-field" data-field>
+                <input type="email" value="" placeholder="" autocomplete="username">
+                <span class="auth-field-label">Work Email</span>
+              </label>
+              <label class="auth-field" data-field>
+                <input type="password" value="" autocomplete="new-password">
+                <span class="auth-field-label">Password</span>
+              </label>
+              <div class="auth-checks">
+                <label class="auth-check-line">
+                  <span class="auth-checkbox">
+                    <input type="checkbox">
+                    <span class="box"></span>
+                    <svg viewBox="0 0 12 12" fill="none"><path d="M3 6.2 5 8.1 9 3.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </span>
+                  <span>I don't want to receive emails about MarketSyde admin product updates</span>
+                </label>
+                <label class="auth-check-line">
+                  <span class="auth-checkbox">
+                    <input type="checkbox" checked>
+                    <span class="box"></span>
+                    <svg viewBox="0 0 12 12" fill="none"><path d="M3 6.2 5 8.1 9 3.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </span>
+                  <span>By creating an account, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+                </label>
+              </div>
+              <button class="auth-submit" type="submit">Create account</button>
+            </form>
+            <p class="auth-switch">Already have an account? <a id="toSignIn">Sign in</a></p>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="auth-toast" id="authToast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- Toast ---------- */
+  const toastEl = document.getElementById('authToast');
+  let toastTimer = null;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 2600);
+  }
+
+  /* ---------- Carousel ---------- */
+  const captions = [
+    '<b>/dashboard</b> Monitor live trading signals with AI confidence scoring across every contributor tier.',
+    '<b>/dashboard</b> Track cashback settlements in real time, from pending ledger to payout confirmation.',
+    '<b>/dashboard</b> Manage broker connections and compare conditions across the entire partner network.',
+    '<b>/dashboard</b> Grow trader communities with gamified missions, levels, and referral rewards.',
+  ];
+  const tiles = [...document.querySelectorAll('.auth-tile')];
+  const dotsWrap = document.getElementById('authDots');
+  const captionText = document.getElementById('authCaptionText');
+  let activeIndex = 0;
+  let carouselTimer = null;
+
+  captions.forEach(function(_, i){
+    const dot = document.createElement('button');
+    dot.className = 'auth-dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('aria-label', 'Show feature ' + (i + 1));
+    dot.addEventListener('click', function(){ setActive(i); restartCarousel(); });
+    dotsWrap.appendChild(dot);
+  });
+
+  function setActive(i){
+    activeIndex = i;
+    tiles.forEach(function(tile){
+      tile.classList.toggle('active', parseInt(tile.getAttribute('data-idx'), 10) === i);
+    });
+    [...dotsWrap.children].forEach(function(dot, di){ dot.classList.toggle('active', di === i); });
+    captionText.innerHTML = captions[i];
+  }
+  function restartCarousel(){
+    clearInterval(carouselTimer);
+    carouselTimer = setInterval(function(){ setActive((activeIndex + 1) % captions.length); }, 2600);
+  }
+  document.getElementById('authCaptionNext').addEventListener('click', function(){
+    setActive((activeIndex + 1) % captions.length);
+    restartCarousel();
+  });
+  setActive(0);
+  restartCarousel();
+
+  /* ---------- Floating-label fields (matches the reference's FieldBox behavior) ---------- */
+  document.querySelectorAll('[data-field]').forEach(function(field){
+    const input = field.querySelector('input');
+    let isEditing = false;
+    input.addEventListener('focus', function(){
+      if (!isEditing){ input.value = ''; isEditing = true; field.querySelector('.auth-field-label').style.display = 'none'; }
+    });
+    input.addEventListener('input', function(){
+      if (!isEditing){ isEditing = true; field.querySelector('.auth-field-label').style.display = 'none'; }
+    });
+  });
+
+  /* ---------- View toggle ---------- */
+  const viewSignIn = document.getElementById('viewSignIn');
+  const viewSignUp = document.getElementById('viewSignUp');
+  document.getElementById('toSignUp').addEventListener('click', function(){ viewSignIn.style.display = 'none'; viewSignUp.style.display = 'block'; });
+  document.getElementById('toSignIn').addEventListener('click', function(){ viewSignUp.style.display = 'none'; viewSignIn.style.display = 'block'; });
+
+  /* ---------- SSO buttons (demo — no real OAuth backend) ---------- */
+  document.querySelectorAll('[data-sso]').forEach(function(btn){
+    btn.addEventListener('click', function(){ showToast('Would redirect to ' + btn.getAttribute('data-sso') + ' sign-in (no live OAuth in this prototype)'); });
+  });
+
+  /* ---------- Forgot password ---------- */
+  document.getElementById('forgotLink').addEventListener('click', function(e){
+    e.preventDefault();
+    showToast('A password reset link would be sent to your email');
+  });
+
+  /* ---------- Form validation + submit (demo — no real backend) ---------- */
+  function validateEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  function markField(field, bad){
+    field.classList.toggle('auth-field-error', bad);
+  }
+
+  document.getElementById('formSignIn').addEventListener('submit', function(e){
+    e.preventDefault();
+    const fields = [...this.querySelectorAll('[data-field]')];
+    const email = fields[0].querySelector('input').value.trim();
+    const pass = fields[1].querySelector('input').value.trim();
+    let ok = true;
+    markField(fields[0], false); markField(fields[1], false);
+    if (!validateEmail(email)){ markField(fields[0], true); ok = false; }
+    if (!pass){ markField(fields[1], true); ok = false; }
+    if (!ok){ showToast('Check the highlighted fields'); return; }
+    showToast('Signed in — redirecting to dashboard… (demo, no live backend yet)');
+  });
+
+  document.getElementById('formSignUp').addEventListener('submit', function(e){
+    e.preventDefault();
+    const fields = [...this.querySelectorAll('[data-field]')];
+    const first = fields[0].querySelector('input').value.trim();
+    const last = fields[1].querySelector('input').value.trim();
+    const email = fields[2].querySelector('input').value.trim();
+    const pass = fields[3].querySelector('input').value.trim();
+    const termsChecked = this.querySelectorAll('.auth-checkbox input')[1].checked;
+    let ok = true;
+    fields.forEach(function(f){ markField(f, false); });
+    if (!first){ markField(fields[0], true); ok = false; }
+    if (!last){ markField(fields[1], true); ok = false; }
+    if (!validateEmail(email)){ markField(fields[2], true); ok = false; }
+    if (!pass || pass.length < 8){ markField(fields[3], true); ok = false; }
+    if (!termsChecked){ showToast('Please accept the Terms of Service and Privacy Policy'); ok = false; }
+    if (!ok){ if (termsChecked === false) {} else showToast('Check the highlighted fields'); return; }
+    showToast('Account created for ' + first + ' ' + last + ' — awaiting Super Admin approval (demo)');
+  });
+})();
+</script>
+</body>
+</html>
