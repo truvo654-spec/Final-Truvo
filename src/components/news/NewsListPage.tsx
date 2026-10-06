@@ -15,7 +15,8 @@ import { NewsArticle } from '../../types';
 import { NEWS_ARTICLES, NEWS_CATEGORIES, canAccessNews } from '../../data/newsData';
 import { FolderTabs, FolderTabItem } from '../common/FolderTabs';
 import { NewsPromoBanner } from './NewsPromoBanner';
-import { useNewsFollowState, releasedArticles } from '../../data/newsFollows';
+import { FollowWriterModal } from './FollowWriterModal';
+import { useNewsFollowState, releasedArticles, newsFollows } from '../../data/newsFollows';
 
 type NewsListTab = 'for-you' | 'following';
 
@@ -27,6 +28,11 @@ interface NewsListPageProps {
   onSelectArticle: (article: NewsArticle) => void;
   onUpgradePrompt: () => void;
   onShowToast: (msg: string) => void;
+  /** Show only this writer's stories, with a writer header. */
+  writer?: string;
+  onSelectWriter?: (writer: string) => void;
+  onBackToNews?: () => void;
+  onSignIn?: () => void;
 }
 
 const SENTIMENT_STYLES: Record<NewsArticle['sentiment'], string> = {
@@ -43,8 +49,13 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
   onSelectArticle,
   onUpgradePrompt,
   onShowToast,
+  writer,
+  onSelectWriter,
+  onBackToNews,
+  onSignIn,
 }) => {
   const followState = useNewsFollowState();
+  const [followModal, setFollowModal] = useState(false);
   const followedWriters = followState.follows.map((f) => f.writer);
   // Stories published since the member started following sit on top of the feed
   const articles = useMemo(() => [...releasedArticles(followState), ...baseArticles], [followState, baseArticles]);
@@ -55,13 +66,19 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [bannerVisible, setBannerVisible] = useState(!isLoggedIn);
 
-  const tabs: FolderTabItem<NewsListTab>[] = [
+  const writerFollow = writer ? followState.follows.find((f) => f.writer === writer) : undefined;
+  const writerAvatar = articles.find((x) => x.source === writer)?.sourceAvatar ?? '';
+  const writerStoryCount = writer ? articles.filter((x) => x.source === writer).length : 0;
+
+  const tabs: FolderTabItem<NewsListTab>[] = writer
+    ? [{ id: 'for-you', label: 'All stories' }]
+    : [
     { id: 'for-you', label: 'For you' },
     { id: 'following', label: 'Following' },
   ];
 
   const filtered = useMemo(() => {
-    let list = articles.filter((a) => !hiddenIds[a.id]);
+    let list = articles.filter((a) => !hiddenIds[a.id] && (!writer || a.source === writer));
     if (category !== 'All') {
       list = list.filter((a) => a.assetClass === (category as NewsArticle['assetClass']));
     }
@@ -70,7 +87,7 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
     }
     return list;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [articles, category, tab, hiddenIds, followState]);
+  }, [articles, category, tab, hiddenIds, followState, writer]);
 
   const canAccess = (article: NewsArticle) => canAccessNews(article, userTierLevel, isLoggedIn);
 
@@ -93,6 +110,7 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
   const advisorPicks = articles.filter((a) => a.advisorPick).slice(0, 3);
 
   return (
+    <>
     <div className="w-full">
       <NewsPromoBanner
         visible={bannerVisible}
@@ -101,7 +119,38 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
       />
 
       <div className="w-full max-w-[1360px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
-        {/* Page title */}
+        {/* Page title, or the writer header when viewing one writer */}
+        {writer ? (
+          <div className="mb-6">
+            <button onClick={onBackToNews} className="text-xs font-semibold text-[#5338ec] hover:underline mb-4">← Market News</button>
+            <div className="flex flex-wrap items-center justify-between gap-5">
+              <div className="flex items-center gap-4 min-w-0">
+                <img src={writerAvatar} alt={writer} className="w-16 h-16 rounded-full object-cover border border-slate-200 shrink-0" />
+                <div className="min-w-0">
+                  <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30] leading-tight">{writer}</h1>
+                  <p className="text-sm text-[#474556] mt-0.5">
+                    38.2K followers · Verified newswire partner · {writerStoryCount} {writerStoryCount === 1 ? 'story' : 'stories'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1.5">
+                <button
+                  onClick={() => (isLoggedIn ? setFollowModal(true) : onSignIn ? onSignIn() : onShowToast('Sign in to follow writers'))}
+                  className={`text-sm font-bold px-5 py-2.5 rounded-full transition-colors ${
+                    writerFollow ? 'bg-slate-100 text-slate-500' : 'bg-[#5338ec] text-white hover:bg-[#4326d8]'
+                  }`}
+                >
+                  {writerFollow ? 'Following' : 'Follow'}
+                </button>
+                {writerFollow && (
+                  <span className={`text-[11px] font-semibold ${writerFollow.notify ? 'text-emerald-600' : 'text-[#94a3b8]'}`}>
+                    {writerFollow.notify ? 'Notifications on' : 'Notifications off'}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="flex items-end justify-between gap-6 mb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Market News</h1>
@@ -110,6 +159,7 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
             </p>
           </div>
         </div>
+        )}
 
         {/* Tabs + category filters */}
         <div className="flex flex-col gap-4 mb-6">
@@ -161,7 +211,16 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
                         alt={article.source}
                         className="w-5 h-5 rounded-full object-cover border border-slate-200"
                       />
-                      <span className="font-semibold text-slate-700">{article.source}</span>
+                      <span
+                        onClick={(e) => {
+                          if (!onSelectWriter || writer) return;
+                          e.stopPropagation();
+                          onSelectWriter(article.source);
+                        }}
+                        className={`font-semibold text-slate-700 ${onSelectWriter && !writer ? 'hover:text-[#5338ec] hover:underline cursor-pointer' : ''}`}
+                      >
+                        {article.source}
+                      </span>
                       <span>· {article.timestamp}</span>
                       <span className={`font-semibold ${SENTIMENT_STYLES[article.sentiment]}`}>
                         · {article.sentiment}
@@ -259,7 +318,7 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
 
             {filtered.length === 0 && (
               <div className="py-16 text-center text-sm text-[#474556]">
-                Nothing here yet — follow a few topics and we'll fill this in.
+                {writer ? `No ${writer} stories match these filters.` : "Nothing here yet — follow a few topics and we'll fill this in."}
               </div>
             )}
           </div>
@@ -329,5 +388,29 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
         </div>
       </div>
     </div>
+      {writer && followModal && (
+        <FollowWriterModal
+          writer={writer}
+          avatar={writerAvatar}
+          isFollowing={!!writerFollow}
+          notify={!!writerFollow?.notify}
+          onClose={() => setFollowModal(false)}
+          onConfirm={(notify) => {
+            newsFollows.follow(writer, notify);
+            setFollowModal(false);
+            onShowToast(
+              notify
+                ? writerFollow ? `Notifications on for ${writer}` : `Following ${writer}. New news goes to Notifications › Market News.`
+                : writerFollow ? `Notifications off for ${writer}` : `Following ${writer}`
+            );
+          }}
+          onUnfollow={() => {
+            newsFollows.unfollow(writer);
+            setFollowModal(false);
+            onShowToast(`Unfollowed ${writer}`);
+          }}
+        />
+      )}
+    </>
   );
 };

@@ -309,7 +309,7 @@ export const Header: React.FC<HeaderProps> = ({
                   handleCloseImmediately();
                 }}
                 className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
-                  activeHoverMenu === 'knowledge' || activeTab === 'news' || activeTab === 'news-detail' || activeTab === 'education-hub'
+                  activeHoverMenu === 'knowledge' || activeTab === 'news' || activeTab === 'news-detail' || activeTab === 'news-writer' || activeTab === 'education-hub'
                     ? 'text-[#5945F1] font-semibold'
                     : 'text-slate-800 hover:text-[#5945F1]'
                 }`}
@@ -1709,14 +1709,14 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <div className="flex items-start gap-3">
                     {(hoveredKnowledgeOption === 'news' ||
-                      (!hoveredKnowledgeOption && (activeTab === 'news' || activeTab === 'news-detail'))) ? (
+                      (!hoveredKnowledgeOption && (activeTab === 'news' || activeTab === 'news-detail' || activeTab === 'news-writer'))) ? (
                       <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
                     ) : null}
                     <div>
                       <div
                         className={`font-bold text-base transition-colors leading-tight ${
                           hoveredKnowledgeOption === 'news' ||
-                          (!hoveredKnowledgeOption && (activeTab === 'news' || activeTab === 'news-detail'))
+                          (!hoveredKnowledgeOption && (activeTab === 'news' || activeTab === 'news-detail' || activeTab === 'news-writer'))
                             ? 'text-[#5945F1]'
                             : 'text-[#0b1c30] group-hover:text-[#5945F1]'
                         }`}
@@ -2223,7 +2223,7 @@ export const Header: React.FC<HeaderProps> = ({
               setMobileMenuOpen(false);
             }}
             className={`w-full py-2 text-left text-sm font-semibold ${
-              activeTab === 'news' || activeTab === 'news-detail' ? 'text-[#5338ec]' : 'text-slate-700'
+              activeTab === 'news' || activeTab === 'news-detail' || activeTab === 'news-writer' ? 'text-[#5338ec]' : 'text-slate-700'
             }`}
           >
             Market News

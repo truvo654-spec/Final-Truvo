@@ -33,6 +33,8 @@ interface NewsDetailPageProps {
   onShowToast: (msg: string) => void;
   /** Opens the sign-in modal. Following needs an account. */
   onSignIn?: () => void;
+  /** Open the list of stories by a writer. */
+  onSelectWriter?: (writer: string) => void;
 }
 
 const LABEL_STYLES: Record<AdvisorLabel, string> = {
@@ -52,6 +54,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
   onUpgradePrompt,
   onShowToast,
   onSignIn,
+  onSelectWriter,
 }) => {
   const follow = useNewsFollowState();
   const following = follow.follows.some((f) => f.writer === article.source);
@@ -229,14 +232,20 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
 
             {/* Author card */}
             <div className="flex items-center justify-between gap-4 mt-10 pt-6 border-t border-[#f1f5f9]">
-              <div className="flex items-center gap-3">
+              <div
+                role={onSelectWriter ? 'link' : undefined}
+                tabIndex={onSelectWriter ? 0 : undefined}
+                onClick={() => onSelectWriter?.(article.source)}
+                onKeyDown={(e) => e.key === 'Enter' && onSelectWriter?.(article.source)}
+                className={`flex items-center gap-3 ${onSelectWriter ? 'cursor-pointer group' : ''}`}
+              >
                 <img
                   src={article.sourceAvatar}
                   alt={article.source}
                   className="w-11 h-11 rounded-full object-cover border border-slate-200"
                 />
                 <div>
-                  <p className="text-sm font-bold text-[#0b1c30]">Written by {article.source}</p>
+                  <p className={`text-sm font-bold text-[#0b1c30] ${onSelectWriter ? 'group-hover:text-[#5338ec] group-hover:underline' : ''}`}>Written by {article.source}</p>
                   <p className="text-xs text-[#474556]">38.2K followers · Verified newswire partner</p>
                 </div>
               </div>
@@ -315,7 +324,12 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
             {/* More from source */}
             {related.length > 0 && (
               <div className="mt-10 pt-6 border-t border-[#f1f5f9]">
-                <h3 className="text-lg font-bold text-[#0b1c30] mb-4">More from {article.source}</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-[#0b1c30]">More from {article.source}</h3>
+                  {onSelectWriter && (
+                    <button onClick={() => onSelectWriter(article.source)} className="text-sm font-semibold text-[#5338ec] hover:underline">See all stories</button>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {related.map((r) => (
                     <div key={r.id} className="cursor-pointer group">

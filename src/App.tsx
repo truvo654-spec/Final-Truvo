@@ -112,6 +112,7 @@ const KNOWN_APP_TABS = new Set([
   'instrument-analysis',
   'news',
   'news-detail',
+  'news-writer',
   'economic-calendar',
   'education-hub',
   'portfolio-tracker',
@@ -306,6 +307,12 @@ export default function App() {
   });
   const [isSignalModalOpen, setIsSignalModalOpen] = useState(false);
   const [selectedNewsArticle, setSelectedNewsArticle] = useState<NewsArticle | null>(null);
+  const [selectedNewsWriter, setSelectedNewsWriter] = useState<string | null>(null);
+  const openNewsWriter = (writer: string) => {
+    setSelectedNewsWriter(writer);
+    setActiveTab('news-writer');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [isActivityLogModalOpen, setIsActivityLogModalOpen] = useState(false);
   const [isBrokerComparisonOpen, setIsBrokerComparisonOpen] = useState(false);
@@ -1290,6 +1297,31 @@ export default function App() {
             }}
             onUpgradePrompt={() => setActiveTab('member-plan')}
             onShowToast={showToast}
+            onSelectWriter={openNewsWriter}
+          />
+        )}
+
+        {/* ─── TAB: stories by one writer (same layout as Market News) ─── */}
+        {activeTab === 'news-writer' && selectedNewsWriter && (
+          <NewsListPage
+            isLoggedIn={isLoggedIn}
+            userTierLevel={user.tierLevel}
+            writer={selectedNewsWriter}
+            onBackToNews={() => {
+              setActiveTab('news');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onSelectArticle={(article) => {
+              setSelectedNewsArticle(article);
+              setActiveTab('news-detail');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onUpgradePrompt={() => setActiveTab('member-plan')}
+            onShowToast={showToast}
+            onSignIn={() => {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+            }}
           />
         )}
 
@@ -1306,6 +1338,7 @@ export default function App() {
               setAuthModalMode('signin');
               setIsAuthModalOpen(true);
             }}
+            onSelectWriter={openNewsWriter}
           />
         )}
 
