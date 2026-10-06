@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowLeft, BadgeCheck, MessageCircle, Repeat2, Heart, BarChart2, Search, Clock, Sparkles } from 'lucide-react';
 import { Promotion, PROMO_LEVELS } from '../../data/promotionsData';
-import { NewsArticle, MarketSignal } from '../../types';
+import { NewsArticle, MarketSignal, Broker } from '../../types';
 import { InstrumentIcon } from '../analysis/InstrumentIcon';
 import { THEME } from '../promotions/promotionArt';
 import { HashtagLink, HashtagText } from './HashtagText';
@@ -26,13 +26,16 @@ interface HashtagPageProps {
   onOpenSignal: (ticker: string) => void;
   onOpenInstrument: (symbol: string) => void;
   onOpenPromotion: (id: string) => void;
+  onOpenBroker: (broker: Broker) => void;
 }
 
 type FeedTab = 'all' | FeatureKind;
 type Sort = 'top' | 'latest';
 
-const TAB_ORDER: FeedTab[] = ['all', 'post', 'news', 'signal', 'analysis', 'event', 'course', 'offer'];
-const WEIGHT: Record<FeatureKind, number> = { post: 1, news: 0.95, signal: 0.9, analysis: 0.85, event: 0.7, course: 0.6, offer: 0.6 };
+const TAB_ORDER: FeedTab[] = ['all', 'post', 'news', 'signal', 'analysis', 'event', 'course', 'broker', 'offer'];
+/** In the All tab each feature shows its best few. Open its tab to see every one. */
+const ALL_LIMIT = 6;
+const WEIGHT: Record<FeatureKind, number> = { post: 1, news: 0.95, signal: 0.9, analysis: 0.85, event: 0.7, course: 0.6, broker: 0.55, offer: 0.6 };
 const COLORS = ['#5338ec', '#0d9488', '#be185d', '#8d6a1f', '#3410D5', '#0b1c30'];
 const colorFor = (s: string) => {
   let h = 0;
@@ -112,7 +115,7 @@ const Reply: React.FC<{ name: string; avatar?: string; time: string; text: strin
   </div>
 );
 
-export const HashtagPage: React.FC<HashtagPageProps> = ({ tag, onBack, onNavigateToTab, onOpenArticle, onOpenSignal, onOpenInstrument, onOpenPromotion }) => {
+export const HashtagPage: React.FC<HashtagPageProps> = ({ tag, onBack, onNavigateToTab, onOpenArticle, onOpenSignal, onOpenInstrument, onOpenPromotion, onOpenBroker }) => {
   const [tab, setTab] = useState<FeedTab>('all');
   const [sort, setSort] = useState<Sort>('top');
   const [query, setQuery] = useState('');
@@ -129,9 +132,20 @@ export const HashtagPage: React.FC<HashtagPageProps> = ({ tag, onBack, onNavigat
       maxBy[k] = Math.max(maxBy[k] ?? 1, i.score);
     });
     const rank = (i: HashtagItem) => (i.score / (maxBy[featureOf(i)] || 1)) * WEIGHT[featureOf(i)];
-    const list = items.filter((i) => tab === 'all' || featureOf(i) === tab);
-    return [...list].sort((a, b) => (sort === 'latest' ? a.age - b.age : rank(b) - rank(a)));
+    const order = (a: HashtagItem, b: HashtagItem) => (sort === 'latest' ? a.age - b.age : rank(b) - rank(a));
+    if (tab !== 'all') return items.filter((i) => featureOf(i) === tab).sort(order);
+    // All: the best few of each feature, so one busy feature cannot bury the others
+    const taken: Partial<Record<FeatureKind, number>> = {};
+    return [...items]
+      .sort((a, b) => rank(b) - rank(a))
+      .filter((i) => {
+        const k = featureOf(i);
+        taken[k] = (taken[k] ?? 0) + 1;
+        return taken[k]! <= ALL_LIMIT;
+      })
+      .sort(order);
   }, [items, tab, sort]);
+  const hiddenInAll = tab === 'all' ? items.length - feed.length : 0;
 
   const tabLabel = (t: FeedTab) => (t === 'all' ? 'All' : FEATURE_LABEL[t]);
   const tabCount = (t: FeedTab) => (t === 'all' ? items.length : summary.counts[t]);
@@ -277,6 +291,41 @@ export const HashtagPage: React.FC<HashtagPageProps> = ({ tag, onBack, onNavigat
         </Tweet>
       );
     }
+    if (i.kind === 'article') {
+      const a = i.article;
+      return (
+        <Tweet key={i.id} avatar={<Avatar src={a.authorAvatar} name={a.authorName} />} name={a.authorName} verified={a.verified} time={a.timeAgo} label="Article" onClick={() => onNavigateToTab('community')}>
+          <p className="text-[15px] font-bold text-[#0b1c30] mt-1 leading-snug">{a.title}</p>
+          <p className="text-sm text-[#474556] mt-1 leading-relaxed line-clamp-3">{a.excerpt}</p>
+          <div className="mt-3 border border-[#e2e8f0] rounded-2xl overflow-hidden flex">
+            <img src={a.thumbnail} alt="" className="w-28 h-20 object-cover shrink-0" />
+            <div className="p-3 min-w-0">
+              <p className="text-xs text-[#6b7686]">{a.categoryLabel} · {a.readTime}</p>
+              <p className="text-xs text-[#6b7686] mt-1">{fmtN(a.views)} views</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-6 mt-3">
+            <Stat icon={MessageCircle} value={a.comments} />
+            <Stat icon={Heart} value={fmtN(a.likes)} />
+          </div>
+        </Tweet>
+      );
+    }
+    if (i.kind === 'broker') {
+      const b = i.broker;
+      return (
+        <Tweet key={i.id} avatar={<Avatar name={b.name} />} name={b.name} verified={b.verified} label="Broker" onClick={() => onOpenBroker(b)}>
+          <div className="mt-2 border border-[#e2e8f0] rounded-2xl p-4">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {[['Spread from', b.spreadFrom], ['Cashback up to', b.maxCashback], ['Min deposit', b.minDeposit]].map(([k, v]) => (
+                <div key={String(k)} className="bg-slate-50 rounded-xl py-2 px-1"><p className="text-[10px] text-[#6b7686]">{k}</p><p className="text-sm font-bold">{v}</p></div>
+              ))}
+            </div>
+            <p className="text-xs text-[#6b7686] mt-3 truncate">{b.category} · {b.platforms.join(', ')} · {b.regulations.slice(0, 2).join(', ')}</p>
+          </div>
+        </Tweet>
+      );
+    }
     if (i.kind === 'course') {
       const c = i.course;
       return (
@@ -396,6 +445,11 @@ export const HashtagPage: React.FC<HashtagPageProps> = ({ tag, onBack, onNavigat
           {/* Feed */}
           <div>
             {feed.map(renderItem)}
+            {hiddenInAll > 0 && (
+              <p className="px-4 py-4 text-sm text-[#6b7686] border-b border-[#e8ebf0]">
+                Showing the top {ALL_LIMIT} of each feature. {hiddenInAll} more {hiddenInAll === 1 ? 'item is' : 'items are'} in the feature tabs above.
+              </p>
+            )}
             {feed.length === 0 && (
               <div className="py-16 px-6 text-center">
                 <p className="text-lg font-bold text-[#0b1c30]">Nothing for #{name} yet</p>

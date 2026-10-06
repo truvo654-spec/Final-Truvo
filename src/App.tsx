@@ -1436,6 +1436,11 @@ export default function App() {
               setActiveTab('promotions');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
+            onOpenBroker={(broker) => {
+              setSelectedBrokerForDetail(broker);
+              setActiveTab('broker-detail');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 
