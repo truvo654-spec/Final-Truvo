@@ -3,13 +3,16 @@ import { Clock, ShieldCheck } from 'lucide-react';
 import { Promotion, PromoLevel, PROMO_LEVELS, PROMO_TYPES, PROMOTIONS } from '../../data/promotionsData';
 import { THEME, LEVEL_DOT, BannerArt } from './promotionArt';
 
-export type CtaKind = 'take' | 'connect' | 'notify' | 'done' | 'notifying';
+export type CtaKind = 'take' | 'connect' | 'notify' | 'done' | 'notifying' | 'signin' | 'locked';
 
 interface PromotionDetailProps {
   promo: Promotion;
   level: PromoLevel;
   connected: boolean;
   cta: { label: string; kind: CtaKind };
+  isLoggedIn: boolean;
+  onSignIn: () => void;
+  onOpenNotifications: () => void;
   onAct: () => void;
   onBack: () => void;
   onOpen: (p: Promotion) => void;
@@ -89,7 +92,7 @@ const Section: React.FC<{ id: string; title: string; children: React.ReactNode; 
   </section>
 );
 
-export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, level, connected, cta, onAct, onBack, onOpen, onLevelUp, onCompare, onViewBroker, onToast }) => {
+export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, level, connected, cta, isLoggedIn, onSignIn, onOpenNotifications, onAct, onBack, onOpen, onLevelUp, onCompare, onViewBroker, onToast }) => {
   const t = THEME[p.type];
   const typeLabel = PROMO_TYPES.find((x) => x.id === p.type)!.label;
   const live = p.startsInDays === 0;
@@ -163,10 +166,13 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
     ['Minimum deposit', p.minDeposit > 0 ? `$${p.minDeposit}` : 'None'],
   ];
 
-  const checks: { ok: boolean | null; title: string; text: string }[] = [
-    { ok: levelOk, title: `Level ${p.minLevel}${p.minLevel > 1 ? '+' : ''}`, text: levelOk ? `You are Lv.${level} ${PROMO_LEVELS[level]}.` : `You are Lv.${level}. This opens at Lv.${p.minLevel}.` },
+  const checks: { ok: boolean | null; title: string; text: string; action?: { label: string; run: () => void } }[] = [
+    isLoggedIn
+      ? { ok: true, title: 'Signed in', text: 'You can take offers and get notified.' }
+      : { ok: false, title: 'Signed out', text: 'Sign in to take this offer or get notified.', action: { label: 'Sign in', run: onSignIn } },
+    { ok: isLoggedIn ? levelOk : null, title: `Level ${p.minLevel}${p.minLevel > 1 ? '+' : ''}`, text: !isLoggedIn ? `Needs Lv.${p.minLevel}${p.minLevel > 1 ? ' or higher' : ''}.` : levelOk ? `You are Lv.${level} ${PROMO_LEVELS[level]}.` : `You are Lv.${level}. This opens at Lv.${p.minLevel}. Finish missions to level up.` },
     p.requiresConnected
-      ? { ok: connected, title: `${p.brokerName} account connected`, text: connected ? 'Connected.' : `Connect it to take this offer.` }
+      ? { ok: isLoggedIn ? connected : null, title: `${p.brokerName} account connected`, text: !isLoggedIn ? 'Needs a connected account.' : connected ? 'Connected.' : 'Not connected yet. Connect it to take this offer.' }
       : { ok: true, title: 'No connection needed', text: 'You can take this offer without linking an account.' },
     { ok: null, title: 'Region and account rules', text: `${sourceName(p)} may limit offers by country or account type. Check the conditions.` },
   ];
@@ -341,11 +347,15 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
                 cta.kind === 'done' ? 'bg-emerald-50 text-emerald-700 cursor-default'
                 : cta.kind === 'take' ? 'bg-[#5338ec] hover:bg-[#4326d8] text-white'
                 : cta.kind === 'notifying' ? 'bg-[#EEF0FE] text-[#5338ec]'
+                : cta.kind === 'locked' ? 'bg-slate-100 hover:bg-slate-200 text-[#0b1c30]'
                 : 'border border-[#5338ec]/40 hover:border-[#5338ec] text-[#5338ec]'
               }`}
             >
               {cta.label}
             </button>
+            {cta.kind === 'notifying' && (
+              <button onClick={onOpenNotifications} className="w-full mt-2 text-xs font-semibold text-[#5338ec] hover:underline">View in Notifications › My Promotion</button>
+            )}
             <button
               onClick={share}
               className="w-full mt-2.5 text-sm font-bold rounded-xl py-3 bg-white border border-slate-200 hover:border-[#5338ec] text-[#0b1c30] hover:text-[#5338ec] transition-colors"
@@ -366,11 +376,12 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
                   <div>
                     <p className="text-xs font-bold text-[#0b1c30]">{c.title}</p>
                     <p className="text-[11px] text-[#474556] leading-snug">{c.text}</p>
+                    {c.action && <button onClick={c.action.run} className="mt-1 text-[11px] font-bold text-[#5338ec] hover:underline">{c.action.label}</button>}
                   </div>
                 </li>
               ))}
             </ul>
-            {!levelOk && <button onClick={onLevelUp} className="mt-4 w-full text-xs font-bold text-[#5338ec] hover:underline">See how to level up</button>}
+            {isLoggedIn && !levelOk && <button onClick={onLevelUp} className="mt-4 w-full text-xs font-bold text-[#5338ec] hover:underline">See how to level up</button>}
           </div>
         </aside>
       </div>

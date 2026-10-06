@@ -1347,6 +1347,19 @@ export default function App() {
           <PromotionsPage
             detailId={promotionDetailId}
             onDetailChange={setPromotionDetailId}
+            missions={missions}
+            points={user.currentPoints}
+            maxPoints={user.maxPoints}
+            credits={user.sydeCredits}
+            onSignIn={() => {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+            }}
+            onGoToMissions={() => {
+              setActiveTab('dashboard');
+              window.setTimeout(() => document.getElementById('mission-card-widget')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 700);
+            }}
+            onOpenNotifications={() => setActiveTab('notifications')}
             userTierLevel={user.tierLevel}
             isLoggedIn={isLoggedIn}
             brokers={brokers}
@@ -1509,6 +1522,11 @@ export default function App() {
               setIsConnectModalOpen(true);
             }}
             onShowToast={showToast}
+            onOpenPromotion={(id) => {
+              setPromotionDetailId(id);
+              setActiveTab('promotions');
+            }}
+            onBrowsePromotions={() => setActiveTab('promotions')}
           />
         )}
 

@@ -14,6 +14,8 @@ import {
 import { TabMain } from '../common/TabMain';
 import { Broker } from '../../types';
 import { BorderBeam } from '../ui/BorderBeam';
+import { promotionAlerts, useMyPromotionAlerts, PromoAlert } from '../../data/promotionAlerts';
+import { PROMO_LEVELS } from '../../data/promotionsData';
 
 
 export interface NotificationItem {
@@ -44,6 +46,9 @@ interface NotificationsPageProps {
   onNavigateToBrokers: () => void;
   onOpenConnectModal?: (broker?: Broker) => void;
   onShowToast?: (msg: string) => void;
+  /** Open a promotion's detail page. */
+  onOpenPromotion?: (id: string) => void;
+  onBrowsePromotions?: () => void;
 }
 
 const INITIAL_ACTIVITIES: NotificationItem[] = [
@@ -228,8 +233,12 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   onNavigateToBrokers,
   onOpenConnectModal,
   onShowToast,
+  onOpenPromotion,
+  onBrowsePromotions,
 }) => {
-  const [activeTab, setActiveTab] = useState<'activities' | 'announcements'>('activities');
+  const [activeTab, setActiveTab] = useState<'activities' | 'announcements' | 'my-promotion'>('activities');
+  const promoAlerts = useMyPromotionAlerts();
+  const unreadPromoCount = promoAlerts.filter((a) => !a.isRead).length;
   const [sourceFilter, setSourceFilter] = useState<'all' | 'cashback' | 'connect'>('all');
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
 
@@ -253,7 +262,10 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
   // Handle Mark All as Read
   const handleMarkAllAsRead = () => {
-    if (activeTab === 'activities') {
+    if (activeTab === 'my-promotion') {
+      promotionAlerts.markAllRead();
+      onShowToast?.('All promotion notifications marked as read');
+    } else if (activeTab === 'activities') {
       setActivities((prev) => prev.map((a) => ({ ...a, isRead: true })));
       onShowToast?.('All activity notifications marked as read');
     } else {
@@ -387,15 +399,21 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                     label: 'Announcement',
                     count: unreadAnnouncementsCount > 0 ? unreadAnnouncementsCount : undefined,
                   },
+                  {
+                    id: 'my-promotion',
+                    label: 'My Promotion',
+                    count: unreadPromoCount > 0 ? unreadPromoCount : undefined,
+                  },
                 ]}
                 activeTab={activeTab}
-                onChange={(t) => setActiveTab(t as 'activities' | 'announcements')}
+                onChange={(t) => setActiveTab(t as 'activities' | 'announcements' | 'my-promotion')}
               />
             </div>
 
             {/* Filter and Action Bar */}
             <div className="flex items-end justify-between gap-4 pt-2">
-              {/* Left: Sources Dropdown */}
+              {/* Left: Sources Dropdown (not used on My Promotion) */}
+              {activeTab !== 'my-promotion' ? (
               <div className="relative">
                 <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                   Sources
@@ -490,6 +508,9 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                   </AnimatePresence>
                 </div>
               </div>
+              ) : (
+                <p className="text-xs text-slate-500 dark:text-slate-400 pb-2">Offers you asked to be told about, and offers you took.</p>
+              )}
 
               {/* Right: Mark all as read */}
               <button
@@ -567,6 +588,85 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
                           {/* Right Chevron */}
                           <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#5945F1] group-hover:translate-x-0.5 transition-all shrink-0" />
+                        </div>
+                      );
+                    })
+                  )}
+                </>
+              )}
+
+              {/* TAB 3: MY PROMOTION */}
+              {activeTab === 'my-promotion' && (
+                <>
+                  {promoAlerts.length === 0 ? (
+                    <div className="py-16 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-[#5945F1] flex items-center justify-center mx-auto shadow-xs">
+                        <Bell className="w-6 h-6" />
+                      </div>
+                      <h4 className="font-bold text-sm text-[#0b1c30] dark:text-white">No promotions here yet</h4>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        Tap Notify me on an upcoming offer, or take an offer, and it shows up here.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => onBrowsePromotions?.()}
+                        className="mt-1 px-4 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4a38d6] text-white text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Browse promotions
+                      </button>
+                    </div>
+                  ) : (
+                    promoAlerts.map((item: PromoAlert) => {
+                      const unread = !item.isRead;
+                      const open = () => {
+                        promotionAlerts.markRead(item.id, item.kind);
+                        onOpenPromotion?.(item.id);
+                      };
+                      return (
+                        <div
+                          key={`${item.kind}-${item.id}`}
+                          onClick={open}
+                          className="group flex items-center justify-between gap-4 py-4 px-3 sm:px-4 rounded-xl hover:bg-white dark:hover:bg-[#120a2e] transition-all cursor-pointer"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2.5">
+                              {unread && <span className="w-2 h-2 rounded-full bg-[#3b82f6] shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />}
+                              <h4 className={`text-sm sm:text-[14.5px] truncate transition-colors ${unread ? 'font-bold text-[#3b82f6] dark:text-[#60a5fa]' : 'font-semibold text-[#0b1c30] dark:text-slate-200 group-hover:text-[#5945F1]'}`}>
+                                {item.kind === 'notify' ? `We will notify you when “${item.title}” starts` : `You took “${item.title}”`}
+                              </h4>
+                            </div>
+                            <div className="flex items-center flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300 mt-1 pl-4">
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${item.kind === 'notify' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                                {item.kind === 'notify' ? 'Waiting to start' : 'Taken'}
+                              </span>
+                              <span>{item.brokerName}</span>
+                              <span>•</span>
+                              <span>{item.value} {item.valueNote}</span>
+                              <span>•</span>
+                              <span>Lv.{item.minLevel} {PROMO_LEVELS[item.minLevel as 1 | 2 | 3 | 4]}</span>
+                              <span>•</span>
+                              <span>{item.date}</span>
+                              <span>•</span>
+                              <span>{item.time}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            {item.kind === 'notify' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  promotionAlerts.stopNotify(item.id);
+                                  onShowToast?.('Notification turned off');
+                                }}
+                                className="text-xs font-semibold text-slate-500 hover:text-rose-500 transition-colors cursor-pointer"
+                              >
+                                Turn off
+                              </button>
+                            )}
+                            <button type="button" onClick={open} className="text-xs font-bold text-[#5945F1] hover:underline cursor-pointer">
+                              View offer
+                            </button>
+                          </div>
                         </div>
                       );
                     })
