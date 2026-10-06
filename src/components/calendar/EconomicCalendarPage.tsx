@@ -830,7 +830,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
 
             <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_440px] gap-6 items-start">
               <div>
-            <div className="mb-6 overflow-hidden rounded-2xl bg-[#0b1c30] px-4 py-5 text-white sm:px-5">
+            <div className="mb-6 w-full overflow-hidden rounded-2xl bg-[#0b1c30] px-4 py-5 text-white sm:px-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#ABA1F8]">Economic Calendar</p>
@@ -972,7 +972,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
               )}
             </div>
 
-              {calendarView === 'visualization' && <div>
+              {calendarView === 'visualization' && <div className="hidden" aria-hidden="true">
               {/* Table */}
               <div>
                 <div className={`hidden md:grid ${ROW_GRID} gap-2 px-3 py-3 text-sm font-bold text-[#0b1c30] border-b border-[#e2e8f0]`}>

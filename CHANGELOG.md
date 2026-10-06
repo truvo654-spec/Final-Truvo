@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.51] - 2026-10-06
+### Changed
+- Removed the duplicate lower calendar table from Visualization mode and made the timeline container fill its available calendar column.
+
 ## [1.0.50] - 2026-10-06
 ### Changed
 - Refined economic indicator detail pages into a light provider-backed layout with release snapshots, affected-asset chips, news sentiment, and simulated market-reaction context.
