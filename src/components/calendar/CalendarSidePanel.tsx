@@ -420,10 +420,14 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
             onClick={() => onNavigateToTab?.('profile')}
             aria-label="Personalize your calendar"
             title="Personalize your calendar"
-            className="group relative mx-1 mt-auto flex flex-col items-center gap-1 overflow-hidden rounded-xl border border-fuchsia-300/80 bg-gradient-to-b from-fuchsia-500 via-violet-600 to-indigo-700 px-1 py-3 text-[10px] font-bold leading-tight text-white shadow-[0_0_14px_rgba(168,85,247,0.7)] transition-transform hover:scale-105 animate-pulse"
+            className="group relative mx-1 mt-auto flex flex-col items-center gap-1 overflow-hidden rounded-xl border border-fuchsia-300/80 bg-gradient-to-b from-fuchsia-500 via-violet-600 to-indigo-700 px-1 py-3 text-[10px] font-bold leading-tight text-white shadow-[0_0_14px_rgba(168,85,247,0.7),0_0_28px_rgba(34,211,238,0.3)] transition-transform hover:scale-105 motion-safe:animate-[pulse_1.4s_ease-in-out_infinite]"
           >
             <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/90 shadow-[0_0_8px_2px_rgba(255,255,255,0.9)]" />
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-lime-300 shadow-[0_0_8px_3px_rgba(190,242,100,0.9)]">
+              <span className="absolute inset-0 rounded-full bg-lime-200 motion-safe:animate-ping" />
+            </span>
             <Sparkles className="h-5 w-5 drop-shadow-[0_0_5px_rgba(255,255,255,0.9)]" />
+            <span className="rounded-full bg-lime-300/90 px-1 py-0.5 text-[7px] font-black uppercase tracking-wider text-indigo-900">Promo</span>
             Personalize
           </button>
         </div>
