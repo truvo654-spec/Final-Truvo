@@ -54,6 +54,12 @@ export interface EconomicIndicator {
   news: { id: string; headline: string; summary: string; publishedAt: string; source: string; body: string }[];
   sessions: { venue: string; symbol: string; status: string; reopening: string; expectation: string; observed: string }[];
   outlook: { scenario: string; probability: string; implication: string }[];
+  affectedAssets: { symbol: string; assetClass: string; sensitivity: 'High' | 'Medium' | 'Low'; rationale: string }[];
+  volatility: { window: string; trueRange: string; potentialRange: string; confidence: string }[];
+  sentiment: { label: 'Bullish' | 'Bearish' | 'Neutral'; score: number; rationale: string };
+  marketStructure: { label: string; value: string; note: string }[];
+  releaseState: 'Upcoming' | 'Released' | 'All day';
+  surpriseLabel: 'Beat' | 'Miss' | 'In line' | 'Pending';
   seededAlerts: IndicatorAlert[];
 }
 
@@ -174,6 +180,27 @@ export function buildDemoIndicator(event: EconomicEvent): EconomicIndicator {
     { id: `${event.id}-outlook`, headline: kind === 'holiday' ? 'Reopening watch: liquidity and accumulated orders' : `Outlook: ${event.category.toLowerCase()} and the next release`, summary: outlook[0].implication, publishedAt: event.at, source: 'MarketSyde demo research', body: `${outlook[0].implication} ${outlook[1].implication} ${outlook[2].implication} These are illustrative scenarios for exploring the detail page.` },
     { id: `${event.id}-crossasset`, headline: `${pairFor(event.currency)}: related calendar events to monitor`, summary: 'Policy rates, inflation and business activity provide the next set of reference points for the local currency.', publishedAt: event.at, source: 'MarketSyde demo research', body: `The sample dashboard links ${event.currency} events with PMI, inflation, policy rates and confidence data. Select a related indicator to explore its history and release expectations.` },
   ];
+  const basePair = pairFor(event.currency);
+  const affectedAssets = [
+    { symbol: basePair, assetClass: 'Forex', sensitivity: event.impact === 'High' ? 'High' as const : 'Medium' as const, rationale: `Primary ${event.currency} cross reacts to rate-path and growth expectations.` },
+    { symbol: event.relatedSignalTicker || (event.currency === 'USD' ? 'DXY' : 'XAU/USD'), assetClass: event.currency === 'USD' ? 'Index' : 'Commodity', sensitivity: event.impact === 'High' ? 'Medium' as const : 'Low' as const, rationale: 'Cross-asset reference for the first reaction window.' },
+    { symbol: event.currency === 'USD' ? 'US500' : `${event.currency} equities`, assetClass: 'Indices', sensitivity: 'Low' as const, rationale: 'Risk appetite and discount-rate repricing can transmit into broader markets.' },
+  ];
+  const volatility = [
+    { window: '15 min', trueRange: event.impact === 'High' ? '0.35%' : '0.18%', potentialRange: event.impact === 'High' ? '0.60%' : '0.30%', confidence: 'Medium' },
+    { window: '1 hour', trueRange: event.impact === 'High' ? '0.80%' : '0.42%', potentialRange: event.impact === 'High' ? '1.40%' : '0.70%', confidence: 'Medium' },
+    { window: '1 day', trueRange: event.impact === 'High' ? '1.25%' : '0.68%', potentialRange: event.impact === 'High' ? '2.40%' : '1.20%', confidence: 'Low' },
+  ];
+  const releaseState = event.allDay ? 'All day' : Date.parse(event.at) <= Date.now() ? 'Released' : 'Upcoming';
+  const surpriseLabel = latest === null || consensus === null ? 'Pending' : latest > consensus ? 'Beat' : latest < consensus ? 'Miss' : 'In line';
+  const sentiment = event.category === 'Inflation' || event.category === 'Employment' && latest !== null && previous !== null && latest < previous
+    ? { label: 'Bearish' as const, score: 42, rationale: 'The illustrative surprise path suggests softer growth or tighter financial-condition concerns.' }
+    : { label: 'Neutral' as const, score: 56, rationale: 'The sample release is balanced; direction depends on policy guidance and follow-through in related data.' };
+  const marketStructure = [
+    { label: 'Liquidity regime', value: event.impact === 'High' ? 'Thin into release' : 'Normal / moderate', note: 'Illustrative spread and depth condition around the scheduled timestamp.' },
+    { label: 'Key reaction zone', value: event.impact === 'High' ? 'First 15 minutes' : 'First hour', note: 'Demo window where the initial surprise is most likely to be repriced.' },
+    { label: 'Confirmation', value: 'Cross-asset follow-through', note: `Compare ${basePair} with rates, ${event.currency === 'USD' ? 'DXY' : 'gold'} and the next related release.` },
+  ];
   return {
     id: event.id, country: { code: event.acuity?.countryCode || event.currency, name: event.country, flag: event.countryFlag }, category: event.category,
     name: event.currency === 'AUD' && /Manufacturing.*Services PMI/.test(event.title) ? 'Australia S&P Global Composite PMI' : event.title,
@@ -192,7 +219,7 @@ export function buildDemoIndicator(event: EconomicEvent): EconomicIndicator {
       { label: 'Source / data notes', text: 'Country, currency, category, description and event timing come from the calendar fixtures. API-shaped identifiers are mock values. All supplemental statistics, news, schedules and projections are illustrative.' },
     ], components, relatedIndicators, historicalSeries, forecastSeries,
     consensusHistory: isNumeric ? historicalSeries.slice(-6).map((point, i, points) => { const expectation = i === points.length - 1 ? consensus! : round(point.value + [0.2, -0.1, 0.3, -0.2, 0.1][i] * step); return { referencePeriod: point.period, releaseDate: `${point.period} · sample release`, actual: point.value, consensus: expectation, previous: i === 0 ? historicalSeries[5].value : points[i - 1].value, surprise: round(point.value - expectation) }; }) : [],
-    news, sessions, outlook,
+    news, sessions, outlook, affectedAssets, volatility, sentiment, marketStructure, releaseState, surpriseLabel,
     seededAlerts: [
       { id: `${event.id}-reminder`, indicatorId: event.id, name: kind === 'holiday' ? 'Reopening reminder' : 'Release reminder', type: 'Release', condition: 'Before release', triggerValue: '30', delivery: 'In-app', active: true },
       { id: `${event.id}-monitor`, indicatorId: event.id, name: kind === 'holiday' ? 'Schedule and liquidity updates' : 'New research brief', type: 'News', condition: 'Relevant news published', triggerValue: 'Any update', delivery: 'Email', active: false },

@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.50] - 2026-10-06
+### Changed
+- Refined economic indicator detail pages into a light provider-backed layout with release snapshots, affected-asset chips, news sentiment, and simulated market-reaction context.
+
+## [1.0.49] - 2026-10-06
+### Changed
+- Timeline event cards now switch to the shared calendar table area and open the existing event detail flow when selected.
+
+## [1.0.48] - 2026-10-06
+### Changed
+- Moved List mode into the Economic Calendar section using the existing white calendar table presentation and interactions.
+
+## [1.0.47] - 2026-10-06
+### Added
+- Added an accessible Visualization/List toggle for switching between the economic-calendar timeline and the existing filtered event list.
+
+## [1.0.46] - 2026-10-06
+### Added
+- Replaced the Next 24 hours strip with a responsive weekly Economic Calendar timeline linked to the shared impact filters, event details, and Calendar filters overlay.
+
+## [1.0.45] - 2026-10-06
+### Changed
+- Stacked the `Calendar filters` descriptor below the Economic Calendar tab label for a compact vertical control layout.
+
+## [1.0.44] - 2026-10-06
+### Changed
+- Added the visible `Calendar filters` descriptor and matching accessibility label to the Economic Calendar tab control.
+
+## [1.0.43] - 2026-10-06
+### Changed
+- Replaced the Economic Calendar week-at-a-glance card with a tab-anchored dark date-range picker for custom calendar filtering.
+- Added click-only and outside-dismiss behavior while preserving pinned picker interaction.
+- Expanded the picker into a fixed responsive overlay with a two-column desktop layout and stacked mobile layout.
+
+## [1.0.42] - 2026-10-06
+### Added
+- Added a replaceable mock economic-calendar provider contract with event snapshots, release state, surprise labels, affected assets, range metrics, overview tiles, and CSV export.
+- Added week-at-a-glance event counts, maximum impact, next-impactful-event countdown, release/surprise labels, and export affordances to the calendar.
+- Expanded indicator detail pages with affected assets, true/potential range scenarios, sentiment/news correlation, and market-structure context, plus actual-vs-forecast history visualization.
+
 ## [1.0.41] - 2026-10-05
 ### Reverted
 - Restored the pre-API local-demo calendar and Summary, Forecast, Consensus, and Alerts indicator detail experience, including populated holiday demo content.
