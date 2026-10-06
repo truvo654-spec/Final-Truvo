@@ -294,7 +294,13 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   const timelineIsSingleDay = timelineDays.length === 1;
   const detailDay = selectedDetailDay || todayKey;
   const detailEvents = selectedInstrumentGroup?.events || timelineEvents.filter((event) => eventKey(event) === detailDay);
-  const nextImpactful = useMemo(() => provider.getNextImpactfulEvent(NOW_MS), [provider, NOW_MS]);
+  const topUpcomingImpactful = useMemo(() => filtered
+    .filter((event) => !event.allDay && eventMs(event) > NOW_MS && event.impact !== 'Low')
+    .sort((a, b) => {
+      const impactDelta = IMPACT_STARS[b.impact] - IMPACT_STARS[a.impact];
+      return impactDelta || eventMs(a) - eventMs(b);
+    })
+    .slice(0, 3), [filtered, NOW_MS]);
   const countdown = (at: string) => {
     const remaining = Math.max(0, Date.parse(at) - NOW_MS);
     const hours = Math.floor(remaining / HOUR);
@@ -682,20 +688,47 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
           <>
             <div className="mb-6">
               <div className="rounded-2xl border border-[#ded8fb] bg-[#f6f3ff] p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#5338ec]"><Timer className="h-3.5 w-3.5" /> Next impactful release</p>
-                    {nextImpactful ? <button onClick={() => setSelectedEvent(nextImpactful.event)} className="mt-2 text-left">
-                      <p className="text-base font-bold text-[#0b1c30]">{nextImpactful.event.countryFlag} {nextImpactful.event.title}</p>
-                      <p className="mt-1 text-xs text-[#475569]">{nextImpactful.event.currency} · {whenLabel(nextImpactful.event)} · <span className="font-bold text-[#5338ec]">in {countdown(nextImpactful.event.at)}</span></p>
-                    </button> : <p className="mt-2 text-sm text-[#475569]">No upcoming medium or high-impact releases in this demo window.</p>}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#5338ec]"><Timer className="h-3.5 w-3.5" /> Top 3 upcoming impact</p>
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#5338ec]">
+                    {topUpcomingImpactful.filter((event) => event.impact === 'High').length} high impact
+                  </span>
+                </div>
+                {topUpcomingImpactful.length ? (
+                  <div className="mt-3 grid gap-3 lg:grid-cols-3">
+                    {topUpcomingImpactful.map((event) => {
+                      const snapshot = provider.getSnapshot(event);
+                      return (
+                        <button
+                          key={event.id}
+                          onClick={() => setSelectedEvent(event)}
+                          className="rounded-xl border border-[#ded8fb] bg-white p-3 text-left transition-shadow hover:shadow-md"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-bold uppercase tracking-wide text-[#64748b]">
+                                {event.countryFlag} {event.currency} · {whenLabel(event)}
+                              </p>
+                              <p className="mt-1 line-clamp-2 text-sm font-bold leading-5 text-[#0b1c30]">{event.title}</p>
+                            </div>
+                            <span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-bold ${
+                              event.impact === 'High' ? 'bg-rose-50 text-rose-600' : 'bg-sky-50 text-sky-700'
+                            }`}>
+                              {event.impact}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-xs font-bold text-[#5338ec]">in {countdown(event.at)}</p>
+                          <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-[#475569]">
+                            {snapshot.affectedAssets.slice(0, 2).map((asset) => <span key={asset} className="rounded-full border border-[#d9d1ff] bg-[#faf9ff] px-2 py-1">{asset}</span>)}
+                            <span className="rounded-full border border-[#d9d1ff] bg-[#faf9ff] px-2 py-1">Range {snapshot.trueRange}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                  {nextImpactful && <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#5338ec]">{nextImpactful.event.impact} impact</span>}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-[#475569]">
-                  {nextImpactful?.affectedAssets.map(asset => <span key={asset} className="rounded-full border border-[#d9d1ff] bg-white px-2 py-1">{asset}</span>)}
-                  {nextImpactful && <span className="rounded-full border border-[#d9d1ff] bg-white px-2 py-1">True range {nextImpactful.trueRange}</span>}
-                </div>
+                ) : (
+                  <p className="mt-3 text-sm text-[#475569]">No upcoming medium or high-impact releases match the selected dates and filters.</p>
+                )}
               </div>
             </div>
 

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.73] - 2026-10-06
+### Changed
+- Replaced the single next-release panel with an adaptive top-three upcoming impact watchlist driven by the selected dates and active filters.
+
 ## [1.0.72] - 2026-10-06
 ### Changed
 - Made each market-category header and event count clickable to apply that market type as the active calendar filter.
