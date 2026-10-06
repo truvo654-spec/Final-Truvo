@@ -894,19 +894,6 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
               </div>
             </div>
 
-            {range === 'custom' && (
-              <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
-                <label className="flex items-center gap-2 font-semibold text-[#474556]">
-                  From
-                  <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2 text-sm" />
-                </label>
-                <label className="flex items-center gap-2 font-semibold text-[#474556]">
-                  To
-                  <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-2 text-sm" />
-                </label>
-              </div>
-            )}
-
             {/* Time controls */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 text-sm">
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
