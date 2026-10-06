@@ -80,6 +80,17 @@ function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; 
   const maxPotentialRange = Math.max(...indicator.volatility.map((row) => rangeValue(row.potentialRange)), 1);
   const reactionSign = indicator.sentiment.label === 'Bearish' ? -1 : 1;
   const reaction = [0.06, 0.42, 0.24, 0.58].map((value) => reactionSign * value * (indicator.sentiment.score / 60));
+  const primaryAssetClass = indicator.affectedAssets[0]?.assetClass || 'Other';
+  const rangeUnit = primaryAssetClass === 'Forex' ? 'pips' : primaryAssetClass === 'Indices' ? 'points' : 'change %';
+  const rangeMultiplier = primaryAssetClass === 'Forex' ? 100 : primaryAssetClass === 'Indices' ? 50 : 1;
+  const rangeInMarketUnits = (value: string) => {
+    const percent = rangeValue(value);
+    return primaryAssetClass === 'Forex'
+      ? `${Math.round(percent * rangeMultiplier)} pips`
+      : primaryAssetClass === 'Indices'
+        ? `${(percent * rangeMultiplier).toFixed(1)} pts`
+        : `${percent.toFixed(2)}%`;
+  };
   return <div className="grid overflow-hidden bg-[#171821] text-white lg:grid-cols-[minmax(0,1fr)_270px]">
     <div className="min-w-0 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -111,8 +122,9 @@ function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; 
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-rose-500/80"><div className="h-full bg-emerald-400" style={{ width: `${indicator.sentiment.score}%` }} /></div>
       <div className="mt-1 flex justify-between text-[9px] text-slate-400"><span>Bearish {100 - indicator.sentiment.score}%</span><span>Bullish {indicator.sentiment.score}%</span></div>
       <p className="mt-1 text-[9px] text-slate-500">{indicator.sentiment.articleCount} related articles · {indicator.sentiment.window}</p>
-      <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">True range % / potential range %</p>
-      <div className="mt-2 space-y-2">{indicator.volatility.map((row) => { const width = Math.max(8, rangeValue(row.potentialRange) / maxPotentialRange * 100); return <div key={row.window}><div className="mb-1 flex justify-between text-[9px]"><span className="text-slate-400">{row.window}</span><span className="text-sky-300">{row.trueRange} / {row.potentialRange}</span></div><div className="h-1.5 rounded bg-white/10"><div className="h-full rounded bg-sky-400" style={{ width: `${width}%` }} /><div className="relative -mt-1.5 h-1.5 rounded bg-white" style={{ width: `${Math.max(6, rangeValue(row.trueRange) / maxPotentialRange * 100)}%` }} /></div></div>; })}</div>
+      <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">1H / 1D / 1W / 1M · true range % / potential range %</p>
+      <p className="mt-1 text-[9px] text-slate-500">Market-unit proxy: {rangeUnit}; white = true range, blue = potential range.</p>
+      <div className="mt-2 space-y-2">{indicator.volatility.map((row) => { const width = Math.max(8, rangeValue(row.potentialRange) / maxPotentialRange * 100); return <div key={row.window}><div className="mb-1 flex justify-between text-[9px]"><span className="text-slate-400">{row.window}</span><span className="text-sky-300">{row.trueRange} / {row.potentialRange}</span></div><div className="h-1.5 rounded bg-white/10"><div className="h-full rounded bg-sky-400" style={{ width: `${width}%` }} /><div className="relative -mt-1.5 h-1.5 rounded bg-white" style={{ width: `${Math.max(6, rangeValue(row.trueRange) / maxPotentialRange * 100)}%` }} /></div><p className="mt-1 text-[9px] text-slate-500">≈ {rangeInMarketUnits(row.trueRange)} / {rangeInMarketUnits(row.potentialRange)}</p></div>; })}</div>
     </aside>
   </div>;
 }

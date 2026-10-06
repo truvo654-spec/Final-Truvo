@@ -187,9 +187,10 @@ export function buildDemoIndicator(event: EconomicEvent): EconomicIndicator {
     { symbol: event.currency === 'USD' ? 'US500' : `${event.currency} equities`, assetClass: 'Indices', sensitivity: 'Low' as const, rationale: 'Risk appetite and discount-rate repricing can transmit into broader markets.' },
   ];
   const volatility = [
-    { window: '15 min', trueRange: event.impact === 'High' ? '0.35%' : '0.18%', potentialRange: event.impact === 'High' ? '0.60%' : '0.30%', confidence: 'Medium' },
-    { window: '1 hour', trueRange: event.impact === 'High' ? '0.80%' : '0.42%', potentialRange: event.impact === 'High' ? '1.40%' : '0.70%', confidence: 'Medium' },
-    { window: '1 day', trueRange: event.impact === 'High' ? '1.25%' : '0.68%', potentialRange: event.impact === 'High' ? '2.40%' : '1.20%', confidence: 'Low' },
+    { window: '1H', trueRange: event.impact === 'High' ? '0.80%' : '0.42%', potentialRange: event.impact === 'High' ? '1.40%' : '0.70%', confidence: 'Medium' },
+    { window: '1D', trueRange: event.impact === 'High' ? '1.25%' : '0.68%', potentialRange: event.impact === 'High' ? '2.40%' : '1.20%', confidence: 'Medium' },
+    { window: '1W', trueRange: event.impact === 'High' ? '2.10%' : '1.10%', potentialRange: event.impact === 'High' ? '3.80%' : '2.10%', confidence: 'Low' },
+    { window: '1M', trueRange: event.impact === 'High' ? '3.40%' : '1.80%', potentialRange: event.impact === 'High' ? '6.20%' : '3.40%', confidence: 'Low' },
   ];
   const releaseState = event.allDay ? 'All day' : Date.parse(event.at) <= Date.now() ? 'Released' : 'Upcoming';
   const surpriseLabel = latest === null || consensus === null ? 'Pending' : latest > consensus ? 'Beat' : latest < consensus ? 'Miss' : 'In line';

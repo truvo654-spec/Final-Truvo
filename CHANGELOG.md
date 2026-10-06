@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.91] - 2026-10-06
+### Changed
+- Expanded event-impact volatility horizons to 1H, 1D, 1W, and 1M, with market-aware pip, point, and percentage move comparisons.
+
 ## [1.0.90] - 2026-10-06
 ### Changed
 - Locked the calendar rail's AI Assistant entry for users below Level 3 and routed locked clicks to the existing upgrade prompt.
