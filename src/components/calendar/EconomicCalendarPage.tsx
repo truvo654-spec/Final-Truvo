@@ -1008,7 +1008,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                         {instrumentEvents.length}
                                       </span>
                                     </button>
-                                    <div className={instrumentEvents.length > 1 ? 'hidden' : timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'space-y-2'}>
+                                    <div className={timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'space-y-2'}>
                                       {instrumentEvents.map((event) => {
                                         const impactClass = event.impact === 'High'
                                           ? 'border-rose-400/40 bg-rose-400/10'

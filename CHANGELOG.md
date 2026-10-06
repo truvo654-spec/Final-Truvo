@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.70] - 2026-10-06
+### Fixed
+- Made populated multi-event instrument groups display their dummy event cards immediately instead of hiding them until group selection.
+
 ## [1.0.69] - 2026-10-06
 ### Added
 - Added same-day illustrative Index, Stock, Commodity, and Crypto events with instrument tickers for immediate visibility in the default calendar view.
