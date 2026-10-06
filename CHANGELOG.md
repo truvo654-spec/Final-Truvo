@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.65] - 2026-10-06
+### Changed
+- Made every instrument/currency group row actionable with linked mock detail data, including single-event groups.
+
 ## [1.0.64] - 2026-10-06
 ### Changed
 - Single-event instruments now render directly as linked cards; multi-event instruments expose a clickable group header that populates the detail-card strip below.

@@ -987,29 +987,27 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                       const isExpanded = expandedInstrumentGroup === instrumentGroupKey;
                                       return (
                                         <>
-                                    {instrumentEvents.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setExpandedInstrumentGroup(isExpanded ? null : instrumentGroupKey);
-                                          setSelectedInstrumentGroup(
-                                            isExpanded ? null : { market, currency, events: instrumentEvents }
-                                          );
-                                          setSelectedDetailDay(day);
-                                        }}
-                                        className={`mb-1.5 flex w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors ${
-                                          isExpanded ? 'bg-white/10' : 'hover:bg-white/5'
-                                        }`}
-                                        aria-expanded={isExpanded}
-                                      >
-                                        <span className="text-[9px] font-bold uppercase tracking-wide text-white/60">
-                                          {instrumentEvents[0].countryFlag} {currency}
-                                        </span>
-                                        <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/60">
-                                          {instrumentEvents.length}
-                                        </span>
-                                      </button>
-                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setExpandedInstrumentGroup(isExpanded ? null : instrumentGroupKey);
+                                        setSelectedInstrumentGroup(
+                                          isExpanded ? null : { market, currency, events: instrumentEvents }
+                                        );
+                                        setSelectedDetailDay(day);
+                                      }}
+                                      className={`mb-1.5 flex w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors ${
+                                        isExpanded ? 'bg-white/10' : 'hover:bg-white/5'
+                                      }`}
+                                      aria-expanded={isExpanded}
+                                    >
+                                      <span className="text-[9px] font-bold uppercase tracking-wide text-white/60">
+                                        {instrumentEvents[0].countryFlag} {currency}
+                                      </span>
+                                      <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/60">
+                                        {instrumentEvents.length}
+                                      </span>
+                                    </button>
                                     <div className={instrumentEvents.length > 1 ? 'hidden' : timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'space-y-2'}>
                                       {instrumentEvents.map((event) => {
                                         const impactClass = event.impact === 'High'
