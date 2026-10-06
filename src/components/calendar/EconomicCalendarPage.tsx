@@ -302,7 +302,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
       const impactDelta = IMPACT_STARS[b.impact] - IMPACT_STARS[a.impact];
       return impactDelta || eventMs(a) - eventMs(b);
     })
-    .slice(0, 3), [filtered, NOW_MS]);
+    .slice(0, 10), [filtered, NOW_MS]);
   const countdown = (at: string) => {
     const remaining = Math.max(0, Date.parse(at) - NOW_MS);
     const hours = Math.floor(remaining / HOUR);
@@ -703,7 +703,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
             <div className="mb-6">
               <div className="rounded-2xl border border-[#ded8fb] bg-[#f6f3ff] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#5338ec]"><Timer className="h-3.5 w-3.5" /> Top 3 upcoming impact</p>
+                  <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#5338ec]"><Timer className="h-3.5 w-3.5" /> Top 10 upcoming impact</p>
                   <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-[#5338ec]">
                     {topUpcomingImpactful.filter((event) => event.impact === 'High').length} high impact
                   </span>

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.83] - 2026-10-06
+### Changed
+- Expanded the adaptive upcoming-impact watchlist from the top 3 to the top 10 upcoming impactful events and updated its heading.
+
 ## [1.0.82] - 2026-10-06
 ### Changed
 - Removed the duplicate Summary historical participation chart, range controls, projection legend, and sample-stat cards so Event Impact history is the single primary reaction visualization.
