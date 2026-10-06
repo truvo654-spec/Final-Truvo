@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.85] - 2026-10-06
+### Changed
+- Made AI Assistant the default calendar side-panel view and moved it to the first rail position.
+- Added show/hide controls for the side-panel rail while keeping the active panel visible.
+
 ## [1.0.84] - 2026-10-06
 ### Added
 - Added a demo Google Calendar sync card to the profile, including local connection state, last-sync status, and an option to include watched economic-calendar events.

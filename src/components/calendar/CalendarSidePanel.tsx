@@ -10,6 +10,7 @@ import {
   Lock,
   X,
   ChevronRight,
+  ChevronLeft,
 } from 'lucide-react';
 import { EconomicEvent, Broker } from '../../types';
 import { instruments } from '../analysis/detail/mockMarket';
@@ -74,8 +75,8 @@ interface CalendarSidePanelProps {
 }
 
 const RAIL: { id: string; label: string; icon: React.ElementType; panel?: SidePanel; tab?: string }[] = [
-  { id: 'markets', label: 'Markets', icon: BarChart3, panel: 'markets' },
   { id: 'ai', label: 'AI Assistant', icon: Sparkles, panel: 'ai' },
+  { id: 'markets', label: 'Markets', icon: BarChart3, panel: 'markets' },
   { id: 'watchlist', label: 'Watchlist', icon: Star, panel: 'watchlist' },
   { id: 'alerts', label: 'Alerts', icon: Bell, panel: 'alerts' },
   { id: 'brokers', label: 'Top Brokers', icon: TrendingUp, tab: 'brokers' },
@@ -102,6 +103,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
   const [period, setPeriod] = useState<Period>('1D');
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [moversTab, setMoversTab] = useState<'active' | 'gainers' | 'losers'>('active');
+  const [railVisible, setRailVisible] = useState(true);
 
   const rows = useMemo(
     () => instruments.filter((i) => MARKET_FILTER[marketTab].includes(i.market)).slice(0, 8),
@@ -372,24 +374,45 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
       </div>
 
       {/* Icon rail */}
-      <div className="w-[76px] shrink-0 border-l border-[#f1f5f9] bg-[#fcfcfe] flex flex-col py-2">
-        {RAIL.map((r) => {
-          const Icon = r.icon;
-          const active = r.panel === panel;
-          return (
-            <button
-              key={r.id}
-              onClick={() => (r.panel ? onPanelChange(r.panel) : r.tab && onNavigateToTab?.(r.tab))}
-              className={`flex flex-col items-center gap-1 py-3 px-1 text-[10px] font-semibold leading-tight text-center transition-colors ${
-                active ? 'text-[#5338ec]' : 'text-[#474556] hover:text-[#5338ec]'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              {r.label}
-            </button>
-          );
-        })}
-      </div>
+      {railVisible ? (
+        <div className="w-[76px] shrink-0 border-l border-[#f1f5f9] bg-[#fcfcfe] flex flex-col py-2">
+          <button
+            type="button"
+            onClick={() => setRailVisible(false)}
+            aria-label="Hide calendar side panel rail"
+            title="Hide side panel rail"
+            className="mx-auto mb-1 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-[#5338ec]"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          {RAIL.map((r) => {
+            const Icon = r.icon;
+            const active = r.panel === panel;
+            return (
+              <button
+                key={r.id}
+                onClick={() => (r.panel ? onPanelChange(r.panel) : r.tab && onNavigateToTab?.(r.tab))}
+                className={`flex flex-col items-center gap-1 py-3 px-1 text-[10px] font-semibold leading-tight text-center transition-colors ${
+                  active ? 'text-[#5338ec]' : 'text-[#474556] hover:text-[#5338ec]'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                {r.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setRailVisible(true)}
+          aria-label="Show calendar side panel rail"
+          title="Show side panel rail"
+          className="flex w-8 shrink-0 items-center justify-center border-l border-[#f1f5f9] bg-[#fcfcfe] text-slate-400 transition-colors hover:text-[#5338ec]"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 };
