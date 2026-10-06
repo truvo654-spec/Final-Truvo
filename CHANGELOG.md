@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.79] - 2026-10-06
+### Added
+- Added a combined event-impact chart with actual-versus-forecast history, surprise points, true-range bars, reaction windows, sentiment split, and potential-range visualization.
+
 ## [1.0.78] - 2026-10-06
 ### Changed
 - Enabled multi-select Market Type filtering with inclusive filtering across selected markets.

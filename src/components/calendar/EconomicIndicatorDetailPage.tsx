@@ -63,6 +63,57 @@ function ResearchChart({ historical, forecasts = [], unit, threshold }: { histor
     {points.map((point, i) => <g key={`${point.period}-${i}`}><circle cx={x(i)} cy={y(point.value)} r="3" fill={i >= history.length ? '#0284c7' : '#5338ec'}><title>{point.period}: {number(point.value)} {unit}{i >= history.length ? ' (projection)' : ' (sample history)'}</title></circle>{(i % Math.max(1, Math.ceil(points.length / 6)) === 0 || i === points.length - 1) && <text x={x(i)} y="215" textAnchor="middle" fill="#64748b" fontSize="10">{point.period}</text>}</g>)}
   </svg></div><div className="flex flex-wrap gap-4 px-4 pb-3 text-[11px] text-slate-500"><span>● Sample history</span>{forecasts.length > 0 && <span className="text-sky-600">┄ Model projections</span>}</div></div>;
 }
+function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; asset: string }) {
+  const rows = indicator.consensusHistory.slice(-12);
+  if (!rows.length) return <div className="bg-[#171821] p-5 text-sm text-slate-400">No numeric actual-versus-forecast history is available for this event type.</div>;
+  const values = rows.flatMap((row) => [row.actual, row.consensus]);
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const padding = Math.max((high - low) * 0.18, 0.2);
+  const min = low - padding;
+  const max = high + padding;
+  const x = (index: number) => 48 + index / Math.max(rows.length - 1, 1) * 690;
+  const y = (value: number) => 190 - ((value - min) / Math.max(max - min, 1)) * 135;
+  const line = (key: 'actual' | 'consensus') => rows.map((row, index) => `${index === 0 ? 'M' : 'L'} ${x(index)} ${y(row[key])}`).join(' ');
+  const rangeValue = (value: string) => Number.parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
+  const maxRange = Math.max(...indicator.volatility.map((row) => rangeValue(row.potentialRange)), 1);
+  const reactionSign = indicator.sentiment.label === 'Bearish' ? -1 : 1;
+  const reaction = [0.06, 0.42, 0.24, 0.58].map((value) => reactionSign * value * (indicator.sentiment.score / 60));
+  return <div className="grid overflow-hidden bg-[#171821] text-white lg:grid-cols-[minmax(0,1fr)_270px]">
+    <div className="min-w-0 p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-base font-semibold">History of {indicator.name}</h3>
+        <div className="flex flex-wrap gap-3 text-[10px] text-slate-400"><span><span className="mr-1 inline-block h-2 w-5 bg-white" />Actual</span><span><span className="mr-1 inline-block h-2 w-5 border-t border-dashed border-slate-400 align-middle" />Forecast</span><span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-white" />True range</span></div>
+      </div>
+      <div className="mt-3 overflow-x-auto">
+        <svg viewBox="0 0 760 240" className="min-w-[620px] w-full" role="img" aria-label={`${indicator.name} actual, forecast and true range chart`}>
+          {[0, 1, 2, 3, 4].map((step) => { const value = min + step / 4 * (max - min); return <g key={step}><line x1="48" x2="720" y1={y(value)} y2={y(value)} stroke="#2d303b" strokeDasharray="2 4" /><text x="41" y={y(value) + 4} textAnchor="end" fill="#8b90a3" fontSize="9">{number(value)}</text></g>; })}
+          <path d={line('consensus')} stroke="#858aa3" strokeWidth="1.8" strokeDasharray="6 5" fill="none" />
+          <path d={line('actual')} stroke="#f8fafc" strokeWidth="2" fill="none" />
+          {rows.map((row, index) => {
+            const barHeight = Math.max(7, rangeValue(indicator.volatility[index % indicator.volatility.length]?.potentialRange || '0') / maxRange * 48);
+            return <g key={`${row.referencePeriod}-${index}`}>
+              <rect x={x(index) - 5} y={202 - barHeight} width="10" height={barHeight} rx="2" fill="#f8fafc" />
+              <circle cx={x(index)} cy={y(row.actual)} r="3.2" fill={row.surprise >= 0 ? '#34d399' : '#f43f5e'}><title>{row.referencePeriod}: actual {number(row.actual)}, forecast {number(row.consensus)}</title></circle>
+              {(index % 2 === 0 || index === rows.length - 1) && <text x={x(index)} y="224" textAnchor="middle" fill="#8b90a3" fontSize="9">{row.referencePeriod}</text>}
+            </g>;
+          })}
+        </svg>
+      </div>
+      <p className="mt-2 text-[10px] text-slate-400">Illustrative history. Green/red points indicate a positive/negative surprise versus forecast; bars show potential range.</p>
+    </div>
+    <aside className="border-t border-white/10 p-4 sm:p-5 lg:border-l lg:border-t-0">
+      <p className="text-sm font-semibold">What happened to {asset}</p>
+      <p className="mt-4 text-[10px] font-semibold text-slate-400">Price after the event</p>
+      <div className="mt-2 grid grid-cols-4 gap-2 text-center">{['1H', '1D', '1W', '1M'].map((window, index) => <div key={window}><p className="text-[9px] text-slate-400">{window}</p><p className={`mt-1 text-xs font-bold ${reaction[index] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{reaction[index] >= 0 ? '+' : ''}{reaction[index].toFixed(2)}%</p></div>)}</div>
+      <p className="mt-5 text-[10px] font-semibold text-slate-400">News sentiment before the event</p>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-rose-500/80"><div className="h-full bg-emerald-400" style={{ width: `${indicator.sentiment.score}%` }} /></div>
+      <div className="mt-1 flex justify-between text-[9px] text-slate-400"><span>Bearish {100 - indicator.sentiment.score}%</span><span>Bullish {indicator.sentiment.score}%</span></div>
+      <p className="mt-5 text-[10px] font-semibold text-slate-400">Potential range based on sample history</p>
+      <div className="mt-2 grid grid-cols-4 items-end gap-2">{indicator.volatility.map((row) => { const height = Math.max(18, rangeValue(row.potentialRange) / maxRange * 58); return <div key={row.window} className="text-center"><div className="mx-auto w-8 rounded-t bg-white" style={{ height }} /><p className="mt-1 text-[9px] text-slate-400">{row.window}</p><p className="text-[9px] text-sky-300">{row.potentialRange}</p></div>; })}</div>
+    </aside>
+  </div>;
+}
 function Relations({ rows, onSelect }: { rows: IndicatorRelation[]; onSelect: (row: IndicatorRelation) => void }) {
   return <div className="overflow-x-auto"><table className="w-full text-xs"><thead className={headings}><tr>{['Indicator', 'Latest', 'Previous', 'Unit', 'Period'].map(h => <th key={h} className={cell}>{h}</th>)}</tr></thead><tbody>{rows.map(row => <tr key={row.id} className="border-t border-slate-100 hover:bg-[#f8fafc]"><td className={cell}><button className="text-left font-semibold text-[#5338ec] hover:underline" onClick={() => onSelect(row)}>{row.name}</button><p className="mt-1 text-[10px] text-slate-500">{row.state}</p></td><td className={`${cell} tabular-nums`}>{number(row.latest)}</td><td className={`${cell} tabular-nums`}>{number(row.previous)}</td><td className={cell}>{row.unit}</td><td className={`${cell} whitespace-nowrap`}>{row.referencePeriod}</td></tr>)}</tbody></table></div>;
 }
@@ -178,6 +229,7 @@ export const EconomicIndicatorDetailPage: React.FC<EconomicIndicatorDetailPagePr
           <Section title="Affected assets" note="Illustrative sensitivity map"><div className="divide-y divide-slate-100">{indicator.affectedAssets.map(asset => <button key={asset.symbol} onClick={() => onNavigateToInstrument?.(asset.symbol)} className="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-3 text-left hover:bg-[#f8fafc]"><div><p className="text-xs font-bold text-[#5338ec]">{asset.symbol} <span className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">{asset.assetClass}</span></p><p className="mt-1 text-xs text-slate-600">{asset.rationale}</p></div><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${asset.sensitivity === 'High' ? 'bg-rose-50 text-rose-600' : asset.sensitivity === 'Medium' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>{asset.sensitivity} sensitivity</span></button>)}</div></Section>
           {!numeric && <Section title={indicator.kind === 'holiday' ? 'Affected markets & reopening schedule' : 'Event agenda'} note="Illustrative calendar"><SessionTable indicator={indicator} onSymbol={onNavigateToInstrument} /></Section>}
           <Section title={chartTitle} note={numeric ? indicator.unit : 'Simulated analytical proxy'}><ResearchChart historical={indicator.historicalSeries} unit={indicator.unit} threshold={indicator.neutralThreshold} /><div className="grid grid-cols-2 gap-px border-t border-slate-200 bg-slate-200 sm:grid-cols-4">{[{ label: 'Sample average', value: number(historyStats.average) }, { label: 'Sample high', value: `${number(historyStats.high)} · ${historyStats.highDate}` }, { label: 'Sample low', value: `${number(historyStats.low)} · ${historyStats.lowDate}` }, { label: 'Coverage', value: historyStats.coverage }].map(s => <div key={s.label} className="bg-white px-4 py-3"><p className="text-[10px] uppercase text-slate-500">{s.label}</p><p className="mt-1 text-xs font-semibold">{s.value}</p></div>)}</div>{indicator.neutralThreshold !== null && <p className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">PMI: 50 = neutral · Above 50 = expansion · Below 50 = contraction</p>}</Section>
+          <Section title="Event impact history" note="Actual vs forecast · illustrative ranges"><EventImpactChart indicator={indicator} asset={primaryAsset} /></Section>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
             <Section title="News & insights" note="Provider-linked demo context"><div className="p-4"><div className="mb-4 flex items-center justify-between gap-3"><div><p className="text-xs font-bold text-[#0b1c30]">News sentiment before the event</p><p className="mt-1 text-[11px] text-slate-500">Illustrative correlation from related articles</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${indicator.sentiment.label === 'Bullish' ? 'bg-emerald-50 text-emerald-700' : indicator.sentiment.label === 'Bearish' ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600'}`}>{indicator.sentiment.label}</span></div><div className="h-2 overflow-hidden rounded-full bg-rose-100"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${indicator.sentiment.score}%` }} /></div><div className="mt-2 flex justify-between text-[10px] font-semibold text-slate-500"><span>Bearish {100 - indicator.sentiment.score}%</span><span>Bullish {indicator.sentiment.score}%</span></div><p className="mt-4 text-xs leading-5 text-slate-600">{indicator.sentiment.rationale}</p></div></Section>
             <Section title={`What happened to ${primaryAsset}`} note="Simulated reaction bands"><div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-2">{['1H', '1D', '1W', '1M'].map((window, index) => <div key={window} className="rounded-lg bg-[#f8fafc] p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{window}</p><p className={`mt-1 text-sm font-bold ${providerSurprise === null ? 'text-slate-500' : providerSurprise >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{providerSurprise === null ? '—' : `${providerSurprise >= 0 ? '+' : ''}${(providerSurprise * [0.4, 0.8, 0.6, 1.1][index]).toFixed(2)}%`}</p></div>)}</div><p className="border-t border-slate-100 px-4 py-3 text-[11px] leading-5 text-slate-500">{reactionDirection}. True range {providerSnapshot.trueRange}; potential range {providerSnapshot.potentialRange}. These values are illustrative, not a price target.</p></Section>
