@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.96] - 2026-10-06
+### Fixed
+- Stabilized timeline market-group filtering by centralizing asset-class normalization and adding explicit selected-state feedback to group buttons.
+
 ## [1.0.95] - 2026-10-06
 ### Changed
 - Enhanced the calendar rail Personalize promotion with a neon glow, animated beacon, Promo badge, and motion-safe pulse.

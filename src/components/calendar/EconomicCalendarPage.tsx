@@ -51,6 +51,8 @@ type FilterMenu = 'range' | 'impact' | 'countries' | 'marketType' | 'category' |
 type FilterId = Exclude<FilterMenu, null>;
 type MarketType = 'All Markets' | 'Forex' | 'Indices' | 'Stocks' | 'Commodities' | 'Crypto' | 'Other';
 const MARKET_TYPE_OPTIONS: MarketType[] = ['All Markets', 'Forex', 'Indices', 'Stocks', 'Commodities', 'Crypto'];
+const marketTypeForAssetClass = (assetClass?: EconomicEvent['assetClass']): MarketType =>
+  assetClass === 'Commodity' ? 'Commodities' : assetClass || 'Other';
 
 const DEFAULT_FILTER_ORDER: FilterId[] = ['range', 'impact', 'countries', 'marketType', 'category', 'timezone'];
 
@@ -258,7 +260,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
         if (k < rangeFrom || k > rangeTo) return false;
         if (!impSel[IMPACT_STARS[e.impact]]) return false;
         if (countrySel.length && !countrySel.includes(e.currency)) return false;
-        if (!marketTypes.includes('All Markets') && !marketTypes.some((market) => e.assetClass === (market === 'Commodities' ? 'Commodity' : market))) return false;
+        if (!marketTypes.includes('All Markets') && !marketTypes.includes(marketTypeForAssetClass(e.assetClass))) return false;
         if (catSel.length && !catSel.some((label) => CALENDAR_CATEGORY_MATCHES[label as keyof typeof CALENDAR_CATEGORY_MATCHES]?.includes(e.category))) return false;
         const instrumentSearch = instrumentQuery.trim().toLowerCase();
         if (instrumentSearch && ![e.currency, e.country, e.assetClass, e.title].some((value) => value.toLowerCase().includes(instrumentSearch))) return false;
@@ -1021,8 +1023,9 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                             <section key={market} className="rounded-xl border border-white/10 bg-white/[0.025] p-1.5">
                               <button
                                 type="button"
-                                onClick={() => toggleMarketType(market === 'Commodity' ? 'Commodities' : market as MarketType)}
-                                className="mb-1.5 flex w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors hover:bg-white/5"
+                                onClick={() => toggleMarketType(marketTypeForAssetClass(market as EconomicEvent['assetClass']))}
+                                aria-pressed={marketTypes.includes(marketTypeForAssetClass(market as EconomicEvent['assetClass']))}
+                                className={`mb-1.5 flex w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors hover:bg-white/5 ${marketTypes.includes(marketTypeForAssetClass(market as EconomicEvent['assetClass'])) ? 'bg-white/10' : ''}`}
                                 aria-label={`Filter calendar to ${market} events`}
                               >
                                 <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">{market}</span>
