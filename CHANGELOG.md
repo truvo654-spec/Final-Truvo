@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.84] - 2026-10-06
+### Added
+- Added a demo Google Calendar sync card to the profile, including local connection state, last-sync status, and an option to include watched economic-calendar events.
+
 ## [1.0.83] - 2026-10-06
 ### Changed
 - Expanded the adaptive upcoming-impact watchlist from the top 3 to the top 10 upcoming impactful events and updated its heading.

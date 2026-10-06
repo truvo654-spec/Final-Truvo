@@ -9,6 +9,9 @@ import {
   Check,
   Shield,
   CreditCard,
+  CalendarDays,
+  CheckCircle2,
+  Star,
   User,
   Bookmark,
   Plus,
@@ -91,6 +94,36 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   
   // Edit Profile Modal ("Change Things About You")
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [googleCalendarConnected, setGoogleCalendarConnected] = useState(() => {
+    try { return localStorage.getItem('marketsyde.google-calendar-connected') === 'true'; } catch { return false; }
+  });
+  const [syncWatchedEvents, setSyncWatchedEvents] = useState(() => {
+    try { return localStorage.getItem('marketsyde.google-calendar-watchlist') !== 'false'; } catch { return true; }
+  });
+  const [lastCalendarSync, setLastCalendarSync] = useState<string | null>(() => {
+    try { return localStorage.getItem('marketsyde.google-calendar-last-sync'); } catch { return null; }
+  });
+
+  const toggleGoogleCalendar = () => {
+    const next = !googleCalendarConnected;
+    setGoogleCalendarConnected(next);
+    try { localStorage.setItem('marketsyde.google-calendar-connected', String(next)); } catch {}
+    if (next) {
+      const timestamp = new Date().toISOString();
+      setLastCalendarSync(timestamp);
+      try { localStorage.setItem('marketsyde.google-calendar-last-sync', timestamp); } catch {}
+      onShowToast(syncWatchedEvents ? 'Demo Google Calendar sync enabled for watched events' : 'Demo Google Calendar sync enabled');
+    } else {
+      onShowToast('Demo Google Calendar sync disconnected');
+    }
+  };
+
+  const toggleWatchedEventSync = () => {
+    const next = !syncWatchedEvents;
+    setSyncWatchedEvents(next);
+    try { localStorage.setItem('marketsyde.google-calendar-watchlist', String(next)); } catch {}
+    onShowToast(next ? 'Watched events will be included in the next calendar sync' : 'Watched events excluded from calendar sync');
+  };
 
   // Handlers for Saved Calculations
   const handleStartRename = (calc: SavedCalculation) => {
@@ -542,6 +575,39 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   <p className="text-xs sm:text-sm text-slate-700 leading-relaxed max-w-3xl">
                     {bioDisplay}
                   </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-[#e2e8f0] bg-white p-4 sm:p-5 shadow-2xs">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f1f5ff] text-[#5338ec]">
+                      <CalendarDays className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[#0b1c30]">Google Calendar sync</h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        Add watched economic-calendar events to a Google Calendar. This MVP uses a local demo connection and never asks for Google credentials.
+                      </p>
+                      {lastCalendarSync && <p className="mt-2 text-[10px] text-slate-400">Last demo sync: {new Date(lastCalendarSync).toLocaleString()}</p>}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleGoogleCalendar}
+                    className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-colors ${googleCalendarConnected ? 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-[#5338ec] text-white hover:bg-[#4326d8]'}`}
+                  >
+                    {googleCalendarConnected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <CalendarDays className="h-3.5 w-3.5" />}
+                    {googleCalendarConnected ? 'Connected' : 'Sync Google Calendar'}
+                  </button>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                    <input type="checkbox" checked={syncWatchedEvents} onChange={toggleWatchedEventSync} className="h-3.5 w-3.5 accent-[#5338ec]" />
+                    <Star className="h-3.5 w-3.5 text-amber-500" />
+                    Include watched events
+                  </label>
+                  <span className="text-[10px] text-slate-400">{googleCalendarConnected ? 'Demo sync active' : 'Not connected'}</span>
                 </div>
               </div>
             </div>
