@@ -194,6 +194,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   const [calendarPickerPinned, setCalendarPickerPinned] = useState(false);
   const calendarPickerRootRef = useRef<HTMLDivElement>(null);
   const calendarVisualizationRef = useRef<HTMLDivElement>(null);
+  const impactCarouselRef = useRef<HTMLDivElement>(null);
   const [isCalendarFullscreen, setIsCalendarFullscreen] = useState(false);
 
   const hasAiAccess = isLoggedIn && userTierLevel >= 3;
@@ -695,14 +696,23 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                   </span>
                 </div>
                 {topUpcomingImpactful.length ? (
-                  <div className="mt-3 grid gap-3 lg:grid-cols-3">
+                  <div className="relative mt-3">
+                    <button
+                      type="button"
+                      onClick={() => impactCarouselRef.current?.scrollBy({ left: -380, behavior: 'smooth' })}
+                      aria-label="Show previous upcoming impact events"
+                      className="absolute left-1 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-[#ded8fb] bg-white p-1.5 text-[#5338ec] shadow-sm hover:bg-[#faf9ff] sm:block"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <div ref={impactCarouselRef} className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 scrollbar-none">
                     {topUpcomingImpactful.map((event) => {
                       const snapshot = provider.getSnapshot(event);
                       return (
                         <button
                           key={event.id}
                           onClick={() => setSelectedEvent(event)}
-                          className="rounded-xl border border-[#ded8fb] bg-white p-3 text-left transition-shadow hover:shadow-md"
+                          className="w-full min-w-[min(100%,360px)] snap-start rounded-xl border border-[#ded8fb] bg-white p-3 text-left transition-shadow hover:shadow-md sm:min-w-[calc(50%-6px)] lg:min-w-[calc(33.333%-8px)]"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
@@ -725,6 +735,15 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                         </button>
                       );
                     })}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => impactCarouselRef.current?.scrollBy({ left: 380, behavior: 'smooth' })}
+                      aria-label="Show next upcoming impact events"
+                      className="absolute right-1 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-[#ded8fb] bg-white p-1.5 text-[#5338ec] shadow-sm hover:bg-[#faf9ff] sm:block"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-[#475569]">No upcoming medium or high-impact releases match the selected dates and filters.</p>

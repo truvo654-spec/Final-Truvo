@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.74] - 2026-10-06
+### Changed
+- Made the adaptive top-three impact watchlist horizontally slidable with snap scrolling and desktop navigation controls.
+
 ## [1.0.73] - 2026-10-06
 ### Changed
 - Replaced the single next-release panel with an adaptive top-three upcoming impact watchlist driven by the selected dates and active filters.
