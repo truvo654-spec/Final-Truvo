@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.68] - 2026-10-06
+### Changed
+- Reworded the event-detail demo notice as an introductory explanation of the available research sections.
+
 ## [1.0.67] - 2026-10-06
 ### Added
 - Added an `Other` market type with illustrative bond, credit, and sovereign-spread events and filter support.
