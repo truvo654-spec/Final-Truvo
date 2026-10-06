@@ -1,3 +1,5 @@
+import { HashtagText } from '../hashtag/HashtagText';
+import { openHashtag } from '../../lib/hashtagNav';
 import React, { useState } from 'react';
 import {
   Search,
@@ -471,7 +473,7 @@ export const CommunityFeedsView: React.FC<CommunityFeedsViewProps> = ({
                   {/* Post Content */}
                   <div className="space-y-2 mb-2.5">
                     <p className="text-xs text-[#0b1c30] leading-relaxed whitespace-pre-line">
-                      {post.content}
+                      <HashtagText text={post.content} linkClassName="text-[#5338ec] font-semibold" />
                     </p>
 
                     {/* Embedded Image Graphic */}
@@ -527,7 +529,7 @@ export const CommunityFeedsView: React.FC<CommunityFeedsViewProps> = ({
                           <button
                             key={tag}
                             type="button"
-                            onClick={() => setSearchQuery(tag)}
+                            onClick={() => openHashtag(tag)}
                             className="text-[10px] font-semibold text-[#159b78] hover:text-[#5338ec] transition-colors"
                           >
                             #{tag}

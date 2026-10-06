@@ -10,6 +10,7 @@ export interface RouteResolution {
   calcTool?: string;
   subTab?: string;
   promotionId?: string;
+  hashtag?: string;
   isNotFound?: boolean;
 }
 
@@ -198,6 +199,13 @@ export const ROUTE_REGISTRY: Record<string, RouteItem> = {
     category: 'Brokers',
     breadcrumbs: ['Brokers', 'Compare Brokers'],
   },
+  hashtag: {
+    path: '/hashtag',
+    tab: 'hashtag',
+    title: 'Hashtag | MarketSyde',
+    category: 'Community',
+    breadcrumbs: ['Community', 'Hashtag'],
+  },
   promotions: {
     path: '/brokers/promotions',
     tab: 'promotions',
@@ -378,8 +386,11 @@ export const ROUTE_REGISTRY: Record<string, RouteItem> = {
  */
 export function tabToPath(
   tab: string,
-  params?: { brokerId?: string; signalId?: string; calcTool?: string; promotionId?: string }
+  params?: { brokerId?: string; signalId?: string; calcTool?: string; promotionId?: string; hashtag?: string }
 ): string {
+  if (tab === 'hashtag' && params?.hashtag) {
+    return `/hashtag/${encodeURIComponent(params.hashtag)}`;
+  }
   if (tab === 'promotions' && params?.promotionId) {
     return `/brokers/promotions/${encodeURIComponent(params.promotionId)}`;
   }
@@ -500,6 +511,10 @@ export function pathToState(rawPath: string): RouteResolution {
   }
   if (pathname === '/brokers/compare') {
     return { tab: 'broker-comparison' };
+  }
+  const hashtagMatch = pathname.match(/^\/hashtag\/([^/]+)$/);
+  if (hashtagMatch) {
+    return { tab: 'hashtag', hashtag: decodeURIComponent(hashtagMatch[1]) };
   }
   if (pathname === '/brokers/promotions') {
     return { tab: 'promotions' };

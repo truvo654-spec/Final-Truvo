@@ -180,7 +180,7 @@ export const COURSES: Course[] = [
   {
     id: 'course_4',
     title: 'Crypto Fundamentals for Traders',
-    summary: 'What actually drives crypto price action — funding rates, on-chain flows, and how it differs from FX.',
+    summary: 'What actually drives crypto price action, from Bitcoin to altcoins: funding rates, on-chain flows, and how it differs from FX.',
     category: 'Crypto',
     level: 'Beginner',
     thumbnail: COURSE_CRYPTO,

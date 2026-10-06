@@ -312,7 +312,7 @@ export const ECONOMIC_EVENTS: EconomicEvent[] = [
         assetClass: 'Crypto',
         relatedArticleId: 'news_5',
         relatedSignalTicker: 'ETH',
-        summary: 'A congressional committee hearing on digital-asset market-structure legislation. Headline risk is elevated around regulatory commentary.',
+        summary: 'A congressional committee hearing on digital-asset market-structure legislation. Headline risk is elevated around regulatory commentary, which can move Bitcoin and other major coins.',
       },
     },
     { at: '2026-10-15T11:30:00+07:00', cur: 'AUD', title: 'Employment Change (Sep)', imp: 3, cat: 'Employment', f: '25.0K', p: '47.5K' },

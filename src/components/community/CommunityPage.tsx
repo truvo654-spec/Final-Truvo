@@ -1,3 +1,4 @@
+import { HashtagLink } from '../hashtag/HashtagText';
 import React, { useState } from 'react';
 import {
   Bell,
@@ -444,7 +445,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({
               <aside className="border-b border-[#e2e8f0] bg-slate-50/60 p-4 lg:border-b-0 lg:border-r">
                 <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Explore topics</p>
                 <div className="space-y-1 text-sm"><button type="button" onClick={() => setActiveSubTab('topics')} className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-600 hover:bg-white">Home</button><button type="button" className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-600 hover:bg-white">Popular</button><button type="button" className="w-full rounded-lg px-3 py-2 text-left font-semibold text-slate-600 hover:bg-white">Market News</button><button type="button" onClick={() => showToast('Start a topic flow opened')} className="w-full rounded-lg px-3 py-2 text-left text-slate-600 hover:bg-white">＋ Start a topic</button></div>
-                <div className="mt-5 border-t border-[#e2e8f0] pt-4"><p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Trending hashtags</p><div className="flex flex-wrap gap-1.5">{['#BTC','#Macro','#Technical','#Fundamental','#Forex','#Stocks','#Crypto','#Earnings'].map((tag) => <span key={tag} className="rounded-full bg-violet-50 px-2 py-1 text-[10px] font-semibold text-violet-700">{tag}</span>)}</div></div>
+                <div className="mt-5 border-t border-[#e2e8f0] pt-4"><p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">Trending hashtags</p><div className="flex flex-wrap gap-1.5">{['#BTC','#Macro','#Technical','#Fundamental','#Forex','#Stocks','#Crypto','#Earnings'].map((tag) => <HashtagLink key={tag} tag={tag} className="rounded-full bg-violet-50 px-2 py-1 text-[10px] font-semibold text-violet-700">{tag}</HashtagLink>)}</div></div>
               </aside>
               <div className="space-y-6 p-4"><section><div className="mb-3 flex items-center gap-2"><span className="text-lg">▶</span><h2 className="text-lg font-bold text-[#0b1c30]">Shorts</h2></div><div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3">{[
                 ['https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=500&auto=format&fit=crop&q=80','FOMC #Trading #Crypto #Bitcoin · @CryptoBanter','4.2k views'],

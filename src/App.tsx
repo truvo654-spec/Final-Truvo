@@ -54,6 +54,8 @@ import { NewsListPage } from './components/news/NewsListPage';
 import { NewsDetailPage } from './components/news/NewsDetailPage';
 import { canAccessNews, NEWS_ARTICLES } from './data/newsData';
 import { newsFollows } from './data/newsFollows';
+import { HashtagPage } from './components/hashtag/HashtagPage';
+import { HASHTAG_EVENT } from './lib/hashtagNav';
 import { findNewsById } from './data/newsIncoming';
 import { EconomicCalendarPage } from './components/calendar/EconomicCalendarPage';
 import { EducationHubPage } from './components/education/EducationHubPage';
@@ -113,6 +115,7 @@ const KNOWN_APP_TABS = new Set([
   'news',
   'news-detail',
   'news-writer',
+  'hashtag',
   'economic-calendar',
   'education-hub',
   'portfolio-tracker',
@@ -261,6 +264,8 @@ export default function App() {
 
   // Which promotion detail is open (drives /brokers/promotions/<id> so the Share link is real)
   const [promotionDetailId, setPromotionDetailId] = useState<string | null>(initialRoute.promotionId ?? null);
+  // Which #hashtag page is open (drives /hashtag/<tag>)
+  const [hashtag, setHashtag] = useState<string | null>(initialRoute.hashtag ?? null);
 
   const [brokers, setBrokers] = useState<Broker[]>(INITIAL_BROKERS);
   const [signals, setSignals] = useState<MarketSignal[]>(INITIAL_SIGNALS);
@@ -499,6 +504,7 @@ export default function App() {
           ? selectedSignal?.id || selectedSignal?.ticker?.toLowerCase().replace('/', '')
           : undefined,
       promotionId: activeTab === 'promotions' ? promotionDetailId ?? undefined : undefined,
+      hashtag: activeTab === 'hashtag' ? hashtag ?? undefined : undefined,
     });
 
     if (currentPath !== targetPath) {
@@ -509,7 +515,7 @@ export default function App() {
     if (meta?.title) {
       document.title = meta.title;
     }
-  }, [activeTab, selectedBrokerForDetail?.id, selectedBrokerForDetail?.name, selectedSignal?.id, promotionDetailId]);
+  }, [activeTab, selectedBrokerForDetail?.id, selectedBrokerForDetail?.name, selectedSignal?.id, promotionDetailId, hashtag]);
 
   // Leaving Promotions closes any open offer, so coming back starts at the list
   useEffect(() => {
@@ -522,6 +528,7 @@ export default function App() {
       const res = pathToState(window.location.pathname);
       setActiveTab(res.tab);
       setPromotionDetailId(res.tab === 'promotions' ? res.promotionId ?? null : null);
+      if (res.tab === 'hashtag') setHashtag(res.hashtag ?? null);
       if (res.brokerId) {
         const found = brokers.find(
           (b) =>
@@ -589,6 +596,19 @@ export default function App() {
       setToastMessage(null);
     }, 3500);
   };
+
+  // Any #hashtag in the app opens its hashtag page
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const tag = (e as CustomEvent<string>).detail;
+      if (!tag) return;
+      setHashtag(tag);
+      setActiveTab('hashtag');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener(HASHTAG_EVENT, onOpen);
+    return () => window.removeEventListener(HASHTAG_EVENT, onOpen);
+  }, []);
 
   // A followed writer published something and notifications are on: say so wherever the member is
   useEffect(
@@ -1385,6 +1405,37 @@ export default function App() {
             isBroker={false}
             onUpgradePrompt={() => setActiveTab('member-plan')}
             onShowToast={showToast}
+          />
+        )}
+
+        {/* ─── TAB: Hashtag (everything on MarketSyde about one #tag) ─── */}
+        {activeTab === 'hashtag' && hashtag && (
+          <HashtagPage
+            tag={hashtag}
+            onBack={() => {
+              if (window.history.length > 1) window.history.back();
+              else setActiveTab('community');
+            }}
+            onNavigateToTab={(tab) => {
+              setActiveTab(tab);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenArticle={(article) => {
+              setSelectedNewsArticle(article);
+              setActiveTab('news-detail');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenSignal={(ticker) => handleSelectSignalByTicker(ticker)}
+            onOpenInstrument={(symbol) => {
+              setSelectedInstrumentSymbol(symbol);
+              setActiveTab('instrument-analysis');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenPromotion={(id) => {
+              setPromotionDetailId(id);
+              setActiveTab('promotions');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 

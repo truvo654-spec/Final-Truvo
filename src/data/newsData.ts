@@ -195,6 +195,52 @@ export const NEWS_ARTICLES: NewsArticle[] = [
     minTier: 'basic',
     followedTopic: 'Bank of Japan',
   },
+  {
+    id: 'news_8',
+    source: 'Bloomberg',
+    sourceAvatar: SOURCE_BLOOMBERG,
+    assetClass: 'Crypto',
+    tags: ['Crypto', 'Bitcoin', 'ETF'],
+    headline: 'Bitcoin holds above key support as spot ETF inflows return',
+    excerpt:
+      'Bitcoin steadied after a choppy week as US spot ETFs recorded their first net inflow in several sessions, easing worries about a deeper pullback.',
+    content: [
+      'Bitcoin held above its recent support zone on Thursday after data showed US-listed spot ETFs took in fresh money for the first time in several sessions.',
+      'Analysts cautioned that the move is early. Funding rates are still near neutral and open interest has not recovered, which usually points to a market waiting for a catalyst rather than chasing one.',
+      'Traders are watching the weekly close and next week\u2019s inflation data for direction.',
+    ],
+    expertSummary: 'ETF flows turned positive after several outflow days. A weekly close back above the support zone would keep the near-term structure intact.',
+    thumbnail: THUMB_ETH,
+    heroImage: THUMB_ETH,
+    sentiment: 'Bullish',
+    timestamp: '26 minutes ago',
+    readTime: '3 min read',
+    claps: 233,
+    commentsCount: 17,
+    minTier: 'basic',
+  },
+  {
+    id: 'news_9',
+    source: 'Reuters',
+    sourceAvatar: SOURCE_REUTERS,
+    assetClass: 'Crypto',
+    tags: ['Crypto', 'Bitcoin', 'Regulation'],
+    headline: 'Bitcoin slips as lawmakers debate crypto market-structure rules',
+    excerpt:
+      'The largest cryptocurrency fell about 1% as investors weighed how proposed market-structure legislation could change trading and custody rules.',
+    content: [
+      'Bitcoin dipped about 1% as lawmakers opened debate on legislation that would set clearer rules for crypto trading platforms and custodians.',
+      'Supporters say clarity could draw in more institutions. Critics worry about compliance costs for smaller venues. Either way, headline risk is elevated into the hearing.',
+    ],
+    thumbnail: THUMB_ETH,
+    heroImage: THUMB_ETH,
+    sentiment: 'Bearish',
+    timestamp: '2 hours ago',
+    readTime: '2 min read',
+    claps: 142,
+    commentsCount: 9,
+    minTier: 'public',
+  },
 ];
 
 const NEWS_TIER_RANK: Record<NewsArticle['minTier'], number> = {

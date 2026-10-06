@@ -1,3 +1,4 @@
+import { HashtagLink } from '../hashtag/HashtagText';
 import React, { useState } from 'react';
 import { Star, ImageIcon, CheckCircle2 } from 'lucide-react';
 import { TrendingPost } from '../../data/communityTrendingPostsData';
@@ -115,9 +116,7 @@ export const CommunityTrendingPostCard: React.FC<CommunityTrendingPostCardProps>
       {post.hashtags && (
         <div className="flex flex-wrap gap-2 mb-3">
           {post.hashtags.map((h) => (
-            <span key={h} className="text-xs font-semibold text-emerald-600">
-              {h}
-            </span>
+            <HashtagLink key={h} tag={h} className="text-xs font-semibold text-emerald-600" />
           ))}
         </div>
       )}

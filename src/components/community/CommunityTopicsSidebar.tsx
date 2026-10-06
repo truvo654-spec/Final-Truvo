@@ -1,3 +1,4 @@
+import { openHashtag } from '../../lib/hashtagNav';
 import React from 'react';
 import {
   MessageSquare,
@@ -78,7 +79,7 @@ export const CommunityTopicsSidebar: React.FC<CommunityTopicsSidebarProps> = ({
           {KEY_TOPICS.map((t, i) => (
             <button
               key={t.tag}
-              onClick={() => onShowToast?.(`Showing posts tagged ${t.tag}`)}
+              onClick={() => openHashtag(t.tag)}
               className="w-full flex items-center justify-between py-1.5 px-1 rounded-lg hover:bg-[#f8fafc] transition-colors group"
             >
               <div className="flex items-center gap-2.5 min-w-0">
