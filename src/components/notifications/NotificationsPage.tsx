@@ -16,6 +16,7 @@ import { Broker } from '../../types';
 import { BorderBeam } from '../ui/BorderBeam';
 import { promotionAlerts, useMyPromotionAlerts, PromoAlert } from '../../data/promotionAlerts';
 import { PROMO_LEVELS } from '../../data/promotionsData';
+import { newsFollows, useNewsFollowState, NewsAlert } from '../../data/newsFollows';
 
 
 export interface NotificationItem {
@@ -49,6 +50,9 @@ interface NotificationsPageProps {
   /** Open a promotion's detail page. */
   onOpenPromotion?: (id: string) => void;
   onBrowsePromotions?: () => void;
+  /** Open a Market News story. */
+  onOpenNews?: (articleId: string) => void;
+  onBrowseNews?: () => void;
 }
 
 const INITIAL_ACTIVITIES: NotificationItem[] = [
@@ -235,8 +239,13 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   onShowToast,
   onOpenPromotion,
   onBrowsePromotions,
+  onOpenNews,
+  onBrowseNews,
 }) => {
-  const [activeTab, setActiveTab] = useState<'activities' | 'announcements' | 'my-promotion'>('activities');
+  type MainTab = 'activities' | 'announcements' | 'my-promotion' | 'market-news';
+  const [activeTab, setActiveTab] = useState<MainTab>('activities');
+  const newsState = useNewsFollowState();
+  const unreadNewsCount = newsState.alerts.filter((a) => !a.isRead).length;
   const promoAlerts = useMyPromotionAlerts();
   const unreadPromoCount = promoAlerts.filter((a) => !a.isRead).length;
   const [sourceFilter, setSourceFilter] = useState<'all' | 'cashback' | 'connect'>('all');
@@ -262,7 +271,10 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
   // Handle Mark All as Read
   const handleMarkAllAsRead = () => {
-    if (activeTab === 'my-promotion') {
+    if (activeTab === 'market-news') {
+      newsFollows.markAllRead();
+      onShowToast?.('All Market News notifications marked as read');
+    } else if (activeTab === 'my-promotion') {
       promotionAlerts.markAllRead();
       onShowToast?.('All promotion notifications marked as read');
     } else if (activeTab === 'activities') {
@@ -404,16 +416,21 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                     label: 'My Promotion',
                     count: unreadPromoCount > 0 ? unreadPromoCount : undefined,
                   },
+                  {
+                    id: 'market-news',
+                    label: 'Market News',
+                    count: unreadNewsCount > 0 ? unreadNewsCount : undefined,
+                  },
                 ]}
                 activeTab={activeTab}
-                onChange={(t) => setActiveTab(t as 'activities' | 'announcements' | 'my-promotion')}
+                onChange={(t) => setActiveTab(t as MainTab)}
               />
             </div>
 
             {/* Filter and Action Bar */}
             <div className="flex items-end justify-between gap-4 pt-2">
               {/* Left: Sources Dropdown (not used on My Promotion) */}
-              {activeTab !== 'my-promotion' ? (
+              {activeTab !== 'my-promotion' && activeTab !== 'market-news' ? (
               <div className="relative">
                 <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                   Sources
@@ -509,7 +526,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                 </div>
               </div>
               ) : (
-                <p className="text-xs text-slate-500 dark:text-slate-400 pb-2">Offers you asked to be told about, and offers you took.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 pb-2">{activeTab === 'market-news' ? 'New stories from writers you follow with notifications on.' : 'Offers you asked to be told about, and offers you took.'}</p>
               )}
 
               {/* Right: Mark all as read */}
@@ -665,6 +682,115 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                             )}
                             <button type="button" onClick={open} className="text-xs font-bold text-[#5945F1] hover:underline cursor-pointer">
                               View offer
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </>
+              )}
+
+              {/* TAB 4: MARKET NEWS */}
+              {activeTab === 'market-news' && (
+                <>
+                  {/* Writers you follow */}
+                  {newsState.follows.length > 0 && (
+                    <div className="mb-4 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/60 dark:bg-white/5 p-4">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-3">Writers you follow</p>
+                      <div className="space-y-2.5">
+                        {newsState.follows.map((f) => (
+                          <div key={f.writer} className="flex items-center justify-between gap-3">
+                            <span className="text-sm font-bold text-[#0b1c30] dark:text-white">{f.writer}</span>
+                            <div className="flex items-center gap-4">
+                              <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={f.notify}
+                                  onChange={(e) => {
+                                    newsFollows.setNotify(f.writer, e.target.checked);
+                                    onShowToast?.(e.target.checked ? `Notifications on for ${f.writer}` : `Notifications off for ${f.writer}`);
+                                  }}
+                                  className="rounded border-slate-300 text-[#5945F1] focus:ring-[#5945F1]"
+                                />
+                                Notify me
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  newsFollows.unfollow(f.writer);
+                                  onShowToast?.(`Unfollowed ${f.writer}`);
+                                }}
+                                className="text-xs font-semibold text-slate-500 hover:text-rose-500 transition-colors cursor-pointer"
+                              >
+                                Unfollow
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {newsState.alerts.length === 0 ? (
+                    <div className="py-14 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-[#5945F1] flex items-center justify-center mx-auto shadow-xs">
+                        <Bell className="w-6 h-6" />
+                      </div>
+                      <h4 className="font-bold text-sm text-[#0b1c30] dark:text-white">No new stories yet</h4>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        Follow a writer on Market News and turn on “Notify me about new news”. New stories from them show up here.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => onBrowseNews?.()}
+                        className="mt-1 px-4 py-2 rounded-xl bg-[#5945F1] hover:bg-[#4a38d6] text-white text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Browse Market News
+                      </button>
+                    </div>
+                  ) : (
+                    newsState.alerts.map((item: NewsAlert) => {
+                      const unread = !item.isRead;
+                      const open = () => {
+                        newsFollows.markRead(item.id);
+                        onOpenNews?.(item.id);
+                      };
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={open}
+                          className="group flex items-center justify-between gap-4 py-4 px-3 sm:px-4 rounded-xl hover:bg-white dark:hover:bg-[#120a2e] transition-all cursor-pointer"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2.5">
+                              {unread && <span className="w-2 h-2 rounded-full bg-[#3b82f6] shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />}
+                              <h4 className={`text-sm sm:text-[14.5px] truncate transition-colors ${unread ? 'font-bold text-[#3b82f6] dark:text-[#60a5fa]' : 'font-semibold text-[#0b1c30] dark:text-slate-200 group-hover:text-[#5945F1]'}`}>
+                                New from {item.writer}: {item.headline}
+                              </h4>
+                            </div>
+                            <div className="flex items-center flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300 mt-1 pl-4">
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-[#5945F1]">New story</span>
+                              <span className="truncate max-w-[26rem]">{item.excerpt}</span>
+                              <span>•</span>
+                              <span>{item.date}</span>
+                              <span>•</span>
+                              <span>{item.time}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                newsFollows.setNotify(item.writer, false);
+                                onShowToast?.(`Notifications off for ${item.writer}`);
+                              }}
+                              className="text-xs font-semibold text-slate-500 hover:text-rose-500 transition-colors cursor-pointer"
+                            >
+                              Mute {item.writer}
+                            </button>
+                            <button type="button" onClick={open} className="text-xs font-bold text-[#5945F1] hover:underline cursor-pointer">
+                              Read story
                             </button>
                           </div>
                         </div>

@@ -15,6 +15,7 @@ import { NewsArticle } from '../../types';
 import { NEWS_ARTICLES, NEWS_CATEGORIES, canAccessNews } from '../../data/newsData';
 import { FolderTabs, FolderTabItem } from '../common/FolderTabs';
 import { NewsPromoBanner } from './NewsPromoBanner';
+import { useNewsFollowState, releasedArticles } from '../../data/newsFollows';
 
 type NewsListTab = 'for-you' | 'following';
 
@@ -35,7 +36,7 @@ const SENTIMENT_STYLES: Record<NewsArticle['sentiment'], string> = {
 };
 
 export const NewsListPage: React.FC<NewsListPageProps> = ({
-  articles = NEWS_ARTICLES,
+  articles: baseArticles = NEWS_ARTICLES,
   isLoggedIn,
   userTierLevel,
   isAdvisor = false,
@@ -43,6 +44,10 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
   onUpgradePrompt,
   onShowToast,
 }) => {
+  const followState = useNewsFollowState();
+  const followedWriters = followState.follows.map((f) => f.writer);
+  // Stories published since the member started following sit on top of the feed
+  const articles = useMemo(() => [...releasedArticles(followState), ...baseArticles], [followState, baseArticles]);
   const [tab, setTab] = useState<NewsListTab>('for-you');
   const [category, setCategory] = useState<(typeof NEWS_CATEGORIES)[number]>('All');
   const [savedIds, setSavedIds] = useState<Record<string, boolean>>({});
@@ -61,10 +66,11 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
       list = list.filter((a) => a.assetClass === (category as NewsArticle['assetClass']));
     }
     if (tab === 'following') {
-      list = list.filter((a) => !!a.followedTopic);
+      list = list.filter((a) => !!a.followedTopic || followedWriters.includes(a.source));
     }
     return list;
-  }, [articles, category, tab, hiddenIds]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [articles, category, tab, hiddenIds, followState]);
 
   const canAccess = (article: NewsArticle) => canAccessNews(article, userTierLevel, isLoggedIn);
 

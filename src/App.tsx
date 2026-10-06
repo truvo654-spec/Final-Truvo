@@ -53,6 +53,8 @@ import { TradingSignalsPage } from './components/TradingSignalsPage';
 import { NewsListPage } from './components/news/NewsListPage';
 import { NewsDetailPage } from './components/news/NewsDetailPage';
 import { canAccessNews, NEWS_ARTICLES } from './data/newsData';
+import { newsFollows } from './data/newsFollows';
+import { findNewsById } from './data/newsIncoming';
 import { EconomicCalendarPage } from './components/calendar/EconomicCalendarPage';
 import { EducationHubPage } from './components/education/EducationHubPage';
 import { PortfolioTrackerPage } from './components/portfolio/PortfolioTrackerPage';
@@ -580,6 +582,13 @@ export default function App() {
       setToastMessage(null);
     }, 3500);
   };
+
+  // A followed writer published something and notifications are on: say so wherever the member is
+  useEffect(
+    () => newsFollows.onRelease((a) => showToast(`New from ${a.writer}: ${a.headline}`)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   // Gamification: Reward points with tier upgrade checking
   const handleRewardPoints = (pointsToAdd: number, reason?: string) => {
@@ -1293,6 +1302,10 @@ export default function App() {
             onBack={() => setActiveTab('news')}
             onUpgradePrompt={() => setActiveTab('member-plan')}
             onShowToast={showToast}
+            onSignIn={() => {
+              setAuthModalMode('signin');
+              setIsAuthModalOpen(true);
+            }}
           />
         )}
 
@@ -1527,6 +1540,15 @@ export default function App() {
               setActiveTab('promotions');
             }}
             onBrowsePromotions={() => setActiveTab('promotions')}
+            onOpenNews={(id) => {
+              const found = findNewsById(id) || NEWS_ARTICLES.find((a) => a.id === id);
+              if (found) {
+                setSelectedNewsArticle(found);
+                setActiveTab('news-detail');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            onBrowseNews={() => setActiveTab('news')}
           />
         )}
 
