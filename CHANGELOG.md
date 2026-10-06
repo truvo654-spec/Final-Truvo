@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.92] - 2026-10-06
+### Changed
+- Added a currency hashtag badge beside event-detail titles for easier scanning and sharing.
+
 ## [1.0.91] - 2026-10-06
 ### Changed
 - Expanded event-impact volatility horizons to 1H, 1D, 1W, and 1M, with market-aware pip, point, and percentage move comparisons.
