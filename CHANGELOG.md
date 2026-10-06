@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.66] - 2026-10-06
+### Added
+- Added deterministic Stocks earnings and Crypto flow demo events so every market-type filter has representative multi-event data.
+
 ## [1.0.65] - 2026-10-06
 ### Changed
 - Made every instrument/currency group row actionable with linked mock detail data, including single-event groups.

@@ -315,6 +315,38 @@ export const ECONOMIC_EVENTS: EconomicEvent[] = [
         summary: 'A congressional committee hearing on digital-asset market-structure legislation. Headline risk is elevated around regulatory commentary.',
       },
     },
+    {
+      at: '2026-10-14T23:00:00+07:00', cur: 'USD', title: 'Bitcoin ETF Flow Update', imp: 2, cat: 'Trade',
+      extra: {
+        assetClass: 'Crypto',
+        relatedSignalTicker: 'BTC/USD',
+        summary: 'Illustrative daily flow update for spot Bitcoin exchange-traded funds. This synthetic release demonstrates grouped Crypto cards without requiring a live market-data provider.',
+      },
+    },
+    {
+      at: '2026-10-14T21:00:00+07:00', cur: 'USD', title: 'JPMorgan Earnings (Q3)', imp: 3, cat: 'GDP', f: '4.82', p: '4.37',
+      extra: {
+        assetClass: 'Stocks',
+        relatedSignalTicker: 'JPM',
+        summary: 'Illustrative company earnings release for JPMorgan Chase. Compare the synthetic EPS forecast and previous result to demonstrate the Stocks market-type workflow.',
+      },
+    },
+    {
+      at: '2026-10-14T21:15:00+07:00', cur: 'USD', title: 'Wells Fargo Earnings (Q3)', imp: 2, cat: 'GDP', f: '1.55', p: '1.42',
+      extra: {
+        assetClass: 'Stocks',
+        relatedSignalTicker: 'WFC',
+        summary: 'Illustrative company earnings release for Wells Fargo. This synthetic event is grouped with other Stocks events and links to the standard event detail flow.',
+      },
+    },
+    {
+      at: '2026-10-15T21:00:00+07:00', cur: 'USD', title: 'Bank of America Earnings (Q3)', imp: 2, cat: 'GDP', f: '0.92', p: '0.81',
+      extra: {
+        assetClass: 'Stocks',
+        relatedSignalTicker: 'BAC',
+        summary: 'Illustrative company earnings release for Bank of America. Values are demo-only and intentionally require no provider credentials.',
+      },
+    },
     { at: '2026-10-15T11:30:00+07:00', cur: 'AUD', title: 'Employment Change (Sep)', imp: 3, cat: 'Employment', f: '25.0K', p: '47.5K' },
     { at: '2026-10-15T15:00:00+07:00', cur: 'MYR', title: 'GDP (YoY) (Q3, Advance)', imp: 2, cat: 'GDP', f: '4.6%', p: '4.4%' },
     { at: '2026-10-15T19:30:00+07:00', cur: 'USD', title: 'Retail Sales (MoM) (Sep)', imp: 2, cat: 'Sentiment', f: '0.3%', p: '0.1%', extra: { assetClass: 'Indices' } },
