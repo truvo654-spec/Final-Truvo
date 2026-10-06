@@ -165,6 +165,11 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   const [displayMode, setDisplayMode] = useState<'all' | 'remaining'>('all');
   const [calendarView, setCalendarView] = useState<'visualization' | 'list'>('visualization');
   const [expandedInstrumentGroup, setExpandedInstrumentGroup] = useState<string | null>(null);
+  const [selectedInstrumentGroup, setSelectedInstrumentGroup] = useState<{
+    market: string;
+    currency: string;
+    events: EconomicEvent[];
+  } | null>(null);
   const [search, setSearch] = useState('');
   const [instrumentQuery, setInstrumentQuery] = useState('');
   const [openFilter, setOpenFilter] = useState<FilterMenu>(null);
@@ -973,7 +978,12 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                         <>
                                     <button
                                       type="button"
-                                      onClick={() => setExpandedInstrumentGroup(isExpanded ? null : instrumentGroupKey)}
+                                      onClick={() => {
+                                        setExpandedInstrumentGroup(isExpanded ? null : instrumentGroupKey);
+                                        setSelectedInstrumentGroup(
+                                          isExpanded ? null : { market, currency, events: instrumentEvents }
+                                        );
+                                      }}
                                       className={`mb-1.5 flex w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors ${
                                         isExpanded ? 'bg-white/10' : 'hover:bg-white/5'
                                       }`}
@@ -986,7 +996,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                         {instrumentEvents.length}
                                       </span>
                                     </button>
-                                    <div className={isExpanded ? 'flex gap-2 overflow-x-auto pb-1' : timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'space-y-2'}>
+                                    <div className={timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'space-y-2'}>
                                       {instrumentEvents.map((event) => {
                                         const impactClass = event.impact === 'High'
                                           ? 'border-rose-400/40 bg-rose-400/10'
@@ -1000,7 +1010,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                               setCalendarView('list');
                                               setSelectedEvent(event);
                                             }}
-                                            className={`relative w-full rounded-xl border p-2.5 text-left transition-colors hover:brightness-125 ${isExpanded ? 'min-w-[180px]' : ''} ${impactClass}`}
+                                            className={`relative w-full rounded-xl border p-2.5 text-left transition-colors hover:brightness-125 ${impactClass}`}
                                           >
                                             <div className="flex items-center justify-between gap-2">
                                               <span className={`rounded-full border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
@@ -1098,6 +1108,75 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                 </div>
               )}
             </div>
+
+            {calendarView === 'visualization' && selectedInstrumentGroup && (
+              <div className="mb-6 w-full overflow-hidden rounded-2xl border border-[#1f2937] bg-[#111827] p-4 text-white sm:p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#ABA1F8]">Instrument details</p>
+                    <h3 className="mt-1 text-base font-bold">
+                      {selectedInstrumentGroup.currency} · {selectedInstrumentGroup.market} events
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-bold text-white/70">
+                      {selectedInstrumentGroup.events.length} events
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExpandedInstrumentGroup(null);
+                        setSelectedInstrumentGroup(null);
+                      }}
+                      className="rounded-lg border border-white/15 px-2 py-1 text-[10px] font-bold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-flow-col auto-cols-[220px] gap-3 overflow-x-auto pb-2">
+                  {selectedInstrumentGroup.events.map((event) => {
+                    const impactClass = event.impact === 'High'
+                      ? 'border-rose-400/40 bg-rose-400/10'
+                      : event.impact === 'Medium'
+                        ? 'border-sky-300/30 bg-sky-300/10'
+                        : 'border-emerald-400/30 bg-emerald-400/10';
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={() => {
+                          setCalendarView('list');
+                          setSelectedEvent(event);
+                        }}
+                        className={`relative w-full rounded-xl border p-3 text-left transition-colors hover:brightness-125 ${impactClass}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`rounded-full border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
+                            event.impact === 'High'
+                              ? 'border-rose-400/60 text-rose-200'
+                              : event.impact === 'Medium'
+                                ? 'border-sky-300/60 text-sky-100'
+                                : 'border-emerald-300/60 text-emerald-100'
+                          }`}>
+                            {event.impact} impact
+                          </span>
+                          <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">
+                            {event.countryFlag} {event.currency}
+                          </span>
+                        </div>
+                        <p className="mt-3 min-h-8 text-sm font-bold leading-4 text-white">{event.title}</p>
+                        <p className="mt-3 text-[10px] font-mono text-white/55">{event.allDay ? 'All day' : hhmmOf(eventMs(event), tz)}</p>
+                        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/10 pt-2 text-[10px]">
+                          <span className="text-white/45">Forecast<br /><strong className="font-mono text-white/85">{event.forecast || '—'}</strong></span>
+                          <span className="text-white/45">Previous<br /><strong className="font-mono text-white/85">{event.previous || '—'}</strong></span>
+                          <span className="text-white/45">Actual<br /><strong className="font-mono text-white/85">{event.actual || '—'}</strong></span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
               {calendarView === 'visualization' && <div className="hidden" aria-hidden="true">
               {/* Table */}

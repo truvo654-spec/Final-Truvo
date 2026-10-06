@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.62] - 2026-10-06
+### Changed
+- Moved selected instrument-group details into a full-width panel below the calendar visualization.
+
 ## [1.0.61] - 2026-10-06
 ### Added
 - Added clickable instrument group headers/counts that expand the group into a horizontal detail-card strip for all active events.
