@@ -13,6 +13,9 @@ type Sort = 'soon' | 'newest' | 'broker';
 type Skip = 'type' | 'letter' | 'phase';
 
 interface PromotionsPageProps {
+  /** Open offer (from the URL). */
+  detailId: string | null;
+  onDetailChange: (id: string | null) => void;
   userTierLevel: number;
   isLoggedIn: boolean;
   brokers: Broker[];
@@ -81,6 +84,8 @@ const Check: React.FC<{ on: boolean }> = ({ on }) => (
 /* ───────────── Page ───────────── */
 
 export const PromotionsPage: React.FC<PromotionsPageProps> = ({
+  detailId,
+  onDetailChange: setDetailId,
   userTierLevel,
   isLoggedIn,
   brokers,
@@ -100,7 +105,6 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   const [taken, setTaken] = useState<string[]>([]);
   const [notified, setNotified] = useState<string[]>([]);
   const [open, setOpen] = useState<Promotion | null>(null);
-  const [detailId, setDetailId] = useState<string | null>(null);
   const [agree, setAgree] = useState(false);
 
   const connected = (p: Promotion) => p.source === 'platform' || !!brokers.find((b) => b.id === p.brokerId)?.connected;
@@ -254,6 +258,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
           onOpen={(x) => setDetailId(x.id)}
           onLevelUp={onUpgradePrompt}
           onCompare={() => onNavigateToTab('broker-comparison')}
+          onToast={onShowToast}
           onViewBroker={(name, ph) => {
             setDetailId(null);
             setTab('all');
@@ -272,6 +277,17 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
 
   return (
     <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
+      {detailId && (
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#F8F7FF] border border-[#ECEEFA] rounded-2xl px-5 py-3 mb-5">
+          <p className="text-sm text-[#0b1c30]">
+            That offer is not open to Lv.{level} {PROMO_LEVELS[level]} yet, or it no longer exists. Level up to see more offers.
+          </p>
+          <div className="flex items-center gap-4">
+            <button onClick={onUpgradePrompt} className="text-xs font-bold text-[#5338ec] hover:underline">See how to level up</button>
+            <button onClick={() => setDetailId(null)} className="text-xs font-semibold text-[#474556] hover:text-[#0b1c30]">Dismiss</button>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-end justify-between gap-4 mb-2">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Promotions &amp; Bonuses</h1>

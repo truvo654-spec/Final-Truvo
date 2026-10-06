@@ -256,6 +256,9 @@ export default function App() {
     return { tab: 'dashboard' };
   });
 
+  // Which promotion detail is open (drives /brokers/promotions/<id> so the Share link is real)
+  const [promotionDetailId, setPromotionDetailId] = useState<string | null>(initialRoute.promotionId ?? null);
+
   const [brokers, setBrokers] = useState<Broker[]>(INITIAL_BROKERS);
   const [signals, setSignals] = useState<MarketSignal[]>(INITIAL_SIGNALS);
   const [quickSteps, setQuickSteps] = useState(QUICK_START_STEPS);
@@ -486,6 +489,7 @@ export default function App() {
         activeTab === 'signal-detail'
           ? selectedSignal?.id || selectedSignal?.ticker?.toLowerCase().replace('/', '')
           : undefined,
+      promotionId: activeTab === 'promotions' ? promotionDetailId ?? undefined : undefined,
     });
 
     if (currentPath !== targetPath) {
@@ -496,13 +500,19 @@ export default function App() {
     if (meta?.title) {
       document.title = meta.title;
     }
-  }, [activeTab, selectedBrokerForDetail?.id, selectedBrokerForDetail?.name, selectedSignal?.id]);
+  }, [activeTab, selectedBrokerForDetail?.id, selectedBrokerForDetail?.name, selectedSignal?.id, promotionDetailId]);
+
+  // Leaving Promotions closes any open offer, so coming back starts at the list
+  useEffect(() => {
+    if (activeTab !== 'promotions') setPromotionDetailId(null);
+  }, [activeTab]);
 
   // Handle Browser Back / Forward buttons (popstate)
   useEffect(() => {
     const handlePopState = () => {
       const res = pathToState(window.location.pathname);
       setActiveTab(res.tab);
+      setPromotionDetailId(res.tab === 'promotions' ? res.promotionId ?? null : null);
       if (res.brokerId) {
         const found = brokers.find(
           (b) =>
@@ -1335,6 +1345,8 @@ export default function App() {
         {/* ─── TAB: Promotions & Bonuses ─── */}
         {activeTab === 'promotions' && (
           <PromotionsPage
+            detailId={promotionDetailId}
+            onDetailChange={setPromotionDetailId}
             userTierLevel={user.tierLevel}
             isLoggedIn={isLoggedIn}
             brokers={brokers}

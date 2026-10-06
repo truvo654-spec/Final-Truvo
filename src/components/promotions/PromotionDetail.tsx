@@ -16,6 +16,7 @@ interface PromotionDetailProps {
   onLevelUp: () => void;
   onCompare: () => void;
   onViewBroker: (name: string, phase: 'live' | 'upcoming') => void;
+  onToast: (msg: string) => void;
 }
 
 /** Fixed "today" so sample dates stay stable (same day the rest of the demo uses). */
@@ -88,7 +89,7 @@ const Section: React.FC<{ id: string; title: string; children: React.ReactNode; 
   </section>
 );
 
-export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, level, connected, cta, onAct, onBack, onOpen, onLevelUp, onCompare, onViewBroker }) => {
+export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, level, connected, cta, onAct, onBack, onOpen, onLevelUp, onCompare, onViewBroker, onToast }) => {
   const t = THEME[p.type];
   const typeLabel = PROMO_TYPES.find((x) => x.id === p.type)!.label;
   const live = p.startsInDays === 0;
@@ -101,6 +102,26 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
     setFaqOpen(0);
     setActive('overview');
   }, [p.id]);
+
+  /** Native share sheet when the browser has one, otherwise copy the link. */
+  const share = async () => {
+    const text = `${p.title}: ${p.value} ${p.valueNote}, on MarketSyde`;
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: p.title, text, url });
+        return;
+      } catch (e) {
+        if ((e as { name?: string })?.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      onToast('Link copied');
+    } catch {
+      onToast('Could not copy here. Copy the link from your address bar.');
+    }
+  };
 
   const go = (id: string) => {
     setActive(id);
@@ -324,6 +345,12 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
               }`}
             >
               {cta.label}
+            </button>
+            <button
+              onClick={share}
+              className="w-full mt-2.5 text-sm font-bold rounded-xl py-3 bg-white border border-slate-200 hover:border-[#5338ec] text-[#0b1c30] hover:text-[#5338ec] transition-colors"
+            >
+              Share
             </button>
             <p className="text-[11px] text-[#94a3b8] mt-3 text-center">{live ? `Ends ${date(p.endsInDays)}` : `Starts ${date(p.startsInDays)}`}</p>
           </div>

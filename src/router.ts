@@ -9,6 +9,7 @@ export interface RouteResolution {
   signalId?: string;
   calcTool?: string;
   subTab?: string;
+  promotionId?: string;
   isNotFound?: boolean;
 }
 
@@ -197,6 +198,13 @@ export const ROUTE_REGISTRY: Record<string, RouteItem> = {
     category: 'Brokers',
     breadcrumbs: ['Brokers', 'Compare Brokers'],
   },
+  promotions: {
+    path: '/brokers/promotions',
+    tab: 'promotions',
+    title: 'Promotions & Bonuses | MarketSyde',
+    category: 'Brokers',
+    breadcrumbs: ['Brokers', 'Promotions & Bonuses'],
+  },
   'connect-to-truvo': {
     path: '/brokers/connect',
     tab: 'connect-to-truvo',
@@ -370,8 +378,11 @@ export const ROUTE_REGISTRY: Record<string, RouteItem> = {
  */
 export function tabToPath(
   tab: string,
-  params?: { brokerId?: string; signalId?: string; calcTool?: string }
+  params?: { brokerId?: string; signalId?: string; calcTool?: string; promotionId?: string }
 ): string {
+  if (tab === 'promotions' && params?.promotionId) {
+    return `/brokers/promotions/${encodeURIComponent(params.promotionId)}`;
+  }
   // Direct matching
   if (tab === 'broker-detail' && params?.brokerId) {
     return `/brokers/${encodeURIComponent(params.brokerId.toLowerCase())}`;
@@ -490,6 +501,13 @@ export function pathToState(rawPath: string): RouteResolution {
   if (pathname === '/brokers/compare') {
     return { tab: 'broker-comparison' };
   }
+  if (pathname === '/brokers/promotions') {
+    return { tab: 'promotions' };
+  }
+  const promotionMatch = pathname.match(/^\/brokers\/promotions\/([^/]+)$/);
+  if (promotionMatch) {
+    return { tab: 'promotions', promotionId: decodeURIComponent(promotionMatch[1]) };
+  }
   if (pathname === '/brokers/connect') {
     return { tab: 'connect-to-truvo' };
   }
@@ -498,7 +516,7 @@ export function pathToState(rawPath: string): RouteResolution {
     return { tab: 'broker-rebate-table', brokerId: brokerRebateMatch[1] };
   }
   const brokerDetailMatch = pathname.match(/^\/brokers\/([^/]+)$/);
-  if (brokerDetailMatch && brokerDetailMatch[1] !== 'compare' && brokerDetailMatch[1] !== 'connect') {
+  if (brokerDetailMatch && brokerDetailMatch[1] !== 'compare' && brokerDetailMatch[1] !== 'connect' && brokerDetailMatch[1] !== 'promotions') {
     return { tab: 'broker-detail', brokerId: brokerDetailMatch[1] };
   }
 
