@@ -401,6 +401,17 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => onNavigateToTab?.('profile')}
+            aria-label="Personalize your calendar"
+            title="Personalize your calendar"
+            className="group relative mx-1 mt-auto flex flex-col items-center gap-1 overflow-hidden rounded-xl border border-fuchsia-300/80 bg-gradient-to-b from-fuchsia-500 via-violet-600 to-indigo-700 px-1 py-3 text-[10px] font-bold leading-tight text-white shadow-[0_0_14px_rgba(168,85,247,0.7)] transition-transform hover:scale-105 animate-pulse"
+          >
+            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/90 shadow-[0_0_8px_2px_rgba(255,255,255,0.9)]" />
+            <Sparkles className="h-5 w-5 drop-shadow-[0_0_5px_rgba(255,255,255,0.9)]" />
+            Personalize
+          </button>
         </div>
       ) : (
         <button

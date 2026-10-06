@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.87] - 2026-10-06
+### Added
+- Added a neon animated `Personalize` promotion to the calendar side rail, linking to the existing profile/account personalization flow.
+
 ## [1.0.86] - 2026-10-06
 ### Changed
 - Made Watchlist and Alert controls persistently visible in calendar event rows instead of revealing them only on hover.
