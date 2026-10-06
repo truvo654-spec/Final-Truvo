@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.89] - 2026-10-06
+### Changed
+- Kept alert controls visible for all-day calendar events and assigned future all-day releases a one-day reminder default.
+
 ## [1.0.88] - 2026-10-06
 ### Changed
 - Made the economic calendar table fit the available card width on desktop while preserving horizontal scrolling on narrow screens.

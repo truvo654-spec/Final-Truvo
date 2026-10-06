@@ -339,15 +339,15 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
       return;
     }
     setAlerts((prev) => ({ ...prev, [id]: lead }));
-    onShowToast(`Reminder set for ${lead} minutes before`);
+    onShowToast(`Reminder set for ${lead >= 1440 ? '1 day' : `${lead} minutes`} before`);
   };
 
   const toggleBell = (e: EconomicEvent) => {
-    if (e.allDay || eventMs(e) <= NOW_MS) {
+    if (eventMs(e) <= NOW_MS) {
       onShowToast('This event has already happened.');
       return;
     }
-    setAlert(e.id, alerts[e.id] !== undefined ? null : 15);
+    setAlert(e.id, alerts[e.id] !== undefined ? null : e.allDay ? 1440 : 15);
   };
 
   function toggleIn<T>(list: T[], v: T, set: (l: T[]) => void) {
@@ -1171,7 +1171,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                     <span className="md:text-right">{event.previous || ''}</span>
                                     <span className="flex items-center justify-end gap-2">
                                       <button onClick={(ev) => { ev.stopPropagation(); toggleWatch(event.id); }} aria-label={watchedIds[event.id] ? 'Remove from watchlist' : 'Add to watchlist'} title={watchedIds[event.id] ? 'Remove from watchlist' : 'Add to watchlist'} className={watchedIds[event.id] ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}><Star className={`h-4 w-4 ${watchedIds[event.id] ? 'fill-current' : ''}`} /></button>
-                                      {!event.allDay && <button onClick={(ev) => { ev.stopPropagation(); toggleBell(event); }} aria-label={alerts[event.id] !== undefined ? 'Remove alert' : 'Set alert'} title={alerts[event.id] !== undefined ? 'Remove alert' : 'Set alert'} className={alerts[event.id] !== undefined ? 'text-[#5338ec]' : 'text-slate-400 hover:text-[#5338ec]'}>{alerts[event.id] !== undefined ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}</button>}
+                                      <button onClick={(ev) => { ev.stopPropagation(); toggleBell(event); }} aria-label={alerts[event.id] !== undefined ? 'Remove alert' : 'Set alert'} title={alerts[event.id] !== undefined ? 'Remove alert' : event.allDay ? 'Set alert for 1 day before' : 'Set alert'} className={alerts[event.id] !== undefined ? 'text-[#5338ec]' : 'text-slate-400 hover:text-[#5338ec]'}>{alerts[event.id] !== undefined ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}</button>
                                     </span>
                                   </div>
                                 </React.Fragment>
@@ -1334,16 +1334,14 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                 >
                                   <Star className={`w-4 h-4 ${watchedIds[e.id] ? 'fill-current' : ''}`} />
                                 </button>
-                                {!e.allDay && (
-                                  <button
-                                    onClick={(ev) => { ev.stopPropagation(); toggleBell(e); }}
-                                    aria-label={alerts[e.id] !== undefined ? 'Remove alert' : 'Set alert'}
-                                    title={alerts[e.id] !== undefined ? 'Remove alert' : 'Set alert'}
-                                    className={alerts[e.id] !== undefined ? 'text-[#5338ec]' : 'text-slate-400 hover:text-[#5338ec]'}
-                                  >
-                                    {alerts[e.id] !== undefined ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-                                  </button>
-                                )}
+                                <button
+                                  onClick={(ev) => { ev.stopPropagation(); toggleBell(e); }}
+                                  aria-label={alerts[e.id] !== undefined ? 'Remove alert' : 'Set alert'}
+                                  title={alerts[e.id] !== undefined ? 'Remove alert' : e.allDay ? 'Set alert for 1 day before' : 'Set alert'}
+                                  className={alerts[e.id] !== undefined ? 'text-[#5338ec]' : 'text-slate-400 hover:text-[#5338ec]'}
+                                >
+                                  {alerts[e.id] !== undefined ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                                </button>
                                 {e.aiPrediction && !e.allDay && (
                                   <button
                                     onClick={(ev) => { ev.stopPropagation(); setSelectedEvent(e); }}
