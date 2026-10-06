@@ -1141,7 +1141,17 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                   {markerAt === index && <NowMarker />}
                                   <div onClick={() => setSelectedEvent(event)} className={`group grid grid-cols-1 ${ROW_GRID} items-center gap-2 border-b border-[#f1f5f9] px-3 py-3 transition-colors hover:bg-[#f8f9fc]`}>
                                     <span className="text-sm">{event.allDay ? 'All Day' : hhmmOf(eventMs(event), tz)}</span>
-                                    <span className="flex items-center gap-1.5 text-sm"><span className="text-base leading-none">{event.countryFlag}</span><span className="font-semibold">{event.currency}</span></span>
+                                    <span className="flex items-center gap-1.5 text-sm">
+                                      <span className="text-base leading-none">{event.countryFlag}</span>
+                                      <button
+                                        type="button"
+                                        onClick={(ev) => { ev.stopPropagation(); onNavigateToInstrument?.(event.currency); }}
+                                        className="font-semibold text-[#0b1c30] underline-offset-2 hover:text-[#5338ec] hover:underline"
+                                        aria-label={`Open ${event.currency} instrument page`}
+                                      >
+                                        {event.currency}
+                                      </button>
+                                    </span>
                                     <span className="flex min-w-0 items-center gap-2 text-sm"><span className="min-w-0 truncate">{event.title}<span className="mt-0.5 block text-[10px] font-normal text-slate-400">{provider.getSnapshot(event).releaseState} · {provider.getSnapshot(event).surprise}</span></span>{event.hasSpeech && <Volume2 className="h-4 w-4 shrink-0 text-slate-400" />}</span>
                                     <span className="flex items-center gap-0.5" title={`${event.impact} impact`}>{[1, 2, 3].map((i) => <Star key={i} className={`h-3.5 w-3.5 ${i <= stars ? IMPACT_STYLES[event.impact].star : 'fill-slate-200 text-slate-200'}`} />)}</span>
                                     <span className={`font-bold md:text-right ${actualClass(event)}`}>{event.actual || ''}</span>
