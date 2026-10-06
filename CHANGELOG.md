@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.63] - 2026-10-06
+### Changed
+- Made the below-calendar event-card strip visible by default for the active day; instrument selection now narrows the same linked card strip.
+
 ## [1.0.62] - 2026-10-06
 ### Changed
 - Moved selected instrument-group details into a full-width panel below the calendar visualization.

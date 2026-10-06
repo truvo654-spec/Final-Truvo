@@ -165,6 +165,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   const [displayMode, setDisplayMode] = useState<'all' | 'remaining'>('all');
   const [calendarView, setCalendarView] = useState<'visualization' | 'list'>('visualization');
   const [expandedInstrumentGroup, setExpandedInstrumentGroup] = useState<string | null>(null);
+  const [selectedDetailDay, setSelectedDetailDay] = useState<string | null>(null);
   const [selectedInstrumentGroup, setSelectedInstrumentGroup] = useState<{
     market: string;
     currency: string;
@@ -291,6 +292,8 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   }, [rangeFrom, rangeTo, filtered, tz]);
   const timelineEvents = filtered;
   const timelineIsSingleDay = timelineDays.length === 1;
+  const detailDay = selectedDetailDay || todayKey;
+  const detailEvents = selectedInstrumentGroup?.events || timelineEvents.filter((event) => eventKey(event) === detailDay);
   const nextImpactful = useMemo(() => provider.getNextImpactfulEvent(NOW_MS), [provider, NOW_MS]);
   const countdown = (at: string) => {
     const remaining = Math.max(0, Date.parse(at) - NOW_MS);
@@ -931,7 +934,12 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                       return (
                         <button
                           key={day}
-                          onClick={() => openRangePicker(day, day)}
+                          onClick={() => {
+                            setSelectedDetailDay(day);
+                            setSelectedInstrumentGroup(null);
+                            setExpandedInstrumentGroup(null);
+                            openRangePicker(day, day);
+                          }}
                           className={`rounded-lg border px-2 py-2 text-left transition-colors ${day === todayKey ? 'border-[#f97316]/70 bg-[#f97316]/10' : 'border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.06]'}`}
                         >
                           <div className="flex items-center justify-between gap-1">
@@ -983,6 +991,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                         setSelectedInstrumentGroup(
                                           isExpanded ? null : { market, currency, events: instrumentEvents }
                                         );
+                                        setSelectedDetailDay(day);
                                       }}
                                       className={`mb-1.5 flex w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors ${
                                         isExpanded ? 'bg-white/10' : 'hover:bg-white/5'
@@ -1109,18 +1118,22 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
               )}
             </div>
 
-            {calendarView === 'visualization' && selectedInstrumentGroup && (
+            {calendarView === 'visualization' && detailEvents.length > 0 && (
               <div className="mb-6 w-full overflow-hidden rounded-2xl border border-[#1f2937] bg-[#111827] p-4 text-white sm:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#ABA1F8]">Instrument details</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#ABA1F8]">
+                      {selectedInstrumentGroup ? 'Instrument details' : 'Event details'}
+                    </p>
                     <h3 className="mt-1 text-base font-bold">
-                      {selectedInstrumentGroup.currency} · {selectedInstrumentGroup.market} events
+                      {selectedInstrumentGroup
+                        ? `${selectedInstrumentGroup.currency} · ${selectedInstrumentGroup.market} events`
+                        : `${longDate(detailDay)} events`}
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-bold text-white/70">
-                      {selectedInstrumentGroup.events.length} events
+                      {detailEvents.length} events
                     </span>
                     <button
                       type="button"
@@ -1135,7 +1148,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                   </div>
                 </div>
                 <div className="grid grid-flow-col auto-cols-[220px] gap-3 overflow-x-auto pb-2">
-                  {selectedInstrumentGroup.events.map((event) => {
+                  {detailEvents.map((event) => {
                     const impactClass = event.impact === 'High'
                       ? 'border-rose-400/40 bg-rose-400/10'
                       : event.impact === 'Medium'
