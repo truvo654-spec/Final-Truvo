@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.53] - 2026-10-06
+### Added
+- Added a shared two-week calendar range option so the Visualization timeline can extend beyond a single week.
+
 ## [1.0.52] - 2026-10-06
 ### Changed
 - Made single-day Visualization events render in a compact responsive card grid so the timeline fits the active data without a long vertical event column.

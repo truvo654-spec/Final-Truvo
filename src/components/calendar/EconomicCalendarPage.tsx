@@ -44,7 +44,7 @@ import { CalendarSidePanel, SidePanel } from './CalendarSidePanel';
 import { createMockEconomicCalendarProvider } from '../../data/economicCalendarProvider';
 
 type PageTab = 'calendar' | 'holidays' | 'earnings' | 'dividends' | 'ipo';
-type RangeId = 'yesterday' | 'today' | 'tomorrow' | 'week' | 'nextweek' | 'custom';
+type RangeId = 'yesterday' | 'today' | 'tomorrow' | 'week' | 'nextweek' | 'twoweeks' | 'custom';
 type FilterMenu = 'range' | 'impact' | 'countries' | 'marketType' | 'category' | 'timezone' | null;
 type FilterId = Exclude<FilterMenu, null>;
 type MarketType = 'All Markets' | 'Forex' | 'Indices' | 'Stocks' | 'Commodities' | 'Crypto';
@@ -205,6 +205,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
       case 'tomorrow': return [addDays(todayKey, 1), addDays(todayKey, 1)];
       case 'week': return [weekStart, addDays(weekStart, 6)];
       case 'nextweek': return [addDays(weekStart, 7), addDays(weekStart, 13)];
+      case 'twoweeks': return [weekStart, addDays(weekStart, 13)];
       case 'custom': return customFrom <= customTo ? [customFrom, customTo] : [customTo, customFrom];
       default: return [todayKey, todayKey];
     }
@@ -356,6 +357,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
     { id: 'tomorrow', label: 'Tomorrow' },
     { id: 'week', label: 'This Week' },
     { id: 'nextweek', label: 'Next Week' },
+    { id: 'twoweeks', label: '2 Weeks' },
   ];
   const calendarCells = useMemo(() => {
     const first = new Date(`${calendarMonth}T00:00:00Z`);
@@ -424,6 +426,8 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
             ? [weekStart, addDays(weekStart, 6)]
             : id === 'nextweek'
               ? [addDays(weekStart, 7), addDays(weekStart, 13)]
+              : id === 'twoweeks'
+                ? [weekStart, addDays(weekStart, 13)]
               : [todayKey, todayKey];
     setDraftFrom(nextRange[0]);
     setDraftTo(nextRange[1]);
