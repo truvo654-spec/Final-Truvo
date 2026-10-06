@@ -259,6 +259,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangeFrom, rangeTo, filtered, tz]);
   const timelineEvents = filtered;
+  const timelineIsSingleDay = timelineDays.length === 1;
   const nextImpactful = useMemo(() => provider.getNextImpactfulEvent(NOW_MS), [provider, NOW_MS]);
   const countdown = (at: string) => {
     const remaining = Math.max(0, Date.parse(at) - NOW_MS);
@@ -859,7 +860,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
               </div>
               <div className="mt-5 overflow-x-auto pb-2 scrollbar-none">
                 <div className="min-w-[920px]">
-                  <div className="grid grid-cols-7 gap-2">
+                  <div className={timelineIsSingleDay ? 'grid grid-cols-1 gap-2' : 'grid grid-cols-7 gap-2'}>
                     {timelineDays.map((day) => {
                       const dayEvents = timelineEvents.filter((event) => eventKey(event) === day);
                       return (
@@ -880,11 +881,11 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                     <div className="absolute inset-y-0 left-0 right-0 bg-gradient-to-r from-emerald-300/70 via-sky-300/70 to-rose-400/80" />
                     {timelineDays.map((day, index) => <span key={day} className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#0b1c30] bg-white/70" style={{ left: `${(index / 6) * 100}%` }} />)}
                   </div>
-                  <div className="mt-3 grid grid-cols-7 gap-2">
+                  <div className={timelineIsSingleDay ? 'mt-3 grid grid-cols-1 gap-2' : 'mt-3 grid grid-cols-7 gap-2'}>
                     {timelineDays.map((day) => {
                       const dayEvents = timelineEvents.filter((event) => eventKey(event) === day);
                       return (
-                        <div key={day} className="max-h-[280px] space-y-2 overflow-y-auto pr-1">
+                        <div key={day} className={timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'max-h-[280px] space-y-2 overflow-y-auto pr-1'}>
                           {dayEvents.length === 0 && <p className="rounded-lg border border-dashed border-white/10 px-2 py-5 text-center text-[10px] text-white/25">No events</p>}
                           {dayEvents.map((event) => {
                             const impactClass = event.impact === 'High'

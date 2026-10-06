@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.52] - 2026-10-06
+### Changed
+- Made single-day Visualization events render in a compact responsive card grid so the timeline fits the active data without a long vertical event column.
+
 ## [1.0.51] - 2026-10-06
 ### Changed
 - Removed the duplicate lower calendar table from Visualization mode and made the timeline container fill its available calendar column.
