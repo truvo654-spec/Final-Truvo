@@ -15,12 +15,21 @@ interface PromotionDetailProps {
   onOpen: (p: Promotion) => void;
   onLevelUp: () => void;
   onCompare: () => void;
+  onViewBroker: (name: string, phase: 'live' | 'upcoming') => void;
 }
 
 /** Fixed "today" so sample dates stay stable (same day the rest of the demo uses). */
 const TODAY = Date.parse('2026-10-05T00:00:00Z');
 const DAY = 86400000;
 const date = (days: number) => new Date(TODAY + days * DAY).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+const BRAND_COLORS = ['#5338ec', '#0d9488', '#be185d', '#8d6a1f', '#3410D5', '#0b1c30'];
+const brandColor = (name: string) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return BRAND_COLORS[h % BRAND_COLORS.length];
+};
+const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
 const sourceName = (p: Promotion) => (p.source === 'platform' ? 'MarketSyde' : p.brokerName);
 
@@ -79,7 +88,7 @@ const Section: React.FC<{ id: string; title: string; children: React.ReactNode; 
   </section>
 );
 
-export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, level, connected, cta, onAct, onBack, onOpen, onLevelUp, onCompare }) => {
+export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, level, connected, cta, onAct, onBack, onOpen, onLevelUp, onCompare, onViewBroker }) => {
   const t = THEME[p.type];
   const typeLabel = PROMO_TYPES.find((x) => x.id === p.type)!.label;
   const live = p.startsInDays === 0;
@@ -106,6 +115,20 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
     const pool = PROMOTIONS.filter((x) => x.id !== p.id && x.minLevel <= level && x.source === p.source);
     const score = (x: Promotion) => (x.brokerId === p.brokerId ? 2 : 0) + (x.type === p.type ? 1 : 0) + (x.startsInDays === 0 ? 0.5 : 0);
     return [...pool].sort((a, b) => score(b) - score(a)).slice(0, 3);
+  }, [p, level]);
+
+  /** Other brokers with offers this member can see (standard offers, not premium drops). */
+  const brokerCards = useMemo(() => {
+    const map = new Map<string, { name: string; live: number; upcoming: number }>();
+    PROMOTIONS.filter((x) => x.source === 'broker' && !x.premiumDrop && x.minLevel <= level && x.brokerName !== p.brokerName).forEach((x) => {
+      const e = map.get(x.brokerName) || { name: x.brokerName, live: 0, upcoming: 0 };
+      if (x.startsInDays === 0) e.live += 1;
+      else e.upcoming += 1;
+      map.set(x.brokerName, e);
+    });
+    return Array.from(map.values())
+      .sort((a, b) => b.live - a.live || b.upcoming - a.upcoming || a.name.localeCompare(b.name))
+      .slice(0, 6);
   }, [p, level]);
 
   const facts: [string, string][] = [
@@ -324,6 +347,41 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
           </div>
         </aside>
       </div>
+
+      {brokerCards.length > 0 && (
+        <section className="mt-14">
+          <h2 className="text-2xl font-display font-bold text-[#0b1c30] mb-5">Broker</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {brokerCards.map((b) => {
+              const color = brandColor(b.name);
+              const hasLive = b.live > 0;
+              return (
+                <div key={b.name} className="bg-white rounded-2xl p-6 border border-[#e2e8f0]">
+                  <p className="text-base font-bold mb-3" style={{ color }}>Promotions</p>
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl border border-[#e2e8f0] flex items-center justify-center text-base font-black shrink-0" style={{ color }}>
+                      {initials(b.name)}
+                    </div>
+                    <p className="text-2xl font-display font-bold text-[#0b1c30] leading-tight">{b.name}</p>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 mt-6">
+                    <p className="text-sm font-bold text-[#94a3b8]">
+                      {hasLive ? `${b.live} Active Offer${b.live === 1 ? '' : 's'}` : `${b.upcoming} Upcoming`}
+                    </p>
+                    <button
+                      onClick={() => onViewBroker(b.name, hasLive ? 'live' : 'upcoming')}
+                      className="px-5 py-2.5 rounded-full text-sm font-bold text-white transition-opacity hover:opacity-90"
+                      style={{ background: color }}
+                    >
+                      View offers
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 };

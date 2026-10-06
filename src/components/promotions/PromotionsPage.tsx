@@ -254,6 +254,16 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
           onOpen={(x) => setDetailId(x.id)}
           onLevelUp={onUpgradePrompt}
           onCompare={() => onNavigateToTab('broker-comparison')}
+          onViewBroker={(name, ph) => {
+            setDetailId(null);
+            setTab('all');
+            setPhase(ph);
+            setTypes([]);
+            setLetter(null);
+            setEligibleOnly(false);
+            setSearch(name);
+            window.scrollTo({ top: 0 });
+          }}
         />
         {modal}
       </>
