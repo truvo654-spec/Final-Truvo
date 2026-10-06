@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.86] - 2026-10-06
+### Changed
+- Made Watchlist and Alert controls persistently visible in calendar event rows instead of revealing them only on hover.
+- Added an Actions column label and accessible action titles for adding/removing watched events and alerts.
+
 ## [1.0.85] - 2026-10-06
 ### Changed
 - Made AI Assistant the default calendar side-panel view and moved it to the first rail position.

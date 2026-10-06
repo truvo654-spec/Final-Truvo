@@ -1138,7 +1138,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                     <div className={`min-w-[760px]`}>
                       <div className={`hidden md:grid ${ROW_GRID} gap-2 border-b border-[#e2e8f0] px-3 py-3 text-sm font-bold text-[#0b1c30]`}>
                         <span>Time</span><span>Cur.</span><span>Event</span><span>Imp.</span>
-                        <span className="text-right">Actual</span><span className="text-right">Forecast</span><span className="text-right">Previous</span><span />
+                        <span className="text-right">Actual</span><span className="text-right">Forecast</span><span className="text-right">Previous</span><span className="text-right">Actions</span>
                       </div>
                       {groups.length === 0 && <div className="py-16 text-center text-sm text-[#474556]">No events match these filters. Try a wider date range or reset the filters.</div>}
                       {groups.map(([key, rows]) => {
@@ -1148,7 +1148,6 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                             <div className="border-b border-[#f1f5f9] bg-[#fafbfe] px-3 py-3.5 text-center text-sm font-bold text-[#0b1c30]">{longDate(key)}</div>
                             {rows.map((event, index) => {
                               const stars = IMPACT_STARS[event.impact];
-                              const hasFlag = watchedIds[event.id] || alerts[event.id] !== undefined;
                               return (
                                 <React.Fragment key={event.id}>
                                   {markerAt === index && <NowMarker />}
@@ -1170,9 +1169,9 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                     <span className={`font-bold md:text-right ${actualClass(event)}`}>{event.actual || ''}</span>
                                     <span className="md:text-right">{event.forecast || ''}</span>
                                     <span className="md:text-right">{event.previous || ''}</span>
-                                    <span className={`flex items-center justify-end gap-2 ${hasFlag ? 'opacity-100' : 'md:opacity-0 md:group-hover:opacity-100'}`}>
-                                      <button onClick={(ev) => { ev.stopPropagation(); toggleWatch(event.id); }} aria-label="Watch event" className={watchedIds[event.id] ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}><Star className={`h-4 w-4 ${watchedIds[event.id] ? 'fill-current' : ''}`} /></button>
-                                      {!event.allDay && <button onClick={(ev) => { ev.stopPropagation(); toggleBell(event); }} aria-label="Set reminder" className={alerts[event.id] !== undefined ? 'text-[#5338ec]' : 'text-slate-400 hover:text-[#5338ec]'}>{alerts[event.id] !== undefined ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}</button>}
+                                    <span className="flex items-center justify-end gap-2">
+                                      <button onClick={(ev) => { ev.stopPropagation(); toggleWatch(event.id); }} aria-label={watchedIds[event.id] ? 'Remove from watchlist' : 'Add to watchlist'} title={watchedIds[event.id] ? 'Remove from watchlist' : 'Add to watchlist'} className={watchedIds[event.id] ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}><Star className={`h-4 w-4 ${watchedIds[event.id] ? 'fill-current' : ''}`} /></button>
+                                      {!event.allDay && <button onClick={(ev) => { ev.stopPropagation(); toggleBell(event); }} aria-label={alerts[event.id] !== undefined ? 'Remove alert' : 'Set alert'} title={alerts[event.id] !== undefined ? 'Remove alert' : 'Set alert'} className={alerts[event.id] !== undefined ? 'text-[#5338ec]' : 'text-slate-400 hover:text-[#5338ec]'}>{alerts[event.id] !== undefined ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}</button>}
                                     </span>
                                   </div>
                                 </React.Fragment>
@@ -1290,7 +1289,6 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                       </div>
                       {rows.map((e, idx) => {
                         const stars = IMPACT_STARS[e.impact];
-                        const hasFlag = watchedIds[e.id] || alerts[e.id] !== undefined;
                         return (
                           <React.Fragment key={e.id}>
                             {markerAt === idx && <NowMarker />}
@@ -1327,10 +1325,11 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                   <span className="text-sm md:text-right text-[#0b1c30]">{e.previous || ''}</span>
                                 </>
                               )}
-                              <span className={`flex items-center justify-end gap-2 transition-opacity ${hasFlag ? 'opacity-100' : 'md:opacity-0 md:group-hover:opacity-100'}`}>
+                              <span className="flex items-center justify-end gap-2">
                                 <button
                                   onClick={(ev) => { ev.stopPropagation(); toggleWatch(e.id); }}
-                                  aria-label="Watch event"
+                                  aria-label={watchedIds[e.id] ? 'Remove from watchlist' : 'Add to watchlist'}
+                                  title={watchedIds[e.id] ? 'Remove from watchlist' : 'Add to watchlist'}
                                   className={watchedIds[e.id] ? 'text-amber-500' : 'text-slate-400 hover:text-amber-500'}
                                 >
                                   <Star className={`w-4 h-4 ${watchedIds[e.id] ? 'fill-current' : ''}`} />
@@ -1338,7 +1337,8 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                 {!e.allDay && (
                                   <button
                                     onClick={(ev) => { ev.stopPropagation(); toggleBell(e); }}
-                                    aria-label="Set reminder"
+                                    aria-label={alerts[e.id] !== undefined ? 'Remove alert' : 'Set alert'}
+                                    title={alerts[e.id] !== undefined ? 'Remove alert' : 'Set alert'}
                                     className={alerts[e.id] !== undefined ? 'text-[#5338ec]' : 'text-slate-400 hover:text-[#5338ec]'}
                                   >
                                     {alerts[e.id] !== undefined ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
