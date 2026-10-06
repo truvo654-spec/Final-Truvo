@@ -56,7 +56,7 @@ export interface EconomicIndicator {
   outlook: { scenario: string; probability: string; implication: string }[];
   affectedAssets: { symbol: string; assetClass: string; sensitivity: 'High' | 'Medium' | 'Low'; rationale: string }[];
   volatility: { window: string; trueRange: string; potentialRange: string; confidence: string }[];
-  sentiment: { label: 'Bullish' | 'Bearish' | 'Neutral'; score: number; rationale: string };
+  sentiment: { label: 'Bullish' | 'Bearish' | 'Neutral'; score: number; rationale: string; window: string; articleCount: number };
   marketStructure: { label: string; value: string; note: string }[];
   releaseState: 'Upcoming' | 'Released' | 'All day';
   surpriseLabel: 'Beat' | 'Miss' | 'In line' | 'Pending';
@@ -194,8 +194,8 @@ export function buildDemoIndicator(event: EconomicEvent): EconomicIndicator {
   const releaseState = event.allDay ? 'All day' : Date.parse(event.at) <= Date.now() ? 'Released' : 'Upcoming';
   const surpriseLabel = latest === null || consensus === null ? 'Pending' : latest > consensus ? 'Beat' : latest < consensus ? 'Miss' : 'In line';
   const sentiment = event.category === 'Inflation' || event.category === 'Employment' && latest !== null && previous !== null && latest < previous
-    ? { label: 'Bearish' as const, score: 42, rationale: 'The illustrative surprise path suggests softer growth or tighter financial-condition concerns.' }
-    : { label: 'Neutral' as const, score: 56, rationale: 'The sample release is balanced; direction depends on policy guidance and follow-through in related data.' };
+    ? { label: 'Bearish' as const, score: 42, rationale: 'The illustrative surprise path suggests softer growth or tighter financial-condition concerns.', window: '1 day before release', articleCount: 8 }
+    : { label: 'Neutral' as const, score: 56, rationale: 'The sample release is balanced; direction depends on policy guidance and follow-through in related data.', window: '1 day before release', articleCount: 12 };
   const marketStructure = [
     { label: 'Liquidity regime', value: event.impact === 'High' ? 'Thin into release' : 'Normal / moderate', note: 'Illustrative spread and depth condition around the scheduled timestamp.' },
     { label: 'Key reaction zone', value: event.impact === 'High' ? 'First 15 minutes' : 'First hour', note: 'Demo window where the initial surprise is most likely to be repriced.' },

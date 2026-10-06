@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.80] - 2026-10-06
+### Changed
+- Made the event-impact visualization explicit: Actual and Forecast lines, true-range percentages, potential-range percentages, post-event price windows for 1H/1D/1W/1M, and dated news sentiment from the one-day pre-release window.
+- Added related-article count and clearer impact-range labels to the dark analytics panel.
+
 ## [1.0.79] - 2026-10-06
 ### Added
 - Added a combined event-impact chart with actual-versus-forecast history, surprise points, true-range bars, reaction windows, sentiment split, and potential-range visualization.

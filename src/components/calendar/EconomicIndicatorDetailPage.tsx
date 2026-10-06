@@ -76,14 +76,15 @@ function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; 
   const y = (value: number) => 190 - ((value - min) / Math.max(max - min, 1)) * 135;
   const line = (key: 'actual' | 'consensus') => rows.map((row, index) => `${index === 0 ? 'M' : 'L'} ${x(index)} ${y(row[key])}`).join(' ');
   const rangeValue = (value: string) => Number.parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
-  const maxRange = Math.max(...indicator.volatility.map((row) => rangeValue(row.potentialRange)), 1);
+  const maxTrueRange = Math.max(...indicator.volatility.map((row) => rangeValue(row.trueRange)), 1);
+  const maxPotentialRange = Math.max(...indicator.volatility.map((row) => rangeValue(row.potentialRange)), 1);
   const reactionSign = indicator.sentiment.label === 'Bearish' ? -1 : 1;
   const reaction = [0.06, 0.42, 0.24, 0.58].map((value) => reactionSign * value * (indicator.sentiment.score / 60));
   return <div className="grid overflow-hidden bg-[#171821] text-white lg:grid-cols-[minmax(0,1fr)_270px]">
     <div className="min-w-0 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-base font-semibold">History of {indicator.name}</h3>
-        <div className="flex flex-wrap gap-3 text-[10px] text-slate-400"><span><span className="mr-1 inline-block h-2 w-5 bg-white" />Actual</span><span><span className="mr-1 inline-block h-2 w-5 border-t border-dashed border-slate-400 align-middle" />Forecast</span><span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-white" />True range</span></div>
+      <div className="flex flex-wrap gap-3 text-[10px] text-slate-300"><span><span className="mr-1 inline-block h-2 w-5 bg-white align-middle" />Actual line</span><span><span className="mr-1 inline-block h-0 w-5 border-t-2 border-dashed border-slate-400 align-middle" />Forecast line</span><span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-white" />True range %</span></div>
       </div>
       <div className="mt-3 overflow-x-auto">
         <svg viewBox="0 0 760 240" className="min-w-[620px] w-full" role="img" aria-label={`${indicator.name} actual, forecast and true range chart`}>
@@ -91,7 +92,7 @@ function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; 
           <path d={line('consensus')} stroke="#858aa3" strokeWidth="1.8" strokeDasharray="6 5" fill="none" />
           <path d={line('actual')} stroke="#f8fafc" strokeWidth="2" fill="none" />
           {rows.map((row, index) => {
-            const barHeight = Math.max(7, rangeValue(indicator.volatility[index % indicator.volatility.length]?.potentialRange || '0') / maxRange * 48);
+            const barHeight = Math.max(7, rangeValue(indicator.volatility[index % indicator.volatility.length]?.trueRange || '0') / maxTrueRange * 48);
             return <g key={`${row.referencePeriod}-${index}`}>
               <rect x={x(index) - 5} y={202 - barHeight} width="10" height={barHeight} rx="2" fill="#f8fafc" />
               <circle cx={x(index)} cy={y(row.actual)} r="3.2" fill={row.surprise >= 0 ? '#34d399' : '#f43f5e'}><title>{row.referencePeriod}: actual {number(row.actual)}, forecast {number(row.consensus)}</title></circle>
@@ -100,17 +101,18 @@ function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; 
           })}
         </svg>
       </div>
-      <p className="mt-2 text-[10px] text-slate-400">Illustrative history. Green/red points indicate a positive/negative surprise versus forecast; bars show potential range.</p>
+      <p className="mt-2 text-[10px] text-slate-400">Illustrative history. White = actual line, dashed = forecast line, green/red points = beat/miss, bars = true range %.</p>
     </div>
     <aside className="border-t border-white/10 p-4 sm:p-5 lg:border-l lg:border-t-0">
       <p className="text-sm font-semibold">What happened to {asset}</p>
-      <p className="mt-4 text-[10px] font-semibold text-slate-400">Price after the event</p>
-      <div className="mt-2 grid grid-cols-4 gap-2 text-center">{['1H', '1D', '1W', '1M'].map((window, index) => <div key={window}><p className="text-[9px] text-slate-400">{window}</p><p className={`mt-1 text-xs font-bold ${reaction[index] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{reaction[index] >= 0 ? '+' : ''}{reaction[index].toFixed(2)}%</p></div>)}</div>
-      <p className="mt-5 text-[10px] font-semibold text-slate-400">News sentiment before the event</p>
+      <p className="mt-4 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Price after the event</p>
+      <div className="mt-2 grid grid-cols-2 gap-2">{['1H', '1D', '1W', '1M'].map((window, index) => <div key={window} className="rounded border border-white/10 bg-white/[0.04] p-2"><p className="text-[9px] text-slate-400">{window}</p><p className={`mt-1 text-sm font-bold ${reaction[index] >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{reaction[index] >= 0 ? '+' : ''}{reaction[index].toFixed(2)}%</p><p className="mt-1 text-[9px] text-slate-500">vs release</p></div>)}</div>
+      <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">News sentiment 1 day before</p>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-rose-500/80"><div className="h-full bg-emerald-400" style={{ width: `${indicator.sentiment.score}%` }} /></div>
       <div className="mt-1 flex justify-between text-[9px] text-slate-400"><span>Bearish {100 - indicator.sentiment.score}%</span><span>Bullish {indicator.sentiment.score}%</span></div>
-      <p className="mt-5 text-[10px] font-semibold text-slate-400">Potential range based on sample history</p>
-      <div className="mt-2 grid grid-cols-4 items-end gap-2">{indicator.volatility.map((row) => { const height = Math.max(18, rangeValue(row.potentialRange) / maxRange * 58); return <div key={row.window} className="text-center"><div className="mx-auto w-8 rounded-t bg-white" style={{ height }} /><p className="mt-1 text-[9px] text-slate-400">{row.window}</p><p className="text-[9px] text-sky-300">{row.potentialRange}</p></div>; })}</div>
+      <p className="mt-1 text-[9px] text-slate-500">{indicator.sentiment.articleCount} related articles · {indicator.sentiment.window}</p>
+      <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">True range % / potential range %</p>
+      <div className="mt-2 space-y-2">{indicator.volatility.map((row) => { const width = Math.max(8, rangeValue(row.potentialRange) / maxPotentialRange * 100); return <div key={row.window}><div className="mb-1 flex justify-between text-[9px]"><span className="text-slate-400">{row.window}</span><span className="text-sky-300">{row.trueRange} / {row.potentialRange}</span></div><div className="h-1.5 rounded bg-white/10"><div className="h-full rounded bg-sky-400" style={{ width: `${width}%` }} /><div className="relative -mt-1.5 h-1.5 rounded bg-white" style={{ width: `${Math.max(6, rangeValue(row.trueRange) / maxPotentialRange * 100)}%` }} /></div></div>; })}</div>
     </aside>
   </div>;
 }
