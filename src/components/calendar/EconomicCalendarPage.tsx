@@ -108,7 +108,7 @@ const displayDate = (key: string) => key ? key.split('-').reverse().join('/') : 
 
 const num = (s?: string) => (s ? parseFloat(s.replace(/[^0-9.\-]/g, '')) : NaN);
 
-const ROW_GRID = 'md:grid-cols-[72px_64px_minmax(0,1fr)_72px_84px_84px_84px_88px]';
+const ROW_GRID = 'md:grid-cols-[56px_52px_minmax(0,1fr)_52px_68px_68px_68px_72px]';
 
 const brokerColor = (name: string) => {
   const palette = ['#5338ec', '#0b1c30', '#FD02B0', '#0d9488', '#334155', '#8d6a1f', '#3410D5', '#be185d'];
@@ -1135,7 +1135,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                     <span className="text-xs text-[#474556]">Actual values appear as releases are confirmed.</span>
                   </div>
                   <div className="overflow-x-auto">
-                    <div className={`min-w-[760px]`}>
+                    <div className="min-w-[640px] md:min-w-0">
                       <div className={`hidden md:grid ${ROW_GRID} gap-2 border-b border-[#e2e8f0] px-3 py-3 text-sm font-bold text-[#0b1c30]`}>
                         <span>Time</span><span>Cur.</span><span>Event</span><span>Imp.</span>
                         <span className="text-right">Actual</span><span className="text-right">Forecast</span><span className="text-right">Previous</span><span className="text-right">Actions</span>

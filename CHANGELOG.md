@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.88] - 2026-10-06
+### Changed
+- Made the economic calendar table fit the available card width on desktop while preserving horizontal scrolling on narrow screens.
+
 ## [1.0.87] - 2026-10-06
 ### Added
 - Added a neon animated `Personalize` promotion to the calendar side rail, linking to the existing profile/account personalization flow.
