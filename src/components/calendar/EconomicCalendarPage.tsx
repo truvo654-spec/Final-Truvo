@@ -957,46 +957,65 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                 <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">{market}</span>
                                 <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/60">{marketEvents.length}</span>
                               </div>
-                              <div className={timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'space-y-2'}>
-                                {marketEvents.map((event) => {
-                                  const impactClass = event.impact === 'High'
-                                    ? 'border-rose-400/40 bg-rose-400/10'
-                                    : event.impact === 'Medium'
-                                      ? 'border-sky-300/30 bg-sky-300/10'
-                                      : 'border-emerald-400/30 bg-emerald-400/10';
-                                  return (
-                                    <button
-                                      key={event.id}
-                                      onClick={() => {
-                                        setCalendarView('list');
-                                        setSelectedEvent(event);
-                                      }}
-                                      className={`relative w-full rounded-xl border p-2.5 text-left transition-colors hover:brightness-125 ${impactClass}`}
-                                    >
-                                      <div className="flex items-center justify-between gap-2">
-                                        <span className={`rounded-full border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
-                                          event.impact === 'High'
-                                            ? 'border-rose-400/60 text-rose-200'
-                                            : event.impact === 'Medium'
-                                              ? 'border-sky-300/60 text-sky-100'
-                                              : 'border-emerald-300/60 text-emerald-100'
-                                        }`}>
-                                          {event.impact} impact
-                                        </span>
-                                        <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">
-                                          {event.countryFlag} {event.currency}
-                                        </span>
-                                      </div>
-                                      <p className="mt-2 line-clamp-2 min-h-8 text-xs font-bold leading-4 text-white">{event.title}</p>
-                                      <p className="mt-2 text-[10px] font-mono text-white/55">{event.allDay ? 'All day' : hhmmOf(eventMs(event), tz)}</p>
-                                      <div className="mt-2 grid grid-cols-3 gap-1 border-t border-white/10 pt-2 text-[9px]">
-                                        <span className="text-white/45">Forecast<br /><strong className="font-mono text-white/80">{event.forecast || '—'}</strong></span>
-                                        <span className="text-white/45">Previous<br /><strong className="font-mono text-white/80">{event.previous || '—'}</strong></span>
-                                        <span className="text-white/45">Actual<br /><strong className="font-mono text-white/80">{event.actual || '—'}</strong></span>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
+                              <div className="space-y-2">
+                                {(Object.entries(
+                                  marketEvents.reduce<Record<string, EconomicEvent[]>>((groups, event) => {
+                                    (groups[event.currency] ||= []).push(event);
+                                    return groups;
+                                  }, {})
+                                ) as [string, EconomicEvent[]][]).map(([currency, instrumentEvents]) => (
+                                  <div key={currency} className="rounded-lg border border-white/10 bg-black/10 p-1.5">
+                                    <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
+                                      <span className="text-[9px] font-bold uppercase tracking-wide text-white/60">
+                                        {instrumentEvents[0].countryFlag} {currency}
+                                      </span>
+                                      <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/60">
+                                        {instrumentEvents.length}
+                                      </span>
+                                    </div>
+                                    <div className={timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'space-y-2'}>
+                                      {instrumentEvents.map((event) => {
+                                        const impactClass = event.impact === 'High'
+                                          ? 'border-rose-400/40 bg-rose-400/10'
+                                          : event.impact === 'Medium'
+                                            ? 'border-sky-300/30 bg-sky-300/10'
+                                            : 'border-emerald-400/30 bg-emerald-400/10';
+                                        return (
+                                          <button
+                                            key={event.id}
+                                            onClick={() => {
+                                              setCalendarView('list');
+                                              setSelectedEvent(event);
+                                            }}
+                                            className={`relative w-full rounded-xl border p-2.5 text-left transition-colors hover:brightness-125 ${impactClass}`}
+                                          >
+                                            <div className="flex items-center justify-between gap-2">
+                                              <span className={`rounded-full border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide ${
+                                                event.impact === 'High'
+                                                  ? 'border-rose-400/60 text-rose-200'
+                                                  : event.impact === 'Medium'
+                                                    ? 'border-sky-300/60 text-sky-100'
+                                                    : 'border-emerald-300/60 text-emerald-100'
+                                              }`}>
+                                                {event.impact} impact
+                                              </span>
+                                              <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/70">
+                                                {event.countryFlag} {event.currency}
+                                              </span>
+                                            </div>
+                                            <p className="mt-2 line-clamp-2 min-h-8 text-xs font-bold leading-4 text-white">{event.title}</p>
+                                            <p className="mt-2 text-[10px] font-mono text-white/55">{event.allDay ? 'All day' : hhmmOf(eventMs(event), tz)}</p>
+                                            <div className="mt-2 grid grid-cols-3 gap-1 border-t border-white/10 pt-2 text-[9px]">
+                                              <span className="text-white/45">Forecast<br /><strong className="font-mono text-white/80">{event.forecast || '—'}</strong></span>
+                                              <span className="text-white/45">Previous<br /><strong className="font-mono text-white/80">{event.previous || '—'}</strong></span>
+                                              <span className="text-white/45">Actual<br /><strong className="font-mono text-white/80">{event.actual || '—'}</strong></span>
+                                            </div>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </section>
                           ))}

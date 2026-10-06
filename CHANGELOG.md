@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.60] - 2026-10-06
+### Changed
+- Added per-instrument grouping and event-count badges inside each market category.
+
 ## [1.0.59] - 2026-10-06
 ### Changed
 - Expanded visualization event cards with impact/country badges, release time, and Forecast/Previous/Actual values.
