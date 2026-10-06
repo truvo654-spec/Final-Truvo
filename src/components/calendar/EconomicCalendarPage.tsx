@@ -973,8 +973,8 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                                       }}
                                       className={`relative w-full rounded-xl border p-2.5 text-left transition-colors hover:brightness-125 ${impactClass}`}
                                     >
-                                      <span className="absolute right-2 top-2 rounded-full bg-black/20 px-1.5 py-0.5 text-[9px] font-bold text-white/70">{IMPACT_STARS[event.impact]}</span>
-                                      <p className="pr-6 text-[10px] font-bold text-white/80">{event.countryFlag} {event.currency}</p>
+                                      <span className="absolute right-2 top-2 rounded-full bg-black/20 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white/60">{event.impact}</span>
+                                      <p className="pr-16 text-[10px] font-bold text-white/80">{event.countryFlag} {event.currency}</p>
                                       <p className="mt-2 line-clamp-2 text-xs font-bold leading-4 text-white">{event.title}</p>
                                       <p className="mt-2 text-[10px] font-mono text-white/55">{event.allDay ? 'All day' : hhmmOf(eventMs(event), tz)}</p>
                                     </button>

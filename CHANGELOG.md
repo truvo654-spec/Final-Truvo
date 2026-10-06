@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.58] - 2026-10-06
+### Changed
+- Clarified visualization badges so category counts represent the number of rendered event cards, while cards show impact labels instead of numeric impact levels.
+
 ## [1.0.57] - 2026-10-06
 ### Changed
 - Grouped visualization event cards by market category with compact category labels and event-count badges.
