@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.98] - 2026-10-06
+### Added
+- Added a functional Indices tab to the calendar Markets panel with S&P 500, Nasdaq 100, and DAX 40 demo instruments.
+
 ## [1.0.97] - 2026-10-06
 ### Fixed
 - Made timeline market headers deterministically select one market group and restore all markets when clicked again.

@@ -20,13 +20,14 @@ import { IMPACT_STYLES } from '../../data/economicCalendarData';
 
 export type SidePanel = 'markets' | 'ai' | 'watchlist' | 'alerts';
 
-type MarketTab = 'Forex' | 'Commodities' | 'Crypto' | 'Stocks';
+type MarketTab = 'Forex' | 'Indices' | 'Commodities' | 'Crypto' | 'Stocks';
 type Period = '1D' | '1W' | '1M' | '6M' | '1Y' | '5Y' | 'Max';
 
-const MARKET_TABS: MarketTab[] = ['Forex', 'Commodities', 'Crypto', 'Stocks'];
+const MARKET_TABS: MarketTab[] = ['Forex', 'Indices', 'Commodities', 'Crypto', 'Stocks'];
 const PERIODS: Period[] = ['1D', '1W', '1M', '6M', '1Y', '5Y', 'Max'];
 const MARKET_FILTER: Record<MarketTab, string[]> = {
   Forex: ['Forex'],
+  Indices: ['Indices'],
   Commodities: ['Commodity'],
   Crypto: ['Crypto'],
   Stocks: ['US Stocks', 'Stocks'],
