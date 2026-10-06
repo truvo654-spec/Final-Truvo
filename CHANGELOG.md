@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.81] - 2026-10-06
+### Fixed
+- Connected the Summary historical chart to its forecast series so the inspected chart renders both history and a dashed forecast path.
+- Added deterministic Actual/Forecast comparison rows for non-numeric demo events such as holidays and speeches, keeping the impact visualization populated without implying provider data.
+
 ## [1.0.80] - 2026-10-06
 ### Changed
 - Made the event-impact visualization explicit: Actual and Forecast lines, true-range percentages, potential-range percentages, post-event price windows for 1H/1D/1W/1M, and dated news sentiment from the one-day pre-release window.

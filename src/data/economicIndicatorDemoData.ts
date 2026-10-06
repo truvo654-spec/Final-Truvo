@@ -218,7 +218,19 @@ export function buildDemoIndicator(event: EconomicEvent): EconomicIndicator {
       { label: 'Variables tracked', text: profile.variables }, { label: 'Interpretation', text: profile.interpretation },
       { label: 'Source / data notes', text: 'Country, currency, category, description and event timing come from the calendar fixtures. API-shaped identifiers are mock values. All supplemental statistics, news, schedules and projections are illustrative.' },
     ], components, relatedIndicators, historicalSeries, forecastSeries,
-    consensusHistory: isNumeric ? historicalSeries.slice(-6).map((point, i, points) => { const expectation = i === points.length - 1 ? consensus! : round(point.value + [0.2, -0.1, 0.3, -0.2, 0.1][i] * step); return { referencePeriod: point.period, releaseDate: `${point.period} · sample release`, actual: point.value, consensus: expectation, previous: i === 0 ? historicalSeries[5].value : points[i - 1].value, surprise: round(point.value - expectation) }; }) : [],
+    consensusHistory: historicalSeries.slice(-6).map((point, i, points) => {
+      const expectation = isNumeric && i === points.length - 1 && consensus !== null
+        ? consensus
+        : round(point.value + [0.2, -0.1, 0.3, -0.2, 0.1, -0.15][i] * step);
+      return {
+        referencePeriod: point.period,
+        releaseDate: `${point.period} · sample release`,
+        actual: point.value,
+        consensus: expectation,
+        previous: i === 0 ? historicalSeries[5].value : points[i - 1].value,
+        surprise: round(point.value - expectation),
+      };
+    }),
     news, sessions, outlook, affectedAssets, volatility, sentiment, marketStructure, releaseState, surpriseLabel,
     seededAlerts: [
       { id: `${event.id}-reminder`, indicatorId: event.id, name: kind === 'holiday' ? 'Reopening reminder' : 'Release reminder', type: 'Release', condition: 'Before release', triggerValue: '30', delivery: 'In-app', active: true },
