@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.55] - 2026-10-06
+### Added
+- Added a fullscreen control for the Economic Calendar visualization with browser exit and Escape-key synchronization.
+
 ## [1.0.54] - 2026-10-06
 ### Changed
 - Reduced Economic Calendar sidebar padding, chart height, row spacing, and section gaps for a more compact layout.

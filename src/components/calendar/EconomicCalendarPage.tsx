@@ -19,6 +19,8 @@ import {
   Timer,
   ChevronLeft,
   ChevronRight,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { EconomicEvent, EventCategory, Broker } from '../../types';
 import {
@@ -184,6 +186,8 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
   const [calendarPickerPinned, setCalendarPickerPinned] = useState(false);
   const calendarPickerRootRef = useRef<HTMLDivElement>(null);
+  const calendarVisualizationRef = useRef<HTMLDivElement>(null);
+  const [isCalendarFullscreen, setIsCalendarFullscreen] = useState(false);
 
   const hasAiAccess = isLoggedIn && userTierLevel >= 3;
   const alertsLimited = !(isLoggedIn && userTierLevel >= 3);
@@ -195,6 +199,26 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsCalendarFullscreen(document.fullscreenElement === calendarVisualizationRef.current);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  const toggleCalendarFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        return;
+      }
+      await calendarVisualizationRef.current?.requestFullscreen();
+    } catch {
+      onShowToast('Fullscreen view is not available in this browser.');
+    }
+  };
 
   const todayKey = dayKeyOf(NOW_MS, tz);
   const weekStart = addDays(todayKey, -((new Date(`${todayKey}T00:00:00Z`).getUTCDay() + 6) % 7));
@@ -835,12 +859,29 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
 
             <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_440px] gap-6 items-start">
               <div>
-            <div className="mb-6 w-full overflow-hidden rounded-2xl bg-[#0b1c30] px-4 py-5 text-white sm:px-5">
+            <div
+              ref={calendarVisualizationRef}
+              className={`mb-6 w-full overflow-hidden bg-[#0b1c30] px-4 py-5 text-white sm:px-5 ${
+                isCalendarFullscreen
+                  ? 'min-h-screen overflow-y-auto rounded-none'
+                  : 'rounded-2xl'
+              }`}
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#ABA1F8]">Economic Calendar</p>
                   <h2 className="mt-1 text-lg font-bold">Upcoming economic events</h2>
                 </div>
+                <button
+                  type="button"
+                  onClick={toggleCalendarFullscreen}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-[10px] font-bold text-white/75 transition-colors hover:bg-white/10 hover:text-white"
+                  aria-label={isCalendarFullscreen ? 'Exit fullscreen calendar' : 'View calendar fullscreen'}
+                  title={isCalendarFullscreen ? 'Exit fullscreen' : 'View fullscreen'}
+                >
+                  {isCalendarFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                  {isCalendarFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                </button>
               </div>
               {calendarView === 'visualization' ? <><div className="mt-4 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                 <span className="mr-2 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-white/40">Impact Level</span>
