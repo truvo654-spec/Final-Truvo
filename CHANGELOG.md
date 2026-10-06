@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.76] - 2026-10-06
+### Changed
+- Set the economic calendar to open in List view by default.
+
 ## [1.0.75] - 2026-10-06
 ### Changed
 - Removed the duplicate inline From/To date inputs; custom date selection remains available in the range picker.
