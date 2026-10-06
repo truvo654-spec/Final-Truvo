@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.78] - 2026-10-06
+### Changed
+- Enabled multi-select Market Type filtering with inclusive filtering across selected markets.
+
 ## [1.0.77] - 2026-10-06
 ### Changed
 - Made list-view currency symbols clickable through the existing instrument-page navigation callback.

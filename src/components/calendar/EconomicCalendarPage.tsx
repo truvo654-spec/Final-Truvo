@@ -50,6 +50,7 @@ type RangeId = 'yesterday' | 'today' | 'tomorrow' | 'week' | 'nextweek' | 'twowe
 type FilterMenu = 'range' | 'impact' | 'countries' | 'marketType' | 'category' | 'timezone' | null;
 type FilterId = Exclude<FilterMenu, null>;
 type MarketType = 'All Markets' | 'Forex' | 'Indices' | 'Stocks' | 'Commodities' | 'Crypto' | 'Other';
+const MARKET_TYPE_OPTIONS: MarketType[] = ['All Markets', 'Forex', 'Indices', 'Stocks', 'Commodities', 'Crypto'];
 
 const DEFAULT_FILTER_ORDER: FilterId[] = ['range', 'impact', 'countries', 'marketType', 'category', 'timezone'];
 
@@ -178,7 +179,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
   const [draggingFilter, setDraggingFilter] = useState<FilterId | null>(null);
   const [impSel, setImpSel] = useState<Record<number, boolean>>({ 1: true, 2: true, 3: true });
   const [countrySel, setCountrySel] = useState<string[]>([]);
-  const [marketType, setMarketType] = useState<MarketType>('All Markets');
+  const [marketTypes, setMarketTypes] = useState<MarketType[]>(['All Markets']);
   const [catSel, setCatSel] = useState<string[]>([]);
   const [watchedIds, setWatchedIds] = useState<Record<string, boolean>>({});
   const [alerts, setAlerts] = useState<Record<string, number>>({});
@@ -257,7 +258,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
         if (k < rangeFrom || k > rangeTo) return false;
         if (!impSel[IMPACT_STARS[e.impact]]) return false;
         if (countrySel.length && !countrySel.includes(e.currency)) return false;
-        if (marketType !== 'All Markets' && e.assetClass !== (marketType === 'Commodities' ? 'Commodity' : marketType)) return false;
+        if (!marketTypes.includes('All Markets') && !marketTypes.some((market) => e.assetClass === (market === 'Commodities' ? 'Commodity' : market))) return false;
         if (catSel.length && !catSel.some((label) => CALENDAR_CATEGORY_MATCHES[label as keyof typeof CALENDAR_CATEGORY_MATCHES]?.includes(e.category))) return false;
         const instrumentSearch = instrumentQuery.trim().toLowerCase();
         if (instrumentSearch && ![e.currency, e.country, e.assetClass, e.title].some((value) => value.toLowerCase().includes(instrumentSearch))) return false;
@@ -273,7 +274,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
         return eventMs(a) - eventMs(b);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events, search, instrumentQuery, rangeFrom, rangeTo, impSel, countrySel, marketType, catSel, displayMode, tz, NOW_MS]);
+  }, [events, search, instrumentQuery, rangeFrom, rangeTo, impSel, countrySel, marketTypes, catSel, displayMode, tz, NOW_MS]);
 
   const groups = useMemo(() => {
     const map = new Map<string, EconomicEvent[]>();
@@ -353,13 +354,25 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
     set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
   }
 
+  const toggleMarketType = (option: MarketType) => {
+    if (option === 'All Markets') {
+      setMarketTypes(['All Markets']);
+      return;
+    }
+    setMarketTypes((current) => {
+      const selected = current.filter((market) => market !== 'All Markets');
+      const next = selected.includes(option) ? selected.filter((market) => market !== option) : [...selected, option];
+      return next.length ? next : ['All Markets'];
+    });
+  };
+
   const activeFilterCount =
-    (Object.values(impSel).filter(Boolean).length < 3 ? 1 : 0) + (countrySel.length ? 1 : 0) + (marketType !== 'All Markets' ? 1 : 0) + (catSel.length ? 1 : 0);
+    (Object.values(impSel).filter(Boolean).length < 3 ? 1 : 0) + (countrySel.length ? 1 : 0) + (!marketTypes.includes('All Markets') ? 1 : 0) + (catSel.length ? 1 : 0);
 
   const resetFilters = () => {
     setImpSel({ 1: true, 2: true, 3: true });
     setCountrySel([]);
-    setMarketType('All Markets');
+    setMarketTypes(['All Markets']);
     setCatSel([]);
     setInstrumentQuery('');
   };
@@ -757,7 +770,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                 { id: 'range' as const, icon: CalendarIcon, label: 'Recent', active: range !== 'today' },
                 { id: 'impact' as const, icon: Star, label: 'Impact', active: activeFilterCount > 0 && Object.values(impSel).filter(Boolean).length < 3 },
                 { id: 'countries' as const, icon: Globe2, label: 'Countries', active: countrySel.length > 0 },
-                { id: 'marketType' as const, icon: BarChart3, label: 'Market Type', active: marketType !== 'All Markets' },
+                { id: 'marketType' as const, icon: BarChart3, label: 'Market Type', active: !marketTypes.includes('All Markets') },
                 { id: 'category' as const, icon: BarChart3, label: 'Category', active: catSel.length > 0 },
                 { id: 'timezone' as const, icon: Clock, label: tzLabel, active: false },
               ].sort((a, b) => filterOrder.indexOf(a.id) - filterOrder.indexOf(b.id)).map(({ id, icon: Icon, label, active }) => (
@@ -836,17 +849,17 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
 
                   {openFilter === id && id === 'marketType' && (
                     <div className="absolute left-0 top-full mt-1 w-44 rounded-none border border-[#cbd5e1] bg-white py-1 shadow-md">
-                      {(['All Markets', 'Forex', 'Indices', 'Stocks', 'Commodities', 'Crypto'] as MarketType[]).map((option) => (
+                      {MARKET_TYPE_OPTIONS.map((option) => (
                         <button
                           key={option}
-                          onClick={() => { setMarketType(option); setOpenFilter(null); }}
-                          className={`flex w-full items-center gap-2 px-3.5 py-1.5 text-left text-sm ${marketType === option ? 'font-semibold text-[#5338ec]' : 'text-[#26364a] hover:bg-[#f8fafc]'}`}
+                          onClick={() => toggleMarketType(option)}
+                          className={`flex w-full items-center gap-2 px-3.5 py-1.5 text-left text-sm ${marketTypes.includes(option) ? 'font-semibold text-[#5338ec]' : 'text-[#26364a] hover:bg-[#f8fafc]'}`}
                           role="option"
-                          aria-selected={marketType === option}
+                          aria-selected={marketTypes.includes(option)}
                         >
                           <input
                             type="checkbox"
-                            checked={marketType === option}
+                            checked={marketTypes.includes(option)}
                             readOnly
                             tabIndex={-1}
                             aria-hidden="true"
@@ -1008,7 +1021,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                             <section key={market} className="rounded-xl border border-white/10 bg-white/[0.025] p-1.5">
                               <button
                                 type="button"
-                                onClick={() => setMarketType(market === 'Commodity' ? 'Commodities' : market as MarketType)}
+                                onClick={() => toggleMarketType(market === 'Commodity' ? 'Commodities' : market as MarketType)}
                                 className="mb-1.5 flex w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors hover:bg-white/5"
                                 aria-label={`Filter calendar to ${market} events`}
                               >
