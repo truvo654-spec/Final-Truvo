@@ -64,6 +64,8 @@ function ResearchChart({ historical, forecasts = [], unit, threshold }: { histor
   </svg></div><div className="flex flex-wrap gap-4 px-4 pb-3 text-[11px] text-slate-500"><span>● Sample history</span>{forecasts.length > 0 && <span className="text-sky-600">┄ Model projections</span>}</div></div>;
 }
 function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; asset: string }) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const rows = indicator.consensusHistory.slice(-12);
   if (!rows.length) return <div className="bg-[#171821] p-5 text-sm text-slate-400">No numeric actual-versus-forecast history is available for this event type.</div>;
   const values = rows.flatMap((row) => [row.actual, row.consensus]);
@@ -83,6 +85,7 @@ function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; 
   const primaryAssetClass = indicator.affectedAssets[0]?.assetClass || 'Other';
   const rangeUnit = primaryAssetClass === 'Forex' ? 'pips' : primaryAssetClass === 'Indices' ? 'points' : 'change %';
   const rangeMultiplier = primaryAssetClass === 'Forex' ? 100 : primaryAssetClass === 'Indices' ? 50 : 1;
+  const moveMultiplier = primaryAssetClass === 'Forex' ? 100 : primaryAssetClass === 'Indices' ? 50 : 1;
   const rangeInMarketUnits = (value: string) => {
     const percent = rangeValue(value);
     return primaryAssetClass === 'Forex'
@@ -91,6 +94,17 @@ function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; 
         ? `${(percent * rangeMultiplier).toFixed(1)} pts`
         : `${percent.toFixed(2)}%`;
   };
+  const moveInMarketUnits = (percent: number) => primaryAssetClass === 'Forex'
+    ? `${Math.round(percent * moveMultiplier)} pips`
+    : primaryAssetClass === 'Indices'
+      ? `${(percent * moveMultiplier).toFixed(1)} pts`
+      : `${percent.toFixed(2)}%`;
+  const activePoint = hoveredIndex ?? selectedIndex;
+  const activeRow = activePoint === null ? null : rows[activePoint];
+  const activeX = activePoint === null ? 0 : x(activePoint);
+  const activeY = activePoint === null || !activeRow ? 0 : y(activeRow.actual);
+  const tooltipX = Math.min(Math.max(activeX - 88, 8), 572);
+  const tooltipY = activeY < 112 ? 120 : 12;
   return <div className="grid overflow-hidden bg-[#171821] text-white lg:grid-cols-[minmax(0,1fr)_270px]">
     <div className="min-w-0 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -106,10 +120,43 @@ function EventImpactChart({ indicator, asset }: { indicator: EconomicIndicator; 
             const barHeight = Math.max(7, rangeValue(indicator.volatility[index % indicator.volatility.length]?.trueRange || '0') / maxTrueRange * 48);
             return <g key={`${row.referencePeriod}-${index}`}>
               <rect x={x(index) - 5} y={202 - barHeight} width="10" height={barHeight} rx="2" fill="#f8fafc" />
-              <circle cx={x(index)} cy={y(row.actual)} r="3.2" fill={row.surprise >= 0 ? '#34d399' : '#f43f5e'}><title>{row.referencePeriod}: actual {number(row.actual)}, forecast {number(row.consensus)}</title></circle>
+              <circle
+                cx={x(index)}
+                cy={y(row.actual)}
+                r={activePoint === index ? 5 : 3.2}
+                fill={row.surprise >= 0 ? '#34d399' : '#f43f5e'}
+                tabIndex={0}
+                role="button"
+                aria-label={`Show ${row.referencePeriod} market reaction data`}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                onFocus={() => setHoveredIndex(index)}
+                onBlur={() => setHoveredIndex(null)}
+                onClick={() => setSelectedIndex(selectedIndex === index ? null : index)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSelectedIndex(selectedIndex === index ? null : index);
+                  }
+                }}
+                className="cursor-pointer outline-none"
+              >
+                <title>{row.referencePeriod}: actual {number(row.actual)}, forecast {number(row.consensus)}</title>
+              </circle>
               {(index % 2 === 0 || index === rows.length - 1) && <text x={x(index)} y="224" textAnchor="middle" fill="#8b90a3" fontSize="9">{row.referencePeriod}</text>}
             </g>;
           })}
+          {activeRow && (
+            <g pointerEvents="none">
+              <rect x={tooltipX} y={tooltipY} width="180" height="104" rx="6" fill="#0b1c30" stroke="#475569" />
+              <text x={tooltipX + 10} y={tooltipY + 16} fill="#ffffff" fontSize="10" fontWeight="700">{activeRow.referencePeriod} · {asset}</text>
+              <text x={tooltipX + 10} y={tooltipY + 32} fill="#cbd5e1" fontSize="9">Previous {number(activeRow.previous)}</text>
+              <text x={tooltipX + 10} y={tooltipY + 46} fill="#cbd5e1" fontSize="9">Forecast {number(activeRow.consensus)}</text>
+              <text x={tooltipX + 10} y={tooltipY + 60} fill="#ffffff" fontSize="9">Actual {number(activeRow.actual)} · {activeRow.surprise >= 0 ? 'Beat' : 'Miss'}</text>
+              <text x={tooltipX + 10} y={tooltipY + 76} fill="#7dd3fc" fontSize="9">Surprise {signed(activeRow.surprise)}</text>
+              <text x={tooltipX + 10} y={tooltipY + 92} fill="#86efac" fontSize="9">After 1H/1D/1W/1M: {moveInMarketUnits(activeRow.surprise / Math.max(Math.abs(activeRow.consensus), 1) * 100 * 0.4)} / {moveInMarketUnits(activeRow.surprise / Math.max(Math.abs(activeRow.consensus), 1) * 100 * 0.8)} / {moveInMarketUnits(activeRow.surprise / Math.max(Math.abs(activeRow.consensus), 1) * 100 * 1.1)} / {moveInMarketUnits(activeRow.surprise / Math.max(Math.abs(activeRow.consensus), 1) * 100 * 1.4)}</text>
+            </g>
+          )}
         </svg>
       </div>
       <p className="mt-2 text-[10px] text-slate-400">Illustrative history. White = actual line, dashed = forecast line, green/red points = beat/miss, bars = true range %.</p>

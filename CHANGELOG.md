@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.93] - 2026-10-06
+### Added
+- Added hover, focus, and click interactions to event-impact chart points with market-aware reaction details.
+
 ## [1.0.92] - 2026-10-06
 ### Changed
 - Added a currency hashtag badge beside event-detail titles for easier scanning and sharing.
