@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.97] - 2026-10-06
+### Fixed
+- Made timeline market headers deterministically select one market group and restore all markets when clicked again.
+
 ## [1.0.96] - 2026-10-06
 ### Fixed
 - Stabilized timeline market-group filtering by centralizing asset-class normalization and adding explicit selected-state feedback to group buttons.

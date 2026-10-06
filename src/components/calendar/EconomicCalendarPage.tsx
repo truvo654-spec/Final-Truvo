@@ -368,6 +368,11 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
     });
   };
 
+  const selectTimelineMarket = (assetClass: EconomicEvent['assetClass']) => {
+    const market = marketTypeForAssetClass(assetClass);
+    setMarketTypes((current) => current.length === 1 && current[0] === market ? ['All Markets'] : [market]);
+  };
+
   const activeFilterCount =
     (Object.values(impSel).filter(Boolean).length < 3 ? 1 : 0) + (countrySel.length ? 1 : 0) + (!marketTypes.includes('All Markets') ? 1 : 0) + (catSel.length ? 1 : 0);
 
@@ -1023,7 +1028,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                             <section key={market} className="rounded-xl border border-white/10 bg-white/[0.025] p-1.5">
                               <button
                                 type="button"
-                                onClick={() => toggleMarketType(marketTypeForAssetClass(market as EconomicEvent['assetClass']))}
+                                onClick={() => selectTimelineMarket(market as EconomicEvent['assetClass'])}
                                 aria-pressed={marketTypes.includes(marketTypeForAssetClass(market as EconomicEvent['assetClass']))}
                                 className={`mb-1.5 flex w-full items-center justify-between gap-2 rounded-md px-1 text-left transition-colors hover:bg-white/5 ${marketTypes.includes(marketTypeForAssetClass(market as EconomicEvent['assetClass'])) ? 'bg-white/10' : ''}`}
                                 aria-label={`Filter calendar to ${market} events`}
