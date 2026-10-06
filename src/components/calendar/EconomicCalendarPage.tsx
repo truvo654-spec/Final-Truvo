@@ -776,7 +776,21 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                   {openFilter === id && id === 'marketType' && (
                     <div className="absolute left-0 top-full mt-1 w-44 rounded-none border border-[#cbd5e1] bg-white py-1 shadow-md">
                       {(['All Markets', 'Forex', 'Indices', 'Stocks', 'Commodities', 'Crypto'] as MarketType[]).map((option) => (
-                        <button key={option} onClick={() => { setMarketType(option); setOpenFilter(null); }} className={`block w-full px-3.5 py-1.5 text-left text-sm ${marketType === option ? 'font-semibold text-[#5338ec]' : 'text-[#26364a] hover:bg-[#f8fafc]'}`}>
+                        <button
+                          key={option}
+                          onClick={() => { setMarketType(option); setOpenFilter(null); }}
+                          className={`flex w-full items-center gap-2 px-3.5 py-1.5 text-left text-sm ${marketType === option ? 'font-semibold text-[#5338ec]' : 'text-[#26364a] hover:bg-[#f8fafc]'}`}
+                          role="option"
+                          aria-selected={marketType === option}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={marketType === option}
+                            readOnly
+                            tabIndex={-1}
+                            aria-hidden="true"
+                            className="h-3.5 w-3.5 accent-[#5338ec]"
+                          />
                           {option}
                         </button>
                       ))}
@@ -929,31 +943,46 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                   <div className={timelineIsSingleDay ? 'mt-3 grid grid-cols-1 gap-2' : 'mt-3 grid grid-cols-7 gap-2'}>
                     {timelineDays.map((day) => {
                       const dayEvents = timelineEvents.filter((event) => eventKey(event) === day);
+                      const marketGroups = dayEvents.reduce<Record<string, EconomicEvent[]>>((groups, event) => {
+                        const group = event.assetClass || 'Other';
+                        (groups[group] ||= []).push(event);
+                        return groups;
+                      }, {});
                       return (
-                        <div key={day} className={timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'max-h-[280px] space-y-2 overflow-y-auto pr-1'}>
+                        <div key={day} className={timelineIsSingleDay ? 'space-y-2' : 'max-h-[280px] space-y-2 overflow-y-auto pr-1'}>
                           {dayEvents.length === 0 && <p className="rounded-lg border border-dashed border-white/10 px-2 py-5 text-center text-[10px] text-white/25">No events</p>}
-                          {dayEvents.map((event) => {
-                            const impactClass = event.impact === 'High'
-                              ? 'border-rose-400/40 bg-rose-400/10'
-                              : event.impact === 'Medium'
-                                ? 'border-sky-300/30 bg-sky-300/10'
-                                : 'border-emerald-400/30 bg-emerald-400/10';
-                            return (
-                              <button
-                                key={event.id}
-                                onClick={() => {
-                                  setCalendarView('list');
-                                  setSelectedEvent(event);
-                                }}
-                                className={`relative w-full rounded-xl border p-2.5 text-left transition-colors hover:brightness-125 ${impactClass}`}
-                              >
-                                <span className="absolute right-2 top-2 rounded-full bg-black/20 px-1.5 py-0.5 text-[9px] font-bold text-white/70">{IMPACT_STARS[event.impact]}</span>
-                                <p className="pr-6 text-[10px] font-bold text-white/80">{event.countryFlag} {event.currency}</p>
-                                <p className="mt-2 line-clamp-2 text-xs font-bold leading-4 text-white">{event.title}</p>
-                                <p className="mt-2 text-[10px] font-mono text-white/55">{event.allDay ? 'All day' : hhmmOf(eventMs(event), tz)}</p>
-                              </button>
-                            );
-                          })}
+                          {(Object.entries(marketGroups) as [string, EconomicEvent[]][]).map(([market, marketEvents]) => (
+                            <section key={market} className="rounded-xl border border-white/10 bg-white/[0.025] p-1.5">
+                              <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
+                                <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">{market}</span>
+                                <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-white/60">{marketEvents.length}</span>
+                              </div>
+                              <div className={timelineIsSingleDay ? 'grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4' : 'space-y-2'}>
+                                {marketEvents.map((event) => {
+                                  const impactClass = event.impact === 'High'
+                                    ? 'border-rose-400/40 bg-rose-400/10'
+                                    : event.impact === 'Medium'
+                                      ? 'border-sky-300/30 bg-sky-300/10'
+                                      : 'border-emerald-400/30 bg-emerald-400/10';
+                                  return (
+                                    <button
+                                      key={event.id}
+                                      onClick={() => {
+                                        setCalendarView('list');
+                                        setSelectedEvent(event);
+                                      }}
+                                      className={`relative w-full rounded-xl border p-2.5 text-left transition-colors hover:brightness-125 ${impactClass}`}
+                                    >
+                                      <span className="absolute right-2 top-2 rounded-full bg-black/20 px-1.5 py-0.5 text-[9px] font-bold text-white/70">{IMPACT_STARS[event.impact]}</span>
+                                      <p className="pr-6 text-[10px] font-bold text-white/80">{event.countryFlag} {event.currency}</p>
+                                      <p className="mt-2 line-clamp-2 text-xs font-bold leading-4 text-white">{event.title}</p>
+                                      <p className="mt-2 text-[10px] font-mono text-white/55">{event.allDay ? 'All day' : hhmmOf(eventMs(event), tz)}</p>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </section>
+                          ))}
                         </div>
                       );
                     })}
