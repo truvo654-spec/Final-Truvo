@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.64] - 2026-10-06
+### Changed
+- Single-event instruments now render directly as linked cards; multi-event instruments expose a clickable group header that populates the detail-card strip below.
+
 ## [1.0.63] - 2026-10-06
 ### Changed
 - Made the below-calendar event-card strip visible by default for the active day; instrument selection now narrows the same linked card strip.
