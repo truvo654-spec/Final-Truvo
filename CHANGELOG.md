@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.59] - 2026-10-06
+### Changed
+- Expanded visualization event cards with impact/country badges, release time, and Forecast/Previous/Actual values.
+- Widened the timeline canvas so detailed cards remain readable across multi-day views.
+
 ## [1.0.58] - 2026-10-06
 ### Changed
 - Clarified visualization badges so category counts represent the number of rendered event cards, while cards show impact labels instead of numeric impact levels.
