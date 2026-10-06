@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.90] - 2026-10-06
+### Changed
+- Locked the calendar rail's AI Assistant entry for users below Level 3 and routed locked clicks to the existing upgrade prompt.
+
 ## [1.0.89] - 2026-10-06
 ### Changed
 - Kept alert controls visible for all-day calendar events and assigned future all-day releases a one-day reminder default.

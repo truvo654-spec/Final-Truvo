@@ -388,15 +388,29 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
           {RAIL.map((r) => {
             const Icon = r.icon;
             const active = r.panel === panel;
+            const aiLocked = r.id === 'ai' && !hasAiAccess;
             return (
               <button
                 key={r.id}
-                onClick={() => (r.panel ? onPanelChange(r.panel) : r.tab && onNavigateToTab?.(r.tab))}
-                className={`flex flex-col items-center gap-1 py-3 px-1 text-[10px] font-semibold leading-tight text-center transition-colors ${
-                  active ? 'text-[#5338ec]' : 'text-[#474556] hover:text-[#5338ec]'
+                onClick={() => {
+                  if (aiLocked) {
+                    onUpgradePrompt();
+                    return;
+                  }
+                  if (r.panel) onPanelChange(r.panel);
+                  else if (r.tab) onNavigateToTab?.(r.tab);
+                }}
+                aria-label={aiLocked ? 'Unlock AI Assistant for Level 3 or Level 4' : r.label}
+                aria-disabled={aiLocked}
+                title={aiLocked ? 'AI Assistant is available at Level 3 or Level 4' : r.label}
+                className={`relative flex flex-col items-center gap-1 py-3 px-1 text-[10px] font-semibold leading-tight text-center transition-colors ${
+                  aiLocked
+                    ? 'text-slate-400 hover:text-[#5338ec]'
+                    : active ? 'text-[#5338ec]' : 'text-[#474556] hover:text-[#5338ec]'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className={`w-5 h-5 ${aiLocked ? 'opacity-60' : ''}`} />
+                {aiLocked && <Lock className="absolute right-2 top-2 h-2.5 w-2.5 text-slate-500" />}
                 {r.label}
               </button>
             );
