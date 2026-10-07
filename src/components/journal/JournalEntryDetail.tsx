@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Star, Check, X as XIcon, Trash2, Pencil, Link2, AlertTriangle } from 'lucide-react';
 import { JournalEntry, JournalChecklistItem } from '../../types';
 import { AiEntrySummary } from './AiEntrySummary';
+import { TradeLogSection } from './TradeLogSection';
 
 interface JournalEntryDetailProps {
   entry: JournalEntry;
@@ -107,6 +108,8 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               <img src={entry.screenshot} alt="Trade screenshot" className="w-full rounded-xl border border-slate-200" />
             </div>
           )}
+
+          <TradeLogSection entry={entry} checklist={checklist} onShowToast={onShowToast} />
 
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">Setup</p>
