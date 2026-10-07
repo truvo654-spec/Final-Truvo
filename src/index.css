@@ -850,3 +850,36 @@ select:not(.appearance-none) {
   .jr-word, .jr-fade { animation: none; opacity: 1; filter: none; transform: none; }
   .jr-spot-idle, .jr-shimmer, .jr-skeleton { animation: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Dark-mode surfaces for the Economic Calendar. These pages use light
+   hex backgrounds and dark text colours that the shared dark theme does
+   not flip, which left light text on light panels. Measured with a
+   contrast scan; every colour below was found in the rendered page.
+   ══════════════════════════════════════════════════════════════════ */
+.dark .bg-\[\#f6f3ff\],
+.dark .bg-\[\#F4F2FF\],
+.dark .bg-\[\#f4f2ff\] {
+  background-color: #1a0a52;
+}
+.dark .bg-\[\#f7f9fc\] {
+  background-color: #0d0626;
+}
+.dark .bg-\[\#eeeaff\] {
+  background-color: #2a1380;
+}
+.dark .bg-\[\#f8fafc\].rounded-full {
+  background-color: #1a0a52;
+}
+/* the filter bar and chips use these dark text colours */
+.dark .text-\[\#26364a\],
+.dark .text-\[\#334155\] {
+  color: #dcd8fb;
+}
+.dark .text-\[\#5046E5\] {
+  color: #b3a9fb;
+}
+.dark .border-\[\#d6d8df\],
+.dark .border-\[\#dfe5ee\] {
+  border-color: #2e1a8f;
+}

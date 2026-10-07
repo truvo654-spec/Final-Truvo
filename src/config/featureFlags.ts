@@ -4,8 +4,8 @@
  * The pages themselves are untouched, they just have no menu entry while hidden.
  */
 export const FEATURE_FLAGS = {
-  portfolioTracker: false,
-  expertAdvisors: false,
-  priceAlerts: false,
-  aiCompanion: false,
+  portfolioTracker: true,
+  expertAdvisors: true,
+  priceAlerts: true,
+  aiCompanion: true,
 } as const;

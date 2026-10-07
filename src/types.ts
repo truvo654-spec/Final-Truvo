@@ -412,7 +412,7 @@ export interface EconomicEvent {
   countryFlag: string;
   currency: string;
   region: string;
-  assetClass: 'Forex' | 'Crypto' | 'Commodity' | 'Indices' | 'Stocks';
+  assetClass: 'Forex' | 'Crypto' | 'Commodity' | 'Indices' | 'Stocks' | 'Other';
   category: EventCategory;
   impact: EventImpact;
   /** ISO timestamp with offset, e.g. 2026-10-05T05:00:00+07:00. Ignored for all-day rows. */
@@ -632,5 +632,3 @@ export interface CommunityInfluencer {
   followersCount?: number;
   postsCount?: number;
 }
-
-

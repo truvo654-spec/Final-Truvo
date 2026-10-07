@@ -10,6 +10,7 @@ import {
   Lock,
   X,
   ChevronRight,
+  ChevronLeft,
 } from 'lucide-react';
 import { EconomicEvent, Broker } from '../../types';
 import { instruments } from '../analysis/detail/mockMarket';
@@ -19,13 +20,14 @@ import { IMPACT_STYLES } from '../../data/economicCalendarData';
 
 export type SidePanel = 'markets' | 'ai' | 'watchlist' | 'alerts';
 
-type MarketTab = 'Forex' | 'Commodities' | 'Crypto' | 'Stocks';
+type MarketTab = 'Forex' | 'Indices' | 'Commodities' | 'Crypto' | 'Stocks';
 type Period = '1D' | '1W' | '1M' | '6M' | '1Y' | '5Y' | 'Max';
 
-const MARKET_TABS: MarketTab[] = ['Forex', 'Commodities', 'Crypto', 'Stocks'];
+const MARKET_TABS: MarketTab[] = ['Forex', 'Indices', 'Commodities', 'Crypto', 'Stocks'];
 const PERIODS: Period[] = ['1D', '1W', '1M', '6M', '1Y', '5Y', 'Max'];
 const MARKET_FILTER: Record<MarketTab, string[]> = {
   Forex: ['Forex'],
+  Indices: ['Indices'],
   Commodities: ['Commodity'],
   Crypto: ['Crypto'],
   Stocks: ['US Stocks', 'Stocks'],
@@ -74,8 +76,8 @@ interface CalendarSidePanelProps {
 }
 
 const RAIL: { id: string; label: string; icon: React.ElementType; panel?: SidePanel; tab?: string }[] = [
-  { id: 'markets', label: 'Markets', icon: BarChart3, panel: 'markets' },
   { id: 'ai', label: 'AI Assistant', icon: Sparkles, panel: 'ai' },
+  { id: 'markets', label: 'Markets', icon: BarChart3, panel: 'markets' },
   { id: 'watchlist', label: 'Watchlist', icon: Star, panel: 'watchlist' },
   { id: 'alerts', label: 'Alerts', icon: Bell, panel: 'alerts' },
   { id: 'brokers', label: 'Top Brokers', icon: TrendingUp, tab: 'brokers' },
@@ -102,6 +104,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
   const [period, setPeriod] = useState<Period>('1D');
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [moversTab, setMoversTab] = useState<'active' | 'gainers' | 'losers'>('active');
+  const [railVisible, setRailVisible] = useState(true);
 
   const rows = useMemo(
     () => instruments.filter((i) => MARKET_FILTER[marketTab].includes(i.market)).slice(0, 8),
@@ -147,11 +150,11 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
 
   return (
     <div className="bg-white border border-[#e2e8f0] rounded-2xl shadow-xs flex overflow-hidden">
-      <div className="flex-1 min-w-0 p-4">
+      <div className="flex-1 min-w-0 p-3">
         {/* ───── Markets ───── */}
         {panel === 'markets' && (
           <div>
-            <div className="flex items-center gap-4 border-b border-[#f1f5f9] mb-3 overflow-x-auto">
+            <div className="flex items-center gap-3 border-b border-[#f1f5f9] mb-2 overflow-x-auto">
               {MARKET_TABS.map((t) => (
                 <button
                   key={t}
@@ -159,7 +162,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
                     setMarketTab(t);
                     setSelectedSymbol(null);
                   }}
-                  className={`pb-2 text-sm font-semibold whitespace-nowrap relative transition-colors ${
+                  className={`pb-1.5 text-sm font-semibold whitespace-nowrap relative transition-colors ${
                     marketTab === t
                       ? "text-[#5338ec] after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#5338ec]"
                       : 'text-[#474556] hover:text-[#0b1c30]'
@@ -170,7 +173,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
               ))}
             </div>
 
-            <div className="flex items-center gap-3 mb-2 overflow-x-auto">
+            <div className="flex items-center gap-2.5 mb-1.5 overflow-x-auto">
               {PERIODS.map((p) => (
                 <button
                   key={p}
@@ -183,7 +186,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
             </div>
 
             {chart && selected && (
-              <div className="mb-3">
+              <div className="mb-2">
                 <div className="flex items-baseline justify-between mb-1">
                   <span className="text-xs font-bold text-[#0b1c30]">{selected.symbol}</span>
                   <span className={`text-xs font-bold font-mono ${chart.up ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -191,7 +194,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
                     {periodChange(selected.change, selected.return1m, period).toFixed(2)}%
                   </span>
                 </div>
-                <svg viewBox={`0 0 ${chart.w} ${chart.h}`} className="w-full h-28">
+                <svg viewBox={`0 0 ${chart.w} ${chart.h}`} className="w-full h-20">
                   <polygon points={chart.area} fill={chart.up ? 'rgba(16,185,129,0.10)' : 'rgba(244,63,94,0.10)'} />
                   <polyline points={chart.line} fill="none" stroke={chart.up ? '#10b981' : '#f43f5e'} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
                 </svg>
@@ -206,7 +209,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
                   <button
                     key={r.symbol}
                     onClick={() => setSelectedSymbol(r.symbol)}
-                    className={`w-full grid grid-cols-[1fr_auto_auto] items-center gap-3 px-2 py-2 text-left transition-colors ${active ? 'bg-[#F8F7FF]' : 'hover:bg-slate-50'}`}
+                    className={`w-full grid grid-cols-[1fr_auto_auto] items-center gap-2 px-2 py-1.5 text-left transition-colors ${active ? 'bg-[#F8F7FF]' : 'hover:bg-slate-50'}`}
                   >
                     <span className="text-xs font-bold text-[#0b1c30] truncate">{r.symbol}</span>
                     <span className="text-xs font-mono text-[#0b1c30]">{fmtPrice(r.price)}</span>
@@ -219,26 +222,26 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
               })}
             </div>
 
-            <div className="mt-5 pt-4 border-t border-[#f1f5f9]">
-              <p className="text-sm text-[#0b1c30] leading-snug mb-3">
+            <div className="mt-3 pt-3 border-t border-[#f1f5f9]">
+              <p className="text-sm text-[#0b1c30] leading-snug mb-2">
                 Join our learning challenges and earn rewards while you study.
               </p>
               <button
                 onClick={() => onNavigateToTab?.('education-hub')}
-                className="w-full bg-[#5338ec] hover:bg-[#4326d8] text-white text-sm font-bold py-2.5 rounded-xl transition-colors"
+                className="w-full bg-[#5338ec] hover:bg-[#4326d8] text-white text-sm font-bold py-2 rounded-xl transition-colors"
               >
                 Take the Challenge
               </button>
             </div>
 
-            <div className="mt-5">
+            <div className="mt-3">
               <button
                 onClick={() => onNavigateToTab?.('signals')}
-                className="flex items-center gap-1 text-sm font-bold text-[#0b1c30] hover:text-[#5338ec] mb-2 transition-colors"
+                className="flex items-center gap-1 text-sm font-bold text-[#0b1c30] hover:text-[#5338ec] mb-1.5 transition-colors"
               >
                 Market Movers <ChevronRight className="w-4 h-4" />
               </button>
-              <div className="flex items-center gap-4 border-b border-[#f1f5f9] mb-2">
+              <div className="flex items-center gap-3 border-b border-[#f1f5f9] mb-1">
                 {([
                   ['active', 'Most Active'],
                   ['gainers', 'Gainers %'],
@@ -247,7 +250,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
                   <button
                     key={id}
                     onClick={() => setMoversTab(id)}
-                    className={`pb-2 text-xs font-semibold relative transition-colors ${
+                    className={`pb-1.5 text-xs font-semibold relative transition-colors ${
                       moversTab === id
                         ? "text-[#5338ec] after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#5338ec]"
                         : 'text-[#474556]'
@@ -259,7 +262,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
               </div>
               <div className="divide-y divide-[#f1f5f9]">
                 {movers.map((m) => (
-                  <div key={m.symbol} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-1 py-2">
+                  <div key={m.symbol} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 px-1 py-1.5">
                     <span className="text-xs font-bold text-[#0b1c30]">{m.symbol}</span>
                     <span className="text-xs font-mono text-[#0b1c30]">{fmtPrice(m.price)}</span>
                     <span className={`text-xs font-bold font-mono w-16 text-right ${m.change >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -272,7 +275,7 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
             </div>
 
             {adBroker && (
-              <div className="mt-5 -mx-1">
+              <div className="mt-3 -mx-1">
                 <CommunityBrokerAdWidget broker={adBroker} onOpenConnectModal={onOpenConnectModal} />
               </div>
             )}
@@ -372,24 +375,74 @@ export const CalendarSidePanel: React.FC<CalendarSidePanelProps> = ({
       </div>
 
       {/* Icon rail */}
-      <div className="w-[76px] shrink-0 border-l border-[#f1f5f9] bg-[#fcfcfe] flex flex-col py-2">
-        {RAIL.map((r) => {
-          const Icon = r.icon;
-          const active = r.panel === panel;
-          return (
-            <button
-              key={r.id}
-              onClick={() => (r.panel ? onPanelChange(r.panel) : r.tab && onNavigateToTab?.(r.tab))}
-              className={`flex flex-col items-center gap-1 py-3 px-1 text-[10px] font-semibold leading-tight text-center transition-colors ${
-                active ? 'text-[#5338ec]' : 'text-[#474556] hover:text-[#5338ec]'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              {r.label}
-            </button>
-          );
-        })}
-      </div>
+      {railVisible ? (
+        <div className="w-[76px] shrink-0 border-l border-[#f1f5f9] bg-[#fcfcfe] flex flex-col py-2">
+          <button
+            type="button"
+            onClick={() => setRailVisible(false)}
+            aria-label="Hide calendar side panel rail"
+            title="Hide side panel rail"
+            className="mx-auto mb-1 flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-[#5338ec]"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          {RAIL.map((r) => {
+            const Icon = r.icon;
+            const active = r.panel === panel;
+            const aiLocked = r.id === 'ai' && !hasAiAccess;
+            return (
+              <button
+                key={r.id}
+                onClick={() => {
+                  if (aiLocked) {
+                    onUpgradePrompt();
+                    return;
+                  }
+                  if (r.panel) onPanelChange(r.panel);
+                  else if (r.tab) onNavigateToTab?.(r.tab);
+                }}
+                aria-label={aiLocked ? 'Unlock AI Assistant for Level 3 or Level 4' : r.label}
+                aria-disabled={aiLocked}
+                title={aiLocked ? 'AI Assistant is available at Level 3 or Level 4' : r.label}
+                className={`relative flex flex-col items-center gap-1 py-3 px-1 text-[10px] font-semibold leading-tight text-center transition-colors ${
+                  aiLocked
+                    ? 'text-slate-400 hover:text-[#5338ec]'
+                    : active ? 'text-[#5338ec]' : 'text-[#474556] hover:text-[#5338ec]'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${aiLocked ? 'opacity-60' : ''}`} />
+                {aiLocked && <Lock className="absolute right-2 top-2 h-2.5 w-2.5 text-slate-500" />}
+                {r.label}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            onClick={() => onNavigateToTab?.('profile')}
+            aria-label="Personalize your calendar"
+            title="Personalize your calendar"
+            className="group relative mx-1 mt-auto flex flex-col items-center gap-1 overflow-hidden rounded-xl border border-fuchsia-300/80 bg-gradient-to-b from-fuchsia-500 via-violet-600 to-indigo-700 px-1 py-3 text-[10px] font-bold leading-tight text-white shadow-[0_0_14px_rgba(168,85,247,0.7),0_0_28px_rgba(34,211,238,0.3)] transition-transform hover:scale-105 motion-safe:animate-[pulse_1.4s_ease-in-out_infinite]"
+          >
+            <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/90 shadow-[0_0_8px_2px_rgba(255,255,255,0.9)]" />
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-lime-300 shadow-[0_0_8px_3px_rgba(190,242,100,0.9)]">
+              <span className="absolute inset-0 rounded-full bg-lime-200 motion-safe:animate-ping" />
+            </span>
+            <Sparkles className="h-5 w-5 drop-shadow-[0_0_5px_rgba(255,255,255,0.9)]" />
+            <span className="rounded-full bg-lime-300/90 px-1 py-0.5 text-[7px] font-black uppercase tracking-wider text-indigo-900">Promo</span>
+            Personalize
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setRailVisible(true)}
+          aria-label="Show calendar side panel rail"
+          title="Show side panel rail"
+          className="flex w-8 shrink-0 items-center justify-center border-l border-[#f1f5f9] bg-[#fcfcfe] text-slate-400 transition-colors hover:text-[#5338ec]"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 };

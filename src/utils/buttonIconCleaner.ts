@@ -23,7 +23,7 @@ export function setupButtonIconCleaner() {
       button.classList.contains('dropdown-trigger') ||
       button.classList.contains('select-trigger') ||
       button.id?.includes('dropdown') ||
-      button.className.includes('pr-10'); // typical dropdown button layout with right chevron
+      (button.getAttribute('class') || '').includes('pr-10'); // typical dropdown button layout with right chevron (SVG elements have no string className)
 
     // It has text! Hide any svg icons inside this button (except dropdown arrow indicators)
     const svgs = button.querySelectorAll('svg');
