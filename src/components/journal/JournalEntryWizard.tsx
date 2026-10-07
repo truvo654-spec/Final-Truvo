@@ -21,6 +21,21 @@ interface JournalEntryWizardProps {
   brokers?: Broker[];
   onConnectBroker?: (broker: Broker) => void;
   initialMode?: 'auto' | 'upload' | 'import' | 'manual';
+  /** Playbook names to choose from (defaults to the built-in list). */
+  strategies?: string[];
+  /** Prefill from a playbook (checklist step or a scenario). */
+  prefill?: {
+    strategy?: string;
+    checklist?: string[];
+    symbol?: string;
+    assetClass?: PortfolioAssetClass;
+    direction?: 'BUY' | 'SELL';
+    entryPrice?: number;
+    stopPrice?: number;
+    takeProfit?: number;
+    notes?: string;
+    scenarioId?: string;
+  } | null;
 }
 
 const STEPS = ['Trade', 'Setup', 'Execution', 'Review'];
@@ -41,33 +56,36 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
   brokers = [],
   onConnectBroker,
   initialMode,
+  strategies,
+  prefill,
 }) => {
+  const STRATS = strategies && strategies.length ? strategies : JOURNAL_STRATEGIES;
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<'auto' | 'upload' | 'import' | 'manual'>(initialMode ?? 'import');
   const [linked, setLinked] = useState<PortfolioTrade | null>(null);
 
   // manual trade fields
-  const [symbol, setSymbol] = useState('');
-  const [assetClass, setAssetClass] = useState<PortfolioAssetClass>('Forex');
-  const [direction, setDirection] = useState<'BUY' | 'SELL'>('BUY');
-  const [entryPrice, setEntryPrice] = useState('');
+  const [symbol, setSymbol] = useState(prefill?.symbol ?? '');
+  const [assetClass, setAssetClass] = useState<PortfolioAssetClass>(prefill?.assetClass ?? 'Forex');
+  const [direction, setDirection] = useState<'BUY' | 'SELL'>(prefill?.direction ?? 'BUY');
+  const [entryPrice, setEntryPrice] = useState(prefill?.entryPrice !== undefined ? String(prefill.entryPrice) : '');
   const [exitPrice, setExitPrice] = useState('');
-  const [stopPrice, setStopPrice] = useState('');
+  const [stopPrice, setStopPrice] = useState(prefill?.stopPrice !== undefined ? String(prefill.stopPrice) : '');
   const [size, setSize] = useState('');
-  const [takeProfit, setTakeProfit] = useState('');
+  const [takeProfit, setTakeProfit] = useState(prefill?.takeProfit !== undefined ? String(prefill.takeProfit) : '');
   const [commission, setCommission] = useState('');
   const [entryTime, setEntryTime] = useState('');
   const [exitTime, setExitTime] = useState('');
 
   // setup
-  const [strategy, setStrategy] = useState(JOURNAL_STRATEGIES[0]);
+  const [strategy, setStrategy] = useState(prefill?.strategy && STRATS.includes(prefill.strategy) ? prefill.strategy : STRATS[0]);
   const [brokerId, setBrokerId] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [setupNotes, setSetupNotes] = useState('');
+  const [setupNotes, setSetupNotes] = useState(prefill?.notes ?? '');
   const [screenshot, setScreenshot] = useState<string | undefined>();
 
   // execution
-  const [checked, setChecked] = useState<string[]>([]);
+  const [checked, setChecked] = useState<string[]>(prefill?.checklist ?? []);
   const [followedPlan, setFollowedPlan] = useState(true);
   const [emotionBefore, setEmotionBefore] = useState<JournalEmotion>('Calm');
   const [emotionAfter, setEmotionAfter] = useState<JournalEmotion>('Calm');
@@ -117,6 +135,16 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
       : mode !== 'manual'
       ? false
       : symbol.trim() !== '' && entryPrice !== '' && size !== '' && !timeOrderError && !levelError;
+
+  // Why Next is disabled on the first step (shown next to the button).
+  const nextHint = (() => {
+    if (step !== 0 || tradeValid) return '';
+    if (mode === 'import') return 'Pick a trade from your portfolio to continue.';
+    if (mode !== 'manual') return 'Switch to "Enter manually" or "Import from Portfolio" to continue.';
+    if (timeOrderError || levelError) return timeOrderError || levelError;
+    const missing = [!symbol.trim() && 'symbol', entryPrice === '' && 'entry price', size === '' && 'size'].filter(Boolean) as string[];
+    return missing.length ? `Add ${missing.join(', ').replace(/, ([^,]*)$/, ' and $1')} to continue.` : '';
+  })();
 
   const handleFile = (file?: File) => {
     if (!file) return;
@@ -188,6 +216,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
       screenshot,
       source: 'manual',
       brokerId: brokerId || undefined,
+      scenarioId: prefill?.scenarioId,
       stopPrice: stopPrice ? parseFloat(stopPrice) : undefined,
       takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
       commission: commission ? parseFloat(commission) : undefined,
@@ -322,7 +351,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
                     <div>
                       <label className="text-xs font-semibold text-[#474556] mb-1 block">Playbook setup</label>
                       <select value={strategy} onChange={(e) => setStrategy(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
-                        {JOURNAL_STRATEGIES.map((st) => <option key={st}>{st}</option>)}
+                        {STRATS.map((st) => <option key={st}>{st}</option>)}
                       </select>
                     </div>
                     <div>
@@ -350,7 +379,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">Strategy</p>
                 <div className="flex flex-wrap gap-2">
-                  {JOURNAL_STRATEGIES.map((s) => (
+                  {STRATS.map((s) => (
                     <button key={s} onClick={() => setStrategy(s)} className={chip(strategy === s)}>{s}</button>
                   ))}
                 </div>
@@ -466,6 +495,8 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
             <ChevronLeft className="w-4 h-4" /> {step === 0 ? 'Cancel' : 'Back'}
           </button>
           {step < STEPS.length - 1 ? (
+            <div className="flex items-center gap-3">
+            {nextHint && <span className="text-xs text-amber-700 text-right max-w-[260px]" role="status">{nextHint}</span>}
             <button
               disabled={step === 0 && !tradeValid}
               onClick={() => setStep(step + 1)}
@@ -473,6 +504,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>
+            </div>
           ) : (
             <button
               onClick={() => onSave(buildEntry())}

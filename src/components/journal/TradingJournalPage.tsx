@@ -11,10 +11,14 @@ import {
 } from '../../data/journalData';
 import { FolderTabs, FolderTabItem } from '../common/FolderTabs';
 import { JournalEntryWizard } from './JournalEntryWizard';
+
+type WizardPrefill = React.ComponentProps<typeof JournalEntryWizard>['prefill'];
 import { JournalEntryDetail } from './JournalEntryDetail';
 import { JournalCalendar } from './JournalCalendar';
 import { JournalTradeLog } from './JournalTradeLog';
 import { JournalInsights } from './JournalInsights';
+import { JournalPlaybooks } from './JournalPlaybooks';
+import { DEFAULT_PLAYBOOKS, JournalPlaybook } from '../../data/journalPlaybooks';
 import { JournalCumulativeChart } from './JournalCumulativeChart';
 import { DisciplineCard, RulesMonitor, TiltMonitor } from './JournalMonitors';
 import { CashbackMode, PnlMode, RangeMode, UNASSIGNED, addMonth, brokerColor, computeKpis, entryCashback, entryPoints, entryValue, rangeBounds, shortDate } from './journalOverview';
@@ -64,6 +68,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
   const [checklist, setChecklist] = useState<JournalChecklistItem[]>(DEFAULT_CHECKLIST);
   const [newItem, setNewItem] = useState('');
+  const [playbooks, setPlaybooks] = useState<JournalPlaybook[]>(DEFAULT_PLAYBOOKS);
+  const [recordings, setRecordings] = useState<Record<string, string>>({}); // entry id → replay video (object URL)
   const [rules, setRules] = useState({ maxRisk: 1, maxDailyLoss: 3, maxTrades: 3, stopAfterLosses: 2 });
 
 
@@ -76,7 +82,9 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
   // Overview toolbar + calendar state
   const [wizardMode, setWizardMode] = useState<'auto' | 'upload' | 'import' | 'manual'>('import');
-  const openWizard = (m: 'auto' | 'upload' | 'import' | 'manual' = 'import') => {
+  const [wizardPreset, setWizardPreset] = useState<WizardPrefill>(null);
+  const openWizard = (m: 'auto' | 'upload' | 'import' | 'manual' = 'import', preset: WizardPrefill = null) => {
+    setWizardPreset(preset);
     setWizardMode(m);
     setWizardOpen(true);
   };
@@ -354,8 +362,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         <div className="space-y-6">
           {/* Toolbar */}
           <div className="flex flex-wrap items-start gap-2" role="toolbar" aria-label="Overview filters">
-            <div className="flex flex-col gap-1">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col gap-1.5">
                 <select
                   aria-label="Date range"
                   value={rangeMode}
@@ -369,13 +376,12 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                   <option value="custom">Custom range</option>
                 </select>
                 {rangeMode === 'custom' && (
-                  <>
+                  <div className="flex flex-wrap items-center gap-2">
                     <input type="date" aria-label="From date" value={customRange.from} max={customRange.to} onChange={(e) => e.target.value && setCustomRange((r) => ({ ...r, from: e.target.value }))} className="text-xs h-9 border border-slate-200 rounded-lg px-2" />
                     <span className="text-xs text-[#94a3b8]">to</span>
                     <input type="date" aria-label="To date" value={customRange.to} min={customRange.from} onChange={(e) => e.target.value && setCustomRange((r) => ({ ...r, to: e.target.value }))} className="text-xs h-9 border border-slate-200 rounded-lg px-2" />
-                  </>
+                  </div>
                 )}
-              </div>
               <span className="text-xs font-mono text-[#474556] px-1" aria-live="polite">{rangeLabel}</span>
             </div>
 
@@ -605,6 +611,23 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
       {/* ───── PLAYBOOK ───── */}
       {tab === 'playbook' && (
+        <JournalPlaybooks
+          entries={entries}
+          playbooks={playbooks}
+          setPlaybooks={setPlaybooks}
+          onOpenEntry={setSelectedId}
+          onShowTrades={(ids, label) => { setLogPreset({ ids, label }); setTab('entries'); }}
+          onToast={onShowToast}
+          houseChecklist={checklist}
+          recordings={recordings}
+          onSetRecording={(id, blob) => setRecordings((r) => {
+            const next = { ...r };
+            if (next[id]) URL.revokeObjectURL(next[id]);
+            if (blob) next[id] = URL.createObjectURL(blob); else delete next[id];
+            return next;
+          })}
+          onLogTrade={(pre) => openWizard('manual', pre)}
+          houseRules={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
             <h4 className="flex items-center gap-1.5 text-sm font-bold mb-1"><BookOpen className="w-4 h-4 text-[#5338ec]" /> Pre-trade checklist</h4>
@@ -664,6 +687,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             </button>
           </div>
         </div>
+          )}
+        />
       )}
 
       {/* ───── WEEKLY REVIEW ───── */}
@@ -736,6 +761,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {wizardOpen && (
         <JournalEntryWizard
           initialMode={wizardMode}
+          prefill={wizardPreset}
+          strategies={playbooks.filter((p) => p.status !== 'archived').map((p) => p.name)}
           checklist={checklist}
           journaledTradeIds={entries.map((e) => e.linkedTradeId).filter((x): x is string => !!x)}
           onClose={() => setWizardOpen(false)}

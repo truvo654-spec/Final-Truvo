@@ -107,7 +107,7 @@ const toSide = (v: string | undefined): 'BUY' | 'SELL' | null => {
   return null;
 };
 
-const guessAssetClass = (symbol: string): PortfolioAssetClass => {
+export const guessAssetClass = (symbol: string): PortfolioAssetClass => {
   const s = symbol.toUpperCase();
   if (/BTC|ETH|SOL|USDT|USDC|XRP/.test(s)) return 'Crypto';
   if (/^(XAU|XAG|WTI|BRENT|CL|GC|SI|NG)/.test(s)) return 'Commodity';
