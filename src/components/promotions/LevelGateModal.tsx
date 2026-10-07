@@ -10,12 +10,15 @@ interface LevelGateModalProps {
   maxPoints: number;
   credits: number;
   missions: Mission[];
-  onGoToMissions: () => void;
+  /** Opens the Syde Credits page (Mission, Points & Credits). */
+  onGoToCredits: () => void;
+  /** Opens the guide to earning credits. */
+  onOpenCreditGuide: () => void;
   onClose: () => void;
 }
 
-/** Shown when a member tries to take an offer above their level. Points them to missions. */
-export const LevelGateModal: React.FC<LevelGateModalProps> = ({ promo, level, points, maxPoints, credits, missions, onGoToMissions, onClose }) => {
+/** Shown when a member tries to take an offer above their level. Explains the gap and sends them to the Syde Credits page. */
+export const LevelGateModal: React.FC<LevelGateModalProps> = ({ promo, level, points, maxPoints, credits, missions, onGoToCredits, onOpenCreditGuide, onClose }) => {
   const steps = ([1, 2, 3, 4] as PromoLevel[]).filter((l) => l >= level && l <= promo.minLevel);
   const open = missions.filter((m) => m.status !== 'completed').slice(0, 3);
   const pct = maxPoints > 0 ? Math.min(100, Math.round((points / maxPoints) * 100)) : 0;
@@ -27,12 +30,12 @@ export const LevelGateModal: React.FC<LevelGateModalProps> = ({ promo, level, po
         <div className="flex items-start justify-between gap-3 mb-1">
           <div>
             <p className="text-xs font-semibold text-[#474556]">{promo.source === 'platform' ? 'MarketSyde' : promo.brokerName}</p>
-            <h3 className="text-lg font-bold text-[#0b1c30] leading-snug">Reach Lv.{promo.minLevel} {PROMO_LEVELS[promo.minLevel]} to take this offer</h3>
+            <h3 className="text-lg font-bold text-[#0b1c30] leading-snug">Reach Lv.{promo.minLevel} {PROMO_LEVELS[promo.minLevel]} to join this offer</h3>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 shrink-0" aria-label="Close"><X className="w-4 h-4" /></button>
         </div>
         <p className="text-sm text-[#474556] mb-4">
-          “{promo.title}” is open from Lv.{promo.minLevel}. You are Lv.{level} {PROMO_LEVELS[level]}, {gap} level{gap === 1 ? '' : 's'} away. Finish missions to earn credits and points.
+          “{promo.title}” is open from Lv.{promo.minLevel}. You are Lv.{level} {PROMO_LEVELS[level]}, {gap} level{gap === 1 ? '' : 's'} away. You cannot join it yet. Earn Syde Credits and points from missions to level up, and it opens for you.
         </p>
 
         <div className="flex items-center gap-2 mb-4">
@@ -72,8 +75,9 @@ export const LevelGateModal: React.FC<LevelGateModalProps> = ({ promo, level, po
 
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 border border-slate-200 hover:bg-slate-50 text-sm font-semibold py-2.5 rounded-xl transition-colors">Not now</button>
-          <button onClick={onGoToMissions} className="flex-1 bg-[#5338ec] hover:bg-[#4326d8] text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">Go to missions</button>
+          <button onClick={onGoToCredits} className="flex-1 bg-[#5338ec] hover:bg-[#4326d8] text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">Go to Syde Credits</button>
         </div>
+        <button onClick={onOpenCreditGuide} className="mt-3 w-full text-center text-xs font-semibold text-[#5338ec] hover:underline">How to earn Syde Credits</button>
       </div>
     </div>
   );

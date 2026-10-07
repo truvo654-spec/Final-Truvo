@@ -30,7 +30,8 @@ interface PromotionsPageProps {
   onOpenBrokerDetail: (broker: Broker) => void;
   onOpenSignal: (ticker: string) => void;
   onOpenInstrument: (symbol: string) => void;
-  onGoToMissions: () => void;
+  onGoToCredits: () => void;
+  onOpenCreditGuide: () => void;
   onOpenNotifications: () => void;
   onOpenConnectModal: (broker?: Broker) => void;
   onNavigateToTab: (tab: string) => void;
@@ -110,7 +111,8 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   onOpenBrokerDetail,
   onOpenSignal,
   onOpenInstrument,
-  onGoToMissions,
+  onGoToCredits,
+  onOpenCreditGuide,
   onOpenNotifications,
   onOpenConnectModal,
   onNavigateToTab,
@@ -341,9 +343,13 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
           credits={credits}
           missions={missions}
           onClose={() => setGate(null)}
-          onGoToMissions={() => {
+          onGoToCredits={() => {
             setGate(null);
-            onGoToMissions();
+            onGoToCredits();
+          }}
+          onOpenCreditGuide={() => {
+            setGate(null);
+            onOpenCreditGuide();
           }}
         />
       )}

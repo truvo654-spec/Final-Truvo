@@ -1472,9 +1472,13 @@ export default function App() {
               setActiveTab('instrument-analysis');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            onGoToMissions={() => {
-              setActiveTab('dashboard');
-              window.setTimeout(() => document.getElementById('mission-card-widget')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 700);
+            onGoToCredits={() => {
+              setActiveTab('points-credits');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenCreditGuide={() => {
+              setActiveTab('credit-earning-guide');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             onOpenNotifications={() => setActiveTab('notifications')}
             userTierLevel={user.tierLevel}
