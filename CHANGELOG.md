@@ -2,6 +2,75 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.134] - 2026-10-07
+
+### Added
+
+- Playbook analytics: ⓘ hover/focus explanations for each metric (win rate, profit factor, avg win/loss, target hit) showing this playbook's own calculation, plus explanations for the rolling chart, by-playbook comparison, results in R and scenario management.
+
+## [1.0.133] - 2026-10-07
+### Changed
+- Playbooks: the Analytics panel (metric cards, rolling chart, by-playbook comparison, R vs target, scenario stats) now sits directly under the playbook header for every step, with Hide/Show, instead of only inside Review. The rolling chart is shorter.
+
+## [1.0.132] - 2026-10-07
+### Added
+- Playbook analytics (Review step): win rate, profit factor, avg win/loss and target hit rate (share of trades reaching the playbook's minimum R) as selectable cards, a rolling 10-trade line with reference line and hover details, a by-playbook comparison, an R-outcome distribution against the target, and scenario management stats (status counts, trigger rate, average planned R:R, trades from scenarios vs others).
+- Execution replays: every trade in Execution and Best executions has a Replay button. The replay window can record a short screen capture (up to 60s, via the browser's screen share) or attach a video file, plays it back, downloads or removes it, and shows an animated trade-path schematic (entry → exit against stop and target; clearly labelled as drawn from journal numbers, not tick data). Recorded trades are marked and listed under "Your execution replays".
+- Journal entries logged from a scenario keep a link to it (scenarioId) for the scenario stats.
+
+## [1.0.131] - 2026-10-07
+### Fixed
+- New journal entry: when Next is disabled on the first step, the footer now says why (e.g. "Add entry price and size to continue", a stop/target on the wrong side, or which tab to use).
+- Logging a trade from a playbook without a scenario now prefills the playbook's first instrument as the symbol.
+
+## [1.0.130] - 2026-10-07
+### Changed
+- Playbook checklist is now guidance, not a gate: it shows "x of N ticked" with a completion bar and a setup label (Light, Partial, Strong, Full), and "Log trade with this playbook" is always available. The ticked house checklist items are still saved on the new entry.
+
+## [1.0.129] - 2026-10-07
+### Added
+- Playbooks: the grade tooltip now explains each variable (profit factor, average R, plan followed, trades) in plain language.
+
+## [1.0.128] - 2026-10-07
+### Added
+- Playbooks: hovering or focusing a grade badge shows the grading criteria (A+: PF ≥ 2.5, avg ≥ +0.5R, plan ≥ 85%, 30+ trades; A: PF ≥ 2.0, ≥ +0.3R, plan ≥ 80%, 20+; B+: PF ≥ 1.5, ≥ +0.2R, 15+; B: PF ≥ 1.2, avg R > 0, 10+; C: below B or under 10 trades), this playbook's numbers, the grade the data suggests versus the one you set, and what is needed for the next grade. The Edit form shows the suggested grade next to the grade picker.
+
+## [1.0.127] - 2026-10-07
+### Changed
+- Playbooks: inventory is now a compact side list (280px, two lines per playbook: name, grade, net P&L; instruments, win rate, profit factor) with an open-scenarios link, a scroll area and sticky position; the detail panel gets the extra width.
+
+## [1.0.126] - 2026-10-07
+### Added
+- Playbooks: instruments per playbook (symbol chips with trade counts, editable in Edit playbook, searchable) and a "By instrument" table in Review.
+- Playbooks: Scenarios step (Setup → Rules → Scenarios → Checklist → Execution → Review). Traders write their own hypothesis per playbook: symbol, long/short bias, "If … then …" statement, trigger, entry/stop/target with planned reward:risk checked against the playbook minimum, valid-until date and status (Watching, Triggered, Invalidated, Closed). Scenarios can be edited, deleted, invalidated, closed or reopened; expired ones are flagged.
+- "Check and trade" links a scenario to the Checklist step; "Log trade" then opens a new journal entry prefilled with the playbook, ticked checklist, symbol, direction, entry, stop, target and the hypothesis as notes, and marks the scenario Triggered.
+### Changed
+- Playbook inventory cards simplified: name, grade, session, instruments, net P&L and one stats line, with links to open scenarios and "+ New scenario".
+
+## [1.0.125] - 2026-10-07
+### Changed
+- Strategy Playbooks: each playbook now follows one flow, Playbook = Setup + Rules + Checklist + Execution + Review, shown as five steps.
+  - Setup (kept): grade, style, markets, session, minimum reward:risk, thesis and tags.
+  - Rules (new): numbered setup rules, per-playbook risk per trade and max trades per day (with how often the daily limit was broken in the journal), and "Do not trade when" conditions.
+  - Checklist (extended): setup conditions plus the house pre-trade checklist in one live check with a valid/wait verdict, and "Log trade with this playbook", which opens a new entry with the playbook and ticked checklist items filled in.
+  - Execution (extended): entry/stop/profit-taking rules, plan-followed rate, checklist completion from journal entries, average hold time, and the latest executions marked on/off plan with their mistake.
+  - Review (new): trades, win rate, profit factor, expectancy, average R and net P&L, a cumulative R curve, on-plan vs off-plan results, most common mistakes, best executions, and a review log with Keep / Adjust / Pause / Retire decisions that update the playbook status.
+- Edit playbook: risk per trade, max trades per day and no-trade conditions. Export includes risk limits, no-trade conditions and the review log.
+
+## [1.0.124] - 2026-10-07
+### Changed
+- Journal Overview: with Custom range selected, the From/To date pickers now sit below the date range filter (with the range text under them) instead of beside it.
+
+## [1.0.123] - 2026-10-07
+### Added
+- Journal Playbook tab rebuilt as Strategy Playbooks (light theme, after the uploaded concept):
+  - Playbook library with grade/style badges, markets, session window (UTC), net P&L and total R, win rate, profit factor, avg win/loss and trade count computed from journal entries; "In session now" and last-traded indicators.
+  - Market filter chips with counts, Active / Testing / Archived / All tabs, search, and sort by profit factor, net P&L, win rate, trades or grade.
+  - Detail pane: ID, session, benchmark R:R, edge metrics (expectancy, average R, average hold time, plan followed), setup thesis and tags, an interactive execution-rules check ("x/y conditions met"), entry trigger / stop / profit-taking cards, and best executions with a stop/entry/exit level bar, View trade and "All trades in Trade Log".
+  - Create new playbook, Import template (Silver Bullet 15m FVG, Opening Range Breakout, VWAP Mean Reversion), Edit (grade, style, status, markets, session window, benchmark R:R, thesis, rules, entry/stop/target, tags), delete for playbooks without trades, and Export to Markdown.
+  - New playbooks appear in the entry wizard's setup list (archived ones are hidden).
+- The pre-trade checklist and trading rules are kept under "House rules" on the same tab.
+
 ## [1.0.122] - 2026-10-07
 ### Added
 - Insights › Day & Time: editable time zone (UTC, London, Frankfurt, New York, Chicago, Dubai, Bangkok, Singapore/Hong Kong, Tokyo, Sydney), remembered per browser. Weekdays, months, trade-time buckets, drill-down times and the session hours are shown in the chosen zone with daylight saving applied; market sessions stay fixed in UTC.
