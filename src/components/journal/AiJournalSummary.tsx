@@ -1,22 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { JournalEntry } from '../../types';
 import { analyzeJournal } from './journalAnalysis';
 import { TextReveal, wordCount } from './TextReveal';
-
-const STAGGER = 26;
-
-const useReducedMotion = () => {
-  const [reduced, setReduced] = useState(() => (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false));
-  useEffect(() => {
-    if (!window.matchMedia) return;
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const on = () => setReduced(mq.matches);
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
-  return reduced;
-};
+import { SpotlightCard, SpotlightColumn as Column, SpotlightItem as Item, STAGGER, itemDelay, useReducedMotion } from './SpotlightCard';
 
 const money = (v: number) => `${v < 0 ? '-' : v > 0 ? '+' : ''}$${Math.abs(Math.round(v)).toLocaleString()}`;
 
@@ -35,7 +22,6 @@ export const AiJournalSummary: React.FC<Props> = ({ entries, checklistSize, toda
   const sig = useMemo(() => JSON.stringify([a.n, a.netPnl, a.winRate, a.avgR, a.planRate, a.headline, a.overview, a.strengths, a.improvements, a.focus]), [a]);
   const [run, setRun] = useState(0);
   const [reading, setReading] = useState(!reduced);
-  const ref = useRef<HTMLElement>(null);
 
   // "Reading your trades" for a moment, then the text writes itself. Runs again when the journal changes.
   useEffect(() => {
@@ -48,28 +34,12 @@ export const AiJournalSummary: React.FC<Props> = ({ entries, checklistSize, toda
     return () => window.clearTimeout(t);
   }, [sig, run, reduced]);
 
-  const move = (e: React.PointerEvent) => {
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty('--mx', `${e.clientX - r.left}px`);
-    el.style.setProperty('--my', `${e.clientY - r.top}px`);
-    el.dataset.hover = 'true';
-  };
-  const leave = () => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.removeProperty('--mx');
-    el.style.removeProperty('--my');
-    delete el.dataset.hover;
-  };
-
   // when each piece starts, so the sections follow one another
   const t0 = 120;
   const tOverview = t0 + wordCount(a.headline) * STAGGER + 160;
   const tChips = tOverview + wordCount(a.overview) * STAGGER * 0.6;
   const tLists = tOverview + wordCount(a.overview) * STAGGER + 200;
-  const colDelay = (col: number, upTo: number, items: { text: string }[]) => tLists + col * 260 + items.slice(0, upTo).reduce((s, it) => s + wordCount(it.text) * STAGGER * 0.7 + 120, 0);
+  const colDelay = (col: number, upTo: number, items: { text: string }[]) => itemDelay(tLists, col, upTo, items);
 
   const chips = [
     { label: 'Win rate', value: `${a.winRate}%`, tone: 'text-[#D6F73A]' },
@@ -80,12 +50,8 @@ export const AiJournalSummary: React.FC<Props> = ({ entries, checklistSize, toda
   ];
 
   return (
-    <section ref={ref} onPointerMove={move} onPointerLeave={leave} aria-label="MarketSyde AI summary of your trading" className="jr-spot relative isolate overflow-hidden rounded-3xl bg-[#090119] text-white border border-white/10 p-5 sm:p-8">
-      <div className="jr-spot-idle" aria-hidden />
-      <div className="jr-spot-glow" aria-hidden />
-      <div className="jr-spot-border" aria-hidden />
-
-      <div className="relative z-10">
+    <SpotlightCard label="MarketSyde AI summary of your trading">
+      <div>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-2.5">
             <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold tracking-wide bg-white/10 border border-white/15">
@@ -167,23 +133,6 @@ export const AiJournalSummary: React.FC<Props> = ({ entries, checklistSize, toda
           </div>
         )}
       </div>
-    </section>
+    </SpotlightCard>
   );
 };
-
-const Column: React.FC<{ accent: string; title: string; delay: number; reduced: boolean; children: React.ReactNode }> = ({ accent, title, delay, reduced, children }) => (
-  <div className={`rounded-2xl bg-white/[0.05] border border-white/10 p-4 sm:p-5 ${reduced ? '' : 'jr-fade'}`} style={reduced ? undefined : { animationDelay: `${delay}ms` }}>
-    <div className="flex items-center gap-2 mb-3">
-      <span className="w-2 h-2 rounded-full" style={{ background: accent, boxShadow: `0 0 10px ${accent}` }} aria-hidden />
-      <h3 className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">{title}</h3>
-    </div>
-    <div className="space-y-4">{children}</div>
-  </div>
-);
-
-const Item: React.FC<{ title: string; text: string; delay: number; reduced: boolean }> = ({ title, text, delay, reduced }) => (
-  <div>
-    <p className={`text-sm font-bold text-white ${reduced ? '' : 'jr-fade'}`} style={reduced ? undefined : { animationDelay: `${delay}ms` }}>{title}</p>
-    <TextReveal text={text} palette="soft" delay={delay + 120} stagger={STAGGER * 0.7} instant={reduced} className="text-xs leading-relaxed mt-1" />
-  </div>
-);

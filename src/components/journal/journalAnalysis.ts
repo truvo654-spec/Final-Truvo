@@ -276,7 +276,7 @@ function mostCommon(xs: string[]) {
   return Array.from(m.entries()).sort((a, b) => b[1] - a[1])[0][0];
 }
 
-const MISTAKE_PLAN: Record<string, FocusPlan> = {
+export const MISTAKE_PLAN: Record<string, FocusPlan> = {
   'Moved stop loss': { title: 'Set the stop once and leave it', why: 'Moving the stop is the mistake that shows up most in your journal.', steps: ['Place the stop before entry and write down its price.', 'You may tighten a stop in profit. Never widen it.', 'Add "stop untouched" to your checklist.'] },
   'Revenge trade': { title: 'Break the revenge loop', why: 'Revenge trades are the mistake you flag most often.', steps: ['After a loss, step away for 15 minutes before the next order.', 'Set a hard stop for the day after two losses in a row.', 'Write what you felt in the journal before the next trade.'] },
   'Oversized position': { title: 'Size every trade by the stop', why: 'Oversized positions are your most repeated mistake.', steps: ['Decide the risk in dollars first (for example 1% of the account).', 'Use the position calculator before every entry.', 'Never add to a loser.'] },

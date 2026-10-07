@@ -164,6 +164,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       <JournalEntryDetail
         entry={selected}
         checklist={checklist}
+        allEntries={entries}
         onBack={() => setSelectedId(null)}
         onUpdate={(upd) => setEntries((prev) => prev.map((e) => (e.id === upd.id ? upd : e)))}
         onDelete={(id) => {

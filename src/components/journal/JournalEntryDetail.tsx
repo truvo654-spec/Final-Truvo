@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Star, Check, X as XIcon, Trash2, Pencil, Link2, AlertTriangle } from 'lucide-react';
 import { JournalEntry, JournalChecklistItem } from '../../types';
+import { AiEntrySummary } from './AiEntrySummary';
 
 interface JournalEntryDetailProps {
   entry: JournalEntry;
   checklist: JournalChecklistItem[];
+  /** The rest of the journal, so the summary can compare this trade with it. */
+  allEntries?: JournalEntry[];
   onBack: () => void;
   onUpdate: (entry: JournalEntry) => void;
   onDelete: (id: string) => void;
@@ -23,6 +26,7 @@ const money = (n: number) => `${n < 0 ? '-' : n > 0 ? '+' : ''}$${Math.abs(n).to
 export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   entry,
   checklist,
+  allEntries,
   onBack,
   onUpdate,
   onDelete,
@@ -92,6 +96,8 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           </div>
         )}
       </div>
+
+      <AiEntrySummary entry={entry} allEntries={allEntries ?? [entry]} checklist={checklist} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-5">
         <div className="space-y-5">
