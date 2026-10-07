@@ -288,6 +288,66 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered, tz]);
 
+  type SortKey = 'time' | 'currency' | 'event' | 'impact' | 'actual' | 'forecast' | 'previous' | 'actions';
+  const [sortKey, setSortKey] = useState<SortKey>('time');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const toggleSort = (key: SortKey) => {
+    if (sortKey !== key) { setSortKey(key); setSortDir(key === 'impact' || key === 'actions' ? 'desc' : 'asc'); return; }
+    setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+  };
+  const isDefaultSort = sortKey === 'time' && sortDir === 'asc';
+  const sortedGroups = useMemo(() => {
+    if (isDefaultSort) return groups;
+    const IMPACT_RANK: Record<string, number> = { Low: 1, Medium: 2, High: 3 };
+    const num = (v?: string) => {
+      if (!v) return null;
+      const n = parseFloat(v.replace(/[^0-9.+-]/g, ''));
+      return Number.isFinite(n) ? n : null;
+    };
+    const dir = sortDir === 'asc' ? 1 : -1;
+    // Actions: watchlisted (star) and alert (bell) each count 1, so starred + alerted rows rank highest.
+    const actionRank = (e: EconomicEvent) => (watchedIds[e.id] ? 1 : 0) + (alerts[e.id] != null ? 1 : 0);
+    const cmp = (a: EconomicEvent, b: EconomicEvent) => {
+      const byTime = (eventMs(a) - eventMs(b)) || 0;
+      let r = 0;
+      switch (sortKey) {
+        case 'time': r = byTime; break;
+        case 'currency': r = a.currency.localeCompare(b.currency); break;
+        case 'event': r = a.title.localeCompare(b.title); break;
+        case 'impact': r = (IMPACT_RANK[a.impact] || 0) - (IMPACT_RANK[b.impact] || 0); break;
+        case 'actions': r = actionRank(a) - actionRank(b); break;
+        default: {
+          const na = num(a[sortKey]);
+          const nb = num(b[sortKey]);
+          if (na === null && nb === null) r = 0;
+          else if (na === null) return 1; // blanks always last
+          else if (nb === null) return -1;
+          else r = na - nb;
+        }
+      }
+      return r * dir || byTime;
+    };
+    return groups.map(([k, rows]) => [k, [...rows].sort(cmp)] as [string, EconomicEvent[]]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups, sortKey, sortDir, isDefaultSort, watchedIds, alerts]);
+  const SortHeader = ({ k, label, right }: { k: SortKey; label: string; right?: boolean }) => {
+    const active = sortKey === k;
+    // Text glyphs, not SVG icons: the platform hides icons inside text buttons.
+    const glyph = !active ? '↕' : sortDir === 'asc' ? '▲' : '▼';
+    return (
+      <button
+        type="button"
+        onClick={() => toggleSort(k)}
+        aria-label={`Sort by ${label}${active ? (sortDir === 'asc' ? ', ascending' : ', descending') : ''}`}
+        title={active ? (sortDir === 'asc' ? 'Ascending — click for descending' : 'Descending — click for ascending') : `Sort by ${label}`}
+        className={`group inline-flex items-center gap-1 font-bold transition-colors ${right ? 'justify-self-end' : 'justify-self-start'} ${active ? 'text-[#5338ec]' : 'text-[#0b1c30] hover:text-[#5338ec]'}`}
+      >
+        {label}
+        <span aria-hidden="true" className={`text-[10px] leading-none ${active ? '' : 'opacity-40 group-hover:opacity-80'}`}>{glyph}</span>
+      </button>
+    );
+  };
+
   const timelineDays = useMemo(() => {
     const span = Math.round((Date.parse(`${rangeTo}T00:00:00Z`) - Date.parse(`${rangeFrom}T00:00:00Z`)) / DAY_MS);
     if (span <= 14) return Array.from({ length: Math.max(1, span + 1) }, (_, index) => addDays(rangeFrom, index));
@@ -1145,12 +1205,12 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
                   <div className="overflow-x-auto">
                     <div className="min-w-[640px] md:min-w-0">
                       <div className={`hidden md:grid ${ROW_GRID} gap-2 border-b border-[#e2e8f0] px-3 py-3 text-sm font-bold text-[#0b1c30]`}>
-                        <span>Time</span><span>Cur.</span><span>Event</span><span>Imp.</span>
-                        <span className="text-right">Actual</span><span className="text-right">Forecast</span><span className="text-right">Previous</span><span className="text-right">Actions</span>
+                        <SortHeader k="time" label="Time" /><SortHeader k="currency" label="Cur." /><SortHeader k="event" label="Event" /><SortHeader k="impact" label="Imp." />
+                        <SortHeader k="actual" label="Actual" right /><SortHeader k="forecast" label="Forecast" right /><SortHeader k="previous" label="Previous" right /><SortHeader k="actions" label="Actions" right />
                       </div>
                       {groups.length === 0 && <div className="py-16 text-center text-sm text-[#474556]">No events match these filters. Try a wider date range or reset the filters.</div>}
-                      {groups.map(([key, rows]) => {
-                        const markerAt = key === todayKey ? nowMarkerIndex(rows) : -1;
+                      {sortedGroups.map(([key, rows]) => {
+                        const markerAt = key === todayKey && sortKey === 'time' ? nowMarkerIndex(rows) : -1;
                         return (
                           <div key={key}>
                             <div className="border-b border-[#f1f5f9] bg-[#fafbfe] px-3 py-3.5 text-center text-sm font-bold text-[#0b1c30]">{longDate(key)}</div>

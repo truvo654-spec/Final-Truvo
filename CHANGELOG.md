@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.99] - 2026-10-07
+### Added
+- Added ascending/descending sorting to the Upcoming economic events list headers (Time, Cur., Event, Imp., Actual, Forecast, Previous, Actions). Sorting applies within each day; blank values stay last.
+
 ## [1.0.98] - 2026-10-06
 ### Added
 - Added a functional Indices tab to the calendar Markets panel with S&P 500, Nasdaq 100, and DAX 40 demo instruments.
