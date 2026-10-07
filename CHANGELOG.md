@@ -2,6 +2,115 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.122] - 2026-10-07
+### Added
+- Insights › Day & Time: editable time zone (UTC, London, Frankfurt, New York, Chicago, Dubai, Bangkok, Singapore/Hong Kong, Tokyo, Sydney), remembered per browser. Weekdays, months, trade-time buckets, drill-down times and the session hours are shown in the chosen zone with daylight saving applied; market sessions stay fixed in UTC.
+
+## [1.0.121] - 2026-10-07
+### Added
+- Journal Insights: report navigation (Overview, Day & Time) and a new Day & Time report in light mode, based on the uploaded concept:
+  - Views Days / Month / Trade time (hourly, 2-hour, 4-hour) / Duration, date range, Broker / Market type / Playbook filters, session filter (Asia, London, London/NY overlap, New York PM, after hours, no entry time; UTC) and Export CSV.
+  - Benchmark vs previous period (same-length window before the selected range) on cards, chart and table.
+  - Insight cards: best window, leak window, most active window (with average hold time) and peak win rate.
+  - Distribution chart (Net P&L, Win rate, Trades or Avg R) with hover details and click-to-drill.
+  - Cross analysis matrix against Broker, Playbook, Symbol, Tag, Session, Duration, Position size or R-multiple.
+  - Detailed breakdown table (trades, win/loss/BE %, net and gross P&L, PF, Avg R, cashback, points) with expandable session or weekday sub-rows, totals, peak/leak flags.
+  - Drill-down panel and "Open in Trade Log", which opens the Trade Log filtered to those trades.
+- Sample journal data: generated Aug–Sep 2026 trade history (58 trades with entry/exit times, brokers and commissions) so reports have enough data.
+
+## [1.0.120] - 2026-10-07
+### Changed
+- Journal Overview: the Trading / + Cashback / Points and Gross / Net toggles are now dropdown buttons in the same style as the other filters (Show: Trading, Basis: Gross).
+
+## [1.0.119] - 2026-10-07
+### Changed
+- Journal Overview: the Filters popover (single-choice selects) is replaced by checkbox dropdowns like the Trade Log: Playbook, Market type, Outcome and Broker, each showing ticked/total with Select all and Clear.
+
+## [1.0.118] - 2026-10-07
+### Changed
+- Journal Overview: filter bar restyled to match the Trade Log controls (one row of same-height buttons: Date range, Filters, Broker checkbox dropdown, Trading / + Cashback / Points, Gross / Net). The broker checkbox row and filter card were removed.
+
+## [1.0.117] - 2026-10-07
+### Changed
+- Trade Log: Market type and Broker filters are now checkbox dropdowns in the same row and style as Group, Any outcome and Columns (all controls share one height).
+
+## [1.0.116] - 2026-10-07
+### Added
+- Trade Log: Market type and Broker checkbox filters (with counts, Select all / Clear). They drive the table, KPI cards, group subtotals, totals and export.
+
+## [1.0.115] - 2026-10-07
+### Changed
+- Trade Log switched from the dark concept theme to the app's light theme (same layout and functions).
+
+## [1.0.114] - 2026-10-07
+### Changed
+- Journal "Entries" tab is now the "Trade Log", redesigned from the uploaded dark concept: KPI strip (Cumul. Net P&L, Profit Factor, Win Rate, Avg Win/Loss, Realized R-Avg, Comms & Fees, plus Cashback and Points), bulk-action bar (Tag, Move Account, Export CSV, Delete, Deselect with selected-trade subtotals), filter, Group by (Instrument, Broker, Playbook, Side, Outcome) with group subtotals, column picker, sortable table with new Broker, Cashback, Points and Comm. & Fees columns, Total and Selected sum rows, per-page and pagination.
+- Sample journal entries now carry execution times and commissions.
+
+## [1.0.113] - 2026-10-07
+### Changed
+- Journal Overview: filter toolbar is now one card with a row for Date range, Filters, Trading / + Cashback / Points and Gross / Net, and a second row with the broker checkboxes (moved up from the cumulative chart).
+
+## [1.0.112] - 2026-10-07
+### Changed
+- Cumulative chart table view: brokers are now rows (Date, Broker, Entries, Day, Cumulative) with a Total row per date, instead of one column per broker.
+
+## [1.0.111] - 2026-10-07
+### Changed
+- Journal Overview: the selected date range text now sits below the date range filter instead of beside it.
+
+## [1.0.110] - 2026-10-07
+### Changed
+- Journal Overview: the "Cashback only" option is now "Points". It shows estimated MarketSyde Points (base points per lot by asset class: Forex 50, Indices 60, Commodity 55, Crypto 60) in the KPI card, cumulative chart and calendar, in "pts" instead of dollars.
+- "Sync data" moved from the Overview toolbar to the Trading Journal page header.
+
+## [1.0.109] - 2026-10-07
+### Changed
+- Journal cumulative chart: replaced the Combined / By broker switch with broker checkboxes (Select all / Clear). The ticked brokers drive the chart, KPIs, calendar and recent entries; with two or more ticked the chart shows a Total line plus one line per broker.
+- Removed the Brokers popover from the Overview toolbar (duplicated by the checkboxes).
+
+## [1.0.108] - 2026-10-07
+### Added
+- Journal Overview: Brokers filter (select one or several brokers) that drives the KPIs, cumulative chart, calendar and recent entries.
+- Journal Overview: Cashback switch (Trading / + Cashback / Cashback only). Cashback is the stored amount or the broker's rate per lot x lots for Forex, Commodity and Indices trades.
+- Cumulative chart: Combined / By broker view with per-broker lines, clickable legend, per-broker tooltip and table columns.
+- Calendar: per-broker colour dots and per-broker split on hover.
+- Journal entries can carry a broker (Broker field in the manual entry form); entry rows show broker and cashback.
+### Removed
+- Duplicate "New entry" button in the Trading Journal header (Sync data in the toolbar opens the same window).
+
+## [1.0.107] - 2026-10-07
+### Added
+- Journal Overview: cumulative P&L chart (follows range, filters and Gross/Net) with hover tooltip, keyboard navigation and a table view.
+- Journal Overview: Discipline score, Personal rules monitor (max trades/day, stop after losses; percent-based rules show "Not tracked" until an account balance is available) and Tilt monitor (recent losing streak, negative emotions, off-plan trades, revenge/overtrading signals).
+
+## [1.0.106] - 2026-10-07
+### Removed
+- Removed the "You haven't journaled today" banner (Write an entry) from the Journal Overview.
+
+## [1.0.105] - 2026-10-07
+### Added
+- Journal Overview: toolbar with date range (calendar month, last 7/30 days, all time, custom), Filters (playbook, asset class, outcome), Gross/Net P&L toggle and Sync data shortcut, mirroring the Stitch Connect & Ingest header.
+- Journal Overview: P&L and profit factor KPIs that follow the range, filters and Gross/Net choice.
+- Journal Overview: the 5-week heatmap is now an interactive month calendar (month navigation, daily P&L colouring, click a day to list its trades, keyboard accessible).
+
+## [1.0.104] - 2026-10-07
+### Changed
+- Renamed the journal entry "Auto-Sync" tab to "Sync Account".
+
+## [1.0.103] - 2026-10-07
+### Changed
+- Journal Auto-Sync tab now uses the real MarketSyde broker directory (names, verification, score, cashback, platforms, regulators, category filters, linked accounts) and opens the existing Link Trading Account flow, replacing the placeholder connector list.
+
+## [1.0.102] - 2026-10-07
+### Added
+- New journal entry window now has the Stitch Connect & Ingest functions: Upload Statement (CSV drop zone, automatic header mapping with manual override, duplicate skipping by ticket id, batch import) and an Auto-Sync connector preview (demo only, no live broker sync). Entries gain an optional ticketId.
+
+## [1.0.101] - 2026-10-07
+### Changed
+- Journal manual entry: LONG/SHORT direction labels, Playbook setup dropdown in the ticket form, live Gross/Net P&L preview.
+- Journal entry detail now shows stop loss, take profit (planned R:R), commissions, net P&L and entry/exit timestamps when provided.
+
 ## [1.0.100] - 2026-10-07
 ### Added
 - Journal "New journal entry" manual trade form now matches the Quick Ticket Manual Entry Dock: added Commissions, Take Profit, Entry/Exit timestamps, planned risk:reward, and validation (exit after entry, SL/TP on the correct side of entry).
