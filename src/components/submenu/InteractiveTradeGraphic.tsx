@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Target, Calculator, DollarSign, TrendingUp, ArrowLeftRight, Clock, BarChart2, Activity, Compass, LineChart, Calendar, Wallet, BookOpen, Star, Bot, BellRing, Sparkles } from 'lucide-react';
 import { CalculatorType } from '../calculators/TradingCalculatorsModal';
 
-export type TradeFeatureVariant = 'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | 'advisors' | 'alerts' | 'ai';
+export type TradeFeatureVariant = 'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | 'advisors' | 'alerts' | 'ai' | 'strategy';
 
 interface InteractiveTradeGraphicProps {
   variant?: TradeFeatureVariant;
@@ -17,6 +17,7 @@ interface InteractiveTradeGraphicProps {
   onSelectAdvisors?: () => void;
   onSelectAlerts?: () => void;
   onSelectAi?: () => void;
+  onSelectStrategy?: () => void;
 }
 
 export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = ({
@@ -31,6 +32,7 @@ export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = (
   onSelectAdvisors,
   onSelectAlerts,
   onSelectAi,
+  onSelectStrategy,
 }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [hoveredIcon, setHoveredIcon] = useState<string | null>(null);
@@ -718,6 +720,38 @@ export const InteractiveTradeGraphic: React.FC<InteractiveTradeGraphicProps> = (
 
               <div className="absolute -bottom-2 -right-2 bg-[#FD02B0] group-hover:bg-[#e0009d] text-white text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg transition-transform group-hover:scale-105">
                 SET
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {variant === 'strategy' && (
+          <motion.div
+            key="strategy"
+            initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+            animate={{ opacity: 1, scale: 1, rotateX: tilt.y, rotateY: tilt.x - 6 }}
+            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+            className="relative cursor-pointer"
+            onClick={onSelectStrategy}
+          >
+            <div className="w-48 sm:w-52 rounded-3xl bg-[#0f1115] border border-white/10 p-4 sm:p-5 shadow-2xl relative overflow-visible transform -rotate-6 transition-transform duration-300 group-hover:rotate-0">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-white shadow-xs" />
+                <span className="text-[11px] font-bold tracking-widest text-white/90 uppercase font-mono">BACKTEST</span>
+              </div>
+              <span className="text-base sm:text-lg font-black text-white leading-tight tracking-tight block">EMA 20 / 50 cross</span>
+              <span className="text-xs font-bold text-white/60 block mb-2">EUR/USD · 4H · sample</span>
+              <svg viewBox="0 0 160 56" className="w-full h-14 mb-2" aria-hidden>
+                <path d="M2 46 L16 40 L28 44 L42 30 L56 34 L70 22 L84 28 L98 16 L112 22 L126 10 L140 14 L158 4" fill="none" stroke="#CAEB0E" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M2 46 L40 36 L80 28 L120 18 L158 12" fill="none" stroke="#ffffff" strokeOpacity="0.35" strokeWidth="1.4" strokeDasharray="3 4" />
+              </svg>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">142</span>
+                <span className="text-xs text-white/70 font-medium">trades tested</span>
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-[#CAEB0E] group-hover:bg-[#b8d70c] text-black text-xs font-black px-3 py-1 rounded-xl uppercase tracking-wider shadow-lg transition-colors">
+                BUILD
               </div>
             </div>
           </motion.div>

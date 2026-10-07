@@ -55,6 +55,7 @@ import { NewsDetailPage } from './components/news/NewsDetailPage';
 import { canAccessNews, NEWS_ARTICLES } from './data/newsData';
 import { newsFollows } from './data/newsFollows';
 import { HashtagPage } from './components/hashtag/HashtagPage';
+import { StrategyBuilderPage } from './components/strategy/StrategyBuilderPage';
 import { HASHTAG_EVENT } from './lib/hashtagNav';
 import { findNewsById } from './data/newsIncoming';
 import { EconomicCalendarPage } from './components/calendar/EconomicCalendarPage';
@@ -117,6 +118,7 @@ const KNOWN_APP_TABS = new Set([
   'news-writer',
   'hashtag',
   'economic-calendar',
+  'strategy-builder',
   'education-hub',
   'portfolio-tracker',
   'trading-journal',
@@ -1407,6 +1409,9 @@ export default function App() {
             onShowToast={showToast}
           />
         )}
+
+        {/* ─── TAB: Strategy Builder & Backtesting ─── */}
+        {activeTab === 'strategy-builder' && <StrategyBuilderPage onShowToast={showToast} />}
 
         {/* ─── TAB: Hashtag (everything on MarketSyde about one #tag) ─── */}
         {activeTab === 'hashtag' && hashtag && (

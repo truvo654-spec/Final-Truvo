@@ -93,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [activeHoverMenu, setActiveHoverMenu] = useState<'trade' | 'brokers' | 'knowledge' | 'community' | 'company' | null>(null);
   const [hoveredBrokerOption, setHoveredBrokerOption] = useState<'brokers' | 'broker-comparison' | 'promotions' | null>(null);
-  const [hoveredTradeOption, setHoveredTradeOption] = useState<'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | 'advisors' | 'alerts' | 'ai' | null>(null);
+  const [hoveredTradeOption, setHoveredTradeOption] = useState<'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | 'advisors' | 'alerts' | 'ai' | 'strategy' | null>(null);
   const [hoveredKnowledgeOption, setHoveredKnowledgeOption] = useState<'news' | 'education-hub' | null>(null);
   const [hoveredCommunityOption, setHoveredCommunityOption] = useState<string | null>(null);
   const [hoveredCompanyOption, setHoveredCompanyOption] = useState<'about' | 'contact' | null>(null);
@@ -107,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  const activeTradeFeature: 'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | 'advisors' | 'alerts' | 'ai' =
+  const activeTradeFeature: 'signals' | 'analysis' | 'calculators' | 'converters' | 'calendar' | 'portfolio' | 'journal' | 'advisors' | 'alerts' | 'ai' | 'strategy' =
     hoveredTradeOption ||
     (activeTab === 'signals' || activeTab === 'signal-detail'
       ? 'signals'
@@ -125,6 +125,8 @@ export const Header: React.FC<HeaderProps> = ({
       ? 'alerts'
       : activeTab === 'ai-companion'
       ? 'ai'
+      : activeTab === 'strategy-builder'
+      ? 'strategy'
       : [
           'timezone-converter',
           'trading-timezone-converter',
@@ -257,7 +259,7 @@ export const Header: React.FC<HeaderProps> = ({
                   handleCloseImmediately();
                 }}
                 className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
-                  activeHoverMenu === 'trade' || activeTab === 'dashboard' || activeTab === 'signals' || activeTab === 'visitor-signals' || activeTab === 'signal-detail' || activeTab === 'instrument-analysis' || activeTab === 'portfolio-tracker' || activeTab === 'trading-journal' || activeTab === 'economic-calendar' || activeTab === 'expert-advisors' || activeTab === 'alerts' || activeTab === 'ai-companion'
+                  activeHoverMenu === 'trade' || activeTab === 'dashboard' || activeTab === 'signals' || activeTab === 'visitor-signals' || activeTab === 'signal-detail' || activeTab === 'instrument-analysis' || activeTab === 'portfolio-tracker' || activeTab === 'trading-journal' || activeTab === 'economic-calendar' || activeTab === 'expert-advisors' || activeTab === 'alerts' || activeTab === 'ai-companion' || activeTab === 'strategy-builder'
                     ? 'text-[#5945F1] font-semibold'
                     : 'text-slate-800 hover:text-[#5945F1]'
                 }`}
@@ -1154,7 +1156,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Bridging shield */}
             <div className="absolute -top-3 left-0 right-0 h-4 bg-transparent" />
 
-            <div className="w-full max-w-[960px] bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200/90 relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
+            <div className="w-full max-w-[960px] bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200/90 relative overflow-hidden flex max-h-[calc(100vh-88px)] flex-col md:flex-row items-stretch gap-6">
               {/* Vibrant Electric Lime Curved Backdrop (Left ~48% of container) matching Navigation Menu Content 44, 45, 46 */}
               <div className="absolute inset-y-0 left-0 w-full md:w-[48%] bg-[#bef226] rounded-r-none md:rounded-r-[130px] pointer-events-none" />
 
@@ -1214,6 +1216,10 @@ export const Header: React.FC<HeaderProps> = ({
                     setActiveTab('expert-advisors');
                     handleCloseImmediately();
                   }}
+                  onSelectStrategy={() => {
+                    setActiveTab('strategy-builder');
+                    handleCloseImmediately();
+                  }}
                   onSelectAlerts={() => {
                     setActiveTab('alerts');
                     handleCloseImmediately();
@@ -1226,7 +1232,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* Right Menu Options (Preserving exact structure: Products & Tools) */}
-              <div className="w-full md:w-[52%] pl-4 sm:pl-6 pr-2 relative z-10">
+              <div className="w-full md:w-[52%] pl-4 sm:pl-6 pr-2 relative z-10 overflow-y-auto overscroll-contain">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Column 1: Products */}
                   <div className="space-y-4">
@@ -1356,9 +1362,56 @@ export const Header: React.FC<HeaderProps> = ({
                       Tools
                     </div>
 
+                    {FEATURE_FLAGS.strategyBuilder && (
+<div
+                      className="space-y-2"
+                      onMouseEnter={() => setHoveredTradeOption('strategy')}
+                    >
+                      <div className="flex items-center gap-2 cursor-pointer group">
+                        {activeTradeFeature === 'strategy' ? (
+                          <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 shadow-xs" />
+                        ) : null}
+                        <button
+                          onClick={() => {
+                            setActiveTab('strategy-builder');
+                            handleCloseImmediately();
+                          }}
+                          className="font-bold text-base text-[#0b1c30] group-hover:text-[#5945F1] transition-colors text-left cursor-pointer"
+                        >
+                          Strategy Builder &amp; Backtesting
+                        </button>
+                        <span className="px-1.5 py-0.5 rounded-md bg-[#CAEB0E] text-[10px] font-black text-black uppercase tracking-wide">New</span>
+                      </div>
+                      <ul className="space-y-1.5 pl-3 text-xs">
+                        <li>
+                          <button
+                            onClick={() => {
+                              setActiveTab('strategy-builder');
+                              handleCloseImmediately();
+                            }}
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
+                          >
+                            <span className="text-slate-400">•</span> Rule builder &amp; templates
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            onClick={() => {
+                              setActiveTab('strategy-builder');
+                              handleCloseImmediately();
+                            }}
+                            className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
+                          >
+                            <span className="text-slate-400">•</span> Backtest, replay &amp; stress test
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+)}
+
                     {/* Section 1: Trading Calculators */}
                     <div
-                      className="space-y-2"
+                      className="space-y-2 pt-2 border-t border-slate-100"
                       onMouseEnter={() => setHoveredTradeOption('calculators')}
                     >
                       <div className="flex items-center gap-2 cursor-pointer group">
@@ -2180,6 +2233,19 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             AI Companion
+          </button>
+)}
+          {FEATURE_FLAGS.strategyBuilder && (
+<button
+            onClick={() => {
+              setActiveTab('strategy-builder');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full py-2 text-left text-sm font-semibold ${
+              activeTab === 'strategy-builder' ? 'text-[#5338ec]' : 'text-slate-700'
+            }`}
+          >
+            Strategy Builder &amp; Backtesting
           </button>
 )}
           <button

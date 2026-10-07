@@ -8,4 +8,5 @@ export const FEATURE_FLAGS = {
   expertAdvisors: true,
   priceAlerts: true,
   aiCompanion: true,
+  strategyBuilder: true,
 } as const;

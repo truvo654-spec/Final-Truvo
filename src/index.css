@@ -912,3 +912,7 @@ select:not(.appearance-none) {
 @media (prefers-reduced-motion: reduce) {
   .follow-ripple, .follow-pop, .follow-label-in { animation: none; }
 }
+
+/* ── Strategy Builder: chart text and grid colours for light and dark ── */
+.strategy-root { --st-text: #6b7686; --st-grid: #e8ebf0; --st-cell-text: #0b1c30; }
+.dark .strategy-root { --st-text: #a79fe0; --st-grid: #2a1a7a; --st-cell-text: #f3f0ff; }
