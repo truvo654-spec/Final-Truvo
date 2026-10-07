@@ -70,7 +70,7 @@ function howItWorks(p: Promotion): { title: string; text: string }[] {
   return steps;
 }
 
-function conditions(p: Promotion): string[] {
+export function conditions(p: Promotion): string[] {
   const out = [...p.terms];
   out.push(`Valid from ${date(p.startsInDays)} to ${date(p.endsInDays)}.`);
   if (p.source === 'broker') out.push(`${p.brokerName} sets and pays this offer. MarketSyde does not guarantee it and cannot change ${p.brokerName}’s terms.`);
@@ -211,7 +211,7 @@ export const PromotionDetail: React.FC<PromotionDetailProps> = ({ promo: p, leve
       {/* Title row */}
       <div className="mt-6 mb-2">
         <div className="flex flex-wrap items-center gap-2 mb-2">
-          <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${live ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{live ? 'Live now' : 'Upcoming'}</span>
+          <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${live ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{live ? 'Available now' : 'Upcoming'}</span>
           <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EEF0FE] text-[#5338ec]">{typeLabel}</span>
           <span className={`flex items-center gap-1 text-[11px] font-semibold ${live && p.endsInDays <= 7 ? 'text-rose-600' : 'text-[#474556]'}`}>
             <Clock className="w-3 h-3" />

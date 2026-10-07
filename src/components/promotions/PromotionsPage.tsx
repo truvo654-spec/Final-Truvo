@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, X, Clock, ShieldCheck } from 'lucide-react';
+import { Search, X, Clock, ShieldCheck, Lock } from 'lucide-react';
 import { Broker, Mission } from '../../types';
 import { PROMOTIONS, Promotion, PromoType, PromoLevel, PROMO_TYPES, PROMO_LEVELS } from '../../data/promotionsData';
 import { PillTabs } from '../portfolio/portfolioUi';
 import { MoreConnectedBrokersBanner } from '../dashboard/MoreConnectedBrokersBanner';
 import { THEME, LEVEL_DOT, BannerArt } from './promotionArt';
-import { PromotionDetail, CtaKind } from './PromotionDetail';
+import { PromotionDetail, CtaKind, conditions } from './PromotionDetail';
 import { LevelGateModal } from './LevelGateModal';
 import { promotionAlerts, useMyPromotionAlerts } from '../../data/promotionAlerts';
 
-type Tab = 'all' | 'drops' | 'mine';
+type Tab = 'tier' | 'mine';
 type Phase = 'live' | 'upcoming' | 'mine';
 type Sort = 'soon' | 'newest' | 'broker';
 type Skip = 'type' | 'letter' | 'phase';
@@ -39,8 +39,7 @@ interface PromotionsPageProps {
 }
 
 const TAB_INFO: Record<Tab, { label: string; blurb: string }> = {
-  all: { label: 'All offers', blurb: 'Offers from brokers, shown for your level.' },
-  drops: { label: 'Premium drops', blurb: 'Broker exclusives that open up as your level grows.' },
+  tier: { label: 'Tier Offer', blurb: 'Broker offers and premium drops by tier. Offers above your tier show as unavailable until you level up.' },
   mine: { label: 'My offers', blurb: 'Promotions from MarketSyde on the platform.' },
 };
 
@@ -119,7 +118,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   onShowToast,
 }) => {
   const level = (isLoggedIn ? Math.min(4, Math.max(1, userTierLevel || 1)) : 1) as PromoLevel;
-  const [tab, setTab] = useState<Tab>('all');
+  const [tab, setTab] = useState<Tab>('tier');
   const [phase, setPhase] = useState<Phase>('live');
   const [search, setSearch] = useState('');
   const [types, setTypes] = useState<PromoType[]>([]);
@@ -135,7 +134,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
 
   const joinedAt = (id: string) => alerts.find((a) => a.kind === 'taken' && a.id === id)?.date;
   const connected = (p: Promotion) => p.source === 'platform' || !!brokers.find((b) => b.id === p.brokerId)?.connected;
-  const inTab = (p: Promotion, t: Tab) => (t === 'all' ? p.source === 'broker' && !p.premiumDrop : t === 'drops' ? p.source === 'broker' && p.premiumDrop : p.source === 'platform');
+  const inTab = (p: Promotion, t: Tab) => (t === 'tier' ? p.source === 'broker' : p.source === 'platform');
   const isLive = (p: Promotion) => p.startsInDays === 0;
   const first = (p: Promotion) => p.brokerName.charAt(0).toUpperCase();
 
@@ -199,8 +198,8 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
     }).length;
 
   const tabCount = (t: Tab) => PROMOTIONS.filter((p) => inTab(p, t)).length;
-  const openList = phase === 'mine' ? list : list.filter((p) => p.minLevel <= level);
-  const lockedList = phase === 'mine' ? [] : list.filter((p) => p.minLevel > level);
+  // One list. What the member can take comes first, offers above their tier follow as unavailable.
+  const ordered = phase === 'mine' ? list : [...list.filter((p) => p.minLevel <= level), ...list.filter((p) => p.minLevel > level)];
 
   const activeFilters = types.length + (letter ? 1 : 0) + (eligibleOnly ? 1 : 0) + (search.trim() ? 1 : 0);
   const clearFilters = () => {
@@ -215,7 +214,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
   const cta = (p: Promotion): { label: string; kind: CtaKind } => {
     if (taken.includes(p.id)) return { label: 'Joined ✓', kind: 'done' };
     if (!isLoggedIn) return { label: 'Join MarketSyde', kind: 'join' };
-    if (p.minLevel > level) return { label: `Reach Lv.${p.minLevel} to unlock`, kind: 'locked' };
+    if (p.minLevel > level) return { label: `Unavailable until Lv.${p.minLevel}`, kind: 'locked' };
     if (!isLive(p)) return notified.includes(p.id) ? { label: 'We will notify you ✓', kind: 'notifying' } : { label: 'Notify me', kind: 'notify' };
     if (p.source === 'broker' && !connected(p)) return { label: 'Connect broker', kind: 'connect' };
     return { label: 'Join Promotion', kind: 'take' };
@@ -261,7 +260,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
     const isLocked = isLoggedIn ? p.minLevel > level : p.minLevel > 1;
     const needsConn = p.source === 'broker';
     return (
-      <div key={p.id} className="bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden flex flex-col">
+      <div key={p.id} data-locked={isLocked ? 'true' : undefined} className={`bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden flex flex-col ${isLocked ? 'opacity-75' : ''}`}>
         <div onClick={() => setDetailId(p.id)} className="relative h-44 p-5 flex flex-col justify-between overflow-hidden cursor-pointer" style={{ background: t.bg, color: t.ink, filter: isLocked ? 'saturate(0.45)' : undefined }}>
           <div className="absolute -right-12 -bottom-16 w-60 h-60 rounded-full" style={{ background: 'rgba(255,255,255,0.10)' }} />
           <BannerArt type={p.type} color={t.art} />
@@ -272,13 +271,20 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
             </div>
             <span className="flex items-center gap-1.5 bg-white text-[#0b1c30] text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0">
               <span className="w-2 h-2 rounded-full" style={{ background: LEVEL_DOT[p.minLevel], boxShadow: p.minLevel === 4 ? 'inset 0 0 0 1px #0b1c30' : undefined }} />
-              {isLocked ? 'Locked · ' : ''}Lv.{p.minLevel}{p.minLevel > 1 ? '+' : ''} {PROMO_LEVELS[p.minLevel]}
+              Lv.{p.minLevel}{p.minLevel > 1 ? '+' : ''} {PROMO_LEVELS[p.minLevel]}
             </span>
           </div>
           <div className="relative">
             <p className="font-display text-3xl font-black leading-none tracking-tight">{p.value}</p>
             <p className="text-xs font-semibold mt-1.5" style={{ color: t.sub }}>{p.valueNote}</p>
           </div>
+          {isLocked && (
+            <div className="absolute inset-0 bg-slate-900/45 flex items-center justify-center">
+              <span className="flex items-center gap-2 bg-white text-[#0b1c30] text-xs font-bold px-3.5 py-2 rounded-full shadow-md">
+                <Lock className="w-3.5 h-3.5" /> Unavailable at your tier
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="p-5 flex flex-col flex-1">
@@ -342,29 +348,37 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
         />
       )}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl border border-[#e2e8f0] w-full max-w-md shadow-2xl p-6">
-            <div className="flex items-start justify-between mb-1">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs" onClick={() => setOpen(null)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="join-title" className="bg-white rounded-2xl border border-[#e2e8f0] w-full max-w-md shadow-2xl p-6 max-h-[calc(100vh-2rem)] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between mb-1 shrink-0">
               <div>
                 <p className="text-xs font-semibold text-[#474556]">{open.source === 'platform' ? 'MarketSyde' : open.brokerName} · Lv.{open.minLevel}{open.minLevel > 1 ? '+' : ''}</p>
-                <h3 className="text-lg font-bold text-[#0b1c30]">{open.title}</h3>
+                <h3 id="join-title" className="text-lg font-bold text-[#0b1c30]">Review before you join</h3>
+                <p className="text-sm font-semibold text-[#5338ec] mt-0.5">{open.title}</p>
               </div>
               <button onClick={() => setOpen(null)} className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100" aria-label="Close"><X className="w-4 h-4" /></button>
             </div>
-            <p className="text-sm text-[#474556] mb-4">{open.summary}</p>
-            <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">Terms</p>
-            <ul className="space-y-1.5 mb-4">
-              {open.terms.map((x) => (
-                <li key={x} className="flex items-start gap-2 text-xs text-[#0b1c30]"><span className="text-[#5338ec] mt-0.5">•</span>{x}</li>
+            <p className="text-sm text-[#474556] mb-3 shrink-0">{open.summary}</p>
+            {open.source === 'broker' && <p className="text-xs text-[#474556] bg-slate-50 rounded-lg px-3 py-2 mb-3 shrink-0">This offer comes from {open.brokerName}, not MarketSyde. {open.brokerName} sets its terms and pays it.</p>}
+
+            <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2 shrink-0">Terms &amp; Conditions</p>
+            <ul className="space-y-1.5 mb-3 overflow-y-auto border border-[#e2e8f0] rounded-xl p-3 min-h-[5rem]" tabIndex={0} aria-label="Terms and conditions">
+              {conditions(open).map((x) => (
+                <li key={x} className="flex items-start gap-2 text-xs text-[#0b1c30] leading-relaxed"><span className="text-[#5338ec] mt-0.5">•</span>{x}</li>
               ))}
             </ul>
-            <label className="flex items-start gap-2.5 text-xs text-[#0b1c30] cursor-pointer mb-5">
+            <button type="button" onClick={() => { const id = open.id; setOpen(null); setDetailId(id); }} className="self-start text-xs font-semibold text-[#5338ec] hover:underline mb-3 shrink-0">Open the full offer page</button>
+
+            <label className="flex items-start gap-2.5 text-sm text-[#0b1c30] cursor-pointer mb-1 shrink-0">
               <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 rounded border-slate-300 text-[#5338ec] focus:ring-[#5338ec]" />
-              I have read the terms{open.source === 'broker' ? ` and understand this offer comes from ${open.brokerName}, not MarketSyde.` : '.'}
+              <span>I have read and agree to the Terms &amp; Conditions of this promotion.</span>
             </label>
-            <button disabled={!agree} onClick={confirm} className="w-full bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
-              Join Promotion
-            </button>
+            <p className={`text-[11px] mb-4 shrink-0 ${agree ? 'text-transparent' : 'text-[#6b7686]'}`} aria-live="polite">{agree ? 'Ready' : 'Tick the box to enable Confirm.'}</p>
+
+            <div className="flex gap-3 shrink-0">
+              <button type="button" onClick={() => setOpen(null)} className="flex-1 border border-slate-200 hover:bg-slate-50 text-sm font-semibold py-2.5 rounded-xl transition-colors">Cancel</button>
+              <button type="button" disabled={!agree} onClick={confirm} className="flex-1 bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">Confirm</button>
+            </div>
           </div>
         </div>
       )}
@@ -403,7 +417,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
           onOpenInstrument={onOpenInstrument}
           onViewBroker={(name, ph) => {
             setDetailId(null);
-            setTab('all');
+            setTab('tier');
             setPhase(ph);
             setTypes([]);
             setLetter(null);
@@ -430,7 +444,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Promotions &amp; Bonuses</h1>
           <p className="text-sm text-[#474556] mt-1 max-w-xl">
             {isLoggedIn ? (
-              <>You are <span className="font-bold text-[#0b1c30]">Lv.{level} {PROMO_LEVELS[level]}</span>. Offers above your level are locked until you level up.</>
+              <>You are <span className="font-bold text-[#0b1c30]">Lv.{level} {PROMO_LEVELS[level]}</span>. Offers above your tier show as unavailable until you level up.</>
             ) : (
               <>You are browsing as a visitor. <button onClick={onSignIn} className="font-bold text-[#5338ec] hover:underline">Sign in</button> to take offers and get notified.</>
             )}
@@ -455,7 +469,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
             onClick={() => setPhase(ph)}
             className={`pb-3 -mb-px text-sm font-bold border-b-2 transition-colors ${phase === ph ? 'border-[#5338ec] text-[#5338ec]' : 'border-transparent text-[#474556] hover:text-[#0b1c30]'}`}
           >
-            {ph === 'live' ? 'Live' : ph === 'upcoming' ? 'Upcoming' : 'My Promotion'} <span className="ml-1 font-mono text-xs opacity-70">{phaseCount(ph)}</span>
+            {ph === 'live' ? 'Available' : ph === 'upcoming' ? 'Upcoming' : 'Ongoing'} <span className="ml-1 font-mono text-xs opacity-70">{phaseCount(ph)}</span>
           </button>
         ))}
       </div>
@@ -545,37 +559,22 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
         </div>
 
         <div className="flex items-center justify-between text-xs text-[#474556]">
-          <span>Showing <span className="font-bold text-[#0b1c30]">{list.length}</span> {phase === 'mine' ? 'joined' : phase} {phase === 'mine' ? `promotion${list.length === 1 ? '' : 's'}` : `offer${list.length === 1 ? '' : 's'}`}</span>
+          <span>Showing <span className="font-bold text-[#0b1c30]">{list.length}</span> {phase === 'mine' ? 'ongoing' : phase === 'live' ? 'available' : phase} {phase === 'mine' ? `promotion${list.length === 1 ? '' : 's'}` : `offer${list.length === 1 ? '' : 's'}`}</span>
           {activeFilters > 0 && <button onClick={clearFilters} className="font-semibold text-[#5338ec] hover:underline">Clear filters</button>}
         </div>
       </div>
 
-      {/* Banner cards: open to your level first, locked ones below */}
-      {openList.length > 0 && <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">{openList.map(renderCard)}</div>}
-
-      {lockedList.length > 0 && (
-        <>
-          <div className="flex flex-wrap items-end justify-between gap-3 mt-10 mb-4">
-            <div>
-              <h2 className="text-lg font-display font-bold text-[#0b1c30]">Unlock with a higher level</h2>
-              <p className="text-xs text-[#474556] mt-0.5">
-                {lockedList.length} offer{lockedList.length === 1 ? '' : 's'} open from Lv.{Math.min(...lockedList.map((x) => x.minLevel))}. Finish missions to earn credits and level up.
-              </p>
-            </div>
-            <button onClick={onGoToMissions} className="text-xs font-bold text-[#5338ec] border border-[#5338ec]/40 hover:border-[#5338ec] rounded-xl px-4 py-2 transition-colors">Go to missions</button>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">{lockedList.map(renderCard)}</div>
-        </>
-      )}
+      {/* Banner cards: open to your tier first, unavailable ones after */}
+      {ordered.length > 0 && <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">{ordered.map(renderCard)}</div>}
 
       {list.length === 0 && (
         <div className="text-center py-16 bg-white border border-[#e2e8f0] rounded-2xl">
           <p className="text-sm font-semibold text-[#0b1c30] mb-1">
-            {activeFilters > 0 ? 'No offers match these filters' : phase === 'mine' ? 'You have not joined any promotion yet' : phase === 'live' ? 'Nothing live here right now' : 'Nothing upcoming here right now'}
+            {activeFilters > 0 ? 'No offers match these filters' : phase === 'mine' ? 'You have not joined any promotion yet' : phase === 'live' ? 'Nothing available here right now' : 'Nothing upcoming here right now'}
           </p>
-          <p className="text-xs text-[#474556]">{activeFilters > 0 ? 'Try fewer filters.' : phase === 'mine' ? 'Join an offer from Live and it shows up here.' : 'Check the other tab.'}</p>
+          <p className="text-xs text-[#474556]">{activeFilters > 0 ? 'Try fewer filters.' : phase === 'mine' ? 'Join an offer from Available and it shows up here.' : 'Check the other tab.'}</p>
           {activeFilters > 0 && <button onClick={clearFilters} className="mt-3 text-xs font-bold text-[#5338ec] hover:underline">Clear filters</button>}
-          {activeFilters === 0 && phase === 'mine' && <button onClick={() => setPhase('live')} className="mt-3 text-xs font-bold text-[#5338ec] hover:underline">Browse live offers</button>}
+          {activeFilters === 0 && phase === 'mine' && <button onClick={() => setPhase('live')} className="mt-3 text-xs font-bold text-[#5338ec] hover:underline">Browse available offers</button>}
         </div>
       )}
 
