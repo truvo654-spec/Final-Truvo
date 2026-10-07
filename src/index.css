@@ -883,3 +883,32 @@ select:not(.appearance-none) {
 .dark .border-\[\#dfe5ee\] {
   border-color: #2e1a8f;
 }
+
+/* ── Follow button: a short ripple and pop when someone follows ── */
+@keyframes follow-ripple {
+  0% { transform: scale(0.85); opacity: 0.55; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+@keyframes follow-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.93); }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes follow-label-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+.follow-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid #5338ec;
+  pointer-events: none;
+  animation: follow-ripple 0.65s ease-out forwards;
+}
+.follow-pop { animation: follow-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.follow-label-in { display: inline-block; animation: follow-label-in 0.25s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .follow-ripple, .follow-pop, .follow-label-in { animation: none; }
+}

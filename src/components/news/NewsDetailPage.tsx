@@ -14,8 +14,8 @@ import {
   Star,
   ShieldCheck,
 } from 'lucide-react';
-import { FollowWriterModal } from './FollowWriterModal';
-import { newsFollows, useNewsFollowState } from '../../data/newsFollows';
+import { FollowButton } from './FollowButton';
+import { useNewsFollowState } from '../../data/newsFollows';
 import { NewsArticle, NewsComment, AdvisorLabel } from '../../types';
 import { NEWS_ARTICLES, NEWS_COMMENTS } from '../../data/newsData';
 import { AVATAR_ADVISOR_SARAH } from '../../data/newsImagePlaceholders';
@@ -59,7 +59,6 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
   const follow = useNewsFollowState();
   const following = follow.follows.some((f) => f.writer === article.source);
   const notifying = follow.follows.find((f) => f.writer === article.source)?.notify ?? false;
-  const [followModal, setFollowModal] = useState(false);
   const [claps, setClaps] = useState(article.claps);
   const [hasClapped, setHasClapped] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -249,21 +248,7 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
                   <p className="text-xs text-[#474556]">38.2K followers · Verified newswire partner</p>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-1.5">
-                <button
-                  onClick={() => (isLoggedIn ? setFollowModal(true) : onSignIn ? onSignIn() : onShowToast('Sign in to follow writers'))}
-                  className={`text-xs font-bold px-4 py-2 rounded-full transition-colors ${
-                    following ? 'bg-slate-100 text-slate-500' : 'bg-violet-50 text-[#5338ec] hover:bg-violet-100'
-                  }`}
-                >
-                  {following ? 'Following' : 'Follow'}
-                </button>
-                {following && (
-                  <span className={`text-[11px] font-semibold ${notifying ? 'text-emerald-600' : 'text-[#94a3b8]'}`}>
-                    {notifying ? 'Notifications on' : 'Notifications off'}
-                  </span>
-                )}
-              </div>
+              <FollowButton writer={article.source} following={following} notify={notifying} isLoggedIn={isLoggedIn} onSignIn={onSignIn} onToast={onShowToast} />
             </div>
 
             {/* Responses */}
@@ -452,29 +437,6 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
         </div>
       </div>
     </div>
-    {followModal && (
-      <FollowWriterModal
-        writer={article.source}
-        avatar={article.sourceAvatar}
-        isFollowing={following}
-        notify={notifying}
-        onClose={() => setFollowModal(false)}
-        onConfirm={(notify) => {
-          newsFollows.follow(article.source, notify);
-          setFollowModal(false);
-          onShowToast(
-            notify
-              ? following ? `Notifications on for ${article.source}` : `Following ${article.source}. New news goes to Notifications › Market News.`
-              : following ? `Notifications off for ${article.source}` : `Following ${article.source}`
-          );
-        }}
-        onUnfollow={() => {
-          newsFollows.unfollow(article.source);
-          setFollowModal(false);
-          onShowToast(`Unfollowed ${article.source}`);
-        }}
-      />
-    )}
     </>
   );
 };

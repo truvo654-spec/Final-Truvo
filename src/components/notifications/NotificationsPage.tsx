@@ -739,7 +739,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                       </div>
                       <h4 className="font-bold text-sm text-[#0b1c30] dark:text-white">No new stories yet</h4>
                       <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                        Follow a writer on Market News and turn on “Notify me about new news”. New stories from them show up here.
+                        Follow a writer on Market News, then turn on notifications under the Following button. New stories from them show up here.
                       </p>
                       <button
                         type="button"

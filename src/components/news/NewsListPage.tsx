@@ -15,8 +15,8 @@ import { NewsArticle } from '../../types';
 import { NEWS_ARTICLES, NEWS_CATEGORIES, canAccessNews } from '../../data/newsData';
 import { FolderTabs, FolderTabItem } from '../common/FolderTabs';
 import { NewsPromoBanner } from './NewsPromoBanner';
-import { FollowWriterModal } from './FollowWriterModal';
-import { useNewsFollowState, releasedArticles, newsFollows } from '../../data/newsFollows';
+import { FollowButton } from './FollowButton';
+import { useNewsFollowState, releasedArticles } from '../../data/newsFollows';
 
 type NewsListTab = 'for-you' | 'following';
 
@@ -55,7 +55,6 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
   onSignIn,
 }) => {
   const followState = useNewsFollowState();
-  const [followModal, setFollowModal] = useState(false);
   const followedWriters = followState.follows.map((f) => f.writer);
   // Stories published since the member started following sit on top of the feed
   const articles = useMemo(() => [...releasedArticles(followState), ...baseArticles], [followState, baseArticles]);
@@ -133,21 +132,7 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-1.5">
-                <button
-                  onClick={() => (isLoggedIn ? setFollowModal(true) : onSignIn ? onSignIn() : onShowToast('Sign in to follow writers'))}
-                  className={`text-sm font-bold px-5 py-2.5 rounded-full transition-colors ${
-                    writerFollow ? 'bg-slate-100 text-slate-500' : 'bg-[#5338ec] text-white hover:bg-[#4326d8]'
-                  }`}
-                >
-                  {writerFollow ? 'Following' : 'Follow'}
-                </button>
-                {writerFollow && (
-                  <span className={`text-[11px] font-semibold ${writerFollow.notify ? 'text-emerald-600' : 'text-[#94a3b8]'}`}>
-                    {writerFollow.notify ? 'Notifications on' : 'Notifications off'}
-                  </span>
-                )}
-              </div>
+              <FollowButton writer={writer} following={!!writerFollow} notify={!!writerFollow?.notify} isLoggedIn={isLoggedIn} variant="solid" size="md" onSignIn={onSignIn} onToast={onShowToast} />
             </div>
           </div>
         ) : (
@@ -388,29 +373,6 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
         </div>
       </div>
     </div>
-      {writer && followModal && (
-        <FollowWriterModal
-          writer={writer}
-          avatar={writerAvatar}
-          isFollowing={!!writerFollow}
-          notify={!!writerFollow?.notify}
-          onClose={() => setFollowModal(false)}
-          onConfirm={(notify) => {
-            newsFollows.follow(writer, notify);
-            setFollowModal(false);
-            onShowToast(
-              notify
-                ? writerFollow ? `Notifications on for ${writer}` : `Following ${writer}. New news goes to Notifications › Market News.`
-                : writerFollow ? `Notifications off for ${writer}` : `Following ${writer}`
-            );
-          }}
-          onUnfollow={() => {
-            newsFollows.unfollow(writer);
-            setFollowModal(false);
-            onShowToast(`Unfollowed ${writer}`);
-          }}
-        />
-      )}
     </>
   );
 };
