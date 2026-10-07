@@ -605,6 +605,12 @@ export interface JournalEntry {
   entryTime?: string;
   exitTime?: string;
   plannedR?: number | null;
+  /** Broker ticket / order id, used to skip duplicates on import. */
+  ticketId?: string;
+  /** Broker the trade was executed with (Broker.id). */
+  brokerId?: string;
+  /** Cashback earned on this trade in USD; estimated from the broker's rate per lot when absent. */
+  cashback?: number;
 }
 
 export interface JournalChecklistItem {
