@@ -12,6 +12,7 @@ import {
 import { FolderTabs, FolderTabItem } from '../common/FolderTabs';
 import { JournalEntryWizard } from './JournalEntryWizard';
 import { JournalEntryDetail } from './JournalEntryDetail';
+import { AiJournalSummary } from './AiJournalSummary';
 
 type JournalTab = 'overview' | 'entries' | 'insights' | 'playbook' | 'review';
 
@@ -227,6 +228,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {/* ───── OVERVIEW ───── */}
       {tab === 'overview' && (
         <div className="space-y-6">
+          <AiJournalSummary entries={entries} checklistSize={checklist.length} today={JOURNAL_TODAY} onWriteEntry={() => setWizardOpen(true)} onOpenInsights={() => setTab('insights')} />
+
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1">Entries</p>
