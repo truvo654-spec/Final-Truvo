@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { X, Check, Star, Upload, ChevronLeft, ChevronRight, Link2, PenLine } from 'lucide-react';
-import { JournalEntry, JournalEmotion, JournalChecklistItem, PortfolioAssetClass, PortfolioTrade } from '../../types';
+import { Broker, JournalEntry, JournalEmotion, JournalChecklistItem, PortfolioAssetClass, PortfolioTrade } from '../../types';
 import { PORTFOLIO_TRADES } from '../../data/portfolioData';
+import { AutoSyncPanel, StatementUploadPanel } from './JournalIngestPanels';
 import {
   JOURNAL_EMOTIONS,
   JOURNAL_STRATEGIES,
@@ -15,6 +16,11 @@ interface JournalEntryWizardProps {
   journaledTradeIds: string[];
   onClose: () => void;
   onSave: (entry: JournalEntry) => void;
+  existingEntries?: JournalEntry[];
+  onImportMany?: (entries: JournalEntry[]) => void;
+  brokers?: Broker[];
+  onConnectBroker?: (broker: Broker) => void;
+  initialMode?: 'auto' | 'upload' | 'import' | 'manual';
 }
 
 const STEPS = ['Trade', 'Setup', 'Execution', 'Review'];
@@ -30,9 +36,14 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
   journaledTradeIds,
   onClose,
   onSave,
+  existingEntries = [],
+  onImportMany,
+  brokers = [],
+  onConnectBroker,
+  initialMode,
 }) => {
   const [step, setStep] = useState(0);
-  const [mode, setMode] = useState<'import' | 'manual'>('import');
+  const [mode, setMode] = useState<'auto' | 'upload' | 'import' | 'manual'>(initialMode ?? 'import');
   const [linked, setLinked] = useState<PortfolioTrade | null>(null);
 
   // manual trade fields
@@ -50,6 +61,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
 
   // setup
   const [strategy, setStrategy] = useState(JOURNAL_STRATEGIES[0]);
+  const [brokerId, setBrokerId] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [setupNotes, setSetupNotes] = useState('');
   const [screenshot, setScreenshot] = useState<string | undefined>();
@@ -91,9 +103,19 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
     if (isNaN(e) || isNaN(sl) || isNaN(tp) || levelError || Math.abs(e - sl) === 0) return null;
     return Math.round((Math.abs(tp - e) / Math.abs(e - sl)) * 100) / 100;
   })();
+  const grossPreview = (() => {
+    const e = num(entryPrice), x = num(exitPrice), sz = num(size);
+    if (isNaN(e) || isNaN(x) || isNaN(sz)) return null;
+    const move = direction === 'BUY' ? x - e : e - x;
+    return Math.round(move * sz * 100 * 100) / 100;
+  })();
+  const netPreview = grossPreview === null ? null : Math.round((grossPreview - (num(commission) || 0)) * 100) / 100;
+  const usd = (v: number) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
   const tradeValid =
     mode === 'import'
       ? !!linked
+      : mode !== 'manual'
+      ? false
       : symbol.trim() !== '' && entryPrice !== '' && size !== '' && !timeOrderError && !levelError;
 
   const handleFile = (file?: File) => {
@@ -165,6 +187,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
       rating,
       screenshot,
       source: 'manual',
+      brokerId: brokerId || undefined,
       stopPrice: stopPrice ? parseFloat(stopPrice) : undefined,
       takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
       commission: commission ? parseFloat(commission) : undefined,
@@ -210,16 +233,27 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
         <div className="px-6 py-5 overflow-y-auto flex-1">
           {step === 0 && (
             <div>
-              <div className="flex gap-2 mb-4">
-                <button onClick={() => setMode('import')} className={chip(mode === 'import') + ' flex items-center gap-1.5'}>
+              <div className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="How to add trades">
+                <button role="tab" aria-selected={mode === 'auto'} onClick={() => setMode('auto')} className={chip(mode === 'auto')}>Sync Account</button>
+                <button role="tab" aria-selected={mode === 'upload'} onClick={() => setMode('upload')} className={chip(mode === 'upload')}>Upload Statement</button>
+                <button role="tab" aria-selected={mode === 'import'} onClick={() => setMode('import')} className={chip(mode === 'import') + ' flex items-center gap-1.5'}>
                   <Link2 className="w-3.5 h-3.5" /> Import from Portfolio
                 </button>
-                <button onClick={() => setMode('manual')} className={chip(mode === 'manual') + ' flex items-center gap-1.5'}>
+                <button role="tab" aria-selected={mode === 'manual'} onClick={() => setMode('manual')} className={chip(mode === 'manual') + ' flex items-center gap-1.5'}>
                   <PenLine className="w-3.5 h-3.5" /> Enter manually
                 </button>
               </div>
 
-              {mode === 'import' ? (
+              {mode === 'auto' && <AutoSyncPanel brokers={brokers} onConnect={onConnectBroker} />}
+              {mode === 'upload' && (
+                <StatementUploadPanel
+                  existing={existingEntries}
+                  strategy={strategy}
+                  onImport={(list) => (onImportMany ? onImportMany(list) : list.forEach(onSave))}
+                />
+              )}
+
+              {mode === 'auto' || mode === 'upload' ? null : mode === 'import' ? (
                 <div className="space-y-2">
                   {importable.length === 0 && (
                     <p className="text-sm text-[#474556] py-6 text-center">Every portfolio trade is already journaled. Nice work.</p>
@@ -258,7 +292,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
                   </div>
                   <div className="flex rounded-xl border border-slate-200 overflow-hidden w-fit">
                     {(['BUY', 'SELL'] as const).map((d) => (
-                      <button key={d} onClick={() => setDirection(d)} className={`px-6 py-2 text-xs font-bold ${direction === d ? (d === 'BUY' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white') : 'bg-white text-slate-500'}`}>{d}</button>
+                      <button key={d} onClick={() => setDirection(d)} aria-pressed={direction === d} className={`px-6 py-2 text-xs font-bold ${direction === d ? (d === 'BUY' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white') : 'bg-white text-slate-500'}`}>{d === 'BUY' ? 'LONG' : 'SHORT'}</button>
                     ))}
                   </div>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -284,9 +318,28 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
                       <input type="datetime-local" step="1" value={exitTime} onChange={(e) => setExitTime(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
                     </div>
                   </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Playbook setup</label>
+                      <select value={strategy} onChange={(e) => setStrategy(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        {JOURNAL_STRATEGIES.map((st) => <option key={st}>{st}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Broker</label>
+                      <select value={brokerId} onChange={(e) => setBrokerId(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        <option value="">Unassigned</option>
+                        {brokers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-[#474556]">
+                      <div className="flex justify-between"><span>Gross P&amp;L</span><span className="font-mono font-bold">{grossPreview === null ? '—' : usd(grossPreview)}</span></div>
+                      <div className="flex justify-between mt-1"><span>Net after commissions</span><span className="font-mono font-bold">{netPreview === null ? '—' : usd(netPreview)}</span></div>
+                    </div>
+                  </div>
                   {(timeOrderError || levelError) && <p role="alert" className="text-[11px] font-semibold text-rose-600">{timeOrderError || levelError}</p>}
                   {plannedRR !== null && <p className="text-[11px] font-semibold text-[#5338ec]">Planned risk:reward 1 : {plannedRR}</p>}
-                  <p className="text-[11px] text-[#94a3b8]">Leave exit empty for a trade that is still open. Stop loss lets us calculate your R multiple; take profit gives your planned risk:reward. P&L shown is gross, commissions are stored separately. Playbook setup is chosen in the next step.</p>
+                  <p className="text-[11px] text-[#94a3b8]">Leave exit empty for a trade that is still open. Stop loss lets us calculate your R multiple; take profit gives your planned risk:reward. P&L shown is gross, commissions are stored separately. You can refine the playbook, tags and notes in the next step.</p>
                 </div>
               )}
             </div>

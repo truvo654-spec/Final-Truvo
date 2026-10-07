@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Plus, Flame, Target, TrendingUp, ShieldCheck, Lock, Search, Trash2, BookOpen, Lightbulb, ChevronRight, AlertTriangle } from 'lucide-react';
-import { JournalEntry, JournalChecklistItem, JournalWeeklyReview } from '../../types';
+import { Flame, Target, TrendingUp, ShieldCheck, Lock, Trash2, BookOpen, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview } from '../../types';
 import {
   JOURNAL_ENTRIES,
   JOURNAL_REVIEWS,
@@ -12,6 +12,12 @@ import {
 import { FolderTabs, FolderTabItem } from '../common/FolderTabs';
 import { JournalEntryWizard } from './JournalEntryWizard';
 import { JournalEntryDetail } from './JournalEntryDetail';
+import { JournalCalendar } from './JournalCalendar';
+import { JournalTradeLog } from './JournalTradeLog';
+import { JournalInsights } from './JournalInsights';
+import { JournalCumulativeChart } from './JournalCumulativeChart';
+import { DisciplineCard, RulesMonitor, TiltMonitor } from './JournalMonitors';
+import { CashbackMode, PnlMode, RangeMode, UNASSIGNED, addMonth, brokerColor, computeKpis, entryCashback, entryPoints, entryValue, rangeBounds, shortDate } from './journalOverview';
 
 type JournalTab = 'overview' | 'entries' | 'insights' | 'playbook' | 'review';
 
@@ -20,6 +26,8 @@ interface TradingJournalPageProps {
   isLoggedIn: boolean;
   onUpgradePrompt: () => void;
   onShowToast: (msg: string) => void;
+  brokers?: Broker[];
+  onConnectBroker?: (broker: Broker) => void;
 }
 
 const OUTCOME_STYLE: Record<JournalEntry['outcome'], string> = {
@@ -45,20 +53,19 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   isLoggedIn,
   onUpgradePrompt,
   onShowToast,
+  brokers,
+  onConnectBroker,
 }) => {
   const [tab, setTab] = useState<JournalTab>('overview');
   const [entries, setEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [logPreset, setLogPreset] = useState<{ ids: string[]; label: string } | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const [checklist, setChecklist] = useState<JournalChecklistItem[]>(DEFAULT_CHECKLIST);
   const [newItem, setNewItem] = useState('');
   const [rules, setRules] = useState({ maxRisk: 1, maxDailyLoss: 3, maxTrades: 3, stopAfterLosses: 2 });
 
-  const [search, setSearch] = useState('');
-  const [fOutcome, setFOutcome] = useState<'all' | JournalEntry['outcome']>('all');
-  const [fStrategy, setFStrategy] = useState('all');
-  const [fEmotion, setFEmotion] = useState('all');
 
   const [reviews, setReviews] = useState<JournalWeeklyReview[]>(JOURNAL_REVIEWS);
   const [rvBest, setRvBest] = useState('');
@@ -67,9 +74,145 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
   const hasAdvanced = isLoggedIn && userTierLevel >= 3;
 
+  // Overview toolbar + calendar state
+  const [wizardMode, setWizardMode] = useState<'auto' | 'upload' | 'import' | 'manual'>('import');
+  const openWizard = (m: 'auto' | 'upload' | 'import' | 'manual' = 'import') => {
+    setWizardMode(m);
+    setWizardOpen(true);
+  };
+  const [pnlMode, setPnlMode] = useState<PnlMode>('gross');
+  const [calMonth, setCalMonth] = useState(JOURNAL_TODAY.slice(0, 7));
+  const [rangeMode, setRangeMode] = useState<RangeMode>('month');
+  const [customRange, setCustomRange] = useState({ from: `${JOURNAL_TODAY.slice(0, 7)}-01`, to: JOURNAL_TODAY });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [openMenu, setOpenMenu] = useState<null | 'strategy' | 'asset' | 'outcome' | 'broker' | 'show' | 'basis'>(null);
+  const [strategyOff, setStrategyOff] = useState<string[]>([]);
+  const [assetOff, setAssetOff] = useState<string[]>([]);
+  const [outcomeOff, setOutcomeOff] = useState<string[]>([]);
+  const [brokerOff, setBrokerOff] = useState<string[]>([]);
+
+  const [cbMode, setCbMode] = useState<CashbackMode>('off');
+
+  const brokerMap = useMemo(() => new Map((brokers || []).map((b) => [b.id, b] as const)), [brokers]);
+  const brokerOrder = useMemo(() => (brokers || []).map((b) => b.id), [brokers]);
+  const brokerName = (id: string) => (id === UNASSIGNED ? 'Unassigned' : brokerMap.get(id)?.name || id);
+  const colorOf = (id: string) => brokerColor(id, brokerOrder);
+  const valueOf = useMemo(() => (e: JournalEntry) => entryValue(e, pnlMode, cbMode, brokerMap), [pnlMode, cbMode, brokerMap]);
+  const valueLabel = `${pnlMode}${cbMode === 'include' ? ' + cashback' : ''}`;
+  const toggleBroker = (id: string) => { setBrokerOff((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id])); setSelectedDay(null); };
+
+  const [rangeFrom, rangeTo] = rangeBounds(rangeMode, calMonth, JOURNAL_TODAY, customRange);
+  // entries after the Filters panel (used by the calendar, which shows every day of its month)
+  const calEntries = useMemo(
+    () =>
+      entries.filter(
+        (e) =>
+          !strategyOff.includes(e.strategy) &&
+          !assetOff.includes(e.assetClass) &&
+          !outcomeOff.includes(e.outcome) &&
+          !brokerOff.includes(e.brokerId || UNASSIGNED)
+      ),
+    [entries, strategyOff, assetOff, outcomeOff, brokerOff]
+  );
+  // ...and additionally inside the chosen date range (used by the KPI cards and recent list)
+  const scoped = useMemo(() => calEntries.filter((e) => e.date >= rangeFrom && e.date <= rangeTo), [calEntries, rangeFrom, rangeTo]);
+  const kpi = useMemo(() => computeKpis(scoped, pnlMode), [scoped, pnlMode]);
+  const cashbackTotal = useMemo(() => Math.round(scoped.reduce((a, e) => a + entryCashback(e, brokerMap), 0) * 100) / 100, [scoped, brokerMap]);
+  const shownTotal = useMemo(() => Math.round(scoped.reduce((a, e) => a + valueOf(e), 0) * 100) / 100, [scoped, valueOf]);
+  // brokers that actually have entries (before the broker filter) -> options for the Brokers popover
+  const brokerStats = useMemo(() => {
+    const m = new Map<string, { n: number; cb: number }>();
+    entries.forEach((e) => {
+      const k = e.brokerId || UNASSIGNED;
+      const d = m.get(k) || { n: 0, cb: 0 };
+      d.n += 1; d.cb += entryCashback(e, brokerMap);
+      m.set(k, d);
+    });
+    return Array.from(m.entries()).map(([id, d]) => ({ id, ...d, cb: Math.round(d.cb * 100) / 100 }));
+  }, [entries, brokerMap]);
+  const chartBrokers = useMemo(
+    () => brokerStats.map((b) => ({ id: b.id, name: brokerName(b.id), color: colorOf(b.id), n: b.n })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [brokerStats, brokerMap, brokerOrder]
+  );
+  const rangeLabel =
+    rangeMode === 'all' ? 'All time' : `${shortDate(rangeFrom)} – ${shortDate(rangeTo, true)}`;
+  const dayEntries = useMemo(
+    () => (selectedDay ? calEntries.filter((e) => e.date === selectedDay) : []),
+    [calEntries, selectedDay]
+  );
+
+  const filterMenu = (
+    id: 'strategy' | 'asset' | 'outcome' | 'broker',
+    title: string,
+    opts: { id: string; label: string; n: number; color?: string }[],
+    off: string[],
+    set: React.Dispatch<React.SetStateAction<string[]>>
+  ) => (
+    <div className="relative">
+      <button
+        type="button"
+        aria-expanded={openMenu === id}
+        onClick={() => setOpenMenu(openMenu === id ? null : id)}
+        className={`h-9 text-xs font-semibold border rounded-lg px-3 bg-white hover:bg-slate-50 ${off.length ? 'border-[#5338ec] text-[#5338ec]' : 'border-slate-200 text-[#0b1c30]'}`}
+      >
+        {title} ({opts.length - off.length}/{opts.length})
+      </button>
+      {openMenu === id && (
+        <div className="absolute z-20 mt-2 w-56 rounded-xl bg-white border border-slate-200 shadow-xl p-2 max-h-72 overflow-y-auto">
+          {opts.map((o) => (
+            <label key={o.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 text-xs text-[#0b1c30] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!off.includes(o.id)}
+                onChange={() => { set((cur) => (cur.includes(o.id) ? cur.filter((x) => x !== o.id) : [...cur, o.id])); setSelectedDay(null); }}
+                style={o.color ? { accentColor: o.color } : undefined}
+              />
+              <span className="flex-1">{o.label}</span>
+              <span className="text-[10px] font-mono text-slate-400">{o.n}</span>
+            </label>
+          ))}
+          <div className="flex justify-between px-2 pt-1.5">
+            <button type="button" onClick={() => { set([]); setSelectedDay(null); }} className="text-[11px] font-semibold text-[#5338ec] hover:underline">Select all</button>
+            <button type="button" onClick={() => { set(opts.map((o) => o.id)); setSelectedDay(null); }} className="text-[11px] font-semibold text-slate-500 hover:underline">Clear</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const choiceMenu = <T extends string>(
+    id: 'show' | 'basis',
+    title: string,
+    opts: { id: T; label: string }[],
+    value: T,
+    set: (v: T) => void
+  ) => (
+    <div className="relative">
+      <button
+        type="button"
+        aria-expanded={openMenu === id}
+        onClick={() => setOpenMenu(openMenu === id ? null : id)}
+        className="h-9 text-xs font-semibold border rounded-lg px-3 bg-white hover:bg-slate-50 border-slate-200 text-[#0b1c30]"
+      >
+        {title}: {opts.find((o) => o.id === value)?.label}
+      </button>
+      {openMenu === id && (
+        <div role="radiogroup" aria-label={title} className="absolute z-20 mt-2 w-48 rounded-xl bg-white border border-slate-200 shadow-xl p-2">
+          {opts.map((o) => (
+            <label key={o.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 text-xs text-[#0b1c30] cursor-pointer">
+              <input type="radio" name={`ov-${id}`} checked={value === o.id} onChange={() => { set(o.id); setOpenMenu(null); }} />
+              <span className="flex-1">{o.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const tabs: FolderTabItem<JournalTab>[] = [
     { id: 'overview', label: 'Overview' },
-    { id: 'entries', label: 'Entries' },
+    { id: 'entries', label: 'Trade Log' },
     { id: 'insights', label: 'Insights' },
     { id: 'playbook', label: 'Playbook' },
     { id: 'review', label: 'Weekly Review' },
@@ -99,31 +242,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     };
   }, [entries]);
 
-  const heat = useMemo(() => {
-    const counts: Record<string, number> = {};
-    entries.forEach((e) => (counts[e.date] = (counts[e.date] || 0) + 1));
-    return Array.from({ length: 35 }, (_, i) => {
-      const iso = isoDaysAgo(34 - i);
-      return { iso, count: counts[iso] || 0 };
-    });
-  }, [entries]);
-
-  const journaledToday = entries.some((e) => e.date === JOURNAL_TODAY);
-
-  const filtered = useMemo(
-    () =>
-      sorted.filter(
-        (e) =>
-          (fOutcome === 'all' || e.outcome === fOutcome) &&
-          (fStrategy === 'all' || e.strategy === fStrategy) &&
-          (fEmotion === 'all' || e.emotionBefore === fEmotion) &&
-          (!search.trim() ||
-            e.symbol.toLowerCase().includes(search.toLowerCase()) ||
-            e.setupNotes.toLowerCase().includes(search.toLowerCase()) ||
-            e.tags.some((t) => t.toLowerCase().includes(search.toLowerCase())))
-      ),
-    [sorted, fOutcome, fStrategy, fEmotion, search]
-  );
 
   const insights = useMemo(() => {
     const followed = entries.filter((e) => e.followedPlan).map((e) => e.pnl);
@@ -190,6 +308,12 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         <span className={`text-xs font-bold font-mono shrink-0 ${e.pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{money(e.pnl)}</span>
         {e.rMultiple !== null && <span className="text-xs font-mono text-[#474556] shrink-0">{e.rMultiple > 0 ? '+' : ''}{e.rMultiple}R</span>}
         <span className="px-2 py-0.5 rounded-md bg-[#EEF0FE] text-[#5338ec] text-[10px] font-semibold shrink-0">{e.strategy}</span>
+        {e.brokerId && (
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-[#474556] shrink-0">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colorOf(e.brokerId) }} />
+            {brokerName(e.brokerId)}{entryCashback(e, brokerMap) > 0 ? ` · cb ${money(entryCashback(e, brokerMap))}` : ''}{entryPoints(e) > 0 ? ` · ${entryPoints(e)} pts` : ''}
+          </span>
+        )}
         <span className="text-[11px] text-[#474556] shrink-0">{e.emotionBefore} → {e.emotionAfter}</span>
         {!e.followedPlan && (
           <span className="flex items-center gap-1 text-[10px] font-bold text-rose-500 shrink-0"><AlertTriangle className="w-3 h-3" /> Off plan</span>
@@ -213,10 +337,11 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           </p>
         </div>
         <button
-          onClick={() => setWizardOpen(true)}
-          className="shrink-0 flex items-center gap-1.5 bg-[#5338ec] hover:bg-[#4326d8] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+          type="button"
+          onClick={() => openWizard('auto')}
+          className="shrink-0 text-sm font-semibold bg-[#5338ec] hover:bg-[#4326d8] text-white rounded-xl px-4 py-2.5 transition-colors"
         >
-          <Plus className="w-4 h-4" /> New entry
+          Sync data
         </button>
       </div>
 
@@ -227,71 +352,125 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {/* ───── OVERVIEW ───── */}
       {tab === 'overview' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-start gap-2" role="toolbar" aria-label="Overview filters">
+            <div className="flex flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  aria-label="Date range"
+                  value={rangeMode}
+                  onChange={(e) => setRangeMode(e.target.value as RangeMode)}
+                  className="h-9 text-xs font-semibold border border-slate-200 rounded-lg px-3 bg-white text-[#0b1c30]"
+                >
+                  <option value="month">Calendar month</option>
+                  <option value="last7">Last 7 days</option>
+                  <option value="last30">Last 30 days</option>
+                  <option value="all">All time</option>
+                  <option value="custom">Custom range</option>
+                </select>
+                {rangeMode === 'custom' && (
+                  <>
+                    <input type="date" aria-label="From date" value={customRange.from} max={customRange.to} onChange={(e) => e.target.value && setCustomRange((r) => ({ ...r, from: e.target.value }))} className="text-xs h-9 border border-slate-200 rounded-lg px-2" />
+                    <span className="text-xs text-[#94a3b8]">to</span>
+                    <input type="date" aria-label="To date" value={customRange.to} min={customRange.from} onChange={(e) => e.target.value && setCustomRange((r) => ({ ...r, to: e.target.value }))} className="text-xs h-9 border border-slate-200 rounded-lg px-2" />
+                  </>
+                )}
+              </div>
+              <span className="text-xs font-mono text-[#474556] px-1" aria-live="polite">{rangeLabel}</span>
+            </div>
+
+            {filterMenu('strategy', 'Playbook', JOURNAL_STRATEGIES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.strategy === v).length })), strategyOff, setStrategyOff)}
+            {filterMenu('asset', 'Market type', ['Forex', 'Crypto', 'Stocks', 'Commodity', 'Indices'].map((v) => ({ id: v, label: v, n: entries.filter((e) => e.assetClass === v).length })), assetOff, setAssetOff)}
+            {filterMenu('outcome', 'Outcome', (['win', 'loss', 'breakeven', 'open'] as const).map((v) => ({ id: v, label: v === 'win' ? 'Wins' : v === 'loss' ? 'Losses' : v === 'breakeven' ? 'Breakeven' : 'Open', n: entries.filter((e) => e.outcome === v).length })), outcomeOff, setOutcomeOff)}
+            {filterMenu('broker', 'Broker', chartBrokers.map((b) => ({ id: b.id, label: b.name, n: b.n, color: b.color })), brokerOff, setBrokerOff)}
+
+            {choiceMenu<CashbackMode>('show', 'Show', [{ id: 'off', label: 'Trading' }, { id: 'include', label: '+ Cashback' }, { id: 'points', label: 'Points' }], cbMode, setCbMode)}
+            {choiceMenu<PnlMode>('basis', 'Basis', [{ id: 'gross', label: 'Gross' }, { id: 'net', label: 'Net' }], pnlMode, setPnlMode)}
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
-              <p className="text-[11px] font-semibold text-[#474556] mb-1">Entries</p>
-              <p className="text-xl font-bold">{stats.total}</p>
+              <p className="text-[11px] font-semibold text-[#474556] mb-1 capitalize">{cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`}</p>
+              <p className={`text-xl font-bold font-mono ${shownTotal > 0 ? 'text-emerald-600' : shownTotal < 0 ? 'text-rose-600' : ''}`}>{kpi.count ? (cbMode === 'points' ? `${shownTotal.toLocaleString('en-US')} pts` : money(shownTotal)) : '—'}</p>
+              <p className="text-[10px] text-[#94a3b8] mt-0.5">{kpi.count} entr{kpi.count === 1 ? 'y' : 'ies'} · cashback {money(cashbackTotal)}</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1">Win rate</p>
-              <p className="text-xl font-bold flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-emerald-500" /> {stats.winRate}%</p>
+              <p className="text-xl font-bold flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-emerald-500" /> {kpi.winRate}%</p>
+            </div>
+            <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
+              <p className="text-[11px] font-semibold text-[#474556] mb-1">Profit factor</p>
+              <p className="text-xl font-bold font-mono">{kpi.count === 0 ? '—' : kpi.profitFactor === null ? '∞' : kpi.profitFactor.toFixed(2)}</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1">Average R</p>
-              <p className="text-xl font-bold flex items-center gap-1.5"><Target className="w-4 h-4 text-[#5338ec]" /> {stats.avgR}R</p>
+              <p className="text-xl font-bold flex items-center gap-1.5"><Target className="w-4 h-4 text-[#5338ec]" /> {kpi.avgR}R</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1">Plan followed</p>
-              <p className="text-xl font-bold flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-500" /> {stats.plan}%</p>
+              <p className="text-xl font-bold flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-500" /> {kpi.plan}%</p>
             </div>
-            <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 col-span-2 lg:col-span-1">
+            <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 col-span-2 md:col-span-1">
               <p className="text-[11px] font-semibold text-[#474556] mb-1">Journal streak</p>
               <p className="text-xl font-bold flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-500" /> {stats.streak} days</p>
             </div>
           </div>
 
-          {!journaledToday && (
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-[#F8F7FF] border border-[#ECEEFA] rounded-2xl px-5 py-4">
-              <div className="flex items-start gap-3">
-                <Lightbulb className="w-5 h-5 text-[#5338ec] mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-bold">You haven't journaled today</p>
-                  <p className="text-xs text-[#474556]">Two minutes now is worth more than trying to remember it on Friday.</p>
-                </div>
-              </div>
-              <button onClick={() => setWizardOpen(true)} className="bg-[#5338ec] hover:bg-[#4326d8] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
-                Write an entry
-              </button>
-            </div>
-          )}
+          <JournalCumulativeChart entries={scoped} valueOf={valueOf} title={cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`} unit={cbMode === 'points' ? 'pts' : 'usd'} rangeLabel={rangeLabel} brokers={chartBrokers} off={brokerOff} />
 
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold">Recent entries</h3>
-                <button onClick={() => setTab('entries')} className="text-xs font-semibold text-[#5338ec] hover:underline">View all</button>
+                <h3 className="text-sm font-bold">
+                  {selectedDay ? `Trades on ${shortDate(selectedDay, true)}` : 'Recent entries'}
+                </h3>
+                {selectedDay ? (
+                  <button onClick={() => setSelectedDay(null)} className="text-xs font-semibold text-[#5338ec] hover:underline">Clear day</button>
+                ) : (
+                  <button onClick={() => setTab('entries')} className="text-xs font-semibold text-[#5338ec] hover:underline">View all</button>
+                )}
               </div>
-              {sorted.slice(0, 4).map((e) => (
-                <EntryRow key={e.id} e={e} />
-              ))}
+              {selectedDay ? (
+                dayEntries.length === 0 ? (
+                  <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-6 text-center">
+                    <p className="text-sm text-[#474556]">No entries on this day.</p>
+                    <button onClick={() => openWizard('manual')} className="mt-2 text-xs font-semibold text-[#5338ec] hover:underline">Add one</button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-[11px] font-mono text-[#474556]">
+                      {dayEntries.length} entr{dayEntries.length === 1 ? 'y' : 'ies'} · {cbMode === 'points' ? `${dayEntries.reduce((a, e) => a + valueOf(e), 0)} pts` : money(dayEntries.reduce((a, e) => a + valueOf(e), 0))} {cbMode === 'points' ? 'points' : valueLabel}
+                    </p>
+                    {dayEntries.map((e) => <EntryRow key={e.id} e={e} />)}
+                  </>
+                )
+              ) : scoped.length === 0 ? (
+                <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-6 text-center text-sm text-[#474556]">
+                  No entries match this date range and filters.
+                </div>
+              ) : (
+                [...scoped].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4).map((e) => <EntryRow key={e.id} e={e} />)
+              )}
             </div>
 
             <aside className="space-y-5">
-              <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-                <h4 className="text-sm font-bold mb-3">Last 5 weeks</h4>
-                <div className="grid grid-cols-7 gap-1.5">
-                  {heat.map((c) => (
-                    <div
-                      key={c.iso}
-                      title={`${c.iso}: ${c.count} entr${c.count === 1 ? 'y' : 'ies'}`}
-                      className={`aspect-square rounded-md ${
-                        c.count === 0 ? 'bg-slate-100' : c.count === 1 ? 'bg-[#C9C2FA]' : 'bg-[#5338ec]'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-[11px] text-[#94a3b8] mt-2">Darker means more entries that day.</p>
-              </div>
+              <JournalCalendar
+                month={calMonth}
+                onMonthChange={(ym) => { setCalMonth(ym); setSelectedDay(null); }}
+                entries={calEntries}
+                valueOf={valueOf}
+                label={cbMode === 'points' ? 'points' : valueLabel}
+                unit={cbMode === 'points' ? 'pts' : 'usd'}
+                brokerName={brokerName}
+                brokerColor={colorOf}
+                today={JOURNAL_TODAY}
+                selected={selectedDay}
+                onSelect={setSelectedDay}
+              />
+
+              <TiltMonitor entries={calEntries} rules={rules} />
+              <DisciplineCard entries={scoped} checklistLength={checklist.length} />
+              <RulesMonitor entries={scoped} rules={rules} onEdit={() => setTab('playbook')} />
 
               <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
                 <h4 className="text-sm font-bold mb-2">What your journal says</h4>
@@ -311,41 +490,26 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
       {/* ───── ENTRIES ───── */}
       {tab === 'entries' && (
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-5">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search symbol, tag or notes..." className="w-full border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
-            </div>
-            <select value={fOutcome} onChange={(e) => setFOutcome(e.target.value as typeof fOutcome)} className="text-xs font-semibold border border-slate-200 rounded-full px-3.5 py-2">
-              <option value="all">Any outcome</option>
-              <option value="win">Wins</option>
-              <option value="loss">Losses</option>
-              <option value="breakeven">Breakeven</option>
-              <option value="open">Open</option>
-            </select>
-            <select value={fStrategy} onChange={(e) => setFStrategy(e.target.value)} className="text-xs font-semibold border border-slate-200 rounded-full px-3.5 py-2">
-              <option value="all">Any strategy</option>
-              {JOURNAL_STRATEGIES.map((s) => <option key={s}>{s}</option>)}
-            </select>
-            <select value={fEmotion} onChange={(e) => setFEmotion(e.target.value)} className="text-xs font-semibold border border-slate-200 rounded-full px-3.5 py-2">
-              <option value="all">Any feeling before</option>
-              {JOURNAL_EMOTIONS.map((s) => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-          <div className="space-y-3">
-            {filtered.map((e) => <EntryRow key={e.id} e={e} />)}
-            {filtered.length === 0 && (
-              <div className="py-16 text-center text-sm text-[#474556]">
-                No entries match these filters.
-              </div>
-            )}
-          </div>
-        </div>
+        <JournalTradeLog
+          entries={entries}
+          brokers={brokers || []}
+          onChange={setEntries}
+          onOpen={setSelectedId}
+          onNew={() => openWizard('manual')}
+          onToast={onShowToast}
+          preset={logPreset}
+          onClearPreset={() => setLogPreset(null)}
+        />
       )}
 
       {/* ───── INSIGHTS ───── */}
       {tab === 'insights' && (
+        <JournalInsights
+          entries={entries}
+          brokers={brokers || []}
+          onToast={onShowToast}
+          onDrill={(ids, label) => { setLogPreset({ ids, label }); setTab('entries'); }}
+          overview={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
             <h4 className="text-sm font-bold mb-4">Plan adherence</h4>
@@ -435,6 +599,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             )}
           </div>
         </div>
+          )}
+        />
       )}
 
       {/* ───── PLAYBOOK ───── */}
@@ -569,9 +735,19 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
       {wizardOpen && (
         <JournalEntryWizard
+          initialMode={wizardMode}
           checklist={checklist}
           journaledTradeIds={entries.map((e) => e.linkedTradeId).filter((x): x is string => !!x)}
           onClose={() => setWizardOpen(false)}
+          existingEntries={entries}
+          brokers={brokers}
+          onConnectBroker={onConnectBroker}
+          onImportMany={(list) => {
+            setEntries((prev) => [...list, ...prev]);
+            setWizardOpen(false);
+            setTab('entries');
+            onShowToast(`${list.length} trade${list.length === 1 ? '' : 's'} imported`);
+          }}
           onSave={(entry) => {
             setEntries((prev) => [entry, ...prev]);
             setWizardOpen(false);
