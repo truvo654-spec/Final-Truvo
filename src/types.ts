@@ -598,6 +598,13 @@ export interface JournalEntry {
   screenshot?: string;
   linkedTradeId?: string;
   source: 'portfolio' | 'manual';
+  /** Manual-entry execution details (optional). */
+  stopPrice?: number;
+  takeProfit?: number;
+  commission?: number;
+  entryTime?: string;
+  exitTime?: string;
+  plannedR?: number | null;
 }
 
 export interface JournalChecklistItem {

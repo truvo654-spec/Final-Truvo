@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.100] - 2026-10-07
+### Added
+- Journal "New journal entry" manual trade form now matches the Quick Ticket Manual Entry Dock: added Commissions, Take Profit, Entry/Exit timestamps, planned risk:reward, and validation (exit after entry, SL/TP on the correct side of entry).
+
 ## [1.0.99] - 2026-10-07
 ### Added
 - Added ascending/descending sorting to the Upcoming economic events list headers (Time, Cur., Event, Imp., Actual, Forecast, Previous, Actions). Sorting applies within each day; blank values stay last.

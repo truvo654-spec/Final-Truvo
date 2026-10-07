@@ -43,6 +43,10 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
   const [exitPrice, setExitPrice] = useState('');
   const [stopPrice, setStopPrice] = useState('');
   const [size, setSize] = useState('');
+  const [takeProfit, setTakeProfit] = useState('');
+  const [commission, setCommission] = useState('');
+  const [entryTime, setEntryTime] = useState('');
+  const [exitTime, setExitTime] = useState('');
 
   // setup
   const [strategy, setStrategy] = useState(JOURNAL_STRATEGIES[0]);
@@ -69,8 +73,28 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
   const toggle = (list: string[], setList: (v: string[]) => void, v: string) =>
     setList(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
+  const timeOrderError =
+    mode === 'manual' && entryTime && exitTime && new Date(exitTime).getTime() < new Date(entryTime).getTime()
+      ? 'Exit time must be after entry time.'
+      : '';
+  const num = (v: string) => (v === '' ? NaN : parseFloat(v));
+  const levelError = (() => {
+    if (mode !== 'manual') return '';
+    const e = num(entryPrice), sl = num(stopPrice), tp = num(takeProfit);
+    const long = direction === 'BUY';
+    if (!isNaN(e) && !isNaN(sl) && (long ? sl >= e : sl <= e)) return `Stop loss should be ${long ? 'below' : 'above'} entry for a ${long ? 'long' : 'short'}.`;
+    if (!isNaN(e) && !isNaN(tp) && (long ? tp <= e : tp >= e)) return `Take profit should be ${long ? 'above' : 'below'} entry for a ${long ? 'long' : 'short'}.`;
+    return '';
+  })();
+  const plannedRR = (() => {
+    const e = num(entryPrice), sl = num(stopPrice), tp = num(takeProfit);
+    if (isNaN(e) || isNaN(sl) || isNaN(tp) || levelError || Math.abs(e - sl) === 0) return null;
+    return Math.round((Math.abs(tp - e) / Math.abs(e - sl)) * 100) / 100;
+  })();
   const tradeValid =
-    mode === 'import' ? !!linked : symbol.trim() !== '' && entryPrice !== '' && size !== '';
+    mode === 'import'
+      ? !!linked
+      : symbol.trim() !== '' && entryPrice !== '' && size !== '' && !timeOrderError && !levelError;
 
   const handleFile = (file?: File) => {
     if (!file) return;
@@ -141,6 +165,12 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
       rating,
       screenshot,
       source: 'manual',
+      stopPrice: stopPrice ? parseFloat(stopPrice) : undefined,
+      takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
+      commission: commission ? parseFloat(commission) : undefined,
+      entryTime: entryTime || undefined,
+      exitTime: exitTime || undefined,
+      plannedR: plannedRR,
     };
   };
 
@@ -216,7 +246,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
                 <div className="space-y-3.5">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Symbol</label>
+                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Symbol / ticker</label>
                       <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="EUR/USD" className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
                     </div>
                     <div>
@@ -231,20 +261,32 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
                       <button key={d} onClick={() => setDirection(d)} className={`px-6 py-2 text-xs font-bold ${direction === d ? (d === 'BUY' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white') : 'bg-white text-slate-500'}`}>{d}</button>
                     ))}
                   </div>
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
-                      ['Entry', entryPrice, setEntryPrice],
-                      ['Exit', exitPrice, setExitPrice],
-                      ['Planned stop', stopPrice, setStopPrice],
-                      ['Size (lots)', size, setSize],
-                    ].map(([label, val, setter]) => (
+                      ['Size (lots)', size, setSize, '1'],
+                      ['Entry price', entryPrice, setEntryPrice, 'any'],
+                      ['Exit price', exitPrice, setExitPrice, 'any'],
+                      ['Commissions ($)', commission, setCommission, '0.01'],
+                      ['Stop loss (SL)', stopPrice, setStopPrice, 'any'],
+                      ['Take profit (TP)', takeProfit, setTakeProfit, 'any'],
+                    ].map(([label, val, setter, step]) => (
                       <div key={label as string}>
                         <label className="text-xs font-semibold text-[#474556] mb-1 block">{label as string}</label>
-                        <input type="number" value={val as string} onChange={(e) => (setter as (v: string) => void)(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
+                        <input type="number" step={step as string} min={label === 'Commissions ($)' || label === 'Size (lots)' ? 0 : undefined} value={val as string} onChange={(e) => (setter as (v: string) => void)(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
                       </div>
                     ))}
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Entry timestamp</label>
+                      <input type="datetime-local" step="1" value={entryTime} onChange={(e) => setEntryTime(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Exit timestamp</label>
+                      <input type="datetime-local" step="1" value={exitTime} onChange={(e) => setExitTime(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
+                    </div>
                   </div>
-                  <p className="text-[11px] text-[#94a3b8]">Leave exit empty for a trade that is still open. Planned stop lets us calculate your R multiple.</p>
+                  {(timeOrderError || levelError) && <p role="alert" className="text-[11px] font-semibold text-rose-600">{timeOrderError || levelError}</p>}
+                  {plannedRR !== null && <p className="text-[11px] font-semibold text-[#5338ec]">Planned risk:reward 1 : {plannedRR}</p>}
+                  <p className="text-[11px] text-[#94a3b8]">Leave exit empty for a trade that is still open. Stop loss lets us calculate your R multiple; take profit gives your planned risk:reward. P&L shown is gross, commissions are stored separately. Playbook setup is chosen in the next step.</p>
                 </div>
               )}
             </div>
