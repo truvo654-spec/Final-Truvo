@@ -1544,6 +1544,11 @@ export default function App() {
             isLoggedIn={isLoggedIn}
             onUpgradePrompt={() => setActiveTab('member-plan')}
             onShowToast={showToast}
+            brokers={brokers}
+            onConnectBroker={(b) => {
+              setSelectedBrokerForConnect(b);
+              setIsConnectModalOpen(true);
+            }}
           />
         )}
 

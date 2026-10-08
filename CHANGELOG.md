@@ -2,6 +2,426 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.134] - 2026-10-07
+
+### Added
+
+- Playbook analytics: ⓘ hover/focus explanations for each metric (win rate, profit factor, avg win/loss, target hit) showing this playbook's own calculation, plus explanations for the rolling chart, by-playbook comparison, results in R and scenario management.
+
+## [1.0.133] - 2026-10-07
+### Changed
+- Playbooks: the Analytics panel (metric cards, rolling chart, by-playbook comparison, R vs target, scenario stats) now sits directly under the playbook header for every step, with Hide/Show, instead of only inside Review. The rolling chart is shorter.
+
+## [1.0.132] - 2026-10-07
+### Added
+- Playbook analytics (Review step): win rate, profit factor, avg win/loss and target hit rate (share of trades reaching the playbook's minimum R) as selectable cards, a rolling 10-trade line with reference line and hover details, a by-playbook comparison, an R-outcome distribution against the target, and scenario management stats (status counts, trigger rate, average planned R:R, trades from scenarios vs others).
+- Execution replays: every trade in Execution and Best executions has a Replay button. The replay window can record a short screen capture (up to 60s, via the browser's screen share) or attach a video file, plays it back, downloads or removes it, and shows an animated trade-path schematic (entry → exit against stop and target; clearly labelled as drawn from journal numbers, not tick data). Recorded trades are marked and listed under "Your execution replays".
+- Journal entries logged from a scenario keep a link to it (scenarioId) for the scenario stats.
+
+## [1.0.131] - 2026-10-07
+### Fixed
+- New journal entry: when Next is disabled on the first step, the footer now says why (e.g. "Add entry price and size to continue", a stop/target on the wrong side, or which tab to use).
+- Logging a trade from a playbook without a scenario now prefills the playbook's first instrument as the symbol.
+
+## [1.0.130] - 2026-10-07
+### Changed
+- Playbook checklist is now guidance, not a gate: it shows "x of N ticked" with a completion bar and a setup label (Light, Partial, Strong, Full), and "Log trade with this playbook" is always available. The ticked house checklist items are still saved on the new entry.
+
+## [1.0.129] - 2026-10-07
+### Added
+- Playbooks: the grade tooltip now explains each variable (profit factor, average R, plan followed, trades) in plain language.
+
+## [1.0.128] - 2026-10-07
+### Added
+- Playbooks: hovering or focusing a grade badge shows the grading criteria (A+: PF ≥ 2.5, avg ≥ +0.5R, plan ≥ 85%, 30+ trades; A: PF ≥ 2.0, ≥ +0.3R, plan ≥ 80%, 20+; B+: PF ≥ 1.5, ≥ +0.2R, 15+; B: PF ≥ 1.2, avg R > 0, 10+; C: below B or under 10 trades), this playbook's numbers, the grade the data suggests versus the one you set, and what is needed for the next grade. The Edit form shows the suggested grade next to the grade picker.
+
+## [1.0.127] - 2026-10-07
+### Changed
+- Playbooks: inventory is now a compact side list (280px, two lines per playbook: name, grade, net P&L; instruments, win rate, profit factor) with an open-scenarios link, a scroll area and sticky position; the detail panel gets the extra width.
+
+## [1.0.126] - 2026-10-07
+### Added
+- Playbooks: instruments per playbook (symbol chips with trade counts, editable in Edit playbook, searchable) and a "By instrument" table in Review.
+- Playbooks: Scenarios step (Setup → Rules → Scenarios → Checklist → Execution → Review). Traders write their own hypothesis per playbook: symbol, long/short bias, "If … then …" statement, trigger, entry/stop/target with planned reward:risk checked against the playbook minimum, valid-until date and status (Watching, Triggered, Invalidated, Closed). Scenarios can be edited, deleted, invalidated, closed or reopened; expired ones are flagged.
+- "Check and trade" links a scenario to the Checklist step; "Log trade" then opens a new journal entry prefilled with the playbook, ticked checklist, symbol, direction, entry, stop, target and the hypothesis as notes, and marks the scenario Triggered.
+### Changed
+- Playbook inventory cards simplified: name, grade, session, instruments, net P&L and one stats line, with links to open scenarios and "+ New scenario".
+
+## [1.0.125] - 2026-10-07
+### Changed
+- Strategy Playbooks: each playbook now follows one flow, Playbook = Setup + Rules + Checklist + Execution + Review, shown as five steps.
+  - Setup (kept): grade, style, markets, session, minimum reward:risk, thesis and tags.
+  - Rules (new): numbered setup rules, per-playbook risk per trade and max trades per day (with how often the daily limit was broken in the journal), and "Do not trade when" conditions.
+  - Checklist (extended): setup conditions plus the house pre-trade checklist in one live check with a valid/wait verdict, and "Log trade with this playbook", which opens a new entry with the playbook and ticked checklist items filled in.
+  - Execution (extended): entry/stop/profit-taking rules, plan-followed rate, checklist completion from journal entries, average hold time, and the latest executions marked on/off plan with their mistake.
+  - Review (new): trades, win rate, profit factor, expectancy, average R and net P&L, a cumulative R curve, on-plan vs off-plan results, most common mistakes, best executions, and a review log with Keep / Adjust / Pause / Retire decisions that update the playbook status.
+- Edit playbook: risk per trade, max trades per day and no-trade conditions. Export includes risk limits, no-trade conditions and the review log.
+
+## [1.0.124] - 2026-10-07
+### Changed
+- Journal Overview: with Custom range selected, the From/To date pickers now sit below the date range filter (with the range text under them) instead of beside it.
+
+## [1.0.123] - 2026-10-07
+### Added
+- Journal Playbook tab rebuilt as Strategy Playbooks (light theme, after the uploaded concept):
+  - Playbook library with grade/style badges, markets, session window (UTC), net P&L and total R, win rate, profit factor, avg win/loss and trade count computed from journal entries; "In session now" and last-traded indicators.
+  - Market filter chips with counts, Active / Testing / Archived / All tabs, search, and sort by profit factor, net P&L, win rate, trades or grade.
+  - Detail pane: ID, session, benchmark R:R, edge metrics (expectancy, average R, average hold time, plan followed), setup thesis and tags, an interactive execution-rules check ("x/y conditions met"), entry trigger / stop / profit-taking cards, and best executions with a stop/entry/exit level bar, View trade and "All trades in Trade Log".
+  - Create new playbook, Import template (Silver Bullet 15m FVG, Opening Range Breakout, VWAP Mean Reversion), Edit (grade, style, status, markets, session window, benchmark R:R, thesis, rules, entry/stop/target, tags), delete for playbooks without trades, and Export to Markdown.
+  - New playbooks appear in the entry wizard's setup list (archived ones are hidden).
+- The pre-trade checklist and trading rules are kept under "House rules" on the same tab.
+
+## [1.0.122] - 2026-10-07
+### Added
+- Insights › Day & Time: editable time zone (UTC, London, Frankfurt, New York, Chicago, Dubai, Bangkok, Singapore/Hong Kong, Tokyo, Sydney), remembered per browser. Weekdays, months, trade-time buckets, drill-down times and the session hours are shown in the chosen zone with daylight saving applied; market sessions stay fixed in UTC.
+
+## [1.0.121] - 2026-10-07
+### Added
+- Journal Insights: report navigation (Overview, Day & Time) and a new Day & Time report in light mode, based on the uploaded concept:
+  - Views Days / Month / Trade time (hourly, 2-hour, 4-hour) / Duration, date range, Broker / Market type / Playbook filters, session filter (Asia, London, London/NY overlap, New York PM, after hours, no entry time; UTC) and Export CSV.
+  - Benchmark vs previous period (same-length window before the selected range) on cards, chart and table.
+  - Insight cards: best window, leak window, most active window (with average hold time) and peak win rate.
+  - Distribution chart (Net P&L, Win rate, Trades or Avg R) with hover details and click-to-drill.
+  - Cross analysis matrix against Broker, Playbook, Symbol, Tag, Session, Duration, Position size or R-multiple.
+  - Detailed breakdown table (trades, win/loss/BE %, net and gross P&L, PF, Avg R, cashback, points) with expandable session or weekday sub-rows, totals, peak/leak flags.
+  - Drill-down panel and "Open in Trade Log", which opens the Trade Log filtered to those trades.
+- Sample journal data: generated Aug–Sep 2026 trade history (58 trades with entry/exit times, brokers and commissions) so reports have enough data.
+
+## [1.0.120] - 2026-10-07
+### Changed
+- Journal Overview: the Trading / + Cashback / Points and Gross / Net toggles are now dropdown buttons in the same style as the other filters (Show: Trading, Basis: Gross).
+
+## [1.0.119] - 2026-10-07
+### Changed
+- Journal Overview: the Filters popover (single-choice selects) is replaced by checkbox dropdowns like the Trade Log: Playbook, Market type, Outcome and Broker, each showing ticked/total with Select all and Clear.
+
+## [1.0.118] - 2026-10-07
+### Changed
+- Journal Overview: filter bar restyled to match the Trade Log controls (one row of same-height buttons: Date range, Filters, Broker checkbox dropdown, Trading / + Cashback / Points, Gross / Net). The broker checkbox row and filter card were removed.
+
+## [1.0.117] - 2026-10-07
+### Changed
+- Trade Log: Market type and Broker filters are now checkbox dropdowns in the same row and style as Group, Any outcome and Columns (all controls share one height).
+
+## [1.0.116] - 2026-10-07
+### Added
+- Trade Log: Market type and Broker checkbox filters (with counts, Select all / Clear). They drive the table, KPI cards, group subtotals, totals and export.
+
+## [1.0.115] - 2026-10-07
+### Changed
+- Trade Log switched from the dark concept theme to the app's light theme (same layout and functions).
+
+## [1.0.114] - 2026-10-07
+### Changed
+- Journal "Entries" tab is now the "Trade Log", redesigned from the uploaded dark concept: KPI strip (Cumul. Net P&L, Profit Factor, Win Rate, Avg Win/Loss, Realized R-Avg, Comms & Fees, plus Cashback and Points), bulk-action bar (Tag, Move Account, Export CSV, Delete, Deselect with selected-trade subtotals), filter, Group by (Instrument, Broker, Playbook, Side, Outcome) with group subtotals, column picker, sortable table with new Broker, Cashback, Points and Comm. & Fees columns, Total and Selected sum rows, per-page and pagination.
+- Sample journal entries now carry execution times and commissions.
+
+## [1.0.113] - 2026-10-07
+### Changed
+- Journal Overview: filter toolbar is now one card with a row for Date range, Filters, Trading / + Cashback / Points and Gross / Net, and a second row with the broker checkboxes (moved up from the cumulative chart).
+
+## [1.0.112] - 2026-10-07
+### Changed
+- Cumulative chart table view: brokers are now rows (Date, Broker, Entries, Day, Cumulative) with a Total row per date, instead of one column per broker.
+
+## [1.0.111] - 2026-10-07
+### Changed
+- Journal Overview: the selected date range text now sits below the date range filter instead of beside it.
+
+## [1.0.110] - 2026-10-07
+### Changed
+- Journal Overview: the "Cashback only" option is now "Points". It shows estimated MarketSyde Points (base points per lot by asset class: Forex 50, Indices 60, Commodity 55, Crypto 60) in the KPI card, cumulative chart and calendar, in "pts" instead of dollars.
+- "Sync data" moved from the Overview toolbar to the Trading Journal page header.
+
+## [1.0.109] - 2026-10-07
+### Changed
+- Journal cumulative chart: replaced the Combined / By broker switch with broker checkboxes (Select all / Clear). The ticked brokers drive the chart, KPIs, calendar and recent entries; with two or more ticked the chart shows a Total line plus one line per broker.
+- Removed the Brokers popover from the Overview toolbar (duplicated by the checkboxes).
+
+## [1.0.108] - 2026-10-07
+### Added
+- Journal Overview: Brokers filter (select one or several brokers) that drives the KPIs, cumulative chart, calendar and recent entries.
+- Journal Overview: Cashback switch (Trading / + Cashback / Cashback only). Cashback is the stored amount or the broker's rate per lot x lots for Forex, Commodity and Indices trades.
+- Cumulative chart: Combined / By broker view with per-broker lines, clickable legend, per-broker tooltip and table columns.
+- Calendar: per-broker colour dots and per-broker split on hover.
+- Journal entries can carry a broker (Broker field in the manual entry form); entry rows show broker and cashback.
+### Removed
+- Duplicate "New entry" button in the Trading Journal header (Sync data in the toolbar opens the same window).
+
+## [1.0.107] - 2026-10-07
+### Added
+- Journal Overview: cumulative P&L chart (follows range, filters and Gross/Net) with hover tooltip, keyboard navigation and a table view.
+- Journal Overview: Discipline score, Personal rules monitor (max trades/day, stop after losses; percent-based rules show "Not tracked" until an account balance is available) and Tilt monitor (recent losing streak, negative emotions, off-plan trades, revenge/overtrading signals).
+
+## [1.0.106] - 2026-10-07
+### Removed
+- Removed the "You haven't journaled today" banner (Write an entry) from the Journal Overview.
+
+## [1.0.105] - 2026-10-07
+### Added
+- Journal Overview: toolbar with date range (calendar month, last 7/30 days, all time, custom), Filters (playbook, asset class, outcome), Gross/Net P&L toggle and Sync data shortcut, mirroring the Stitch Connect & Ingest header.
+- Journal Overview: P&L and profit factor KPIs that follow the range, filters and Gross/Net choice.
+- Journal Overview: the 5-week heatmap is now an interactive month calendar (month navigation, daily P&L colouring, click a day to list its trades, keyboard accessible).
+
+## [1.0.104] - 2026-10-07
+### Changed
+- Renamed the journal entry "Auto-Sync" tab to "Sync Account".
+
+## [1.0.103] - 2026-10-07
+### Changed
+- Journal Auto-Sync tab now uses the real MarketSyde broker directory (names, verification, score, cashback, platforms, regulators, category filters, linked accounts) and opens the existing Link Trading Account flow, replacing the placeholder connector list.
+
+## [1.0.102] - 2026-10-07
+### Added
+- New journal entry window now has the Stitch Connect & Ingest functions: Upload Statement (CSV drop zone, automatic header mapping with manual override, duplicate skipping by ticket id, batch import) and an Auto-Sync connector preview (demo only, no live broker sync). Entries gain an optional ticketId.
+
+## [1.0.101] - 2026-10-07
+### Changed
+- Journal manual entry: LONG/SHORT direction labels, Playbook setup dropdown in the ticket form, live Gross/Net P&L preview.
+- Journal entry detail now shows stop loss, take profit (planned R:R), commissions, net P&L and entry/exit timestamps when provided.
+
+## [1.0.100] - 2026-10-07
+### Added
+- Journal "New journal entry" manual trade form now matches the Quick Ticket Manual Entry Dock: added Commissions, Take Profit, Entry/Exit timestamps, planned risk:reward, and validation (exit after entry, SL/TP on the correct side of entry).
+
+## [1.0.99] - 2026-10-07
+### Added
+- Added ascending/descending sorting to the Upcoming economic events list headers (Time, Cur., Event, Imp., Actual, Forecast, Previous, Actions). Sorting applies within each day; blank values stay last.
+
+## [1.0.98] - 2026-10-06
+### Added
+- Added a functional Indices tab to the calendar Markets panel with S&P 500, Nasdaq 100, and DAX 40 demo instruments.
+
+## [1.0.97] - 2026-10-06
+### Fixed
+- Made timeline market headers deterministically select one market group and restore all markets when clicked again.
+
+## [1.0.96] - 2026-10-06
+### Fixed
+- Stabilized timeline market-group filtering by centralizing asset-class normalization and adding explicit selected-state feedback to group buttons.
+
+## [1.0.95] - 2026-10-06
+### Changed
+- Enhanced the calendar rail Personalize promotion with a neon glow, animated beacon, Promo badge, and motion-safe pulse.
+
+## [1.0.94] - 2026-10-06
+### Added
+- Made chart true-range bars selectable to switch and highlight the 1H, 1D, 1W, or 1M horizon using the same market-unit conversion.
+
+## [1.0.93] - 2026-10-06
+### Added
+- Added hover, focus, and click interactions to event-impact chart points with market-aware reaction details.
+
+## [1.0.92] - 2026-10-06
+### Changed
+- Added a currency hashtag badge beside event-detail titles for easier scanning and sharing.
+
+## [1.0.91] - 2026-10-06
+### Changed
+- Expanded event-impact volatility horizons to 1H, 1D, 1W, and 1M, with market-aware pip, point, and percentage move comparisons.
+
+## [1.0.90] - 2026-10-06
+### Changed
+- Locked the calendar rail's AI Assistant entry for users below Level 3 and routed locked clicks to the existing upgrade prompt.
+
+## [1.0.89] - 2026-10-06
+### Changed
+- Kept alert controls visible for all-day calendar events and assigned future all-day releases a one-day reminder default.
+
+## [1.0.88] - 2026-10-06
+### Changed
+- Made the economic calendar table fit the available card width on desktop while preserving horizontal scrolling on narrow screens.
+
+## [1.0.87] - 2026-10-06
+### Added
+- Added a neon animated `Personalize` promotion to the calendar side rail, linking to the existing profile/account personalization flow.
+
+## [1.0.86] - 2026-10-06
+### Changed
+- Made Watchlist and Alert controls persistently visible in calendar event rows instead of revealing them only on hover.
+- Added an Actions column label and accessible action titles for adding/removing watched events and alerts.
+
+## [1.0.85] - 2026-10-06
+### Changed
+- Made AI Assistant the default calendar side-panel view and moved it to the first rail position.
+- Added show/hide controls for the side-panel rail while keeping the active panel visible.
+
+## [1.0.84] - 2026-10-06
+### Added
+- Added a demo Google Calendar sync card to the profile, including local connection state, last-sync status, and an option to include watched economic-calendar events.
+
+## [1.0.83] - 2026-10-06
+### Changed
+- Expanded the adaptive upcoming-impact watchlist from the top 3 to the top 10 upcoming impactful events and updated its heading.
+
+## [1.0.82] - 2026-10-06
+### Changed
+- Removed the duplicate Summary historical participation chart, range controls, projection legend, and sample-stat cards so Event Impact history is the single primary reaction visualization.
+
+## [1.0.81] - 2026-10-06
+### Fixed
+- Connected the Summary historical chart to its forecast series so the inspected chart renders both history and a dashed forecast path.
+- Added deterministic Actual/Forecast comparison rows for non-numeric demo events such as holidays and speeches, keeping the impact visualization populated without implying provider data.
+
+## [1.0.80] - 2026-10-06
+### Changed
+- Made the event-impact visualization explicit: Actual and Forecast lines, true-range percentages, potential-range percentages, post-event price windows for 1H/1D/1W/1M, and dated news sentiment from the one-day pre-release window.
+- Added related-article count and clearer impact-range labels to the dark analytics panel.
+
+## [1.0.79] - 2026-10-06
+### Added
+- Added a combined event-impact chart with actual-versus-forecast history, surprise points, true-range bars, reaction windows, sentiment split, and potential-range visualization.
+
+## [1.0.78] - 2026-10-06
+### Changed
+- Enabled multi-select Market Type filtering with inclusive filtering across selected markets.
+
+## [1.0.77] - 2026-10-06
+### Changed
+- Made list-view currency symbols clickable through the existing instrument-page navigation callback.
+
+## [1.0.76] - 2026-10-06
+### Changed
+- Set the economic calendar to open in List view by default.
+
+## [1.0.75] - 2026-10-06
+### Changed
+- Removed the duplicate inline From/To date inputs; custom date selection remains available in the range picker.
+
+## [1.0.74] - 2026-10-06
+### Changed
+- Made the adaptive top-three impact watchlist horizontally slidable with snap scrolling and desktop navigation controls.
+
+## [1.0.73] - 2026-10-06
+### Changed
+- Replaced the single next-release panel with an adaptive top-three upcoming impact watchlist driven by the selected dates and active filters.
+
+## [1.0.72] - 2026-10-06
+### Changed
+- Made each market-category header and event count clickable to apply that market type as the active calendar filter.
+
+## [1.0.71] - 2026-10-06
+### Changed
+- Removed the `Other` option from the Market Type dropdown while retaining its illustrative events under All Markets.
+
+## [1.0.70] - 2026-10-06
+### Fixed
+- Made populated multi-event instrument groups display their dummy event cards immediately instead of hiding them until group selection.
+
+## [1.0.69] - 2026-10-06
+### Added
+- Added same-day illustrative Index, Stock, Commodity, and Crypto events with instrument tickers for immediate visibility in the default calendar view.
+
+## [1.0.68] - 2026-10-06
+### Changed
+- Reworded the event-detail demo notice as an introductory explanation of the available research sections.
+
+## [1.0.67] - 2026-10-06
+### Added
+- Added an `Other` market type with illustrative bond, credit, and sovereign-spread events and filter support.
+
+## [1.0.66] - 2026-10-06
+### Added
+- Added deterministic Stocks earnings and Crypto flow demo events so every market-type filter has representative multi-event data.
+
+## [1.0.65] - 2026-10-06
+### Changed
+- Made every instrument/currency group row actionable with linked mock detail data, including single-event groups.
+
+## [1.0.64] - 2026-10-06
+### Changed
+- Single-event instruments now render directly as linked cards; multi-event instruments expose a clickable group header that populates the detail-card strip below.
+
+## [1.0.63] - 2026-10-06
+### Changed
+- Made the below-calendar event-card strip visible by default for the active day; instrument selection now narrows the same linked card strip.
+
+## [1.0.62] - 2026-10-06
+### Changed
+- Moved selected instrument-group details into a full-width panel below the calendar visualization.
+
+## [1.0.61] - 2026-10-06
+### Added
+- Added clickable instrument group headers/counts that expand the group into a horizontal detail-card strip for all active events.
+
+## [1.0.60] - 2026-10-06
+### Changed
+- Added per-instrument grouping and event-count badges inside each market category.
+
+## [1.0.59] - 2026-10-06
+### Changed
+- Expanded visualization event cards with impact/country badges, release time, and Forecast/Previous/Actual values.
+- Widened the timeline canvas so detailed cards remain readable across multi-day views.
+
+## [1.0.58] - 2026-10-06
+### Changed
+- Clarified visualization badges so category counts represent the number of rendered event cards, while cards show impact labels instead of numeric impact levels.
+
+## [1.0.57] - 2026-10-06
+### Changed
+- Grouped visualization event cards by market category with compact category labels and event-count badges.
+- Added checkbox indicators to the Market Type filter menu.
+
+## [1.0.55] - 2026-10-06
+### Added
+- Added a fullscreen control for the Economic Calendar visualization with browser exit and Escape-key synchronization.
+
+## [1.0.54] - 2026-10-06
+### Changed
+- Reduced Economic Calendar sidebar padding, chart height, row spacing, and section gaps for a more compact layout.
+
+## [1.0.53] - 2026-10-06
+### Added
+- Added a shared two-week calendar range option so the Visualization timeline can extend beyond a single week.
+
+## [1.0.52] - 2026-10-06
+### Changed
+- Made single-day Visualization events render in a compact responsive card grid so the timeline fits the active data without a long vertical event column.
+
+## [1.0.51] - 2026-10-06
+### Changed
+- Removed the duplicate lower calendar table from Visualization mode and made the timeline container fill its available calendar column.
+
+## [1.0.50] - 2026-10-06
+### Changed
+- Refined economic indicator detail pages into a light provider-backed layout with release snapshots, affected-asset chips, news sentiment, and simulated market-reaction context.
+
+## [1.0.49] - 2026-10-06
+### Changed
+- Timeline event cards now switch to the shared calendar table area and open the existing event detail flow when selected.
+
+## [1.0.48] - 2026-10-06
+### Changed
+- Moved List mode into the Economic Calendar section using the existing white calendar table presentation and interactions.
+
+## [1.0.47] - 2026-10-06
+### Added
+- Added an accessible Visualization/List toggle for switching between the economic-calendar timeline and the existing filtered event list.
+
+## [1.0.46] - 2026-10-06
+### Added
+- Replaced the Next 24 hours strip with a responsive weekly Economic Calendar timeline linked to the shared impact filters, event details, and Calendar filters overlay.
+
+## [1.0.45] - 2026-10-06
+### Changed
+- Stacked the `Calendar filters` descriptor below the Economic Calendar tab label for a compact vertical control layout.
+
+## [1.0.44] - 2026-10-06
+### Changed
+- Added the visible `Calendar filters` descriptor and matching accessibility label to the Economic Calendar tab control.
+
+## [1.0.43] - 2026-10-06
+### Changed
+- Replaced the Economic Calendar week-at-a-glance card with a tab-anchored dark date-range picker for custom calendar filtering.
+- Added click-only and outside-dismiss behavior while preserving pinned picker interaction.
+- Expanded the picker into a fixed responsive overlay with a two-column desktop layout and stacked mobile layout.
+
+## [1.0.42] - 2026-10-06
+### Added
+- Added a replaceable mock economic-calendar provider contract with event snapshots, release state, surprise labels, affected assets, range metrics, overview tiles, and CSV export.
+- Added week-at-a-glance event counts, maximum impact, next-impactful-event countdown, release/surprise labels, and export affordances to the calendar.
+- Expanded indicator detail pages with affected assets, true/potential range scenarios, sentiment/news correlation, and market-structure context, plus actual-vs-forecast history visualization.
+
 ## [1.0.41] - 2026-10-05
 ### Reverted
 - Restored the pre-API local-demo calendar and Summary, Forecast, Consensus, and Alerts indicator detail experience, including populated holiday demo content.

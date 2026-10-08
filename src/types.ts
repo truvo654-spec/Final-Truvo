@@ -598,6 +598,21 @@ export interface JournalEntry {
   screenshot?: string;
   linkedTradeId?: string;
   source: 'portfolio' | 'manual';
+  /** Manual-entry execution details (optional). */
+  stopPrice?: number;
+  takeProfit?: number;
+  commission?: number;
+  entryTime?: string;
+  exitTime?: string;
+  plannedR?: number | null;
+  /** Broker ticket / order id, used to skip duplicates on import. */
+  ticketId?: string;
+  /** Playbook scenario this trade was taken from. */
+  scenarioId?: string;
+  /** Broker the trade was executed with (Broker.id). */
+  brokerId?: string;
+  /** Cashback earned on this trade in USD; estimated from the broker's rate per lot when absent. */
+  cashback?: number;
 }
 
 export interface JournalChecklistItem {

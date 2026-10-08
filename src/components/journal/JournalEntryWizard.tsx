@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { X, Check, Star, Upload, ChevronLeft, ChevronRight, Link2, PenLine } from 'lucide-react';
-import { JournalEntry, JournalEmotion, JournalChecklistItem, PortfolioAssetClass, PortfolioTrade } from '../../types';
+import { Broker, JournalEntry, JournalEmotion, JournalChecklistItem, PortfolioAssetClass, PortfolioTrade } from '../../types';
 import { PORTFOLIO_TRADES } from '../../data/portfolioData';
+import { AutoSyncPanel, StatementUploadPanel } from './JournalIngestPanels';
 import {
   JOURNAL_EMOTIONS,
   JOURNAL_STRATEGIES,
@@ -15,6 +16,26 @@ interface JournalEntryWizardProps {
   journaledTradeIds: string[];
   onClose: () => void;
   onSave: (entry: JournalEntry) => void;
+  existingEntries?: JournalEntry[];
+  onImportMany?: (entries: JournalEntry[]) => void;
+  brokers?: Broker[];
+  onConnectBroker?: (broker: Broker) => void;
+  initialMode?: 'auto' | 'upload' | 'import' | 'manual';
+  /** Playbook names to choose from (defaults to the built-in list). */
+  strategies?: string[];
+  /** Prefill from a playbook (checklist step or a scenario). */
+  prefill?: {
+    strategy?: string;
+    checklist?: string[];
+    symbol?: string;
+    assetClass?: PortfolioAssetClass;
+    direction?: 'BUY' | 'SELL';
+    entryPrice?: number;
+    stopPrice?: number;
+    takeProfit?: number;
+    notes?: string;
+    scenarioId?: string;
+  } | null;
 }
 
 const STEPS = ['Trade', 'Setup', 'Execution', 'Review'];
@@ -30,28 +51,41 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
   journaledTradeIds,
   onClose,
   onSave,
+  existingEntries = [],
+  onImportMany,
+  brokers = [],
+  onConnectBroker,
+  initialMode,
+  strategies,
+  prefill,
 }) => {
+  const STRATS = strategies && strategies.length ? strategies : JOURNAL_STRATEGIES;
   const [step, setStep] = useState(0);
-  const [mode, setMode] = useState<'import' | 'manual'>('import');
+  const [mode, setMode] = useState<'auto' | 'upload' | 'import' | 'manual'>(initialMode ?? 'import');
   const [linked, setLinked] = useState<PortfolioTrade | null>(null);
 
   // manual trade fields
-  const [symbol, setSymbol] = useState('');
-  const [assetClass, setAssetClass] = useState<PortfolioAssetClass>('Forex');
-  const [direction, setDirection] = useState<'BUY' | 'SELL'>('BUY');
-  const [entryPrice, setEntryPrice] = useState('');
+  const [symbol, setSymbol] = useState(prefill?.symbol ?? '');
+  const [assetClass, setAssetClass] = useState<PortfolioAssetClass>(prefill?.assetClass ?? 'Forex');
+  const [direction, setDirection] = useState<'BUY' | 'SELL'>(prefill?.direction ?? 'BUY');
+  const [entryPrice, setEntryPrice] = useState(prefill?.entryPrice !== undefined ? String(prefill.entryPrice) : '');
   const [exitPrice, setExitPrice] = useState('');
-  const [stopPrice, setStopPrice] = useState('');
+  const [stopPrice, setStopPrice] = useState(prefill?.stopPrice !== undefined ? String(prefill.stopPrice) : '');
   const [size, setSize] = useState('');
+  const [takeProfit, setTakeProfit] = useState(prefill?.takeProfit !== undefined ? String(prefill.takeProfit) : '');
+  const [commission, setCommission] = useState('');
+  const [entryTime, setEntryTime] = useState('');
+  const [exitTime, setExitTime] = useState('');
 
   // setup
-  const [strategy, setStrategy] = useState(JOURNAL_STRATEGIES[0]);
+  const [strategy, setStrategy] = useState(prefill?.strategy && STRATS.includes(prefill.strategy) ? prefill.strategy : STRATS[0]);
+  const [brokerId, setBrokerId] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [setupNotes, setSetupNotes] = useState('');
+  const [setupNotes, setSetupNotes] = useState(prefill?.notes ?? '');
   const [screenshot, setScreenshot] = useState<string | undefined>();
 
   // execution
-  const [checked, setChecked] = useState<string[]>([]);
+  const [checked, setChecked] = useState<string[]>(prefill?.checklist ?? []);
   const [followedPlan, setFollowedPlan] = useState(true);
   const [emotionBefore, setEmotionBefore] = useState<JournalEmotion>('Calm');
   const [emotionAfter, setEmotionAfter] = useState<JournalEmotion>('Calm');
@@ -69,8 +103,48 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
   const toggle = (list: string[], setList: (v: string[]) => void, v: string) =>
     setList(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
+  const timeOrderError =
+    mode === 'manual' && entryTime && exitTime && new Date(exitTime).getTime() < new Date(entryTime).getTime()
+      ? 'Exit time must be after entry time.'
+      : '';
+  const num = (v: string) => (v === '' ? NaN : parseFloat(v));
+  const levelError = (() => {
+    if (mode !== 'manual') return '';
+    const e = num(entryPrice), sl = num(stopPrice), tp = num(takeProfit);
+    const long = direction === 'BUY';
+    if (!isNaN(e) && !isNaN(sl) && (long ? sl >= e : sl <= e)) return `Stop loss should be ${long ? 'below' : 'above'} entry for a ${long ? 'long' : 'short'}.`;
+    if (!isNaN(e) && !isNaN(tp) && (long ? tp <= e : tp >= e)) return `Take profit should be ${long ? 'above' : 'below'} entry for a ${long ? 'long' : 'short'}.`;
+    return '';
+  })();
+  const plannedRR = (() => {
+    const e = num(entryPrice), sl = num(stopPrice), tp = num(takeProfit);
+    if (isNaN(e) || isNaN(sl) || isNaN(tp) || levelError || Math.abs(e - sl) === 0) return null;
+    return Math.round((Math.abs(tp - e) / Math.abs(e - sl)) * 100) / 100;
+  })();
+  const grossPreview = (() => {
+    const e = num(entryPrice), x = num(exitPrice), sz = num(size);
+    if (isNaN(e) || isNaN(x) || isNaN(sz)) return null;
+    const move = direction === 'BUY' ? x - e : e - x;
+    return Math.round(move * sz * 100 * 100) / 100;
+  })();
+  const netPreview = grossPreview === null ? null : Math.round((grossPreview - (num(commission) || 0)) * 100) / 100;
+  const usd = (v: number) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`;
   const tradeValid =
-    mode === 'import' ? !!linked : symbol.trim() !== '' && entryPrice !== '' && size !== '';
+    mode === 'import'
+      ? !!linked
+      : mode !== 'manual'
+      ? false
+      : symbol.trim() !== '' && entryPrice !== '' && size !== '' && !timeOrderError && !levelError;
+
+  // Why Next is disabled on the first step (shown next to the button).
+  const nextHint = (() => {
+    if (step !== 0 || tradeValid) return '';
+    if (mode === 'import') return 'Pick a trade from your portfolio to continue.';
+    if (mode !== 'manual') return 'Switch to "Enter manually" or "Import from Portfolio" to continue.';
+    if (timeOrderError || levelError) return timeOrderError || levelError;
+    const missing = [!symbol.trim() && 'symbol', entryPrice === '' && 'entry price', size === '' && 'size'].filter(Boolean) as string[];
+    return missing.length ? `Add ${missing.join(', ').replace(/, ([^,]*)$/, ' and $1')} to continue.` : '';
+  })();
 
   const handleFile = (file?: File) => {
     if (!file) return;
@@ -141,6 +215,14 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
       rating,
       screenshot,
       source: 'manual',
+      brokerId: brokerId || undefined,
+      scenarioId: prefill?.scenarioId,
+      stopPrice: stopPrice ? parseFloat(stopPrice) : undefined,
+      takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
+      commission: commission ? parseFloat(commission) : undefined,
+      entryTime: entryTime || undefined,
+      exitTime: exitTime || undefined,
+      plannedR: plannedRR,
     };
   };
 
@@ -180,16 +262,27 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
         <div className="px-6 py-5 overflow-y-auto flex-1">
           {step === 0 && (
             <div>
-              <div className="flex gap-2 mb-4">
-                <button onClick={() => setMode('import')} className={chip(mode === 'import') + ' flex items-center gap-1.5'}>
+              <div className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="How to add trades">
+                <button role="tab" aria-selected={mode === 'auto'} onClick={() => setMode('auto')} className={chip(mode === 'auto')}>Sync Account</button>
+                <button role="tab" aria-selected={mode === 'upload'} onClick={() => setMode('upload')} className={chip(mode === 'upload')}>Upload Statement</button>
+                <button role="tab" aria-selected={mode === 'import'} onClick={() => setMode('import')} className={chip(mode === 'import') + ' flex items-center gap-1.5'}>
                   <Link2 className="w-3.5 h-3.5" /> Import from Portfolio
                 </button>
-                <button onClick={() => setMode('manual')} className={chip(mode === 'manual') + ' flex items-center gap-1.5'}>
+                <button role="tab" aria-selected={mode === 'manual'} onClick={() => setMode('manual')} className={chip(mode === 'manual') + ' flex items-center gap-1.5'}>
                   <PenLine className="w-3.5 h-3.5" /> Enter manually
                 </button>
               </div>
 
-              {mode === 'import' ? (
+              {mode === 'auto' && <AutoSyncPanel brokers={brokers} onConnect={onConnectBroker} />}
+              {mode === 'upload' && (
+                <StatementUploadPanel
+                  existing={existingEntries}
+                  strategy={strategy}
+                  onImport={(list) => (onImportMany ? onImportMany(list) : list.forEach(onSave))}
+                />
+              )}
+
+              {mode === 'auto' || mode === 'upload' ? null : mode === 'import' ? (
                 <div className="space-y-2">
                   {importable.length === 0 && (
                     <p className="text-sm text-[#474556] py-6 text-center">Every portfolio trade is already journaled. Nice work.</p>
@@ -216,7 +309,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
                 <div className="space-y-3.5">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Symbol</label>
+                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Symbol / ticker</label>
                       <input value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="EUR/USD" className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
                     </div>
                     <div>
@@ -228,23 +321,54 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
                   </div>
                   <div className="flex rounded-xl border border-slate-200 overflow-hidden w-fit">
                     {(['BUY', 'SELL'] as const).map((d) => (
-                      <button key={d} onClick={() => setDirection(d)} className={`px-6 py-2 text-xs font-bold ${direction === d ? (d === 'BUY' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white') : 'bg-white text-slate-500'}`}>{d}</button>
+                      <button key={d} onClick={() => setDirection(d)} aria-pressed={direction === d} className={`px-6 py-2 text-xs font-bold ${direction === d ? (d === 'BUY' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white') : 'bg-white text-slate-500'}`}>{d === 'BUY' ? 'LONG' : 'SHORT'}</button>
                     ))}
                   </div>
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[
-                      ['Entry', entryPrice, setEntryPrice],
-                      ['Exit', exitPrice, setExitPrice],
-                      ['Planned stop', stopPrice, setStopPrice],
-                      ['Size (lots)', size, setSize],
-                    ].map(([label, val, setter]) => (
+                      ['Size (lots)', size, setSize, '1'],
+                      ['Entry price', entryPrice, setEntryPrice, 'any'],
+                      ['Exit price', exitPrice, setExitPrice, 'any'],
+                      ['Commissions ($)', commission, setCommission, '0.01'],
+                      ['Stop loss (SL)', stopPrice, setStopPrice, 'any'],
+                      ['Take profit (TP)', takeProfit, setTakeProfit, 'any'],
+                    ].map(([label, val, setter, step]) => (
                       <div key={label as string}>
                         <label className="text-xs font-semibold text-[#474556] mb-1 block">{label as string}</label>
-                        <input type="number" value={val as string} onChange={(e) => (setter as (v: string) => void)(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
+                        <input type="number" step={step as string} min={label === 'Commissions ($)' || label === 'Size (lots)' ? 0 : undefined} value={val as string} onChange={(e) => (setter as (v: string) => void)(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
                       </div>
                     ))}
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Entry timestamp</label>
+                      <input type="datetime-local" step="1" value={entryTime} onChange={(e) => setEntryTime(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Exit timestamp</label>
+                      <input type="datetime-local" step="1" value={exitTime} onChange={(e) => setExitTime(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
+                    </div>
                   </div>
-                  <p className="text-[11px] text-[#94a3b8]">Leave exit empty for a trade that is still open. Planned stop lets us calculate your R multiple.</p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Playbook setup</label>
+                      <select value={strategy} onChange={(e) => setStrategy(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        {STRATS.map((st) => <option key={st}>{st}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-[#474556] mb-1 block">Broker</label>
+                      <select value={brokerId} onChange={(e) => setBrokerId(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        <option value="">Unassigned</option>
+                        {brokers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-[#474556]">
+                      <div className="flex justify-between"><span>Gross P&amp;L</span><span className="font-mono font-bold">{grossPreview === null ? '—' : usd(grossPreview)}</span></div>
+                      <div className="flex justify-between mt-1"><span>Net after commissions</span><span className="font-mono font-bold">{netPreview === null ? '—' : usd(netPreview)}</span></div>
+                    </div>
+                  </div>
+                  {(timeOrderError || levelError) && <p role="alert" className="text-[11px] font-semibold text-rose-600">{timeOrderError || levelError}</p>}
+                  {plannedRR !== null && <p className="text-[11px] font-semibold text-[#5338ec]">Planned risk:reward 1 : {plannedRR}</p>}
+                  <p className="text-[11px] text-[#94a3b8]">Leave exit empty for a trade that is still open. Stop loss lets us calculate your R multiple; take profit gives your planned risk:reward. P&L shown is gross, commissions are stored separately. You can refine the playbook, tags and notes in the next step.</p>
                 </div>
               )}
             </div>
@@ -255,7 +379,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">Strategy</p>
                 <div className="flex flex-wrap gap-2">
-                  {JOURNAL_STRATEGIES.map((s) => (
+                  {STRATS.map((s) => (
                     <button key={s} onClick={() => setStrategy(s)} className={chip(strategy === s)}>{s}</button>
                   ))}
                 </div>
@@ -371,6 +495,8 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
             <ChevronLeft className="w-4 h-4" /> {step === 0 ? 'Cancel' : 'Back'}
           </button>
           {step < STEPS.length - 1 ? (
+            <div className="flex items-center gap-3">
+            {nextHint && <span className="text-xs text-amber-700 text-right max-w-[260px]" role="status">{nextHint}</span>}
             <button
               disabled={step === 0 && !tradeValid}
               onClick={() => setStep(step + 1)}
@@ -378,6 +504,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>
+            </div>
           ) : (
             <button
               onClick={() => onSave(buildEntry())}

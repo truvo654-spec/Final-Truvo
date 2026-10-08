@@ -71,6 +71,9 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           <div className="text-right">
             <p className={`text-2xl font-bold font-mono ${entry.pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{money(entry.pnl)}</p>
             <p className="text-xs text-[#474556] font-semibold">{entry.rMultiple !== null ? `${entry.rMultiple > 0 ? '+' : ''}${entry.rMultiple}R` : 'R not set'}</p>
+            {entry.commission !== undefined && (
+              <p className="text-[11px] text-[#94a3b8] font-mono">Net {money(entry.pnl - entry.commission)} after ${entry.commission.toFixed(2)} fees</p>
+            )}
           </div>
         </div>
 
@@ -87,7 +90,32 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             <p className="text-[11px] text-[#474556] mb-0.5">Size</p>
             <p className="text-sm font-bold font-mono">{entry.size} lots</p>
           </div>
+          {entry.stopPrice !== undefined && (
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-[#474556] mb-0.5">Stop loss</p>
+              <p className="text-sm font-bold font-mono">{entry.stopPrice}</p>
+            </div>
+          )}
+          {entry.takeProfit !== undefined && (
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-[#474556] mb-0.5">Take profit{entry.plannedR ? ` · 1:${entry.plannedR}` : ''}</p>
+              <p className="text-sm font-bold font-mono">{entry.takeProfit}</p>
+            </div>
+          )}
+          {entry.commission !== undefined && (
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-[#474556] mb-0.5">Commissions</p>
+              <p className="text-sm font-bold font-mono">${entry.commission.toFixed(2)}</p>
+            </div>
+          )}
         </div>
+        {(entry.entryTime || entry.exitTime) && (
+          <p className="text-[11px] text-[#94a3b8] font-mono mt-3">
+            {entry.entryTime ? `In ${entry.entryTime.replace('T', ' ')}` : ''}
+            {entry.entryTime && entry.exitTime ? ' → ' : ''}
+            {entry.exitTime ? `Out ${entry.exitTime.replace('T', ' ')}` : ''}
+          </p>
+        )}
 
         {entry.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
