@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2026-10-08
+
+### Changed
+
+- Backtest → Practice: the single "Market" dropdown is replaced by separate **Market type** (Forex, Indices, Commodities, Crypto, Stocks) and **Instrument** filters, both multi-select. With several instruments, one is picked at random (blind mode keeps you guessing). Journal names map to the demo feed (NAS100 → MNQ, US500 → MES, XAU/USD → MGC).
+- Practising your own trades adds Result (losses / wins / all), Playbook and Mistake filters, with a live count of matching trades.
+- Custom filters: "Save as my filter" stores the current combination under a name; saved filters appear as chips to apply or delete.
+
+## [1.1.1] - 2026-10-08
+
+### Changed
+
+- Trading Journal tabs: Playbook now comes before Backtest (Overview · Trade Log · Insights · Playbook · Backtest · Weekly Review).
+
+## [1.1.0] - 2026-10-08
+
+### Added
+
+- **Backtest tab in the Trading Journal**. Simplified flow: a home page with three plain choices, then one page per task.
+  - **Test a playbook on past prices.** One setup page in three steps (what to test, market and dates, money/risk/costs), pre-filled from the playbook, your journal's trading rules and your broker, so you can press Run straight away. Rules can come from a playbook, a rule builder (SMA, EMA, RSI, ATR, VWAP, yesterday's high/low, session high/low, N-bar high/low, fair value gaps) or a plain-English description that is shown back for confirmation. Less common settings (session, weekdays, news days, trade management, costs, prop-firm rules) are folded away. Run is disabled until the setup is valid, with the reason shown.
+  - **Engine** in a Web Worker with a one-at-a-time queue, progress and cancel: strict time order with a guard that refuses to read future bars, market fills at the next bar open (or same-bar close), limit orders only when price trades through, stop-before-target when both are inside one bar (flagged), commission/spread/slippage, % / fixed $ / fixed size sizing, breakeven, trailing stop, partial exits, time and session-end exits, daily loss, max drawdown and prop-firm rules. Zero-trade runs explain why.
+  - **Results**: one-sentence summary, four headline numbers with sample sizes (more behind "Show all stats": profit factor, expectancy, Sharpe, Sortino, Calmar, streaks…), equity curve ($ or R) with drawdown, a verdict with three reasons and suggested changes that were re-tested on the same data, out-of-sample (70/30), walk-forward (4 periods) and Monte Carlo (1,000 reshuffles) checks, breakdowns by session, weekday and hour, and warnings for small samples and too many rules.
+  - **Trade log** for each run: sortable columns (running balance stays in time order), direction and date filters, a "More filters" drawer (result, P&L, R, exit reason, session, weekday, entry hour, hold time) with removable chips and totals for the filtered trades, and a side drawer showing the trade on a chart.
+  - **What-if on your real trades**: pick trades with journal filters, change one rule (losses per day, daily loss, hours, mistake tags, breakeven, target, tighter stop), compare actual vs what-if with deltas, overlaid equity and the list of changed trades (opens in the Trade Log). Price-path rules are labelled as estimates.
+  - **Practice (manual replay)**: random date, a day like today, or your own journal trades rebuilt bar by bar, blind by default; play/step/speed/jump, higher-timeframe inset, horizontal lines, an order ticket with live reward:risk, breakeven/close half/close, tags and notes. Finishing a session awards Points once.
+  - **Saved runs** with open, duplicate, share, delete, and side-by-side comparison of 2–3 runs (changed settings highlighted, best value with its lead, overlaid curves, one-line summary).
+- **Closing the loop**: saving a run from a playbook stores it as that playbook's expected results. Playbook pages show "Backtest vs live" (expected vs actual, On track / Underperforming, live cumulative R against the expected range) and a "Backtest this playbook" button; the journal Overview has a "Strategy health" card. Entry points: "Replay this trade blind" on a journal entry and in the Trade Log selection bar, and "Try a what-if" in Insights. Results can be sent to the playbook's review notes or added to tomorrow's plan as a scenario.
+- **Plan, Credits, Points**: automated runs per month by member level, an extra run for 15 Syde Credits (spent, never "debited"), and Points for finished replay sessions and saved runs. What-if and replay are free.
+- Mock market data (7 instruments, 5-minute bars from Oct 2024 to Oct 2026), configurable values in `src/backtest/config.ts`, engine tests (`npm test`) and docs in `docs/BACKTESTING.md`.
+
 ## [1.0.134] - 2026-10-07
 
 ### Added
