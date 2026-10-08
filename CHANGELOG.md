@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.42] - 2026-10-08
+### Added
+- Added `vite.single.config.ts` and `vite-plugin-singlefile` to build the whole app as a single self-contained HTML file (`npm run build:single`).
+- Added the standalone build at `artifact/marketsyde.html` for the design team.
+
 ## [1.0.41] - 2026-10-05
 ### Reverted
 - Restored the pre-API local-demo calendar and Summary, Forecast, Consensus, and Alerts indicator detail experience, including populated holiday demo content.
