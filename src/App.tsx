@@ -625,7 +625,7 @@ export default function App() {
   };
 
   // Gamification: Deduct credits for feature unlock
-  const handleSpendCredits = (amount: number, reason: string): boolean => {
+  const handleSpendCredits = (amount: number, reason: string, description?: string): boolean => {
     if (user.sydeCredits < amount) {
       showToast(`⚠️ Insufficient Syde Credits (Required: ${amount} 🪙)`);
       return false;
@@ -641,7 +641,7 @@ export default function App() {
     const newLogItem: ActivityLogItem = {
       id: `act-${Date.now()}`,
       title: reason || 'Credit Unlock',
-      description: `Unlocked premium trading signal telemetry for 24h`,
+      description: description ?? `Unlocked premium trading signal telemetry for 24h`,
       pointsChange: 0,
       creditsChange: -amount,
       timestamp: 'Just now',
@@ -649,7 +649,7 @@ export default function App() {
       category: 'Bonus',
     };
     setActivityLogs((prev) => [newLogItem, ...prev]);
-    showToast(`🔓 Unlocked with ${amount} Syde Credits!`);
+    showToast(description ? `${amount} Syde Credits spent: ${reason}` : `🔓 Unlocked with ${amount} Syde Credits!`);
     return true;
   };
 
@@ -1194,7 +1194,7 @@ export default function App() {
               handleRewardPoints(Math.round(lotSize * 15), `Live Trade via ${brokerName}`);
               showToast(`🎉 +$${rebateAmount.toFixed(2)} Cashback earned via ${brokerName}!`);
             }}
-            onSpendCredits={handleSpendCredits}
+            onSpendCredits={(amount, reason) => handleSpendCredits(amount, reason, 'Extra automated backtest run')}
             onClaimBonusCredits={(amount) => handleRewardPointsAndCredits(0, amount, 'Credit Bonus Claim')}
             onSetUserCredits={(credits) => {
               setUser((prev) => {
@@ -1398,6 +1398,9 @@ export default function App() {
               setSelectedBrokerForConnect(b);
               setIsConnectModalOpen(true);
             }}
+            sydeCredits={user.sydeCredits}
+            onSpendCredits={(amount, reason) => handleSpendCredits(amount, reason, 'Extra automated backtest run')}
+            onRewardPoints={handleRewardPoints}
           />
         )}
 
