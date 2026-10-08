@@ -84,9 +84,11 @@ interface Props {
   overview: React.ReactNode;
   onDrill: (ids: string[], label: string) => void;
   onToast: (msg: string) => void;
+  /** Open Backtest → What-if on these trades. */
+  onWhatIf?: () => void;
 }
 
-export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, onDrill, onToast }) => {
+export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, onDrill, onToast, onWhatIf }) => {
   const brokerMap = useMemo(() => new Map(brokers.map((b) => [b.id, b] as const)), [brokers]);
   const brokerOrder = useMemo(() => brokers.map((b) => b.id), [brokers]);
   const brokerName = (id: string) => (id === UNASSIGNED ? 'Unassigned' : brokerMap.get(id)?.name || id);
@@ -332,6 +334,13 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold ${report === id ? 'bg-[#EEF0FE] text-[#5338ec]' : 'text-[#474556] hover:bg-slate-50'}`}>{label}</button>
           ))}
         </nav>
+        {onWhatIf && (
+          <button type="button" onClick={onWhatIf} className="w-full text-left bg-[#FBFAFF] border border-[#5338ec]/20 rounded-2xl p-4 hover:border-[#5338ec]">
+            <p className="text-xs font-bold text-[#0b1c30]">What if you had followed one rule?</p>
+            <p className="text-[11px] text-[#474556] mt-0.5">Test "stop after 2 losses a day" and other rules on these trades.</p>
+            <p className="text-[11px] font-semibold text-[#5338ec] mt-1.5">Try a what-if →</p>
+          </button>
+        )}
         {report === 'daytime' && (
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
             <p className="text-[10px] font-bold tracking-wider uppercase text-slate-500 mb-2">Session filter</p>

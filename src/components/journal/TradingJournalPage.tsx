@@ -22,8 +22,11 @@ import { DEFAULT_PLAYBOOKS, JournalPlaybook } from '../../data/journalPlaybooks'
 import { JournalCumulativeChart } from './JournalCumulativeChart';
 import { DisciplineCard, RulesMonitor, TiltMonitor } from './JournalMonitors';
 import { CashbackMode, PnlMode, RangeMode, UNASSIGNED, addMonth, brokerColor, computeKpis, entryCashback, entryPoints, entryValue, rangeBounds, shortDate } from './journalOverview';
+import { BacktestPage, BacktestIntent } from '../backtest/BacktestPage';
+import { StrategyHealthCard } from '../backtest/PlaybookBacktestPanel';
+import { loadExpected, saveExpected, PlaybookExpectedStats } from '../../backtest/store';
 
-type JournalTab = 'overview' | 'entries' | 'insights' | 'playbook' | 'review';
+type JournalTab = 'overview' | 'entries' | 'insights' | 'playbook' | 'backtest' | 'review';
 
 interface TradingJournalPageProps {
   userTierLevel: number;
@@ -32,6 +35,9 @@ interface TradingJournalPageProps {
   onShowToast: (msg: string) => void;
   brokers?: Broker[];
   onConnectBroker?: (broker: Broker) => void;
+  sydeCredits?: number;
+  onSpendCredits?: (amount: number, reason: string) => boolean;
+  onRewardPoints?: (points: number, reason: string) => void;
 }
 
 const OUTCOME_STYLE: Record<JournalEntry['outcome'], string> = {
@@ -59,6 +65,9 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   onShowToast,
   brokers,
   onConnectBroker,
+  sydeCredits = 0,
+  onSpendCredits,
+  onRewardPoints,
 }) => {
   const [tab, setTab] = useState<JournalTab>('overview');
   const [entries, setEntries] = useState<JournalEntry[]>(JOURNAL_ENTRIES);
@@ -71,6 +80,10 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [playbooks, setPlaybooks] = useState<JournalPlaybook[]>(DEFAULT_PLAYBOOKS);
   const [recordings, setRecordings] = useState<Record<string, string>>({}); // entry id → replay video (object URL)
   const [rules, setRules] = useState({ maxRisk: 1, maxDailyLoss: 3, maxTrades: 3, stopAfterLosses: 2 });
+  const [expected, setExpected] = useState<Record<string, PlaybookExpectedStats>>(() => loadExpected());
+  const [btIntent, setBtIntent] = useState<BacktestIntent | null>(null);
+  const goBacktest = (intent: BacktestIntent) => { setBtIntent(intent); setSelectedId(null); setTab('backtest'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const setExpectedFor = (st: PlaybookExpectedStats) => setExpected((m) => { const next = { ...m, [st.playbookId]: st }; saveExpected(next); return next; });
 
 
   const [reviews, setReviews] = useState<JournalWeeklyReview[]>(JOURNAL_REVIEWS);
@@ -223,6 +236,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     { id: 'entries', label: 'Trade Log' },
     { id: 'insights', label: 'Insights' },
     { id: 'playbook', label: 'Playbook' },
+    { id: 'backtest', label: 'Backtest' },
     { id: 'review', label: 'Weekly Review' },
   ];
 
@@ -290,6 +304,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         entry={selected}
         checklist={checklist}
         onBack={() => setSelectedId(null)}
+        onReplay={() => goBacktest({ view: 'replay', entryId: selected.id })}
         onUpdate={(upd) => setEntries((prev) => prev.map((e) => (e.id === upd.id ? upd : e)))}
         onDelete={(id) => {
           setEntries((prev) => prev.filter((e) => e.id !== id));
@@ -477,6 +492,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               <TiltMonitor entries={calEntries} rules={rules} />
               <DisciplineCard entries={scoped} checklistLength={checklist.length} />
               <RulesMonitor entries={scoped} rules={rules} onEdit={() => setTab('playbook')} />
+              <StrategyHealthCard playbooks={playbooks} entries={entries} expected={expected} onOpen={() => goBacktest({ view: 'home' })} />
 
               <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
                 <h4 className="text-sm font-bold mb-2">What your journal says</h4>
@@ -505,6 +521,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onToast={onShowToast}
           preset={logPreset}
           onClearPreset={() => setLogPreset(null)}
+          onReplay={(id) => goBacktest({ view: 'replay', entryId: id })}
         />
       )}
 
@@ -515,6 +532,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           brokers={brokers || []}
           onToast={onShowToast}
           onDrill={(ids, label) => { setLogPreset({ ids, label }); setTab('entries'); }}
+          onWhatIf={() => goBacktest({ view: 'whatif' })}
           overview={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
@@ -609,6 +627,30 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         />
       )}
 
+      {/* ───── BACKTEST ───── */}
+      {tab === 'backtest' && (
+        <BacktestPage
+          entries={entries}
+          playbooks={playbooks}
+          setPlaybooks={setPlaybooks}
+          journalRules={rules}
+          onUpdateRules={(p) => setRules((r) => ({ ...r, ...p }))}
+          onAddChecklist={(label) => setChecklist((prev) => (prev.some((c) => c.label === label) ? prev : [...prev, { id: `chk_${Date.now()}`, label }]))}
+          brokers={brokers || []}
+          userTierLevel={isLoggedIn ? userTierLevel : 1}
+          sydeCredits={sydeCredits}
+          onSpendCredits={(amount, reason) => (onSpendCredits ? onSpendCredits(amount, reason) : false)}
+          onRewardPoints={(pts, reason) => (onRewardPoints ? onRewardPoints(pts, reason) : onShowToast(`+${pts} Points: ${reason}`))}
+          onUpgrade={onUpgradePrompt}
+          onToast={onShowToast}
+          onOpenTrades={(ids, label) => { setLogPreset({ ids, label }); setTab('entries'); }}
+          expected={expected}
+          onSetExpected={setExpectedFor}
+          intent={btIntent}
+          onIntentDone={() => setBtIntent(null)}
+        />
+      )}
+
       {/* ───── PLAYBOOK ───── */}
       {tab === 'playbook' && (
         <JournalPlaybooks
@@ -627,6 +669,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             return next;
           })}
           onLogTrade={(pre) => openWizard('manual', pre)}
+          expected={expected}
+          onBacktest={(id) => goBacktest({ view: 'setup', playbookId: id })}
           houseRules={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">

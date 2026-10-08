@@ -3,6 +3,8 @@ import { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../t
 import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, PLAYBOOK_TEMPLATES, ReviewDecision, ScenarioStatus } from '../../data/journalPlaybooks';
 import { guessAssetClass } from './journalIngest';
 import { PlaybookAnalytics } from './PlaybookAnalytics';
+import { PlaybookBacktestPanel } from '../backtest/PlaybookBacktestPanel';
+import type { PlaybookExpectedStats } from '../../backtest/store';
 import { TradeReplayModal } from './TradeReplayModal';
 import { JOURNAL_TODAY } from '../../data/journalData';
 
@@ -109,6 +111,9 @@ interface Props {
     strategy: string; checklist: string[]; symbol?: string; assetClass?: PortfolioAssetClass; direction?: 'BUY' | 'SELL';
     entryPrice?: number; stopPrice?: number; takeProfit?: number; notes?: string; scenarioId?: string;
   }) => void;
+  /** Saved backtest expectations by playbook id. */
+  expected?: Record<string, PlaybookExpectedStats>;
+  onBacktest?: (playbookId: string) => void;
 }
 
 const blank = (): JournalPlaybook => ({
@@ -116,7 +121,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, onLogTrade, recordings, onSetRecording }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, onLogTrade, recordings, onSetRecording, expected = {}, onBacktest }) => {
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
   const [status, setStatus] = useState<'all' | PlaybookStatus>('active');
   const [sort, setSort] = useState<SortKey>('pf');
@@ -591,6 +596,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className={btn} title="Test these rules on past prices">Backtest this playbook</button>}
                   <button type="button" onClick={exportMd} className={btn}>Export</button>
                   <button type="button" onClick={startEdit} className={btn}>Edit playbook</button>
                 </div>
@@ -604,6 +610,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                 </div>
                 {showAnalytics && <PlaybookAnalytics playbook={sel} playbooks={playbooks} entries={entries} onShowTrades={onShowTrades} />}
               </div>
+
+              {onBacktest && <PlaybookBacktestPanel playbook={sel} entries={entries} expected={expected[sel.id]} onBacktest={() => onBacktest(sel.id)} />}
 
               {/* Step tabs: Setup → Rules → Checklist → Execution → Review */}
               <nav className="grid grid-cols-3 md:grid-cols-6 gap-1 rounded-xl bg-slate-100 p-1" role="tablist" aria-label="Playbook steps">

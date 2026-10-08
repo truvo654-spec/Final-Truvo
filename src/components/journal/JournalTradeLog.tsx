@@ -75,9 +75,11 @@ interface Props {
   onToast: (msg: string) => void;
   preset?: { ids: string[]; label: string } | null;
   onClearPreset?: () => void;
+  /** Replay one trade blind in Backtest → Practice. */
+  onReplay?: (id: string) => void;
 }
 
-export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onNew, onToast, preset, onClearPreset }) => {
+export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onNew, onToast, preset, onClearPreset, onReplay }) => {
   const brokerMap = useMemo(() => new Map(brokers.map((b) => [b.id, b] as const)), [brokers]);
   const brokerOrder = useMemo(() => brokers.map((b) => b.id), [brokers]);
   const brokerName = (id?: string) => (id ? brokerMap.get(id)?.name || id : 'Unassigned');
@@ -410,6 +412,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
             <button type="button" className={btn} onClick={() => setPanel(panel === 'tag' ? null : 'tag')}>Tag</button>
             <button type="button" className={btn} onClick={() => { setMoveTo(''); setPanel(panel === 'move' ? null : 'move'); }}>Move Account</button>
             <button type="button" className={btn} onClick={exportCsv}>Export</button>
+            {onReplay && sel.length === 1 && <button type="button" className={btn} title="Practise this trade bar by bar with the date and outcome hidden" onClick={() => onReplay(sel[0])}>Replay this trade blind</button>}
             <button type="button" className={`${btn} text-rose-600`} onClick={() => setPanel(panel === 'delete' ? null : 'delete')}>Delete</button>
             <button type="button" className="px-2 py-1.5 text-xs font-semibold text-slate-500 hover:text-[#0b1c30]" onClick={() => { setSel([]); setPanel(null); }}>Deselect ({sel.length})</button>
             <span className="ml-auto text-[11px] font-mono text-slate-500">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Star, Check, X as XIcon, Trash2, Pencil, Link2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Star, Check, X as XIcon, Trash2, Pencil, Link2, AlertTriangle, PlayCircle } from 'lucide-react';
 import { JournalEntry, JournalChecklistItem } from '../../types';
 
 interface JournalEntryDetailProps {
@@ -9,6 +9,8 @@ interface JournalEntryDetailProps {
   onUpdate: (entry: JournalEntry) => void;
   onDelete: (id: string) => void;
   onShowToast: (msg: string) => void;
+  /** Replay this trade bar by bar with the outcome hidden (Backtest → Practice). */
+  onReplay?: () => void;
 }
 
 const OUTCOME_STYLE: Record<JournalEntry['outcome'], string> = {
@@ -27,6 +29,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   onUpdate,
   onDelete,
   onShowToast,
+  onReplay,
 }) => {
   const [editing, setEditing] = useState(false);
   const [lessons, setLessons] = useState(entry.lessons);
@@ -68,6 +71,11 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             <p className="text-xs text-[#474556] font-semibold">{entry.rMultiple !== null ? `${entry.rMultiple > 0 ? '+' : ''}${entry.rMultiple}R` : 'R not set'}</p>
             {entry.commission !== undefined && (
               <p className="text-[11px] text-[#94a3b8] font-mono">Net {money(entry.pnl - entry.commission)} after ${entry.commission.toFixed(2)} fees</p>
+            )}
+            {onReplay && entry.outcome !== 'open' && (
+              <button type="button" onClick={onReplay} title="Practise this trade bar by bar with the date and outcome hidden" className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#5338ec] hover:underline">
+                <PlayCircle className="w-3.5 h-3.5" /> Replay this trade blind
+              </button>
             )}
           </div>
         </div>
