@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Send, Building2, GraduationCap, Newspaper, LineChart, HeartPulse, Compass, ShieldCheck, ChevronRight, Copy, ThumbsUp, ThumbsDown, Trash2, BookMarked, Gift } from 'lucide-react';
+import { Send, Building2, GraduationCap, Newspaper, LineChart, HeartPulse, Compass, ShieldCheck, ChevronRight, Copy, ThumbsUp, ThumbsDown, Trash2, BookMarked, Gift, Wallet, FlaskConical, Bot, Users } from 'lucide-react';
 import { Broker, MarketSignal, UserProfile } from '../../types';
 import { PORTFOLIO_TRADES } from '../../data/portfolioData';
 import { JOURNAL_ENTRIES } from '../../data/journalData';
@@ -23,6 +23,10 @@ const SURFACES: { id: Surface; title: string; desc: string; icon: React.ElementT
   { id: 'insights', title: 'Trading insights', desc: 'What your trades say, by strategy, pair and session.', icon: LineChart },
   { id: 'behavior', title: 'Behavioral observation', desc: 'Mood, plan and mistakes, before they cost you.', icon: HeartPulse },
   { id: 'playbook', title: 'Playbook review', desc: 'Which of your setups actually pays, and which does not.', icon: BookMarked },
+  { id: 'portfolio', title: 'Portfolio review', desc: 'Accounts, equity, drawdown and your goals.', icon: Wallet },
+  { id: 'strategy', title: 'Backtest guide', desc: 'What to test next, and how to read the result.', icon: FlaskConical },
+  { id: 'tools', title: 'Advisors & alerts', desc: 'Expert advisors worth a look, and alert hygiene.', icon: Bot },
+  { id: 'community', title: 'Community pulse', desc: 'What traders are posting and which article to read.', icon: Users },
   { id: 'rewards', title: 'Cashback & perks', desc: 'Cashback, points, level, missions and live offers.', icon: Gift },
   { id: 'next', title: 'Recommendations', desc: 'What to learn, read and watch next, with the reason.', icon: Compass },
 ];

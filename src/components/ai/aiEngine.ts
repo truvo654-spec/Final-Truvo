@@ -7,6 +7,7 @@ import { marketSummary } from './aiMarket';
 import { behaviorObservation, detectBehaviorFocus, detectFocus, tradingInsights } from './aiPersonal';
 import { recommendations } from './aiRecs';
 import { detectPlaybookFocus, detectRewardFocus, playbooks, rewards } from './aiMore';
+import { communityAnswer, portfolioAnswer, strategyAnswer, toolsAnswer } from './aiFeatureBridge';
 import { findAssetClass, findInstrument, levenshtein, mid, parseRange, personalOff } from './aiUtil';
 
 export type { AiContext, AiItem, AiMessage, AiReply, AiMemory, BrokerPrefs, Level, RangeDays, Surface } from './aiTypes';
@@ -18,6 +19,10 @@ export const SURFACE_PROMPTS: Record<Surface, string[]> = {
   insights: ['How are my trades doing?', 'Which strategy works best for me?', 'Which session do I trade best?', 'What are my open positions doing?', 'Show my last 90 days'],
   behavior: ['Any habits I should watch?', 'What do I do after a loss?', 'How does my mood affect results?', 'Which mistakes cost me most?', 'Does the checklist help me?'],
   playbook: ['How do my playbooks compare?', 'Which playbook is weakest?', 'Do my playbooks follow their rules?', 'How are my trades doing?'],
+  portfolio: ['How are my accounts doing?', 'What is my drawdown?', 'Am I close to my goals?', 'What is my exposure right now?'],
+  strategy: ['What should I backtest first?', 'How do my playbooks compare?', 'How do I read a backtest?'],
+  tools: ['Which expert advisor is safest?', 'How many alerts can I set?', 'Are expert advisors worth it?'],
+  community: ['What is the community talking about?', 'What should I read?', 'What is the top article?'],
   rewards: ['How much cashback have I earned?', 'How close am I to the next level?', 'What missions are open?', 'What offers are live?', 'Where am I on the leaderboard?'],
   next: ['What should I do next?', 'Learning path', 'Week ahead'],
 };
@@ -37,7 +42,7 @@ const helpMsg = (ctx: AiContext, heading = 'Here is what I can do'): AiMessage =
   id: mid(), role: 'ai',
   heading,
   paragraphs: [
-    `I can match you with brokers and compare them, explain any trading term at your level (${ctx.level}), quiz you, work out position size and margin, brief you on the market or one instrument, read your trades, compare your playbooks, notice habits in your journal, track your cashback, points, missions and offers, and suggest what to do next.`,
+    `I can match you with brokers and compare them, explain any trading term at your level (${ctx.level}), quiz you, work out position size and margin, brief you on the market or one instrument, read your trades and accounts, compare your playbooks, say what to backtest, notice habits in your journal, weigh up expert advisors and alerts, tell you what the community is talking about, track your cashback, points, missions and offers, and suggest what to do next.`,
     'Tap a suggestion or write it your own way. I remember what we were just talking about, so “and gold?” or “last 7 days” works.',
   ],
   followUps: ['Which broker suits me?', 'What is leverage?', 'Gold outlook', 'How are my trades doing?', 'How do my playbooks compare?', 'How much cashback have I earned?', 'What should I do next?'],
@@ -55,6 +60,10 @@ function runSurfaceRaw(s: Surface, ctx: AiContext): AiReply {
     case 'insights': return ctx.allowTrades ? tradingInsights(ctx) : { msg: personalOff('your trades', 'trades'), mem: { surface: 'insights' } };
     case 'behavior': return ctx.allowJournal ? behaviorObservation(ctx) : { msg: personalOff('your journal', 'journal'), mem: { surface: 'behavior' } };
     case 'playbook': return playbooks(ctx);
+    case 'portfolio': return portfolioAnswer(ctx);
+    case 'strategy': return strategyAnswer();
+    case 'tools': return toolsAnswer(ctx);
+    case 'community': return communityAnswer();
     case 'rewards': return rewards(ctx, ctx.user);
     default: return recommendations(ctx);
   }
@@ -84,12 +93,16 @@ const RULES: Record<Surface, Rule[]> = {
     [/\bplan\b/, 1],
   ],
   playbook: [[/playbook|setup rules|strategy rules|my strategies|which setup/, 4], [/\bgrade\b|benchmark/, 1]],
+  portfolio: [[/account|equity|balance|exposure|margin|goal|drawdown|พอร์ต|บัญชี/, 4]],
+  strategy: [[/backtest|back ?test|strategy builder|optimi[sz]e|walk.?forward|monte ?carlo|ทดสอบย้อนหลัง/, 5]],
+  tools: [[/expert advisor|\bea\b|robot|automat|alert|notification|แจ้งเตือน|บอท/, 4]],
+  community: [[/community|feed|post|article|what are (people|traders) (saying|talking)|คอมมูนิตี้|โพสต์|บทความ/, 4]],
   rewards: [[/cashback|rebate|payout|credits?\b|points?\b|level|tier|perk|mission|promo|offer|bonus|leaderboard|rank|แคชแบ็ก|คะแนน|เลเวล/, 4]],
   next: [[/\bnext\b|recommend|what should i|suggest|to ?do list|แนะนำ/, 3], [/what to do|what now/, 3]],
 };
 
 function scoreSurfaces(q: string, ctx: AiContext) {
-  const score: Record<Surface, number> = { broker: 0, learn: 0, market: 0, insights: 0, behavior: 0, playbook: 0, rewards: 0, next: 0 };
+  const score: Record<Surface, number> = { broker: 0, learn: 0, market: 0, insights: 0, behavior: 0, playbook: 0, portfolio: 0, strategy: 0, tools: 0, community: 0, rewards: 0, next: 0 };
   (Object.keys(RULES) as Surface[]).forEach((s) => RULES[s].forEach(([re, w]) => { if (re.test(q)) score[s] += w; }));
   const personal = /\b(my|mine|i've|i have|i am|i'm)\b/.test(q);
   const term = findTerm(q);
@@ -109,6 +122,10 @@ function scoreSurfaces(q: string, ctx: AiContext) {
   if (/broker|compare|directory/.test(q)) score.rewards -= 5;
   if (/\bmy\b|have i|am i|i earned/.test(q) && /cashback|points?|credits?|level|rank/.test(q)) score.rewards += 3;
   if (/playbook/.test(q)) { score.insights -= 3; score.next -= 3; }
+  if (/backtest|back ?test/.test(q)) { score.playbook -= 3; score.insights -= 3; }
+  if (/drawdown|equity|account|goal/.test(q)) score.insights -= 2;
+  if (/alert|advisor/.test(q)) { score.market -= 3; score.next -= 3; }
+  if (/article|post\b/.test(q)) score.learn -= 3;
   // Short follow-ups inherit the last surface
   if (/^(and|what about|how about|also|then)\b/.test(q) && ctx.memory.surface && !inst) score[ctx.memory.surface] += 3;
   return score;
@@ -183,6 +200,10 @@ function routeRaw(text: string, ctx: AiContext): AiReply {
         return behaviorObservation(ctx, detectBehaviorFocus(q));
       }
       case 'playbook': return playbooks(ctx, detectPlaybookFocus(q));
+      case 'portfolio': return portfolioAnswer(ctx, parseRange(q) ?? ctx.range);
+      case 'strategy': return strategyAnswer();
+      case 'tools': return toolsAnswer(ctx, /alert|notification|แจ้งเตือน/.test(q) ? 'alerts' : 'advisors');
+      case 'community': return communityAnswer();
       case 'rewards': return rewards(ctx, ctx.user, detectRewardFocus(q));
       default: return recommendations(ctx);
     }

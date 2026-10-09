@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-10-09
+### Added
+- AI Companion now covers the rest of the app, taking it to twelve areas: **Portfolio review** (accounts, equity, drawdown, margin and goals), **Backtest guide** (what to test next and how to read a run), **Advisors & alerts** (which expert advisor stands up, alert limits and hygiene) and **Community pulse** (what the feed is posting and which article to read).
+- A MarketSyde AI summary section, in the same spotlight card the trading journal uses, now sits on Expert Advisors, Price Alerts, Portfolio Tracker, Strategy Builder, the journal Backtest tab and the Community feed. Each one reads that page's own live data.
+- Shared `AiSection` component so any page can show the spotlight read with a headline, a paragraph, stat chips and up to three columns.
+
 ## [1.1.3] - 2026-10-09
 ### Changed
 - Create Post modal rebuilt to the supplied design at its measured sizes: 664px wide, 17px gutters, the title, author row, 108px text box, 166px upload area, a 16:9 attachment block with the round white remove button and the dot pager, the poll card with 37px fields, and a footer of three filled buttons.

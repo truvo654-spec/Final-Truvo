@@ -1,5 +1,7 @@
 // Backtest tab of the Trading Journal: routes between Home, Setup, Results, What-if, Replay and Saved runs,
 // and owns the run queue, usage limits, credits and points.
+import { AiSection } from '../ai/AiSection';
+import { strategyRead } from '../ai/aiFeature';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Coins, Loader2, XCircle, PlayCircle, Sparkles } from 'lucide-react';
 import type { Broker, JournalEntry } from '../../types';
@@ -171,6 +173,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
 
   return (
     <div className="space-y-5">
+      <AiSection data={strategyRead()} />
       <div className="flex flex-wrap items-center gap-3">
         <nav aria-label="Backtest sections" className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
           {NAV.map(([v, label]) => (

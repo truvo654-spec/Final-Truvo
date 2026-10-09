@@ -1,6 +1,6 @@
 import { Broker, MarketSignal, UserProfile } from '../../types';
 
-export type Surface = 'broker' | 'learn' | 'market' | 'insights' | 'behavior' | 'playbook' | 'rewards' | 'next';
+export type Surface = 'broker' | 'learn' | 'market' | 'insights' | 'behavior' | 'playbook' | 'portfolio' | 'strategy' | 'tools' | 'community' | 'rewards' | 'next';
 export type Level = 'Beginner' | 'Intermediate' | 'Advanced';
 export type RangeDays = 7 | 30 | 90;
 

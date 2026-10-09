@@ -1,3 +1,5 @@
+import { AiSection } from '../ai/AiSection';
+import { alertsRead } from '../ai/aiFeature';
 import React, { useMemo, useState } from 'react';
 import { Bell, BellRing, Mail, MessageSquare, Copy, Trash2, Pencil, Pause, Play, Send, AlertTriangle, Info } from 'lucide-react';
 import { instruments } from '../analysis/detail/mockMarket';
@@ -109,6 +111,8 @@ export const AlertsPage: React.FC<AlertsPageProps> = ({ userTierLevel, isLoggedI
         <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Price Alerts</h1>
         <p className="text-sm text-[#474556] mt-1 max-w-xl">Tell us what matters and where to reach you. Preview exactly what you will receive before you save.</p>
       </div>
+
+      <AiSection data={alertsRead(alerts, limit, (a) => distance(a as AlertRule))} className="mb-6" />
 
       <div className="grid grid-cols-1 xl:grid-cols-[440px_minmax(0,1fr)] gap-6 items-start">
         {/* Create / edit */}

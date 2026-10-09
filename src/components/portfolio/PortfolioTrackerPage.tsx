@@ -1,3 +1,5 @@
+import { AiSection } from '../ai/AiSection';
+import { portfolioRead } from '../ai/aiFeature';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, Link2, FlaskConical, ChevronDown } from 'lucide-react';
 import { PortfolioTrade } from '../../types';
@@ -219,6 +221,7 @@ export const PortfolioTrackerPage: React.FC<PortfolioTrackerPageProps> = ({
         <FolderTabs tabs={tabs} activeTab={activeTab} onChange={(t) => setTab(t)} />
       </div>
 
+      {activeTab === 'overview' && <AiSection data={portfolioRead(accountIds, 30)} className="mb-6" />}
       {activeTab === 'overview' && <PortfolioOverview ctx={ctx} />}
       {activeTab === 'trades' && <PortfolioTrades ctx={ctx} selectedId={selectedTradeId} onSelect={setSelectedTradeId} addRequest={addRequest} onAddConsumed={() => setAddRequest(false)} />}
       {activeTab === 'analytics' && <PortfolioAnalytics ctx={ctx} />}
