@@ -4,7 +4,7 @@ import { BookOpen, ChevronDown, MessageSquareText, Plus, SlidersHorizontal, Spar
 import type { Broker, JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { eligible, metrics } from '../journal/journalMath';
-import { SYMBOLS, symbolSpec } from '../../backtest/marketData';
+import { SYMBOLS, marketGroupOf, symbolSpec } from '../../backtest/marketData';
 import { parseStrategy, ParseResult, PARSE_EXAMPLE } from '../../backtest/parse';
 import {
   IND_HAS_PERIOD, IND_LABEL, JournalRules, OP_LABEL, cond, defaultCostsFor, defaultSettings, describeCondition, describeRules, presetRange, price, ruleCount, val, validateSettings,
@@ -163,7 +163,7 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
     const b = brokers.find((x) => x.id === s.costs.brokerId);
     set({ symbol: sym, costs: { ...s.costs, ...(b ? brokerCosts(b, sym) : defaultCostsFor(sym)) } });
   };
-  const chooseClass = (c: AssetClass) => { const first = SYMBOLS.find((x) => x.assetClass === c); if (first) chooseSymbol(first.symbol); };
+  const chooseClass = (c: AssetClass) => { const first = SYMBOLS.find((x) => marketGroupOf(x) === c); if (first) chooseSymbol(first.symbol); };
 
   const brokerOptions = useMemo(() => {
     const used = new Set(entries.map((e) => e.brokerId).filter(Boolean));
@@ -375,12 +375,13 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
       <Step n={2} title="Market and dates" sub="Which market, which period, which chart.">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Field label="Market type">
-            <Segmented label="Asset class" value={spec?.assetClass ?? 'Forex'} onChange={chooseClass} options={ASSET_CLASSES.map((c) => ({ id: c, label: c }))} disabled={{ Options: 'Options data is not available yet.' } as Partial<Record<AssetClass, string>>} />
+            <Segmented label="Asset class" value={spec ? marketGroupOf(spec) : 'Forex'} onChange={chooseClass} options={ASSET_CLASSES.map((c) => ({ id: c, label: c }))} />
+            {spec && marketGroupOf(spec) === 'Indices' && <p className="text-[11px] text-slate-500 mt-1">Micro index futures (MNQ / MES), not cash-index CFDs.</p>}
           </Field>
           <Field label="Symbol" htmlFor="bt-symbol" hint="Instruments the demo price feed covers. Your journal names map automatically (NAS100 → MNQ, US500 → MES, XAU/USD → MGC)." aside={live?.top && pb && <span className="text-[10px] text-emerald-700 font-semibold">Most traded in {pb.name}: {live.top.symbol} ({live.top.n})</span>}>
             <select id="bt-symbol" value={s.symbol} onChange={(e) => chooseSymbol(e.target.value)} className={inputCls}>
-              {ASSET_CLASSES.filter((c) => SYMBOLS.some((x) => x.assetClass === c)).map((c) => (
-                <optgroup key={c} label={c}>{SYMBOLS.filter((x) => x.assetClass === c).map((x) => <option key={x.symbol} value={x.symbol}>{x.symbol} · {x.name}{x.aliases.length ? ` (${x.aliases[0]})` : ''}</option>)}</optgroup>
+              {ASSET_CLASSES.filter((c) => SYMBOLS.some((x) => marketGroupOf(x) === c)).map((c) => (
+                <optgroup key={c} label={c}>{SYMBOLS.filter((x) => marketGroupOf(x) === c).map((x) => <option key={x.symbol} value={x.symbol}>{x.symbol} · {x.name}{x.aliases.length ? ` (${x.aliases[0]})` : ''}</option>)}</optgroup>
               ))}
             </select>
             <p className="text-[11px] text-slate-500 mt-1">{sizeText(s.symbol)}</p>

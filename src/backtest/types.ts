@@ -8,8 +8,8 @@ export const TF_MS: Record<Timeframe, number> = {
   tick: 0, '1s': 1000, '1m': 60000, '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000, '1D': 86400000,
 };
 
-export type AssetClass = 'Stocks' | 'Futures' | 'Forex' | 'Crypto' | 'Options';
-export const ASSET_CLASSES: AssetClass[] = ['Stocks', 'Futures', 'Forex', 'Crypto', 'Options'];
+export type AssetClass = 'Stocks' | 'Futures' | 'Forex' | 'Crypto' | 'Indices';
+export const ASSET_CLASSES: AssetClass[] = ['Stocks', 'Futures', 'Forex', 'Crypto', 'Indices'];
 
 /** Column-oriented price history (typed arrays keep two years of 5-minute bars small and fast). */
 export interface Series {
@@ -32,6 +32,8 @@ export interface SymbolSpec {
   symbol: string;
   name: string;
   assetClass: AssetClass;
+  /** Setup navigation group; does not change contract type or valuation. */
+  marketGroup?: AssetClass;
   /** Journal symbols that map onto this instrument (e.g. NAS100 → NQ). */
   aliases: string[];
   tickSize: number;

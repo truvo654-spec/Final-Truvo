@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2026-10-09
+
+### Changed
+
+- Replaced the unavailable Options button in Backtest → Market and dates with an active Indices group. MNQ and MES appear under Indices and selecting the group selects MNQ. Futures retains MGC. Existing symbols, saved runs, contract multipliers, tick sizes and cost calculations are unchanged; the setup explains that available indices are micro index futures, not cash-index CFDs.
+
 ## [1.3.0] - 2026-10-09
 
 ### Added

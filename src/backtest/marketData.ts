@@ -15,8 +15,8 @@ export interface MarketDataProvider {
 export const SYMBOLS: SymbolSpec[] = [
   { symbol: 'EUR/USD', name: 'Euro / US Dollar', assetClass: 'Forex', aliases: ['EURUSD'], tickSize: 0.00001, multiplier: 100000, sizeUnit: 'lots', minSize: 0.01, sizeStep: 0.01, costUnit: { label: 'pips', size: 0.0001 }, priceDp: 5, hours: 'fx', startPrice: 1.095, annualVol: 0.07 },
   { symbol: 'GBP/USD', name: 'British Pound / US Dollar', assetClass: 'Forex', aliases: ['GBPUSD'], tickSize: 0.00001, multiplier: 100000, sizeUnit: 'lots', minSize: 0.01, sizeStep: 0.01, costUnit: { label: 'pips', size: 0.0001 }, priceDp: 5, hours: 'fx', startPrice: 1.305, annualVol: 0.08 },
-  { symbol: 'MNQ', name: 'Micro Nasdaq-100 futures', assetClass: 'Futures', aliases: ['NAS100', 'NQ', 'NQ1!', 'US100'], tickSize: 0.25, multiplier: 2, sizeUnit: 'contracts', minSize: 1, sizeStep: 1, costUnit: { label: 'ticks', size: 0.25 }, priceDp: 2, hours: 'cme', startPrice: 20100, annualVol: 0.21 },
-  { symbol: 'MES', name: 'Micro S&P 500 futures', assetClass: 'Futures', aliases: ['US500', 'ES', 'ES1!', 'SPX500'], tickSize: 0.25, multiplier: 5, sizeUnit: 'contracts', minSize: 1, sizeStep: 1, costUnit: { label: 'ticks', size: 0.25 }, priceDp: 2, hours: 'cme', startPrice: 5750, annualVol: 0.16 },
+  { symbol: 'MNQ', name: 'Micro Nasdaq-100 futures', assetClass: 'Futures', marketGroup: 'Indices', aliases: ['NAS100', 'NQ', 'NQ1!', 'US100'], tickSize: 0.25, multiplier: 2, sizeUnit: 'contracts', minSize: 1, sizeStep: 1, costUnit: { label: 'ticks', size: 0.25 }, priceDp: 2, hours: 'cme', startPrice: 20100, annualVol: 0.21 },
+  { symbol: 'MES', name: 'Micro S&P 500 futures', assetClass: 'Futures', marketGroup: 'Indices', aliases: ['US500', 'ES', 'ES1!', 'SPX500'], tickSize: 0.25, multiplier: 5, sizeUnit: 'contracts', minSize: 1, sizeStep: 1, costUnit: { label: 'ticks', size: 0.25 }, priceDp: 2, hours: 'cme', startPrice: 5750, annualVol: 0.16 },
   { symbol: 'MGC', name: 'Micro Gold futures', assetClass: 'Futures', aliases: ['XAU/USD', 'XAUUSD', 'GC', 'GOLD'], tickSize: 0.1, multiplier: 10, sizeUnit: 'contracts', minSize: 1, sizeStep: 1, costUnit: { label: 'ticks', size: 0.1 }, priceDp: 1, hours: 'cme', startPrice: 2660, annualVol: 0.15 },
   { symbol: 'BTC/USDT', name: 'Bitcoin / Tether', assetClass: 'Crypto', aliases: ['BTCUSDT', 'BTC-PERP'], tickSize: 0.01, multiplier: 1, sizeUnit: 'coins', minSize: 0.001, sizeStep: 0.001, costUnit: { label: 'USD', size: 1 }, priceDp: 2, hours: 'crypto', startPrice: 63000, annualVol: 0.5 },
   { symbol: 'NVDA', name: 'NVIDIA Corp.', assetClass: 'Stocks', aliases: [], tickSize: 0.01, multiplier: 1, sizeUnit: 'shares', minSize: 1, sizeStep: 1, costUnit: { label: 'cents', size: 0.01 }, priceDp: 2, hours: 'us-stocks', startPrice: 122, annualVol: 0.48 },
@@ -24,6 +24,9 @@ export const SYMBOLS: SymbolSpec[] = [
 
 export const symbolSpec = (symbol: string): SymbolSpec | undefined =>
   SYMBOLS.find((s) => s.symbol === symbol) || SYMBOLS.find((s) => s.aliases.includes(symbol));
+
+/** Group index futures under Indices without reclassifying their contracts. */
+export const marketGroupOf = (spec: SymbolSpec) => spec.marketGroup ?? spec.assetClass;
 
 /** Map a journal symbol (NAS100, XAU/USD…) to an instrument the feed has, if any. */
 export const resolveSymbol = (journalSymbol: string): string | null => symbolSpec(journalSymbol)?.symbol ?? null;
