@@ -112,12 +112,8 @@ export const StoriesRow: React.FC<{ state?: PreviewState; onAdd: () => void; onT
 };
 
 /* ───────── Composer ───────── */
-export const Composer: React.FC<{ me: Me; onPost: (text: string, image?: string) => void; onOpenCreate: () => void; onToast?: ShowToast; heading?: string }> = ({ me, onPost, onOpenCreate, onToast, heading = 'Your Feed' }) => {
-  const [text, setText] = useState('');
-  const [image, setImage] = useState<string | undefined>();
-  const fileRef = useRef<HTMLInputElement>(null);
-  useEffect(() => () => { if (image) URL.revokeObjectURL(image); }, [image]);
-  const submit = () => { if (!text.trim() && !image) return; onPost(text.trim(), image); setText(''); setImage(undefined); };
+/** The feed composer: a preview of the box. Any control opens the Create Post modal. */
+export const Composer: React.FC<{ me: Me; onOpenCreate: (intent?: 'text' | 'media' | 'poll') => void; heading?: string }> = ({ me, onOpenCreate, heading = 'Your Feed' }) => {
   const btn = `flex items-center gap-2 h-9 border ${BORDER} text-[#5945F1] hover:bg-[#EEF0FE] rounded-lg text-[14px] font-medium px-4 transition-colors`;
   return (
     <section aria-label={heading || 'Write a post'}>
@@ -125,22 +121,18 @@ export const Composer: React.FC<{ me: Me; onPost: (text: string, image?: string)
       <Card className="p-4">
         <div className="flex gap-2.5">
           <Avatar src={me.avatar} alt={me.name} size={38} />
-          <div className="flex-1 min-w-0">
-            <textarea value={text} onChange={(e) => setText(e.target.value.slice(0, 500))} rows={2} placeholder={`What’s on your mind, ${me.name}?`} aria-label="Write a post" className={`w-full h-[60px] border ${BORDER} rounded-lg px-3 py-2 text-[14px] leading-5 text-[#111827] placeholder:text-[#cbd5e1] outline-none focus:ring-2 focus:ring-[#5945F1]/30 resize-none block`} />
-            {image && (
-              <div className="relative mt-2 inline-block">
-                <img src={image} alt="Selected upload" className="max-h-40 rounded-lg" />
-                <button type="button" aria-label="Remove image" onClick={() => { setImage(undefined); onToast?.('Image Removed', 'The attachment was cleared'); }} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#0b1c30] text-white flex items-center justify-center"><X className="w-3 h-3" /></button>
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => onOpenCreate('text')}
+            className={`flex-1 min-w-0 h-[60px] border ${BORDER} rounded-lg px-3 py-2 text-left text-[14px] leading-5 text-[#cbd5e1] hover:border-[#5945F1] transition-colors`}
+          >
+            What&apos;s on your mind, {me.name}?
+          </button>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-4">
-          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) { setImage(URL.createObjectURL(f)); onToast?.('Image Added', f.name); } e.target.value = ''; }} />
-          <button type="button" onClick={() => fileRef.current?.click()} className={btn}><ImageIcon className="w-4 h-4" />Photo / Video</button>
-          <button type="button" onClick={onOpenCreate} className={btn}><Drama className="w-4 h-4" />Shorts</button>
-          <button type="button" onClick={onOpenCreate} className={btn}><ChartNoAxesColumnIncreasing className="w-4 h-4" />Poll</button>
-          <PrimaryButton onClick={submit} className="ml-auto flex items-center gap-2 !h-9 !px-4 !text-[14px] !font-medium"><Send className="w-4 h-4" />Post</PrimaryButton>
+          <button type="button" onClick={() => onOpenCreate('media')} className={btn}><ImageIcon className="w-4 h-4" />Photo / Video</button>
+          <button type="button" onClick={() => onOpenCreate('poll')} className={btn}><ChartNoAxesColumnIncreasing className="w-4 h-4" />Poll</button>
+          <PrimaryButton onClick={() => onOpenCreate('text')} className="ml-auto flex items-center gap-2 !h-9 !px-4 !text-[14px] !font-medium"><Send className="w-4 h-4" />Post</PrimaryButton>
         </div>
       </Card>
     </section>

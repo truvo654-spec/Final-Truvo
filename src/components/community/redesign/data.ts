@@ -99,11 +99,15 @@ export const COURSES = [
   { title: 'Gold Trading Fundamentals', meta: '10 Lessons · 2h', image: img('course3') },
 ];
 
+/**
+ * Shorts in the feed. The clips are mock market replays generated for the demo
+ * (`short1..4`); the design stills are still in the folder as `story1..4` if you want them back.
+ */
 export const STORIES = [
-  { id: 's1', title: 'Technical Analysis', time: '2h ago', image: img('story1'), video: img('story1', 'mp4'), videoWebm: img('story1', 'webm') },
-  { id: 's2', title: 'Trading Setup', time: '4h ago', image: img('story2'), video: img('story2', 'mp4'), videoWebm: img('story2', 'webm') },
-  { id: 's3', title: 'Life As a Trader', time: '6h ago', image: img('story3'), video: img('story3', 'mp4'), videoWebm: img('story3', 'webm') },
-  { id: 's4', title: 'Event Highlights', time: '12h ago', image: img('story4'), video: img('story4', 'mp4'), videoWebm: img('story4', 'webm') },
+  { id: 's1', title: 'Technical Analysis', time: '2h ago', image: img('short1'), video: img('short1', 'mp4'), videoWebm: img('short1', 'webm') },
+  { id: 's2', title: 'Trading Setup', time: '4h ago', image: img('short2'), video: img('short2', 'mp4'), videoWebm: img('short2', 'webm') },
+  { id: 's3', title: 'Life As a Trader', time: '6h ago', image: img('short3'), video: img('short3', 'mp4'), videoWebm: img('short3', 'webm') },
+  { id: 's4', title: 'Event Highlights', time: '12h ago', image: img('short4'), video: img('short4', 'mp4'), videoWebm: img('short4', 'webm') },
 ];
 
 export interface ReplyItem { id: string; name: string; handle: string; time: string; text: string; likes: number; avatar: string }
@@ -119,6 +123,9 @@ export interface FeedPost {
   precision?: number;
   text: string;
   image?: string;
+  /** Uploads attached to the post: images and videos from the person's device. */
+  media?: { id: string; url: string; kind: 'image' | 'video'; name?: string }[];
+  poll?: { question: string; options: { id: string; text: string; votes: number }[]; votedId?: string };
   tags: string[];
   likes: number;
   views: string;

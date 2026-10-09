@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Home, ScrollText, UserCircle2 } from 'lucide-react';
-import { CommunityPost, UserProfile } from '../../../types';
-import { CreateCommunityPostModal } from '../CreateCommunityPostModal';
+import { UserProfile } from '../../../types';
+import { CreatePostModal, NewPostDraft } from './CreatePostModal';
 import { ARTICLES, Article, FeedPost, IMG, SEED_POSTS, SUGGESTED } from './data';
 import { Me } from './Comments';
 import { PreviewState, BORDER } from './ui';
@@ -39,6 +39,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   const [articles, setArticles] = useState<Article[]>(ARTICLES);
   const [rewarded, setRewarded] = useState<Set<string>>(new Set());
   const [createOpen, setCreateOpen] = useState(false);
+  const [createIntent, setCreateIntent] = useState<'text' | 'media' | 'poll'>('text');
   const [panelOpen, setPanelOpen] = useState(false);
   const { toasts, showToast } = useToasts();
 
@@ -59,14 +60,24 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
 
   const changePost = (p: FeedPost) => setPosts((l) => l.map((x) => (x.id === p.id ? p : x)));
   const removePost = (id: string, mode: 'delete' | 'draft') => { setPosts((l) => l.filter((x) => x.id !== id)); showToast(mode === 'draft' ? 'Moved to Drafts' : 'Post Deleted', mode === 'draft' ? 'Find it in your drafts' : 'It is gone from your feed'); };
-  const addPost = (text: string, image?: string, tags?: string[]) => {
-    const p: FeedPost = { id: `up${Date.now()}`, name: me.name, handle: me.handle, avatar: me.avatar, verified: true, time: 'Just now', text, image, tags: tags ?? (text.match(/#[A-Za-z][A-Za-z0-9_]*/g) ?? []), likes: 0, views: '1', saves: 0, own: true, comments: [] };
+  const addPost = (draft: NewPostDraft) => {
+    const p: FeedPost = {
+      id: `up${Date.now()}`, name: me.name, handle: me.handle, avatar: me.avatar, verified: true, time: 'Just now',
+      text: draft.text,
+      media: draft.media.length ? draft.media : undefined,
+      poll: draft.poll,
+      tags: draft.text.match(/#[A-Za-z][A-Za-z0-9_]*/g) ?? [],
+      likes: 0, views: '1', saves: 0, own: true, comments: [],
+    };
     setPosts((l) => [p, ...l]);
-    showToast('+10 Credits', 'First post published', { reward: true });
+    const what = draft.poll ? 'Poll published' : draft.media.length ? `${draft.media.length} attachment${draft.media.length === 1 ? '' : 's'} published` : 'First post published';
+    showToast('+10 Credits', what, { reward: true });
   };
-  const fromModal = (d: Partial<CommunityPost>) => {
-    const text = [d.title, d.content].filter(Boolean).join('\n\n') || 'New post';
-    addPost(text, d.image, (d.tags ?? []).map((t) => (t.startsWith('#') ? t : `#${t}`)));
+
+  const openCreate = (intent: 'text' | 'media' | 'poll' = 'text') => {
+    if (!signedIn) return auth('signin');
+    setCreateIntent(intent);
+    setCreateOpen(true);
   };
 
   const toggleArticle = (id: string, key: 'liked' | 'saved') => {
@@ -144,13 +155,13 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
                   <BackLink onClick={() => { setTopic(null); showToast('Feed Opened', 'Back to the community feed'); }} />
                   <TopicHeader title={topic} icon={topicIcon} />
                 </div>
-                <Composer me={me} heading="" onToast={showToast} onPost={(t, i) => (signedIn ? addPost(t, i) : auth('signin'))} onOpenCreate={() => (signedIn ? (setCreateOpen(true), showToast('Composer Opened', `Post in ${topic}`)) : auth('signin'))} />
+                <Composer me={me} heading="" onOpenCreate={openCreate} />
                 <div className="mt-[15px]"><FeedList posts={topicPosts} state={preview} me={me} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
               </div>
             ) : (
               <div className="flex flex-col gap-7">
-                <StoriesRow state={preview} onToast={showToast} onAdd={() => (signedIn ? (setCreateOpen(true), showToast('Story Composer', 'Add a photo or a short')) : auth('signin'))} />
-                <Composer me={me} onToast={showToast} onPost={(t, i) => (signedIn ? addPost(t, i) : auth('signin'))} onOpenCreate={() => (signedIn ? (setCreateOpen(true), showToast('Composer Opened', 'Share a post with the community')) : auth('signin'))} />
+                <StoriesRow state={preview} onToast={showToast} onAdd={() => openCreate('media')} />
+                <Composer me={me} onOpenCreate={openCreate} />
                 <div className="mt-1"><FeedList posts={shownPosts} state={preview} openFirstComments me={me} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
               </div>
             )}
@@ -173,7 +184,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
 
       {activeTab === 'mypage' && signedIn && (
         <MyPageView me={me} posts={shownPosts} articles={shownArticles} state={preview} rankTitle={user.rankTitle} onChangePost={changePost} onRemovePost={removePost}
-          onPost={(t, i) => addPost(t, i)} onOpenCreate={() => setCreateOpen(true)} onOpenArticle={openArticle} onToggleArticle={toggleArticle} onArticleMenu={articleMenu} onShareArticle={shareArticle} onToast={showToast} onNavigate={nav} />
+          onOpenCreate={openCreate} onOpenArticle={openArticle} onToggleArticle={toggleArticle} onArticleMenu={articleMenu} onShareArticle={shareArticle} onToast={showToast} onNavigate={nav} />
       )}
 
       <div className={`fixed bottom-4 left-4 z-40 bg-white/95 backdrop-blur border ${BORDER} rounded-xl shadow-lg print:hidden`} role="group" aria-label="Preview design state">
@@ -187,7 +198,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
         )}
       </div>
 
-      <CreateCommunityPostModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onSubmit={fromModal} user={user} />
+      <CreatePostModal open={createOpen} me={me} intent={createIntent} onClose={() => setCreateOpen(false)} onSubmit={addPost} onToast={showToast} />
     </div>
   );
 };

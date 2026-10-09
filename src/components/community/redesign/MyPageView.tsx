@@ -25,8 +25,7 @@ interface Props {
   rankTitle: string;
   onChangePost: (p: FeedPost) => void;
   onRemovePost: (id: string, mode: 'delete' | 'draft') => void;
-  onPost: (text: string, image?: string) => void;
-  onOpenCreate: () => void;
+  onOpenCreate: (intent?: 'text' | 'media' | 'poll') => void;
   onOpenArticle: (id: string) => void;
   onToggleArticle: (id: string, key: 'liked' | 'saved') => void;
   onArticleMenu: (id: string, a: 'edit' | 'draft' | 'delete') => void;
@@ -35,7 +34,7 @@ interface Props {
   onNavigate: (tab: string) => void;
 }
 
-export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTitle, onChangePost, onRemovePost, onPost, onOpenCreate, onOpenArticle, onToggleArticle, onArticleMenu, onShareArticle, onToast, onNavigate }) => {
+export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTitle, onChangePost, onRemovePost, onOpenCreate, onOpenArticle, onToggleArticle, onArticleMenu, onShareArticle, onToast, onNavigate }) => {
   const [section, setSection] = useState('post');
   const [tab, setTab] = useState<'mine' | 'saved'>('mine');
   const pickSection = (id: string) => { setSection(id); onToast('Section Opened', MYPAGE_NAV.find((n) => n.id === id)?.label ?? id); };
@@ -59,7 +58,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
   } else {
     main = (
       <>
-        {tab === 'mine' && <div className="mb-6"><Composer me={me} heading="Share something" onPost={onPost} onOpenCreate={onOpenCreate} onToast={onToast} /></div>}
+        {tab === 'mine' && <div className="mb-6"><Composer me={me} heading="Share something" onOpenCreate={onOpenCreate} /></div>}
         {posts_.length && !empty
           ? <div className="space-y-6">{posts_.map((p) => <PostCard key={p.id} post={p} me={me} onChange={onChangePost} onRemove={onRemovePost} onToast={onToast} />)}</div>
           : <EmptyState image={IMG.emptyQuiet} title={tab === 'mine' ? 'It’s Quiet in Here' : 'Nothing saved yet'} text={tab === 'mine' ? 'No posts yet. The first word is yours!' : 'Tap the bookmark on a post to keep it here.'} className="py-20" imgClass="w-44" />}

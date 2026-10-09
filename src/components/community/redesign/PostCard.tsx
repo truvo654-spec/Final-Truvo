@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bookmark, Eye, Heart, MessageCircle, MoreVertical, Share2 } from 'lucide-react';
+import { Bookmark, ChevronLeft, ChevronRight, Eye, Heart, MessageCircle, MoreVertical, Share2 } from 'lucide-react';
 import { HashtagLink } from '../../hashtag/HashtagText';
 import { Avatar, Card, Verified, BORDER } from './ui';
 import { CommentThread, Me } from './Comments';
@@ -42,6 +42,10 @@ interface Props {
 
 export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, onRemove, onToast }) => {
   const [showComments, setShowComments] = useState(!!openComments);
+  const [slide, setSlide] = useState(0);
+  const media = post.media ?? [];
+  const poll = post.poll;
+  const votes = poll ? poll.options.reduce((a, o) => a + o.votes, 0) : 0;
   const set = (patch: Partial<FeedPost>) => onChange({ ...post, ...patch });
   const share = async () => {
     try { await navigator.clipboard.writeText(`${window.location.origin}/community?post=${post.id}`); onToast('Link Copied', 'Share it anywhere'); } catch { onToast('Could Not Copy', 'Copy the link from the address bar'); }
@@ -64,6 +68,49 @@ export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, on
 
       <p className="text-[16px] leading-5 text-[#111827] mt-[18px]">{post.text}</p>
       {post.image && <img src={post.image} alt="" className="w-full rounded-lg mt-[15px]" loading="lazy" />}
+
+      {media.length > 0 && (
+        <div className="mt-[15px]">
+          <div className="rounded-lg overflow-hidden bg-black">
+            {media[slide]?.kind === 'video'
+              ? <video key={media[slide].id} src={media[slide].url} controls playsInline preload="metadata" className="w-full max-h-[420px] object-contain bg-black" />
+              : <img src={media[slide]?.url} alt={media[slide]?.name ?? ''} className="w-full max-h-[420px] object-contain bg-black" loading="lazy" />}
+          </div>
+          {media.length > 1 && (
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <button type="button" aria-label="Previous attachment" disabled={slide === 0} onClick={() => setSlide(slide - 1)} className="p-0.5 text-[#111827] disabled:text-[#9ca3af]"><ChevronLeft className="w-3.5 h-3.5" strokeWidth={2.5} /></button>
+              {media.map((m, i) => <button key={m.id} type="button" aria-label={`Attachment ${i + 1}`} aria-current={i === slide} onClick={() => setSlide(i)} className={`w-2 h-2 rounded-full ${i === slide ? 'bg-[#5945F1]' : 'bg-[#c9c4fb]'}`} />)}
+              <button type="button" aria-label="Next attachment" disabled={slide === media.length - 1} onClick={() => setSlide(slide + 1)} className="p-0.5 text-[#111827] disabled:text-[#9ca3af]"><ChevronRight className="w-3.5 h-3.5" strokeWidth={2.5} /></button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {poll && (
+        <section className={`mt-[15px] border ${BORDER} rounded-lg p-4`} aria-label="Poll">
+          <p className="text-[15px] font-semibold text-[#111827] mb-3">{poll.question}</p>
+          <div className="space-y-2">
+            {poll.options.map((o) => {
+              const share = votes ? Math.round((o.votes / votes) * 100) : 0;
+              const mine = poll.votedId === o.id;
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  aria-pressed={mine}
+                  disabled={!!poll.votedId}
+                  onClick={() => { onChange({ ...post, poll: { ...poll, votedId: o.id, options: poll.options.map((x) => (x.id === o.id ? { ...x, votes: x.votes + 1 } : x)) } }); onToast('Vote Counted', o.text); }}
+                  className={`relative w-full overflow-hidden border ${BORDER} rounded-lg px-3 py-2.5 text-left text-[14px] ${poll.votedId ? 'cursor-default' : 'hover:border-[#5945F1]'} ${mine ? 'text-[#5945F1] font-semibold' : 'text-[#111827]'}`}
+                >
+                  {poll.votedId && <span className="absolute inset-y-0 left-0 bg-[#EEF0FE]" style={{ width: `${share}%` }} aria-hidden="true" />}
+                  <span className="relative flex items-center justify-between gap-3"><span className="truncate">{o.text}</span>{poll.votedId && <span className="shrink-0 tabular-nums">{share}%</span>}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-[#6b7280] mt-2.5">{votes} {votes === 1 ? 'vote' : 'votes'}{poll.votedId ? '' : ' · pick one'}</p>
+        </section>
+      )}
       <p className="flex flex-wrap gap-x-2 gap-y-1 mt-[15px] text-[13px] leading-5 text-[#5945F1]">{post.tags.map((t) => <HashtagLink key={t} tag={t} />)}</p>
 
       <div className="flex items-center gap-6 mt-3.5 text-[#111827]">

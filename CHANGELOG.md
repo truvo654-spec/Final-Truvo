@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-10-09
+### Added
+- Create Post modal built to the design: author row, text, an upload area for photos and video from the device (drag and drop too), an attachment carousel with remove, and a poll with a question, options, Add Option and character counters.
+- Posts now carry uploads and polls: attachments play or display in the feed card, and a poll can be voted on once, showing the share per option.
+### Changed
+- The feed composer is now a preview of the box with Photo / Video and Poll only; any control opens the Create Post modal, with Photo / Video opening the file picker straight away and Poll opening with the poll section ready.
+- Shorts in the feed are mock market replays generated for the demo (animated candles, "MOCK DATA · DEMO" on screen). The design stills remain in `src/assets/community` as `story1..4`.
+
 ## [1.1.0] - 2026-10-09
 ### Added
 - Trading Journal brought over from `Trading_journal_7.10.2026`: Overview, Trade Log, Insights, Playbook, Backtest and Weekly Review tabs, the entry wizard with import and ingest, review drawer with rule evidence and fills, calendar, cumulative chart, monitors, playbook analytics and trade replay, plus the `src/backtest` engine the Backtest tab needs.
