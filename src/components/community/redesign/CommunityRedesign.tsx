@@ -62,7 +62,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   const addPost = (text: string, image?: string, tags?: string[]) => {
     const p: FeedPost = { id: `up${Date.now()}`, name: me.name, handle: me.handle, avatar: me.avatar, verified: true, time: 'Just now', text, image, tags: tags ?? (text.match(/#[A-Za-z][A-Za-z0-9_]*/g) ?? []), likes: 0, views: '1', saves: 0, own: true, comments: [] };
     setPosts((l) => [p, ...l]);
-    showToast('Credits Earned', 'First post published');
+    showToast('+10 Credits', 'First post published', { reward: true });
   };
   const fromModal = (d: Partial<CommunityPost>) => {
     const text = [d.title, d.content].filter(Boolean).join('\n\n') || 'New post';
@@ -93,7 +93,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
     if (!articleId) return;
     setRewarded((s) => new Set(s).add(articleId));
     onRewardPointsAndCredits?.(0, 5, 'Finished reading an article');
-    showToast('Credits Earned', '+5 credits for finishing the article');
+    showToast('+5 Credits', 'Article finished', { reward: true });
   }, [articleId, onRewardPointsAndCredits]);
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [

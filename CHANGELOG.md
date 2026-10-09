@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.49] - 2026-10-09
+### Changed
+- Community toasts now follow the second template: #f0efff card at the top right under the header, icon and headline on the first line, and the action detail underneath.
+- Credit-earning actions (first comment, first post, finishing an article) show the gift icon with "+N Credits"; other actions keep the check icon with a short headline.
+
 ## [1.0.48] - 2026-10-09
 ### Changed
 - Knowledge Hub and Community are top-level header items again, as they were before 1.0.46; the entries added to the Company menu were removed. The header keeps its design styling (62px, page background, design border, search box without the Cmd+K badge).

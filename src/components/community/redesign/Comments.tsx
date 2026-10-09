@@ -56,7 +56,7 @@ export const CommentThread: React.FC<{ comments: CommentItem[]; me: Me; max?: nu
 
   return (
     <div className="space-y-4">
-      <Composer placeholder={multiline ? 'Write a comment...' : 'Comment Here'} max={max} multiline={multiline} onPost={(t) => { const first = !comments.some((c) => c.handle === me.handle); onChange([{ ...now(), id: `c${Date.now()}`, text: t, replies: [] }, ...comments]); onToast(first ? 'Credits Earned' : 'Comment Posted', first ? 'First comment posted' : 'Your comment is live'); }} />
+      <Composer placeholder={multiline ? 'Write a comment...' : 'Comment Here'} max={max} multiline={multiline} onPost={(t) => { const first = !comments.some((c) => c.handle === me.handle); onChange([{ ...now(), id: `c${Date.now()}`, text: t, replies: [] }, ...comments]); onToast(first ? '+5 Credits' : 'Comment Posted', first ? 'First comment posted' : 'Your comment is live', { reward: first }); }} />
       {comments.map((c) => (
         <div key={c.id} className={`border ${BORDER} bg-[#faf9ff] rounded-lg p-3`}>
           <Row c={c} liked={!!liked[c.id]} onLike={() => toggleLike(c.id)} onReply={() => { setReplying(replying === c.id ? null : c.id); setOpen((o) => ({ ...o, [c.id]: true })); }}
