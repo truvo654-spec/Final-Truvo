@@ -1,3 +1,5 @@
+import { AiSection } from '../ai/AiSection';
+import { promotionsRead } from '../ai/aiFeature';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, X, Clock, ShieldCheck, Lock } from 'lucide-react';
 import { Broker, Mission } from '../../types';
@@ -439,6 +441,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
 
   return (
     <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
+      <AiSection data={promotionsRead(undefined, userTierLevel)} className="mb-6" />
       {detailId && !detail && (
         <div className="flex flex-wrap items-center justify-between gap-3 bg-[#F8F7FF] border border-[#ECEEFA] rounded-2xl px-5 py-3 mb-5">
           <p className="text-sm text-[#0b1c30]">We could not find that offer. It may have ended.</p>

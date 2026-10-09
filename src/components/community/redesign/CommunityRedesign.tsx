@@ -11,8 +11,6 @@ import { ArticleList } from './ArticleList';
 import { ArticleRead } from './ArticleRead';
 import { MyPageView } from './MyPageView';
 import { ToastStack, useToasts } from './Toast';
-import { AiSection } from '../../ai/AiSection';
-import { communityRead } from '../../ai/aiFeature';
 
 type Tab = 'feed' | 'article' | 'mypage';
 
@@ -162,7 +160,6 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
               </div>
             ) : (
               <div className="flex flex-col gap-7">
-                {preview === 'default' && <AiSection data={communityRead(shownPosts, shownArticles)} />}
                 <StoriesRow state={preview} onToast={showToast} onAdd={() => openCreate('media')} />
                 <Composer me={me} onOpenCreate={openCreate} />
                 <div className="mt-1"><FeedList posts={shownPosts} state={preview} openFirstComments me={me} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>

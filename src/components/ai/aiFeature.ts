@@ -3,6 +3,11 @@ import { PORTFOLIO_ACCOUNTS, PORTFOLIO_TRADES, DEFAULT_GOALS } from '../../data/
 import { JOURNAL_ENTRIES } from '../../data/journalData';
 import { DEFAULT_PLAYBOOKS } from '../../data/journalPlaybooks';
 import { isClosed, maxDrawdown, sliceSeries, totalSeries, tradeStats, tradesInRange, groupPnl } from '../portfolio/portfolioMath';
+import { COURSES, CERTIFICATES } from '../../data/educationData';
+import { ECONOMIC_EVENTS, CALENDAR_NOW } from '../../data/economicCalendarData';
+import { NEWS_ARTICLES } from '../../data/newsData';
+import { PROMOTIONS } from '../../data/promotionsData';
+import { GAMIFICATION_TIERS, INITIAL_MISSIONS, LEADERBOARD_USERS } from '../../data/mockData';
 import { AiSectionData, ACCENT } from './AiSection';
 
 const money = (v: number) => `${v < 0 ? '-' : v > 0 ? '+' : ''}$${Math.abs(Math.round(v)).toLocaleString()}`;
@@ -329,5 +334,388 @@ export function communityRead(posts: CommunityPostLike[], articles: CommunityArt
       },
     ],
     footnote: 'Built from the posts and articles on this page. Community content is other people’s opinion, not advice.',
+  };
+}
+
+/* ───────────── Education hub ───────────── */
+
+export function educationRead(courses = COURSES, certificates = CERTIFICATES, tierLevel = 1): AiSectionData {
+  if (!courses.length) {
+    return { eyebrow: 'Education hub', headline: 'No courses match', overview: '', empty: { text: 'Clear a filter and I will tell you where to start.' } };
+  }
+  const byLevel = { Beginner: 0, Intermediate: 0, Advanced: 0 } as Record<string, number>;
+  courses.forEach((c) => { byLevel[c.level] = (byLevel[c.level] ?? 0) + 1; });
+  const lessons = courses.reduce((a, c) => a + c.lessons.length, 0);
+  const minutes = courses.reduce((a, c) => a + c.lessons.reduce((m, l) => m + l.durationMinutes, 0), 0);
+  const points = courses.reduce((a, c) => a + c.pointsReward, 0);
+  const want = tierLevel >= 4 ? 'Advanced' : tierLevel >= 2 ? 'Intermediate' : 'Beginner';
+  const start = courses.filter((c) => c.level === want).sort((a, b) => b.rating - a.rating)[0] ?? courses[0];
+  const quizzes = courses.filter((c) => c.lessons.some((l) => (l.quizQuestions ?? []).length)).length;
+  const locked = courses.filter((c) => c.requiredPlan !== 'Free').length;
+
+  return {
+    eyebrow: 'Education hub',
+    reading: `Reading ${plural(courses.length, 'course')}…`,
+    headline: `Start with ${start.title}`,
+    overview: `${plural(courses.length, 'course')} here, ${lessons} lessons and about ${Math.round(minutes / 60)} hours in total, worth up to +${points} points if you finish them all. ${start.title} fits your level and is rated ${start.rating.toFixed(1)} by ${start.enrolledCount.toLocaleString()} traders.`,
+    chips: [
+      { label: 'Courses', value: String(courses.length) },
+      { label: 'Lessons', value: String(lessons) },
+      { label: 'Hours', value: String(Math.round(minutes / 60)) },
+      { label: 'Points on offer', value: `+${points}`, tone: 'lime' },
+      { label: 'Certificates earned', value: String(certificates.length) },
+    ],
+    columns: [
+      {
+        accent: ACCENT.lime,
+        title: 'Where to start',
+        items: [
+          { title: start.title, text: `${start.category}. ${start.lessons.length} lessons, ${start.summary}` },
+          { title: 'Then build on it', text: `${byLevel.Beginner} beginner, ${byLevel.Intermediate} intermediate and ${byLevel.Advanced} advanced courses are here. Finish one level before you jump.` },
+        ],
+      },
+      {
+        accent: ACCENT.pink,
+        title: 'How to actually learn it',
+        items: [
+          { title: 'Trade it on demo the same week', text: 'A course you did not apply is a course you will forget. Take one idea, size it small and journal the result.' },
+          { title: 'Quizzes are the cheap test', text: `${plural(quizzes, 'course')} has a quiz. If you cannot pass it, you have not learned it yet, however good the video felt.` },
+        ],
+      },
+      {
+        accent: ACCENT.violet,
+        title: 'Worth knowing',
+        items: [
+          { title: 'Points come from finishing', text: `Completing a course pays points towards your level. ${start.title} alone is +${start.pointsReward}.` },
+          ...(locked ? [{ title: 'Plan-gated content', text: `${plural(locked, 'course')} needs a paid learning plan; the rest you can take now.` }] : []),
+        ],
+      },
+    ],
+    footnote: 'Built from the courses on this page. Education, not financial advice.',
+  };
+}
+
+/* ───────────── Economic calendar ───────────── */
+
+export function calendarRead(events = ECONOMIC_EVENTS, now = Date.parse(CALENDAR_NOW)): AiSectionData {
+  const upcoming = events.filter((e) => !e.allDay && Date.parse(e.at) > now).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  if (!upcoming.length) {
+    return { eyebrow: 'The calendar', headline: 'Nothing scheduled ahead', overview: '', empty: { text: 'No releases ahead in this view. Widen the date range or clear a filter.' } };
+  }
+  const high = upcoming.filter((e) => e.impact === 'High');
+  const next24 = upcoming.filter((e) => Date.parse(e.at) < now + 864e5);
+  const week = upcoming.filter((e) => Date.parse(e.at) < now + 7 * 864e5);
+  const first = high[0] ?? upcoming[0];
+  const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+  const ccy = new Map<string, number>();
+  week.filter((e) => e.impact === 'High').forEach((e) => ccy.set(e.currency, (ccy.get(e.currency) ?? 0) + 1));
+  const busiest = Array.from(ccy.entries()).sort((a, b) => b[1] - a[1])[0];
+
+  return {
+    eyebrow: 'The calendar',
+    reading: `Reading ${plural(upcoming.length, 'release')}…`,
+    headline: `${first.title} is the one to plan around`,
+    overview: `${plural(next24.length, 'release')} in the next 24 hours and ${plural(high.length, 'high-impact print')} ahead in this view. ${first.title} lands ${when(first.at)} for ${first.currency}${first.forecast ? `, forecast ${first.forecast} against ${first.previous ?? 'no prior'}` : ''}.`,
+    chips: [
+      { label: 'Next 24h', value: String(next24.length) },
+      { label: 'High impact', value: String(high.length), tone: 'pink' },
+      { label: 'This week', value: String(week.length) },
+      ...(busiest ? [{ label: 'Busiest currency', value: `${busiest[0]} (${busiest[1]})` }] : []),
+    ],
+    columns: [
+      {
+        accent: ACCENT.lime,
+        title: 'Next up',
+        items: high.slice(0, 2).map((e) => ({ title: e.title, text: `${e.currency} · ${when(e.at)}${e.forecast ? ` · forecast ${e.forecast}, previous ${e.previous ?? '—'}` : ''}. ${e.summary.slice(0, 130)}` })),
+      },
+      {
+        accent: ACCENT.pink,
+        title: 'What it does to your orders',
+        items: [
+          { title: 'Spreads widen at the print', text: 'Costs jump and stops get slipped in the seconds either side. If you are in a position, know what the release can do to it before it lands.' },
+          { title: 'The surprise moves price, not the number', text: 'Markets trade the gap between the actual and the forecast. A strong number that was already expected often does nothing.' },
+        ],
+      },
+      {
+        accent: ACCENT.violet,
+        title: 'A simple rule',
+        items: [
+          { title: 'Decide beforehand', text: 'Stand aside, cut size, or trade the reaction after the first candle. Pick one before the release, not while the chart is moving.' },
+          ...(busiest ? [{ title: `${busiest[0]} is loaded this week`, text: `${plural(busiest[1], 'high-impact release')} touches ${busiest[0]}. If most of your positions are in it, that is one bet, not several.` }] : []),
+        ],
+      },
+    ],
+    footnote: 'Built from the calendar on this page. Times shown in Bangkok time. Not financial advice.',
+  };
+}
+
+/* ───────────── Market news ───────────── */
+
+export function newsRead(articles = NEWS_ARTICLES): AiSectionData {
+  if (!articles.length) {
+    return { eyebrow: 'Market news', headline: 'No stories match', overview: '', empty: { text: 'Clear a filter and I will summarise what the desk is saying.' } };
+  }
+  const tally = { Bullish: 0, Bearish: 0, Neutral: 0 } as Record<string, number>;
+  articles.forEach((a) => { tally[a.sentiment] = (tally[a.sentiment] ?? 0) + 1; });
+  const lean = tally.Bullish > tally.Bearish ? 'leaning bullish' : tally.Bearish > tally.Bullish ? 'leaning bearish' : 'split';
+  const lead = articles[0];
+  const classes = new Map<string, number>();
+  articles.forEach((a) => classes.set(a.assetClass, (classes.get(a.assetClass) ?? 0) + 1));
+  const top = Array.from(classes.entries()).sort((a, b) => b[1] - a[1])[0];
+  const expert = articles.filter((a) => a.expertSummary);
+
+  return {
+    eyebrow: 'Market news',
+    reading: `Reading ${plural(articles.length, 'story')}…`,
+    headline: `The desk is ${lean} today`,
+    overview: `${plural(articles.length, 'story')} on the page: ${tally.Bullish} bullish, ${tally.Bearish} bearish and ${tally.Neutral} neutral.${top ? ` ${top[0]} has the most coverage with ${top[1]}.` : ''} Lead story: ${lead.headline}.`,
+    chips: [
+      { label: 'Stories', value: String(articles.length) },
+      { label: 'Bullish', value: String(tally.Bullish), tone: 'lime' },
+      { label: 'Bearish', value: String(tally.Bearish), tone: 'pink' },
+      { label: 'Neutral', value: String(tally.Neutral) },
+      ...(top ? [{ label: 'Most covered', value: top[0] }] : []),
+    ],
+    columns: [
+      {
+        accent: ACCENT.lime,
+        title: 'Read these first',
+        items: articles.slice(0, 2).map((a) => ({ title: a.headline, text: `${a.source} · ${a.sentiment} · ${a.readTime}. ${a.excerpt.slice(0, 130)}` })),
+      },
+      {
+        accent: ACCENT.pink,
+        title: 'Hold it at arm’s length',
+        items: [
+          { title: 'Headlines lag price', text: 'By the time a move has a story attached, the market has usually already traded it. Use news for context, not entries.' },
+          { title: 'Sentiment counts, it does not predict', text: `${lean === 'split' ? 'Coverage is evenly split' : `Coverage is ${lean}`}, which tells you what is consensus. Crowded views unwind fast when the next number surprises.` },
+        ],
+      },
+      {
+        accent: ACCENT.violet,
+        title: 'Make it useful',
+        items: [
+          ...(expert.length ? [{ title: 'Advisor commentary', text: `${plural(expert.length, 'story')} has an expert summary attached, which is the fastest way to see what a story means for a position.` }] : []),
+          { title: 'Tie it to a level', text: 'Pick one instrument from today’s stories, mark the level you would act on, and set an alert. That turns reading into a plan.' },
+        ],
+      },
+    ],
+    footnote: 'Built from the stories on this page. Reporting, not advice.',
+  };
+}
+
+/* ───────────── Trading signals ───────────── */
+
+export function signalsRead(signals: { ticker: string; action: string; confidence: number; timeframe: string; riskReward: string; change24h: number; assetClass: string; analysis?: string }[], tierLevel = 1): AiSectionData {
+  const open = signals.filter((s) => s.action !== 'UPGRADE');
+  if (!open.length) {
+    return { eyebrow: 'Trading signals', headline: 'Signals are locked on your level', overview: '', empty: { text: 'Your level unlocks a confidence band. Earn points or upgrade to see the calls behind the lock.' } };
+  }
+  const best = [...open].sort((a, b) => b.confidence - a.confidence)[0];
+  const buys = open.filter((s) => /buy/i.test(s.action)).length;
+  const sells = open.length - buys;
+  const avg = open.reduce((a, s) => a + s.confidence, 0) / open.length;
+  const locked = signals.length - open.length;
+  const rr = (s: string) => parseFloat((s.split(':')[1] ?? '0')) || 0;
+  const bestRR = [...open].sort((a, b) => rr(b.riskReward) - rr(a.riskReward))[0];
+
+  return {
+    eyebrow: 'Trading signals',
+    reading: `Reading ${plural(open.length, 'signal')}…`,
+    headline: buys === sells ? 'The book is split between longs and shorts' : buys > sells ? `${buys} of ${open.length} calls lean long` : `${sells} of ${open.length} calls lean short`,
+    overview: `Average confidence across ${plural(open.length, 'open signal')} is ${pct(avg, 0)}. The highest is ${best.ticker} ${best.action} at ${pct(best.confidence, 0)} on the ${best.timeframe}, and the widest reward-to-risk is ${bestRR.ticker} at ${bestRR.riskReward}.${locked ? ` ${plural(locked, 'signal')} is still locked on your level.` : ''}`,
+    chips: [
+      { label: 'Open signals', value: String(open.length) },
+      { label: 'Long', value: String(buys), tone: 'lime' },
+      { label: 'Short', value: String(sells), tone: 'pink' },
+      { label: 'Avg confidence', value: pct(avg, 0) },
+      ...(locked ? [{ label: 'Locked', value: String(locked) }] : []),
+    ],
+    columns: [
+      {
+        accent: ACCENT.lime,
+        title: 'Highest conviction',
+        items: [
+          { title: `${best.ticker} ${best.action}`, text: `${pct(best.confidence, 0)} confidence on the ${best.timeframe}, reward to risk ${best.riskReward}. ${(best.analysis ?? '').slice(0, 130)}` },
+          { title: `Widest payoff: ${bestRR.ticker}`, text: `${bestRR.riskReward} at ${pct(bestRR.confidence, 0)} confidence. A wide target only pays if you let it run.` },
+        ],
+      },
+      {
+        accent: ACCENT.pink,
+        title: 'What confidence is not',
+        items: [
+          { title: 'It is not a win rate', text: 'A 90% confidence call still loses often enough to hurt if you size it like a certainty. Risk the same amount on every signal you take.' },
+          { title: 'Crowded direction', text: buys > sells * 2 || sells > buys * 2 ? 'Most calls point the same way right now, so taking several of them is really one big position.' : 'Calls are spread across both directions, so you can size each one on its own merit.' },
+        ],
+      },
+      {
+        accent: ACCENT.violet,
+        title: 'Before you take one',
+        items: [
+          { title: 'Use the given stop', text: 'The entry, stop and target are a set. Taking the entry and inventing your own stop changes the maths entirely.' },
+          { title: 'Check the calendar', text: 'A high-impact release inside your holding window can undo a clean setup. Look before you commit.' },
+        ],
+      },
+    ],
+    footnote: 'Built from the signals on this page. Signals are research, not instructions, and are not financial advice.',
+  };
+}
+
+/* ───────────── Points, credits and missions ───────────── */
+
+export function pointsRead(user: { rankTitle: string; tierLevel: number; currentPoints: number; maxPoints: number; sydeCredits: number; activeStreakDays: number }, missions = INITIAL_MISSIONS): AiSectionData {
+  const tierIndex = GAMIFICATION_TIERS.findIndex((t) => t.level === user.tierLevel);
+  const next = tierIndex >= 0 ? GAMIFICATION_TIERS[tierIndex + 1] : undefined;
+  const toNext = next ? Math.max(0, next.minPoints - user.currentPoints) : 0;
+  const openM = missions.filter((m) => m.status !== 'completed' && m.tasks.some((t) => !t.completed));
+  const pts = openM.reduce((a, m) => a + m.rewardPoints, 0);
+  const creds = openM.reduce((a, m) => a + m.rewardCredits, 0);
+  const nearest = [...openM].sort((a, b) => a.tasks.filter((t) => !t.completed).length - b.tasks.filter((t) => !t.completed).length)[0];
+
+  return {
+    eyebrow: 'Points and credits',
+    reading: 'Reading your level…',
+    headline: next ? `${toNext} points from ${next.tier}` : `You are at the top level, ${user.rankTitle}`,
+    overview: next
+      ? `You are ${user.rankTitle} with ${user.currentPoints} of ${user.maxPoints} points and ${user.sydeCredits.toLocaleString()} credits. Reaching ${next.tier} gives ${next.cashbackBoost} and ${next.signalAccess}. The ${plural(openM.length, 'open mission')} on this page is worth +${pts} points, which ${pts >= toNext ? 'is enough on its own' : `covers ${pct((pts / Math.max(1, toNext)) * 100, 0)} of the gap`}.`
+      : `You are ${user.rankTitle} with ${user.currentPoints} points and ${user.sydeCredits.toLocaleString()} credits. There is no level above this one, so the missions are now just credits.`,
+    chips: [
+      { label: 'Level', value: `${user.tierLevel} · ${user.rankTitle}` },
+      { label: 'Points', value: `${user.currentPoints}/${user.maxPoints}` },
+      { label: 'Credits', value: user.sydeCredits.toLocaleString() },
+      ...(next ? [{ label: 'To next level', value: `${toNext} pts`, tone: 'pink' as const }] : []),
+      { label: 'Streak', value: `${user.activeStreakDays} days`, tone: 'lime' },
+    ],
+    columns: [
+      {
+        accent: ACCENT.lime,
+        title: 'Quickest points',
+        items: [
+          ...(nearest ? [{ title: nearest.title, text: `${plural(nearest.tasks.filter((t) => !t.completed).length, 'task')} left for +${nearest.rewardPoints} points and +${nearest.rewardCredits} credits${nearest.expiresIn ? `, ${nearest.expiresIn.toLowerCase()}` : ''}.` }] : []),
+          { title: 'Keep the streak', text: `${user.activeStreakDays} days running. A daily check-in is the cheapest points on the board, and the streak resets the moment you skip.` },
+        ],
+      },
+      {
+        accent: ACCENT.pink,
+        title: 'What the level buys you',
+        items: next
+          ? [
+              { title: next.tier, text: `${next.cashbackBoost} and ${next.signalAccess}. On real volume the cashback boost is the part that compounds.` },
+              { title: 'Points are not credits', text: 'Points move your level and never get spent. Credits are the balance you spend on unlocks, so do not confuse the two.' },
+            ]
+          : [{ title: 'Credits only from here', text: 'Points no longer move your level, so missions are now a credit balance rather than progress.' }],
+      },
+      {
+        accent: ACCENT.violet,
+        title: 'Worth remembering',
+        items: [
+          { title: 'Do not trade for points', text: 'Missions reward activity. Taking a trade you would not otherwise take to finish one costs more than the points are worth.' },
+          { title: 'Credits expire quietly', text: 'Check the expiry on anything you are saving credits for; an unspent balance earns you nothing.' },
+        ],
+      },
+    ],
+    footnote: 'Built from your level, credits and the missions on this page.',
+  };
+}
+
+/* ───────────── Promotions ───────────── */
+
+export function promotionsRead(promos = PROMOTIONS, tierLevel = 1): AiSectionData {
+  const live = promos.filter((p) => p.startsInDays === 0);
+  if (!live.length) {
+    return { eyebrow: 'Offers', headline: 'Nothing live right now', overview: '', empty: { text: 'No offers are running in this view. Clear a filter or check back after the next drop.' } };
+  }
+  const mine = live.filter((p) => p.minLevel <= Math.max(1, tierLevel));
+  const locked = live.length - mine.length;
+  const ending = [...mine].sort((a, b) => a.endsInDays - b.endsInDays)[0];
+  const needConn = mine.filter((p) => p.requiresConnected).length;
+  const deposits = mine.filter((p) => p.type === 'deposit').length;
+  const byType = new Map<string, number>();
+  mine.forEach((p) => byType.set(p.type, (byType.get(p.type) ?? 0) + 1));
+  const top = Array.from(byType.entries()).sort((a, b) => b[1] - a[1])[0];
+
+  return {
+    eyebrow: 'Offers',
+    reading: `Reading ${plural(live.length, 'offer')}…`,
+    headline: ending ? `${ending.title} closes in ${plural(ending.endsInDays, 'day')}` : 'Offers open to you',
+    overview: `${plural(mine.length, 'offer')} is open on your level${locked ? ` and ${plural(locked, 'more')} needs a higher one` : ''}. ${ending ? `${ending.brokerName} is first to close: ${ending.value}, ${ending.valueNote}.` : ''}${top ? ` Most of what is live is ${top[0]}.` : ''}`,
+    chips: [
+      { label: 'Open to you', value: String(mine.length), tone: 'lime' },
+      ...(locked ? [{ label: 'Locked', value: String(locked), tone: 'pink' as const }] : []),
+      ...(ending ? [{ label: 'Closes first', value: `${ending.endsInDays}d` }] : []),
+      { label: 'Need a connected account', value: String(needConn) },
+    ],
+    columns: [
+      {
+        accent: ACCENT.lime,
+        title: 'Worth claiming',
+        items: mine.slice(0, 2).map((p) => ({ title: p.title, text: `${p.brokerName} · ${p.value} ${p.valueNote}. ${p.summary.slice(0, 120)}` })),
+      },
+      {
+        accent: ACCENT.pink,
+        title: 'Read the terms',
+        items: [
+          ...(deposits ? [{ title: 'Deposit bonuses have strings', text: `${plural(deposits, 'offer')} here is a deposit bonus. Credit usually cannot be withdrawn and needs a lot requirement cleared first, so count the volume before you take it.` }] : []),
+          { title: 'An offer is not a reason to trade', text: 'Extra cashback on volume you would not otherwise trade costs more in spread than the rebate returns.' },
+        ],
+      },
+      {
+        accent: ACCENT.violet,
+        title: 'Before you claim',
+        items: [
+          ...(needConn ? [{ title: 'Connect first', text: `${plural(needConn, 'offer')} only tracks on an account connected to MarketSyde. Connect before you deposit or the offer will not register.` }] : []),
+          { title: 'Check the broker, not the banner', text: 'The headline number comes from the provider. Regulation and execution matter more than the size of the bonus.' },
+        ],
+      },
+    ],
+    footnote: 'Built from the offers on this page. Terms come from the provider and can change. Not financial advice.',
+  };
+}
+
+/* ───────────── Leaderboard ───────────── */
+
+export function leaderboardRead(users = LEADERBOARD_USERS): AiSectionData {
+  if (!users.length) {
+    return { eyebrow: 'The leaderboard', headline: 'No standings yet', overview: '', empty: { text: 'The board is empty for this period.' } };
+  }
+  const sorted = [...users].sort((a, b) => a.rank - b.rank);
+  const me = sorted.find((u) => u.isCurrentUser);
+  const top = sorted[0];
+  const ahead = me ? sorted.find((u) => u.rank === me.rank - 1) : undefined;
+  const avg = sorted.reduce((a, u) => a + u.points, 0) / sorted.length;
+
+  return {
+    eyebrow: 'The leaderboard',
+    reading: `Reading ${plural(sorted.length, 'trader')}…`,
+    headline: me ? `You are #${me.rank} of ${sorted.length}` : `${top.username} leads with ${top.points.toLocaleString()} points`,
+    overview: me
+      ? `You have ${me.points.toLocaleString()} points and $${me.cashbackEarned.toFixed(2)} cashback, against an average of ${Math.round(avg).toLocaleString()} points on the board.${ahead ? ` ${ahead.username} is one place ahead, ${(ahead.points - me.points).toLocaleString()} points up.` : ''} ${top.username} leads on ${top.points.toLocaleString()}.`
+      : `${top.username} leads on ${top.points.toLocaleString()} points and $${top.cashbackEarned.toFixed(2)} cashback, with an average of ${Math.round(avg).toLocaleString()} points across ${plural(sorted.length, 'trader')}.`,
+    chips: [
+      ...(me ? [{ label: 'Your rank', value: `#${me.rank}`, tone: 'lime' as const }, { label: 'Your points', value: me.points.toLocaleString() }] : []),
+      { label: 'Leader', value: top.points.toLocaleString() },
+      { label: 'Board average', value: Math.round(avg).toLocaleString() },
+      { label: 'Traders', value: String(sorted.length) },
+    ],
+    columns: [
+      {
+        accent: ACCENT.lime,
+        title: 'Closing the gap',
+        items: [
+          ahead && me
+            ? { title: `${(ahead.points - me.points).toLocaleString()} points behind ${ahead.username}`, text: 'Missions and finishing a course are the fastest points on the board; trading volume alone moves it slowly.' }
+            : { title: 'Points come from habits', text: 'Daily check-ins, missions and finished courses move you up faster than volume does.' },
+          { title: `${top.username} sets the pace`, text: `${top.tier} tier with $${top.cashbackEarned.toFixed(2)} cashback earned. The board rewards consistency, not one good week.` },
+        ],
+      },
+      {
+        accent: ACCENT.pink,
+        title: 'What it does not measure',
+        items: [
+          { title: 'Not a profit ranking', text: 'Points come from activity and cashback, not from how well anyone trades. A high rank is not a track record.' },
+          { title: 'Do not chase volume', text: 'Trading more to climb costs spread on every lot. The rank is not worth the drawdown.' },
+        ],
+      },
+    ],
+    footnote: 'Built from the standings on this page. Points measure activity, not trading results.',
   };
 }

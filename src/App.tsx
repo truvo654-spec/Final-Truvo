@@ -62,6 +62,8 @@ import { EconomicCalendarPage } from './components/calendar/EconomicCalendarPage
 import { EducationHubPage } from './components/education/EducationHubPage';
 import { PortfolioTrackerPage } from './components/portfolio/PortfolioTrackerPage';
 import { TradingJournalPage } from './components/journal/TradingJournalPage';
+import { AiSection } from './components/ai/AiSection';
+import { leaderboardRead } from './components/ai/aiFeature';
 import { PromotionsPage } from './components/promotions/PromotionsPage';
 import { ExpertAdvisorsPage } from './components/advisors/ExpertAdvisorsPage';
 import { AlertsPage } from './components/alerts/AlertsPage';
@@ -1882,6 +1884,8 @@ export default function App() {
 
         {/* ─── TAB 5: Leaderboard ─── */}
         {activeTab === 'leaderboard' && (
+          <div className="space-y-6">
+          <AiSection data={leaderboardRead(LEADERBOARD_USERS)} />
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-7">
               <LeaderboardCard
@@ -1922,6 +1926,7 @@ export default function App() {
                 </button>
               </div>
             </div>
+          </div>
           </div>
         )}
 

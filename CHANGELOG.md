@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2026-10-09
+### Added
+- A MarketSyde AI summary now sits on every remaining feature page: Trading Signals, Economic Calendar, Market News, Education Hub, Promotions, Points & Credits and the Leaderboard. Each reads that page's own data, so it covers twelve pages in total.
+### Removed
+- The AI summary is gone from the Community feed.
+
 ## [1.2.0] - 2026-10-09
 ### Added
 - AI Companion now covers the rest of the app, taking it to twelve areas: **Portfolio review** (accounts, equity, drawdown, margin and goals), **Backtest guide** (what to test next and how to read a run), **Advisors & alerts** (which expert advisor stands up, alert limits and hygiene) and **Community pulse** (what the feed is posting and which article to read).

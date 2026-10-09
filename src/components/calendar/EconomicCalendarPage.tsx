@@ -1,3 +1,5 @@
+import { AiSection } from '../ai/AiSection';
+import { calendarRead } from '../ai/aiFeature';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Info,
@@ -550,6 +552,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
 
   return (
     <div className="w-full">
+      <div className="px-4 sm:px-8 md:px-14 pt-6"><AiSection data={calendarRead()} /></div>
       {/* Sticky tools strip (appears after scrolling) */}
       {scrolled && (
         <div className="fixed top-[68px] left-0 right-0 z-30 bg-white/95 backdrop-blur border-b border-[#e2e8f0] shadow-xs">
