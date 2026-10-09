@@ -215,10 +215,10 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-indigo-100/70">
-      <div className="w-full px-4 sm:px-8 md:px-[56px] h-[68px] flex items-center justify-between relative">
+    <header className="sticky top-0 z-50 bg-[#fbfbff] border-b border-[#ccc6fb]">
+      <div className="w-full px-4 sm:px-8 md:px-8 h-[61px] flex items-center justify-between relative">
         {/* Brand Logo & Left Navigation */}
-        <div className="flex items-center gap-10 lg:gap-12">
+        <div className="flex items-center gap-[25px]">
           {/* MarketSyde Logo */}
           <button
             onClick={() => {
@@ -246,7 +246,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Desktop Navigation with Hover Mega Menus - Exactly matching Total Nav Bar.png */}
-          <nav className="hidden md:flex items-center gap-8 text-[14px] font-medium text-slate-800">
+          <nav data-keep-button-icons className="hidden md:flex items-center gap-[29px] text-[14px] font-medium text-slate-800">
             {/* Trade Dropdown Trigger */}
             <div
               className="relative py-4"
@@ -300,8 +300,9 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Knowledge Hub Dropdown Trigger (merges Market News + Education Hub) */}
+            {/* Not a top-level item in the design: reachable from the Company menu. */}
             <div
-              className="relative py-4"
+              className="relative py-4 hidden"
               onMouseEnter={() => handleMouseEnter('knowledge')}
               onMouseLeave={handleMouseLeave}
             >
@@ -341,8 +342,9 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {/* Community Dropdown Trigger */}
+            {/* Not a top-level item in the design: reachable from the Company menu. */}
             <div
-              className="relative py-4"
+              className="relative py-4 hidden"
               onMouseEnter={() => handleMouseEnter('community')}
               onMouseLeave={handleMouseLeave}
             >
@@ -400,7 +402,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden md:flex items-center relative">
             <div
               onClick={() => onOpenSearchModal?.()}
-              className="w-52 lg:w-64 h-10 px-3.5 bg-white border border-indigo-200/90 hover:border-[#5945F1] rounded-xl flex items-center justify-between gap-2 shadow-2xs transition-all text-left cursor-pointer group"
+              className="w-[200px] h-[38px] px-3.5 bg-white border border-[#ccc6fb] hover:border-[#5945F1] rounded-xl flex items-center justify-between gap-2 transition-all text-left cursor-pointer group"
               title="Search brokers, trading signals, and rewards (Cmd+K)"
             >
               <div className="flex items-center gap-2 text-slate-400 group-hover:text-slate-600 transition-colors min-w-0 flex-1">
@@ -417,7 +419,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="text-sm font-medium text-slate-800 placeholder-slate-400 truncate bg-transparent focus:outline-none w-full cursor-pointer"
                 />
               </div>
-              <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 shrink-0">
+              <kbd className="hidden items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 shrink-0">
                 ⌘K
               </kbd>
             </div>
@@ -2045,7 +2047,47 @@ export const Header: React.FC<HeaderProps> = ({
                   </div>
                 </button>
 
-                {/* 3. System Status & Error Pages */}
+                {/* 3. Community */}
+                <button
+                  onClick={() => {
+                    setActiveTab('community');
+                    handleCloseImmediately();
+                  }}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full"
+                >
+                  <div className="flex items-start gap-3">
+                    <div>
+                      <div className="font-bold text-base transition-colors leading-tight text-[#0b1c30] group-hover:text-[#5945F1]">
+                        Community
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        The trader feed, articles and your own page.
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                {/* 4. Knowledge Hub */}
+                <button
+                  onClick={() => {
+                    setActiveTab('news');
+                    handleCloseImmediately();
+                  }}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full"
+                >
+                  <div className="flex items-start gap-3">
+                    <div>
+                      <div className="font-bold text-base transition-colors leading-tight text-[#0b1c30] group-hover:text-[#5945F1]">
+                        Knowledge Hub
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        Market news and the education courses.
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                {/* 5. System Status & Error Pages */}
                 <button
                   onClick={() => {
                     setActiveTab('404');

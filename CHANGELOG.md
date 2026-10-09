@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.46] - 2026-10-09
+### Changed
+- Header matched to the design: 61px tall on the page background with the design border, the four top-level items (Trade, Brokers, Member Plan, Company), design search box without the Cmd+K badge, and the dropdown chevrons kept.
+- Knowledge Hub and Community are no longer top-level items, to match the design; both are now entries in the Company menu so they stay reachable.
+- Community page offsets retuned to the new header so the tab bar and cards land exactly where the design puts them.
+
 ## [1.0.45] - 2026-10-09
 ### Added
 - Community sidebars now stay with the page while it scrolls (sticky below the header) and scroll internally when taller than the viewport, on Feed, Article and My Page.

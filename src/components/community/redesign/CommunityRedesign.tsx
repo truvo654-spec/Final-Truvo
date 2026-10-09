@@ -121,7 +121,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
         </div>
       )}
 
-      <nav aria-label="Community sections" className="flex justify-center mb-[17px]">
+      <nav aria-label="Community sections" className="flex justify-center mb-3">
         <div role="tablist" className="inline-flex items-center rounded-[10px] bg-[#efecff] p-[3px]">
           {tabs.map((t) => {
             const Icon = t.icon;
