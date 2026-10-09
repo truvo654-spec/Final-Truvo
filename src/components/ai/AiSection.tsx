@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { ChevronDown, Sparkles } from 'lucide-react';
 import { TextReveal, wordCount } from '../journal/TextReveal';
-import { SpotlightCard, SpotlightColumn, SpotlightItem, STAGGER, itemDelay, useReducedMotion } from '../journal/SpotlightCard';
+import { SpotlightCard, SpotlightColumn, SpotlightItem, STAGGER, useReducedMotion } from '../journal/SpotlightCard';
 
 export interface AiSectionChip { label: string; value: string; tone?: 'lime' | 'pink' | 'white' }
 export interface AiSectionItem { title: string; text: string }
@@ -29,8 +29,9 @@ export const ACCENT = { lime: '#D6F73A', pink: '#FF8AD8', violet: '#A78BFA', sky
  * MarketSyde's read of one feature, in the same spotlight card the trading journal uses.
  * Pass a short headline, one paragraph, a few numbers and up to three columns.
  */
-export const AiSection: React.FC<{ data: AiSectionData; label?: string; className?: string }> = ({ data, label, className = '' }) => {
+export const AiSection: React.FC<{ data: AiSectionData; label?: string; className?: string; defaultOpen?: boolean }> = ({ data, label, className = '', defaultOpen = false }) => {
   const reduced = useReducedMotion();
+  const [open, setOpen] = useState(defaultOpen);
   const sig = useMemo(() => JSON.stringify(data), [data]);
   const [run, setRun] = useState(0);
   const [reading, setReading] = useState(!reduced);
@@ -52,66 +53,73 @@ export const AiSection: React.FC<{ data: AiSectionData; label?: string; classNam
   const columns = data.columns ?? [];
 
   return (
-    <SpotlightCard label={label ?? `MarketSyde AI summary: ${data.eyebrow}`} className={className}>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold tracking-wide bg-white/10 border border-white/15">
-          <Sparkles className="w-3.5 h-3.5 text-[#D6F73A]" aria-hidden />
+    <SpotlightCard label={label ?? `MarketSyde AI summary: ${data.eyebrow}`} className={`!p-4 sm:!p-5 !rounded-2xl ${className}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide bg-white/10 border border-white/15">
+          <Sparkles className="w-3 h-3 text-[#D6F73A]" aria-hidden />
           <span className="jr-grad-text">MarketSyde AI summary</span>
         </span>
         {!data.empty && (
-          <button type="button" onClick={() => setRun((r) => r + 1)} className="text-xs font-semibold text-white/70 hover:text-white underline-offset-4 hover:underline transition-colors">
+          <button type="button" onClick={() => setRun((r) => r + 1)} className="text-[11px] font-semibold text-white/60 hover:text-white underline-offset-4 hover:underline transition-colors">
             ↻ Analyze again
           </button>
         )}
       </div>
 
       {data.empty ? (
-        <div className="py-4">
-          <TextReveal as="h2" text={data.headline} palette="headline" instant={reduced} className="font-display text-2xl sm:text-3xl font-bold leading-tight" />
-          <p className="text-sm text-white/70 mt-3 max-w-xl">{data.empty.text}</p>
+        <div className="py-1">
+          <TextReveal as="h2" text={data.headline} palette="headline" instant={reduced} className="font-display text-lg sm:text-xl font-bold leading-snug" />
+          <p className="text-[13px] text-white/70 mt-2 max-w-xl">{data.empty.text}</p>
           {data.empty.actionLabel && (
-            <button type="button" onClick={data.empty.onAction} className="mt-5 rounded-xl bg-[#CAEB0E] hover:bg-[#b8d70c] text-black text-sm font-bold px-5 py-2.5 transition-colors">
+            <button type="button" onClick={data.empty.onAction} className="mt-4 rounded-lg bg-[#CAEB0E] hover:bg-[#b8d70c] text-black text-[13px] font-bold px-4 py-2 transition-colors">
               {data.empty.actionLabel}
             </button>
           )}
         </div>
       ) : reading ? (
-        <div className="py-6" role="status" aria-live="polite">
-          <p className="text-sm font-semibold jr-grad-text jr-shimmer">{data.reading ?? 'Reading your data…'}</p>
-          <div className="mt-4 space-y-2.5" aria-hidden>
-            {[92, 78, 60].map((w) => <div key={w} className="h-3 rounded-full jr-skeleton" style={{ width: `${w}%` }} />)}
+        <div className="py-2" role="status" aria-live="polite">
+          <p className="text-[13px] font-semibold jr-grad-text jr-shimmer">{data.reading ?? 'Reading your data…'}</p>
+          <div className="mt-3 space-y-2" aria-hidden>
+            {[82, 58].map((w) => <div key={w} className="h-2.5 rounded-full jr-skeleton" style={{ width: `${w}%` }} />)}
           </div>
         </div>
       ) : (
         <div key={`${sig}-${run}`}>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/55 mb-2">{data.eyebrow}</p>
-          <TextReveal as="h2" text={data.headline} palette="headline" delay={t0} stagger={STAGGER * 1.6} instant={reduced} className="font-display text-2xl sm:text-4xl font-bold leading-tight tracking-tight max-w-3xl" />
-          <TextReveal text={data.overview} palette="body" delay={tOverview} stagger={STAGGER * 0.6} instant={reduced} className="mt-4 text-[15px] sm:text-base leading-relaxed max-w-3xl" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50 mb-1.5">{data.eyebrow}</p>
+          <TextReveal as="h2" text={data.headline} palette="headline" delay={t0} stagger={STAGGER * 1.6} instant={reduced} className="font-display text-xl sm:text-[22px] font-bold leading-snug tracking-tight max-w-3xl" />
+          <TextReveal text={data.overview} palette="body" delay={tOverview} stagger={STAGGER * 0.6} instant={reduced} className="mt-2 text-[13px] leading-relaxed text-white/80 max-w-3xl line-clamp-2" />
 
           {data.chips && data.chips.length > 0 && (
-            <div className={`mt-5 flex flex-wrap gap-2.5 ${reduced ? '' : 'jr-fade'}`} style={reduced ? undefined : { animationDelay: `${tChips}ms` }}>
-              {data.chips.map((c) => (
-                <div key={c.label} className="rounded-xl bg-white/[0.06] border border-white/10 px-3.5 py-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-white/55">{c.label}</p>
-                  <p className={`font-mono text-base font-bold ${TONE[c.tone ?? 'white']}`}>{c.value}</p>
+            <div className={`mt-3 flex flex-wrap gap-2 ${reduced ? '' : 'jr-fade'}`} style={reduced ? undefined : { animationDelay: `${tChips}ms` }}>
+              {data.chips.slice(0, 4).map((c) => (
+                <div key={c.label} className="rounded-lg bg-white/[0.06] border border-white/10 px-2.5 py-1.5">
+                  <p className="text-[9px] font-semibold uppercase tracking-wide text-white/50">{c.label}</p>
+                  <p className={`font-mono text-[13px] font-bold ${TONE[c.tone ?? 'white']}`}>{c.value}</p>
                 </div>
               ))}
             </div>
           )}
 
           {columns.length > 0 && (
-            <div className={`mt-6 grid gap-4 ${columns.length >= 3 ? 'md:grid-cols-3' : columns.length === 2 ? 'md:grid-cols-2' : ''}`}>
-              {columns.map((col, ci) => (
-                <SpotlightColumn key={col.title} accent={col.accent} title={col.title} delay={itemDelay(tLists, ci, 0, [])} reduced={reduced}>
-                  {col.items.map((it, ii) => (
-                    <SpotlightItem key={it.title} title={it.title} text={it.text} delay={itemDelay(tLists, ci, ii, col.items)} reduced={reduced} />
+            <>
+              <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-semibold text-white/70 hover:text-white transition-colors">
+                {open ? 'Hide the detail' : 'Read the detail'}
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+              </button>
+
+              {open && (
+                <div className={`mt-4 grid gap-3 ${columns.length >= 3 ? 'md:grid-cols-3' : columns.length === 2 ? 'md:grid-cols-2' : ''}`}>
+                  {columns.map((col) => (
+                    <SpotlightColumn key={col.title} accent={col.accent} title={col.title} delay={0} reduced>
+                      {col.items.map((it) => <SpotlightItem key={it.title} title={it.title} text={it.text} delay={0} reduced />)}
+                    </SpotlightColumn>
                   ))}
-                </SpotlightColumn>
-              ))}
-            </div>
+                </div>
+              )}
+            </>
           )}
 
-          {data.footnote && <p className="mt-6 text-[11px] text-white/45 leading-relaxed">{data.footnote}</p>}
+          {data.footnote && open && <p className="mt-4 text-[11px] text-white/45 leading-relaxed">{data.footnote}</p>}
         </div>
       )}
     </SpotlightCard>

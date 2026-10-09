@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2026-10-09
+### Changed
+- The AI summary on the feature pages is now a short card: a one-line headline, two lines of summary and four stat chips, about half its old height. The columns of detail sit behind a "Read the detail" toggle, and the disclaimer shows with them. The trading journal's own summary is unchanged.
+
 ## [1.2.1] - 2026-10-09
 ### Added
 - A MarketSyde AI summary now sits on every remaining feature page: Trading Signals, Economic Calendar, Market News, Education Hub, Promotions, Points & Credits and the Leaderboard. Each reads that page's own data, so it covers twelve pages in total.
