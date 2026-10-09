@@ -1551,6 +1551,22 @@ export default function App() {
             isLoggedIn={isLoggedIn}
             onUpgradePrompt={() => setActiveTab('member-plan')}
             onShowToast={showToast}
+            brokers={brokers}
+            onConnectBroker={(broker) => {
+              setSelectedBrokerForConnect(broker);
+              setIsConnectModalOpen(true);
+            }}
+            sydeCredits={user.sydeCredits}
+            onSpendCredits={(amount, reason) => {
+              if (user.sydeCredits < amount) {
+                showToast('Not enough Syde Credits for that.');
+                return false;
+              }
+              setUser((prev) => ({ ...prev, sydeCredits: prev.sydeCredits - amount }));
+              showToast(`🪙 -${amount} Credits: ${reason}`);
+              return true;
+            }}
+            onRewardPoints={handleRewardPoints}
           />
         )}
 

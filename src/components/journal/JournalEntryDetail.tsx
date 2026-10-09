@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Star, Check, X as XIcon, Trash2, Pencil, Link2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Star, Check, X as XIcon, Trash2, Pencil, Link2, AlertTriangle, PlayCircle } from 'lucide-react';
 import { JournalEntry, JournalChecklistItem } from '../../types';
-import { AiEntrySummary } from './AiEntrySummary';
-import { TradeLogSection } from './TradeLogSection';
+import { TradingStatusBadge, tradingStatusOf } from './tradingStatus';
 
 interface JournalEntryDetailProps {
   entry: JournalEntry;
   checklist: JournalChecklistItem[];
-  /** The rest of the journal, so the summary can compare this trade with it. */
-  allEntries?: JournalEntry[];
   onBack: () => void;
   onUpdate: (entry: JournalEntry) => void;
   onDelete: (id: string) => void;
   onShowToast: (msg: string) => void;
+  /** Replay this trade bar by bar with the outcome hidden (Backtest → Practice). */
+  onReplay?: () => void;
 }
 
 const OUTCOME_STYLE: Record<JournalEntry['outcome'], string> = {
@@ -27,11 +26,11 @@ const money = (n: number) => `${n < 0 ? '-' : n > 0 ? '+' : ''}$${Math.abs(n).to
 export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   entry,
   checklist,
-  allEntries,
   onBack,
   onUpdate,
   onDelete,
   onShowToast,
+  onReplay,
 }) => {
   const [editing, setEditing] = useState(false);
   const [lessons, setLessons] = useState(entry.lessons);
@@ -58,6 +57,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               <h1 className="text-2xl font-display font-bold text-[#0b1c30]">{entry.symbol}</h1>
               <span className={`text-sm font-bold ${entry.direction === 'BUY' ? 'text-emerald-600' : 'text-rose-600'}`}>{entry.direction}</span>
               <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold capitalize ${OUTCOME_STYLE[entry.outcome]}`}>{entry.outcome}</span>
+              <TradingStatusBadge status={tradingStatusOf(entry)} />
             </div>
             <p className="text-xs text-[#94a3b8]">
               {entry.date} · {entry.assetClass} · {entry.strategy}
@@ -71,7 +71,29 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           <div className="text-right">
             <p className={`text-2xl font-bold font-mono ${entry.pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{money(entry.pnl)}</p>
             <p className="text-xs text-[#474556] font-semibold">{entry.rMultiple !== null ? `${entry.rMultiple > 0 ? '+' : ''}${entry.rMultiple}R` : 'R not set'}</p>
+            {entry.commission !== undefined && (
+              <p className="text-[11px] text-[#94a3b8] font-mono">Net {money(entry.pnl - entry.commission)} after ${entry.commission.toFixed(2)} fees</p>
+            )}
+            {onReplay && entry.outcome !== 'open' && (
+              <button type="button" onClick={onReplay} title="Practise this trade bar by bar with the date and outcome hidden" className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#5338ec] hover:underline">
+                <PlayCircle className="w-3.5 h-3.5" /> Replay this trade blind
+              </button>
+            )}
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 mt-4">
+          <label htmlFor="trading-status" className="text-xs font-semibold text-[#474556]">Trading status</label>
+          <select
+            id="trading-status"
+            value={tradingStatusOf(entry)}
+            onChange={(e) => { onUpdate({ ...entry, tradingStatus: e.target.value as JournalEntry['tradingStatus'] }); onShowToast('Trading status updated'); }}
+            className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#0b1c30] bg-white"
+          >
+            <option value="planned">Planned</option>
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+          </select>
         </div>
 
         <div className="grid grid-cols-3 gap-3 mt-5">
@@ -87,7 +109,32 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             <p className="text-[11px] text-[#474556] mb-0.5">Size</p>
             <p className="text-sm font-bold font-mono">{entry.size} lots</p>
           </div>
+          {entry.stopPrice !== undefined && (
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-[#474556] mb-0.5">Stop loss</p>
+              <p className="text-sm font-bold font-mono">{entry.stopPrice}</p>
+            </div>
+          )}
+          {entry.takeProfit !== undefined && (
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-[#474556] mb-0.5">Take profit{entry.plannedR ? ` · 1:${entry.plannedR}` : ''}</p>
+              <p className="text-sm font-bold font-mono">{entry.takeProfit}</p>
+            </div>
+          )}
+          {entry.commission !== undefined && (
+            <div className="bg-slate-50 rounded-xl p-3 text-center">
+              <p className="text-[11px] text-[#474556] mb-0.5">Commissions</p>
+              <p className="text-sm font-bold font-mono">${entry.commission.toFixed(2)}</p>
+            </div>
+          )}
         </div>
+        {(entry.entryTime || entry.exitTime) && (
+          <p className="text-[11px] text-[#94a3b8] font-mono mt-3">
+            {entry.entryTime ? `In ${entry.entryTime.replace('T', ' ')}` : ''}
+            {entry.entryTime && entry.exitTime ? ' → ' : ''}
+            {entry.exitTime ? `Out ${entry.exitTime.replace('T', ' ')}` : ''}
+          </p>
+        )}
 
         {entry.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
@@ -98,8 +145,6 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         )}
       </div>
 
-      <AiEntrySummary entry={entry} allEntries={allEntries ?? [entry]} checklist={checklist} />
-
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-5">
         <div className="space-y-5">
           {entry.screenshot && (
@@ -108,8 +153,6 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               <img src={entry.screenshot} alt="Trade screenshot" className="w-full rounded-xl border border-slate-200" />
             </div>
           )}
-
-          <TradeLogSection entry={entry} checklist={checklist} onShowToast={onShowToast} />
 
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
             <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">Setup</p>

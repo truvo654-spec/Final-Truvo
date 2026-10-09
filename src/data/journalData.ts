@@ -1,5 +1,6 @@
 import { JournalEntry, JournalChecklistItem, JournalWeeklyReview, JournalEmotion } from '../types';
 import { CHART_BTC_4H } from './communityDemoPostAssets';
+import { generateJournalHistory } from './journalHistory';
 
 /** "Today" for the demo dataset (matches the rest of the mock data). */
 export const JOURNAL_TODAY = '2026-10-05';
@@ -20,9 +21,13 @@ export const DEFAULT_CHECKLIST: JournalChecklistItem[] = [
   { id: 'chk_5', label: 'Position size calculated, not guessed' },
 ];
 
-export const JOURNAL_ENTRIES: JournalEntry[] = [
+const BASE_ENTRIES: JournalEntry[] = [
   {
     id: 'jr_1',
+    exitTime: '2026-10-02T15:12:40',
+    entryTime: '2026-10-02T09:44:12',
+    commission: 7.0,
+    brokerId: 'exness',
     date: '2026-10-02',
     symbol: 'EUR/USD',
     assetClass: 'Forex',
@@ -49,6 +54,10 @@ export const JOURNAL_ENTRIES: JournalEntry[] = [
   },
   {
     id: 'jr_2',
+    exitTime: '2026-10-01T14:31:09',
+    entryTime: '2026-10-01T14:08:31',
+    commission: 1.4,
+    brokerId: 'hfm',
     date: '2026-10-01',
     symbol: 'BTC/USDT',
     assetClass: 'Crypto',
@@ -74,6 +83,9 @@ export const JOURNAL_ENTRIES: JournalEntry[] = [
   },
   {
     id: 'jr_3',
+    entryTime: '2026-09-30T10:21:05',
+    commission: 1.75,
+    brokerId: 'xm',
     date: '2026-09-30',
     symbol: 'XAU/USD',
     assetClass: 'Commodity',
@@ -99,6 +111,10 @@ export const JOURNAL_ENTRIES: JournalEntry[] = [
   },
   {
     id: 'jr_4',
+    exitTime: '2026-09-28T16:05:20',
+    entryTime: '2026-09-28T15:32:48',
+    commission: 3.5,
+    brokerId: 'exness',
     date: '2026-09-28',
     symbol: 'US500',
     assetClass: 'Indices',
@@ -124,6 +140,10 @@ export const JOURNAL_ENTRIES: JournalEntry[] = [
   },
   {
     id: 'jr_5',
+    exitTime: '2026-09-26T11:48:02',
+    entryTime: '2026-09-26T08:15:40',
+    commission: 2.8,
+    brokerId: 'ic-markets',
     date: '2026-09-26',
     symbol: 'GBP/JPY',
     assetClass: 'Forex',
@@ -149,6 +169,10 @@ export const JOURNAL_ENTRIES: JournalEntry[] = [
   },
   {
     id: 'jr_6',
+    exitTime: '2026-09-24T11:52:30',
+    entryTime: '2026-09-24T11:12:05',
+    commission: 4.2,
+    brokerId: 'hfm',
     date: '2026-09-24',
     symbol: 'USD/CAD',
     assetClass: 'Forex',
@@ -174,6 +198,10 @@ export const JOURNAL_ENTRIES: JournalEntry[] = [
   },
   {
     id: 'jr_7',
+    exitTime: '2026-09-22T19:58:44',
+    entryTime: '2026-09-22T16:40:19',
+    commission: 1.0,
+    brokerId: 'pepperstone',
     date: '2026-09-22',
     symbol: 'NVDA',
     assetClass: 'Stocks',
@@ -198,6 +226,10 @@ export const JOURNAL_ENTRIES: JournalEntry[] = [
   },
   {
     id: 'jr_8',
+    exitTime: '2026-09-18T14:02:10',
+    entryTime: '2026-09-18T13:45:00',
+    commission: 5.25,
+    brokerId: 'xm',
     date: '2026-09-18',
     symbol: 'ETH/USDT',
     assetClass: 'Crypto',
@@ -221,6 +253,9 @@ export const JOURNAL_ENTRIES: JournalEntry[] = [
     source: 'manual',
   },
 ];
+
+/** Recent hand-written entries plus generated Aug–Sep history (see journalHistory.ts). */
+export const JOURNAL_ENTRIES: JournalEntry[] = [...BASE_ENTRIES, ...generateJournalHistory()];
 
 export const JOURNAL_REVIEWS: JournalWeeklyReview[] = [
   {

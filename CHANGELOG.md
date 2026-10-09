@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-10-09
+### Added
+- Trading Journal brought over from `Trading_journal_7.10.2026`: Overview, Trade Log, Insights, Playbook, Backtest and Weekly Review tabs, the entry wizard with import and ingest, review drawer with rule evidence and fills, calendar, cumulative chart, monitors, playbook analytics and trade replay, plus the `src/backtest` engine the Backtest tab needs.
+- Journal types extended (trading status, review state, fills, risk history, broker, cashback, playbook scenario) and the new journal data files (`journalHistory`, `journalPlaybooks`).
+### Kept
+- MarketSyde AI summary from design-team: the overview card now sits at the top of the Overview tab and the per-trade read appears inside the new review drawer.
+### Fixed
+- Overview bar chart no longer emits an SVG rect with an undefined height when a point has no value.
+
 ## [1.0.50] - 2026-10-09
 ### Added
 - Community stories are real video now: each tile plays a looping, muted 6-second clip in place (pausing when scrolled out of view), and opening one plays it full screen with a progress bar, keyboard controls and auto-advance to the next story.
