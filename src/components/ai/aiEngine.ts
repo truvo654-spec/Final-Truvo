@@ -6,6 +6,7 @@ import { findTerm, termByTitle } from './aiKnowledge';
 import { marketSummary } from './aiMarket';
 import { behaviorObservation, detectBehaviorFocus, detectFocus, tradingInsights } from './aiPersonal';
 import { recommendations } from './aiRecs';
+import { detectPlaybookFocus, detectRewardFocus, playbooks, rewards } from './aiMore';
 import { findAssetClass, findInstrument, levenshtein, mid, parseRange, personalOff } from './aiUtil';
 
 export type { AiContext, AiItem, AiMessage, AiReply, AiMemory, BrokerPrefs, Level, RangeDays, Surface } from './aiTypes';
@@ -16,6 +17,8 @@ export const SURFACE_PROMPTS: Record<Surface, string[]> = {
   market: ['Give me today’s briefing', 'Week ahead', 'Gold outlook', 'Crypto summary', 'Market sentiment by asset class'],
   insights: ['How are my trades doing?', 'Which strategy works best for me?', 'Which session do I trade best?', 'What are my open positions doing?', 'Show my last 90 days'],
   behavior: ['Any habits I should watch?', 'What do I do after a loss?', 'How does my mood affect results?', 'Which mistakes cost me most?', 'Does the checklist help me?'],
+  playbook: ['How do my playbooks compare?', 'Which playbook is weakest?', 'Do my playbooks follow their rules?', 'How are my trades doing?'],
+  rewards: ['How much cashback have I earned?', 'How close am I to the next level?', 'What missions are open?', 'What offers are live?', 'Where am I on the leaderboard?'],
   next: ['What should I do next?', 'Learning path', 'Week ahead'],
 };
 
@@ -34,10 +37,10 @@ const helpMsg = (ctx: AiContext, heading = 'Here is what I can do'): AiMessage =
   id: mid(), role: 'ai',
   heading,
   paragraphs: [
-    `I can match you with brokers and compare them, explain any trading term at your level (${ctx.level}), quiz you, work out position size and margin, brief you on the market or one instrument, read your trades, notice habits in your journal, and suggest what to do next.`,
+    `I can match you with brokers and compare them, explain any trading term at your level (${ctx.level}), quiz you, work out position size and margin, brief you on the market or one instrument, read your trades, compare your playbooks, notice habits in your journal, track your cashback, points, missions and offers, and suggest what to do next.`,
     'Tap a suggestion or write it your own way. I remember what we were just talking about, so “and gold?” or “last 7 days” works.',
   ],
-  followUps: ['Which broker suits me?', 'What is leverage?', 'Gold outlook', 'How are my trades doing?', 'Any habits I should watch?', 'What should I do next?'],
+  followUps: ['Which broker suits me?', 'What is leverage?', 'Gold outlook', 'How are my trades doing?', 'How do my playbooks compare?', 'How much cashback have I earned?', 'What should I do next?'],
 });
 
 export function runSurface(s: Surface, ctx: AiContext): AiReply {
@@ -51,6 +54,8 @@ function runSurfaceRaw(s: Surface, ctx: AiContext): AiReply {
     case 'market': return marketSummary(ctx, 'today');
     case 'insights': return ctx.allowTrades ? tradingInsights(ctx) : { msg: personalOff('your trades', 'trades'), mem: { surface: 'insights' } };
     case 'behavior': return ctx.allowJournal ? behaviorObservation(ctx) : { msg: personalOff('your journal', 'journal'), mem: { surface: 'behavior' } };
+    case 'playbook': return playbooks(ctx);
+    case 'rewards': return rewards(ctx, ctx.user);
     default: return recommendations(ctx);
   }
 }
@@ -78,11 +83,13 @@ const RULES: Record<Surface, Rule[]> = {
     [/habit|behaviou?r|emotion|mistake|disciplin|revenge|journal|mood|psycholog|after (a )?loss|tilt|fomo|checklist|นิสัย|พฤติกรรม|อารมณ์/, 3],
     [/\bplan\b/, 1],
   ],
+  playbook: [[/playbook|setup rules|strategy rules|my strategies|which setup/, 4], [/\bgrade\b|benchmark/, 1]],
+  rewards: [[/cashback|rebate|payout|credits?\b|points?\b|level|tier|perk|mission|promo|offer|bonus|leaderboard|rank|แคชแบ็ก|คะแนน|เลเวล/, 4]],
   next: [[/\bnext\b|recommend|what should i|suggest|to ?do list|แนะนำ/, 3], [/what to do|what now/, 3]],
 };
 
 function scoreSurfaces(q: string, ctx: AiContext) {
-  const score: Record<Surface, number> = { broker: 0, learn: 0, market: 0, insights: 0, behavior: 0, next: 0 };
+  const score: Record<Surface, number> = { broker: 0, learn: 0, market: 0, insights: 0, behavior: 0, playbook: 0, rewards: 0, next: 0 };
   (Object.keys(RULES) as Surface[]).forEach((s) => RULES[s].forEach(([re, w]) => { if (re.test(q)) score[s] += w; }));
   const personal = /\b(my|mine|i've|i have|i am|i'm)\b/.test(q);
   const term = findTerm(q);
@@ -98,6 +105,10 @@ function scoreSurfaces(q: string, ctx: AiContext) {
   }
   if (findAssetClass(q) && !personal && !/broker/.test(q)) score.market += 2;
   if (/cashback|rebate/.test(q) && /\d+\s?lots?/.test(q)) score.broker += 3;
+  // "cashback" next to a broker word is a directory question; on its own it is about the person's own rewards.
+  if (/broker|compare|directory/.test(q)) score.rewards -= 5;
+  if (/\bmy\b|have i|am i|i earned/.test(q) && /cashback|points?|credits?|level|rank/.test(q)) score.rewards += 3;
+  if (/playbook/.test(q)) { score.insights -= 3; score.next -= 3; }
   // Short follow-ups inherit the last surface
   if (/^(and|what about|how about|also|then)\b/.test(q) && ctx.memory.surface && !inst) score[ctx.memory.surface] += 3;
   return score;
@@ -171,6 +182,8 @@ function routeRaw(text: string, ctx: AiContext): AiReply {
         if (!ctx.allowJournal) return { msg: personalOff('your journal', 'journal'), mem: { ...mem, surface: 'behavior' } };
         return behaviorObservation(ctx, detectBehaviorFocus(q));
       }
+      case 'playbook': return playbooks(ctx, detectPlaybookFocus(q));
+      case 'rewards': return rewards(ctx, ctx.user, detectRewardFocus(q));
       default: return recommendations(ctx);
     }
   }

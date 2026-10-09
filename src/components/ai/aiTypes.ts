@@ -1,6 +1,6 @@
-import { Broker, MarketSignal } from '../../types';
+import { Broker, MarketSignal, UserProfile } from '../../types';
 
-export type Surface = 'broker' | 'learn' | 'market' | 'insights' | 'behavior' | 'next';
+export type Surface = 'broker' | 'learn' | 'market' | 'insights' | 'behavior' | 'playbook' | 'rewards' | 'next';
 export type Level = 'Beginner' | 'Intermediate' | 'Advanced';
 export type RangeDays = 7 | 30 | 90;
 
@@ -73,6 +73,8 @@ export interface AiMemory {
 }
 
 export interface AiContext {
+  /** The signed-in profile, for level, points, credits and cashback answers. */
+  user: UserProfile;
   firstName: string;
   brokers: Broker[];
   signals: MarketSignal[];

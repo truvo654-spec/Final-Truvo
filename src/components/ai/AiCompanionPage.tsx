@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Send, Building2, GraduationCap, Newspaper, LineChart, HeartPulse, Compass, ShieldCheck, ChevronRight, Copy, ThumbsUp, ThumbsDown, Trash2 } from 'lucide-react';
+import { Send, Building2, GraduationCap, Newspaper, LineChart, HeartPulse, Compass, ShieldCheck, ChevronRight, Copy, ThumbsUp, ThumbsDown, Trash2, BookMarked, Gift } from 'lucide-react';
 import { Broker, MarketSignal, UserProfile } from '../../types';
 import { PORTFOLIO_TRADES } from '../../data/portfolioData';
 import { JOURNAL_ENTRIES } from '../../data/journalData';
@@ -22,6 +22,8 @@ const SURFACES: { id: Surface; title: string; desc: string; icon: React.ElementT
   { id: 'market', title: 'Market summaries', desc: 'Today, week ahead, an asset class or one instrument.', icon: Newspaper },
   { id: 'insights', title: 'Trading insights', desc: 'What your trades say, by strategy, pair and session.', icon: LineChart },
   { id: 'behavior', title: 'Behavioral observation', desc: 'Mood, plan and mistakes, before they cost you.', icon: HeartPulse },
+  { id: 'playbook', title: 'Playbook review', desc: 'Which of your setups actually pays, and which does not.', icon: BookMarked },
+  { id: 'rewards', title: 'Cashback & perks', desc: 'Cashback, points, level, missions and live offers.', icon: Gift },
   { id: 'next', title: 'Recommendations', desc: 'What to learn, read and watch next, with the reason.', icon: Compass },
 ];
 
@@ -111,7 +113,7 @@ export const AiCompanionPage: React.FC<AiCompanionPageProps> = ({ user, brokers,
     } catch { /* storage can be unavailable; the chat still works in memory */ }
   }, [messages, memory, prefs, level, range, allowTrades, allowJournal, quizAnswers, feedback]);
 
-  const ctx: AiContext = { firstName: first, brokers, signals, level, range, allowTrades, allowJournal, prefs, memory };
+  const ctx: AiContext = { firstName: first, user, brokers, signals, level, range, allowTrades, allowJournal, prefs, memory };
 
   const respond = (make: () => AiReply) => {
     setThinking(true);
@@ -183,7 +185,7 @@ export const AiCompanionPage: React.FC<AiCompanionPageProps> = ({ user, brokers,
   const lastUserIdx = messages.length - 1;
 
   return (
-    <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
+    <div data-keep-button-icons className="w-full max-w-[1280px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">AI Companion<span className="text-[#FD02B0]">.</span></h1>
         <p className="text-sm text-[#474556] mt-1 max-w-xl">AI that helps traders navigate smarter. Not AI predicting the market: AI around the trader.</p>

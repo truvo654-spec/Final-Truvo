@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2026-10-09
+### Added
+- AI Companion gained two areas, taking it to eight: **Playbook review** (compares the playbooks from the new journal by net result, win rate and average R, and checks each against its own reward:risk benchmark) and **Cashback & perks** (cashback credited, pending and per lot by broker, level and points to the next tier, open missions, live offers for your level, and your leaderboard place).
+- Questions like "how much cashback have I earned?", "how close am I to the next level?", "what missions are open?", "what offers are live?", "where am I on the leaderboard?", "which playbook is weakest?" and "do my playbooks follow their rules?" now route to those areas, with broker-cashback questions still going to the broker directory.
+### Fixed
+- AI Companion surface tiles show their icons again; the platform-wide icon removal is scoped out of that page.
+
 ## [1.1.1] - 2026-10-09
 ### Added
 - Create Post modal built to the design: author row, text, an upload area for photos and video from the device (drag and drop too), an attachment carousel with remove, and a poll with a question, options, Add Option and character counters.
