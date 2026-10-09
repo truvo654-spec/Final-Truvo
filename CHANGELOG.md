@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.43] - 2026-10-09
+### Added
+- AI Companion rebuilt across all six areas, split into focused modules under `src/components/ai/`.
+- Broker matching: platform and monthly-lots preferences, match %, side-by-side comparison table, "why not X?" explanations, cashback estimates, and tap-through to broker detail.
+- Learning assistant: ~48-term glossary that adapts to Beginner / Intermediate / Advanced, "simpler" and "deeper" follow-ups, in-chat multiple-choice quiz, learning path, and calculators (position size, pip value, margin, drawdown recovery, risk/reward, break-even win rate).
+- Market summaries: today, week ahead, per asset class, per instrument (signal, news, events, your open positions), and sentiment by asset class.
+- Trading insights: 7 / 30 / 90 day ranges, comparison with the previous period, and breakdowns by strategy, instrument, session, weekday, direction, broker and open positions.
+- Behavioral observation: discipline score, mood and mistake cost, behaviour after a loss, checklist impact, and a re-entry-after-loss cross-check against the portfolio.
+- Recommendations: ranked, each with a "why", drawn from journal, equity curve, calendar, signals, broker cashback gap and missions.
+- Conversation memory for follow-ups, follow-up suggestion chips, copy and thumbs feedback, chat saved on this device, "New conversation", and separate privacy switches for trades and journal.
+- Basic Thai keyword recognition for greetings and the main topics.
+
 ## [1.0.42] - 2026-10-08
 ### Added
 - Added `vite.single.config.ts` and `vite-plugin-singlefile` to build the whole app as a single self-contained HTML file (`npm run build:single`).

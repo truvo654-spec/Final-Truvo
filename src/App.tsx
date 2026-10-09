@@ -1533,6 +1533,11 @@ export default function App() {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             onSelectSignal={(sig) => handleSelectSignalByTicker(sig.ticker)}
+            onSelectBroker={(b) => {
+              setSelectedBrokerForDetail(b);
+              setActiveTab('broker-detail');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             onShowToast={showToast}
           />
         )}

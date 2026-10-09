@@ -1,241 +1,191 @@
-import { Broker, MarketSignal } from '../../types';
-import { COURSES } from '../../data/educationData';
-import { NEWS_ARTICLES } from '../../data/newsData';
-import { ECONOMIC_EVENTS, CALENDAR_NOW } from '../../data/economicCalendarData';
-import { JOURNAL_ENTRIES } from '../../data/journalData';
-import { PORTFOLIO_TRADES } from '../../data/portfolioData';
-import { groupPnl, tradeStats, tradesInRange, totalSeries, maxDrawdown, isClosed } from '../portfolio/portfolioMath';
+import { AiContext, AiMessage, AiReply, Surface } from './aiTypes';
+import { calculate, detectCalc } from './aiCalc';
+import { cashbackEstimate, compareBrokers, matchBrokers, prefsFromText, whyNotBroker } from './aiBroker';
+import { explainTerm, learnAnswer, learnHome, learningPath, oneLiner, quizReply } from './aiLearn';
+import { findTerm, termByTitle } from './aiKnowledge';
+import { marketSummary } from './aiMarket';
+import { behaviorObservation, detectBehaviorFocus, detectFocus, tradingInsights } from './aiPersonal';
+import { recommendations } from './aiRecs';
+import { findAssetClass, findInstrument, levenshtein, mid, parseRange, personalOff } from './aiUtil';
 
-export interface AiItem {
-  title: string;
-  sub?: string;
-  tab?: string;
-  signal?: string;
-}
+export type { AiContext, AiItem, AiMessage, AiReply, AiMemory, BrokerPrefs, Level, RangeDays, Surface } from './aiTypes';
 
-export interface AiMessage {
-  id: string;
-  role: 'user' | 'ai';
-  text?: string;
-  heading?: string;
-  paragraphs?: string[];
-  items?: AiItem[];
-  sources?: string[];
-  note?: string;
-}
+export const SURFACE_PROMPTS: Record<Surface, string[]> = {
+  broker: ['Which broker suits me?', 'Brokers with the best cashback', 'Compare these brokers', 'How much cashback for 20 lots?', 'Which broker is safest?'],
+  learn: ['What is drawdown?', 'Quiz me', 'Learning path', 'Position size for $5,000 risking 1% with a 25 pip stop', 'How much to recover from a 20% drawdown?'],
+  market: ['Give me today’s briefing', 'Week ahead', 'Gold outlook', 'Crypto summary', 'Market sentiment by asset class'],
+  insights: ['How are my trades doing?', 'Which strategy works best for me?', 'Which session do I trade best?', 'What are my open positions doing?', 'Show my last 90 days'],
+  behavior: ['Any habits I should watch?', 'What do I do after a loss?', 'How does my mood affect results?', 'Which mistakes cost me most?', 'Does the checklist help me?'],
+  next: ['What should I do next?', 'Learning path', 'Week ahead'],
+};
 
-export interface AiContext {
-  firstName: string;
-  brokers: Broker[];
-  signals: MarketSignal[];
-  usePersonalData: boolean;
-}
+const uniq = (r: AiReply): AiReply => (r.msg.followUps ? { ...r, msg: { ...r.msg, followUps: Array.from(new Set(r.msg.followUps)).slice(0, 5) } } : r);
 
-export type Surface = 'broker' | 'learn' | 'market' | 'insights' | 'behavior' | 'next';
-
-export interface BrokerPrefs {
-  priority: 'cost' | 'safety' | 'cashback' | 'deposit';
-  style: 'scalping' | 'swing' | 'crypto';
-}
-
-let counter = 0;
-const mid = () => `m${Date.now()}_${counter++}`;
-const money = (n: number) => `${n < 0 ? '-' : n > 0 ? '+' : ''}$${Math.abs(n).toFixed(0)}`;
-
-/* ───────────── Broker matching ───────────── */
-
-const num = (s: string) => parseFloat((s || '').replace(/[^0-9.]/g, '')) || 0;
-
-export function matchBrokers(brokers: Broker[], prefs: BrokerPrefs): AiMessage {
-  const scored = brokers.map((b) => {
-    const spread = num(b.spreadFrom);
-    const dep = num(b.minDeposit);
-    const tier1 = b.regulations.filter((r) => /tier 1|fca|asic|cysec/i.test(r)).length;
-    let score = (b.score ?? 8) * 4;
-    const why: string[] = [];
-    if (prefs.priority === 'cost') { score += (1 - Math.min(spread, 1.5) / 1.5) * 20; why.push(`spreads from ${b.spreadFrom}`); }
-    if (prefs.priority === 'safety') { score += tier1 * 7; why.push(`${b.regulations.length} regulators including ${b.regulations.slice(0, 2).join(', ')}`); }
-    if (prefs.priority === 'cashback') { score += b.cashbackPerLot * 3; why.push(`up to $${b.cashbackPerLot.toFixed(2)} cashback per lot`); }
-    if (prefs.priority === 'deposit') { score += (1 - Math.min(dep, 200) / 200) * 20; why.push(`minimum deposit ${b.minDeposit}`); }
-    if (prefs.style === 'scalping') { score += (1 - Math.min(spread, 1.5) / 1.5) * 8; if (/raw|zero|ecn/i.test(b.spreadType || '')) { score += 5; why.push('raw or zero-spread accounts for tight entries'); } }
-    if (prefs.style === 'crypto') { const c = b.category === 'Crypto' || b.category === 'Multi-Asset'; score += c ? 10 : 0; if (c) why.push('multi-asset coverage that includes crypto'); }
-    if (prefs.style === 'swing') { if (b.platforms.includes('cTrader') || b.platforms.includes('MT5')) { score += 4; why.push('MT5 or cTrader for swing charting'); } }
-    return { b, score, why };
-  }).sort((a, b) => b.score - a.score).slice(0, 3);
-
-  const label = { cost: 'low trading costs', safety: 'regulation and safety', cashback: 'cashback', deposit: 'a small starting deposit' }[prefs.priority];
+export function greeting(firstName: string): AiMessage {
   return {
-    id: mid(),
-    role: 'ai',
-    heading: 'Your top three brokers',
-    paragraphs: [`You told me ${label} matters most and you trade ${prefs.style === 'crypto' ? 'crypto' : prefs.style}. Here is how the directory ranks for that.`],
-    items: scored.map(({ b, why }, i) => ({ title: `${i + 1}. ${b.name}`, sub: `${why.slice(0, 2).join(' · ')}${b.connected ? ' · already connected' : ''}`, tab: 'brokers' })),
-    sources: ['Broker directory', 'Your answers'],
-    note: 'This ranks listed data, not a promise of execution quality. Open the comparison to check the full account types before you fund.',
+    id: mid(), role: 'ai',
+    heading: `Hi ${firstName}.`,
+    paragraphs: ['I help you navigate. I do not predict the market, and nothing here is financial advice. Pick a topic on the left or just ask.'],
+    followUps: ['Which broker suits me?', 'Give me today’s briefing', 'How are my trades doing?', 'What should I do next?'],
   };
 }
 
-/* ───────────── Learning assistant ───────────── */
+const helpMsg = (ctx: AiContext, heading = 'Here is what I can do'): AiMessage => ({
+  id: mid(), role: 'ai',
+  heading,
+  paragraphs: [
+    `I can match you with brokers and compare them, explain any trading term at your level (${ctx.level}), quiz you, work out position size and margin, brief you on the market or one instrument, read your trades, notice habits in your journal, and suggest what to do next.`,
+    'Tap a suggestion or write it your own way. I remember what we were just talking about, so “and gold?” or “last 7 days” works.',
+  ],
+  followUps: ['Which broker suits me?', 'What is leverage?', 'Gold outlook', 'How are my trades doing?', 'Any habits I should watch?', 'What should I do next?'],
+});
 
-const GLOSSARY: { keys: string[]; title: string; text: string }[] = [
-  { keys: ['pip'], title: 'Pip', text: 'A pip is the usual smallest price move in a currency pair, 0.0001 for most pairs and 0.01 for yen pairs. Your profit or loss per pip depends on your lot size.' },
-  { keys: ['leverage'], title: 'Leverage', text: 'Leverage lets you control a bigger position than your deposit. It magnifies gains and losses equally, so the safe way to use it is to size by risk, not by the maximum your broker allows.' },
-  { keys: ['margin'], title: 'Margin', text: 'Margin is the part of your balance a broker holds to keep your positions open. If equity falls too far below it, positions are closed automatically (a stop-out).' },
-  { keys: ['drawdown'], title: 'Drawdown', text: 'Drawdown is how far your equity has fallen from its previous high. A 20% drawdown needs a 25% gain to get back, which is why capping it matters more than chasing returns.' },
-  { keys: ['stop loss', 'stop-loss', 'stoploss'], title: 'Stop loss', text: 'A stop loss closes a trade at a price you chose in advance. Set it where your idea is wrong, then size the position so that loss is small enough to accept.' },
-  { keys: ['risk reward', 'risk/reward', 'risk-reward', 'r multiple'], title: 'Risk / reward', text: 'Risk/reward compares what you could lose with what you aim to gain. Risking 1 to make 2 means you can be right less than half the time and still come out ahead.' },
-  { keys: ['spread'], title: 'Spread', text: 'The spread is the gap between the buy and sell price. It is a cost you pay on every trade, so it matters most if you trade often.' },
-  { keys: ['lot'], title: 'Lot', text: 'A lot is a standard trade size. 1 standard lot is 100,000 units of the base currency, a mini is 0.1 and a micro is 0.01. Start with micro sizes while you learn.' },
-  { keys: ['rsi'], title: 'RSI', text: 'RSI is a momentum gauge from 0 to 100. Above 70 is often called overbought and below 30 oversold, but strong trends can stay there for a long time, so use it with structure.' },
-  { keys: ['support', 'resistance'], title: 'Support and resistance', text: 'These are price areas where buyers or sellers have stepped in before. The more times a level held, the more attention it gets, and the more it can matter when it finally breaks.' },
-];
-
-export function learnAnswer(question: string): AiMessage {
-  const q = question.toLowerCase();
-  const hit = GLOSSARY.find((g) => g.keys.some((k) => q.includes(k)));
-  const words = q.split(/[^a-z]+/).filter((w) => w.length > 3);
-  const courses = COURSES.map((c) => ({ c, s: words.reduce((a, w) => a + (`${c.title} ${c.summary} ${c.category}`.toLowerCase().includes(w) ? 1 : 0), 0) }))
-    .filter((x) => x.s > 0 || !!hit)
-    .sort((a, b) => b.s - a.s)
-    .slice(0, 2)
-    .map((x) => x.c);
-  const pool = courses.length ? courses : COURSES.slice(0, 2);
-  return {
-    id: mid(),
-    role: 'ai',
-    heading: hit ? hit.title : 'Where to start',
-    paragraphs: hit
-      ? [hit.text]
-      : ['I do not have a one-line answer for that, but these lessons cover the ground. Tell me the exact term and I will explain it plainly.'],
-    items: pool.map((c) => ({ title: c.title, sub: `${c.level} · ${c.lessons.length} lessons · +${c.pointsReward} pts`, tab: 'education-hub' })),
-    sources: ['Education Hub', hit ? 'Trading glossary' : 'Course catalog'],
-  };
+export function runSurface(s: Surface, ctx: AiContext): AiReply {
+  return uniq(runSurfaceRaw(s, ctx));
 }
 
-/* ───────────── Market summary ───────────── */
-
-export function marketSummary(signals: MarketSignal[]): AiMessage {
-  const now = Date.parse(CALENDAR_NOW);
-  const upcoming = ECONOMIC_EVENTS.filter((e) => !e.allDay && Date.parse(e.at) > now && e.impact !== 'Low').sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
-  const today = upcoming.filter((e) => Date.parse(e.at) < now + 24 * 3600000).slice(0, 3);
-  const week = upcoming.filter((e) => e.impact === 'High').slice(0, 2);
-  const news = NEWS_ARTICLES.slice(0, 3);
-  const top = [...signals].sort((a, b) => b.confidence - a.confidence).slice(0, 2);
-  const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
-  return {
-    id: mid(),
-    role: 'ai',
-    heading: 'Your briefing, in about a minute',
-    paragraphs: [
-      `${news.length} stories matter most right now. ${news[0] ? `Lead: ${news[0].headline}.` : ''}`,
-      today.length ? `Next 24 hours: ${today.map((e) => `${e.title} (${e.currency}, ${when(e.at)})`).join('; ')}.` : 'No medium or high impact releases in the next 24 hours.',
-    ],
-    items: [
-      ...news.map((n) => ({ title: n.headline, sub: `${n.source} · ${n.sentiment} · ${n.timestamp}`, tab: 'news' })),
-      ...week.map((e) => ({ title: `Later: ${e.title}`, sub: `${e.currency} · ${when(e.at)} · high impact`, tab: 'economic-calendar' })),
-      ...top.map((s) => ({ title: `Signal: ${s.ticker} ${s.action}`, sub: `${s.confidence}% confidence · ${s.timeframe}`, signal: s.ticker })),
-    ],
-    sources: ['Market News', 'Economic calendar', 'Trading signals'],
-    note: 'This summarises what is on the page. It does not predict where prices go.',
-  };
+function runSurfaceRaw(s: Surface, ctx: AiContext): AiReply {
+  switch (s) {
+    case 'broker': return matchBrokers(ctx.brokers, ctx.prefs);
+    case 'learn': return learnHome(ctx);
+    case 'market': return marketSummary(ctx, 'today');
+    case 'insights': return ctx.allowTrades ? tradingInsights(ctx) : { msg: personalOff('your trades', 'trades'), mem: { surface: 'insights' } };
+    case 'behavior': return ctx.allowJournal ? behaviorObservation(ctx) : { msg: personalOff('your journal', 'journal'), mem: { surface: 'behavior' } };
+    default: return recommendations(ctx);
+  }
 }
 
-/* ───────────── Trading insights (your trades) ───────────── */
+/* ───────────── Intent scoring ───────────── */
 
-export function tradingInsights(): AiMessage {
-  const w = tradesInRange(PORTFOLIO_TRADES, 30);
-  const s = tradeStats(w);
-  const cls = groupPnl(w, (t) => t.assetClass);
-  const strat = groupPnl(w, (t) => t.strategyTag || 'Untagged');
-  const series = totalSeries([]).slice(-31);
-  const dd = maxDrawdown(series);
-  const open = PORTFOLIO_TRADES.filter((t) => !isClosed(t));
-  const para: string[] = [
-    `Over the last 30 days you closed ${s.closed} trades with a ${s.winRate.toFixed(0)}% win rate and a profit factor of ${s.profitFactor >= 99 ? 'n/a' : s.profitFactor.toFixed(2)}. Net result ${money(s.realized)}.`,
-  ];
-  if (cls[0]) para.push(`${cls[0].name} did the most work (${money(cls[0].pnl)} over ${cls[0].count} trades).${cls.length > 1 && cls[cls.length - 1].pnl < 0 ? ` ${cls[cls.length - 1].name} took ${money(cls[cls.length - 1].pnl)} back.` : ''}`);
-  if (strat[0]) para.push(`Best strategy tag: ${strat[0].name} (${money(strat[0].pnl)}).${strat.length > 1 && strat[strat.length - 1].pnl < 0 ? ` Weakest: ${strat[strat.length - 1].name} (${money(strat[strat.length - 1].pnl)}).` : ''}`);
-  para.push(`Equity drawdown in the window peaked at ${dd.toFixed(1)}%, and you have ${open.length} position${open.length === 1 ? '' : 's'} open.`);
-  return {
-    id: mid(),
-    role: 'ai',
-    heading: 'What your last 30 days say',
-    paragraphs: para,
-    items: [{ title: 'Open the Portfolio Tracker', sub: 'Analytics, heatmap and drill-down', tab: 'portfolio-tracker' }],
-    sources: ['Your trades (30 days)', 'Your equity curve'],
-    note: 'Patterns in a small sample can be noise. Treat this as a prompt to look closer.',
-  };
+type Rule = [RegExp, number];
+const RULES: Record<Surface, Rule[]> = {
+  broker: [
+    [/broker|cashback|rebate|regulat|\bfca\b|\basic\b|cysec|account type|which (account|platform)|\bmt4\b|\bmt5\b|ctrader|min(imum)? deposit|โบรกเกอร์|แคชแบ็ก/, 3],
+    [/compare|versus|\bvs\b|side by side/, 1],
+  ],
+  learn: [
+    [/what is|what's|what are|what does|explain|how do(es)?\b|meaning|define|\blearn|course|lesson|teach|glossary|tutorial|อธิบาย|คืออะไร|เรียน/, 2],
+  ],
+  market: [
+    [/briefing|summar|market|news|today|happening|calendar|week ahead|outlook|sentiment|events?\b|release|ข่าว|ตลาด|สรุป/, 3],
+    [/\bnfp\b|\bcpi\b|fomc|rate decision/, 2],
+  ],
+  insights: [
+    [/my (trades?|portfolio|performance|results?|p&?l|positions?|statistics|stats)|insights?|win ?rate|how am i|how (is|are|was) my|how.?s my|profit factor|best (strategy|pair|instrument|session)|worst (strategy|pair|instrument)|open positions|exposure|พอร์ต|เทรดของฉัน/, 4],
+    [/which (strategy|pair|session|day|instrument)|when do i trade/, 3],
+  ],
+  behavior: [
+    [/habit|behaviou?r|emotion|mistake|disciplin|revenge|journal|mood|psycholog|after (a )?loss|tilt|fomo|checklist|นิสัย|พฤติกรรม|อารมณ์/, 3],
+    [/\bplan\b/, 1],
+  ],
+  next: [[/\bnext\b|recommend|what should i|suggest|to ?do list|แนะนำ/, 3], [/what to do|what now/, 3]],
+};
+
+function scoreSurfaces(q: string, ctx: AiContext) {
+  const score: Record<Surface, number> = { broker: 0, learn: 0, market: 0, insights: 0, behavior: 0, next: 0 };
+  (Object.keys(RULES) as Surface[]).forEach((s) => RULES[s].forEach(([re, w]) => { if (re.test(q)) score[s] += w; }));
+  const personal = /\b(my|mine|i've|i have|i am|i'm)\b/.test(q);
+  const term = findTerm(q);
+  const inst = findInstrument(q, ctx.signals);
+  const asks = /what is|what's|what are|what does|explain|how do(es)?\b|meaning|define|คืออะไร|อธิบาย/.test(q);
+  if (term) score.learn += personal ? 1 : asks ? 4 : 2;
+  if (personal) score.learn -= 3;
+  if (/\bbrokers?\b|โบรกเกอร์/.test(q)) score.learn -= 4;
+  if (ctx.brokers.some((b) => q.includes(b.name.toLowerCase()))) score.broker += 3;
+  if (inst) {
+    if (personal || ctx.memory.surface === 'insights') score.insights += 4;
+    else score.market += 4;
+  }
+  if (findAssetClass(q) && !personal && !/broker/.test(q)) score.market += 2;
+  if (/cashback|rebate/.test(q) && /\d+\s?lots?/.test(q)) score.broker += 3;
+  // Short follow-ups inherit the last surface
+  if (/^(and|what about|how about|also|then)\b/.test(q) && ctx.memory.surface && !inst) score[ctx.memory.surface] += 3;
+  return score;
 }
 
-/* ───────────── Behavioral observation (your journal) ───────────── */
+const GREETING = /^((hi|hello|hey|yo|good (morning|afternoon|evening)|sawasdee)\b|สวัสดี)/;
+const THANKS = /^((thanks|thank you|thx|ty|cheers)\b|ขอบคุณ)/;
 
-export function behaviorObservation(): AiMessage {
-  const e = JOURNAL_ENTRIES;
-  const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
-  const on = e.filter((x) => x.followedPlan);
-  const off = e.filter((x) => !x.followedPlan);
-  const emotions = new Map<string, number[]>();
-  e.forEach((x) => emotions.set(x.emotionBefore, [...(emotions.get(x.emotionBefore) || []), x.pnl]));
-  const worst = Array.from(emotions.entries()).filter(([, v]) => v.length >= 1).sort((a, b) => avg(a[1]) - avg(b[1]))[0];
-  const mistakes = new Map<string, number>();
-  e.forEach((x) => x.mistakes.forEach((m) => mistakes.set(m, (mistakes.get(m) || 0) + 1)));
-  const topMistake = Array.from(mistakes.entries()).sort((a, b) => b[1] - a[1])[0];
-  const para = [
-    `When you followed your plan (${on.length} entries) you averaged ${money(avg(on.map((x) => x.pnl)))} a trade. Off-plan (${off.length}) it was ${money(avg(off.map((x) => x.pnl)))}.`,
-  ];
-  if (worst) para.push(`Your weakest starting mood is “${worst[0]}”: ${money(avg(worst[1]))} on average over ${worst[1].length} trade${worst[1].length === 1 ? '' : 's'}.`);
-  if (topMistake) para.push(`Most repeated mistake: ${topMistake[0]} (${topMistake[1]}×).`);
-  para.push('A rule you could test this week: after two losses in a row, stop for the day and write the journal entry before the next trade.');
-  return {
-    id: mid(),
-    role: 'ai',
-    heading: 'A habit worth catching early',
-    paragraphs: para,
-    items: [{ title: 'Write today’s journal entry', sub: 'Two minutes, while it is fresh', tab: 'trading-journal' }],
-    sources: ['Your trading journal'],
-    note: 'This is an observation about your own notes, not a diagnosis. You know your trading best.',
-  };
+export function route(text: string, ctx: AiContext): AiReply {
+  return uniq(routeRaw(text, ctx));
 }
 
-/* ───────────── Recommendations ───────────── */
+function routeRaw(text: string, ctx: AiContext): AiReply {
+  const q = text.toLowerCase().trim();
+  const mem = ctx.memory;
+  const done = (r: AiReply): AiReply => r;
 
-export function recommendations(signals: MarketSignal[]): AiMessage {
-  const course = COURSES.find((c) => c.level === 'Beginner') || COURSES[0];
-  const article = NEWS_ARTICLES.find((n) => n.expertSummary) || NEWS_ARTICLES[0];
-  const sig = [...signals].sort((a, b) => b.confidence - a.confidence)[0];
-  const now = Date.parse(CALENDAR_NOW);
-  const ev = ECONOMIC_EVENTS.filter((e) => !e.allDay && Date.parse(e.at) > now && e.impact === 'High').sort((a, b) => Date.parse(a.at) - Date.parse(b.at))[0];
-  return {
-    id: mid(),
-    role: 'ai',
-    heading: 'What to do next',
-    paragraphs: ['Four things, in the order I would do them.'],
-    items: [
-      { title: `Read: ${article.headline}`, sub: `${article.source} · ${article.readTime}`, tab: 'news' },
-      { title: `Learn: ${course.title}`, sub: `${course.level} · +${course.pointsReward} pts`, tab: 'education-hub' },
-      ...(sig ? [{ title: `Watch: ${sig.ticker} ${sig.action}`, sub: `${sig.confidence}% confidence`, signal: sig.ticker }] : []),
-      ...(ev ? [{ title: `Prepare for: ${ev.title}`, sub: `${ev.currency} · high impact`, tab: 'economic-calendar' }] : []),
-    ],
-    sources: ['Market News', 'Education Hub', 'Signals', 'Economic calendar'],
-  };
+  if (GREETING.test(q) && q.split(/\s+/).length <= 3) return { msg: greeting(ctx.firstName), mem };
+  if (THANKS.test(q)) return { msg: { id: mid(), role: 'ai', heading: 'Any time.', paragraphs: ['If you want a next step, I can suggest one.'], followUps: ['What should I do next?', 'Quiz me'] }, mem };
+  if (/^(help|what can you do|\?|menu|commands)$/.test(q) || /what can you (do|help)/.test(q)) return { msg: helpMsg(ctx), mem };
+
+  // Calculators
+  const calc = detectCalc(q);
+  if (calc) return { msg: calculate(calc, text), mem: { ...mem, surface: 'learn' } };
+
+  // Quiz and learning path
+  const quizOn = q.match(/(?:quiz|test|question)\w*\s+(?:me\s+)?on\s+(.+)$/);
+  if (/\b(quiz|test me|test my|practice question|next question|another question)\b/.test(q)) {
+    const t = quizOn ? findTerm(quizOn[1]) : /^next question|^another question/.test(q) ? undefined : findTerm(q);
+    return quizReply(ctx, t);
+  }
+  if (/learning path|roadmap|curriculum|where (do|should) i (start|begin)|study plan|what (should|do) i (learn|study)/.test(q)) return learningPath(ctx);
+
+  // Depth changes on the last explained term
+  const lastTerm = mem.term ? termByTitle(mem.term) : undefined;
+  if (lastTerm && !findTerm(q)) {
+    if (/simpler|simple terms|eli5|like i'?m (5|five)|easier|plain(er)?|dumb it down/.test(q)) return mem.level === 'Beginner' ? oneLiner(lastTerm) : explainTerm(lastTerm, 'Beginner');
+    if (/deeper|more detail|go deeper|in depth|advanced|more advanced|explain more|tell me more/.test(q)) return explainTerm(lastTerm, 'Advanced');
+  }
+
+  const score = scoreSurfaces(q, ctx);
+  const ranked = (Object.entries(score) as [Surface, number][]).sort((a, b) => b[1] - a[1]);
+  const [best, bestScore] = ranked[0];
+
+  if (bestScore >= 2) {
+    switch (best) {
+      case 'broker': {
+        const names = ctx.brokers.filter((b) => q.includes(b.name.toLowerCase()));
+        if (/why (not|isn'?t|is not|didn'?t)/.test(q) && names[0]) return whyNotBroker(ctx.brokers, ctx.prefs, names[0].name);
+        if (/compare|versus|\bvs\b|side by side/.test(q)) return compareBrokers(ctx.brokers, names.length >= 2 ? names.map((b) => b.id) : mem.brokerIds, ctx.prefs);
+        const lots = q.match(/(\d+(?:\.\d+)?)\s?lots?/);
+        if (lots && /cashback|rebate|earn|make|get/.test(q)) return cashbackEstimate(ctx.brokers, parseFloat(lots[1]) > 0 ? parseFloat(lots[1]) : ctx.prefs.lots);
+        return matchBrokers(ctx.brokers, prefsFromText(q, ctx.prefs));
+      }
+      case 'learn': return learnAnswer(text, ctx);
+      case 'market': {
+        const inst = findInstrument(q, ctx.signals);
+        const cls = findAssetClass(q);
+        if (/week ahead|this week|next week|upcoming|coming up|calendar|schedule/.test(q) && !inst) return marketSummary(ctx, 'week');
+        if (inst) return marketSummary(ctx, 'symbol', { inst });
+        if (/sentiment|mood of|bullish|bearish/.test(q) && !cls) return marketSummary(ctx, 'sentiment');
+        if (cls) return marketSummary(ctx, 'asset', { cls });
+        return marketSummary(ctx, 'today');
+      }
+      case 'insights': {
+        if (!ctx.allowTrades) return { msg: personalOff('your trades', 'trades'), mem: { ...mem, surface: 'insights' } };
+        const inst = findInstrument(q, ctx.signals);
+        return tradingInsights(ctx, { days: parseRange(q) ?? undefined, focus: detectFocus(q), symbol: inst?.symbol });
+      }
+      case 'behavior': {
+        if (!ctx.allowJournal) return { msg: personalOff('your journal', 'journal'), mem: { ...mem, surface: 'behavior' } };
+        return behaviorObservation(ctx, detectBehaviorFocus(q));
+      }
+      default: return recommendations(ctx);
+    }
+  }
+
+  // Only a range was given ("last 7 days") after a personal answer
+  const range = parseRange(q);
+  if (range && mem.surface === 'insights' && ctx.allowTrades) return tradingInsights(ctx, { days: range, symbol: mem.symbol });
+  if (range && mem.surface === 'behavior' && ctx.allowJournal) return behaviorObservation(ctx);
+
+  // Typos near a glossary term
+  const words = q.split(/[^a-z]+/).filter((w) => w.length >= 4);
+  for (const w of words) {
+    const near = ['drawdown', 'leverage', 'margin', 'spread', 'pip', 'stop loss', 'broker', 'cashback', 'journal', 'breakout'].find((k) => levenshtein(w, k) === 1);
+    if (near) return done({ msg: { id: mid(), role: 'ai', heading: `Did you mean “${near}”?`, paragraphs: ['I did not recognise that word exactly.'], followUps: [`What is ${near}?`] }, mem });
+  }
+  return { msg: helpMsg(ctx, 'I am not sure I got that'), mem };
 }
 
-/* ───────────── Router ───────────── */
-
-export function route(text: string, ctx: AiContext, prefs: BrokerPrefs): AiMessage {
-  const q = text.toLowerCase();
-  const personalOff = (what: string): AiMessage => ({
-    id: mid(), role: 'ai', heading: 'Personal data is switched off',
-    paragraphs: [`I can look at ${what}, but you have turned off “Use my portfolio and journal data”. Turn it on in the panel on the right and ask again.`],
-  });
-  if (/broker|cashback|regulat|which account|account type/.test(q)) return matchBrokers(ctx.brokers, { ...prefs, priority: /cashback/.test(q) ? 'cashback' : /regulat|safe/.test(q) ? 'safety' : /deposit|small/.test(q) ? 'deposit' : prefs.priority, style: /crypto|bitcoin/.test(q) ? 'crypto' : /scalp/.test(q) ? 'scalping' : /swing/.test(q) ? 'swing' : prefs.style });
-  if (/habit|behaviou?r|emotion|mistake|disciplin|revenge|journal|mood/.test(q)) return ctx.usePersonalData ? behaviorObservation() : personalOff('your journal');
-  if (/my (trades|portfolio|performance|results)|insight|win rate|how am i|how.?s my/.test(q)) return ctx.usePersonalData ? tradingInsights() : personalOff('your trades');
-  if (/briefing|summary|market|news|today|happening|calendar/.test(q)) return marketSummary(ctx.signals);
-  if (/next|recommend|what should i|suggest/.test(q)) return recommendations(ctx.signals);
-  if (/what is|what.?s|explain|how do|how does|learn|meaning|pip|leverage|margin|drawdown|stop.?loss|risk.?reward|spread|lot|rsi|support|resistance/.test(q)) return learnAnswer(text);
-  return {
-    id: mid(), role: 'ai', heading: 'I can help with six things',
-    paragraphs: [`I can match you with brokers, explain a trading term, brief you on the market, read your recent trades, notice habits in your journal, or suggest what to do next. Try one of the prompts on the left, ${ctx.firstName}.`],
-  };
-}
