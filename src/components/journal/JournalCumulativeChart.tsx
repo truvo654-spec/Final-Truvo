@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { JournalEntry } from '../../types';
 import { UNASSIGNED, shortDate } from './journalOverview';
+import { useMoney } from './JournalCurrency';
 
 export interface ChartBroker { id: string; name: string; color: string; n: number }
 
@@ -37,9 +38,10 @@ function niceTicks(min: number, max: number, count = 4): number[] {
 }
 
 export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, title, rangeLabel, brokers, unit = 'usd', off }) => {
+  const money=useMoney();
   const pts = unit === 'pts';
-  const usdFull = (n: number) => (pts ? `${n < 0 ? '-' : n > 0 ? '+' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })} pts` : usdFullBase(n));
-  const usdAxis = (n: number) => (pts ? `${n < 0 ? '-' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : usdAxisBase(n));
+  const usdFull = (n: number) => (pts ? `${n < 0 ? '-' : n > 0 ? '+' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })} pts` : money(n));
+  const usdAxis = (n: number) => (pts ? `${n < 0 ? '-' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : money(n,0));
   const [active, setActive] = useState<number | null>(null);
   const [table, setTable] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -207,7 +209,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
           <div tabIndex={0} role="application" aria-label="Chart data points, use left and right arrow keys" onKeyDown={onKey} onBlur={() => setActive(null)} className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5338ec]/40" style={{ pointerEvents: 'none' }} />
           {active !== null && (
             <div
-              className="pointer-events-none absolute z-10 bg-[#0b1c30] text-white rounded-lg px-3 py-2 text-[11px] shadow-lg whitespace-nowrap"
+              className="pointer-events-none absolute z-10 bg-[#0b1c30] text-white rounded-lg px-3 py-2 text-[11px] shadow-lg max-w-[85%] break-words"
               style={{
                 left: `${(ax / W) * 100}%`,
                 top: `${(ay / H) * 100}%`,

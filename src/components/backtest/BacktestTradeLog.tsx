@@ -18,11 +18,12 @@ interface Filters {
 const EMPTY: Filters = { result: [], reasons: [], sessions: [], weekdays: [], pnlMin: '', pnlMax: '', rMin: '', rMax: '', hourFrom: '', hourTo: '', holdMin: '', holdMax: '' };
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-type SortKey = 'id' | 'entryTime' | 'exitTime' | 'direction' | 'entryPrice' | 'exitPrice' | 'size' | 'gross' | 'net' | 'r' | 'mae' | 'mfe' | 'exitReason' | 'balance';
+type SortKey = 'id' | 'entryTime' | 'exitTime' | 'status' | 'direction' | 'entryPrice' | 'exitPrice' | 'size' | 'gross' | 'net' | 'r' | 'mae' | 'mfe' | 'exitReason' | 'balance';
 const COLS: { key: SortKey; label: string; hint: string; align?: 'right' }[] = [
   { key: 'id', label: '#', hint: 'Trade number in time order' },
   { key: 'entryTime', label: 'Entry time', hint: 'When the trade opened (your time zone)' },
   { key: 'exitTime', label: 'Exit time', hint: 'When the trade closed' },
+  { key: 'status', label: 'Trading status', hint: 'Backtest executions are closed at the simulated exit' },
   { key: 'direction', label: 'Side', hint: 'Long (buy) or short (sell)' },
   { key: 'entryPrice', label: 'Entry', hint: 'Fill price including spread and slippage, and the order type', align: 'right' },
   { key: 'exitPrice', label: 'Exit', hint: 'Average exit fill price', align: 'right' },
@@ -77,7 +78,7 @@ export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, ti
   const rows = useMemo(() => {
     const k = sort.key;
     return [...filtered].sort((a, b) => {
-      const x = a[k], y = b[k];
+      const x = k === 'status' ? 'closed' : a[k], y = k === 'status' ? 'closed' : b[k];
       const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y));
       return sort.asc ? c : -c;
     });
@@ -179,6 +180,7 @@ export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, ti
                 <td className="py-2 px-2 text-slate-400">{t.id}</td>
                 <td className="py-2 px-2 whitespace-nowrap">{dateTime(t.entryTime, tz)}</td>
                 <td className="py-2 px-2 whitespace-nowrap text-slate-500">{dateTime(t.exitTime, tz)}</td>
+                <td className="py-2 px-2"><span className="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Closed</span></td>
                 <td className="py-2 px-2"><span className={`inline-flex items-center gap-1 font-bold ${t.direction === 'long' ? 'text-emerald-700' : 'text-rose-700'}`}>{t.direction === 'long' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}{t.direction === 'long' ? 'Long' : 'Short'}</span></td>
                 <td className="py-2 px-2 text-right whitespace-nowrap">{priceFmt(t.entryPrice, dp)} <span className="text-[10px] text-slate-400">{t.orderType}</span></td>
                 <td className="py-2 px-2 text-right">{priceFmt(t.exitPrice, dp)}</td>

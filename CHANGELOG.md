@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-10-09
+
+### Added
+
+- Additional trading charts belong only in Trading Journal → Overview, below Recent Entries: daily P&L, realized daily drawdown, entry-time and duration scatter views, descriptive information coverage, and cost/daily context. Existing Overview filters, currency and gross/net basis control the same cohort; cashback and points remain separate.
+- Chart details support focus, keyboard selection and data-table alternatives. Day selection reuses the daily workspace; trade selection reuses the review drawer. Missing timestamps, costs and risk are not invented.
+
+### Fixed
+
+- Changing currency now resets the account filter to that currency's accounts, rather than leaving an invisible incompatible account selected. Changing currency/account also clears the selected day.
+- New chart explanations stay inside their cards on desktop and mobile. Daily chart positions use actual date spacing, and all-flat charts retain valid axes.
+
+### Preserved
+
+- Restored the main Dashboard to its previous layout. No duplicate KPI row, cumulative chart, calendar, review queue, filters, dashboard score or navigation was added to the journal. Existing emotion, discipline, rules, playbook and broker/cashback workflows remain in place.
+
+## [1.2.0] - 2026-10-09
+
+### Changed
+
+- Journal calculations share closed-result eligibility, net outcomes including breakeven, known-cost requirements, risk coverage and separate currencies. Gross Overview display is explicitly labeled; trading results, USD cashback estimates and Points remain separate.
+- Psychology starts unanswered. Review completion and trading lifecycle are separate. Personal-rule summaries identify unavailable evidence instead of claiming complete compliance.
+- Shared account/currency/date/filter scope continues between journal views. `/trade/journal` opens and reloads the journal directly. Browser storage preserves records and preferences, with an isolated `journalTest=1` workspace for evaluation.
+- Header controls fit medium screens. Trade Log has a smaller default column set without removing optional columns or overriding saved choices. Calendar, Insights and Playbook chart details support keyboard access and clearer explanations.
+
+### Added
+
+- Planned, Open and Closed status indicators and filters across journal and backtest trade views.
+- Review queue, Needs Review view, keyboard-accessible review drawer, previous/next navigation, validation, cancellation, reopen and local save.
+- Daily reflection workspace; weekly dates, prior-focus follow-up, linked trades and daily-note connections.
+- User-supplied execution ledger and partial-close evidence, initial monetary-risk history, equity-at-entry evidence, planned versus realized R and local chart attachments. Incomplete valuation metadata does not create estimated live results.
+- CSV account identity, source-offset handling, known gross/net basis, validation preview, account-aware duplicate skipping, reconciliation and retained import history. Linking is explicitly distinguished from automatic sync, which is not live.
+- Expectancy, daily closed-result drawdown, cost impact and risk/R coverage; per-rule followed/broken/unknown/not-applicable drilldowns and retained rule-definition snapshots.
+- Journal calculation/import regression tests alongside the existing backtest-engine tests.
+
+### Limitations
+
+- This remains a local prototype: no server persistence or automatic broker sync, no currency conversion, and no automatic fill valuation without instrument metadata. Existing aggregate records are retained; missing historical evidence is not invented.
+
 ## [1.1.2] - 2026-10-08
 
 ### Changed

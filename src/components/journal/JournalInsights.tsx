@@ -1,7 +1,11 @@
+import { useJournalState } from './journalStorage';
+import { useMoney, formatMoney } from './JournalCurrency';
+import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
 import React, { useMemo, useState } from 'react';
 import { Broker, JournalEntry } from '../../types';
 import { JOURNAL_STRATEGIES, JOURNAL_TODAY } from '../../data/journalData';
 import { UNASSIGNED, addDays, brokerColor, entryCashback, entryPoints, shortDate } from './journalOverview';
+import { TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
 
 // Insights › reports. "Day & Time" follows the uploaded concept (light theme): view tabs, benchmark,
 // insight cards, distribution chart, cross-analysis matrix, detailed breakdown with drill-down.
@@ -31,7 +35,7 @@ const DUR_BUCKETS = [
 ];
 
 const pad = (n: number) => String(n).padStart(2, '0');
-const hourOf = (e: JournalEntry) => (e.entryTime ? Number(e.entryTime.slice(11, 13)) : null); // UTC hour
+const hourOf = (e: JournalEntry) => e.entryTime ? new Date(timestampMs(e.entryTime)).getUTCHours() : null;
 
 // ── time zones ── (entry times are stored in UTC; reports can be shown in any zone)
 export const TIMEZONES: { id: string; label: string }[] = [
@@ -53,7 +57,7 @@ const zoned = (isoUtc: string, tz: string) => {
     f = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short' });
     fmtCache.set(tz, f);
   }
-  const p = Object.fromEntries(f.formatToParts(new Date(`${isoUtc}Z`)).map((x) => [x.type, x.value]));
+  const p = Object.fromEntries(f.formatToParts(new Date(timestampMs(isoUtc))).map((x) => [x.type, x.value]));
   const date = `${p.year}-${p.month}-${p.day}`;
   return { date, hour: Number(p.hour) % 24, minute: p.minute, weekday: new Date(`${date}T00:00:00Z`).getUTCDay() };
 };
@@ -70,11 +74,11 @@ const sessionOf = (e: JournalEntry): SessionId => {
   return h < 7 ? 'asia' : h < 12 ? 'london' : h < 16 ? 'overlap' : h < 21 ? 'nypm' : 'late';
 };
 const durMin = (e: JournalEntry) =>
-  e.entryTime && e.exitTime ? Math.max(0, (Date.parse(`${e.exitTime}Z`) - Date.parse(`${e.entryTime}Z`)) / 60000) : null;
+  e.entryTime && e.exitTime ? Math.max(0, (timestampMs(e.exitTime) - timestampMs(e.entryTime)) / 60000) : null;
 const fmtDur = (m: number) => (m < 60 ? `${Math.round(m)}m` : `${Math.floor(m / 60)}h ${pad(Math.round(m % 60))}m`);
-const netOf = (e: JournalEntry) => e.pnl - (e.commission ?? 0);
 const money = (n: number, dp = 2) => `${n < 0 ? '-' : n > 0 ? '+' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
 const tone = (n: number) => (n > 0 ? 'text-emerald-600' : n < 0 ? 'text-rose-600' : 'text-slate-500');
+const fmtPf = (n:number|null) => n==null?'—':n===Infinity?'∞':n.toFixed(2);
 
 interface Stats { n: number; wins: number; losses: number; be: number; net: number; gross: number; pf: number | null; winRate: number; lossRate: number; beRate: number; avgR: number | null; cb: number; pts: number; avgDur: number | null }
 
@@ -89,11 +93,13 @@ interface Props {
 }
 
 export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, onDrill, onToast, onWhatIf }) => {
+  const money = useMoney();
+
   const brokerMap = useMemo(() => new Map(brokers.map((b) => [b.id, b] as const)), [brokers]);
   const brokerOrder = useMemo(() => brokers.map((b) => b.id), [brokers]);
   const brokerName = (id: string) => (id === UNASSIGNED ? 'Unassigned' : brokerMap.get(id)?.name || id);
 
-  const [report, setReport] = useState<Report>('daytime');
+  const [report, setReport] = useJournalState<Report>('JournalInsights-report', 'daytime');
   const [tz, setTzState] = useState<string>(() => {
     try { return localStorage.getItem('ms-journal-tz') || 'UTC'; } catch { return 'UTC'; }
   });
@@ -106,38 +112,41 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   };
   // local (chosen zone) view of an entry: date, hour, weekday
   const loc = (e: JournalEntry) => (e.entryTime ? zoned(e.entryTime, tz) : { date: e.date, hour: null as number | null, minute: '00', weekday: new Date(`${e.date}T00:00:00Z`).getUTCDay() });
-  const [view, setView] = useState<View>('days');
-  const [resolution, setResolution] = useState(2);
-  const [range, setRange] = useState<'last30' | 'last90' | 'all'>('all');
-  const [bench, setBench] = useState(false);
-  const [metric, setMetric] = useState<Metric>('net');
-  const [dim, setDim] = useState<Dim>('playbook');
-  const [sessOff, setSessOff] = useState<SessionId[]>([]);
-  const [brokerOff, setBrokerOff] = useState<string[]>([]);
-  const [assetOff, setAssetOff] = useState<string[]>([]);
-  const [stratOff, setStratOff] = useState<string[]>([]);
+  const [view, setView] = useJournalState<View>('JournalInsights-view', 'days');
+  const [resolution, setResolution] = useJournalState('JournalInsights-resolution', 2);
+  const [range, setRange] = useJournalState<'last30' | 'last90' | 'all'>('JournalInsights-range', 'all');
+  const [bench, setBench] = useJournalState('JournalInsights-bench', false);
+  const [metric, setMetric] = useJournalState<Metric>('JournalInsights-metric', 'net');
+  const [dim, setDim] = useJournalState<Dim>('JournalInsights-dim', 'playbook');
+  const [sessOff, setSessOff] = useJournalState<SessionId[]>('JournalInsights-sessOff', []);
+  const [brokerOff, setBrokerOff] = useJournalState<string[]>('JournalInsights-brokerOff', []);
+  const [assetOff, setAssetOff] = useJournalState<string[]>('JournalInsights-assetOff', []);
+  const [stratOff, setStratOff] = useJournalState<string[]>('JournalInsights-stratOff', []);
   const [openMenu, setOpenMenu] = useState<null | 'broker' | 'asset' | 'strategy'>(null);
-  const [hover, setHover] = useState<number | null>(null);
+  const [mouseHover, setHover] = useState<number | null>(null);
+  const [focusedBucket,setFocusedBucket] = useState<number|null>(null);
+  const hover=focusedBucket===-1?null:focusedBucket ?? mouseHover;
   const [expanded, setExpanded] = useState<string[]>([]);
-  const [rowFilter, setRowFilter] = useState('');
+  const [rowFilter, setRowFilter] = useJournalState('JournalInsights-rowFilter', '');
   const [drill, setDrill] = useState<{ label: string; ids: string[] } | null>(null);
 
   const stats = (list: JournalEntry[]): Stats => {
+    list = list.filter(e => eligible(e));
     const nets = list.map(netOf);
-    // classify by the journaled outcome (a breakeven trade stays breakeven even after fees)
-    const wins = list.filter((e) => e.outcome === 'win').length;
-    const losses = list.filter((e) => e.outcome === 'loss').length;
+    // Classify eligible closed results after known costs, using the shared tolerance.
+    const wins = list.filter((e) => resultOf(e) === 'win').length;
+    const losses = list.filter((e) => resultOf(e) === 'loss').length;
     const be = list.length - wins - losses;
     const gW = nets.filter((x) => x > 0).reduce((a, b) => a + b, 0);
     const gL = Math.abs(nets.filter((x) => x < 0).reduce((a, b) => a + b, 0));
-    const rs = list.map((e) => e.rMultiple).filter((x): x is number => x !== null);
+    const rs = list.map((e) => realizedR(e)).filter((x): x is number => x !== null);
     const ds = list.map(durMin).filter((x): x is number => x !== null);
     const pct = (k: number) => (list.length ? Math.round((k / list.length) * 1000) / 10 : 0);
     return {
       n: list.length, wins, losses, be,
       net: Math.round(nets.reduce((a, b) => a + b, 0) * 100) / 100,
       gross: Math.round(list.reduce((a, e) => a + e.pnl, 0) * 100) / 100,
-      pf: gL > 0 ? Math.round((gW / gL) * 100) / 100 : null,
+      pf: gL > 0 ? Math.round((gW / gL) * 100) / 100 : gW>0?Infinity:null,
       winRate: pct(wins), lossRate: pct(losses), beRate: pct(be),
       avgR: rs.length ? Math.round((rs.reduce((a, b) => a + b, 0) / rs.length) * 100) / 100 : null,
       cb: Math.round(list.reduce((a, e) => a + entryCashback(e, brokerMap), 0) * 100) / 100,
@@ -154,8 +163,8 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const benchOn = bench && days > 0;
 
   const passFilters = (e: JournalEntry) =>
-    !brokerOff.includes(e.brokerId || UNASSIGNED) && !assetOff.includes(e.assetClass) && !stratOff.includes(e.strategy) && !sessOff.includes(sessionOf(e));
-  const cur = useMemo(() => entries.filter((e) => passFilters(e) && e.date >= from && e.date <= JOURNAL_TODAY),
+    eligible(e) && !brokerOff.includes(e.brokerId || UNASSIGNED) && !assetOff.includes(e.assetClass) && !stratOff.includes(e.strategy) && !sessOff.includes(sessionOf(e));
+  const cur = useMemo(() => entries.filter((e) => passFilters(e) && e.date >= from && (range === 'all' || e.date <= JOURNAL_TODAY)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [entries, brokerOff, assetOff, stratOff, sessOff, from]);
   const prev = useMemo(() => (benchOn ? entries.filter((e) => passFilters(e) && e.date >= prevFrom && e.date <= prevTo) : []),
@@ -195,7 +204,8 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   // ── insight cards ──
   const withData = buckets.filter((b) => b.s.n > 0);
   const best = withData.length ? withData.reduce((a, b) => (b.s.net > a.s.net ? b : a)) : null;
-  const worst = withData.length ? withData.reduce((a, b) => (b.s.net < a.s.net ? b : a)) : null;
+  const losingBuckets=withData.filter(b=>b.s.net<0);
+  const worst = losingBuckets.length ? losingBuckets.reduce((a,b)=>b.s.net<a.s.net?b:a) : null;
   const busiest = withData.length ? withData.reduce((a, b) => (b.s.n > a.s.n ? b : a)) : null;
   const wrPool = withData.filter((b) => b.s.n >= 3);
   const peakWr = wrPool.length ? wrPool.reduce((a, b) => (b.s.winRate > a.s.winRate ? b : a)) : null;
@@ -233,7 +243,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
         const med = same[Math.floor(same.length / 2)] ?? e.size;
         return e.size > med ? 'Larger than usual' : e.size < med ? 'Smaller than usual' : 'Typical size';
       }
-      case 'r': { const r = e.rMultiple; return r === null ? 'No R' : r <= -1 ? '≤ -1R' : r < 0 ? '-1R to 0' : r < 1 ? '0 to 1R' : r < 2 ? '1R to 2R' : '≥ 2R'; }
+      case 'r': { const r = realizedR(e); return r === null ? 'No R' : r <= -1 ? '≤ -1R' : r < 0 ? '-1R to 0' : r < 1 ? '0 to 1R' : r < 2 ? '1R to 2R' : '≥ 2R'; }
     }
   };
   const matrixCols = buckets.filter((b) => b.s.n > 0);
@@ -378,8 +388,8 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                   <option value={1}>Hourly</option><option value={2}>2-hour</option><option value={4}>4-hour</option>
                 </select>
               )}
-              <select aria-label="Date range" value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="h-9 text-xs font-semibold border border-slate-200 rounded-lg px-3 bg-white">
-                <option value="last30">Last 30 days</option><option value="last90">Last 90 days</option><option value="all">All time</option>
+              <select aria-label="Report subrange" value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="h-9 text-xs font-semibold border border-slate-200 rounded-lg px-3 bg-white">
+                <option value="last30">Last 30 days within scope</option><option value="last90">Last 90 days within scope</option><option value="all">Entire journal scope</option>
               </select>
               {menu('broker', 'Broker', brokerOpts, brokerOff, setBrokerOff)}
               {menu('asset', 'Market type', assetOpts, assetOff, setAssetOff)}
@@ -391,10 +401,18 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               <button type="button" onClick={exportCsv} className={`${btn} ml-auto`}>Export CSV</button>
             </div>
             <p className="text-[11px] text-slate-500 -mt-2">
-              {total.n} trades · {range === 'all' ? 'all time' : `${shortDate(from)} – ${shortDate(JOURNAL_TODAY, true)}`}
+              {total.n} eligible closed trades · {range === 'all' ? 'entire journal scope' : `${shortDate(from)} – ${shortDate(JOURNAL_TODAY, true)} within journal scope`}
               {benchOn && <> · compared with {shortDate(prevFrom)} – {shortDate(prevTo, true)} ({prevTotal.n} trades)</>}
               {activeFilters > 0 && <> · {activeFilters} filter{activeFilters === 1 ? '' : 's'} off</>}
             </p>
+            <div className="flex flex-wrap items-center gap-2 text-[11px] mb-1" aria-label="Trading status summary">
+              <span className="font-semibold text-[#474556]">Trading status:</span>
+              {(['planned', 'open', 'closed'] as const).map((status) => (
+                <span key={status} className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">
+                  {TRADING_STATUS_LABEL[status]} {entries.filter((e) => tradingStatusOf(e) === status).length} recorded in journal scope
+                </span>
+              ))}
+            </div>
 
             {/* Insight cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -402,16 +420,16 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                 <Card kicker={`Best ${unit}`} badge="Rank #1" badgeTone="bg-emerald-50 text-emerald-700" title={best.label}
                   sub={ts ? `Strongest in ${ts.s.label} (${money(ts.st.net, 0)})` : ''}
                   left={['Net P&L', <span className="text-emerald-600">{money(best.s.net)}</span>]}
-                  right={['Win rate / PF', `${best.s.winRate.toFixed(0)}% · ${best.s.pf === null ? '∞' : best.s.pf.toFixed(2)}`]}
+                  right={['Win rate / PF', `${best.s.winRate.toFixed(0)}% · ${fmtPf(best.s.pf)}`]}
                   foot={benchOn ? delta(best.s.net, best.ps.net, (d) => money(d, 0)) : undefined} />
               ); })() : <Card kicker={`Best ${unit}`} badge="—" badgeTone="bg-slate-100 text-slate-500" title="No profitable window" sub="" left={['Net P&L', '—']} right={['', '']} />}
               {worst && worst.s.net < 0 ? (() => { const ts = topSession(worst.list, -1); return (
                 <Card kicker={`Leak ${unit}`} badge="Risk" badgeTone="bg-rose-50 text-rose-700" title={worst.label}
                   sub={ts ? `Weakest in ${ts.s.label} (${money(ts.st.net, 0)})` : ''}
                   left={['Net P&L', <span className="text-rose-600">{money(worst.s.net)}</span>]}
-                  right={['Win rate / PF', `${worst.s.winRate.toFixed(0)}% · ${worst.s.pf === null ? '∞' : worst.s.pf.toFixed(2)}`]}
+                  right={['Win rate / PF', `${worst.s.winRate.toFixed(0)}% · ${fmtPf(worst.s.pf)}`]}
                   foot={benchOn ? delta(worst.s.net, worst.ps.net, (d) => money(d, 0)) : undefined} />
-              ); })() : <Card kicker={`Leak ${unit}`} badge="None" badgeTone="bg-emerald-50 text-emerald-700" title="No losing window" sub="Every window is net positive." left={['Net P&L', '—']} right={['', '']} />}
+              ); })() : <Card kicker={`Leak ${unit}`} badge="None" badgeTone="bg-slate-100 text-slate-600" title="No losing window" sub={withData.length?'Observed windows are net positive or breakeven.':'No eligible results in this scope.'} left={['Net P&L', '—']} right={['', '']} />}
               {busiest ? (
                 <Card kicker={`Most active ${unit}`} badge="Volume" badgeTone="bg-sky-50 text-sky-700" title={busiest.label}
                   sub={`${busiest.s.n} trades · ${total.n ? Math.round((busiest.s.n / total.n) * 1000) / 10 : 0}% of volume`}
@@ -464,7 +482,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                     const fill = metric === 'net' || metric === 'avgR' ? (v >= 0 ? '#10b981' : '#f43f5e') : '#5338ec';
                     const pv = metricVal(b.ps);
                     return (
-                      <g key={b.key} onMouseEnter={() => setHover(i)} onClick={() => b.s.n && setDrill({ label: b.label, ids: b.list.map((e) => e.id) })} style={{ cursor: b.s.n ? 'pointer' : 'default' }}>
+                      <g key={b.key} role="button" tabIndex={0} aria-label={`${b.label}: ${b.s.n} realized trades, net ${money(b.s.net)}; open cohort`} onFocus={()=>setFocusedBucket(i)} onBlur={()=>setFocusedBucket(null)} onKeyDown={ev=>{if(ev.key==='Escape'){setFocusedBucket(-1);setHover(null);}if((ev.key==='Enter'||ev.key===' ')&&b.s.n){ev.preventDefault();setDrill({label:b.label,ids:b.list.map(e=>e.id)});}}} onMouseEnter={() => setHover(i)} onClick={() => b.s.n && setDrill({ label: b.label, ids: b.list.map((e) => e.id) })} style={{ cursor: b.s.n ? 'pointer' : 'default' }}>
                         <rect x={x} y={M.t} width={bw} height={H - M.t - M.b} fill={hover === i ? '#f1f5f9' : 'transparent'} />
                         {b.s.n > 0 && <rect x={x + (bw - inner) / 2} y={Math.min(yS(v), yS(0))} width={inner} height={Math.max(1.5, Math.abs(yS(v) - yS(0)))} rx={4} fill={fill} />}
                         {benchOn && b.ps.n > 0 && <rect x={x + (bw - inner) / 2 - 3} y={Math.min(yS(pv), yS(0))} width={inner + 6} height={Math.max(1.5, Math.abs(yS(pv) - yS(0)))} rx={4} fill="none" stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 3" />}
@@ -480,10 +498,10 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                   const b = buckets[hover];
                   const left = ((M.l + hover * bw + bw / 2) / W) * 100;
                   return (
-                    <div className="pointer-events-none absolute top-2 z-10 bg-[#0b1c30] text-white rounded-lg px-3 py-2 text-[11px] shadow-lg whitespace-nowrap" style={{ left: `${left}%`, transform: left > 60 ? 'translateX(calc(-100% - 8px))' : 'translateX(8px)' }} role="status">
+                    <div className="pointer-events-none absolute top-2 z-10 bg-[#0b1c30] text-white rounded-lg px-3 py-2 text-[11px] shadow-lg max-w-[85%] break-words" style={{ left: `${left}%`, transform: left > 60 ? 'translateX(calc(-100% - 8px))' : 'translateX(8px)' }} role="status">
                       <p className="font-semibold">{b.label}</p>
                       <p className="font-mono">{b.s.n} trades · net {money(b.s.net)}</p>
-                      <p className="font-mono text-slate-300">Win {b.s.winRate.toFixed(0)}% · PF {b.s.pf === null ? '∞' : b.s.pf.toFixed(2)} · Avg R {b.s.avgR === null ? '—' : b.s.avgR.toFixed(2)}</p>
+                      <p className="font-mono text-slate-300">Win {b.s.n?`${b.s.winRate.toFixed(0)}%`:'—'} · PF {fmtPf(b.s.pf)} · Avg R {b.s.avgR === null ? '—' : b.s.avgR.toFixed(2)}</p>
                       {benchOn && <p className="font-mono text-slate-300">Prev: {b.ps.n} trades · net {money(b.ps.net)}</p>}
                     </div>
                   );
@@ -615,7 +633,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                           <td className="px-3 py-2 text-right font-mono text-slate-500">{s.beRate.toFixed(1)}%</td>
                           <td className={`px-3 py-2 text-right font-mono font-bold ${tone(s.net)}`}>{money(s.net)}</td>
                           <td className="px-3 py-2 text-right font-mono text-[#474556]">{money(s.gross)}</td>
-                          <td className="px-3 py-2 text-right font-mono">{s.pf === null ? '∞' : s.pf.toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right font-mono">{fmtPf(s.pf)}</td>
                           <td className={`px-3 py-2 text-right font-mono ${s.avgR === null ? 'text-slate-400' : tone(s.avgR)}`}>{s.avgR === null ? '—' : `${s.avgR > 0 ? '+' : ''}${s.avgR.toFixed(2)}R`}</td>
                           <td className="px-3 py-2 text-right font-mono text-emerald-600">{s.cb ? `+$${s.cb.toFixed(2)}` : '—'}</td>
                           <td className="px-3 py-2 text-right font-mono text-violet-600">{s.pts ? `+${s.pts}` : '—'}</td>
@@ -650,7 +668,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                         <td className="px-3 py-2 text-right font-mono text-slate-500">{total.beRate.toFixed(1)}%</td>
                         <td className={`px-3 py-2 text-right font-mono font-bold ${tone(total.net)}`}>{money(total.net)}</td>
                         <td className="px-3 py-2 text-right font-mono">{money(total.gross)}</td>
-                        <td className="px-3 py-2 text-right font-mono">{total.pf === null ? '∞' : total.pf.toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right font-mono">{fmtPf(total.pf)}</td>
                         <td className="px-3 py-2 text-right font-mono">{total.avgR === null ? '—' : `${total.avgR.toFixed(2)}R`}</td>
                         <td className="px-3 py-2 text-right font-mono text-emerald-600">+${total.cb.toFixed(2)}</td>
                         <td className="px-3 py-2 text-right font-mono text-violet-600">+{total.pts}</td>

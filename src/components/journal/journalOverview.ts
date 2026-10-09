@@ -1,9 +1,12 @@
 import { Broker, JournalEntry } from '../../types';
+import { eligible, realized, metrics, currencyOf } from './journalMath';
 
 export type PnlMode = 'gross' | 'net';
 export type RangeMode = 'month' | 'last7' | 'last30' | 'all' | 'custom';
 
-export const entryPnl = (e: JournalEntry, mode: PnlMode) => (mode === 'net' ? e.pnl - (e.commission ?? 0) : e.pnl);
+export const entryPnl = (e: JournalEntry, mode: PnlMode) => eligible(e, mode) ? (mode === 'net' ? e.pnl - (e.commission ?? 0) : e.pnl) : 0;
+export const isRealized = realized;
+export const realizedEntries = (entries: JournalEntry[]) => entries.filter(isRealized);
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -56,27 +59,21 @@ export function rangeBounds(
 
 export interface Kpis {
   count: number;
+  realizedCount: number;
   pnl: number;
-  winRate: number;
+  winRate: number | null;
   profitFactor: number | null; // null = no losing trades
-  avgR: number;
-  plan: number;
+  avgR: number | null;
+  plan: number | null;
 }
 
 export function computeKpis(entries: JournalEntry[], mode: PnlMode): Kpis {
-  const decided = entries.filter((e) => e.outcome === 'win' || e.outcome === 'loss');
-  const wins = decided.filter((e) => e.outcome === 'win').length;
-  const pnls = entries.map((e) => entryPnl(e, mode));
-  const grossWin = pnls.filter((p) => p > 0).reduce((a, b) => a + b, 0);
-  const grossLoss = Math.abs(pnls.filter((p) => p < 0).reduce((a, b) => a + b, 0));
-  const rs = entries.map((e) => e.rMultiple).filter((r): r is number => r !== null);
+  const m = metrics(entries, mode);
   return {
     count: entries.length,
-    pnl: Math.round(pnls.reduce((a, b) => a + b, 0) * 100) / 100,
-    winRate: decided.length ? Math.round((wins / decided.length) * 100) : 0,
-    profitFactor: grossLoss > 0 ? Math.round((grossWin / grossLoss) * 100) / 100 : null,
-    avgR: rs.length ? Math.round((rs.reduce((a, b) => a + b, 0) / rs.length) * 10) / 10 : 0,
-    plan: entries.length ? Math.round((entries.filter((e) => e.followedPlan).length / entries.length) * 100) : 0,
+    realizedCount: m.n, pnl: m.total,
+    winRate: m.winRate === null ? null : Math.round(m.winRate * 10) / 10,
+    profitFactor: m.pf, avgR: m.avgR, plan: m.plan,
   };
 }
 
@@ -95,18 +92,19 @@ const LOT_CLASSES = ['Forex', 'Commodity', 'Indices'];
 
 /** Cashback in USD: the stored amount, else the broker's rate per lot x lots (lot-based asset classes only). */
 export const entryCashback = (e: JournalEntry, brokers: Map<string, Broker>) => {
+  if (!realized(e)) return 0;
   if (e.cashback !== undefined) return e.cashback;
   const b = e.brokerId ? brokers.get(e.brokerId) : undefined;
-  if (!b || b.hasCashback === false || !LOT_CLASSES.includes(e.assetClass)) return 0;
+  if (!b || b.hasCashback === false || !LOT_CLASSES.includes(e.assetClass) || (e.quantityUnit && !/^lots?$/i.test(e.quantityUnit))) return 0;
   return Math.round(b.cashbackPerLot * e.size * 100) / 100;
 };
 
 /** MarketSyde Points: base points per lot by asset class (from the Points & Credits guide); estimate, before level boosters. */
 const POINTS_PER_LOT: Record<string, number> = { Forex: 50, Indices: 60, Commodity: 55, Crypto: 60 };
-export const entryPoints = (e: JournalEntry) => Math.round(e.size * (POINTS_PER_LOT[e.assetClass] || 0));
+export const entryPoints = (e: JournalEntry) => realized(e) && (!e.quantityUnit || /^lots?$/i.test(e.quantityUnit)) ? Math.round(e.size * (POINTS_PER_LOT[e.assetClass] || 0)) : 0;
 
 export const entryValue = (e: JournalEntry, mode: PnlMode, cb: CashbackMode, brokers: Map<string, Broker>) => {
   if (cb === 'points') return entryPoints(e);
   const base = entryPnl(e, mode);
-  return cb === 'include' ? base + entryCashback(e, brokers) : base;
+  return cb === 'include' && currencyOf(e)==='USD' ? base + entryCashback(e, brokers) : base;
 };

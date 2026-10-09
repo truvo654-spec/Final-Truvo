@@ -4,6 +4,7 @@ import type { PlaybookExpectedStats } from './store';
 import type { JobOutput } from './types';
 import type { JournalEntry } from '../types';
 import { toMs } from './whatif';
+import { eligible, netOf, realizedR } from '../components/journal/journalMath';
 
 export function expectedFromRun(playbookId: string, runId: string, runName: string, symbol: string, o: JobOutput): PlaybookExpectedStats {
   const r = o.result;
@@ -14,16 +15,16 @@ export function expectedFromRun(playbookId: string, runId: string, runName: stri
   return { playbookId, runId, runName, savedAt: new Date().toISOString(), trades: m.trades, winRate: m.winRate, avgR: m.avgR, pf: m.profitFactor, maxDDPct: m.maxDDPct, stdR, symbol };
 }
 
-export interface LiveStats { trades: number; winRate: number; avgR: number; pf: number | null; maxDDPct: number; cumR: number[]; net: number }
+export interface LiveStats { trades: number; winRate: number; avgR: number; pf: number | null; maxDDPct: number | null; cumR: number[]; net: number }
 
 export function liveStats(entries: JournalEntry[], playbookName: string): LiveStats {
-  const list = entries.filter((e) => e.strategy === playbookName && e.outcome !== 'open' && e.rMultiple !== null)
+  const list = entries.filter((e) => e.strategy === playbookName && eligible(e) && realizedR(e) !== null)
     .sort((a, b) => (a.entryTime || a.date).localeCompare(b.entryTime || b.date));
   const ms = (e: JournalEntry) => toMs(e.exitTime || e.entryTime, e.date);
-  const m = computeMetrics(list.map((e) => ({ entryTime: ms(e), exitTime: ms(e), net: e.pnl, r: e.rMultiple })), 10000);
+  const m = computeMetrics(list.map((e) => ({ entryTime: ms(e), exitTime: ms(e), net: netOf(e), r: realizedR(e) })), 1);
   let c = 0;
-  const cumR = list.map((e) => (c += e.rMultiple ?? 0));
-  return { trades: m.trades, winRate: m.winRate, avgR: m.avgR, pf: m.profitFactor, maxDDPct: m.maxDDPct, cumR, net: m.netPnl };
+  const cumR = list.map((e) => (c += realizedR(e) ?? 0));
+  return { trades: m.trades, winRate: m.winRate, avgR: m.avgR, pf: m.profitFactor, maxDDPct: null, cumR, net: m.netPnl };
 }
 
 export type Health = 'on-track' | 'behind' | 'too-few' | 'untested';

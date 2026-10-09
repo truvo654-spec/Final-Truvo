@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Star, Check, X as XIcon, Trash2, Pencil, Link2, AlertTriangle, PlayCircle } from 'lucide-react';
 import { JournalEntry, JournalChecklistItem } from '../../types';
+import { TradingStatusBadge, tradingStatusOf } from './tradingStatus';
 
 interface JournalEntryDetailProps {
   entry: JournalEntry;
@@ -56,6 +57,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               <h1 className="text-2xl font-display font-bold text-[#0b1c30]">{entry.symbol}</h1>
               <span className={`text-sm font-bold ${entry.direction === 'BUY' ? 'text-emerald-600' : 'text-rose-600'}`}>{entry.direction}</span>
               <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold capitalize ${OUTCOME_STYLE[entry.outcome]}`}>{entry.outcome}</span>
+              <TradingStatusBadge status={tradingStatusOf(entry)} />
             </div>
             <p className="text-xs text-[#94a3b8]">
               {entry.date} · {entry.assetClass} · {entry.strategy}
@@ -78,6 +80,20 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               </button>
             )}
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 mt-4">
+          <label htmlFor="trading-status" className="text-xs font-semibold text-[#474556]">Trading status</label>
+          <select
+            id="trading-status"
+            value={tradingStatusOf(entry)}
+            onChange={(e) => { onUpdate({ ...entry, tradingStatus: e.target.value as JournalEntry['tradingStatus'] }); onShowToast('Trading status updated'); }}
+            className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#0b1c30] bg-white"
+          >
+            <option value="planned">Planned</option>
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+          </select>
         </div>
 
         <div className="grid grid-cols-3 gap-3 mt-5">

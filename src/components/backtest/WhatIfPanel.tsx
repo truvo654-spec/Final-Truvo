@@ -2,10 +2,12 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowRight, ChevronDown, Info, ListPlus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { JournalEntry } from '../../types';
+import { eligible, resultOf } from '../journal/journalMath';
+import { JournalCurrency, formatMoney } from '../journal/JournalCurrency';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { JOURNAL_TODAY } from '../../data/journalData';
 import type { JournalRules } from '../../backtest/rules';
-import { describeWhatIf, ESTIMATED_RULES, runWhatIf, WhatIfRule } from '../../backtest/whatif';
+import { describeWhatIf as describeRule, ESTIMATED_RULES, runWhatIf, WhatIfRule } from '../../backtest/whatif';
 import { dateOnly, money, num, pct, rr, tone, utcWindow } from '../../backtest/format';
 import { loadWhatIfs, saveWhatIfs } from '../../backtest/store';
 import { LineChart } from './charts';
@@ -54,6 +56,9 @@ const MultiPick: React.FC<{ label: string; options: string[]; value: string[]; o
 };
 
 export const WhatIfPanel: React.FC<Props> = ({ entries, playbooks, tz, onToast, onOpenTrades, onAddRule }) => {
+  const currency=React.useContext(JournalCurrency);
+  const money=(n:number,_currency?:unknown,dp=2,_signed=true)=>Number.isFinite(n)?formatMoney(n,currency,Math.max(2,dp)):'—';
+  const describeWhatIf=(r:WhatIfRule)=>r.kind==='dailyLoss'?`Stop after ${money(r.usd)} net loss in a day`:describeRule(r);
   const [range, setRange] = useState<'all' | '30' | '90'>('all');
   const [pbs, setPbs] = useState<string[]>([]);
   const [syms, setSyms] = useState<string[]>([]);
@@ -74,12 +79,12 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, playbooks, tz, onToast, 
 
   const picked = useMemo(() => {
     const since = range === 'all' ? '' : new Date(Date.parse(`${JOURNAL_TODAY}T00:00:00Z`) - Number(range) * 86400000).toISOString().slice(0, 10);
-    return entries.filter((e) => e.outcome !== 'open'
+    return entries.filter((e) => eligible(e)
       && (!since || e.date >= since)
       && (!pbs.length || pbs.includes(e.strategy))
       && (!syms.length || syms.includes(e.symbol))
       && (!tags.length || [...e.tags, ...e.mistakes].some((t) => tags.includes(t)))
-      && (result === 'all' || (result === 'wins' ? e.pnl > 0 : e.pnl < 0)));
+      && (result === 'all' || (result === 'wins' ? resultOf(e)==='win' : resultOf(e)==='loss')));
   }, [entries, range, pbs, syms, tags, result]);
 
   const rule: WhatIfRule = kind === 'lossesPerDay' ? { kind, n: params.n } : kind === 'dailyLoss' ? { kind, usd: params.usd } : kind === 'hours' ? { kind, start: params.start, end: params.end }
@@ -106,9 +111,9 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, playbooks, tz, onToast, 
   const rows: [string, string, number, number, (x: number) => string, boolean][] = [
     ['Net P&L', 'Total result of the trades', out.actual.netPnl, out.whatIf.netPnl, (x) => money(x, 'USD', 0), true],
     ['Win rate', 'Winning trades ÷ trades taken', out.actual.winRate, out.whatIf.winRate, (x) => pct(x, 1), true],
-    ['Profit factor', 'Gross profit ÷ gross loss', out.actual.profitFactor ?? 0, out.whatIf.profitFactor ?? 0, (x) => num(x), true],
+    ['Profit factor', 'Positive net ÷ absolute negative net', out.actual.profitFactor ?? NaN, out.whatIf.profitFactor ?? NaN, (x) => x===Infinity?'∞':num(x), true],
     ['Average R', 'Average result per trade in units of risk', out.actual.avgR, out.whatIf.avgR, (x) => rr(x), true],
-    ['Max drawdown', 'Largest fall from a high, on a $10,000 account', out.actual.maxDD, out.whatIf.maxDD, (x) => money(-x, 'USD', 0), false],
+    ['Max drawdown', 'Daily closed-result drawdown by UTC entry date; no account-equity assumption', out.actual.maxDD, out.whatIf.maxDD, (x) => money(-x, 'USD', 0), false],
     ['Trades', 'Trades taken', out.actual.trades, out.whatIf.trades, (x) => `${x}`, true],
   ];
 
@@ -141,7 +146,7 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, playbooks, tz, onToast, 
                   {on && (
                     <div className="mt-2.5 pl-6 flex flex-wrap items-center gap-2 text-xs">
                       {r.kind === 'lossesPerDay' && (<><input type="number" min={1} max={10} aria-label="Losses per day" value={params.n} onChange={(e) => setParams({ ...params, n: Math.max(1, Number(e.target.value)) })} className={`${inputBase} w-20`} /> losses</>)}
-                      {r.kind === 'dailyLoss' && (<>$<input type="number" min={10} step={50} aria-label="Max daily loss in dollars" value={params.usd} onChange={(e) => setParams({ ...params, usd: Math.max(1, Number(e.target.value)) })} className={`${inputBase} w-28`} /></>)}
+                      {r.kind === 'dailyLoss' && (<>{currency}<input type="number" min={10} step={50} aria-label={`Max daily loss in ${currency}`} value={params.usd} onChange={(e) => setParams({ ...params, usd: Math.max(1, Number(e.target.value)) })} className={`${inputBase} w-28`} /></>)}
                       {r.kind === 'hours' && (<>
                         <select aria-label="From hour UTC" value={params.start} onChange={(e) => setParams({ ...params, start: Number(e.target.value) })} className={`${inputBase} w-auto`}>{Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}</select>
                         to
@@ -192,7 +197,7 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, playbooks, tz, onToast, 
                           <td className="py-2 text-right">{f(a)}</td>
                           <td className="py-2 text-right font-bold">{f(b)}</td>
                           <td className={`py-2 text-right font-bold ${k === 'Trades' ? 'text-slate-500' : good ? 'text-emerald-600' : bad ? 'text-rose-600' : 'text-slate-400'}`}>
-                            {Math.abs(d) < 1e-9 ? 'same' : `${d > 0 ? '+' : '−'}${k === 'Win rate' ? `${Math.abs(d * 100).toFixed(1)} pts` : k === 'Max drawdown' || k === 'Net P&L' ? money(Math.abs(d), 'USD', 0, false) : k === 'Average R' ? `${Math.abs(d).toFixed(2)}R` : k === 'Trades' ? Math.abs(d) : Math.abs(d).toFixed(2)}`}
+                            {!Number.isFinite(d)?'—':Math.abs(d) < 1e-9 ? 'same' : `${d > 0 ? '+' : '−'}${k === 'Win rate' ? `${Math.abs(d * 100).toFixed(1)} pts` : k === 'Max drawdown' || k === 'Net P&L' ? money(Math.abs(d), 'USD', 0, false) : k === 'Average R' ? `${Math.abs(d).toFixed(2)}R` : k === 'Trades' ? Math.abs(d) : Math.abs(d).toFixed(2)}`}
                           </td>
                         </tr>
                       );

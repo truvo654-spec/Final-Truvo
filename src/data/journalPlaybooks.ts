@@ -6,6 +6,8 @@ export type PlaybookGrade = 'A+' | 'A' | 'B+' | 'B' | 'C';
 export type PlaybookStatus = 'active' | 'testing' | 'archived';
 
 export interface JournalPlaybook {
+  ruleHistory?: { version:number; effectiveAt:string | null; rules:{id:string;title:string;detail:string}[] }[];
+  rulesEffectiveAt?: string;
   id: string;
   name: string;
   grade: PlaybookGrade;

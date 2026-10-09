@@ -1,7 +1,7 @@
 // Statement ingestion for the journal: CSV parsing, automatic header mapping,
 // row conversion and duplicate detection. Pure functions, no React.
 import { JournalEntry, PortfolioAssetClass } from '../../types';
-import { JOURNAL_TODAY } from '../../data/journalData';
+import { timestampMs } from './journalMath';
 
 export type IngestField =
   | 'time'
@@ -20,8 +20,8 @@ export const INGEST_FIELDS: { key: IngestField; label: string; type: string; ali
   { key: 'side', label: 'Direction (LONG/SHORT)', type: 'Enum flag', aliases: ['orderside', 'side', 'direction', 'buysell', 'action', 'type'] },
   { key: 'entry', label: 'Entry / fill price', type: 'Decimal', aliases: ['entryprice', 'openprice', 'fillprice', 'execavgprice', 'avgfillprice', 'avgprice', 'price'] },
   { key: 'exit', label: 'Exit price', type: 'Decimal', aliases: ['exitprice', 'closeprice'] },
-  { key: 'qty', label: 'Quantity (lots)', type: 'Number', aliases: ['contractsizeqty', 'quantity', 'qty', 'size', 'volume', 'lots', 'filled', 'contracts'] },
-  { key: 'pnl', label: 'Gross P&L', type: 'Currency', aliases: ['realizedpnlusd', 'realizedpnl', 'grosspnl', 'pnl', 'profitloss', 'profit', 'netpnl'] },
+  { key: 'qty', label: 'Quantity (source units)', type: 'Number', aliases: ['contractsizeqty', 'quantity', 'qty', 'size', 'volume', 'lots', 'filled', 'contracts'] },
+  { key: 'pnl', label: 'Reported P&L (gross / net)', type: 'Currency', aliases: ['realizedpnlusd', 'realizedpnl', 'grosspnl', 'pnl', 'profitloss', 'profit', 'netpnl'] },
   { key: 'fee', label: 'Commissions / fees', type: 'Currency', aliases: ['exchangefeetotal', 'commissions', 'commission', 'fees', 'fee'] },
   { key: 'ticket', label: 'Ticket / order ID', type: 'ID', aliases: ['orderticketid', 'ticketid', 'ticket', 'orderid', 'tradeid', 'dealid', 'id'] },
 ];
@@ -96,7 +96,7 @@ const toNum = (v: string | undefined) => {
   if (v === undefined) return NaN;
   const t = v.trim().replace(/[$,\s]/g, '');
   const neg = /^\(.*\)$/.test(t);
-  const n = parseFloat(t.replace(/[()]/g, ''));
+  const n = t ? Number(t.replace(/[()]/g, '')) : NaN;
   return neg ? -n : n;
 };
 
@@ -109,24 +109,24 @@ const toSide = (v: string | undefined): 'BUY' | 'SELL' | null => {
 
 export const guessAssetClass = (symbol: string): PortfolioAssetClass => {
   const s = symbol.toUpperCase();
-  if (/BTC|ETH|SOL|USDT|USDC|XRP/.test(s)) return 'Crypto';
+  if (/^(BTC|ETH|SOL|USDT|USDC|XRP)(?:[\/-]?(USD|USDT|USDC|EUR|GBP|BTC|ETH))?$/.test(s)) return 'Crypto';
   if (/^(XAU|XAG|WTI|BRENT|CL|GC|SI|NG)/.test(s)) return 'Commodity';
   if (/^(NQ|ES|YM|RTY|US500|NAS100|US30|GER40|DAX|SPX|NDX)/.test(s)) return 'Indices';
   if (/^[A-Z]{3}\/?[A-Z]{3}$/.test(s)) return 'Forex';
   return 'Stocks';
 };
 
-const toIso = (v: string | undefined): { date: string; time?: string } => {
+const toIso = (v: string | undefined, offset: string): { date: string; time?: string } | null => {
   const t = (v || '').trim();
-  const d = new Date(t);
-  if (!t || isNaN(d.getTime())) return { date: JOURNAL_TODAY };
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const hasTime = /\d{1,2}:\d{2}/.test(t);
-  return {
-    date: local,
-    time: hasTime ? `${local}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}` : undefined,
-  };
+  if (!/^\d{4}-\d\d-\d\d(?:[T ]\d\d:\d\d(?::\d\d(?:\.\d+)?)?(?:Z|[+-]\d\d:\d\d)?)?$/.test(t)) return null;
+  const day=t.slice(0,10);
+  const calendarDate=new Date(`${day}T00:00:00Z`);
+  if(!Number.isFinite(calendarDate.getTime()) || calendarDate.toISOString().slice(0,10)!==day)return null;
+  if(t.length===10)return {date:day};
+  const s=t.replace(' ','T');
+  const d=new Date(/[zZ]|[+-]\d\d:\d\d$/.test(s)?s:`${s}${offset==='UTC'?'Z':offset}`);
+  if(!Number.isFinite(d.getTime()))return null;
+  const iso=d.toISOString(); return {date:iso.slice(0,10),time:iso};
 };
 
 export interface ParsedRow {
@@ -136,14 +136,14 @@ export interface ParsedRow {
   reason?: string;
 }
 
-export const dedupeKey = (e: Pick<JournalEntry, 'ticketId' | 'symbol' | 'entryTime' | 'date' | 'entryPrice' | 'size' | 'direction'>) =>
-  e.ticketId ? `t:${e.ticketId}` : `k:${e.symbol}|${e.entryTime || e.date}|${e.entryPrice}|${e.size}|${e.direction}`;
+export const dedupeKey = (e: Pick<JournalEntry, 'accountId' | 'ticketId' | 'symbol' | 'entryTime' | 'date' | 'entryPrice' | 'size' | 'direction'>) =>
+  `${e.accountId || 'legacy-demo'}|${e.ticketId ? `t:${e.ticketId}` : `k:${e.symbol}|${e.entryTime ? timestampMs(e.entryTime) : e.date}|${e.entryPrice}|${e.size}|${e.direction}`}`;
 
 export function convertRows(
   rows: string[][],
   mapping: ColumnMapping[],
   existing: JournalEntry[],
-  defaults: { strategy: string }
+  defaults: { strategy: string; accountId?: string; currency?: string; timezone?: string; pnlBasis?: 'gross' | 'net'; quantityUnit?: string }
 ): ParsedRow[] {
   const col = (f: IngestField) => mapping.findIndex((m) => m.field === f);
   const idx = Object.fromEntries(INGEST_FIELDS.map((f) => [f.key, col(f.key)])) as Record<IngestField, number>;
@@ -158,25 +158,36 @@ export function convertRows(
     const size = toNum(get('qty'));
     if (!symbol) return out.push({ line, status: 'invalid', reason: 'Missing symbol' });
     if (!side) return out.push({ line, status: 'invalid', reason: 'Direction not recognised (use BUY/SELL or LONG/SHORT)' });
-    if (isNaN(entryPrice)) return out.push({ line, status: 'invalid', reason: 'Missing or non-numeric price' });
+    if (!Number.isFinite(entryPrice) || entryPrice <= 0) return out.push({ line, status: 'invalid', reason: 'Missing or invalid positive price' });
     if (isNaN(size) || size <= 0) return out.push({ line, status: 'invalid', reason: 'Missing or invalid quantity' });
     const exit = toNum(get('exit'));
+    if(get('exit')?.trim() && (!Number.isFinite(exit) || exit<=0)) return out.push({line,status:'invalid',reason:'Invalid exit price'});
     const exitPrice = isNaN(exit) ? null : exit;
     const pnlRaw = toNum(get('pnl'));
     const fee = toNum(get('fee'));
-    const t = toIso(get('time'));
+    const t = toIso(get('time'),defaults.timezone || 'UTC');
+    if(!t)return out.push({line,status:'invalid',reason:'Missing/invalid ISO execution date or time; no date was invented'});
+    if(get('fee')?.trim() && !Number.isFinite(fee))return out.push({line,status:'invalid',reason:'Invalid fee'});
+    if(Number.isFinite(fee) && fee<0)return out.push({line,status:'invalid',reason:'Use non-negative cost magnitudes. Negative expense signs or rebates need source reconciliation before import.'});
+    if(get('pnl')?.trim() && !Number.isFinite(pnlRaw))return out.push({line,status:'invalid',reason:'Invalid reported P&L'});
     let pnl = pnlRaw;
     if (isNaN(pnl)) {
-      pnl = exitPrice === null ? 0 : Math.round((side === 'BUY' ? exitPrice - entryPrice : entryPrice - exitPrice) * size * 100 * 100) / 100;
+      if(exitPrice!==null)return out.push({line,status:'invalid',reason:'Closed results require reported P&L; instrument valuation is not assumed'});
+      pnl = 0;
     }
+    const netBasis=defaults.pnlBasis==='net' || /netpnl/.test(norm(mapping[idx.pnl]?.header || ''));
+    if(netBasis && !Number.isFinite(fee))return out.push({line,status:'invalid',reason:'Net P&L requires known costs (enter explicit zero when applicable) to preserve gross result'});
+    if(netBasis)pnl+=Math.abs(fee);
     const hasResult = !isNaN(pnlRaw) || exitPrice !== null;
     const outcome = !hasResult ? 'open' : pnl > 0 ? 'win' : pnl < 0 ? 'loss' : 'breakeven';
     const ticket = (get('ticket') || '').trim();
     const entry: JournalEntry = {
-      id: `jr_imp_${Date.now()}_${i}`,
+      id: crypto.randomUUID(),
+      accountId:defaults.accountId, accountCurrency:defaults.currency || 'USD', sourceTimezone:defaults.timezone || 'UTC', quantityUnit:defaults.quantityUnit || 'unknown',
+      tradingStatus:hasResult?'closed':'open', pnlKnown:hasResult, reviewState:'needs_review', mistakesReviewed:false,
       date: t.date,
       symbol,
-      assetClass: guessAssetClass(symbol),
+      assetClass: /^shares?$/i.test(defaults.quantityUnit || '')?'Stocks':guessAssetClass(symbol),
       direction: side,
       entryPrice,
       exitPrice,
@@ -187,13 +198,13 @@ export function convertRows(
       strategy: defaults.strategy,
       tags: ['Imported'],
       setupNotes: '',
-      emotionBefore: 'Calm',
-      emotionAfter: 'Calm',
-      followedPlan: true,
+      emotionBefore: null,
+      emotionAfter: null,
+      followedPlan: null,
       checklistDone: [],
       mistakes: [],
       lessons: '',
-      rating: 3,
+      rating: null,
       source: 'manual',
       commission: isNaN(fee) ? undefined : Math.abs(fee),
       entryTime: t.time,

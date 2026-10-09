@@ -572,8 +572,21 @@ export interface PortfolioSnapshot {
 
 export type JournalEmotion = 'Confident' | 'Calm' | 'Anxious' | 'FOMO' | 'Greedy' | 'Frustrated' | 'Bored';
 export type JournalOutcome = 'win' | 'loss' | 'breakeven' | 'open';
+export type TradingStatus = 'planned' | 'open' | 'closed';
+export type JournalReviewState = 'needs_review' | 'complete';
 
 export interface JournalEntry {
+  accountId?: string;
+  accountCurrency?: string;
+  quantityUnit?: string;
+  sourceTimezone?: string;
+  pnlKnown?: boolean;
+  initialRisk?: number | null;
+  equityAtEntry?: number | null;
+  mistakesReviewed?: boolean;
+  ruleEvidence?: { ruleId: string; label: string; version: string; effectiveAt: string; state: 'pass' | 'fail' | 'unknown' | 'not_applicable'; source: 'user' }[];
+  fills?: { id: string; time: string; side: 'entry' | 'exit'; quantity: number; price: number; fee: number | null }[];
+  riskHistory?: { at: string; stop: number | null; monetaryRisk: number | null; reason: string }[];
   id: string;
   date: string;
   symbol: string;
@@ -585,16 +598,19 @@ export interface JournalEntry {
   pnl: number;
   rMultiple: number | null;
   outcome: JournalOutcome;
+  /** Lifecycle state of the trade, independent from its result. */
+  tradingStatus?: TradingStatus;
   strategy: string;
   tags: string[];
   setupNotes: string;
-  emotionBefore: JournalEmotion;
-  emotionAfter: JournalEmotion;
-  followedPlan: boolean;
+  emotionBefore: JournalEmotion | null;
+  emotionAfter: JournalEmotion | null;
+  followedPlan: boolean | null;
   checklistDone: string[];
   mistakes: string[];
   lessons: string;
-  rating: number;
+  rating: number | null;
+  reviewState?: JournalReviewState;
   screenshot?: string;
   linkedTradeId?: string;
   source: 'portfolio' | 'manual';
@@ -621,6 +637,11 @@ export interface JournalChecklistItem {
 }
 
 export interface JournalWeeklyReview {
+  from?: string;
+  to?: string;
+  tradeIds?: string[];
+  currency?: string;
+  focusFollowUp?: string;
   id: string;
   weekLabel: string;
   bestTrade: string;

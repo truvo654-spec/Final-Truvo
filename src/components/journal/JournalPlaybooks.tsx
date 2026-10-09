@@ -1,3 +1,5 @@
+import { useMoney, formatMoney } from './JournalCurrency';
+import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
 import React, { useMemo, useState } from 'react';
 import { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
 import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, PLAYBOOK_TEMPLATES, ReviewDecision, ScenarioStatus } from '../../data/journalPlaybooks';
@@ -7,6 +9,7 @@ import { PlaybookBacktestPanel } from '../backtest/PlaybookBacktestPanel';
 import type { PlaybookExpectedStats } from '../../backtest/store';
 import { TradeReplayModal } from './TradeReplayModal';
 import { JOURNAL_TODAY } from '../../data/journalData';
+import { TradingStatusBadge, tradingStatusOf } from './tradingStatus';
 
 // Strategy playbooks (light theme, after the uploaded concept): library with market/status filters,
 // search and sort; detail with thesis, a live pre-trade rules check, entry/stop/target, edge metrics
@@ -35,27 +38,28 @@ const DECISION_LABEL: Record<ReviewDecision, string> = { keep: 'Keep', adjust: '
 const DECISION_STYLE: Record<ReviewDecision, string> = { keep: 'bg-emerald-50 text-emerald-700', adjust: 'bg-sky-50 text-sky-700', pause: 'bg-amber-50 text-amber-700', retire: 'bg-slate-100 text-slate-600' };
 
 const pad = (n: number) => String(n).padStart(2, '0');
-const netOf = (e: JournalEntry) => e.pnl - (e.commission ?? 0);
 const money = (n: number, dp = 0) => `${n < 0 ? '-' : n > 0 ? '+' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
 const tone = (n: number) => (n > 0 ? 'text-emerald-600' : n < 0 ? 'text-rose-600' : 'text-slate-500');
+const fmtPf = (n:number|null) => n==null?'—':n===Infinity?'∞':n.toFixed(2);
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
 
 interface PbStats { n: number; wins: number; losses: number; winRate: number; pf: number | null; payoff: number | null; net: number; totalR: number; avgR: number | null; expectancy: number; followed: number; avgHold: number | null; last: string | null }
 
 const statsFor = (list: JournalEntry[]): PbStats => {
+  list = list.filter(e => eligible(e));
   const nets = list.map(netOf);
-  const wins = list.filter((e) => e.outcome === 'win').length;
-  const losses = list.filter((e) => e.outcome === 'loss').length;
+  const wins = list.filter((e) => resultOf(e) === 'win').length;
+  const losses = list.filter((e) => resultOf(e) === 'loss').length;
   const gW = nets.filter((x) => x > 0).reduce((a, b) => a + b, 0);
   const gL = Math.abs(nets.filter((x) => x < 0).reduce((a, b) => a + b, 0));
   const nW = nets.filter((x) => x > 0).length, nL = nets.filter((x) => x < 0).length;
-  const rs = list.map((e) => e.rMultiple).filter((x): x is number => x !== null);
-  const holds = list.filter((e) => e.entryTime && e.exitTime).map((e) => (Date.parse(`${e.exitTime}Z`) - Date.parse(`${e.entryTime}Z`)) / 60000);
+  const rs = list.map((e) => realizedR(e)).filter((x): x is number => x !== null);
+  const holds = list.filter((e) => e.entryTime && e.exitTime).map((e) => (timestampMs(e.exitTime) - timestampMs(e.entryTime)) / 60000);
   const net = nets.reduce((a, b) => a + b, 0);
   return {
     n: list.length, wins, losses,
-    winRate: wins + losses ? Math.round((wins / (wins + losses)) * 1000) / 10 : 0,
-    pf: gL > 0 ? gW / gL : null,
+    winRate: list.length ? Math.round((wins / list.length) * 1000) / 10 : 0,
+    pf: gL > 0 ? gW / gL : gW>0?Infinity:null,
     payoff: nW && nL ? (gW / nW) / (gL / nL) : null,
     net, totalR: rs.reduce((a, b) => a + b, 0), avgR: rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null,
     expectancy: list.length ? net / list.length : 0,
@@ -73,7 +77,7 @@ const GRADE_RULES: { g: PlaybookGrade; pf: number; r: number; plan: number; n: n
   { g: 'B', pf: 1.2, r: 0.0001, plan: 0, n: 10, text: 'PF ≥ 1.2 · avg R above 0 · 10+ trades' },
 ];
 const suggestGrade = (s: PbStats): { grade: PlaybookGrade; next: string | null } => {
-  const pf = s.pf ?? (s.n ? 99 : 0);
+  const pf = s.pf ?? 0;
   const r = s.avgR ?? 0;
   const plan = s.n ? (s.followed / s.n) * 100 : 0;
   const ok = (x: (typeof GRADE_RULES)[number]) => pf >= x.pf && r >= x.r && plan >= x.plan && s.n >= x.n;
@@ -122,6 +126,8 @@ const blank = (): JournalPlaybook => ({
 });
 
 export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, onLogTrade, recordings, onSetRecording, expected = {}, onBacktest }) => {
+  const money = useMoney();
+
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
   const [status, setStatus] = useState<'all' | PlaybookStatus>('active');
   const [sort, setSort] = useState<SortKey>('pf');
@@ -254,8 +260,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
     ? Math.round((selTrades.reduce((a, e) => a + e.checklistDone.filter((id) => houseChecklist.some((c) => c.id === id)).length, 0) / (selTrades.length * houseChecklist.length)) * 100)
     : null;
   const ordered = [...selTrades].sort((a, b) => (a.entryTime || a.date).localeCompare(b.entryTime || b.date));
-  const rCurve = (() => { let c = 0; return ordered.filter((e) => e.rMultiple !== null).map((e) => (c += e.rMultiple as number)); })();
-  const split = (on: boolean) => { const l = selTrades.filter((e) => e.followedPlan === on); return { n: l.length, avg: l.length ? l.reduce((a, e) => a + netOf(e), 0) / l.length : 0 }; };
+  const rCurve = (() => { let c = 0; return ordered.map(realizedR).filter((r):r is number=>r!==null).map(r=>(c+=r)); })();
+  const split = (on: boolean) => { const l = selTrades.filter((e) => eligible(e) && e.followedPlan === on); return { n: l.length, avg: l.length ? l.reduce((a, e) => a + netOf(e), 0) / l.length : 0 }; };
   const planSplit = { on: split(true), off: split(false) };
   const topMistakes = (() => { const m = new Map<string, number>(); selTrades.forEach((e) => e.mistakes.forEach((x) => m.set(x, (m.get(x) || 0) + 1))); return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4); })();
   const addReview = () => {
@@ -270,7 +276,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
 
   const showTip = (id: string) => (e: React.MouseEvent | React.FocusEvent) => {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setGradeTip({ id, x: Math.min(r.left, window.innerWidth - 330), y: Math.min(r.bottom + 6, window.innerHeight - 470) });
+    setGradeTip({ id, x: Math.max(8,Math.min(r.left, window.innerWidth - 330)), y: Math.max(8,Math.min(r.bottom + 6, window.innerHeight - 470)) });
   };
   const gradeBadge = (p: JournalPlaybook, size: 'sm' | 'md', label?: string) => (
     <span
@@ -286,7 +292,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
     const sg = suggestGrade(tipStats);
     const plan = tipStats.n ? Math.round((tipStats.followed / tipStats.n) * 100) : 0;
     return (
-      <div role="tooltip" className="fixed z-50 w-[320px] rounded-xl bg-[#0b1c30] text-white shadow-2xl p-3 text-[11px] pointer-events-none" style={{ left: gradeTip.x, top: gradeTip.y }}>
+      <div role="tooltip" className="fixed z-50 w-[320px] max-w-[calc(100vw-16px)] max-h-[calc(100vh-16px)] overflow-y-auto rounded-xl bg-[#0b1c30] text-white shadow-2xl p-3 text-[11px] pointer-events-none" style={{ left: gradeTip.x, top: gradeTip.y }}>
         <p className="font-bold text-xs">Grade {tipPb.grade} <span className="font-normal text-slate-300">· set by you in Edit playbook</span></p>
         <p className="text-slate-300 mt-1">Grades rank how proven a setup is. A playbook earns the highest grade whose every line it meets:</p>
         <ul className="mt-1.5 space-y-0.5 font-mono">
@@ -296,13 +302,13 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
           <li className={`flex gap-2 ${sg.grade === 'C' ? 'text-emerald-300 font-bold' : ''}`}><span className="w-5 shrink-0">C</span><span>below B, or under 10 trades</span></li>
         </ul>
         <dl className="mt-2 pt-2 border-t border-white/15 space-y-1">
-          <div><dt className="inline font-bold">PF (profit factor)</dt><dd className="inline text-slate-300">: gross profit ÷ gross loss. 1.0 = break-even, 2.0 = $2 won for every $1 lost.</dd></div>
+          <div><dt className="inline font-bold">PF (profit factor)</dt><dd className="inline text-slate-300">: positive net results ÷ absolute negative net results. Costs are deducted.</dd></div>
           <div><dt className="inline font-bold">Avg R</dt><dd className="inline text-slate-300">: average result in units of planned risk. +0.3R = $30 per trade when risking $100. Works for any account size.</dd></div>
-          <div><dt className="inline font-bold">Plan followed</dt><dd className="inline text-slate-300">: share of trades marked as following the playbook rules. Shows the results come from the setup, not from luck.</dd></div>
+          <div><dt className="inline font-bold">Plan followed</dt><dd className="inline text-slate-300">: recorded positives out of eligible trades. Unknown answers cannot earn a positive grade; this is descriptive evidence, not proof of causation.</dd></div>
           <div><dt className="inline font-bold">Trades</dt><dd className="inline text-slate-300">: sample size. Under 10–20 trades the numbers are mostly noise.</dd></div>
         </dl>
         <div className="mt-2 pt-2 border-t border-white/15">
-          <p className="text-slate-300">This playbook: PF {tipStats.pf === null ? (tipStats.n ? '∞' : '—') : tipStats.pf.toFixed(2)} · avg {tipStats.avgR === null ? '—' : `${tipStats.avgR >= 0 ? '+' : ''}${tipStats.avgR.toFixed(2)}R`} · plan {plan}% · {tipStats.n} trades</p>
+          <p className="text-slate-300">This playbook: PF {fmtPf(tipStats.pf)} · avg {tipStats.avgR === null ? '—' : `${tipStats.avgR >= 0 ? '+' : ''}${tipStats.avgR.toFixed(2)}R`} · recorded on plan {plan}% · {tipStats.n} trades</p>
           <p className="mt-0.5 font-bold">Data suggests: {sg.grade}{sg.grade !== tipPb.grade ? ` (you set ${tipPb.grade})` : ' (matches)'}</p>
           {sg.next && <p className="text-slate-300">{sg.next}</p>}
         </div>
@@ -562,7 +568,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                     </span>
                     <span className="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-500">
                       <span className="truncate">{(p.symbols || []).slice(0, 3).join(' · ') || p.markets.join(' · ')}{(p.symbols || []).length > 3 ? ` +${(p.symbols || []).length - 3}` : ''}</span>
-                      <span className="ml-auto font-mono shrink-0">{st.n ? `${st.winRate.toFixed(0)}% · PF ${st.pf === null ? '∞' : st.pf.toFixed(1)}` : 'no trades'}</span>
+                      <span className="ml-auto font-mono shrink-0">{st.n ? `${st.winRate.toFixed(0)}% · PF ${fmtPf(st.pf)}` : 'no trades'}</span>
                     </span>
                   </button>
                   {open.length > 0 && (
@@ -881,7 +887,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                             <span className="font-mono text-slate-500 w-32 shrink-0">{(e.entryTime || e.date).replace('T', ' ').slice(0, 16)}</span>
                             <span className="font-bold text-[#0b1c30] w-20 shrink-0">{e.symbol}</span>
                             <span className={`text-[10px] font-bold w-10 ${e.direction === 'BUY' ? 'text-emerald-700' : 'text-rose-700'}`}>{e.direction === 'BUY' ? 'LONG' : 'SHORT'}</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${e.followedPlan ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{e.followedPlan ? 'On plan' : 'Off plan'}</span>
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${e.followedPlan===true ? 'bg-emerald-50 text-emerald-700' : e.followedPlan===false?'bg-rose-50 text-rose-700':'bg-slate-100 text-slate-600'}`}>{e.followedPlan===true ? 'On plan' : e.followedPlan===false?'Off plan':'Plan unknown'}</span>
                             {e.mistakes[0] && <span className="text-[10px] text-rose-600 truncate">{e.mistakes[0]}</span>}
                             <span className={`ml-auto font-mono font-bold ${tone(netOf(e))}`}>{money(netOf(e), 2)}</span>
                           </button>
@@ -900,7 +906,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                     {[
                       ['Trades', String(s.n), ''],
                       ['Win rate', s.n ? `${s.winRate.toFixed(1)}%` : '—', ''],
-                      ['Profit factor', s.pf === null ? (s.n ? '∞' : '—') : s.pf.toFixed(2), 'text-emerald-600'],
+                      ['Profit factor', fmtPf(s.pf), 'text-emerald-600'],
                       ['Expectancy', s.n ? money(s.expectancy, 2) : '—', tone(s.expectancy)],
                       ['Average R', s.avgR === null ? '—' : `${s.avgR >= 0 ? '+' : ''}${s.avgR.toFixed(2)}R`, s.avgR === null ? '' : tone(s.avgR)],
                       ['Net P&L', s.n ? money(s.net, 2) : '—', tone(s.net)],
@@ -993,7 +999,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                           <div key={e.id} className="rounded-xl border border-slate-200 p-3">
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <p className="text-sm font-bold text-[#0b1c30]">{e.symbol} <span className={`text-[10px] font-bold ${e.direction === 'BUY' ? 'text-emerald-700' : 'text-rose-700'}`}>{e.direction === 'BUY' ? 'LONG' : 'SHORT'}</span></p>
+                                <p className="text-sm font-bold text-[#0b1c30]">{e.symbol} <span className={`text-[10px] font-bold ${e.direction === 'BUY' ? 'text-emerald-700' : 'text-rose-700'}`}>{e.direction === 'BUY' ? 'LONG' : 'SHORT'}</span> <TradingStatusBadge status={tradingStatusOf(e)} /></p>
                                 <p className="text-[11px] text-slate-500 font-mono">{(e.entryTime || e.date).replace('T', ' ').slice(0, 16)} UTC</p>
                               </div>
                               <div className="text-right">

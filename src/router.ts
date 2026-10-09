@@ -22,6 +22,7 @@ export interface RouteItem {
 
 // Complete Hierarchy Registry
 export const ROUTE_REGISTRY: Record<string, RouteItem> = {
+  'trading-journal': { path:'/trade/journal', tab:'trading-journal', title:'Trading Journal | MarketSyde', category:'Trade', breadcrumbs:['Trade','Trading Journal'] },
   'economic-calendar': { path: '/economic-calendar', tab: 'economic-calendar', title: 'Economic Calendar | MarketSyde', category: 'Trade', breadcrumbs: ['Trade', 'Economic Calendar'] },
   dashboard: {
     path: '/dashboard',
@@ -403,6 +404,7 @@ export function tabToPath(
  */
 export function pathToState(rawPath: string): RouteResolution {
   const pathname = (rawPath || '/').replace(/\/+$/, '') || '/';
+  if (pathname === '/trade/journal' || pathname === '/trading-journal') return {tab:'trading-journal'};
   if (pathname === '/economic-calendar' || pathname === '/trade/economic-calendar') return { tab: 'economic-calendar' };
 
   // 1. Root & Dashboard

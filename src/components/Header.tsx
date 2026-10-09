@@ -216,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-50 bg-white border-b border-indigo-100/70">
       <div className="w-full px-4 sm:px-8 md:px-[56px] h-[68px] flex items-center justify-between relative">
         {/* Brand Logo & Left Navigation */}
-        <div className="flex items-center gap-10 lg:gap-12">
+        <div className="flex items-center gap-4 2xl:gap-12 min-w-0">
           {/* MarketSyde Logo */}
           <button
             onClick={() => {
@@ -244,7 +244,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Desktop Navigation with Hover Mega Menus - Exactly matching Total Nav Bar.png */}
-          <nav className="hidden md:flex items-center gap-8 text-[14px] font-medium text-slate-800">
+          <nav className="hidden xl:flex items-center gap-4 2xl:gap-8 text-[14px] font-medium text-slate-800">
             {/* Trade Dropdown Trigger */}
             <div
               className="relative py-4"
@@ -395,10 +395,10 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Search Input & User Profile Pill - Exactly matching Total Nav Bar.png */}
         <div className="flex items-center gap-3 sm:gap-3.5">
           {/* Search Input Box */}
-          <div className="hidden md:flex items-center relative">
+          <div className="hidden xl:flex items-center relative">
             <div
               onClick={() => onOpenSearchModal?.()}
-              className="w-52 lg:w-64 h-10 px-3.5 bg-white border border-indigo-200/90 hover:border-[#5945F1] rounded-xl flex items-center justify-between gap-2 shadow-2xs transition-all text-left cursor-pointer group"
+              className="w-44 2xl:w-64 h-10 px-3.5 bg-white border border-indigo-200/90 hover:border-[#5945F1] rounded-xl flex items-center justify-between gap-2 shadow-2xs transition-all text-left cursor-pointer group"
               title="Search brokers, trading signals, and rewards (Cmd+K)"
             >
               <div className="flex items-center gap-2 text-slate-400 group-hover:text-slate-600 transition-colors min-w-0 flex-1">
@@ -969,7 +969,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={onOpenSignUp}
-              className="px-3.5 sm:px-5 py-2 rounded-xl bg-[#CAEB0E] hover:bg-[#b8d60d] text-black font-extrabold text-xs sm:text-sm transition-all shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
+              className="hidden sm:inline-flex px-3.5 sm:px-5 py-2 rounded-xl bg-[#CAEB0E] hover:bg-[#b8d60d] text-black font-extrabold text-xs sm:text-sm transition-all shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
             >
               Open free account
             </button>
@@ -979,7 +979,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Mobile Search button */}
           <button
             onClick={() => onOpenSearchModal?.()}
-            className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer"
+            className="xl:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer"
             title="Search"
           >
             <Search className="w-5 h-5" />
@@ -988,7 +988,9 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Mobile hamburger menu */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer"
+            aria-label="Open navigation menu"
+            aria-expanded={mobileMenuOpen}
+            className="xl:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -2022,7 +2024,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile Drawer Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-slate-200 px-4 py-3 space-y-2">
+        <div className="xl:hidden bg-white border-t border-slate-200 px-4 py-3 space-y-2">
           {/* Mobile User Profile Banner */}
           <div
             onClick={() => {

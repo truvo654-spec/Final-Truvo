@@ -5,6 +5,8 @@ export function setupButtonIconCleaner() {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   const processButton = (button: Element) => {
+    // Accessible SVG chart points are controls, not text buttons containing decorative icons.
+    if (button.namespaceURI !== 'http://www.w3.org/1999/xhtml') return;
     // If button already marked, skip
     // Check if the button has non-empty text content
     const text = (button.textContent || '').trim();
@@ -23,7 +25,7 @@ export function setupButtonIconCleaner() {
       button.classList.contains('dropdown-trigger') ||
       button.classList.contains('select-trigger') ||
       button.id?.includes('dropdown') ||
-      button.className.includes('pr-10'); // typical dropdown button layout with right chevron
+      (button.getAttribute('class') || '').includes('pr-10'); // typical dropdown button layout with right chevron
 
     // It has text! Hide any svg icons inside this button (except dropdown arrow indicators)
     const svgs = button.querySelectorAll('svg');

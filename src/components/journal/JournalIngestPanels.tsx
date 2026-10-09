@@ -1,6 +1,8 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Broker, JournalEntry } from '../../types';
 import { INGEST_FIELDS, IngestField, ColumnMapping, SAMPLE_CSV, autoMap, convertRows, parseCsv } from './journalIngest';
+import { useJournalState, saveJournalValue } from './journalStorage';
+import { metrics } from './journalMath';
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_ROWS = 5000;
@@ -18,6 +20,12 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
   const [drag, setDrag] = useState(false);
   const [rows, setRows] = useState<string[][]>([]);
   const [mapping, setMapping] = useState<ColumnMapping[]>([]);
+  const [accountId,setAccountId] = useState('');
+  const [currency,setCurrency] = useState('USD');
+  const [timezone,setTimezone] = useState('UTC');
+  const [pnlBasis,setPnlBasis] = useState<'gross'|'net'>('gross');
+  const [unit,setUnit] = useState('');
+  const [history,setHistory,historyFailed] = useJournalState<{id:string;at:string;file:string;account:string;currency:string;imported:number;duplicate:number;invalid:number;net:number}[]>('imports',[]);
 
   const handleFile = async (file?: File) => {
     if (!file) return;
@@ -55,14 +63,14 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
     );
 
   const parsed = useMemo(
-    () => (rows.length ? convertRows(rows, mapping, existing, { strategy }) : []),
-    [rows, mapping, existing, strategy]
+    () => (rows.length ? convertRows(rows, mapping, existing, { strategy,accountId,currency,timezone,pnlBasis,quantityUnit:unit || undefined }) : []),
+    [rows, mapping, existing, strategy,accountId,currency,timezone,pnlBasis,unit]
   );
   const ok = parsed.filter((p) => p.status === 'ok');
   const dup = parsed.filter((p) => p.status === 'duplicate');
   const bad = parsed.filter((p) => p.status === 'invalid');
   const matched = mapping.filter((m) => m.field).length;
-  const required: IngestField[] = ['symbol', 'side', 'entry', 'qty'];
+  const required: IngestField[] = ['time', 'symbol', 'side', 'entry', 'qty'];
   const missing = required.filter((f) => !mapping.some((m) => m.field === f));
 
   const downloadSample = () => {
@@ -76,6 +84,14 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
 
   return (
     <div className="space-y-4">
+      <div className="grid sm:grid-cols-2 gap-3 text-xs">
+        <label>Account identity (required)<input aria-label="Import account identity" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" placeholder="Broker + account name or ID" value={accountId} onChange={e=>setAccountId(e.target.value)}/></label>
+        <label>Account currency<select aria-label="Import currency" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={currency} onChange={e=>setCurrency(e.target.value)}>{['USD','EUR','GBP','THB','JPY','AUD','CAD','CHF','SGD'].map(c=><option key={c}>{c}</option>)}</select></label>
+        <label>Source UTC offset<select aria-label="Source UTC offset" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={timezone} onChange={e=>setTimezone(e.target.value)}>{['UTC','-05:00','-04:00','+01:00','+02:00','+07:00','+08:00','+09:00'].map(t=><option key={t}>{t}</option>)}</select></label>
+        <label>Statement P&amp;L basis<select aria-label="Statement P&L basis" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={pnlBasis} onChange={e=>setPnlBasis(e.target.value as 'gross'|'net')}><option value="gross">Gross (fees separate)</option><option value="net">Net (fees already deducted)</option></select></label>
+        <label>Quantity unit<input aria-label="Import quantity unit" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" placeholder="lots, shares, contracts, BTC…" value={unit} onChange={e=>setUnit(e.target.value)}/></label>
+      </div>
+      <p className="text-xs text-slate-500">ISO dates required. Timestamp offsets take precedence; otherwise the source offset above is used. Use offset-bearing timestamps across daylight-saving changes. Costs must be non-negative expense magnitudes; rebates need separate reconciliation. Net-named columns are treated as net and known costs reconstruct gross. No currency conversion or price-based profit estimates.</p>
       <div
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
         onDragLeave={() => setDrag(false)}
@@ -135,6 +151,8 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
             <span className="text-slate-500">{dup.length} duplicate{dup.length === 1 ? '' : 's'} skipped</span>
             <span className={bad.length ? 'text-rose-600' : 'text-slate-500'}>{bad.length} invalid</span>
           </div>
+          <div className="overflow-x-auto border border-slate-200 rounded-xl"><table className="w-full text-xs"><caption className="text-left p-2 font-bold">Import preview · first 10 rows · {currency}</caption><thead><tr>{['Line','Instrument','UTC entry date','Status','Gross','Costs','Validation'].map(h=><th key={h} className="p-2 text-left">{h}</th>)}</tr></thead><tbody>{parsed.slice(0,10).map(p=><tr key={p.line} className="border-t border-slate-100">{[p.line,p.entry?.symbol || '—',p.entry?.entryTime || p.entry?.date || '—',p.entry?.tradingStatus || '—',p.entry?.pnlKnown===false?'Unknown':p.entry?.pnl ?? '—',p.entry?.commission ?? 'Unknown',p.reason || p.status].map((v,i)=><td key={i} className="p-2">{v}</td>)}</tr>)}</tbody></table></div>
+          <p className="text-xs">Reconciliation: {ok.length+dup.length+bad.length}/{rows.length} rows accounted for · eligible net total {metrics(ok.map(p=>p.entry!)).total.toFixed(2)} {currency}. Rows with unknown costs are excluded from net.</p>
           {(bad.length > 0 || dup.length > 0) && (
             <ul className="max-h-24 overflow-y-auto text-[11px] text-[#474556] space-y-0.5 border border-slate-100 rounded-lg p-2">
               {[...bad, ...dup].slice(0, 20).map((p) => (
@@ -145,14 +163,15 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
 
           <button
             type="button"
-            disabled={ok.length === 0 || missing.length > 0}
-            onClick={() => onImport(ok.map((p) => p.entry!))}
+            disabled={ok.length === 0 || missing.length > 0 || !accountId.trim()}
+            onClick={() => { const list=ok.map(p=>p.entry!);const next=[{id:crypto.randomUUID(),at:new Date().toISOString(),file:fileName,account:accountId,currency,imported:ok.length,duplicate:dup.length,invalid:bad.length,net:metrics(list).total},...history];if(historyFailed || !saveJournalValue('imports',next)){setError('Import history could not be saved. Your existing records were not changed. Free browser storage or export a backup first.');return;}setHistory(next);onImport(list); }}
             className="w-full bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
           >
             Import {ok.length} trade{ok.length === 1 ? '' : 's'}
           </button>
         </>
       )}
+      {history.length>0 && <details><summary className="text-xs font-bold cursor-pointer">Import history ({history.length})</summary><ul className="text-xs space-y-2 mt-2">{history.map(h=><li key={h.id}>{h.at} · {h.file} · {h.account} · {h.imported} imported / {h.duplicate} duplicates / {h.invalid} invalid · eligible net {h.net.toFixed(2)} {h.currency}</li>)}</ul></details>}
     </div>
   );
 };

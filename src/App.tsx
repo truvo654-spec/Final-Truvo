@@ -857,6 +857,7 @@ export default function App() {
 
       {/* Main App Container */}
       <main className={`flex-1 w-full ${
+        activeTab === 'trading-journal' ? 'p-0 space-y-0' :
         activeTab === 'about' ||
         activeTab === 'contact-us' ||
         activeTab === 'contact' ||

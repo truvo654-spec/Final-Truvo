@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { JournalEntry } from '../../types';
 import { UNASSIGNED, addMonth, monthCells, monthLabel } from './journalOverview';
+import { useMoney } from './JournalCurrency';
+import { eligible } from './journalMath';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const usdBase = (n: number) => `${n < 0 ? '-' : n > 0 ? '+' : ''}$${Math.abs(n) >= 1000 ? `${(Math.abs(n) / 1000).toFixed(1)}k` : Math.abs(n) < 10 ? Math.abs(n).toFixed(1) : Math.abs(n).toFixed(0)}`;
@@ -11,6 +13,7 @@ interface Props {
   onMonthChange: (ym: string) => void;
   entries: JournalEntry[];
   valueOf: (e: JournalEntry) => number;
+  eligibleForValue?: (e:JournalEntry)=>boolean;
   unit?: 'usd' | 'pts';
   label: string; // e.g. "gross", "gross + cashback"
   brokerName: (id: string) => string;
@@ -20,23 +23,28 @@ interface Props {
   onSelect: (iso: string | null) => void;
 }
 
-export const JournalCalendar: React.FC<Props> = ({ month, onMonthChange, entries, valueOf, unit = 'usd', label, brokerName, brokerColor, today, selected, onSelect }) => {
+export const JournalCalendar: React.FC<Props> = ({ month, onMonthChange, entries, valueOf, eligibleForValue=eligible, unit = 'usd', label, brokerName, brokerColor, today, selected, onSelect }) => {
+  const [mouseDay,setHoverDay] = useState<string|null>(null);
+  const [focusedDay,setFocusedDay] = useState<string|null>(null);
+  const hoverDay=focusedDay===''?null:focusedDay ?? mouseDay;
+  const money=useMoney();
   const pts = unit === 'pts';
   const fmtP = (n: number, signed: boolean) => `${signed ? (n < 0 ? '-' : n > 0 ? '+' : '') : ''}${Math.abs(n) >= 1000 ? `${(Math.abs(n) / 1000).toFixed(1)}k` : Math.round(Math.abs(n))}`;
-  const usd = (n: number) => (pts ? fmtP(n, true) : usdBase(n));
-  const usdFull = (n: number) => (pts ? `${fmtP(n, true)} pts` : usdFullBase(n));
+  const usd = (n: number) => (pts ? fmtP(n, true) : money(n,0));
+  const usdFull = (n: number) => (pts ? `${fmtP(n, true)} pts` : money(n));
   const byDay = useMemo(() => {
-    const m: Record<string, { n: number; pnl: number; by: Record<string, number> }> = {};
+    const m: Record<string, { n: number; known:number; pnl: number; by: Record<string, number> }> = {};
     entries.forEach((e) => {
-      const d = (m[e.date] ||= { n: 0, pnl: 0, by: {} });
+      const d = (m[e.date] ||= { n: 0, known:0, pnl: 0, by: {} });
       const v = valueOf(e);
       const k = e.brokerId || UNASSIGNED;
       d.n += 1;
+      if(eligibleForValue(e))d.known++;
       d.pnl += v;
       d.by[k] = (d.by[k] || 0) + v;
     });
     return m;
-  }, [entries, valueOf]);
+  }, [entries, valueOf, eligibleForValue]);
 
   const cells = monthCells(month);
   const inMonth = cells.filter((c): c is string => !!c && !!byDay[c]);
@@ -67,7 +75,7 @@ export const JournalCalendar: React.FC<Props> = ({ month, onMonthChange, entries
           const isSel = selected === iso;
           const isToday = iso === today;
           const intensity = d ? 0.15 + 0.5 * (Math.abs(d.pnl) / maxAbs) : 0;
-          const bg = d ? (d.pnl >= 0 ? `rgba(16,185,129,${intensity})` : `rgba(244,63,94,${intensity})`) : undefined;
+          const bg = d ? (d.pnl > 0 ? `rgba(16,185,129,${intensity})` : d.pnl < 0 ? `rgba(244,63,94,${intensity})` : '#f1f5f9') : undefined;
           return (
             <button
               key={iso}
@@ -75,17 +83,20 @@ export const JournalCalendar: React.FC<Props> = ({ month, onMonthChange, entries
               role="gridcell"
               aria-pressed={isSel}
               aria-label={`${iso}: ${d ? `${d.n} entr${d.n === 1 ? 'y' : 'ies'}, ${usdFull(d.pnl)}${Object.keys(d.by).length > 1 ? ` (${(Object.entries(d.by) as [string, number][]).map(([k, v]) => `${brokerName(k)} ${usdFull(v)}`).join(', ')})` : ''}` : 'no entries'}`}
-              title={d ? (Object.entries(d.by) as [string, number][]).map(([k, v]) => `${brokerName(k)}: ${usdFull(v)}`).join('\n') : undefined}
+              aria-describedby={hoverDay===iso ? 'calendar-day-details' : undefined}
+              onMouseEnter={()=>setHoverDay(iso)} onMouseLeave={()=>setHoverDay(null)}
+              onFocus={()=>setFocusedDay(iso)} onBlur={()=>setFocusedDay(null)}
+              onKeyDown={ev=>{if(ev.key==='Escape'){setFocusedDay('');setHoverDay(null);}}}
               onClick={() => onSelect(isSel ? null : iso)}
               style={bg ? { backgroundColor: bg } : undefined}
-              className={`aspect-square rounded-lg p-1 text-left flex flex-col justify-between border transition-colors ${
+              className={`aspect-square max-h-12 rounded-lg p-1 text-left flex flex-col justify-between border transition-colors ${
                 isSel ? 'border-[#5338ec] ring-2 ring-[#5338ec]/30' : isToday ? 'border-[#5338ec]/50' : 'border-transparent hover:border-slate-300'
               } ${d ? '' : 'bg-slate-50'}`}
             >
               <span className={`text-[10px] font-semibold ${isToday ? 'text-[#5338ec]' : 'text-[#474556]'}`}>{Number(iso.slice(8))}</span>
               {d && (
                 <span className="flex items-end justify-between gap-0.5">
-                  <span className="text-[10px] font-bold font-mono leading-none text-[#0b1c30]">{usd(d.pnl)}</span>
+                  <span className="text-[10px] font-bold font-mono leading-none text-[#0b1c30]">{d.known?usd(d.pnl):'—'}</span>
                   <span className="flex gap-0.5 pb-px">
                     {Object.keys(d.by).slice(0, 3).map((k) => <span key={k} className="w-1.5 h-1.5 rounded-full ring-1 ring-white" style={{ backgroundColor: brokerColor(k) }} />)}
                   </span>
@@ -95,7 +106,8 @@ export const JournalCalendar: React.FC<Props> = ({ month, onMonthChange, entries
           );
         })}
       </div>
-      <p className="text-[11px] text-[#94a3b8] mt-2">Green is a profitable day, red a losing day; dots show which brokers traded. Hover a day for the per-broker split, click it to see its trades.</p>
+      {hoverDay && <div id="calendar-day-details" role="tooltip" className="mt-3 rounded-xl bg-[#F7F5FF] border border-purple-100 p-3 text-xs break-words"><p className="font-bold">{hoverDay} · {label}</p><p>{byDay[hoverDay]?.n || 0} recorded entries · {byDay[hoverDay]?.known || 0} eligible closed · realized value {byDay[hoverDay]?.known?usdFull(byDay[hoverDay].pnl):'unavailable'}</p>{Object.entries(byDay[hoverDay]?.by || {}).map(([id,value])=><p key={id}>{brokerName(id)}: {usdFull(Number(value))} (eligible results only)</p>)}</div>}
+      <p className="text-[11px] text-[#94a3b8] mt-2">Green is profitable, red losing, zero neutral. Dots show brokers. Hover or focus a day for its broker split; select it for linked trades and a reflection. Escape dismisses details.</p>
     </div>
   );
 };

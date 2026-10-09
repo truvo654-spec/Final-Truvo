@@ -1,35 +1,41 @@
+import { useJournalState } from './journalStorage';
+import { useMoney, formatMoney } from './JournalCurrency';
+import { netOf, eligible, resultOf, realizedR, timestampMs, metrics, currencyOf } from './journalMath';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Broker, JournalEntry } from '../../types';
 import { UNASSIGNED, brokerColor, entryCashback, entryPoints } from './journalOverview';
+import { TradingStatusBadge, ReviewStateBadge, reviewStateOf, TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
 
 // Dark "trade log" workspace: KPI strip, bulk actions, grouping, column picker, sortable table with
 // totals and pagination. Figures are net of commissions; cashback and points are estimates.
 
 type ColKey =
   | 'time' | 'instrument' | 'side' | 'size' | 'entry' | 'exit' | 'net' | 'r'
-  | 'broker' | 'cashback' | 'points' | 'fees' | 'tags' | 'playbook' | 'outcome';
+  | 'broker' | 'cashback' | 'points' | 'fees' | 'tags' | 'playbook' | 'outcome' | 'tradingStatus' | 'review';
 
 interface ColDef { key: ColKey; label: string; align?: 'right'; sortable?: boolean; defaultOn: boolean }
 
 const COLS: ColDef[] = [
   { key: 'time', label: 'Date & Time', sortable: true, defaultOn: true },
   { key: 'instrument', label: 'Instrument', sortable: true, defaultOn: true },
+  { key: 'tradingStatus', label: 'Trading status', sortable: true, defaultOn: true },
+  { key: 'review', label: 'Review', defaultOn: true },
   { key: 'side', label: 'Side', sortable: true, defaultOn: true },
-  { key: 'size', label: 'Size', align: 'right', sortable: true, defaultOn: true },
-  { key: 'entry', label: 'Entry', align: 'right', sortable: true, defaultOn: true },
-  { key: 'exit', label: 'Exit', align: 'right', sortable: true, defaultOn: true },
+  { key: 'size', label: 'Size', align: 'right', sortable: true, defaultOn: false },
+  { key: 'entry', label: 'Entry', align: 'right', sortable: true, defaultOn: false },
+  { key: 'exit', label: 'Exit', align: 'right', sortable: true, defaultOn: false },
   { key: 'net', label: 'Net P&L', align: 'right', sortable: true, defaultOn: true },
   { key: 'r', label: 'Realized R', align: 'right', sortable: true, defaultOn: true },
   { key: 'broker', label: 'Broker', sortable: true, defaultOn: true },
-  { key: 'cashback', label: 'Cashback', align: 'right', sortable: true, defaultOn: true },
-  { key: 'points', label: 'Points', align: 'right', sortable: true, defaultOn: true },
-  { key: 'fees', label: 'Comm. & Fees', align: 'right', sortable: true, defaultOn: true },
+  { key: 'cashback', label: 'Cashback (est. USD)', align: 'right', sortable: true, defaultOn: false },
+  { key: 'points', label: 'Points', align: 'right', sortable: true, defaultOn: false },
+  { key: 'fees', label: 'Comm. & Fees', align: 'right', sortable: true, defaultOn: false },
   { key: 'tags', label: 'Execution Tags', defaultOn: true },
   { key: 'playbook', label: 'Playbook', sortable: true, defaultOn: false },
   { key: 'outcome', label: 'Outcome', sortable: true, defaultOn: false },
 ];
 
-type GroupBy = 'none' | 'instrument' | 'broker' | 'playbook' | 'side' | 'outcome';
+type GroupBy = 'none' | 'day' | 'week' | 'instrument' | 'broker' | 'playbook' | 'side' | 'outcome' | 'tradingStatus';
 
 const money = (n: number, dp = 2) =>
   `${n < 0 ? '-' : n > 0 ? '+' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
@@ -49,28 +55,27 @@ const BADGE_STYLE: Record<string, string> = {
 
 const sizeLabel = (e: JournalEntry) => {
   const unit =
-    e.assetClass === 'Stocks' ? 'shares'
+    e.quantityUnit || (e.assetClass === 'Stocks' ? 'shares'
     : e.assetClass === 'Crypto' ? e.symbol.split(/[/-]/)[0]
     : e.assetClass === 'Indices' && e.size >= 1 && Number.isInteger(e.size) ? (e.size === 1 ? 'contract' : 'contracts')
-    : e.size === 1 ? 'lot' : 'lots';
+    : e.size === 1 ? 'lot' : 'lots');
   return `${num(e.size)} ${unit}`;
 };
 
 const fmtTime = (e: JournalEntry) => {
-  const d = new Date(`${e.entryTime || `${e.date}T00:00:00`}Z`);
+  const d = new Date(timestampMs(e.entryTime || `${e.date}T00:00:00`));
   const date = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric', timeZone: 'UTC' });
   if (!e.entryTime) return date;
   return `${date} ${d.toLocaleTimeString('en-US', { hour12: false, timeZone: 'UTC' })}`;
 };
 
-const netOf = (e: JournalEntry) => Math.round((e.pnl - (e.commission ?? 0)) * 100) / 100;
 const tagLabel = (t: string) => `#${t.replace(/^#/, '').trim().replace(/\s+/g, '_')}`;
 
 interface Props {
   entries: JournalEntry[];
   brokers: Broker[];
   onChange: (updater: (prev: JournalEntry[]) => JournalEntry[]) => void;
-  onOpen: (id: string) => void;
+  onOpen: (id: string, cohort?: string[]) => void;
   onNew: () => void;
   onToast: (msg: string) => void;
   preset?: { ids: string[]; label: string } | null;
@@ -80,20 +85,25 @@ interface Props {
 }
 
 export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onNew, onToast, preset, onClearPreset, onReplay }) => {
+  const money = useMoney();
+  const tradingPlain = (n:number,dp=2)=>money(Math.abs(n),dp).replace(/^\+/, '');
+
   const brokerMap = useMemo(() => new Map(brokers.map((b) => [b.id, b] as const)), [brokers]);
   const brokerOrder = useMemo(() => brokers.map((b) => b.id), [brokers]);
   const brokerName = (id?: string) => (id ? brokerMap.get(id)?.name || id : 'Unassigned');
 
-  const [query, setQuery] = useState('');
-  const [fOutcome, setFOutcome] = useState('all');
-  const [marketOff, setMarketOff] = useState<string[]>([]);
-  const [brokerOff, setBrokerOff] = useState<string[]>([]);
-  const [groupBy, setGroupBy] = useState<GroupBy>('none');
-  const [cols, setCols] = useState<ColKey[]>(COLS.filter((c) => c.defaultOn).map((c) => c.key));
+  const [query, setQuery] = useJournalState('JournalTradeLog-query', '');
+  const [needsReview, setNeedsReview] = useJournalState('JournalTradeLog-needsReview', false);
+  const [fOutcome, setFOutcome] = useJournalState('JournalTradeLog-fOutcome', 'all');
+  const [fTradingStatus, setFTradingStatus] = useJournalState<'all' | 'planned' | 'open' | 'closed'>('JournalTradeLog-fTradingStatus', 'all');
+  const [marketOff, setMarketOff] = useJournalState<string[]>('JournalTradeLog-marketOff', []);
+  const [brokerOff, setBrokerOff] = useJournalState<string[]>('JournalTradeLog-brokerOff', []);
+  const [groupBy, setGroupBy] = useJournalState<GroupBy>('JournalTradeLog-groupBy', 'none');
+  const [cols, setCols] = useJournalState<ColKey[]>('JournalTradeLog-cols', COLS.filter((c) => c.defaultOn).map((c) => c.key));
   const [colsOpen, setColsOpen] = useState(false);
   const [sort, setSort] = useState<{ key: ColKey; dir: 'asc' | 'desc' }>({ key: 'time', dir: 'desc' });
-  const [perPage, setPerPage] = useState(10);
-  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useJournalState('JournalTradeLog-perPage', 10);
+  const [page, setPage] = useJournalState('JournalTradeLog-page', 1);
   const [sel, setSel] = useState<string[]>([]);
   const [panel, setPanel] = useState<null | 'tag' | 'move' | 'delete'>(null);
   const [tagText, setTagText] = useState('');
@@ -102,32 +112,36 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     return entries.filter((e) => {
-      if (preset && !preset.ids.includes(e.id)) return false;
-      if (fOutcome !== 'all' && e.outcome !== fOutcome) return false;
+      // A contributing-trade handoff must not silently inherit unrelated Log subfilters.
+      if(preset)return preset.ids.includes(e.id);
+      if (needsReview && reviewStateOf(e) === 'complete') return false;
+      if (fOutcome !== 'all' && (!eligible(e) || resultOf(e) !== fOutcome)) return false;
+      if (fTradingStatus !== 'all' && tradingStatusOf(e) !== fTradingStatus) return false;
       if (marketOff.includes(e.assetClass)) return false;
       if (brokerOff.includes(e.brokerId || UNASSIGNED)) return false;
       if (!q) return true;
       return [e.symbol, e.strategy, brokerName(e.brokerId), ...e.tags].some((s) => s.toLowerCase().includes(q));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, query, fOutcome, marketOff, brokerOff, brokerMap, preset]);
+  }, [entries, query, needsReview, fOutcome, fTradingStatus, marketOff, brokerOff, brokerMap, preset]);
 
   const sortVal = (e: JournalEntry, k: ColKey): number | string => {
     switch (k) {
-      case 'time': return e.entryTime || e.date;
+      case 'time': return timestampMs(e.entryTime || `${e.date}T00:00:00`);
       case 'instrument': return e.symbol;
       case 'side': return e.direction;
       case 'size': return e.size;
       case 'entry': return e.entryPrice;
       case 'exit': return e.exitPrice ?? Number.NEGATIVE_INFINITY;
       case 'net': return netOf(e);
-      case 'r': return e.rMultiple ?? Number.NEGATIVE_INFINITY;
+      case 'r': return realizedR(e) ?? Number.NEGATIVE_INFINITY;
       case 'broker': return brokerName(e.brokerId);
       case 'cashback': return entryCashback(e, brokerMap);
       case 'points': return entryPoints(e);
       case 'fees': return e.commission ?? 0;
       case 'playbook': return e.strategy;
-      case 'outcome': return e.outcome;
+      case 'outcome': return eligible(e)?resultOf(e):'unknown';
+      case 'tradingStatus': return tradingStatusOf(e);
       default: return 0;
     }
   };
@@ -147,14 +161,15 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
   const curPage = Math.min(page, pages);
   const visible = sorted.slice((curPage - 1) * perPage, curPage * perPage);
 
-  useEffect(() => { setPage(1); }, [query, fOutcome, marketOff, brokerOff, perPage, groupBy]);
+  useEffect(() => { setPage(1); }, [query, fOutcome, fTradingStatus, marketOff, brokerOff, perPage, groupBy]);
   useEffect(() => { setSel((s) => s.filter((id) => entries.some((e) => e.id === id))); }, [entries]);
 
   const sum = (list: JournalEntry[]) => {
+    list = list.filter(e => eligible(e));
     const net = list.reduce((a, e) => a + netOf(e), 0);
     const gross = list.reduce((a, e) => a + e.pnl, 0);
     const fees = list.reduce((a, e) => a + (e.commission ?? 0), 0);
-    const rs = list.map((e) => e.rMultiple).filter((r): r is number => r !== null);
+    const rs = list.map((e) => realizedR(e)).filter((r): r is number => r !== null);
     return {
       n: list.length,
       net: Math.round(net * 100) / 100,
@@ -169,7 +184,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
 
   const kpi = useMemo(() => {
     const t = sum(rows);
-    const nets = rows.map(netOf);
+    const nets = rows.filter(e => eligible(e)).map(netOf);
     const wins = nets.filter((n) => n > 0);
     const losses = nets.filter((n) => n < 0);
     const be = nets.length - wins.length - losses.length;
@@ -177,19 +192,19 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
     const gL = Math.abs(losses.reduce((a, b) => a + b, 0));
     const avgW = wins.length ? gW / wins.length : 0;
     const avgL = losses.length ? gL / losses.length : 0;
-    const pf = gL > 0 ? gW / gL : null;
-    const rs = rows.map((e) => e.rMultiple).filter((r): r is number => r !== null);
+    const pf = gL > 0 ? gW / gL : gW>0 ? Infinity : null;
+    const rs = rows.map((e) => realizedR(e)).filter((r): r is number => r !== null);
     return {
       ...t,
       pf,
       wins: wins.length,
       losses: losses.length,
       be,
-      winRate: wins.length + losses.length ? Math.round((wins.length / (wins.length + losses.length)) * 1000) / 10 : 0,
+      winRate: nets.length ? Math.round((wins.length / nets.length) * 1000) / 10 : 0,
       avgW, avgL,
       payoff: avgL > 0 ? avgW / avgL : null,
       maxR: rs.length ? Math.max(...rs) : 0,
-      feePct: t.gross > 0 ? (t.fees / t.gross) * 100 : 0,
+      feePct: t.gross !== 0 ? (t.fees / Math.abs(t.gross)) * 100 : null,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, brokerMap]);
@@ -200,7 +215,8 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
   const groups = useMemo(() => {
     if (groupBy === 'none') return [{ key: '', list: visible }];
     const keyOf = (e: JournalEntry) =>
-      groupBy === 'instrument' ? e.symbol : groupBy === 'broker' ? brokerName(e.brokerId) : groupBy === 'playbook' ? e.strategy : groupBy === 'side' ? (e.direction === 'BUY' ? 'LONG' : 'SHORT') : e.outcome;
+      groupBy === 'day' ? e.date : groupBy === 'week' ? `Week of ${new Date(Date.parse(`${e.date}T00:00:00Z`) - ((new Date(`${e.date}T00:00:00Z`).getUTCDay()+6)%7)*86400000).toISOString().slice(0,10)}` :
+      groupBy === 'instrument' ? e.symbol : groupBy === 'broker' ? brokerName(e.brokerId) : groupBy === 'playbook' ? e.strategy : groupBy === 'side' ? (e.direction === 'BUY' ? 'LONG' : 'SHORT') : groupBy === 'outcome' ? (eligible(e)?resultOf(e):'Not realized / unknown') : TRADING_STATUS_LABEL[tradingStatusOf(e)];
     const m = new Map<string, JournalEntry[]>();
     visible.forEach((e) => { const k = keyOf(e); m.set(k, [...(m.get(k) || []), e]); });
     return Array.from(m.entries()).map(([key, list]) => ({ key, list }));
@@ -230,7 +246,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
     set: React.Dispatch<React.SetStateAction<string[]>>
   ) => (
     <div className="relative">
-      <button type="button" aria-expanded={openMenu === id} onClick={() => { setColsOpen(false); setOpenMenu(openMenu === id ? null : id); }} className={`${btn} ${off.length ? 'border-[#5338ec] text-[#5338ec]' : ''}`}>
+      <button type="button" disabled={!!preset} aria-expanded={openMenu === id} onClick={() => { setColsOpen(false); setOpenMenu(openMenu === id ? null : id); }} className={`${btn} ${off.length ? 'border-[#5338ec] text-[#5338ec]' : ''}`}>
         {title} ({opts.length - off.length}/{opts.length})
       </button>
       {openMenu === id && (
@@ -280,9 +296,9 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
 
   const exportCsv = () => {
     const list = sel.length ? selEntries : sorted;
-    const head = ['Date', 'Instrument', 'Side', 'Size', 'Entry', 'Exit', 'Gross P&L', 'Commissions', 'Net P&L', 'Realized R', 'Broker', 'Cashback (est.)', 'Points (est.)', 'Playbook', 'Tags'];
-    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-    const lines = list.map((e) => [e.entryTime || e.date, e.symbol, e.direction === 'BUY' ? 'LONG' : 'SHORT', e.size, e.entryPrice, e.exitPrice ?? '', e.pnl, e.commission ?? 0, netOf(e), e.rMultiple ?? '', brokerName(e.brokerId), entryCashback(e, brokerMap), entryPoints(e), e.strategy, e.tags.join('|')].map(esc).join(','));
+    const head = ['Date', 'Instrument', 'Side', 'Size', 'Entry', 'Exit', 'Gross P&L', 'Commissions', 'Net P&L', 'Realized R', 'Trading status', 'Broker', 'Cashback (est. USD)', 'Points (est.)', 'Playbook', 'Tags', 'Journal ID', 'Account ID', 'Account currency', 'Review state', 'Net eligible'];
+    const esc = (v: string | number) => `"${(typeof v==='string' && /^[=+@\-]/.test(v)?`'${v}`:String(v)).replace(/"/g, '""')}"`;
+    const lines = list.map((e) => [e.entryTime || e.date, e.symbol, e.direction === 'BUY' ? 'LONG' : 'SHORT', e.size, e.entryPrice, e.exitPrice ?? '', e.pnlKnown===false?'':e.pnl, e.commission ?? '', eligible(e)?netOf(e):'', realizedR(e) ?? '', TRADING_STATUS_LABEL[tradingStatusOf(e)], brokerName(e.brokerId), entryCashback(e, brokerMap), entryPoints(e), e.strategy, e.tags.join('|'),e.id,e.accountId || 'legacy-demo',currencyOf(e),reviewStateOf(e),eligible(e)?'yes':'no'].map(esc).join(','));
     const blob = new Blob([[head.map(esc).join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -295,6 +311,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
 
   const cell = (e: JournalEntry, k: ColKey) => {
     switch (k) {
+      case 'review': return <td key={k} className="px-3 py-2.5"><ReviewStateBadge state={reviewStateOf(e)} /></td>;
       case 'time': return <td key={k} className="px-3 py-2.5 whitespace-nowrap text-slate-700">{fmtTime(e)}</td>;
       case 'instrument':
         return (
@@ -314,9 +331,9 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
         );
       case 'size': return <td key={k} className="px-3 py-2.5 text-right whitespace-nowrap text-slate-700">{sizeLabel(e)}</td>;
       case 'entry': return <td key={k} className="px-3 py-2.5 text-right font-mono text-slate-700">{num(e.entryPrice)}</td>;
-      case 'exit': return <td key={k} className="px-3 py-2.5 text-right font-mono text-slate-700">{e.exitPrice === null ? <span className="text-slate-500">open</span> : num(e.exitPrice)}</td>;
-      case 'net': return <td key={k} className={`px-3 py-2.5 text-right font-mono font-bold ${tone(netOf(e))}`}>{money(netOf(e))}</td>;
-      case 'r': return <td key={k} className={`px-3 py-2.5 text-right font-mono ${e.rMultiple === null ? 'text-slate-500' : tone(e.rMultiple)}`}>{e.rMultiple === null ? '—' : `${e.rMultiple > 0 ? '+' : ''}${e.rMultiple.toFixed(2)}R`}</td>;
+      case 'exit': return <td key={k} className="px-3 py-2.5 text-right font-mono text-slate-700">{e.exitPrice == null ? <span className="text-slate-500">{tradingStatusOf(e)==='closed'?'Unknown':'—'}</span> : num(e.exitPrice)}</td>;
+      case 'net': return <td key={k} className={`px-3 py-2.5 text-right font-mono font-bold ${tone(netOf(e))}`} title={!eligible(e) ? 'Not realized or costs unknown; excluded from net totals' : 'Closed result after costs'}>{eligible(e) ? money(netOf(e)) : '—'}</td>;
+      case 'r': return <td key={k} className="px-3 py-2.5 text-right font-mono">{realizedR(e) == null ? '—' : `${realizedR(e)!.toFixed(2)}R`}</td>;
       case 'broker':
         return (
           <td key={k} className="px-3 py-2.5 whitespace-nowrap">
@@ -328,7 +345,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
         );
       case 'cashback': { const v = entryCashback(e, brokerMap); return <td key={k} className={`px-3 py-2.5 text-right font-mono ${v > 0 ? 'text-emerald-600' : 'text-slate-500'}`}>{v > 0 ? `+${plain(v)}` : '—'}</td>; }
       case 'points': { const v = entryPoints(e); return <td key={k} className={`px-3 py-2.5 text-right font-mono ${v > 0 ? 'text-violet-600' : 'text-slate-500'}`}>{v > 0 ? `+${v.toLocaleString('en-US')}` : '—'}</td>; }
-      case 'fees': return <td key={k} className="px-3 py-2.5 text-right font-mono text-slate-700">{e.commission ? plain(e.commission) : <span className="text-slate-500">—</span>}</td>;
+      case 'fees': return <td key={k} className="px-3 py-2.5 text-right font-mono text-slate-700">{Number.isFinite(e.commission) ? tradingPlain(e.commission!) : <span className="text-slate-500">—</span>}</td>;
       case 'tags':
         return (
           <td key={k} className="px-3 py-2.5">
@@ -339,7 +356,8 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
           </td>
         );
       case 'playbook': return <td key={k} className="px-3 py-2.5 whitespace-nowrap text-slate-700">{e.strategy}</td>;
-      case 'outcome': return <td key={k} className="px-3 py-2.5 capitalize text-slate-700">{e.outcome}</td>;
+      case 'outcome': return <td key={k} className="px-3 py-2.5 capitalize text-slate-700">{eligible(e)?resultOf(e):'Not realized / unknown'}</td>;
+      case 'tradingStatus': return <td key={k} className="px-3 py-2.5"><TradingStatusBadge status={tradingStatusOf(e)} /></td>;
     }
   };
 
@@ -350,7 +368,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
       case 'r': return <td key={k} className={`px-3 py-2 text-right font-mono ${tone(s.r)}`}>{s.rn ? `${s.r > 0 ? '+' : ''}${s.r.toFixed(2)}R avg` : '—'}</td>;
       case 'cashback': return <td key={k} className="px-3 py-2 text-right font-mono text-emerald-600">{s.cb > 0 ? `+${plain(s.cb)}` : '—'}</td>;
       case 'points': return <td key={k} className="px-3 py-2 text-right font-mono text-violet-600">{s.pts > 0 ? `+${s.pts.toLocaleString('en-US')}` : '—'}</td>;
-      case 'fees': return <td key={k} className="px-3 py-2 text-right font-mono text-[#0b1c30]">{plain(s.fees)}</td>;
+      case 'fees': return <td key={k} className="px-3 py-2 text-right font-mono text-[#0b1c30]">{tradingPlain(s.fees)}</td>;
       default: return <td key={k} />;
     }
   };
@@ -369,17 +387,17 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
         </div>
         <div className={card}>
           <p className={lbl}>Profit Factor</p>
-          <p className="text-xl font-bold font-mono mt-1 text-[#0b1c30]">{kpi.n === 0 ? '—' : kpi.pf === null ? '∞' : kpi.pf.toFixed(2)}</p>
-          <p className={`text-[10px] font-bold mt-1 ${kpi.pf === null || kpi.pf >= 2 ? 'text-emerald-600' : kpi.pf >= 1.2 ? 'text-amber-600' : 'text-rose-600'}`}>{kpi.n === 0 ? '' : kpi.pf === null || kpi.pf >= 2 ? 'Optimal' : kpi.pf >= 1.2 ? 'Healthy' : 'Weak'}</p>
+          <p className="text-xl font-bold font-mono mt-1 text-[#0b1c30]">{kpi.pf === null ? '—' : kpi.pf === Infinity ? '∞' : kpi.pf.toFixed(2)}</p>
+          <p className="text-[10px] text-slate-500 mt-1">{kpi.pf===Infinity?'No losing results':kpi.pf===null?'No positive or negative results':'Positive net / absolute negative net'}</p>
         </div>
         <div className={card}>
           <p className={lbl}>Win Rate</p>
-          <p className="text-xl font-bold mt-1 text-[#0b1c30]">{kpi.winRate}%</p>
+          <p className="text-xl font-bold mt-1 text-[#0b1c30]">{kpi.n?`${kpi.winRate}%`:'—'}</p>
           <p className="text-[10px] mt-1"><span className="text-emerald-600">{kpi.wins}W</span> / <span className="text-rose-600">{kpi.losses}L</span> <span className="text-slate-500 ml-1">{kpi.be} BE</span></p>
         </div>
         <div className={card}>
           <p className={lbl}>Avg Win / Loss</p>
-          <p className="text-lg font-bold font-mono mt-1"><span className="text-emerald-600">{plain(kpi.avgW, 0)}</span> <span className="text-slate-500">/</span> <span className="text-rose-600">-{plain(kpi.avgL, 0)}</span></p>
+          <p className="text-lg font-bold font-mono mt-1"><span className="text-emerald-600">{kpi.wins?tradingPlain(kpi.avgW, 0):'—'}</span> <span className="text-slate-500">/</span> <span className="text-rose-600">{kpi.losses?`-${tradingPlain(kpi.avgL, 0)}`:'—'}</span></p>
           <p className="text-[10px] text-slate-500 mt-1">Payoff ratio {kpi.payoff === null ? '—' : `${kpi.payoff.toFixed(2)}x`}</p>
         </div>
         <div className={card}>
@@ -389,13 +407,13 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
         </div>
         <div className={card}>
           <p className={lbl}>Comms &amp; Fees</p>
-          <p className="text-xl font-bold font-mono mt-1 text-[#0b1c30]">{plain(kpi.fees)}</p>
-          <p className="text-[10px] text-slate-500 mt-1">Impact {kpi.feePct.toFixed(2)}% of gross</p>
+          <p className="text-xl font-bold font-mono mt-1 text-[#0b1c30]">{tradingPlain(kpi.fees)}</p>
+          <p className="text-[10px] text-slate-500 mt-1">{kpi.feePct==null?'Impact unknown (zero gross)':`${kpi.feePct.toFixed(2)}% of absolute gross total`}</p>
         </div>
         <div className={card}>
-          <p className={lbl}>Cashback (est.)</p>
+          <p className={lbl}>Cashback (est. USD)</p>
           <p className="text-xl font-bold font-mono mt-1 text-emerald-600">{kpi.cb > 0 ? `+${plain(kpi.cb)}` : plain(0)}</p>
-          <p className="text-[10px] text-slate-500 mt-1">After fees {money(Math.round((kpi.net + kpi.cb) * 100) / 100)}</p>
+          <p className="text-[10px] text-slate-500 mt-1">Separate reward estimate; not trading P&amp;L</p>
         </div>
         <div className={card}>
           <p className={lbl}>Points (est.)</p>
@@ -410,7 +428,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
           <>
             <span className="px-3 py-1.5 rounded-lg bg-[#EEF0FE] text-[#5338ec] border border-[#5338ec]/30 text-[11px] font-bold tracking-wide">{sel.length} TRADE{sel.length === 1 ? '' : 'S'} SELECTED</span>
             <button type="button" className={btn} onClick={() => setPanel(panel === 'tag' ? null : 'tag')}>Tag</button>
-            <button type="button" className={btn} onClick={() => { setMoveTo(''); setPanel(panel === 'move' ? null : 'move'); }}>Move Account</button>
+            <button type="button" className={btn} onClick={() => { setMoveTo(''); setPanel(panel === 'move' ? null : 'move'); }}>Change broker</button>
             <button type="button" className={btn} onClick={exportCsv}>Export</button>
             {onReplay && sel.length === 1 && <button type="button" className={btn} title="Practise this trade bar by bar with the date and outcome hidden" onClick={() => onReplay(sel[0])}>Replay this trade blind</button>}
             <button type="button" className={`${btn} text-rose-600`} onClick={() => setPanel(panel === 'delete' ? null : 'delete')}>Delete</button>
@@ -458,18 +476,20 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
       {preset && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg bg-[#F8F7FF] border border-[#5338ec]/30 px-3 py-2 text-xs">
           <span className="font-bold text-[#5338ec]">Drill-down from Insights:</span>
-          <span className="text-[#0b1c30]">{preset.label} ({preset.ids.length} trade{preset.ids.length === 1 ? '' : 's'})</span>
+          <span className="text-[#0b1c30]">{preset.label} · {rows.length}/{preset.ids.length} linked trades in current journal scope. Saved Log subfilters are paused.</span>
           <button type="button" onClick={onClearPreset} className="ml-auto font-semibold text-[#474556] hover:underline">Show all trades</button>
         </div>
       )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter symbols, tags, playbooks, brokers..." aria-label="Filter trades" className="flex-1 min-w-[220px] max-w-md h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs text-[#0b1c30] placeholder:text-slate-400" />
+        <input disabled={!!preset} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter symbols, tags, playbooks, brokers..." aria-label="Filter trades" className="flex-1 min-w-[220px] max-w-md h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs text-[#0b1c30] placeholder:text-slate-400" />
+        <button type="button" disabled={!!preset} aria-pressed={needsReview} onClick={() => { setNeedsReview(v => !v); setPage(1); }} className={btn}>Needs Review ({entries.filter(e => reviewStateOf(e) !== 'complete').length})</button>
         <label className="flex items-center gap-2 h-9 rounded-lg bg-white border border-slate-200 px-3 text-[10px] font-bold tracking-wide text-slate-500">
           GROUP:
           <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)} className="bg-transparent text-xs font-semibold text-[#0b1c30] focus:outline-none">
-            <option value="none" className="text-black">None</option>
+            <option value="none" className="text-black">All</option>
+            <option value="day">Day</option><option value="week">Week</option><option value="tradingStatus">Trading status</option>
             <option value="instrument" className="text-black">Instrument</option>
             <option value="broker" className="text-black">Broker</option>
             <option value="playbook" className="text-black">Playbook</option>
@@ -477,12 +497,17 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
             <option value="outcome" className="text-black">Outcome</option>
           </select>
         </label>
-        <select value={fOutcome} onChange={(e) => setFOutcome(e.target.value)} aria-label="Outcome" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs font-semibold text-[#0b1c30]">
+        <select disabled={!!preset} value={fOutcome} onChange={(e) => setFOutcome(e.target.value)} aria-label="Outcome" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs font-semibold text-[#0b1c30]">
           <option value="all" className="text-black">Any outcome</option>
           <option value="win" className="text-black">Wins</option>
           <option value="loss" className="text-black">Losses</option>
           <option value="breakeven" className="text-black">Breakeven</option>
-          <option value="open" className="text-black">Open</option>
+        </select>
+        <select disabled={!!preset} value={fTradingStatus} onChange={(e) => setFTradingStatus(e.target.value as typeof fTradingStatus)} aria-label="Trading status" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs font-semibold text-[#0b1c30]">
+          <option value="all">Any trading status</option>
+          <option value="planned">Planned</option>
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
         </select>
         {filterMenu('market', 'Market type', marketOpts, marketOff, setMarketOff)}
         {filterMenu('broker', 'Broker', brokerOpts, brokerOff, setBrokerOff)}
@@ -540,7 +565,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
                 {g.list.map((e) => {
                   const on = sel.includes(e.id);
                   return (
-                    <tr key={e.id} onClick={() => onOpen(e.id)} className={`border-t border-[#e2e8f0] cursor-pointer ${on ? 'bg-[#EEF0FE]' : 'hover:bg-slate-50'}`}>
+                    <tr key={e.id} tabIndex={0} aria-label={`Review ${e.symbol} ${e.date}`} onKeyDown={ev => { if (ev.key === 'Enter') onOpen(e.id, sorted.map(x=>x.id)); }} onClick={() => onOpen(e.id, sorted.map(x=>x.id))} className={`border-t border-[#e2e8f0] cursor-pointer focus:outline-2 focus:outline-[#5338ec] ${on ? 'bg-[#EEF0FE]' : 'hover:bg-slate-50'}`}>
                       <td className="px-3 py-2.5" onClick={(ev) => ev.stopPropagation()}>
                         <input type="checkbox" aria-label={`Select ${e.symbol} ${e.date}`} checked={on} onChange={() => toggleRow(e.id)} />
                       </td>

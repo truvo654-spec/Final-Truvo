@@ -1,6 +1,7 @@
 // Data for manual replay: a random past date, a past day that looked like today, or one of
 // your own journal trades rebuilt bar by bar (with the date hidden).
 import type { JournalEntry } from '../types';
+import { netOf, realizedR } from '../components/journal/journalMath';
 import { DATA_END } from './config';
 import { aggregate, dayMs, marketData, parseDay, symbolSpec } from './marketData';
 import { hashSeed, normal, rng } from './rng';
@@ -122,7 +123,7 @@ export function replayJournalTrade(e: JournalEntry): ReplayData {
     id: `rp_${e.id}_${Date.now().toString(36)}`, source: 'journal', symbol: e.symbol, tf: '5m', bars, start: 150,
     dp, tick, multiplier: spec?.multiplier ?? (e.assetClass === 'Forex' ? 100000 : 1), sizeUnit: spec?.sizeUnit ?? 'units', minSize: spec?.minSize ?? 0.01,
     label: `${e.symbol} · ${e.strategy}`, dateLabel: new Date(t0).toUTCString().slice(0, 22),
-    trade: { id: e.id, direction: e.direction, entry, stop: e.stopPrice ?? null, exit, r: e.rMultiple, pnl: e.pnl, entryIndex: 150, exitIndex: 150 + K - 1, date: e.date, strategy: e.strategy, mistakes: e.mistakes },
+    trade: { id: e.id, direction: e.direction, entry, stop: e.stopPrice ?? null, exit, r: realizedR(e), pnl: netOf(e), entryIndex: 150, exitIndex: 150 + K - 1, date: e.date, strategy: e.strategy, mistakes: e.mistakes },
   };
 }
 

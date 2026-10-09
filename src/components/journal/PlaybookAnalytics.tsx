@@ -1,3 +1,4 @@
+import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
 import React, { useMemo, useState } from 'react';
 import { JournalEntry } from '../../types';
 import { JournalPlaybook, ScenarioStatus } from '../../data/journalPlaybooks';
@@ -8,8 +9,8 @@ import { JournalPlaybook, ScenarioStatus } from '../../data/journalPlaybooks';
 
 type Metric = 'winRate' | 'pf' | 'payoff' | 'target';
 const METRICS: { id: Metric; label: string; help: string; ref: number; refLabel: string }[] = [
-  { id: 'winRate', label: 'Win rate', help: 'Share of decided trades (wins + losses) that won.', ref: 50, refLabel: '50%' },
-  { id: 'pf', label: 'Profit factor', help: 'Gross profit ÷ gross loss. Above 1.0 makes money.', ref: 1, refLabel: 'break-even 1.0' },
+  { id: 'winRate', label: 'Win rate', help: 'Winners divided by eligible closed trades, including breakeven.', ref: 50, refLabel: '50%' },
+  { id: 'pf', label: 'Profit factor', help: 'Positive net results divided by absolute negative net results. Chart values are capped at 5.', ref: 1, refLabel: 'break-even 1.0' },
   { id: 'payoff', label: 'Avg win / loss', help: 'Average winning trade ÷ average losing trade (in $).', ref: 1, refLabel: '1:1' },
   { id: 'target', label: 'Target hit', help: "Share of trades that reached the playbook's minimum reward:risk (e.g. ≥ 2R).", ref: 50, refLabel: '50%' },
 ];
@@ -20,10 +21,10 @@ const Info: React.FC<{ title: string; children: React.ReactNode; align?: 'left' 
   const [open, setOpen] = useState(false);
   return (
     <span className="relative inline-flex align-middle" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <span tabIndex={0} role="button" aria-label={`About ${title}`} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+      <span tabIndex={0} role="button" aria-label={`About ${title}`} onKeyDown={e=>{if(e.key==='Escape')setOpen(false);if(e.key==='Enter'||e.key===' '){e.preventDefault();setOpen(o=>!o);}}} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
         className="ml-1 w-3.5 h-3.5 rounded-full border border-slate-300 text-[9px] leading-[12px] text-center font-bold text-slate-500 cursor-help normal-case tracking-normal">i</span>
       {open && (
-        <span role="tooltip" className={`absolute z-40 top-5 ${align === 'right' ? 'right-0' : 'left-0'} w-72 rounded-xl bg-[#0b1c30] text-white text-[11px] leading-relaxed font-normal normal-case tracking-normal p-3 shadow-2xl text-left`}>
+        <span role="tooltip" className={`absolute z-40 top-5 ${align === 'right' ? 'right-0' : 'left-0'} w-64 max-w-[calc(100vw-3rem)] rounded-xl bg-[#0b1c30] text-white text-[11px] leading-relaxed font-normal normal-case tracking-normal p-3 shadow-2xl text-left`}>
           <span className="block font-bold text-xs mb-1">{title}</span>
           {children}
         </span>
@@ -31,16 +32,16 @@ const Info: React.FC<{ title: string; children: React.ReactNode; align?: 'left' 
     </span>
   );
 };
-const netOf = (e: JournalEntry) => e.pnl - (e.commission ?? 0);
 
 const metricOf = (list: JournalEntry[], m: Metric, target: number): number | null => {
+  list = list.filter(e => eligible(e));
   if (!list.length) return null;
   const nets = list.map(netOf);
   const wins = nets.filter((x) => x > 0), losses = nets.filter((x) => x < 0);
   switch (m) {
     case 'winRate': {
-      const w = list.filter((e) => e.outcome === 'win').length, l = list.filter((e) => e.outcome === 'loss').length;
-      return w + l ? (w / (w + l)) * 100 : null;
+      const w = list.filter((e) => resultOf(e) === 'win').length, l = list.filter((e) => resultOf(e) === 'loss').length;
+      return list.length ? (w / list.length) * 100 : null;
     }
     case 'pf': {
       const gl = Math.abs(losses.reduce((a, b) => a + b, 0));
@@ -49,8 +50,8 @@ const metricOf = (list: JournalEntry[], m: Metric, target: number): number | nul
     case 'payoff':
       return wins.length && losses.length ? (wins.reduce((a, b) => a + b, 0) / wins.length) / Math.abs(losses.reduce((a, b) => a + b, 0) / losses.length) : null;
     case 'target': {
-      const withR = list.filter((e) => e.rMultiple !== null);
-      return withR.length ? (withR.filter((e) => (e.rMultiple as number) >= target).length / withR.length) * 100 : null;
+      const withR = list.map(realizedR).filter((r):r is number=>r!==null);
+      return withR.length ? (withR.filter(r=>r >= target).length / withR.length) * 100 : null;
     }
   }
 };
@@ -70,7 +71,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
   const target = playbook.benchmarkRR;
 
   const trades = useMemo(
-    () => entries.filter((e) => e.strategy === playbook.name).sort((a, b) => (a.entryTime || a.date).localeCompare(b.entryTime || b.date)),
+    () => entries.filter((e) => eligible(e) && e.strategy === playbook.name).sort((a, b) => (a.entryTime || a.date).localeCompare(b.entryTime || b.date)),
     [entries, playbook.name]
   );
 
@@ -84,7 +85,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
   // comparison across playbooks
   const compare = useMemo(
     () => playbooks
-      .map((p) => ({ p, v: metricOf(entries.filter((e) => e.strategy === p.name), metric, p.benchmarkRR), n: entries.filter((e) => e.strategy === p.name).length }))
+      .map((p) => ({ p, v: metricOf(entries.filter((e) => e.strategy === p.name), metric, p.benchmarkRR), n: entries.filter((e) => eligible(e) && e.strategy === p.name).length }))
       .filter((x) => x.n > 0)
       .sort((a, b) => (b.v ?? -1) - (a.v ?? -1)),
     [playbooks, entries, metric]
@@ -100,7 +101,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
       { label: '2 to 3R', test: (r: number) => r >= 2 && r < 3 },
       { label: '≥ 3R', test: (r: number) => r >= 3 },
     ];
-    const rs = trades.map((e) => e.rMultiple).filter((x): x is number => x !== null);
+    const rs = trades.map((e) => realizedR(e)).filter((x): x is number => x !== null);
     return defs.map((d) => ({ ...d, n: rs.filter(d.test).length }));
   }, [trades]);
   const bMax = Math.max(1, ...buckets.map((b) => b.n));
@@ -128,17 +129,17 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
 
   // plain-language explanations with this playbook's own numbers
   const nets = trades.map(netOf);
-  const wN = trades.filter((e) => e.outcome === 'win').length, lN = trades.filter((e) => e.outcome === 'loss').length;
+  const wN = trades.filter((e) => resultOf(e) === 'win').length, lN = trades.filter((e) => resultOf(e) === 'loss').length;
   const gW = nets.filter((x) => x > 0).reduce((a, b) => a + b, 0), gL = Math.abs(nets.filter((x) => x < 0).reduce((a, b) => a + b, 0));
   const nWin = nets.filter((x) => x > 0).length, nLoss = nets.filter((x) => x < 0).length;
   const payoffV = nWin && nLoss ? (gW / nWin) / (gL / nLoss) : null;
-  const withR = trades.filter((e) => e.rMultiple !== null);
-  const hitN = withR.filter((e) => (e.rMultiple as number) >= target).length;
+  const withR = trades.map(realizedR).filter((r):r is number=>r!==null);
+  const hitN = withR.filter(r=>r >= target).length;
   const usd = (v: number) => `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
   const calc = (t: string) => <span className="block mt-1.5 pt-1.5 border-t border-white/15 font-mono text-emerald-300">{t}</span>;
   const explain: Record<Metric, React.ReactNode> = {
-    winRate: (<>Wins ÷ (wins + losses). Breakeven and open trades are left out. Read it together with Avg win/loss: a 40% win rate is fine if a typical win is twice a typical loss.{calc(`This playbook: ${wN} wins ÷ ${wN + lN} decided = ${fmt('winRate', metricOf(trades, 'winRate', target))}`)}</>),
-    pf: (<>Gross profit ÷ gross loss, after commissions. Below 1.0 loses money; 1.0–1.5 thin edge; 1.5–2.0 solid; above 2.0 strong. Shown as 5.0+ when there are no losing trades.{calc(`This playbook: ${usd(gW)} won ÷ ${usd(gL)} lost = ${fmt('pf', metricOf(trades, 'pf', target))}`)}</>),
+    winRate: (<>Wins ÷ all eligible closed trades, including breakeven. Open trades and unknown net results are excluded. Read it together with Avg win/loss.{calc(`This playbook: ${wN} wins ÷ ${trades.length} eligible = ${fmt('winRate', metricOf(trades, 'winRate', target))}`)}</>),
+    pf: (<>Positive net results ÷ absolute negative net results, after costs. Chart display is capped at 5.0+; no losses with positive results is unbounded, not an exact factor of 5.{calc(`This playbook: ${usd(gW)} won ÷ ${usd(gL)} lost = ${fmt('pf', metricOf(trades, 'pf', target))}`)}</>),
     payoff: (<>Average winning trade ÷ average losing trade, in dollars. 2:1 means a typical win is twice a typical loss. The win rate needed to break even is 1 ÷ (1 + ratio).{calc(payoffV === null ? 'This playbook: needs at least one win and one loss.' : `This playbook: avg win ${usd(gW / nWin)} ÷ avg loss ${usd(gL / nLoss)} = ${payoffV.toFixed(2)}:1 → break-even win rate ${(100 / (1 + payoffV)).toFixed(0)}%`)}</>),
     target: (<>Share of trades whose result reached this playbook's minimum reward:risk ({target}R), measured in R (multiples of the planned risk). Low values mean exits before target or targets set too far.{calc(`This playbook: ${hitN} of ${withR.length} trades reached ≥ ${target}R = ${fmt('target', metricOf(trades, 'target', target))}`)}</>),
   };
@@ -171,7 +172,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
           <p className="text-sm text-slate-500 py-8 text-center">Needs at least 2 trades with this playbook.</p>
         ) : (
           <div className="relative">
-            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto mt-1" role="img" aria-label={`${def.label} over ${trades.length} trades, now ${fmt(metric, series[series.length - 1])}`} onMouseLeave={() => setHover(null)}
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto mt-1 focus:outline-[#5338ec]" tabIndex={0} role="img" aria-label={`${def.label} over ${trades.length} trades, now ${fmt(metric, series[series.length - 1])}. Use arrow keys for details.`} onFocus={()=>setHover(0)} onBlur={()=>setHover(null)} onKeyDown={e=>{if(e.key==='Escape')setHover(null);if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();setHover(h=>Math.min(trades.length-1,Math.max(0,(h ?? 0)+(e.key==='ArrowRight'?1:-1))));}}} onMouseLeave={() => setHover(null)}
               onMouseMove={(e) => {
                 const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
                 const px = ((e.clientX - r.left) / r.width) * W;
@@ -192,11 +193,12 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
               {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={M.t} y2={H - M.b} stroke="#cbd5e1" />}
             </svg>
             {hover !== null && (
-              <div className="pointer-events-none absolute top-1 bg-[#0b1c30] text-white rounded-lg px-2.5 py-1.5 text-[11px] whitespace-nowrap" style={{ left: `${(x(hover) / W) * 100}%`, transform: x(hover) > W * 0.6 ? 'translateX(calc(-100% - 8px))' : 'translateX(8px)' }} role="status">
+              <div className="pointer-events-none absolute top-1 bg-[#0b1c30] text-white rounded-lg px-2.5 py-1.5 text-[11px] max-w-[85%] break-words" style={{ left: `${(x(hover) / W) * 100}%`, transform: x(hover) > W * 0.6 ? 'translateX(calc(-100% - 8px))' : 'translateX(8px)' }} role="status">
                 <p className="font-semibold">Trade {hover + 1} · {trades[hover].symbol} · {(trades[hover].entryTime || trades[hover].date).slice(0, 10)}</p>
-                <p className="font-mono">{def.label}: {fmt(metric, series[hover])} · this trade {netOf(trades[hover]) >= 0 ? '+' : ''}{netOf(trades[hover]).toFixed(2)} ({trades[hover].rMultiple === null ? '—' : `${trades[hover].rMultiple}R`})</p>
+                <p className="font-mono">{def.label}: {fmt(metric, series[hover])} · this trade {netOf(trades[hover]) >= 0 ? '+' : ''}{netOf(trades[hover]).toFixed(2)} net ({realizedR(trades[hover]) === null ? '—' : `${realizedR(trades[hover])!.toFixed(2)}R`})</p>
               </div>
             )}
+            <details className="mt-2 text-xs"><summary className="cursor-pointer">Rolling results table</summary><table className="w-full"><thead><tr><th className="text-left">Trade</th><th>Window count</th><th>{def.label}</th></tr></thead><tbody>{trades.map((e,i)=><tr key={e.id}><td><button className="text-[#5338ec] underline" onClick={()=>onShowTrades([e.id],`Rolling result · ${e.symbol}`)}>{i+1} · {e.symbol} · {e.date}</button></td><td className="text-center">{Math.min(i+1,WINDOW)}</td><td className="text-center">{fmt(metric,series[i])}</td></tr>)}</tbody></table></details>
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@
 import type { JournalEntry } from '../types';
 import { computeMetrics, Metrics } from './metrics';
 import { hashSeed, normal, rng } from './rng';
+import { eligible, netOf, realizedR, timestampMs, metrics as journalMetrics } from '../components/journal/journalMath';
 
 export type WhatIfRule =
   | { kind: 'stop'; mult: number }
@@ -36,11 +37,11 @@ export interface WhatIfOutput {
 }
 
 export const toMs = (iso: string | undefined, date: string, fallbackHour = 12) =>
-  iso ? Date.parse(iso.endsWith('Z') ? iso : `${iso}Z`) : Date.parse(`${date}T${String(fallbackHour).padStart(2, '0')}:00:00Z`);
+  iso ? timestampMs(iso) : Date.parse(`${date}T${String(fallbackHour).padStart(2, '0')}:00:00Z`);
 
 /** Dollar risk of a journal trade (1R). */
 export function riskOf(e: JournalEntry, fallback: number): number {
-  if (e.rMultiple !== null && Math.abs(e.rMultiple) > 0.05 && e.pnl !== 0) return Math.abs(e.pnl / e.rMultiple);
+  if (e.initialRisk != null && e.initialRisk > 0) return e.initialRisk;
   return fallback;
 }
 
@@ -50,7 +51,7 @@ export function riskOf(e: JournalEntry, fallback: number): number {
  * the trade ended. Seeded by the trade id, so it is the same every time.
  */
 export function pathOf(e: JournalEntry, steps = 48): number[] {
-  const end = e.rMultiple ?? 0;
+  const end = realizedR(e) ?? 0;
   const r = rng(hashSeed(e.id));
   const tpR = e.takeProfit && e.stopPrice ? Math.abs(e.takeProfit - e.entryPrice) / Math.max(1e-9, Math.abs(e.entryPrice - e.stopPrice)) : null;
   const sigma = 0.75 / Math.sqrt(steps);
@@ -70,23 +71,22 @@ export function pathOf(e: JournalEntry, steps = 48): number[] {
   return dev.map((d, k) => (k / steps) * end + f * d);
 }
 
-export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalance = 10000): WhatIfOutput {
-  const closed = entries.filter((e) => e.outcome !== 'open' && e.exitPrice !== null)
+export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalance = 1): WhatIfOutput {
+  journalMetrics(entries); // refuses to combine currencies without a conversion policy
+  const closed = entries.filter((e) => eligible(e))
     .map((e) => ({ e, t0: toMs(e.entryTime, e.date), t1: toMs(e.exitTime, e.date, 13) }))
     .sort((a, b) => a.t0 - b.t0);
-  const risks = closed.map(({ e }) => riskOf(e, NaN)).filter(Number.isFinite).sort((a, b) => a - b);
-  const medRisk = risks.length ? risks[Math.floor(risks.length / 2)] : 100;
 
   const dayLosses = new Map<string, number>();
   const dayPnl = new Map<string, number>();
   const out: WhatIfTrade[] = closed.map(({ e, t0, t1 }) => {
-    const risk = riskOf(e, medRisk);
+    const risk = riskOf(e, NaN);
     const base: WhatIfTrade = {
       id: e.id, symbol: e.symbol, strategy: e.strategy, direction: e.direction, entryTime: t0, exitTime: Math.max(t1, t0),
-      actualNet: e.pnl, actualR: e.rMultiple, newNet: e.pnl, newR: e.rMultiple, status: 'same', note: '', mistakes: e.mistakes,
+      actualNet: netOf(e), actualR: realizedR(e), newNet: netOf(e), newR: realizedR(e), status: 'same', note: '', mistakes: e.mistakes,
     };
     const skip = (note: string): WhatIfTrade => ({ ...base, newNet: 0, newR: null, status: 'skipped', note });
-    const change = (rr: number, note: string): WhatIfTrade => (Math.abs(rr - (e.rMultiple ?? 0)) < 0.005 ? base : { ...base, newNet: Math.round(rr * risk * 100) / 100, newR: rr, status: 'changed', note });
+    const change = (rr: number, note: string): WhatIfTrade => (Math.abs(rr - (realizedR(e) ?? 0)) < 0.005 ? base : { ...base, newNet: Math.round(rr * risk * 100) / 100, newR: rr, status: 'changed', note });
     const day = e.date;
     const record = (t: WhatIfTrade) => {
       if (t.status !== 'skipped') {
@@ -103,6 +103,7 @@ export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalanc
         if ((dayPnl.get(day) || 0) <= -rule.usd) return record(skip(`Skipped: daily loss of $${rule.usd} already reached`));
         return record(base);
       case 'hours': {
+        if (!e.entryTime) return record({...base,note:'Unknown entry time; hours rule not evaluated'});
         const h = new Date(t0).getUTCHours() + new Date(t0).getUTCMinutes() / 60;
         const inside = rule.start < rule.end ? h >= rule.start && h < rule.end : h >= rule.start || h < rule.end;
         return record(inside ? base : skip('Skipped: outside allowed hours'));
@@ -112,7 +113,7 @@ export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalanc
         return record(hit ? skip(`Skipped: tagged "${hit}"`) : base);
       }
       default: {
-        if (e.rMultiple === null) return record(base);
+        if (realizedR(e) === null || !Number.isFinite(risk)) return record({...base,note:'Unknown initial monetary risk; price-path rule not evaluated'});
         const path = pathOf(e);
         if (rule.kind === 'stop') {
           const k = path.findIndex((p) => p <= -rule.mult);
@@ -133,8 +134,15 @@ export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalanc
   const mt = (sel: 'actual' | 'new') => out.filter((t) => sel === 'actual' || t.status !== 'skipped').map((t) => ({ entryTime: t.entryTime, exitTime: t.exitTime, net: sel === 'actual' ? t.actualNet : t.newNet, r: sel === 'actual' ? t.actualR : t.newR }));
   const rs = closed[0]?.t0;
   const re = closed.length ? Math.max(...closed.map((c) => Math.max(c.t1, c.t0))) + 1 : undefined;
-  const actual = computeMetrics(mt('actual'), startBalance, rs, re);
-  const whatIf = computeMetrics(mt('new'), startBalance, rs, re);
+  // Engine time-series calculations are retained, but journal-facing definitions are shared.
+  // The internal numerical anchor is not evidence of an account balance.
+  const sharedMetrics=(sel:'actual'|'new')=>{
+    const selected=out.filter(t=>sel==='actual' || t.status!=='skipped');
+    const m=journalMetrics(selected.map(t=>{const source=entries.find(e=>e.id===t.id)!;return {...source,pnl:sel==='actual'?t.actualNet:t.newNet,commission:0,initialRisk:null,rMultiple:sel==='actual'?t.actualR:t.newR};}));
+    return {...computeMetrics(mt(sel),startBalance,rs,re),trades:m.n,wins:m.wins,losses:m.losses,breakevens:m.be,winRate:m.winRate==null?NaN:m.winRate/100,profitFactor:m.pf,avgR:m.avgR ?? NaN,expectancy:m.expectancy ?? NaN,netPnl:m.total,maxDD:m.drawdown,maxDDPct:NaN,netPct:NaN,endBalance:NaN};
+  };
+  const actual = sharedMetrics('actual');
+  const whatIf = sharedMetrics('new');
   const diff = out.filter((t) => t.status !== 'same');
   return {
     trades: out,

@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { BookOpen, ChevronDown, MessageSquareText, Plus, SlidersHorizontal, Sparkles, Trash2, AlertCircle, Play } from 'lucide-react';
 import type { Broker, JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
-import { computeMetrics } from '../../backtest/metrics';
+import { eligible, metrics } from '../journal/journalMath';
 import { SYMBOLS, symbolSpec } from '../../backtest/marketData';
 import { parseStrategy, ParseResult, PARSE_EXAMPLE } from '../../backtest/parse';
 import {
@@ -141,8 +141,9 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
 
   const live = useMemo(() => {
     if (!pb) return null;
-    const list = entries.filter((e) => e.strategy === pb.name && e.outcome !== 'open');
-    const m = computeMetrics(list.map((e) => ({ entryTime: Date.parse(`${e.date}T12:00:00Z`), exitTime: Date.parse(`${e.date}T12:00:00Z`), net: e.pnl, r: e.rMultiple })), 10000);
+    const list = entries.filter((e) => e.strategy === pb.name && eligible(e));
+    const shared = metrics(list);
+    const m = {trades:shared.n,winRate:(shared.winRate ?? 0)/100,avgR:shared.avgR};
     const counts = new Map<string, number>();
     list.forEach((e) => counts.set(e.symbol, (counts.get(e.symbol) || 0) + 1));
     const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];

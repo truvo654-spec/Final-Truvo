@@ -32,7 +32,7 @@ export const PlaybookBacktestPanel: React.FC<{ playbook: JournalPlaybook; entrie
     ['Win rate', 'Winning trades ÷ all trades', pct(expected.winRate, 0), n ? pct(live.winRate, 0) : '—'],
     ['Average R', 'Average result per trade in units of risk', rr(expected.avgR), n ? rr(live.avgR) : '—'],
     ['Profit factor', 'Gross profit ÷ gross loss', num(expected.pf), n ? num(live.pf) : '—'],
-    ['Max drawdown', 'Largest fall from a high', pct(-expected.maxDDPct), n ? pct(-live.maxDDPct) : '—'],
+    ['Max drawdown', 'Largest fall from a high; live account equity history required', pct(-expected.maxDDPct), 'Unknown equity history'],
     ['Trades', 'Sample size', `${expected.trades}`, `${n}`],
   ];
   return (

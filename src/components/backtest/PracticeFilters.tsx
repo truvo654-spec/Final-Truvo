@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import type { JournalEntry } from '../../types';
+import { eligible, resultOf } from '../journal/journalMath';
 import { SYMBOLS, resolveSymbol } from '../../backtest/marketData';
 import type { SymbolSpec } from '../../backtest/types';
 import { loadPracticeFilters, PracticeFilter, PracticeMarket, savePracticeFilters, SavedPracticeFilter } from '../../backtest/store';
@@ -31,7 +32,7 @@ export const practiceInstruments = (f: PracticeFilter): SymbolSpec[] =>
 export const matchesJournal = (e: JournalEntry, f: PracticeFilter): boolean =>
   (!f.markets.length || f.markets.includes(journalMarket(e)))
   && (!f.symbols.length || f.symbols.includes(e.symbol) || f.symbols.includes(resolveSymbol(e.symbol) ?? ''))
-  && (f.result === 'all' || (f.result === 'losses' ? e.pnl < 0 : e.pnl > 0))
+  && eligible(e) && (f.result === 'all' || (f.result === 'losses' ? resultOf(e)==='loss' : resultOf(e)==='win'))
   && (!f.playbook || e.strategy === f.playbook)
   && (!f.mistake || e.mistakes.includes(f.mistake) || e.tags.includes(f.mistake));
 
@@ -52,7 +53,7 @@ export const PracticeFilters: React.FC<Props> = ({ source, value: f, onChange, e
   const [name, setName] = useState('');
   const [q, setQ] = useState('');
   const journal = source === 'journal';
-  const closed = useMemo(() => entries.filter((e) => e.outcome !== 'open' && e.exitPrice !== null), [entries]);
+  const closed = useMemo(() => entries.filter((e) => eligible(e) && e.exitPrice !== null), [entries]);
 
   const marketCount = (m: PracticeMarket) => (journal ? closed.filter((e) => journalMarket(e) === m).length : SYMBOLS.filter((s) => feedMarket(s) === m).length);
 

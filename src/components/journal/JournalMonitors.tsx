@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { JournalEntry } from '../../types';
+import { eligible, resultOf, statusOf } from './journalMath';
 
 export interface JournalRules {
   maxRisk: number;
@@ -19,6 +20,7 @@ const bar = (pct: number, color: string) => (
 /* ───────────────────────── Discipline ───────────────────────── */
 
 export function computeDiscipline(entries: JournalEntry[], checklistLength: number) {
+  entries = entries.filter(e => typeof e.followedPlan === 'boolean' && (e.mistakesReviewed === true || (e.mistakesReviewed === undefined && e.emotionBefore && e.emotionAfter && e.rating != null)));
   if (!entries.length) return null;
   const plan = entries.filter((e) => e.followedPlan).length / entries.length;
   const checklist = checklistLength
@@ -62,11 +64,11 @@ export const DisciplineCard: React.FC<{ entries: JournalEntry[]; checklistLength
             </div>
           ))}
           <p className="text-[11px] text-[#474556] pt-1">
-            {d.run > 0 ? `${d.run} trade${d.run === 1 ? '' : 's'} in a row on plan.` : 'Your latest trade was off plan.'}
+            {d.run > 0 ? `${d.run} answered trade${d.run === 1 ? '' : 's'} in a row on plan.` : 'Latest answered trade off plan.'} Unanswered reviews are excluded, not counted as mistake-free.
           </p>
         </div>
       ) : (
-        <p className="text-xs text-[#474556]">No entries in this range yet.</p>
+        <p className="text-xs text-[#474556]">No sufficiently answered reviews in this range yet.</p>
       )}
     </div>
   );
@@ -75,6 +77,7 @@ export const DisciplineCard: React.FC<{ entries: JournalEntry[]; checklistLength
 /* ───────────────────── Personal rules monitor ───────────────────── */
 
 export function checkRules(entries: JournalEntry[], rules: JournalRules) {
+  entries = entries.filter(e => statusOf(e) !== 'planned');
   const byDay = new Map<string, JournalEntry[]>();
   entries.forEach((e) => byDay.set(e.date, [...(byDay.get(e.date) || []), e]));
   const tooMany: string[] = [];
@@ -85,7 +88,7 @@ export function checkRules(entries: JournalEntry[], rules: JournalRules) {
     let losses = 0;
     for (let i = 0; i < ordered.length; i++) {
       if (losses >= rules.stopAfterLosses) { keptTrading.push(date); break; }
-      losses = ordered[i].outcome === 'loss' ? losses + 1 : 0;
+      if (eligible(ordered[i])) losses = resultOf(ordered[i]) === 'loss' ? losses + 1 : 0;
     }
   });
   return { tooMany, keptTrading };
@@ -95,7 +98,7 @@ export const RulesMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRul
   const r = useMemo(() => checkRules(entries, rules), [entries, rules]);
   const rows: { name: string; limit: string; breaches: string[] | null }[] = [
     { name: 'Max trades per day', limit: `${rules.maxTrades}`, breaches: r.tooMany },
-    { name: 'Stop after consecutive losses', limit: `${rules.stopAfterLosses}`, breaches: r.keptTrading },
+    { name: 'Stop after consecutive losses', limit: `${rules.stopAfterLosses}`, breaches: entries.length && entries.every(e=>e.entryTime && eligible(e)) ? r.keptTrading : null },
     { name: 'Max risk per trade', limit: `${rules.maxRisk}% of account`, breaches: null },
     { name: 'Max daily loss', limit: `${rules.maxDailyLoss}% of account`, breaches: null },
   ];
@@ -107,8 +110,8 @@ export const RulesMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRul
           <h4 className="text-sm font-bold">Personal rules</h4>
           <p className="text-[11px] text-[#94a3b8]">Checked against your entries</p>
         </div>
-        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${total ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
-          {total ? `${total} breach${total === 1 ? '' : 'es'}` : 'All kept'}
+        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${total ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'}`}>
+          {total ? `${total} breach${total === 1 ? '' : 'es'}` : 'No known breaches · incomplete'}
         </span>
       </div>
       <ul className="space-y-2">
@@ -119,7 +122,7 @@ export const RulesMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRul
               <p className="text-[11px] text-[#94a3b8]">Limit {row.limit}{row.breaches && row.breaches.length ? ` · ${row.breaches.slice(0, 3).join(', ')}${row.breaches.length > 3 ? '…' : ''}` : ''}</p>
             </div>
             {row.breaches === null ? (
-              <span className="shrink-0 text-[10px] font-semibold text-slate-500 bg-slate-100 rounded px-1.5 py-0.5" title="Needs your account balance, which the journal doesn't hold yet">Not tracked</span>
+              <span className="shrink-0 text-[10px] font-semibold text-slate-500 bg-slate-100 rounded px-1.5 py-0.5" title="Required risk, equity history, or complete timestamped results are not available for this rule">Unknown</span>
             ) : row.breaches.length ? (
               <span className="shrink-0 text-[10px] font-bold text-rose-600 bg-rose-50 rounded px-1.5 py-0.5">{row.breaches.length} day{row.breaches.length === 1 ? '' : 's'}</span>
             ) : (
@@ -144,7 +147,7 @@ export function computeTilt(entries: JournalEntry[], rules: JournalRules) {
   if (streak >= 2) signals.push(`${streak} losses in a row`);
   const negative = recent.filter((e) => NEGATIVE_EMOTIONS.includes(e.emotionBefore)).length;
   if (negative >= 2) signals.push(`${negative} of ${recent.length} trades started anxious, greedy, FOMO or frustrated`);
-  const off = recent.filter((e) => !e.followedPlan).length;
+  const off = recent.filter((e) => e.followedPlan === false).length;
   if (off >= 2) signals.push(`${off} of ${recent.length} trades off plan`);
   const revenge = recent.filter((e) => e.mistakes.includes('Revenge trade') || e.tags.includes('Revenge') || e.tags.includes('Overtraded')).length;
   if (revenge >= 1) signals.push(`${revenge} flagged revenge or overtrading`);
@@ -161,7 +164,7 @@ export const TiltMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRule
     ? { label: 'High tilt', cls: 'bg-rose-50 text-rose-600', dot: '#f43f5e' }
     : t.level === 'elevated'
     ? { label: 'Elevated', cls: 'bg-amber-50 text-amber-700', dot: '#f59e0b' }
-    : { label: 'Steady', cls: 'bg-emerald-50 text-emerald-600', dot: '#10b981' };
+    : { label: t && t.signals.length===0 && entries.some(e=>e.emotionBefore==null || e.followedPlan==null) ? 'Incomplete evidence' : 'Steady', cls: 'bg-slate-100 text-slate-600', dot: '#94a3b8' };
   return (
     <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5" role="status" aria-label={`Tilt monitor: ${style.label}`}>
       <div className="flex items-start justify-between mb-2">

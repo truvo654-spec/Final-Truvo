@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, EyeOff, Flag, Minus, Pause, Play, Shuffle, CalendarSearch, NotebookPen, Trash2, Monitor, ShieldCheck, Scissors, X } from 'lucide-react';
 import type { JournalEntry } from '../../types';
+import { eligible, netOf, realizedR } from '../journal/journalMath';
 import { PracticeFilters, matchesJournal, practiceInstruments, DEFAULT_FILTER } from './PracticeFilters';
 import { replayDaysLikeToday, replayJournalTrade, replayRandom, ReplayData, replayTimeframes } from '../../backtest/replay';
 import type { PracticeFilter, PracticeTrade, ReplaySession } from '../../backtest/store';
@@ -58,7 +59,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
   const stateRef = useRef({ pending, pos, cursor, data, trades });
   stateRef.current = { pending, pos, cursor, data, trades };
 
-  const journalMatches = useMemo(() => entries.filter((e) => e.outcome !== 'open' && e.exitPrice !== null && matchesJournal(e, filter))
+  const journalMatches = useMemo(() => entries.filter((e) => eligible(e) && e.exitPrice !== null && matchesJournal(e, filter))
     .sort((a, b) => (b.entryTime || b.date).localeCompare(a.entryTime || a.date)), [entries, filter]);
   const journalList = journalMatches.slice(0, 40);
   const feedMatches = useMemo(() => practiceInstruments(filter), [filter]);
@@ -248,7 +249,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
                   {journalList.map((e) => (
                     <li key={e.id}>
                       <button type="button" aria-pressed={pickId === e.id} onClick={() => setPickId(e.id)} className={`w-full text-left rounded-lg border px-2.5 py-2 text-[11px] ${pickId === e.id ? 'border-[#5338ec] bg-[#FBFAFF]' : 'border-slate-200 hover:bg-slate-50'}`}>
-                        <span className="flex justify-between gap-2 font-semibold text-[#0b1c30]"><span className="truncate">{blind ? `Trade #${e.id.replace(/\D/g, '') || e.id}` : `${e.symbol} · ${e.date}`}</span><span className={tone(e.pnl)}>{rr(e.rMultiple, 1)}</span></span>
+                        <span className="flex justify-between gap-2 font-semibold text-[#0b1c30]"><span className="truncate">{blind ? `Trade #${e.id.replace(/\D/g, '') || e.id}` : `${e.symbol} · ${e.date}`}</span><span className={tone(netOf(e))}>{rr(realizedR(e), 1)}</span></span>
                         <span className="text-slate-500">{e.strategy}{e.mistakes[0] ? ` · ${e.mistakes[0]}` : ''}</span>
                       </button>
                     </li>
