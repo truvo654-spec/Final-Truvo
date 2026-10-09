@@ -7,6 +7,9 @@ export function setupButtonIconCleaner() {
   const processButton = (button: Element) => {
     // If button already marked, skip
     // Check if the button has non-empty text content
+    // The redesigned Community follows the design system, which keeps icons on labelled buttons
+    // (like / comment / save counters, Photo / Video, Continue Writing...). Opt that area out.
+    if (button.closest('[data-keep-button-icons]')) return;
     const text = (button.textContent || '').trim();
     if (!text) {
       // It's an icon-only button (e.g. close 'X' icon, pagination arrows without text, theme toggle)

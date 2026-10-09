@@ -923,6 +923,8 @@ export default function App() {
         (!isLoggedIn && activeTab === 'dashboard') ||
         (!isLoggedIn && activeTab === 'member-plan')
           ? 'p-0 space-y-0 pt-[84px]'
+          : activeTab === 'community'
+          ? 'px-4 sm:px-8 md:px-[56px] pt-8 pb-12 space-y-6'
           : 'px-4 sm:px-8 md:px-[56px] pt-[100px] pb-12 space-y-6'
       }`}>
         <AnimatePresence mode="wait">
@@ -1684,6 +1686,11 @@ export default function App() {
                 }
                 return next;
               });
+            }}
+            isLoggedIn={isLoggedIn}
+            onOpenAuth={(mode) => {
+              setAuthModalMode(mode);
+              setIsAuthModalOpen(true);
             }}
             onRewardPoints={handleRewardPoints}
             onRewardPointsAndCredits={handleRewardPointsAndCredits}

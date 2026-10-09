@@ -916,3 +916,10 @@ select:not(.appearance-none) {
 /* ── Strategy Builder: chart text and grid colours for light and dark ── */
 .strategy-root { --st-text: #6b7686; --st-grid: #e8ebf0; --st-cell-text: #0b1c30; }
 .dark .strategy-root { --st-text: #a79fe0; --st-grid: #2a1a7a; --st-cell-text: #f3f0ff; }
+
+
+/* Community (design system) keeps icons on labelled buttons: overrides the platform-wide icon removal above. */
+[data-keep-button-icons] button:not(#keep-icons) svg,
+[data-keep-button-icons] [role="button"]:not(#keep-icons) svg {
+  display: inline-block !important;
+}

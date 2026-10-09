@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.44] - 2026-10-09
+### Changed
+- Community rebuilt to the MarketSyde design system: Feed, Article and My Page, with the previous Topics, Media and creator-profile views retired.
+- Feed laid out to the 1440px design: 300 / 664 / 300 columns, Key Topics, Suggested for You, Stories, composer, posts with comments and replies, Top Contributors, Most Recent Signals and Featured Courses.
+- Added the Suggested for You list with pagination, and a per-topic discussion view opened from either the sidebar card or that list.
+- Added the designed empty and failed states for every block: Key Topics, Suggested, Stories, feed, Contributors, Signals and Courses, plus a preview switch (Default / Empty / Error / Signed out) for reviewing them.
+- Article tab, article reading page (share rail, Technical Snapshot, comments, sign-in gate, 5-credit reward) and My Page.
+- Community images are stored in `src/assets/community` and bundled, so the standalone build carries them.
+- Buttons inside Community keep their icons: the platform-wide icon removal is scoped out of this area only.
+
 ## [1.0.43] - 2026-10-09
 ### Added
 - AI Companion rebuilt across all six areas, split into focused modules under `src/components/ai/`.
