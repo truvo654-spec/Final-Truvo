@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2026-10-09
+### Changed
+- Create Post modal rebuilt to the supplied design at its measured sizes: 664px wide, 17px gutters, the title, author row, 108px text box, 166px upload area, a 16:9 attachment block with the round white remove button and the dot pager, the poll card with 37px fields, and a footer of three filled buttons.
+- Attachments (photos and uploaded video) use that same 16:9 block, so a short plays in the frame the design shows.
+
 ## [1.1.2] - 2026-10-09
 ### Added
 - AI Companion gained two areas, taking it to eight: **Playbook review** (compares the playbooks from the new journal by net result, win rate and average R, and checks each against its own reward:risk benchmark) and **Cashback & perks** (cashback credited, pending and per lot by broker, level and points to the next tier, open missions, live offers for your level, and your leaderboard place).

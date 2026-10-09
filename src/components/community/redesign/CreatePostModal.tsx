@@ -99,32 +99,31 @@ export const CreatePostModal: React.FC<Props> = ({ open, me, intent = 'text', on
     onClose();
   };
 
-  const field = `w-full border ${BORDER} rounded-lg px-3.5 py-2.5 text-[15px] text-[#111827] placeholder:text-[#9ca3af] outline-none focus:ring-2 focus:ring-[#5945F1]/30`;
-  const footBtn = (on: boolean) => `flex items-center gap-2 h-9 px-4 rounded-lg text-[14px] font-medium transition-colors ${on ? 'bg-[#5945F1] text-white' : `border ${BORDER} text-[#5945F1] hover:bg-[#EEF0FE]`}`;
-  const counter = (v: string, max: number) => <span className="text-[13px] text-[#9ca3af] shrink-0 tabular-nums">{v.length}/{max}</span>;
+  const field = `w-full border ${BORDER} rounded-lg bg-white text-[15px] text-[#111827] placeholder:text-[#9ca3af] outline-none focus:ring-2 focus:ring-[#5945F1]/30`;
+  const footBtn = 'flex items-center justify-center gap-2 h-[35px] px-4 rounded-lg bg-[#5945F1] text-white text-[15px] font-medium hover:bg-[#4a38d6] transition-colors';
+  const counter = (v: string, max: number) => <span className="text-[14px] text-[#9ca3af] shrink-0 tabular-nums pr-3.5">{v.length}/{max}</span>;
 
   return (
     <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-[2px] flex items-start justify-center overflow-y-auto p-4 sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-label="Create Post" className={`w-full max-w-[674px] bg-white border ${BORDER} rounded-2xl shadow-2xl my-auto`}>
-        <header className="flex items-start justify-between gap-3 px-5 pt-5 pb-3">
-          <h2 className="text-[20px] leading-7 font-semibold text-[#5945F1]">Create Post</h2>
-          <button type="button" aria-label="Close" onClick={onClose} className="text-[#111827] hover:text-[#5945F1]"><X className="w-5 h-5" /></button>
-        </header>
+      <div ref={dialog} role="dialog" aria-modal="true" aria-label="Create Post" className={`w-full max-w-[664px] bg-white border ${BORDER} rounded-2xl shadow-2xl my-auto`}>
+        <div className="px-[17px] pt-[17px] pb-4">
+          <header className="flex items-start justify-between gap-3">
+            <h2 className="text-[19px] leading-5 font-semibold text-[#5945F1]">Create Post</h2>
+            <button type="button" aria-label="Close" onClick={onClose} className="-mt-0.5 text-[#111827] hover:text-[#5945F1]"><X className="w-[22px] h-[22px]" strokeWidth={1.8} /></button>
+          </header>
 
-        <div className="px-5 pb-5 space-y-4">
-          <div className="flex items-center gap-2.5">
-            <Avatar src={me.avatar} alt={me.name} size={34} />
-            <span className="flex items-center gap-1.5 text-[16px]"><b className="text-[#111827]">{me.name}</b><Verified /><span className="text-[#6b7280]">{me.handle}</span></span>
+          <div className="flex items-center gap-2.5 mt-[18px]">
+            <Avatar src={me.avatar} alt={me.name} size={36} />
+            <span className="flex items-center gap-1.5 text-[17px] leading-6"><b className="font-bold text-[#111827]">{me.name}</b><Verified /><span className="text-[#6b7280]">{me.handle}</span></span>
           </div>
 
           <textarea
             ref={area}
             value={text}
             onChange={(e) => setText(e.target.value.slice(0, 2000))}
-            rows={4}
             placeholder={`What's on your mind, ${me.name}?`}
             aria-label="Post text"
-            className={`${field} resize-y min-h-[104px]`}
+            className={`${field} h-[108px] mt-[16px] px-4 py-3 resize-y block`}
           />
 
           <input ref={fileRef} type="file" accept={ACCEPT} multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
@@ -133,56 +132,56 @@ export const CreatePostModal: React.FC<Props> = ({ open, me, intent = 'text', on
             onClick={() => fileRef.current?.click()}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); addFiles(e.dataTransfer.files); }}
-            className={`w-full border border-dashed ${BORDER} rounded-lg bg-[#faf9ff] hover:bg-[#f3f1ff] transition-colors py-8 flex flex-col items-center gap-2`}
+            className={`w-full h-[166px] mt-[17px] border border-dashed ${BORDER} rounded-lg bg-[#fbfbff] hover:bg-[#f3f1ff] transition-colors flex flex-col items-center justify-center`}
           >
-            <span className="w-9 h-9 rounded-lg bg-[#EEF0FE] flex items-center justify-center"><ImageIcon className="w-[18px] h-[18px] text-[#5945F1]" /></span>
-            <span className="text-[15px] font-semibold text-[#5945F1]">Upload Photo / Video</span>
-            <span className="text-[13px] text-[#6b7280] text-center leading-5">Recommended 1200 × 630px (16:9)<br />JPG, PNG, MP4 (max {MAX_MB}MB)</span>
+            <span className="w-7 h-7 rounded-md bg-[#f0efff] flex items-center justify-center"><ImageIcon className="w-4 h-4 text-[#aba1f8]" /></span>
+            <span className="mt-[18px] text-[17px] leading-6 font-semibold text-[#5945F1]">Upload Photo / Video</span>
+            <span className="mt-2 text-[14px] leading-[19px] text-[#6b7280] text-center">Recommended 1200 × 630px (16:9)<br />JPG, PNG, MP4 (max {MAX_MB}MB)</span>
           </button>
 
           {media.length > 0 && (
-            <div>
-              <div className="relative rounded-lg overflow-hidden bg-black">
+            <>
+              <div className="relative mt-[17px] rounded-lg overflow-hidden bg-black aspect-[631/355]">
                 {media[slide]?.kind === 'video'
-                  ? <video key={media[slide].id} src={media[slide].url} controls playsInline className="w-full max-h-[340px] object-contain bg-black" />
-                  : <img src={media[slide]?.url} alt={media[slide]?.name ?? 'Attachment'} className="w-full max-h-[340px] object-contain bg-black" />}
-                <button type="button" aria-label="Remove attachment" onClick={() => removeMedia(media[slide].id)} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-[#5945F1] shadow flex items-center justify-center hover:bg-[#EEF0FE]"><X className="w-4 h-4" /></button>
+                  ? <video key={media[slide].id} src={media[slide].url} controls playsInline className="w-full h-full object-cover" />
+                  : <img src={media[slide]?.url} alt={media[slide]?.name ?? 'Attachment'} className="w-full h-full object-cover" />}
+                <button type="button" aria-label="Remove attachment" onClick={() => removeMedia(media[slide].id)} className="absolute top-1.5 right-1.5 w-[38px] h-[38px] rounded-full bg-white text-[#5945F1] shadow-sm flex items-center justify-center hover:bg-[#EEF0FE]"><X className="w-[18px] h-[18px]" strokeWidth={2} /></button>
               </div>
-              {media.length > 1 && (
-                <div className="flex items-center justify-center gap-1.5 mt-2.5">
-                  <button type="button" aria-label="Previous attachment" disabled={slide === 0} onClick={() => setSlide(slide - 1)} className="p-0.5 text-[#111827] disabled:text-[#9ca3af]"><ChevronLeft className="w-3.5 h-3.5" strokeWidth={2.5} /></button>
-                  {media.map((m, i) => <button key={m.id} type="button" aria-label={`Attachment ${i + 1}`} aria-current={i === slide} onClick={() => setSlide(i)} className={`w-2 h-2 rounded-full ${i === slide ? 'bg-[#5945F1]' : 'bg-[#c9c4fb]'}`} />)}
-                  <button type="button" aria-label="Next attachment" disabled={slide === media.length - 1} onClick={() => setSlide(slide + 1)} className="p-0.5 text-[#111827] disabled:text-[#9ca3af]"><ChevronRight className="w-3.5 h-3.5" strokeWidth={2.5} /></button>
-                </div>
-              )}
-            </div>
+              <div className="flex items-center justify-center gap-1.5 h-[23px] mt-3">
+                <button type="button" aria-label="Previous attachment" disabled={slide === 0} onClick={() => setSlide(slide - 1)} className="p-0.5 text-[#111827] disabled:text-[#9ca3af] disabled:cursor-default"><ChevronLeft className="w-3.5 h-3.5" strokeWidth={2.5} /></button>
+                {(media.length > 1 ? media : [media[0], media[0]]).map((m, i) => (
+                  <button key={i} type="button" aria-label={`Attachment ${i + 1}`} aria-current={i === slide} disabled={media.length < 2} onClick={() => setSlide(i)} className={`w-2 h-2 rounded-full ${i === slide ? 'bg-[#5945F1]' : 'bg-[#c9c4fb]'}`} />
+                ))}
+                <button type="button" aria-label="Next attachment" disabled={slide >= media.length - 1} onClick={() => setSlide(slide + 1)} className="p-0.5 text-[#111827] disabled:text-[#9ca3af] disabled:cursor-default"><ChevronRight className="w-3.5 h-3.5" strokeWidth={2.5} /></button>
+              </div>
+            </>
           )}
 
           {pollOpen && (
-            <section className={`border ${BORDER} rounded-lg p-4 space-y-3`} aria-label="Poll">
-              <p className="flex items-center gap-2 text-[15px] font-semibold text-[#5945F1]"><ChartNoAxesColumnIncreasing className="w-4 h-4" />Add an Interest</p>
-              <div className={`flex items-center gap-2 border ${BORDER} rounded-lg px-3.5 bg-white focus-within:ring-2 focus-within:ring-[#5945F1]/30`}>
-                <input value={question} onChange={(e) => setQuestion(e.target.value.slice(0, 200))} placeholder="Poll Question" aria-label="Poll question" className="flex-1 min-w-0 py-2.5 text-[15px] outline-none bg-transparent" />
+            <section className={`mt-3 border ${BORDER} rounded-lg px-[17px] pt-4 pb-[15px]`} aria-label="Poll">
+              <p className="flex items-center gap-2 text-[17px] leading-[18px] font-semibold text-[#5945F1]"><ChartNoAxesColumnIncreasing className="w-[18px] h-[18px]" />Add an Interest</p>
+              <div className={`flex items-center h-[37px] mt-[19px] border ${BORDER} rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#5945F1]/30`}>
+                <input value={question} onChange={(e) => setQuestion(e.target.value.slice(0, 200))} placeholder="Poll Question" aria-label="Poll question" className="flex-1 min-w-0 px-3.5 text-[15px] text-[#111827] placeholder:text-[#9ca3af] outline-none bg-transparent" />
                 {counter(question, 200)}
               </div>
               {options.map((o, i) => (
-                <div key={i} className={`flex items-center gap-2 border ${BORDER} rounded-lg px-3.5 bg-white focus-within:ring-2 focus-within:ring-[#5945F1]/30`}>
-                  <input value={o} onChange={(e) => setOptions(options.map((x, j) => (j === i ? e.target.value.slice(0, 100) : x)))} placeholder={`Option ${i + 1}`} aria-label={`Poll option ${i + 1}`} className="flex-1 min-w-0 py-2.5 text-[15px] outline-none bg-transparent" />
+                <div key={i} className={`flex items-center h-[37px] mt-[18px] border ${BORDER} rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#5945F1]/30`}>
+                  <input value={o} onChange={(e) => setOptions(options.map((x, j) => (j === i ? e.target.value.slice(0, 100) : x)))} placeholder={`Option ${i + 1}`} aria-label={`Poll option ${i + 1}`} className="flex-1 min-w-0 px-3.5 text-[15px] text-[#111827] placeholder:text-[#9ca3af] outline-none bg-transparent" />
                   {counter(o, 100)}
-                  {options.length > 2 && <button type="button" aria-label={`Remove option ${i + 1}`} onClick={() => setOptions(options.filter((_, j) => j !== i))} className="text-[#9ca3af] hover:text-[#5945F1]"><X className="w-4 h-4" /></button>}
+                  {options.length > 2 && <button type="button" aria-label={`Remove option ${i + 1}`} onClick={() => setOptions(options.filter((_, j) => j !== i))} className="pr-3.5 -ml-2 text-[#9ca3af] hover:text-[#5945F1]"><X className="w-4 h-4" /></button>}
                 </div>
               ))}
               {options.length < MAX_OPTIONS && (
-                <button type="button" onClick={() => setOptions([...options, ''])} className={`w-full border ${BORDER} rounded-lg py-2.5 text-[15px] font-medium text-[#5945F1] hover:bg-[#EEF0FE] flex items-center justify-center gap-2`}><Plus className="w-4 h-4" />Add Option</button>
+                <button type="button" onClick={() => setOptions([...options, ''])} className={`w-full h-[35px] mt-[18px] border ${BORDER} rounded-lg text-[15px] font-medium text-[#5945F1] hover:bg-[#EEF0FE] flex items-center justify-center gap-2`}><Plus className="w-4 h-4" strokeWidth={2.2} />Add Option</button>
               )}
             </section>
           )}
         </div>
 
-        <footer className={`flex flex-wrap items-center gap-2 border-t ${BORDER} px-5 py-4`}>
-          <button type="button" onClick={() => fileRef.current?.click()} className={footBtn(false)}><ImageIcon className="w-4 h-4" />Photo / Video</button>
-          <button type="button" aria-pressed={pollOpen} onClick={() => { setPollOpen((v) => !v); if (!pollOpen) onToast('Poll Added', 'Write a question and two options'); }} className={footBtn(pollOpen)}><ChartNoAxesColumnIncreasing className="w-4 h-4" />Poll</button>
-          <PrimaryButton onClick={submit} disabled={!canPost} className="ml-auto flex items-center gap-2 !h-9 !px-4 !text-[14px] !font-medium"><Send className="w-4 h-4" />Post</PrimaryButton>
+        <footer className={`flex items-center gap-[9px] border-t ${BORDER} px-[17px] py-[17px]`}>
+          <button type="button" onClick={() => fileRef.current?.click()} className={footBtn}><ImageIcon className="w-4 h-4" />Photo / Video</button>
+          <button type="button" aria-pressed={pollOpen} onClick={() => { setPollOpen((v) => !v); if (!pollOpen) onToast('Poll Added', 'Write a question and two options'); }} className={footBtn}><ChartNoAxesColumnIncreasing className="w-4 h-4" />Poll</button>
+          <button type="button" onClick={submit} disabled={!canPost} className={`${footBtn} ml-auto disabled:opacity-40`}><Send className="w-4 h-4" />Post</button>
         </footer>
       </div>
     </div>
