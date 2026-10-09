@@ -3,6 +3,7 @@ import { ArrowRight, ArrowUpRight, BarChart3, BookOpen, Bookmark, ChevronRight, 
 import { HashtagLink } from '../../hashtag/HashtagText';
 import { Card, CardTitle, Dots, EmptyState, OutlineButton, PrimaryButton, BORDER, PreviewState } from './ui';
 import { ARTICLE_FILTERS, COURSES, CONTRIBUTORS, DEFAULT_INTERESTS, IMG, INTEREST_STYLES, KEY_TOPICS, SIGNALS, STATE_COPY, SUGGESTED, SuggestIcon } from './data';
+import { ShowToast } from './Toast';
 
 const suggestIcon: Record<SuggestIcon, { icon: React.ElementType | null; bg: string; fg: string }> = {
   btc: { icon: null, bg: 'bg-[#f7931a]', fg: 'text-white' },
@@ -198,16 +199,17 @@ export const YourWritingCard: React.FC<{ onContinue: () => void }> = ({ onContin
 );
 
 /* ───────── Interests / Recommended topics ───────── */
-export const InterestsCard: React.FC<{ title: string; onToast: (m: string) => void }> = ({ title, onToast }) => {
+export const InterestsCard: React.FC<{ title: string; onToast: ShowToast }> = ({ title, onToast }) => {
   const [items, setItems] = useState(DEFAULT_INTERESTS);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const add = () => {
     const t = draft.trim().replace(/^#?/, '#');
     if (t.length < 2) return;
-    if (items.includes(t)) { onToast('That topic is already in your list'); return; }
+    if (items.includes(t)) { onToast('Already Added', `${t} is in your list`); return; }
     setItems([...items, t]);
     setDraft('');
+    onToast('Topic Added', `${t} added to your list`);
   };
   return (
     <div className="bg-[#f6f5ff] rounded-2xl p-4">
@@ -219,7 +221,7 @@ export const InterestsCard: React.FC<{ title: string; onToast: (m: string) => vo
         {items.map((t, i) => (
           <span key={t} className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold ${INTEREST_STYLES[i % INTEREST_STYLES.length]}`}>
             <HashtagLink tag={t} className="no-underline hover:underline" />
-            {editing && <button type="button" aria-label={`Remove ${t}`} onClick={() => setItems(items.filter((x) => x !== t))}><X className="w-3 h-3" /></button>}
+            {editing && <button type="button" aria-label={`Remove ${t}`} onClick={() => { setItems(items.filter((x) => x !== t)); onToast('Topic Removed', `${t} removed from your list`); }}><X className="w-3 h-3" /></button>}
           </span>
         ))}
       </div>

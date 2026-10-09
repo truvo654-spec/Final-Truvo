@@ -1,3 +1,4 @@
+import { ShowToast } from './Toast';
 import React, { useMemo, useState } from 'react';
 import { CalendarDays, MapPin } from 'lucide-react';
 import { Avatar, Card, EmptyState, BORDER, PreviewState } from './ui';
@@ -30,13 +31,15 @@ interface Props {
   onToggleArticle: (id: string, key: 'liked' | 'saved') => void;
   onArticleMenu: (id: string, a: 'edit' | 'draft' | 'delete') => void;
   onShareArticle: (a: Article) => void;
-  onToast: (m: string) => void;
+  onToast: ShowToast;
   onNavigate: (tab: string) => void;
 }
 
 export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTitle, onChangePost, onRemovePost, onPost, onOpenCreate, onOpenArticle, onToggleArticle, onArticleMenu, onShareArticle, onToast, onNavigate }) => {
   const [section, setSection] = useState('post');
   const [tab, setTab] = useState<'mine' | 'saved'>('mine');
+  const pickSection = (id: string) => { setSection(id); onToast('Section Opened', MYPAGE_NAV.find((n) => n.id === id)?.label ?? id); };
+  const pickTab = (id: 'mine' | 'saved') => { setTab(id); onToast(id === 'mine' ? 'My Posts' : 'Saved Posts', id === 'mine' ? 'Showing what you posted' : 'Showing what you saved'); };
   const mine = useMemo(() => posts.filter((p) => p.own), [posts]);
   const saved = useMemo(() => posts.filter((p) => p.saved), [posts]);
   const myArticles = articles.filter((a) => a.own);
@@ -56,7 +59,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
   } else {
     main = (
       <>
-        {tab === 'mine' && <div className="mb-6"><Composer me={me} heading="Share something" onPost={onPost} onOpenCreate={onOpenCreate} /></div>}
+        {tab === 'mine' && <div className="mb-6"><Composer me={me} heading="Share something" onPost={onPost} onOpenCreate={onOpenCreate} onToast={onToast} /></div>}
         {posts_.length && !empty
           ? <div className="space-y-6">{posts_.map((p) => <PostCard key={p.id} post={p} me={me} onChange={onChangePost} onRemove={onRemovePost} onToast={onToast} />)}</div>
           : <EmptyState image={IMG.emptyQuiet} title={tab === 'mine' ? 'It’s Quiet in Here' : 'Nothing saved yet'} text={tab === 'mine' ? 'No posts yet. The first word is yours!' : 'Tap the bookmark on a post to keep it here.'} className="py-20" imgClass="w-44" />}
@@ -67,8 +70,8 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_300px] gap-8 items-start">
       <aside className="order-2 lg:order-none space-y-8 lg:row-span-2 xl:row-span-1 xl:sticky xl:top-[93px] xl:max-h-[calc(100vh-109px)] xl:overflow-y-auto no-scrollbar xl:pb-2">
-        <NavListCard items={nav} active={section} onChange={setSection} />
-        <AdCarousel onOpen={() => onNavigate('brokers')} />
+        <NavListCard items={nav} active={section} onChange={pickSection} />
+        <AdCarousel onOpen={() => { onToast('Broker Offer', 'Taking you to the broker page'); onNavigate('brokers'); }} />
       </aside>
 
       <div className="order-1 lg:order-none min-w-0 space-y-6">
@@ -89,7 +92,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
         {section === 'post' && (
           <div role="tablist" aria-label="Post lists" className={`flex items-center gap-1 border-b ${BORDER}`}>
             {([['mine', 'My Post'], ['saved', 'Saved Post']] as const).map(([id, label]) => (
-              <button key={id} role="tab" type="button" aria-selected={tab === id} onClick={() => setTab(id)} className={`px-4 py-2 text-sm -mb-px transition-colors ${tab === id ? `text-[#5945F1] font-medium border ${BORDER} border-b-white bg-white rounded-t-lg` : 'text-[#0b1c30] hover:text-[#5945F1]'}`}>{label}</button>
+              <button key={id} role="tab" type="button" aria-selected={tab === id} onClick={() => pickTab(id)} className={`px-4 py-2 text-sm -mb-px transition-colors ${tab === id ? `text-[#5945F1] font-medium border ${BORDER} border-b-white bg-white rounded-t-lg` : 'text-[#0b1c30] hover:text-[#5945F1]'}`}>{label}</button>
             ))}
           </div>
         )}
@@ -97,7 +100,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
       </div>
 
       <aside className="order-3 lg:order-none lg:col-span-2 xl:col-span-1 grid sm:grid-cols-2 xl:grid-cols-1 gap-8 items-start xl:sticky xl:top-[93px] xl:max-h-[calc(100vh-109px)] xl:overflow-y-auto no-scrollbar xl:pb-2">
-        <YourWritingCard onContinue={() => onToast('Opening your draft...')} />
+        <YourWritingCard onContinue={() => onToast('Draft Opened', 'Continue where you left off')} />
         <InterestsCard title="My Interests" onToast={onToast} />
       </aside>
     </div>

@@ -1,3 +1,4 @@
+import { ShowToast } from './Toast';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Facebook, Link2, Linkedin, Minus, Plus, Sparkles, TrendingUp, Twitter, Info } from 'lucide-react';
 import { Avatar, Card, EmptyState, OutlineButton, PrimaryButton, Verified, BORDER, PreviewState } from './ui';
@@ -69,16 +70,16 @@ const SnapshotCard: React.FC<{ onDetails: () => void }> = ({ onDetails }) => {
 };
 
 /* ───────── Share rail ───────── */
-const ShareRail: React.FC<{ title: string; onToast: (m: string) => void }> = ({ title, onToast }) => {
+const ShareRail: React.FC<{ title: string; onToast: ShowToast }> = ({ title, onToast }) => {
   const url = typeof window !== 'undefined' ? window.location.href : '';
-  const open = (u: string) => window.open(u, '_blank', 'noopener,noreferrer,width=600,height=500');
+  const open = (u: string) => { window.open(u, '_blank', 'noopener,noreferrer,width=600,height=500'); onToast('Share Opened', title); };
   const btn = 'w-9 h-9 flex items-center justify-center text-[#0b1c30] hover:text-[#5945F1] hover:bg-[#EEF0FE] rounded-lg transition-colors';
   return (
     <Card className="p-1.5 flex flex-row lg:flex-col gap-0.5 w-fit">
       <button type="button" aria-label="Share on X" className={btn} onClick={() => open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`)}><Twitter className="w-4 h-4" /></button>
       <button type="button" aria-label="Share on Facebook" className={btn} onClick={() => open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`)}><Facebook className="w-4 h-4" /></button>
       <button type="button" aria-label="Share on LinkedIn" className={btn} onClick={() => open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`)}><Linkedin className="w-4 h-4" /></button>
-      <button type="button" aria-label="Copy link" className={btn} onClick={async () => { try { await navigator.clipboard.writeText(url); onToast('Link copied'); } catch { onToast('Could not copy the link here'); } }}><Link2 className="w-4 h-4" /></button>
+      <button type="button" aria-label="Copy link" className={btn} onClick={async () => { try { await navigator.clipboard.writeText(url); onToast('Link Copied', title); } catch { onToast('Could Not Copy', 'Copy the link from the address bar'); } }}><Link2 className="w-4 h-4" /></button>
     </Card>
   );
 };
@@ -135,7 +136,7 @@ interface Props {
   onAuth: (mode: 'signin' | 'signup') => void;
   onToggleFollow: () => void;
   onToggle: (id: string, key: 'liked' | 'saved') => void;
-  onToast: (m: string) => void;
+  onToast: ShowToast;
   onNavigate: (tab: string) => void;
   onRetry: () => void;
 }
@@ -173,8 +174,8 @@ export const ArticleRead: React.FC<Props> = ({ article: a, others, state, signed
             <Avatar src={a.avatar} alt={a.author} size={32} /><span className="font-semibold text-[#0b1c30]">{a.author}</span><Verified />
             <span className="text-[#64748b] text-[13px] truncate">{a.handle} · 8 min read</span>
             <div className="ml-auto flex items-center gap-2 shrink-0">
-              {!a.own && <OutlineButton aria-pressed={!!a.following} onClick={() => { onToggleFollow(); onToast(a.following ? `Unfollowed ${a.author}` : `You are now following ${a.author}`); }}>{a.following ? 'Following' : 'Follow'}</OutlineButton>}
-              <MoreMenu items={[{ label: 'Copy link', onClick: async () => { try { await navigator.clipboard.writeText(window.location.href); onToast('Link copied'); } catch { onToast('Could not copy the link here'); } } }, { label: 'Report', onClick: () => onToast('Thanks, we will review this article') }]} />
+              {!a.own && <OutlineButton aria-pressed={!!a.following} onClick={() => { onToggleFollow(); onToast(a.following ? 'Unfollowed' : 'Following', a.author); }}>{a.following ? 'Following' : 'Follow'}</OutlineButton>}
+              <MoreMenu items={[{ label: 'Copy link', onClick: async () => { try { await navigator.clipboard.writeText(window.location.href); onToast('Link Copied', a.title); } catch { onToast('Could Not Copy', 'Copy the link from the address bar'); } } }, { label: 'Report', onClick: () => onToast('Report Sent', 'Thanks, we will review this article') }]} />
             </div>
           </div>
 
@@ -206,7 +207,7 @@ export const ArticleRead: React.FC<Props> = ({ article: a, others, state, signed
             <div className="flex items-center justify-between mb-4"><h2 className="text-sm text-[#5945F1]">More Articles</h2><button type="button" onClick={onBack} className="flex items-center gap-1.5 text-sm text-[#0b1c30] hover:text-[#5945F1]">View All <ArrowRight className="w-4 h-4" /></button></div>
             {error
               ? <><EmptyState error image={IMG.emptyError} title="Articles Have Failed to Load" text="Articles are still there. Refresh to catch up." className="py-10" imgClass="w-40" /><div className="text-center"><PrimaryButton onClick={onRetry}>Refresh</PrimaryButton></div></>
-              : <div className="grid sm:grid-cols-2 gap-5">{others.slice(0, 2).map((o) => <ArticleCard key={o.id} article={o} signedIn={signedIn} onOpen={() => onOpen(o.id)} onToggle={(k) => onToggle(o.id, k)} onMenu={() => onToast('Open the article to manage it')} onShare={() => onToast('Link copied')} />)}</div>}
+              : <div className="grid sm:grid-cols-2 gap-5">{others.slice(0, 2).map((o) => <ArticleCard key={o.id} article={o} signedIn={signedIn} onOpen={() => onOpen(o.id)} onToggle={(k) => onToggle(o.id, k)} onMenu={() => onToast('Open the Article', 'Manage it from the article page')} onShare={() => onToast('Link Copied', o.title)} />)}</div>}
           </section>
         </article>
 

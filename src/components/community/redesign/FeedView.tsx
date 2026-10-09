@@ -1,3 +1,4 @@
+import { ShowToast } from './Toast';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ChartNoAxesColumnIncreasing, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Drama, Image as ImageIcon, Plus, Send, X } from 'lucide-react';
 import { Avatar, Card, EmptyState, PrimaryButton, BORDER, PreviewState } from './ui';
@@ -7,7 +8,7 @@ import { Me } from './Comments';
 import { SuggestIconBadge } from './Sidebars';
 
 /* ───────── Stories ───────── */
-export const StoriesRow: React.FC<{ state?: PreviewState; onAdd: () => void }> = ({ state, onAdd }) => {
+export const StoriesRow: React.FC<{ state?: PreviewState; onAdd: () => void; onToast: ShowToast }> = ({ state, onAdd, onToast }) => {
   const [open, setOpen] = useState<number | null>(null);
   useEffect(() => {
     if (open === null) return;
@@ -37,7 +38,7 @@ export const StoriesRow: React.FC<{ state?: PreviewState; onAdd: () => void }> =
           />
         ) : (
           STORIES.map((s, i) => (
-            <button key={s.id} type="button" onClick={() => setOpen(i)} aria-label={`Open story: ${s.title}, ${s.time}`} className={`shrink-0 ${i === STORIES.length - 1 ? 'w-[119px]' : 'w-[127.3px]'} h-[227px] rounded-lg overflow-hidden border ${BORDER} hover:brightness-110 transition`}>
+            <button key={s.id} type="button" onClick={() => { setOpen(i); onToast('Story Opened', s.title); }} aria-label={`Open story: ${s.title}, ${s.time}`} className={`shrink-0 ${i === STORIES.length - 1 ? 'w-[119px]' : 'w-[127.3px]'} h-[227px] rounded-lg overflow-hidden border ${BORDER} hover:brightness-110 transition`}>
               <img src={s.image} alt="" className="w-full h-full object-cover" loading="lazy" />
             </button>
           ))
@@ -59,7 +60,7 @@ export const StoriesRow: React.FC<{ state?: PreviewState; onAdd: () => void }> =
 };
 
 /* ───────── Composer ───────── */
-export const Composer: React.FC<{ me: Me; onPost: (text: string, image?: string) => void; onOpenCreate: () => void; heading?: string }> = ({ me, onPost, onOpenCreate, heading = 'Your Feed' }) => {
+export const Composer: React.FC<{ me: Me; onPost: (text: string, image?: string) => void; onOpenCreate: () => void; onToast?: ShowToast; heading?: string }> = ({ me, onPost, onOpenCreate, onToast, heading = 'Your Feed' }) => {
   const [text, setText] = useState('');
   const [image, setImage] = useState<string | undefined>();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -77,13 +78,13 @@ export const Composer: React.FC<{ me: Me; onPost: (text: string, image?: string)
             {image && (
               <div className="relative mt-2 inline-block">
                 <img src={image} alt="Selected upload" className="max-h-40 rounded-lg" />
-                <button type="button" aria-label="Remove image" onClick={() => setImage(undefined)} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#0b1c30] text-white flex items-center justify-center"><X className="w-3 h-3" /></button>
+                <button type="button" aria-label="Remove image" onClick={() => { setImage(undefined); onToast?.('Image Removed', 'The attachment was cleared'); }} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#0b1c30] text-white flex items-center justify-center"><X className="w-3 h-3" /></button>
               </div>
             )}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-4">
-          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) setImage(URL.createObjectURL(f)); e.target.value = ''; }} />
+          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) { setImage(URL.createObjectURL(f)); onToast?.('Image Added', f.name); } e.target.value = ''; }} />
           <button type="button" onClick={() => fileRef.current?.click()} className={btn}><ImageIcon className="w-4 h-4" />Photo / Video</button>
           <button type="button" onClick={onOpenCreate} className={btn}><Drama className="w-4 h-4" />Shorts</button>
           <button type="button" onClick={onOpenCreate} className={btn}><ChartNoAxesColumnIncreasing className="w-4 h-4" />Poll</button>
@@ -101,8 +102,9 @@ export const BackLink: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <button type="button" onClick={onClick} className="flex items-center gap-2.5 text-[15px] text-[#111827] hover:text-[#5945F1] mb-[29px]"><ArrowLeft className="w-4 h-4" />View feed</button>
 );
 
-export const SuggestedView: React.FC<{ onBack: () => void; onOpenTopic: (title: string) => void }> = ({ onBack, onOpenTopic }) => {
+export const SuggestedView: React.FC<{ onBack: () => void; onOpenTopic: (title: string) => void; onToast: ShowToast }> = ({ onBack, onOpenTopic, onToast }) => {
   const [page, setPage] = useState(1);
+  const go = (n: number) => { setPage(n); onToast('Page Changed', `Showing page ${n} of ${PAGES}`); };
   const list = page % 2 ? SUGGESTED : [...SUGGESTED].reverse();
   const pager: (number | '…')[] = [1, 2, '…', PAGES];
   const pb = (disabled: boolean) => `w-11 h-11 rounded-lg border ${BORDER} flex items-center justify-center ${disabled ? 'text-[#c1bbf8] bg-[#f8f8ff]' : 'text-[#5945F1] bg-[#f8f8ff] hover:bg-[#EEF0FE]'}`;
@@ -123,13 +125,13 @@ export const SuggestedView: React.FC<{ onBack: () => void; onOpenTopic: (title: 
         ))}
       </ul>
       <nav aria-label="Pagination" className="flex items-center justify-center gap-2 mt-[23px]">
-        <button type="button" aria-label="First page" disabled={page === 1} onClick={() => setPage(1)} className={pb(page === 1)}><ChevronFirst className="w-[18px] h-[18px]" /></button>
-        <button type="button" aria-label="Previous page" disabled={page === 1} onClick={() => setPage(page - 1)} className={pb(page === 1)}><ChevronLeft className="w-[18px] h-[18px]" /></button>
+        <button type="button" aria-label="First page" disabled={page === 1} onClick={() => go(1)} className={pb(page === 1)}><ChevronFirst className="w-[18px] h-[18px]" /></button>
+        <button type="button" aria-label="Previous page" disabled={page === 1} onClick={() => go(page - 1)} className={pb(page === 1)}><ChevronLeft className="w-[18px] h-[18px]" /></button>
         {pager.map((p, i) => p === '…'
           ? <span key={i} className={`${pb(false)} select-none`} aria-hidden="true">…</span>
-          : <button key={i} type="button" aria-current={page === p} onClick={() => setPage(p)} className={`${pb(false)} text-[17px] ${page === p ? '!bg-white font-semibold' : ''}`}>{p}</button>)}
-        <button type="button" aria-label="Next page" disabled={page === PAGES} onClick={() => setPage(Math.min(PAGES, page + 1))} className={pb(page === PAGES)}><ChevronRight className="w-[18px] h-[18px]" /></button>
-        <button type="button" aria-label="Last page" disabled={page === PAGES} onClick={() => setPage(PAGES)} className={pb(page === PAGES)}><ChevronLast className="w-[18px] h-[18px]" /></button>
+          : <button key={i} type="button" aria-current={page === p} onClick={() => go(p)} className={`${pb(false)} text-[17px] ${page === p ? '!bg-white font-semibold' : ''}`}>{p}</button>)}
+        <button type="button" aria-label="Next page" disabled={page === PAGES} onClick={() => go(Math.min(PAGES, page + 1))} className={pb(page === PAGES)}><ChevronRight className="w-[18px] h-[18px]" /></button>
+        <button type="button" aria-label="Last page" disabled={page === PAGES} onClick={() => go(PAGES)} className={pb(page === PAGES)}><ChevronLast className="w-[18px] h-[18px]" /></button>
       </nav>
     </div>
   );
@@ -144,7 +146,7 @@ export const TopicHeader: React.FC<{ title: string; icon: SuggestIcon }> = ({ ti
 );
 
 /* ───────── Feed posts ───────── */
-export const FeedList: React.FC<{ posts: FeedPost[]; state?: PreviewState; openFirstComments?: boolean; me: Me; onChange: (p: FeedPost) => void; onRemove: (id: string, mode: 'delete' | 'draft') => void; onToast: (m: string) => void }> = ({ posts, state, openFirstComments, me, onChange, onRemove, onToast }) => {
+export const FeedList: React.FC<{ posts: FeedPost[]; state?: PreviewState; openFirstComments?: boolean; me: Me; onChange: (p: FeedPost) => void; onRemove: (id: string, mode: 'delete' | 'draft') => void; onToast: ShowToast }> = ({ posts, state, openFirstComments, me, onChange, onRemove, onToast }) => {
   if (state === 'error') return <EmptyState error image={IMG.errFeed} {...STATE_COPY.feedError} className="pt-[163px] pb-24" imgClass="w-[198px]" />;
   if (state === 'empty' || posts.length === 0) return <EmptyState image={IMG.emptyQuiet} {...STATE_COPY.feedEmpty} className="pt-[168px] pb-24" imgClass="w-[213px]" />;
   return <div className="space-y-6">{posts.map((p, i) => <PostCard key={p.id} post={p} openComments={!!openFirstComments && i === 0} me={me} onChange={onChange} onRemove={onRemove} onToast={onToast} />)}</div>;

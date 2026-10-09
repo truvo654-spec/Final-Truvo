@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.47] - 2026-10-09
+### Added
+- Community toast built to the supplied template (290px, #f7f5ff, purple check, title plus one line of detail), stacking up to three and clearing after 3.2s.
+- Every Community action now raises a toast: like, save, follow, comment (first comment reads "Credits Earned"), reply, share, publish, move to drafts, delete, open a story or topic, change tab, category, list or page, add or remove an interest, attach or remove an image, finish reading an article (+5 credits), and open signals, courses or the broker offer.
+
 ## [1.0.46] - 2026-10-09
 ### Changed
 - Header matched to the design: 61px tall on the page background with the design border, the four top-level items (Trade, Brokers, Member Plan, Company), design search box without the Cmd+K badge, and the dropdown chevrons kept.

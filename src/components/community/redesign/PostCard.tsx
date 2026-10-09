@@ -4,6 +4,7 @@ import { HashtagLink } from '../../hashtag/HashtagText';
 import { Avatar, Card, Verified, BORDER } from './ui';
 import { CommentThread, Me } from './Comments';
 import { FeedPost } from './data';
+import { ShowToast } from './Toast';
 
 const fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n));
 
@@ -36,14 +37,14 @@ interface Props {
   me: Me;
   onChange: (p: FeedPost) => void;
   onRemove: (id: string, mode: 'delete' | 'draft') => void;
-  onToast: (m: string) => void;
+  onToast: ShowToast;
 }
 
 export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, onRemove, onToast }) => {
   const [showComments, setShowComments] = useState(!!openComments);
   const set = (patch: Partial<FeedPost>) => onChange({ ...post, ...patch });
   const share = async () => {
-    try { await navigator.clipboard.writeText(`${window.location.origin}/community?post=${post.id}`); onToast('Link copied'); } catch { onToast('Could not copy the link here'); }
+    try { await navigator.clipboard.writeText(`${window.location.origin}/community?post=${post.id}`); onToast('Link Copied', 'Share it anywhere'); } catch { onToast('Could Not Copy', 'Copy the link from the address bar'); }
   };
   const stat = 'flex items-center gap-1.5 text-[13px] leading-5';
 
@@ -56,7 +57,7 @@ export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, on
           {post.precision != null && <span className="inline-block mt-1.5 bg-[#f3f4f6] text-[#374151] text-[12px] leading-[21px] rounded-md px-2.5 py-0.5">Predict Precision: {post.precision}%</span>}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {!post.own && <button type="button" aria-pressed={!!post.following} onClick={() => { set({ following: !post.following }); onToast(post.following ? `Unfollowed ${post.name}` : `You are now following ${post.name}`); }} className={`h-8 w-[68px] rounded-lg border ${BORDER} text-[14px] text-[#5945F1] hover:bg-[#EEF0FE] transition-colors ${post.following ? 'bg-[#EEF0FE]' : ''}`}>{post.following ? 'Following' : 'Follow'}</button>}
+          {!post.own && <button type="button" aria-pressed={!!post.following} onClick={() => { set({ following: !post.following }); onToast(post.following ? 'Unfollowed' : 'Following', post.name); }} className={`h-8 w-[68px] rounded-lg border ${BORDER} text-[14px] text-[#5945F1] hover:bg-[#EEF0FE] transition-colors ${post.following ? 'bg-[#EEF0FE]' : ''}`}>{post.following ? 'Following' : 'Follow'}</button>}
           <MoreMenu items={[{ label: 'Move to Drafts', onClick: () => onRemove(post.id, 'draft') }, { label: 'Delete', onClick: () => onRemove(post.id, 'delete'), danger: true }]} />
         </div>
       </header>
@@ -66,10 +67,10 @@ export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, on
       <p className="flex flex-wrap gap-x-2 gap-y-1 mt-[15px] text-[13px] leading-5 text-[#5945F1]">{post.tags.map((t) => <HashtagLink key={t} tag={t} />)}</p>
 
       <div className="flex items-center gap-6 mt-3.5 text-[#111827]">
-        <button type="button" aria-pressed={!!post.liked} aria-label="Like" onClick={() => set({ liked: !post.liked, likes: post.likes + (post.liked ? -1 : 1) })} className={`${stat} ${post.liked ? 'text-[#5945F1]' : 'hover:text-[#5945F1]'}`}><Heart className={`w-4 h-4 ${post.liked ? 'fill-current' : ''}`} />{fmt(post.likes)}</button>
+        <button type="button" aria-pressed={!!post.liked} aria-label="Like" onClick={() => { set({ liked: !post.liked, likes: post.likes + (post.liked ? -1 : 1) }); onToast(post.liked ? 'Like Removed' : 'Post Liked', post.liked ? `You unliked ${post.name}’s post` : `You liked ${post.name}’s post`); }} className={`${stat} ${post.liked ? 'text-[#5945F1]' : 'hover:text-[#5945F1]'}`}><Heart className={`w-4 h-4 ${post.liked ? 'fill-current' : ''}`} />{fmt(post.likes)}</button>
         <span className={stat}><Eye className="w-4 h-4" />{post.views}</span>
         <button type="button" aria-expanded={showComments} aria-label="Comments" onClick={() => setShowComments((v) => !v)} className={`${stat} hover:text-[#5945F1]`}><MessageCircle className="w-4 h-4" />{post.comments.length + (post.commentBase ?? 0)}</button>
-        <button type="button" aria-pressed={!!post.saved} aria-label="Save" onClick={() => { set({ saved: !post.saved, saves: post.saves + (post.saved ? -1 : 1) }); onToast(post.saved ? 'Removed from saved posts' : 'Saved to your posts'); }} className={`${stat} ${post.saved ? 'text-[#5945F1]' : 'hover:text-[#5945F1]'}`}><Bookmark className={`w-4 h-4 ${post.saved ? 'fill-current' : ''}`} />{post.saves}</button>
+        <button type="button" aria-pressed={!!post.saved} aria-label="Save" onClick={() => { set({ saved: !post.saved, saves: post.saves + (post.saved ? -1 : 1) }); onToast(post.saved ? 'Removed from Saved' : 'Post Saved', post.saved ? 'No longer in your saved posts' : 'Find it on My Page'); }} className={`${stat} ${post.saved ? 'text-[#5945F1]' : 'hover:text-[#5945F1]'}`}><Bookmark className={`w-4 h-4 ${post.saved ? 'fill-current' : ''}`} />{post.saves}</button>
         <button type="button" aria-label="Share" onClick={share} className="ml-auto hover:text-[#5945F1]"><Share2 className="w-4 h-4" /></button>
       </div>
 

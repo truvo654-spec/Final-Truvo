@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, Heart } from 'lucide-react';
 import { Avatar, PrimaryButton, Verified, BORDER } from './ui';
 import { CommentItem, ReplyItem } from './data';
+import { ShowToast } from './Toast';
 
 export interface Me { name: string; handle: string; avatar: string }
 
@@ -46,7 +47,7 @@ const Composer: React.FC<{ placeholder: string; max: number; multiline?: boolean
   );
 };
 
-export const CommentThread: React.FC<{ comments: CommentItem[]; me: Me; max?: number; multiline?: boolean; onChange: (c: CommentItem[]) => void; onToast: (m: string) => void }> = ({ comments, me, max = 50, multiline, onChange, onToast }) => {
+export const CommentThread: React.FC<{ comments: CommentItem[]; me: Me; max?: number; multiline?: boolean; onChange: (c: CommentItem[]) => void; onToast: ShowToast }> = ({ comments, me, max = 50, multiline, onChange, onToast }) => {
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [replying, setReplying] = useState<string | null>(null);
@@ -55,7 +56,7 @@ export const CommentThread: React.FC<{ comments: CommentItem[]; me: Me; max?: nu
 
   return (
     <div className="space-y-4">
-      <Composer placeholder={multiline ? 'Write a comment...' : 'Comment Here'} max={max} multiline={multiline} onPost={(t) => { onChange([{ ...now(), id: `c${Date.now()}`, text: t, replies: [] }, ...comments]); onToast('Comment posted'); }} />
+      <Composer placeholder={multiline ? 'Write a comment...' : 'Comment Here'} max={max} multiline={multiline} onPost={(t) => { const first = !comments.some((c) => c.handle === me.handle); onChange([{ ...now(), id: `c${Date.now()}`, text: t, replies: [] }, ...comments]); onToast(first ? 'Credits Earned' : 'Comment Posted', first ? 'First comment posted' : 'Your comment is live'); }} />
       {comments.map((c) => (
         <div key={c.id} className={`border ${BORDER} bg-[#faf9ff] rounded-lg p-3`}>
           <Row c={c} liked={!!liked[c.id]} onLike={() => toggleLike(c.id)} onReply={() => { setReplying(replying === c.id ? null : c.id); setOpen((o) => ({ ...o, [c.id]: true })); }}
@@ -66,7 +67,7 @@ export const CommentThread: React.FC<{ comments: CommentItem[]; me: Me; max?: nu
                 <div key={r.id} className={i ? `pt-3 border-t ${BORDER}` : ''}><Row c={r} small liked={!!liked[r.id]} onLike={() => toggleLike(r.id)} /></div>
               ))}
               {replying === c.id && (
-                <Composer autoFocus placeholder="Reply here" max={max} onPost={(t) => { onChange(comments.map((x) => (x.id === c.id ? { ...x, replies: [...x.replies, { ...now(), id: `r${Date.now()}`, text: t }] } : x))); setReplying(null); onToast('Reply posted'); }} />
+                <Composer autoFocus placeholder="Reply here" max={max} onPost={(t) => { onChange(comments.map((x) => (x.id === c.id ? { ...x, replies: [...x.replies, { ...now(), id: `r${Date.now()}`, text: t }] } : x))); setReplying(null); onToast('Reply Posted', 'Your reply is live'); }} />
               )}
             </div>
           )}
