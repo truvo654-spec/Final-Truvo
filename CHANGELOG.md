@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.48] - 2026-10-09
+### Changed
+- Knowledge Hub and Community are top-level header items again, as they were before 1.0.46; the entries added to the Company menu were removed. The header keeps its design styling (62px, page background, design border, search box without the Cmd+K badge).
+
 ## [1.0.47] - 2026-10-09
 ### Added
 - Community toast built to the supplied template (290px, #f7f5ff, purple check, title plus one line of detail), stacking up to three and clearing after 3.2s.
