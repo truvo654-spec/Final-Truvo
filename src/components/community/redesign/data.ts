@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 /** Demo content for the redesigned Community (Feed, Article, My Page). Images live in src/assets/community. */
-const files = import.meta.glob('../../../assets/community/*.{jpg,png}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
-const img = (name: string, ext: 'jpg' | 'png' = 'jpg') => files[`../../../assets/community/${name}.${ext}`] ?? '';
+const files = import.meta.glob('../../../assets/community/*.{jpg,png,mp4,webm}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const img = (name: string, ext: 'jpg' | 'png' | 'mp4' | 'webm' = 'jpg') => files[`../../../assets/community/${name}.${ext}`] ?? '';
 
 export const IMG = {
   josh: img('av-josh-big'),
@@ -100,10 +100,10 @@ export const COURSES = [
 ];
 
 export const STORIES = [
-  { id: 's1', title: 'Technical Analysis', time: '2h ago', image: img('story1') },
-  { id: 's2', title: 'Trading Setup', time: '4h ago', image: img('story2') },
-  { id: 's3', title: 'Life As a Trader', time: '6h ago', image: img('story3') },
-  { id: 's4', title: 'Event Highlights', time: '12h ago', image: img('story4') },
+  { id: 's1', title: 'Technical Analysis', time: '2h ago', image: img('story1'), video: img('story1', 'mp4'), videoWebm: img('story1', 'webm') },
+  { id: 's2', title: 'Trading Setup', time: '4h ago', image: img('story2'), video: img('story2', 'mp4'), videoWebm: img('story2', 'webm') },
+  { id: 's3', title: 'Life As a Trader', time: '6h ago', image: img('story3'), video: img('story3', 'mp4'), videoWebm: img('story3', 'webm') },
+  { id: 's4', title: 'Event Highlights', time: '12h ago', image: img('story4'), video: img('story4', 'mp4'), videoWebm: img('story4', 'webm') },
 ];
 
 export interface ReplyItem { id: string; name: string; handle: string; time: string; text: string; likes: number; avatar: string }

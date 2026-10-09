@@ -8,14 +8,48 @@ import { Me } from './Comments';
 import { SuggestIconBadge } from './Sidebars';
 
 /* ───────── Stories ───────── */
+/** One story tile: the short plays in place, muted and looping, with the still as its poster. */
+const StoryTile: React.FC<{ story: typeof STORIES[number]; last: boolean; onOpen: () => void }> = ({ story, last, onOpen }) => {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    const io = typeof IntersectionObserver === 'undefined'
+      ? null
+      : new IntersectionObserver((e) => e.forEach((x) => (x.isIntersecting ? v.play().catch(() => {}) : v.pause())), { threshold: 0.25 });
+    io?.observe(v);
+    v.play().catch(() => {});
+    return () => io?.disconnect();
+  }, []);
+  return (
+    <button type="button" onClick={onOpen} aria-label={`Open story: ${story.title}, ${story.time}`} className={`relative shrink-0 ${last ? 'w-[119px]' : 'w-[127.3px]'} h-[227px] rounded-lg overflow-hidden border ${BORDER} hover:brightness-110 transition`}>
+      <video ref={ref} poster={story.image} muted loop playsInline preload="metadata" aria-hidden="true" className="w-full h-full object-cover">
+        <source src={story.videoWebm} type="video/webm" />
+        <source src={story.video} type="video/mp4" />
+      </video>
+    </button>
+  );
+};
+
 export const StoriesRow: React.FC<{ state?: PreviewState; onAdd: () => void; onToast: ShowToast }> = ({ state, onAdd, onToast }) => {
   const [open, setOpen] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
+  const player = useRef<HTMLVideoElement>(null);
+  const close = () => { setOpen(null); setProgress(0); };
+  const go = (i: number) => { setProgress(0); setOpen(i); };
+
   useEffect(() => {
     if (open === null) return;
-    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(null); if (e.key === 'ArrowRight') setOpen((i) => (i === null ? i : Math.min(STORIES.length - 1, i + 1))); if (e.key === 'ArrowLeft') setOpen((i) => (i === null ? i : Math.max(0, i - 1))); };
+    const k = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowRight' && open < STORIES.length - 1) go(open + 1);
+      if (e.key === 'ArrowLeft' && open > 0) go(open - 1);
+      if (e.key === ' ') { e.preventDefault(); const v = player.current; if (v) (v.paused ? v.play().catch(() => {}) : v.pause()); }
+    };
     document.addEventListener('keydown', k);
     return () => document.removeEventListener('keydown', k);
   }, [open]);
+
   const blank = state === 'empty';
   const failed = state === 'error';
   return (
@@ -38,20 +72,38 @@ export const StoriesRow: React.FC<{ state?: PreviewState; onAdd: () => void; onT
           />
         ) : (
           STORIES.map((s, i) => (
-            <button key={s.id} type="button" onClick={() => { setOpen(i); onToast('Story Opened', s.title); }} aria-label={`Open story: ${s.title}, ${s.time}`} className={`shrink-0 ${i === STORIES.length - 1 ? 'w-[119px]' : 'w-[127.3px]'} h-[227px] rounded-lg overflow-hidden border ${BORDER} hover:brightness-110 transition`}>
-              <img src={s.image} alt="" className="w-full h-full object-cover" loading="lazy" />
-            </button>
+            <StoryTile key={s.id} story={s} last={i === STORIES.length - 1} onOpen={() => { go(i); onToast('Story Opened', s.title); }} />
           ))
         )}
       </div>
+
       {open !== null && (
-        <div role="dialog" aria-modal="true" aria-label={STORIES[open].title} className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setOpen(null)}>
+        <div role="dialog" aria-modal="true" aria-label={STORIES[open].title} className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={close}>
           <div className="relative h-[80vh] max-h-[640px] aspect-[9/16] rounded-2xl overflow-hidden bg-black" onClick={(e) => e.stopPropagation()}>
-            <img src={STORIES[open].image} alt={STORIES[open].title} className="w-full h-full object-cover" />
-            <div className="absolute top-2 left-2 right-2 flex gap-1" aria-hidden="true">{STORIES.map((_, i) => <span key={i} className={`h-0.5 flex-1 rounded-full ${i <= open ? 'bg-white' : 'bg-white/40'}`} />)}</div>
-            <button type="button" aria-label="Close story" onClick={() => setOpen(null)} className="absolute top-5 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"><X className="w-4 h-4" /></button>
-            {open > 0 && <button type="button" aria-label="Previous story" onClick={() => setOpen(open - 1)} className="absolute left-2 top-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"><ChevronLeft className="w-4 h-4" /></button>}
-            {open < STORIES.length - 1 && <button type="button" aria-label="Next story" onClick={() => setOpen(open + 1)} className="absolute right-2 top-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"><ChevronRight className="w-4 h-4" /></button>}
+            <video
+              key={STORIES[open].id}
+              ref={player}
+              poster={STORIES[open].image}
+              autoPlay
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+              onTimeUpdate={(e) => { const v = e.currentTarget; setProgress(v.duration ? v.currentTime / v.duration : 0); }}
+              onEnded={() => (open < STORIES.length - 1 ? go(open + 1) : close())}
+            >
+              <source src={STORIES[open].videoWebm} type="video/webm" />
+              <source src={STORIES[open].video} type="video/mp4" />
+            </video>
+            <div className="absolute top-2 left-2 right-2 flex gap-1" aria-hidden="true">
+              {STORIES.map((_, i) => (
+                <span key={i} className="h-0.5 flex-1 rounded-full bg-white/40 overflow-hidden">
+                  <span className="block h-full bg-white" style={{ width: i < open ? '100%' : i === open ? `${Math.round(progress * 100)}%` : '0%' }} />
+                </span>
+              ))}
+            </div>
+            <button type="button" aria-label="Close story" onClick={close} className="absolute top-5 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"><X className="w-4 h-4" /></button>
+            {open > 0 && <button type="button" aria-label="Previous story" onClick={() => go(open - 1)} className="absolute left-2 top-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"><ChevronLeft className="w-4 h-4" /></button>}
+            {open < STORIES.length - 1 && <button type="button" aria-label="Next story" onClick={() => go(open + 1)} className="absolute right-2 top-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"><ChevronRight className="w-4 h-4" /></button>}
           </div>
         </div>
       )}

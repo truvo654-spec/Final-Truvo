@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.50] - 2026-10-09
+### Added
+- Community stories are real video now: each tile plays a looping, muted 6-second clip in place (pausing when scrolled out of view), and opening one plays it full screen with a progress bar, keyboard controls and auto-advance to the next story.
+- Clips ship as WebM (VP9) and MP4 (H.264) so they play across browsers. They were generated from the design stills with a slow pan and zoom, so they are motion rather than filmed footage.
+
 ## [1.0.49] - 2026-10-09
 ### Changed
 - Community toasts now follow the second template: #f0efff card at the top right under the header, icon and headline on the first line, and the action detail underneath.
