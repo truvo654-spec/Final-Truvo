@@ -923,3 +923,7 @@ select:not(.appearance-none) {
 [data-keep-button-icons] [role="button"]:not(#keep-icons) svg {
   display: inline-block !important;
 }
+
+/* Hide the scrollbar on horizontal strips and the sticky Community sidebars. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }

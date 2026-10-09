@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, BarChart3, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Film, Image as ImageIcon, Plus, Send, X } from 'lucide-react';
+import { ArrowLeft, ChartNoAxesColumnIncreasing, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Drama, Image as ImageIcon, Plus, Send, X } from 'lucide-react';
 import { Avatar, Card, EmptyState, PrimaryButton, BORDER, PreviewState } from './ui';
 import { FeedPost, IMG, STATE_COPY, STORIES, SUGGESTED, SuggestIcon } from './data';
 import { PostCard } from './PostCard';
@@ -85,8 +85,8 @@ export const Composer: React.FC<{ me: Me; onPost: (text: string, image?: string)
         <div className="flex flex-wrap items-center gap-2 mt-4">
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) setImage(URL.createObjectURL(f)); e.target.value = ''; }} />
           <button type="button" onClick={() => fileRef.current?.click()} className={btn}><ImageIcon className="w-4 h-4" />Photo / Video</button>
-          <button type="button" onClick={onOpenCreate} className={btn}><Film className="w-4 h-4" />Shorts</button>
-          <button type="button" onClick={onOpenCreate} className={btn}><BarChart3 className="w-4 h-4" />Poll</button>
+          <button type="button" onClick={onOpenCreate} className={btn}><Drama className="w-4 h-4" />Shorts</button>
+          <button type="button" onClick={onOpenCreate} className={btn}><ChartNoAxesColumnIncreasing className="w-4 h-4" />Poll</button>
           <PrimaryButton onClick={submit} className="ml-auto flex items-center gap-2 !h-9 !px-4 !text-[14px] !font-medium"><Send className="w-4 h-4" />Post</PrimaryButton>
         </div>
       </Card>
@@ -112,7 +112,7 @@ export const SuggestedView: React.FC<{ onBack: () => void; onOpenTopic: (title: 
       <div className={`border-b ${BORDER}`}>
         <span className={`inline-block border ${BORDER} border-b-transparent bg-[#fbfbff] rounded-t-lg px-4 py-2 text-[16px] font-semibold text-[#5945F1] -mb-px`}>Suggested for You</span>
       </div>
-      <ul className="mt-8 space-y-4">
+      <ul className="mt-[38px] space-y-4">
         {list.map((s) => (
           <li key={s.title}>
             <button type="button" onClick={() => onOpenTopic(s.title)} className={`w-full h-[68px] flex items-center gap-3 bg-white border-b ${BORDER} rounded-lg px-4 text-left hover:bg-[#faf9ff] transition-colors`}>
@@ -122,7 +122,7 @@ export const SuggestedView: React.FC<{ onBack: () => void; onOpenTopic: (title: 
           </li>
         ))}
       </ul>
-      <nav aria-label="Pagination" className="flex items-center justify-center gap-2 mt-[29px]">
+      <nav aria-label="Pagination" className="flex items-center justify-center gap-2 mt-[23px]">
         <button type="button" aria-label="First page" disabled={page === 1} onClick={() => setPage(1)} className={pb(page === 1)}><ChevronFirst className="w-[18px] h-[18px]" /></button>
         <button type="button" aria-label="Previous page" disabled={page === 1} onClick={() => setPage(page - 1)} className={pb(page === 1)}><ChevronLeft className="w-[18px] h-[18px]" /></button>
         {pager.map((p, i) => p === '…'

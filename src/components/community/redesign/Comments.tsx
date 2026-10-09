@@ -48,7 +48,7 @@ const Composer: React.FC<{ placeholder: string; max: number; multiline?: boolean
 
 export const CommentThread: React.FC<{ comments: CommentItem[]; me: Me; max?: number; multiline?: boolean; onChange: (c: CommentItem[]) => void; onToast: (m: string) => void }> = ({ comments, me, max = 50, multiline, onChange, onToast }) => {
   const [liked, setLiked] = useState<Record<string, boolean>>({});
-  const [open, setOpen] = useState<Record<string, boolean>>({ cm1: true });
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   const [replying, setReplying] = useState<string | null>(null);
   const now = (): Omit<ReplyItem, 'id' | 'text'> => ({ name: me.name, handle: me.handle, time: 'Just now', avatar: me.avatar, likes: 0 });
   const toggleLike = (id: string) => setLiked((l) => ({ ...l, [id]: !l[id] }));

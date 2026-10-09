@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.45] - 2026-10-09
+### Added
+- Community sidebars now stay with the page while it scrolls (sticky below the header) and scroll internally when taller than the viewport, on Feed, Article and My Page.
+### Changed
+- Community content starts at the same offset as the design, the composer uses the designed Shorts and Poll icons, and the Suggested list and topic view spacing were matched to the design.
+
 ## [1.0.44] - 2026-10-09
 ### Changed
 - Community rebuilt to the MarketSyde design system: Feed, Article and My Page, with the previous Topics, Media and creator-profile views retired.

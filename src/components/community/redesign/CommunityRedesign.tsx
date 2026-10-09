@@ -110,6 +110,8 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   const topicIcon = SUGGESTED.find((s) => s.title === topic)?.icon ?? 'chart';
   const topicPosts = useMemo(() => (topic ? shownPosts.slice(0, 2) : shownPosts), [topic, shownPosts]);
   const wrap = 'grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_300px] gap-8 items-start';
+  /** Sidebars follow the page while it scrolls, and scroll internally when taller than the viewport. */
+  const stickyCol = 'xl:sticky xl:top-[93px] xl:max-h-[calc(100vh-109px)] xl:overflow-y-auto no-scrollbar xl:pb-2';
 
   return (
     <div className="font-sans" data-keep-button-icons>
@@ -136,7 +138,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
 
       {activeTab === 'feed' && (
         <div className={wrap}>
-          <aside className="order-2 lg:order-none space-y-8 lg:row-span-2 xl:row-span-1">
+          <aside className={`order-2 lg:order-none space-y-8 lg:row-span-2 xl:row-span-1 ${stickyCol}`}>
             <KeyTopicsCard state={preview} />
             <SuggestedCard state={preview} onOpen={() => { setTopic(null); setFeedView('suggested'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onOpenTopic={openTopic} />
           </aside>
@@ -145,13 +147,13 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
             {feedView === 'suggested' ? (
               <SuggestedView onBack={() => setFeedView('feed')} onOpenTopic={openTopic} />
             ) : topic ? (
-              <div className="flex flex-col gap-7">
+              <div className="flex flex-col gap-[17px]">
                 <div>
                   <BackLink onClick={() => setTopic(null)} />
                   <TopicHeader title={topic} icon={topicIcon} />
                 </div>
                 <Composer me={me} heading="" onPost={(t, i) => (signedIn ? addPost(t, i) : auth('signin'))} onOpenCreate={() => (signedIn ? setCreateOpen(true) : auth('signin'))} />
-                <div className="mt-1"><FeedList posts={topicPosts} state={preview} me={me} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
+                <div className="mt-[15px]"><FeedList posts={topicPosts} state={preview} me={me} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
               </div>
             ) : (
               <div className="flex flex-col gap-7">
@@ -162,7 +164,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
             )}
           </div>
 
-          <aside className="order-3 lg:order-none lg:col-span-2 xl:col-span-1 grid sm:grid-cols-2 xl:grid-cols-1 gap-8 items-start">
+          <aside className={`order-3 lg:order-none lg:col-span-2 xl:col-span-1 grid sm:grid-cols-2 xl:grid-cols-1 gap-8 items-start ${stickyCol}`}>
             {preview !== 'empty' && <ContributorsCard state={preview} onOpenArticles={() => setTab('article')} />}
             <SignalsCard state={preview} onSignals={() => nav('signals')} onUpgrade={() => nav('member-plan')} />
             <CoursesCard state={preview} onOpen={() => nav('education-hub')} />

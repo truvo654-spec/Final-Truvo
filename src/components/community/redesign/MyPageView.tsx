@@ -66,7 +66,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)_300px] gap-8 items-start">
-      <aside className="order-2 lg:order-none space-y-8 lg:row-span-2 xl:row-span-1">
+      <aside className="order-2 lg:order-none space-y-8 lg:row-span-2 xl:row-span-1 xl:sticky xl:top-[93px] xl:max-h-[calc(100vh-109px)] xl:overflow-y-auto no-scrollbar xl:pb-2">
         <NavListCard items={nav} active={section} onChange={setSection} />
         <AdCarousel onOpen={() => onNavigate('brokers')} />
       </aside>
@@ -96,7 +96,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
         {main}
       </div>
 
-      <aside className="order-3 lg:order-none lg:col-span-2 xl:col-span-1 grid sm:grid-cols-2 xl:grid-cols-1 gap-8 items-start">
+      <aside className="order-3 lg:order-none lg:col-span-2 xl:col-span-1 grid sm:grid-cols-2 xl:grid-cols-1 gap-8 items-start xl:sticky xl:top-[93px] xl:max-h-[calc(100vh-109px)] xl:overflow-y-auto no-scrollbar xl:pb-2">
         <YourWritingCard onContinue={() => onToast('Opening your draft...')} />
         <InterestsCard title="My Interests" onToast={onToast} />
       </aside>
