@@ -3,6 +3,7 @@ import { eligible, realized, metrics, currencyOf } from './journalMath';
 
 export type PnlMode = 'gross' | 'net';
 export type RangeMode = 'month' | 'last7' | 'last30' | 'all' | 'custom';
+export const JOURNAL_MARKET_TYPES: JournalEntry['assetClass'][] = ['Forex', 'Crypto', 'Stocks', 'Commodity', 'Indices'];
 
 export const entryPnl = (e: JournalEntry, mode: PnlMode) => eligible(e, mode) ? (mode === 'net' ? e.pnl - (e.commission ?? 0) : e.pnl) : 0;
 export const isRealized = realized;
@@ -17,14 +18,16 @@ export const addDays = (iso: string, n: number) => {
 };
 
 export const addMonth = (ym: string, delta: number) => {
-  const [y, m] = ym.split('-').map(Number);
-  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`;
+  const d = new Date(`${ym}-01T00:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() + delta);
+  return `${String(d.getUTCFullYear()).padStart(4, '0')}-${pad(d.getUTCMonth() + 1)}`;
 };
 
 export const monthBounds = (ym: string): [string, string] => {
-  const [y, m] = ym.split('-').map(Number);
-  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const d = new Date(`${ym}-01T00:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() + 1);
+  d.setUTCDate(0);
+  const last = d.getUTCDate();
   return [`${ym}-01`, `${ym}-${pad(last)}`];
 };
 

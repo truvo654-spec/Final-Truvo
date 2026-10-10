@@ -4,7 +4,7 @@ import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './jo
 import React, { useMemo, useState } from 'react';
 import { Broker, JournalEntry } from '../../types';
 import { JOURNAL_STRATEGIES, JOURNAL_TODAY } from '../../data/journalData';
-import { UNASSIGNED, addDays, brokerColor, entryCashback, entryPoints, shortDate } from './journalOverview';
+import { JOURNAL_MARKET_TYPES, UNASSIGNED, addDays, entryCashback, entryPoints, shortDate } from './journalOverview';
 import { TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
 
 // Insights › reports. "Day & Time" follows the uploaded concept (light theme): view tabs, benchmark,
@@ -96,7 +96,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const money = useMoney();
 
   const brokerMap = useMemo(() => new Map(brokers.map((b) => [b.id, b] as const)), [brokers]);
-  const brokerOrder = useMemo(() => brokers.map((b) => b.id), [brokers]);
   const brokerName = (id: string) => (id === UNASSIGNED ? 'Unassigned' : brokerMap.get(id)?.name || id);
 
   const [report, setReport] = useJournalState<Report>('JournalInsights-report', 'daytime');
@@ -119,10 +118,9 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const [metric, setMetric] = useJournalState<Metric>('JournalInsights-metric', 'net');
   const [dim, setDim] = useJournalState<Dim>('JournalInsights-dim', 'playbook');
   const [sessOff, setSessOff] = useJournalState<SessionId[]>('JournalInsights-sessOff', []);
-  const [brokerOff, setBrokerOff] = useJournalState<string[]>('JournalInsights-brokerOff', []);
   const [assetOff, setAssetOff] = useJournalState<string[]>('JournalInsights-assetOff', []);
   const [stratOff, setStratOff] = useJournalState<string[]>('JournalInsights-stratOff', []);
-  const [openMenu, setOpenMenu] = useState<null | 'broker' | 'asset' | 'strategy'>(null);
+  const [openMenu, setOpenMenu] = useState<null | 'asset' | 'strategy'>(null);
   const [mouseHover, setHover] = useState<number | null>(null);
   const [focusedBucket,setFocusedBucket] = useState<number|null>(null);
   const hover=focusedBucket===-1?null:focusedBucket ?? mouseHover;
@@ -163,13 +161,13 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const benchOn = bench && days > 0;
 
   const passFilters = (e: JournalEntry) =>
-    eligible(e) && !brokerOff.includes(e.brokerId || UNASSIGNED) && !assetOff.includes(e.assetClass) && !stratOff.includes(e.strategy) && !sessOff.includes(sessionOf(e));
+    eligible(e) && !assetOff.includes(e.assetClass) && !stratOff.includes(e.strategy) && !sessOff.includes(sessionOf(e));
   const cur = useMemo(() => entries.filter((e) => passFilters(e) && e.date >= from && (range === 'all' || e.date <= JOURNAL_TODAY)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [entries, brokerOff, assetOff, stratOff, sessOff, from]);
+    [entries, assetOff, stratOff, sessOff, from]);
   const prev = useMemo(() => (benchOn ? entries.filter((e) => passFilters(e) && e.date >= prevFrom && e.date <= prevTo) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [entries, brokerOff, assetOff, stratOff, sessOff, benchOn, prevFrom, prevTo]);
+    [entries, assetOff, stratOff, sessOff, benchOn, prevFrom, prevTo]);
 
   // ── buckets for the current view ──
   const bucketOf = (e: JournalEntry): { key: string; label: string; order: number } => {
@@ -280,12 +278,12 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
     onToast(`Exported ${rows.length} rows to CSV`);
   };
 
-  const resetFilters = () => { setBrokerOff([]); setAssetOff([]); setStratOff([]); setSessOff([]); setRowFilter(''); setRange('all'); setBench(false); setDrill(null); };
-  const activeFilters = brokerOff.length + assetOff.length + stratOff.length + sessOff.length;
+  const resetFilters = () => { setAssetOff([]); setStratOff([]); setSessOff([]); setRowFilter(''); setRange('all'); setBench(false); setDrill(null); };
+  const activeFilters = assetOff.length + stratOff.length + sessOff.length;
 
   // ── small UI helpers ──
   const btn = 'h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-[#0b1c30]';
-  const menu = (id: 'broker' | 'asset' | 'strategy', title: string, opts: { id: string; label: string; color?: string }[], off: string[], set: (v: string[]) => void) => (
+  const menu = (id: 'asset' | 'strategy', title: string, opts: { id: string; label: string; color?: string }[], off: string[], set: (v: string[]) => void) => (
     <div className="relative">
       <button type="button" aria-expanded={openMenu === id} onClick={() => setOpenMenu(openMenu === id ? null : id)} className={`${btn} ${off.length ? 'border-[#5338ec] text-[#5338ec]' : ''}`}>
         {title} ({opts.length - off.length}/{opts.length})
@@ -296,7 +294,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
             <label key={o.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 text-xs text-[#0b1c30] cursor-pointer">
               <input type="checkbox" checked={!off.includes(o.id)} onChange={() => set(off.includes(o.id) ? off.filter((x) => x !== o.id) : [...off, o.id])} style={o.color ? { accentColor: o.color } : undefined} />
               <span className="flex-1">{o.label}</span>
-              <span className="text-[10px] font-mono text-slate-400">{entries.filter((e) => (id === 'broker' ? (e.brokerId || UNASSIGNED) : id === 'asset' ? e.assetClass : e.strategy) === o.id).length}</span>
+              <span className="text-[10px] font-mono text-slate-400">{entries.filter((e) => (id === 'asset' ? e.assetClass : e.strategy) === o.id).length}</span>
             </label>
           ))}
           <div className="flex justify-between px-2 pt-1.5">
@@ -307,8 +305,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
       )}
     </div>
   );
-  const brokerOpts = Array.from(new Set<string>(entries.map((e) => e.brokerId || UNASSIGNED))).map((id) => ({ id, label: brokerName(id), color: brokerColor(id, brokerOrder) }));
-  const assetOpts = Array.from(new Set<string>(entries.map((e) => e.assetClass))).map((id) => ({ id, label: id }));
+  const assetOpts = JOURNAL_MARKET_TYPES.map((id) => ({ id, label: id }));
   const stratOpts = JOURNAL_STRATEGIES.filter((s) => entries.some((e) => e.strategy === s)).map((id) => ({ id, label: id }));
 
   const delta = (a: number, b: number, fmt: (n: number) => string) => {
@@ -391,7 +388,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               <select aria-label="Report subrange" value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="h-9 text-xs font-semibold border border-slate-200 rounded-lg px-3 bg-white">
                 <option value="last30">Last 30 days within scope</option><option value="last90">Last 90 days within scope</option><option value="all">Entire journal scope</option>
               </select>
-              {menu('broker', 'Broker', brokerOpts, brokerOff, setBrokerOff)}
               {menu('asset', 'Market type', assetOpts, assetOff, setAssetOff)}
               {menu('strategy', 'Playbook', stratOpts, stratOff, setStratOff)}
               <label className={`${btn} flex items-center gap-2 cursor-pointer ${days ? '' : 'opacity-50 cursor-not-allowed'}`} title={days ? '' : 'Pick Last 30 or 90 days to compare with the period before'}>

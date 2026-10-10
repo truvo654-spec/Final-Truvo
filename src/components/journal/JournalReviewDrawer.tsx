@@ -53,7 +53,7 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,chec
     patch({fills:[...(draft.fills || []),{id:crypto.randomUUID(),time:`${fill.time}Z`,side:fill.side,quantity:Number(fill.quantity),price:Number(fill.price),fee:fill.fee===''?null:Number(fill.fee)}]});
     setFill({time:'',side:'entry',quantity:'',price:'',fee:''});setError('');
   };
-  return <div className="fixed inset-0 z-50 bg-slate-900/35 flex justify-end" onClick={ev=>{if(ev.target===ev.currentTarget) requestLeave(onClose);}}>
+  return <div className="fixed inset-0 z-[70] bg-slate-900/35 flex justify-end" onClick={ev=>{if(ev.target===ev.currentTarget) requestLeave(onClose);}}>
     <div ref={dialog} role="dialog" aria-modal="true" aria-label={`Review ${entry.symbol}`} tabIndex={-1} className="w-full max-w-3xl h-full bg-[#FBFBFF] overflow-y-auto shadow-2xl outline-none" onKeyDown={ev=>{
       if(ev.key==='Escape'){ev.stopPropagation();requestLeave(onClose);}
       if(ev.key==='Tab'){const nodes=(Array.from(dialog.current!.querySelectorAll('button:not(:disabled),input,select,textarea,a[href]')) as HTMLElement[]).filter(e=>e.offsetParent!==null);const first=nodes[0],last=nodes[nodes.length-1]; if(ev.shiftKey && (document.activeElement===first || document.activeElement===dialog.current)){ev.preventDefault();last?.focus();}else if(!ev.shiftKey && document.activeElement===last){ev.preventDefault();first?.focus();}}

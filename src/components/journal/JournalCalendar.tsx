@@ -87,7 +87,7 @@ export const JournalCalendar: React.FC<Props> = ({ month, onMonthChange, entries
               onMouseEnter={()=>setHoverDay(iso)} onMouseLeave={()=>setHoverDay(null)}
               onFocus={()=>setFocusedDay(iso)} onBlur={()=>setFocusedDay(null)}
               onKeyDown={ev=>{if(ev.key==='Escape'){setFocusedDay('');setHoverDay(null);}}}
-              onClick={() => onSelect(isSel ? null : iso)}
+              onClick={() => onSelect(iso)}
               style={bg ? { backgroundColor: bg } : undefined}
               className={`aspect-square max-h-12 rounded-lg p-1 text-left flex flex-col justify-between border transition-colors ${
                 isSel ? 'border-[#5338ec] ring-2 ring-[#5338ec]/30' : isToday ? 'border-[#5338ec]/50' : 'border-transparent hover:border-slate-300'

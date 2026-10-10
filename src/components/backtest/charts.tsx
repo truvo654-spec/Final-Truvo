@@ -29,7 +29,8 @@ export const LineChart: React.FC<{
   hLines?: { y: number; label: string; color: string }[];
   area?: boolean;
   label: string;
-}> = ({ series, height = 220, yFmt, xFmt, band, hLines = [], area = true, label }) => {
+  tooltipDetail?: (x: number) => React.ReactNode;
+}> = ({ series, height = 220, yFmt, xFmt, band, hLines = [], area = true, label, tooltipDetail }) => {
   const W = 760, H = height, M = { t: 12, r: 14, b: 26, l: 64 };
   const all = series.flatMap((s) => s.points);
   const ref = useRef<SVGSVGElement>(null);
@@ -95,6 +96,7 @@ export const LineChart: React.FC<{
         <div role="status" className="pointer-events-none absolute top-2 z-10 bg-[#0b1c30] text-white rounded-lg px-3 py-2 text-[11px] shadow-lg whitespace-nowrap"
           style={{ left: `${(sx(hp.x) / W) * 100}%`, transform: sx(hp.x) / W > 0.6 ? 'translateX(calc(-100% - 10px))' : 'translateX(10px)' }}>
           <p className="font-semibold mb-0.5">{xFmt(hp.x)}</p>
+          {tooltipDetail?.(hp.x)}
           {series.map((s) => <p key={s.name} className="tabular-nums"><span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: s.color }} />{s.name}: {yFmt(nearest(s, hp.x).y)}</p>)}
         </div>
       )}
@@ -176,10 +178,12 @@ export const CandleChart: React.FC<{
   onPick?: (price: number) => void;
   label: string;
   hidePriceAxis?: boolean;
-}> = ({ bars, from, to, height = 320, dp, lines = [], markers = [], drawings = [], onPick, label, hidePriceAxis }) => {
-  const W = 760, H = height, M = { t: 10, r: hidePriceAxis ? 8 : 64, b: 10, l: 8 };
+  pnl?: { series: LineSeries[]; detail: (time: number) => React.ReactNode };
+}> = ({ bars, from, to, height = 320, dp, lines = [], markers = [], drawings = [], onPick, label, hidePriceAxis, pnl }) => {
+  const W = 760, H = height, M = { t: pnl ? 30 : 10, r: hidePriceAxis ? 8 : pnl ? 72 : 64, b: pnl ? 28 : 10, l: pnl ? 76 : 8 };
   const vis = bars.slice(Math.max(0, from), Math.max(from, to));
   const ref = useRef<SVGSVGElement>(null);
+  const [hoverTime, setHoverTime] = useState<number|null>(null);
   if (!vis.length) return <div className="h-40 grid place-items-center text-xs text-slate-500">No bars to show.</div>;
   let lo = Math.min(...vis.map((b) => b.l)), hi = Math.max(...vis.map((b) => b.h));
   lines.forEach((l) => { if (Number.isFinite(l.price)) { lo = Math.min(lo, l.price); hi = Math.max(hi, l.price); } });
@@ -194,8 +198,23 @@ export const CandleChart: React.FC<{
     onPick(lo + (1 - (y - M.t) / (H - M.t - M.b)) * (hi - lo));
   };
   const last = vis[vis.length - 1];
+  const times = new Map<number,number>(vis.map((bar, i) => [bar.t, from+i] as const));
+  const overlays = pnl?.series.map(s=>({...s,points:s.points.filter(p=>times.has(p.x)&&Number.isFinite(p.y))})) ?? [];
+  const values = overlays.flatMap(s=>s.points.map(p=>p.y));
+  const minPnl = Math.min(0,...values), maxPnl = Math.max(0,...values), pnlPad = (maxPnl-minPnl)*0.08 || 1;
+  const pnlY = (v:number) => M.t+(1-(v-minPnl+pnlPad)/(maxPnl-minPnl+2*pnlPad))*(H-M.t-M.b);
+  const money = (v:number) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2,notation:Math.abs(v)>=10000?'compact':'standard'}).format(v);
+  const hovered = vis.find(b=>b.t===hoverTime);
   return (
-    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className={`w-full h-auto select-none ${onPick ? 'cursor-crosshair' : ''}`} role="img" aria-label={label} onClick={click}>
+    <div className="relative">
+    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className={`w-full h-auto select-none ${onPick || pnl ? 'cursor-crosshair' : ''}`} role="img" aria-label={label} onClick={click}
+      tabIndex={pnl?0:undefined} onFocus={()=>pnl&&setHoverTime(last.t)} onBlur={()=>setHoverTime(null)}
+      onKeyDown={e=>{if(!pnl||!['ArrowLeft','ArrowRight','Home','End','Escape'].includes(e.key))return;e.preventDefault();if(e.key==='Escape'){setHoverTime(null);return;}const i=hovered?vis.indexOf(hovered):vis.length-1;setHoverTime(vis[e.key==='Home'?0:e.key==='End'?vis.length-1:Math.max(0,Math.min(vis.length-1,i+(e.key==='ArrowLeft'?-1:1)))].t);}}
+      onMouseLeave={()=>setHoverTime(null)} onMouseMove={e=>{if(!pnl)return;const r=ref.current?.getBoundingClientRect();if(!r)return;const i=Math.floor((((e.clientX-r.left)/r.width)*W-M.l)/bw);setHoverTime(vis[Math.max(0,Math.min(vis.length-1,i))].t);}}>
+      {pnl&&<><text x={M.l} y={14} fill={ACCENT} fontSize="11">Net P&amp;L · USD (left)</text><text x={W-M.r} y={14} textAnchor="end" fill={AXIS} fontSize="11">Price (right)</text>
+        {niceTicks(minPnl-pnlPad,maxPnl+pnlPad).map(v=><text key={v} x={M.l-8} y={pnlY(v)+3} textAnchor="end" fill={ACCENT} fontSize="10">{money(v)}</text>)}
+        {[vis[0],...(vis.length>1?[last]:[])].map((b,i)=><text key={b.t} x={sx(times.get(b.t)!)} y={H-6} textAnchor={i?'end':'start'} fill={AXIS} fontSize="10">{new Date(b.t).toISOString().slice(5,16).replace('T',' ')} UTC</text>)}
+      </>}
       {!hidePriceAxis && niceTicks(lo, hi, 5).map((t) => (
         <g key={t}><line x1={M.l} x2={W - M.r} y1={sy(t)} y2={sy(t)} stroke={GRID} strokeDasharray="3 4" />
           <text x={W - M.r + 6} y={sy(t) + 3} fontSize="10" fill={AXIS}>{t.toFixed(dp)}</text></g>
@@ -207,12 +226,14 @@ export const CandleChart: React.FC<{
         const x = sx(i);
         return (
           <g key={b.t}>
+            <title>{`${new Date(b.t).toISOString()} · Open ${b.o.toFixed(dp)} · High ${b.h.toFixed(dp)} · Low ${b.l.toFixed(dp)} · Close ${b.c.toFixed(dp)} · Volume ${b.v}`}</title>
             <line x1={x} x2={x} y1={sy(b.h)} y2={sy(b.l)} stroke={col} strokeWidth={1} />
             <rect x={x - Math.max(1, bw * 0.32)} y={sy(Math.max(b.o, b.c))} width={Math.max(2, bw * 0.64)} height={Math.max(1, Math.abs(sy(b.o) - sy(b.c)))} fill={up ? '#fff' : col} stroke={col} strokeWidth={1} />
           </g>
         );
       })}
       {drawings.map((p, k) => <line key={`d${k}`} x1={M.l} x2={W - M.r} y1={sy(p)} y2={sy(p)} stroke="#0ea5e9" strokeWidth={1.2} />)}
+      {overlays.map(s=><g key={s.name}><path d={s.points.map((p,i)=>`${i?'L':'M'}${sx(times.get(p.x)!)},${pnlY(p.y)}`).join('')} fill="none" stroke={s.color} strokeWidth={2.2} strokeDasharray={s.dashed?'6 4':undefined}/>{s.points.length>0&&<circle cx={sx(times.get(s.points.at(-1)!.x)!)} cy={pnlY(s.points.at(-1)!.y)} r={3} fill={s.color}/>}</g>)}
       {lines.filter((l) => Number.isFinite(l.price)).map((l) => (
         <g key={l.label}>
           <line x1={M.l} x2={W - M.r} y1={sy(l.price)} y2={sy(l.price)} stroke={l.color} strokeWidth={1.2} strokeDasharray={l.dashed ? '5 4' : undefined} />
@@ -232,6 +253,10 @@ export const CandleChart: React.FC<{
           <text x={W - M.r + 6} y={sy(last.c) + 3} fontSize="9" fill="#fff" fontWeight={700}>{last.c.toFixed(dp)}</text>
         </g>
       )}
+      {hovered&&<line x1={sx(times.get(hovered.t)!)} x2={sx(times.get(hovered.t)!)} y1={M.t} y2={H-M.b} stroke={AXIS} strokeDasharray="3 3"/>}
     </svg>
+    {hovered&&pnl&&<div role="status" className="pointer-events-none absolute top-6 left-2 right-2 sm:right-auto rounded-lg bg-[#0b1c30] text-white text-[11px] p-3 shadow-lg"><p>{new Date(hovered.t).toISOString().slice(0,16).replace('T',' ')} UTC</p><p>O {hovered.o.toFixed(dp)} · H {hovered.h.toFixed(dp)} · L {hovered.l.toFixed(dp)} · C {hovered.c.toFixed(dp)}</p>{pnl.detail(hovered.t)}</div>}
+    {pnl&&<div className="flex flex-wrap gap-4 text-[11px] mt-2"><span>Candles · price</span>{overlays.map(s=><span key={s.name} className="flex items-center gap-1"><span className="w-4 border-t-2" style={{borderColor:s.color,borderStyle:s.dashed?'dashed':'solid'}}/>{s.name} · net P&amp;L</span>)}<span className="text-slate-500">Independent scales · hover or focus chart and use ← / →</span></div>}
+    </div>
   );
 };

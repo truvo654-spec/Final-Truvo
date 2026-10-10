@@ -21,10 +21,11 @@ import { BacktestResults } from './BacktestResults';
 import { SavedRuns } from './SavedRuns';
 import { WhatIfPanel } from './WhatIfPanel';
 import { ReplayPanel } from './ReplayPanel';
+import { DemoReplay } from './DemoReplay';
 import { Banner, Modal, btnPrimary, btnSecondary } from './ui';
 
 export type BacktestIntent = { view: 'setup'; playbookId?: string } | { view: 'replay'; entryId?: string } | { view: 'whatif' } | { view: 'home' };
-type View = 'home' | 'setup' | 'running' | 'results' | 'whatif' | 'replay' | 'runs';
+type View = 'home' | 'setup' | 'running' | 'results' | 'whatif' | 'replay' | 'demo' | 'runs';
 
 interface Props {
   entries: JournalEntry[];
@@ -164,7 +165,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
     else onToast(s.trades.length ? 'Session saved' : 'Session saved. Place at least one trade to earn Points.');
   };
 
-  const NAV: [View, string][] = [['home', 'Home'], ['setup', 'Test a playbook'], ['whatif', 'What-if'], ['replay', 'Practice'], ['runs', `Saved runs${runs.length ? ` (${runs.length})` : ''}`]];
+  const NAV: [View, string][] = [['home', 'Home'], ['setup', 'Test a playbook'], ['whatif', 'What-if'], ['replay', 'Practice'], ['demo', 'Demo replay'], ['runs', `Saved runs${runs.length ? ` (${runs.length})` : ''}`]];
   const navOn = (v: View) => view === v || (v === 'setup' && (view === 'running' || view === 'results'));
 
   const curPb = cur ? pb(cur.settings.playbookId) : null;
@@ -235,6 +236,8 @@ export const BacktestPage: React.FC<Props> = (p) => {
         <ReplayPanel entries={entries} tz={tz} initialEntryId={replayEntry} onFinish={finishSession} onToast={onToast} />
       )}
 
+      {view === 'demo' && <DemoReplay entries={entries} playbooks={playbooks}/>}
+
       {view === 'runs' && (
         <SavedRuns runs={runs} playbooks={playbooks} tz={tz} onToast={onToast} onNew={() => startSetup()}
           onOpen={(id) => { const r = runs.find((x) => x.id === id); if (r) { setCur({ settings: r.settings, output: r.output, runId: r.id, name: r.name }); setView('results'); } }}
@@ -256,7 +259,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
         </div>
       </Modal>
 
-      {(view === 'whatif' || view === 'replay' || view === 'runs') && (
+      {(view === 'whatif' || view === 'replay' || view === 'demo' || view === 'runs') && (
         <button type="button" className="flex items-center gap-1.5 text-xs font-medium text-[#474556] hover:text-[#5338ec]" onClick={() => setView('home')}><ArrowLeft className="w-3.5 h-3.5" /> Backtest home</button>
       )}
     </div>

@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.1] - 2026-10-10
+
+### Changed
+
+- Merged position P&L comparisons into the main candlestick chart in Journal replay and Backtest. One chart and timeline now show price, entry/exit markers, stop/target levels, and both P&L lines with explicitly separate price and USD scales.
+- Unified candle and position details on hover and keyboard focus. Kept the accessible data table and removed the separate P&L chart/card.
+
+## [1.7.0] - 2026-10-10
+
+### Added
+
+- Replay now opens a direct position test from a recorded trade or playbook setup. Entry, size, unit valuation, estimated costs, stop and target are editable copies. Starting at a selected chart bar exposes open P&L, realized test P&L, remaining size and account return as playback advances or rewinds.
+- A linked P&L history compares stop/target exits with continuing to hold the position, including chart price in hover details and an accessible table. Manual close and return-to-start controls use the same timeline. Stop gaps and candles touching both exit levels use explicit conservative rules; the last chart bar does not force an exit.
+- Recorded contract aliases and missing currency/valuation information require explicit test inputs. Generated prices remain labeled as simulated; no historical feed or recorded fills are invented. Existing strategy simulation and its position monitor remain available in the second replay mode.
+
+## [1.6.1] - 2026-10-09
+
+### Changed
+
+- Trade Log, Insights, Playbook, Backtest and Weekly Review now use the same two-month date-range calendar as Overview. Presets, manual dates, Apply/Cancel and keyboard navigation reuse the existing component and shared journal date scope, so switching tabs retains the selected range.
+
+## [1.6.0] - 2026-10-09
+
+### Added
+
+- Shared Overview/Backtest demo replay now monitors the hypothesis position at the selected timeline bar: initial/remaining quantity in instrument units, entry, initial/current stop, monetary and percentage risk, partial-close P&L, closed-trade P&L and estimated net open P&L. The existing engine exposes a read-only snapshot; it does not force an exit when inspecting an unfinished replay.
+- Demo equity and risk-percentage/fixed-quantity controls use instrument minimums, increments and multipliers. A setup preview distinguishes planned quantity, stop risk and commissions from actual simulated fills. Invalid or missing inputs remain unknown and block testing.
+- Match the selected playbook with a read-only saved scenario or an editable demo-only price draft. Scenario numeric tests use its bias, entry crossing and absolute stop/target, while discretionary written triggers remain unknown. Checks distinguish Match, Mismatch, Unknown and Not applicable for instrument, timeframe, risk, reward/risk, session, scenario validity and recorded strategy; no automatic compliance grade is added.
+- Scenario validity uses the recorded trade date (or today's UTC date for free practice), not the generated candle date. Saved playbooks/scenario statuses, trading records, currencies, journal metrics, credits and points are never changed by this sandbox.
+
+## [1.5.0] - 2026-10-09
+
+### Added
+
+- Overview daily replay now opens a light-mode simulated candlestick workspace with volume, timeline scrubbing, play/pause, step, restart, speed, instrument and timeframe controls. The same workspace is available under Backtest → Demo replay; existing Practice and automated backtests remain intact.
+- Recorded trade strategy selects its matching playbook's existing executable template. A full-demo hypothesis comparison uses the existing bar-by-bar engine on identical generated candles, with editable ATR stop, R target and commissions, USD demo-account returns, execution ledger and chart markers. Unknown/unlinked strategies require an explicitly separate template; written discretionary rules are not automatically evaluated.
+- Deterministic demo paths do not use actual outcomes or exit prices and are clearly separate from historical/API prices. Demo actions never write trading records, playbook rules, expected performance, points, credits or saved runs. Keyboard timeline controls, candle-table alternatives and modal focus restoration are retained.
+
+## [1.4.1] - 2026-10-09
+
+### Added
+
+- Overview daily review's Linked trades table now separates Buy/Sell, Net ROI percentage and Strategy (identifying known playbooks versus unlinked recorded strategies). Net ROI uses net P&L divided by recorded account equity at entry, not guessed margin or notional. Open/planned trades, unknown costs and missing/non-positive equity remain unknown.
+- A keyboard-accessible replay icon opens a connection-status dialog and returns to the same daily review with focus restored. No custom replay API is configured or documented in the repository; real-candle playback is pending that integration. Generated practice candles are not substituted for actual trade history.
+- Replay and Review actions stay visible while the daily table scrolls horizontally, with an explicit explanation of ROI's denominator.
+
+## [1.4.0] - 2026-10-09
+
+### Added
+
+- Journal Overview's calendar, daily-result and drawdown points, and cumulative chart/table open a light-mode daily review window. Includes separate gross/net/known-cost coverage, lifecycle and review states, trade-by-trade result curve with table alternative, linked trade reviews, previous/next day navigation and the existing daily reflection shared with Weekly Review.
+- Overview date filter now opens two adjacent month calendars, editable start/end dates, inclusive UTC presets, recorded-day count and explicit Apply/Cancel. Draft changes do not affect the journal until confirmed; confirmed ranges remain shared with other journal screens and persist locally. Demo presets identify the journal's demo date; no live feeds or exchange-session counts are implied.
+- Daily progress uses actual review, playbook, stop-history and reflection evidence alongside the existing discipline and rules components, without a competing score. Missing costs, timestamps, risk and answers remain unknown; open and planned trades stay outside realized results; currencies remain separate.
+
+### Fixed
+
+- Empty or planned-only rule cohorts no longer claim that the maximum-trades rule was kept. Dialog focus handling includes expandable data tables and restores focus and scrolling on close. Main Dashboard remains untouched.
+
+## [1.3.2] - 2026-10-09
+
+### Changed
+
+- Removed the duplicate Broker filter from Insights → Day & Time. The shared journal Broker filter remains authoritative; old report-only broker exclusions no longer silently narrow calculations, comparisons, exports or drilldowns. Broker analysis remains available in the matrix.
+- Insights' Market type filter now lists all five journal markets (Forex, Crypto, Stocks, Commodity, Indices), including zero-trade types. Its list and the shared journal toolbar use the same definition; saved report market selections remain intact.
+
 ## [1.3.1] - 2026-10-09
 
 ### Changed

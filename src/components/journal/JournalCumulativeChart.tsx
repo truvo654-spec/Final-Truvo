@@ -13,6 +13,7 @@ interface Props {
   brokers: ChartBroker[]; // every broker with journal entries (the options)
   unit?: 'usd' | 'pts';
   off: string[]; // brokers currently unticked
+  onDay?: (date: string) => void;
 }
 
 interface Series { key: string; name: string; color: string; pts: { date: string; day: number; n: number; cum: number }[] }
@@ -37,7 +38,7 @@ function niceTicks(min: number, max: number, count = 4): number[] {
   return ticks;
 }
 
-export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, title, rangeLabel, brokers, unit = 'usd', off }) => {
+export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, title, rangeLabel, brokers, unit = 'usd', off, onDay }) => {
   const money=useMoney();
   const pts = unit === 'pts';
   const usdFull = (n: number) => (pts ? `${n < 0 ? '-' : n > 0 ? '+' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })} pts` : money(n));
@@ -94,6 +95,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
     let best = 0;
     geo.xs.forEach((x, i) => { if (Math.abs(x - px) < Math.abs(geo.xs[best] - px)) best = i; });
     setActive(best);
+    return best;
   };
 
   const onKey = (e: React.KeyboardEvent) => {
@@ -101,6 +103,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
     if (e.key === 'ArrowRight') { e.preventDefault(); setActive((a) => Math.min(dates.length - 1, (a ?? -1) + 1)); }
     if (e.key === 'ArrowLeft') { e.preventDefault(); setActive((a) => Math.max(0, (a ?? dates.length) - 1)); }
     if (e.key === 'Escape') setActive(null);
+    if ((e.key === 'Enter' || e.key === ' ') && active !== null && onDay) { e.preventDefault(); onDay(dates[active]); }
   };
 
   const path = (s: Series) => (geo ? s.pts.map((p, i) => `${i ? 'L' : 'M'}${geo.xs[i].toFixed(1)},${geo.y(p.cum).toFixed(1)}`).join(' ') : '');
@@ -157,7 +160,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
                   .map((s) => ({ d, s, p: s.pts[i], total: bySeries && s.key === 'total' }))
               ).map(({ d, s, p, total: isTotal }) => (
                 <tr key={`${d}-${s.key}`} className={`border-t border-slate-100 font-mono ${isTotal ? 'bg-slate-50 font-bold' : ''}`}>
-                  <td className="px-3 py-1.5">{d}</td>
+                  <td className="px-3 py-1.5">{onDay ? <button onClick={() => onDay(d)} className="text-[#5338ec] underline" aria-label={`Open daily review for ${d}`}>{d}</button> : d}</td>
                   <td className="px-3 py-1.5 font-sans">
                     <span className="inline-flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: s.color }} aria-hidden="true" />
@@ -181,6 +184,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
             role="img"
             aria-label={`Cumulative ${title} from ${shortDate(dates[0])} to ${shortDate(dates[dates.length - 1], true)}${bySeries ? ' by broker' : `, ending at ${usdFull(total)}`}`}
             onMouseMove={(e) => pick(e.clientX)}
+            onClick={e => { const i = pick(e.clientX); if (i !== undefined) onDay?.(dates[i]); }}
             onMouseLeave={() => setActive(null)}
             onTouchMove={(e) => pick(e.touches[0].clientX)}
           >
@@ -206,7 +210,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
               ))}
             {active !== null && <line x1={ax} x2={ax} y1={M.top} y2={M.top + IH} stroke="#94a3b8" strokeWidth={1} />}
           </svg>
-          <div tabIndex={0} role="application" aria-label="Chart data points, use left and right arrow keys" onKeyDown={onKey} onBlur={() => setActive(null)} className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5338ec]/40" style={{ pointerEvents: 'none' }} />
+          <div tabIndex={0} role="application" aria-label={`Chart data points, use left and right arrow keys${onDay ? ', Enter opens daily review' : ''}`} onKeyDown={onKey} onBlur={() => setActive(null)} className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5338ec]/40" style={{ pointerEvents: 'none' }} />
           {active !== null && (
             <div
               className="pointer-events-none absolute z-10 bg-[#0b1c30] text-white rounded-lg px-3 py-2 text-[11px] shadow-lg max-w-[85%] break-words"

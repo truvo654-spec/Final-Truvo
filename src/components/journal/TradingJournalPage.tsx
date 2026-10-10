@@ -23,7 +23,7 @@ import { DEFAULT_PLAYBOOKS, JournalPlaybook } from '../../data/journalPlaybooks'
 import { JournalCumulativeChart } from './JournalCumulativeChart';
 import { JournalOverviewAnalytics } from './overview/JournalOverviewAnalytics';
 import { DisciplineCard, RulesMonitor, TiltMonitor } from './JournalMonitors';
-import { CashbackMode, PnlMode, RangeMode, UNASSIGNED, addMonth, brokerColor, computeKpis, entryCashback, entryPoints, entryValue, rangeBounds, shortDate } from './journalOverview';
+import { CashbackMode, PnlMode, RangeMode, JOURNAL_MARKET_TYPES, UNASSIGNED, addMonth, brokerColor, computeKpis, entryCashback, entryPoints, entryValue, rangeBounds, shortDate } from './journalOverview';
 import { BacktestPage, BacktestIntent } from '../backtest/BacktestPage';
 import { StrategyHealthCard } from '../backtest/PlaybookBacktestPanel';
 import { loadExpected, saveExpected, PlaybookExpectedStats } from '../../backtest/store';
@@ -32,6 +32,9 @@ import { currencyOf, eligible, incompleteFields, metrics, netOf, resultOf, reali
 import { journalSandbox, useJournalState } from './journalStorage';
 import { JournalReviewDrawer } from './JournalReviewDrawer';
 import { JournalRuleSummary } from './JournalRuleSummary';
+import { JournalDateRange } from './JournalDateRange';
+import { JournalDayReview } from './JournalDayReview';
+import { JournalReplayAvailability } from './JournalReplayAvailability';
 
 type JournalTab = 'overview' | 'entries' | 'insights' | 'playbook' | 'backtest' | 'review';
 
@@ -125,6 +128,9 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [rangeMode, setRangeMode] = useJournalState<RangeMode>('range', 'month');
   const [customRange, setCustomRange] = useJournalState('TradingJournalPage-customRange', { from: `${JOURNAL_TODAY.slice(0, 7)}-01`, to: JOURNAL_TODAY });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [dayReviewOpen, setDayReviewOpen] = useState(false);
+  const [apiReplayId, setApiReplayId] = useState<string | null>(null);
+  const openDay = (date: string) => { setSelectedDay(date); setDayReviewOpen(true); };
   const [openMenu, setOpenMenu] = useState<null | 'strategy' | 'asset' | 'outcome' | 'broker' | 'tradingStatus' | 'show' | 'basis'>(null);
   const [strategyOff, setStrategyOff] = useJournalState<string[]>('TradingJournalPage-strategyOff', []);
   const [assetOff, setAssetOff] = useJournalState<string[]>('TradingJournalPage-assetOff', []);
@@ -392,30 +398,11 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           {/* Toolbar */}
           <div className="flex flex-wrap items-start gap-2" role="toolbar" aria-label="Journal scope">
             <div className="flex flex-col gap-1.5">
-                <select
-                  aria-label="Date range"
-                  value={rangeMode}
-                  onChange={(e) => setRangeMode(e.target.value as RangeMode)}
-                  className="h-9 text-xs font-semibold border border-slate-200 rounded-lg px-3 bg-white text-[#0b1c30]"
-                >
-                  <option value="month">Calendar month</option>
-                  <option value="last7">Last 7 days</option>
-                  <option value="last30">Last 30 days</option>
-                  <option value="all">All time</option>
-                  <option value="custom">Custom range</option>
-                </select>
-                {rangeMode === 'custom' && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <input type="date" aria-label="From date" value={customRange.from} max={customRange.to} onChange={(e) => e.target.value && setCustomRange((r) => ({ ...r, from: e.target.value }))} className="text-xs h-9 border border-slate-200 rounded-lg px-2" />
-                    <span className="text-xs text-[#94a3b8]">to</span>
-                    <input type="date" aria-label="To date" value={customRange.to} min={customRange.from} onChange={(e) => e.target.value && setCustomRange((r) => ({ ...r, to: e.target.value }))} className="text-xs h-9 border border-slate-200 rounded-lg px-2" />
-                  </div>
-                )}
-              <span className="text-xs font-mono text-[#474556] px-1" aria-live="polite">{rangeLabel}</span>
+              <JournalDateRange from={rangeFrom} to={rangeTo} label={rangeLabel} today={JOURNAL_TODAY} entries={calEntries} onApply={(range, all) => { setCustomRange(range); setRangeMode(all ? 'all' : 'custom'); setCalMonth(range.to.slice(0,7)); setSelectedDay(null); setDayReviewOpen(false); }}/>
             </div>
 
             {filterMenu('strategy', 'Playbook', JOURNAL_STRATEGIES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.strategy === v).length })), strategyOff, setStrategyOff)}
-            {filterMenu('asset', 'Market type', ['Forex', 'Crypto', 'Stocks', 'Commodity', 'Indices'].map((v) => ({ id: v, label: v, n: entries.filter((e) => e.assetClass === v).length })), assetOff, setAssetOff)}
+            {filterMenu('asset', 'Market type', JOURNAL_MARKET_TYPES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.assetClass === v).length })), assetOff, setAssetOff)}
             {filterMenu('outcome', 'Net outcome', (['win', 'loss', 'breakeven', 'open'] as const).map((v) => ({ id: v, label: v === 'win' ? 'Wins' : v === 'loss' ? 'Losses' : v === 'breakeven' ? 'Breakeven' : 'Not realized / unknown', n: entries.filter((e) => resultOf(e) === v).length })), outcomeOff, setOutcomeOff)}
             {filterMenu('tradingStatus', 'Trading status', (['planned', 'open', 'closed'] as const).map((v) => ({ id: v, label: v[0].toUpperCase() + v.slice(1), n: entries.filter((e) => tradingStatusOf(e) === v).length })), tradingStatusOff, setTradingStatusOff)}
             {filterMenu('broker', 'Broker', chartBrokers.map((b) => ({ id: b.id, label: b.name, n: b.n, color: b.color })), brokerOff, setBrokerOff)}
@@ -455,7 +442,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             </div>
           </div>
 
-          <JournalCumulativeChart entries={scoped} valueOf={valueOf} title={cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`} unit={cbMode === 'points' ? 'pts' : 'usd'} rangeLabel={rangeLabel} brokers={chartBrokers} off={brokerOff} />
+          <JournalCumulativeChart entries={scoped} valueOf={valueOf} title={cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`} unit={cbMode === 'points' ? 'pts' : 'usd'} rangeLabel={rangeLabel} brokers={chartBrokers} off={brokerOff} onDay={openDay}/>
 
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
             <div className="space-y-3">
@@ -464,12 +451,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                 <p className="text-xs text-slate-500">In this scope. Incomplete information is not a negative result.</p>
                 {scoped.filter(e=>reviewStateOf(e)!=='complete').slice(0,3).map(e=><button key={e.id} className="block text-left text-xs text-[#5338ec] underline" onClick={()=>openEntry(e.id,scoped.filter(x=>reviewStateOf(x)!=='complete').map(x=>x.id))}>{e.symbol} · {e.date} · {incompleteFields(e).join(', ') || 'Review reopened'}</button>)}
               </section>
-              {selectedDay && <section id="journal-daily-workspace" tabIndex={-1} aria-label={`Daily workspace for ${selectedDay}`} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 scroll-mt-24 focus-visible:outline-2 focus-visible:outline-prime-500">
-                <h3 className="font-bold text-sm">Daily workspace · {selectedDay}</h3>
-                <p className="text-xs">{dayEntries.length} recorded · {metrics(dayEntries).n} realized with known costs · net {metrics(dayEntries).n?money(metrics(dayEntries).total):'unavailable'} · known closed costs {money(metrics(dayEntries).fees)}</p>
-                <label className="block text-xs font-semibold">Daily reflection<textarea value={dailyNotes[selectedDay] || ''} onChange={ev=>setDailyNotes(d=>({...d,[selectedDay]:ev.target.value}))} rows={3} className="mt-1 w-full border border-slate-200 rounded-xl p-3" /></label>
-                <p className="text-xs text-slate-500">Saved locally as you type. Links below use the recorded entry date.</p>
-              </section>}
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold">
                   {selectedDay ? `Trades on ${shortDate(selectedDay, true)}` : 'Recent entries'}
@@ -501,14 +482,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               ) : (
                 [...scoped].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4).map((e) => <EntryRow key={e.id} e={e} />)
               )}
-              <JournalOverviewAnalytics entries={scoped} currency={currency} basis={pnlMode} onTrade={id=>openEntry(id,scoped.map(e=>e.id))} onDay={date=>{
-                setSelectedDay(date);
-                requestAnimationFrame(()=>{
-                  const workspace=document.getElementById('journal-daily-workspace');
-                  workspace?.focus({preventScroll:true});
-                  workspace?.scrollIntoView({behavior:'smooth',block:'start'});
-                });
-              }}/>
+              <JournalOverviewAnalytics entries={scoped} currency={currency} basis={pnlMode} onTrade={id=>openEntry(id,scoped.map(e=>e.id))} onDay={openDay}/>
             </div>
 
             <aside className="space-y-5">
@@ -524,7 +498,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                 brokerColor={colorOf}
                 today={JOURNAL_TODAY}
                 selected={selectedDay}
-                onSelect={setSelectedDay}
+                onSelect={date => date ? openDay(date) : setSelectedDay(null)}
               />
 
               <TiltMonitor entries={scoped} rules={rules} />
@@ -786,7 +760,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             <button className="text-xs text-[#5338ec] underline" onClick={()=>{setLogPreset({ids:weekEntries.map(e=>e.id),label:`Week ${weekStart} – ${weekEnd}`});setTab('entries');}}>Open linked week trades ({weekEntries.length})</button>
             <p className="text-xs">Previous focus: {reviews.find(r=>!r.from || r.from<weekStart)?.focusNextWeek || 'No previous focus recorded'}</p>
             <label className="block text-xs">Previous focus follow-up<textarea className="w-full border border-slate-200 rounded-xl p-3 mt-1" value={rvFollowUp} onChange={ev=>setRvFollowUp(ev.target.value)}/></label>
-            <details><summary className="text-xs cursor-pointer">Daily reflections from this week</summary>{Object.entries(dailyNotes).filter(([d])=>d>=weekStart && d<=weekEnd).map(([d,n])=><p key={d} className="text-xs mt-2"><button className="text-[#5338ec] underline" onClick={()=>{setSelectedDay(d);setTab('overview');}}>{d}</button>: {n}</p>)}</details>
+            <details><summary className="text-xs cursor-pointer">Daily reflections from this week</summary>{Object.entries(dailyNotes).filter(([d])=>d>=weekStart && d<=weekEnd).map(([d,n])=><p key={d} className="text-xs mt-2"><button className="text-[#5338ec] underline" onClick={()=>{openDay(d);setTab('overview');}}>{d}</button>: {n}</p>)}</details>
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
                 <p className="text-[11px] font-semibold text-[#474556] mb-1">Entries this week</p>
@@ -852,6 +826,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       )}
 
       {selected && <JournalReviewDrawer entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
+      {tab === 'overview' && selectedDay && dayReviewOpen && <JournalDayReview suspended={!!selected || !!apiReplayId} date={selectedDay} entries={dayEntries} currency={currency} from={rangeFrom} to={rangeTo} note={dailyNotes[selectedDay] || ''} onNote={value => setDailyNotes(d => ({ ...d, [selectedDay]: value }))} onDay={openDay} onClose={() => { setDayReviewOpen(false); setSelectedDay(null); }} onTrade={id => openEntry(id, dayEntries.map(e => e.id))} onReplay={setApiReplayId} onEditRules={() => { setDayReviewOpen(false); setTab('playbook'); }} brokerName={brokerName} checklistLength={checklist.length} playbookNames={playbooks.map(p => p.name)} rules={rules}/>}
+      {apiReplayId && tab === 'overview' && dayReviewOpen && (() => { const trade = dayEntries.find(e => e.id === apiReplayId); return trade ? <JournalReplayAvailability entry={trade} entries={dayEntries} playbooks={playbooks} onClose={() => setApiReplayId(null)}/> : null; })()}
       {wizardOpen && (
         <JournalEntryWizard
           initialMode={wizardMode}

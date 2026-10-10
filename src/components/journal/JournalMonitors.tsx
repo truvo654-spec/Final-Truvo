@@ -97,7 +97,7 @@ export function checkRules(entries: JournalEntry[], rules: JournalRules) {
 export const RulesMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRules; onEdit: () => void }> = ({ entries, rules, onEdit }) => {
   const r = useMemo(() => checkRules(entries, rules), [entries, rules]);
   const rows: { name: string; limit: string; breaches: string[] | null }[] = [
-    { name: 'Max trades per day', limit: `${rules.maxTrades}`, breaches: r.tooMany },
+    { name: 'Max trades per day', limit: `${rules.maxTrades}`, breaches: entries.some(e => statusOf(e) !== 'planned') ? r.tooMany : null },
     { name: 'Stop after consecutive losses', limit: `${rules.stopAfterLosses}`, breaches: entries.length && entries.every(e=>e.entryTime && eligible(e)) ? r.keptTrading : null },
     { name: 'Max risk per trade', limit: `${rules.maxRisk}% of account`, breaches: null },
     { name: 'Max daily loss', limit: `${rules.maxDailyLoss}% of account`, breaches: null },
