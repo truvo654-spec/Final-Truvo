@@ -29,6 +29,8 @@ export interface SpotlightTab {
 
 export interface SpotlightSuggestion {
   label: string;
+  /** One line under the label in the dashboard panel. */
+  sub?: string;
   onClick: () => void;
 }
 
