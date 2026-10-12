@@ -6,6 +6,7 @@ import { liveStats } from '../../backtest/gap';
 import { money, num, pct, rr, tone, utcWindow } from '../../backtest/format';
 import { SESSIONS } from '../../backtest/types';
 import { Card, btnSecondary } from './ui';
+import { JournalTradeBenchmark } from './JournalTradeBenchmark';
 import type { BacktestSettings, JobOutput } from '../../backtest/types';
 
 export interface BacktestComparisonItem {
@@ -17,13 +18,14 @@ interface Props {
   items: BacktestComparisonItem[];
   playbooks: JournalPlaybook[];
   entries: JournalEntry[];
+  benchmarkEntries: JournalEntry[];
   tz: string;
   onOpenTrades: (ids: string[], label: string) => void;
   onEditSetup: () => void;
   onViewResult: (item: BacktestComparisonItem) => void;
 }
 
-export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, entries, tz, onOpenTrades, onEditSetup, onViewResult }) => {
+export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, entries, benchmarkEntries, tz, onOpenTrades, onEditSetup, onViewResult }) => {
   const rows = useMemo(() => items.map((item) => {
     const { settings, output } = item;
     const result = output.result;
@@ -42,6 +44,7 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
 
   return (
     <div className="space-y-5">
+      {benchmarkEntries.length > 0 && <JournalTradeBenchmark entries={benchmarkEntries} />}
       <Card title="Playbook comparison" sub="Each playbook used the same market, dates, balance, risk and costs; its own rules, timeframe and session were preserved."
         right={<button type="button" className={btnSecondary} onClick={onEditSetup}>Edit comparison setup</button>}>
         <p className="mb-3 text-[11px] text-slate-500">Historical simulations are comparisons, not forecasts. Open a full report for robustness checks and the simulated trade log.</p>

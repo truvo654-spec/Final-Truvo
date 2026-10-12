@@ -550,6 +550,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           preset={logPreset}
           onClearPreset={() => setLogPreset(null)}
           onReplay={(id) => goBacktest({ view: 'replay', entryId: id })}
+          onBacktestTrades={(ids) => goBacktest({ view: 'setup', benchmarkTradeIds: ids })}
         />
       )}
 

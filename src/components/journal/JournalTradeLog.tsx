@@ -81,9 +81,10 @@ interface Props {
   onClearPreset?: () => void;
   /** Replay one trade blind in Backtest → Practice. */
   onReplay?: (id: string) => void;
+  onBacktestTrades?: (ids: string[]) => void;
 }
 
-export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay }) => {
+export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay, onBacktestTrades }) => {
   const money = useMoney();
   const tradingPlain = (n:number,dp=2)=>money(Math.abs(n),dp).replace(/^\+/, '');
 
@@ -429,6 +430,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
             <button type="button" className={btn} onClick={() => setPanel(panel === 'tag' ? null : 'tag')}>Tag</button>
             <button type="button" className={btn} onClick={() => { setMoveTo(''); setPanel(panel === 'move' ? null : 'move'); }}>Change broker</button>
             <button type="button" className={btn} onClick={exportCsv}>Export</button>
+            {onBacktestTrades && <button type="button" className={btn} onClick={() => onBacktestTrades(sel)}>Import to Backtest</button>}
             {onReplay && sel.length === 1 && <button type="button" className={btn} title="Practise this trade bar by bar with the date and outcome hidden" onClick={() => onReplay(sel[0])}>Replay this trade blind</button>}
             <button type="button" className={`${btn} text-rose-600`} onClick={() => setPanel(panel === 'delete' ? null : 'delete')}>Delete</button>
             <button type="button" className="px-2 py-1.5 text-xs font-semibold text-slate-500 hover:text-[#0b1c30]" onClick={() => { setSel([]); setPanel(null); }}>Deselect ({sel.length})</button>

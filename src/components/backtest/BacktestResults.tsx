@@ -16,6 +16,7 @@ import { symbolSpec } from '../../backtest/marketData';
 import { BarBreakdown, DrawdownChart, LineChart, ACCENT, UP, DOWN } from './charts';
 import { Banner, Card, Hint, Kpi, Pill, Segmented, btnPrimary, btnSecondary } from './ui';
 import { BacktestTradeLog } from './BacktestTradeLog';
+import { JournalTradeBenchmark } from './JournalTradeBenchmark';
 
 interface Props {
   settings: BacktestSettings;
@@ -24,6 +25,7 @@ interface Props {
   saved: boolean;
   playbook: JournalPlaybook | null;
   entries: JournalEntry[];
+  benchmarkEntries: JournalEntry[];
   expected?: PlaybookExpectedStats;
   tz: string;
   onOpenTrades: (ids: string[], label: string) => void;
@@ -42,7 +44,7 @@ const months = (a: number, b: number) => {
   return m >= 24 && m % 12 === 0 ? `${m / 12} years` : m >= 12 ? `${(m / 12).toFixed(1).replace(/\.0$/, '')} years` : `${Math.max(1, m)} month${m === 1 ? '' : 's'}`;
 };
 
-export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, saved, playbook, entries, expected, tz, onOpenTrades, onBackToComparison, onSave, onEdit, onApplySuggestion, onSetExpected, onSendNotes, onAddToPlan, onToast }) => {
+export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, saved, playbook, entries, benchmarkEntries, expected, tz, onOpenTrades, onBackToComparison, onSave, onEdit, onApplySuggestion, onSetExpected, onSendNotes, onAddToPlan, onToast }) => {
   const r = output.result;
   const cur = r.currency;
   const [unit, setUnit] = useState<'money' | 'r'>('money');
@@ -157,6 +159,8 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
           <button type="button" className={btnPrimary} onClick={onSave} disabled={saved}><Save className="w-4 h-4" /> {saved ? 'Saved' : 'Save'}</button>
         </div>
       </div>
+
+      {benchmarkEntries.length > 0 && <JournalTradeBenchmark entries={benchmarkEntries} />}
 
       {/* Warnings */}
       {r.zeroTradeReason && <Banner tone="bad" icon={<XCircle className="w-4 h-4" />} action={<button type="button" className={btnSecondary} onClick={onEdit}>Change the setup</button>}><b>No trades.</b> {r.zeroTradeReason}</Banner>}

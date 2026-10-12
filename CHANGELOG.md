@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0] - 2026-10-12
+
+### Added
+
+- Added a Trade Log action to import selected trades into Backtest as an actual-results benchmark beside one or more playbook simulations. Matching playbooks are selected automatically when all imported trades share one strategy.
+
 ## [1.13.0] - 2026-10-12
 
 ### Added

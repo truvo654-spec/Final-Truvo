@@ -17,6 +17,7 @@ import {
 import { BacktestSettings, JobOutput, Suggestion } from '../../backtest/types';
 import { BacktestHome } from './BacktestHome';
 import { BacktestSetup } from './BacktestSetup';
+import { JournalTradeBenchmark } from './JournalTradeBenchmark';
 import { BacktestComparisonResults } from './BacktestComparisonResults';
 import type { BacktestComparisonItem } from './BacktestComparisonResults';
 import { BacktestResults } from './BacktestResults';
@@ -26,7 +27,7 @@ import { ReplayPanel } from './ReplayPanel';
 import { DemoReplay } from './DemoReplay';
 import { Banner, Modal, btnPrimary, btnSecondary } from './ui';
 
-export type BacktestIntent = { view: 'setup'; playbookId?: string } | { view: 'replay'; entryId?: string } | { view: 'whatif' } | { view: 'home' };
+export type BacktestIntent = { view: 'setup'; playbookId?: string; benchmarkTradeIds?: string[] } | { view: 'replay'; entryId?: string } | { view: 'whatif' } | { view: 'home' };
 type View = 'home' | 'setup' | 'running' | 'results' | 'comparison' | 'whatif' | 'replay' | 'demo' | 'runs';
 
 interface Props {
@@ -81,6 +82,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const [selectedPlaybookIds, setSelectedPlaybookIds] = useState<string[]>([]);
   const [cur, setCur] = useState<Current | null>(null);
   const [comparisonResults, setComparisonResults] = useState<BacktestComparisonItem[] | null>(null);
+  const [benchmarkEntries, setBenchmarkEntries] = useState<JournalEntry[]>([]);
   const [runs, setRuns] = useState<BacktestRun[]>(() => loadRuns());
   const [usage, setUsage] = useState<Usage>(() => loadUsage());
   const [sessions, setSessions] = useState<ReplaySession[]>(() => loadReplay());
@@ -135,14 +137,19 @@ export const BacktestPage: React.FC<Props> = (p) => {
     setView('setup');
   };
 
-  const startSetup = (playbookId?: string) => {
+  const startSetup = (playbookId?: string, benchmarkTradeIds?: string[]) => {
+    const imported = benchmarkTradeIds?.length ? entries.filter((e) => benchmarkTradeIds.includes(e.id)) : [];
+    const strategyNames = [...new Set(imported.map((e) => e.strategy).filter(Boolean))];
+    const linkedBook = strategyNames.length === 1 ? playbooks.find((x) => x.name === strategyNames[0] && x.status !== 'archived') : undefined;
+    const requestedId = playbookId ?? linkedBook?.id;
     const journalCounts = new Map<string, number>();
     entries.forEach((e) => journalCounts.set(e.strategy, (journalCounts.get(e.strategy) || 0) + 1));
-    const requested = playbooks.find((x) => x.id === playbookId && x.status !== 'archived');
-    const pb = requested || (!playbookId
+    const requested = playbooks.find((x) => x.id === requestedId && x.status !== 'archived');
+    const pb = requested || (!requestedId
       ? playbooks.filter((x) => x.status !== 'archived').sort((a, b) => (journalCounts.get(b.name) || 0) - (journalCounts.get(a.name) || 0))[0] || null
       : null);
     const settings = defaultsForPlaybook(pb, entries, journalRules);
+    setBenchmarkEntries(imported);
     setDraft(settings);
     setSelectedPlaybookIds(pb ? [pb.id] : []);
     setDraftsByPlaybook(pb ? { [pb.id]: settings } : {});
@@ -156,9 +163,9 @@ export const BacktestPage: React.FC<Props> = (p) => {
   useEffect(() => {
     if (!p.intent) return;
     const it = p.intent;
-    if (it.view === 'setup') startSetup(it.playbookId);
-    else if (it.view === 'replay') { setReplayEntry(it.entryId ?? null); setView('replay'); }
-    else setView(it.view);
+    if (it.view === 'setup') startSetup(it.playbookId, it.benchmarkTradeIds);
+    else if (it.view === 'replay') { setBenchmarkEntries([]); setReplayEntry(it.entryId ?? null); setView('replay'); }
+    else { setBenchmarkEntries([]); setView(it.view); }
     p.onIntentDone();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.intent]);
@@ -288,12 +295,13 @@ export const BacktestPage: React.FC<Props> = (p) => {
 
       {view === 'home' && (
         <BacktestHome playbooks={playbooks} entries={entries} expected={expected} runs={runs} usage={usage} limit={limit} credits={sydeCredits} sessions={sessions} tz={tz}
-          onTest={startSetup} onWhatIf={() => setView('whatif')} onReplay={() => { setReplayEntry(null); setView('replay'); }} onOpenRun={(id) => { const r = runs.find((x) => x.id === id); if (r) { setComparisonResults(null); setCur({ settings: r.settings, output: r.output, runId: r.id, name: r.name }); setView('results'); } }} onAllRuns={() => setView('runs')} />
+          onTest={startSetup} onWhatIf={() => setView('whatif')} onReplay={() => { setBenchmarkEntries([]); setReplayEntry(null); setView('replay'); }} onOpenRun={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); setComparisonResults(null); setCur({ settings: r.settings, output: r.output, runId: r.id, name: r.name }); setView('results'); } }} onAllRuns={() => setView('runs')} />
       )}
 
       {view === 'setup' && (
         <>
           {error && <Banner tone="bad" icon={<XCircle className="w-4 h-4" />}><b>The backtest didn't run.</b> {error}</Banner>}
+          {benchmarkEntries.length > 0 && <JournalTradeBenchmark entries={benchmarkEntries} onClear={() => setBenchmarkEntries([])} />}
           <BacktestSetup settings={draft} onChange={updateDraft} playbooks={playbooks} selectedPlaybookIds={selectedPlaybookIds} settingsByPlaybook={draftsByPlaybook} onSelectionChange={changeSelection} entries={entries} brokers={brokers} journalRules={journalRules} tz={tz} onRun={onRun}
             onOpenTrades={p.onOpenTrades}
             runHint={setupRunHint} />
@@ -314,7 +322,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       )}
 
       {view === 'results' && cur && (
-        <BacktestResults settings={cur.settings} output={cur.output} name={cur.name} saved={!!cur.runId} playbook={curPb} entries={entries} expected={curPb ? expected[curPb.id] : undefined} tz={tz}
+        <BacktestResults settings={cur.settings} output={cur.output} name={cur.name} saved={!!cur.runId} playbook={curPb} entries={entries} benchmarkEntries={benchmarkEntries} expected={curPb ? expected[curPb.id] : undefined} tz={tz}
           onOpenTrades={p.onOpenTrades}
           onBackToComparison={comparisonResults?.length ? () => setView('comparison') : undefined}
           onSave={save}
@@ -332,7 +340,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       )}
 
       {view === 'comparison' && comparisonResults && (
-        <BacktestComparisonResults items={comparisonResults} playbooks={playbooks} entries={entries} tz={tz} onOpenTrades={p.onOpenTrades}
+        <BacktestComparisonResults items={comparisonResults} playbooks={playbooks} entries={entries} benchmarkEntries={benchmarkEntries} tz={tz} onOpenTrades={p.onOpenTrades}
           onEditSetup={() => setView('setup')}
           onViewResult={(item) => { setCur({ settings: item.settings, output: item.output, runId: null, name: item.settings.name }); setView('results'); }} />
       )}
@@ -350,8 +358,8 @@ export const BacktestPage: React.FC<Props> = (p) => {
 
       {view === 'runs' && (
         <SavedRuns runs={runs} playbooks={playbooks} tz={tz} onToast={onToast} onNew={() => startSetup()}
-          onOpen={(id) => { const r = runs.find((x) => x.id === id); if (r) { setComparisonResults(null); setCur({ settings: r.settings, output: r.output, runId: r.id, name: r.name }); setView('results'); } }}
-          onDuplicate={(id) => { const r = runs.find((x) => x.id === id); if (r) prepareSetup({ ...deepClone(r.settings), name: `${r.name} (copy)` }); }}
+          onOpen={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); setComparisonResults(null); setCur({ settings: r.settings, output: r.output, runId: r.id, name: r.name }); setView('results'); } }}
+          onDuplicate={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); prepareSetup({ ...deepClone(r.settings), name: `${r.name} (copy)` }); } }}
           onDelete={(id) => { const next = runs.filter((r) => r.id !== id); setRuns(next); saveRuns(next); onToast('Run deleted'); }} />
       )}
 
