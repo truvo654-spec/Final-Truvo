@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.1] - 2026-10-09
+### Changed
+- The AI invite is now a 400px card docked in the same bottom-right corner the panel opens in, instead of a modal over the page: brand purple on white in light, on black in dark, with the tinted title block, rules and pill button from the design. "Show me" opens the panel there; "Maybe later" leaves the pill.
+
 ## [1.8.0] - 2026-10-09
 ### Changed
 - The AI dock is now a panel the size of a small dashboard, built to the supplied design in both light and dark: a MarketSyde header with the AI badge, the page's tabs plus Ask and a Beta mark, a greeting, the headline read with the robot, four figures each with its own trend line, "Where to go next" as three described cards, and the source note at the foot.
