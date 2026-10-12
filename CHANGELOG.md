@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-10-09
+### Added
+- AI now reaches the last six features, each with the UI that suits it rather than the same card everywhere:
+  - **Dashboard** — the full spotlight card, opened by default: your book, today's release, the highest-conviction call and one thing to do.
+  - **Instrument Analysis** — a one-line strip above the list: biggest 24h move, highest-conviction call and the next release that can move it.
+  - **Broker List** — a strip ranking the list on starting spread, cashback and minimum deposit, with the reminder that regulation matters more.
+  - **Broker Comparison** — an inline note working out the monthly cost gap at 20 lots and naming the trade-off.
+  - **Trading Calculator** — an inline note reading the result, warning when margin or effective leverage is heavy.
+  - **Community article** — a light box above the body summarising the opening and flagging that it is one trader's view.
+- Three lighter AI components (`AiStrip`, `AiInline`, `AiNote`) alongside the spotlight card, so the weight of the UI matches how much the AI is adding.
+
 ## [1.2.2] - 2026-10-09
 ### Changed
 - The AI summary on the feature pages is now a short card: a one-line headline, two lines of summary and four stat chips, about half its old height. The columns of detail sit behind a "Read the detail" toggle, and the disclaimer shows with them. The trading journal's own summary is unchanged.

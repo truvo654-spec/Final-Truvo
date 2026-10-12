@@ -125,3 +125,48 @@ export const AiSection: React.FC<{ data: AiSectionData; label?: string; classNam
     </SpotlightCard>
   );
 };
+
+/* ───────────── Lighter variants ─────────────
+ * Not every page deserves the big dark card. Use the one that fits:
+ *  - AiSection  : a page where the read is the point (dashboard, journal)
+ *  - AiNote     : a quiet light box beside content the person is reading
+ *  - AiInline   : one sentence under a number the person just produced
+ *  - AiStrip    : a single line of guidance above a list
+ */
+
+export const AiNote: React.FC<{ title: string; lines: string[]; footnote?: string; className?: string }> = ({ title, lines, footnote, className = '' }) => (
+  <aside className={`rounded-xl border border-[#d7d3fb] bg-[#faf9ff] p-4 ${className}`} aria-label={`MarketSyde AI: ${title}`}>
+    <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#5945F1] mb-2">
+      <Sparkles className="w-3.5 h-3.5" aria-hidden />MarketSyde AI · {title}
+    </p>
+    <ul className="space-y-1.5">
+      {lines.map((l) => (
+        <li key={l} className="flex gap-2 text-[13px] leading-relaxed text-[#0b1c30]">
+          <span className="mt-[7px] w-1.5 h-1.5 rounded-full bg-[#5945F1] shrink-0" aria-hidden />
+          <span>{l}</span>
+        </li>
+      ))}
+    </ul>
+    {footnote && <p className="text-[11px] text-[#64748b] mt-2.5">{footnote}</p>}
+  </aside>
+);
+
+export const AiInline: React.FC<{ text: string; tone?: 'neutral' | 'warn' | 'good'; className?: string }> = ({ text, tone = 'neutral', className = '' }) => {
+  const colour = tone === 'warn' ? 'text-[#b45309] bg-[#fffbeb] border-[#fde68a]' : tone === 'good' ? 'text-[#15803d] bg-[#f0fdf4] border-[#bbf7d0]' : 'text-[#0b1c30] bg-[#faf9ff] border-[#d7d3fb]';
+  return (
+    <p className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-[13px] leading-relaxed ${colour} ${className}`} role="note">
+      <Sparkles className="w-3.5 h-3.5 mt-[3px] shrink-0 opacity-80" aria-hidden />
+      <span><span className="font-semibold">MarketSyde AI:</span> {text}</span>
+    </p>
+  );
+};
+
+export const AiStrip: React.FC<{ text: string; action?: { label: string; onClick: () => void }; className?: string }> = ({ text, action, className = '' }) => (
+  <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-[#d7d3fb] bg-gradient-to-r from-[#f3f1ff] to-[#fdf2fb] px-4 py-3 ${className}`} role="note">
+    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#5945F1] shrink-0">
+      <Sparkles className="w-3.5 h-3.5" aria-hidden />MarketSyde AI
+    </span>
+    <span className="text-[13px] leading-relaxed text-[#0b1c30] flex-1 min-w-[200px]">{text}</span>
+    {action && <button type="button" onClick={action.onClick} className="text-[13px] font-semibold text-[#5945F1] hover:underline shrink-0">{action.label}</button>}
+  </div>
+);

@@ -63,7 +63,7 @@ import { EducationHubPage } from './components/education/EducationHubPage';
 import { PortfolioTrackerPage } from './components/portfolio/PortfolioTrackerPage';
 import { TradingJournalPage } from './components/journal/TradingJournalPage';
 import { AiSection } from './components/ai/AiSection';
-import { leaderboardRead } from './components/ai/aiFeature';
+import { dashboardRead, leaderboardRead } from './components/ai/aiFeature';
 import { PromotionsPage } from './components/promotions/PromotionsPage';
 import { ExpertAdvisorsPage } from './components/advisors/ExpertAdvisorsPage';
 import { AlertsPage } from './components/alerts/AlertsPage';
@@ -1010,6 +1010,9 @@ export default function App() {
               onNavigateToTab={setActiveTab}
             />
           ) : (
+            <div className="space-y-6">
+            <div className="px-4 sm:px-8 md:px-[56px]"><AiSection data={dashboardRead(user, signals)} defaultOpen /></div>
+
             <ReferenceDashboard
               user={user}
               brokers={brokers}
@@ -1047,6 +1050,7 @@ export default function App() {
               onSelectLevelScenario={handleSelectLevelScenario}
               onStartTour={handleStartOnboarding}
             />
+            </div>
           )
         )}
 

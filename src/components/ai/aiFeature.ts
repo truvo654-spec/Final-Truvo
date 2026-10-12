@@ -719,3 +719,148 @@ export function leaderboardRead(users = LEADERBOARD_USERS): AiSectionData {
     footnote: 'Built from the standings on this page. Points measure activity, not trading results.',
   };
 }
+
+/* ───────────── Dashboard: the daily brief ───────────── */
+
+export function dashboardRead(user: { firstName?: string; rankTitle: string; currentPoints: number; maxPoints: number; sydeCredits: number }, signals: { ticker: string; action: string; confidence: number; timeframe: string }[] = []): AiSectionData {
+  const now = Date.parse(CALENDAR_NOW);
+  const next = ECONOMIC_EVENTS.filter((e) => !e.allDay && Date.parse(e.at) > now && e.impact === 'High').sort((a, b) => Date.parse(a.at) - Date.parse(b.at))[0];
+  const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+  const tone = { Bullish: 0, Bearish: 0 } as Record<string, number>;
+  NEWS_ARTICLES.slice(0, 8).forEach((a) => { tone[a.sentiment] = (tone[a.sentiment] ?? 0) + 1; });
+  const lean = tone.Bullish > tone.Bearish ? 'leaning bullish' : tone.Bearish > tone.Bullish ? 'leaning bearish' : 'mixed';
+  const trades = tradesInRange(PORTFOLIO_TRADES, 7);
+  const s = tradeStats(trades);
+  const open = PORTFOLIO_TRADES.filter((t) => !isClosed(t));
+  const float = open.reduce((a, t) => a + t.pnl, 0);
+  const top = [...signals].filter((x) => x.action !== 'UPGRADE').sort((a, b) => b.confidence - a.confidence)[0];
+  const dd = maxDrawdown(sliceSeries(totalSeries([]), 30, 120));
+
+  return {
+    eyebrow: 'Today',
+    reading: 'Reading your morning…',
+    headline: open.length ? `${plural(open.length, 'position')} open, ${money(float)} floating` : s.closed ? `${plural(s.closed, 'trade')} closed this week for ${money(s.realized)}` : 'Nothing open, nothing closed this week',
+    overview: `News is ${lean} this morning.${next ? ` ${next.title} lands ${when(next.at)} for ${next.currency}.` : ''}${top ? ` Highest-confidence call right now is ${top.ticker} ${top.action} at ${pct(top.confidence, 0)} on the ${top.timeframe}.` : ''} You are ${user.rankTitle} on ${user.currentPoints}/${user.maxPoints} points with ${user.sydeCredits.toLocaleString()} credits.`,
+    chips: [
+      { label: 'Open', value: String(open.length) },
+      { label: 'Floating', value: money(float), tone: float >= 0 ? 'lime' : 'pink' },
+      { label: '7d net', value: money(s.realized), tone: s.realized >= 0 ? 'lime' : 'pink' },
+      { label: '30d drawdown', value: pct(dd, 1), tone: dd > 10 ? 'pink' : 'white' },
+    ],
+    columns: [
+      {
+        accent: ACCENT.lime,
+        title: 'Today',
+        items: [
+          ...(next ? [{ title: next.title, text: `${next.currency} · ${when(next.at)}. Decide now whether you stand aside, cut size, or trade the reaction.` }] : []),
+          ...(top ? [{ title: `${top.ticker} ${top.action}`, text: `${pct(top.confidence, 0)} confidence on the ${top.timeframe}. Use the stop it comes with or leave it alone.` }] : []),
+        ],
+      },
+      {
+        accent: ACCENT.pink,
+        title: 'Your book',
+        items: [
+          { title: open.length ? `${plural(open.length, 'position')} open` : 'Flat', text: open.length ? `Floating ${money(float)}. Largest is ${open.sort((a, b) => b.size - a.size)[0].symbol} at ${open[0].size} lots.` : 'Nothing open, so nothing to manage before the next release.' },
+          { title: 'Drawdown', text: dd > 10 ? `${pct(dd, 1)} over 30 days. Cut risk per trade until it is back under 5%.` : `${pct(dd, 1)} over 30 days, which is a manageable dip.` },
+        ],
+      },
+      {
+        accent: ACCENT.violet,
+        title: 'One thing to do',
+        items: [{ title: s.closed ? 'Journal this week' : 'Pick one setup', text: s.closed ? `You closed ${plural(s.closed, 'trade')} this week. Write up the worst one while you still remember why you took it.` : 'No trades this week. Pick one setup from your playbook and wait for it rather than hunting.' }],
+      },
+    ],
+    footnote: 'Built from your trades, the calendar, today’s news and your level. Not financial advice.',
+  };
+}
+
+/* ───────────── Instrument analysis ───────────── */
+
+export function instrumentRead(symbol: string, signals: { ticker: string; action: string; confidence: number; timeframe: string; riskReward: string; change24h: number; analysis?: string }[] = []): { title: string; lines: string[]; footnote: string } {
+  const now = Date.parse(CALENDAR_NOW);
+  const sig = signals.find((s) => s.ticker === symbol && s.action !== 'UPGRADE');
+  const hay = (t: string) => t.toLowerCase();
+  const base = symbol.split('/')[0];
+  const news = NEWS_ARTICLES.filter((a) => hay(`${a.headline} ${a.excerpt} ${a.tags.join(' ')}`).includes(base.toLowerCase())).slice(0, 2);
+  const ccy = symbol.split('/').filter(Boolean);
+  const events = ECONOMIC_EVENTS.filter((e) => !e.allDay && Date.parse(e.at) > now && e.impact !== 'Low' && ccy.includes(e.currency))
+    .sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).slice(0, 2);
+  const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+  const held = PORTFOLIO_TRADES.filter((t) => !isClosed(t) && t.symbol === symbol);
+
+  const lines: string[] = [];
+  lines.push(sig
+    ? `There is a ${sig.action} call on ${symbol} at ${pct(sig.confidence, 0)} confidence on the ${sig.timeframe}, reward to risk ${sig.riskReward}.`
+    : `No active MarketSyde signal on ${symbol} right now, so this is context rather than a call.`);
+  if (news.length) lines.push(`Recent coverage: ${news.map((n) => `${n.headline} (${n.sentiment})`).join('; ')}.`);
+  if (events.length) lines.push(`Releases that can move it: ${events.map((e) => `${e.title}, ${e.currency}, ${when(e.at)}`).join('; ')}. Expect wider spreads around them.`);
+  if (held.length) lines.push(`You hold ${plural(held.length, 'position')} on it, floating ${money(held.reduce((a, t) => a + t.pnl, 0))}.`);
+  lines.push('Levels on this page are drawn from past price. They mark where to make a decision, not where price has to turn.');
+  return { title: symbol, lines, footnote: 'Built from the signals, news and calendar on this page. Not financial advice.' };
+}
+
+/* ───────────── Calculator result ───────────── */
+
+export function calculatorNote(input: { lots?: number; riskUsd?: number; equity?: number; leverage?: number; marginUsd?: number; stopPips?: number }): { text: string; tone: 'neutral' | 'warn' | 'good' } | null {
+  const { lots, riskUsd, equity, leverage, marginUsd, stopPips } = input;
+  if (equity && riskUsd) {
+    const share = (riskUsd / equity) * 100;
+    if (share > 2) return { text: `That risks ${pct(share, 1)} of your account on one trade. Most traders cap a single trade at 1–2%; at this size six losses in a row would cost about ${pct(Math.min(99, share * 6), 0)}.`, tone: 'warn' };
+    return { text: `That risks ${pct(share, 1)} of your account, which sits inside the usual 1–2% cap. Keep the same percentage on every trade and the maths stays comparable.`, tone: 'good' };
+  }
+  if (equity && marginUsd) {
+    const share = (marginUsd / equity) * 100;
+    if (share > 30) return { text: `This ties up ${pct(share, 0)} of your equity as margin. A gap against you gets close to a margin call fast, so size down or add headroom.`, tone: 'warn' };
+    return { text: `This uses ${pct(share, 0)} of your equity as margin, which leaves room for the position to breathe.`, tone: 'good' };
+  }
+  if (lots && stopPips) return { text: `${lots.toFixed(2)} lots with a ${stopPips} pip stop is about $${(lots * 10 * stopPips).toFixed(0)} at risk on a USD-quoted pair. Check the pair's pip value before you trade it.`, tone: 'neutral' };
+  if (leverage && leverage > 100) return { text: `1:${leverage} is a ceiling, not a target. What matters is effective leverage: position value divided by equity. Most careful traders stay under 10:1.`, tone: 'warn' };
+  return null;
+}
+
+/* ───────────── Broker list and comparison ───────────── */
+
+export function brokerListStrip(brokers: { name: string; spreadFrom: string; minDeposit: string; cashbackPerLot: number; regulations: string[]; connected?: boolean }[]): string {
+  if (!brokers.length) return 'No brokers match those filters. Clear one and I will rank what is left.';
+  const num = (s: string) => parseFloat((s || '').replace(/[^0-9.]/g, '')) || 0;
+  const cheap = [...brokers].sort((a, b) => num(a.spreadFrom) - num(b.spreadFrom))[0];
+  const rich = [...brokers].sort((a, b) => b.cashbackPerLot - a.cashbackPerLot)[0];
+  const low = [...brokers].sort((a, b) => num(a.minDeposit) - num(b.minDeposit))[0];
+  const connected = brokers.filter((b) => b.connected).length;
+  return `${brokers.length} brokers here. Lowest starting spread is ${cheap.name} at ${cheap.spreadFrom}, highest cashback is ${rich.name} at $${rich.cashbackPerLot.toFixed(2)} a lot, and ${low.name} opens from ${low.minDeposit}.${connected ? ` ${connected} already connected to you.` : ''} Regulation and execution matter more than any of those three.`;
+}
+
+export function brokerCompareNote(list: { name: string; spreadFrom: string; cashbackPerLot: number; minDeposit: string; regulations: string[]; maxLeverage: string }[], lotsPerMonth = 20): { text: string; tone: 'neutral' | 'warn' | 'good' } | null {
+  if (list.length < 2) return null;
+  const num = (s: string) => parseFloat((s || '').replace(/[^0-9.]/g, '')) || 0;
+  const cost = (b: typeof list[number]) => num(b.spreadFrom) * 10 * lotsPerMonth - b.cashbackPerLot * lotsPerMonth;
+  const ranked = [...list].sort((a, b) => cost(a) - cost(b));
+  const best = ranked[0];
+  const worst = ranked[ranked.length - 1];
+  const gap = Math.abs(cost(worst) - cost(best));
+  const safest = [...list].sort((a, b) => b.regulations.length - a.regulations.length)[0];
+  const tail = safest.name !== best.name ? ` ${safest.name} lists more regulators, which is the trade-off against the cheaper bill.` : '';
+  return { text: `At ${lotsPerMonth} lots a month, ${best.name} works out about $${gap.toFixed(0)} cheaper than ${worst.name} once cashback is counted against the starting spread.${tail} Commission tiers and execution are not in this number.`, tone: 'neutral' };
+}
+
+/* ───────────── Community article ───────────── */
+
+export function articleNote(article: { title: string; excerpt?: string; summary?: string; category?: string; author?: string }): { title: string; lines: string[]; footnote: string } {
+  const body = article.excerpt ?? article.summary ?? '';
+  const sentences = body.split(/(?<=\.)\s+/).filter((x) => x.trim().length > 25).slice(0, 2);
+  const lines = sentences.length ? sentences : ['This piece has no preview text to summarise, so read it in full.'];
+  lines.push('It is one trader’s view. Treat the method as a hypothesis to test in your journal, not as a signal.');
+  return { title: 'Before you read', lines, footnote: `Summarised from the opening of “${article.title}”. Community content is opinion, not advice.` };
+}
+
+/** One line above the instrument list: what is moving and what is due. */
+export function instrumentListStrip(signals: { ticker: string; action: string; confidence: number; change24h: number; assetClass: string }[] = []): string {
+  const live = signals.filter((s) => s.action !== 'UPGRADE');
+  const now = Date.parse(CALENDAR_NOW);
+  const next = ECONOMIC_EVENTS.filter((e) => !e.allDay && Date.parse(e.at) > now && e.impact === 'High').sort((a, b) => Date.parse(a.at) - Date.parse(b.at))[0];
+  if (!live.length) return 'No open signals to compare right now. Pick an instrument and I will pull its news and upcoming releases.';
+  const mover = [...live].sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))[0];
+  const conviction = [...live].sort((a, b) => b.confidence - a.confidence)[0];
+  const when = next ? new Date(next.at).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' }) : '';
+  return `Biggest 24h move is ${mover.ticker} at ${mover.change24h > 0 ? '+' : ''}${mover.change24h}%, and the highest-conviction call is ${conviction.ticker} ${conviction.action} at ${Math.round(conviction.confidence)}%.${next ? ` ${next.title} lands ${when} and can move ${next.currency} pairs.` : ''} A big move is not an entry on its own.`;
+}

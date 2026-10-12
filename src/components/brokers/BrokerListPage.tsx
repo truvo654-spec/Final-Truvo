@@ -1,3 +1,5 @@
+import { AiStrip } from '../ai/AiSection';
+import { brokerListStrip } from '../ai/aiFeature';
 import React, { useState } from 'react';
 import { Broker, UserProfile } from '../../types';
 import {
@@ -159,6 +161,7 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
 
   return (
     <div id="broker-list-landing-page" className="w-full space-y-8 pb-16">
+      <AiStrip text={brokerListStrip(brokers)} />
       {/* ─────────────────────────────────────────────────────────────
           1. HEADER SECTION (Exact typography: Partner Brokers.)
          ───────────────────────────────────────────────────────────── */}

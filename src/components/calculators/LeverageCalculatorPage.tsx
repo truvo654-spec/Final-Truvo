@@ -1,3 +1,5 @@
+import { AiInline } from '../ai/AiSection';
+import { calculatorNote } from '../ai/aiFeature';
 import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
@@ -935,6 +937,12 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
             onSave={handleSave}
           />
         )}
+        {activeTool === 'leverage' && (() => {
+          const margin = parseFloat(marginInput) || 0;
+          const lev = margin ? Math.round(leverageCalculations.value / margin) : 0;
+          const n = calculatorNote({ leverage: lev, marginUsd: margin, equity: margin ? margin * 10 : undefined });
+          return n ? <AiInline text={n.text} tone={n.tone} className="mt-4" /> : null;
+        })()}
 
         {/* ─── NEW VIEWS: TRADE PLANNING ─── */}
         {activeTool === 'position-size' && (
