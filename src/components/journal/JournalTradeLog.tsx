@@ -2,6 +2,7 @@ import { useJournalState } from './journalStorage';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics, currencyOf } from './journalMath';
 import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { Broker, JournalEntry } from '../../types';
 import { UNASSIGNED, brokerColor, entryCashback, entryPoints } from './journalOverview';
 import { TradingStatusBadge, ReviewStateBadge, reviewStateOf, TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
@@ -421,6 +422,17 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
           <p className="text-[10px] text-slate-500 mt-1">Base rate, before boosters</p>
         </div>
       </div>
+      {hasSel && onBacktestTrades && (
+        <div className="flex justify-end -mb-2">
+          <button
+            type="button"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#5338ec] px-4 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#4326d8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5338ec]"
+            onClick={() => onBacktestTrades(sel)}
+          >
+            Import to Backtest <ArrowRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+      )}
 
       {/* Bulk actions */}
       <div className="flex flex-wrap items-center gap-2 min-h-[36px]">
@@ -430,7 +442,6 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
             <button type="button" className={btn} onClick={() => setPanel(panel === 'tag' ? null : 'tag')}>Tag</button>
             <button type="button" className={btn} onClick={() => { setMoveTo(''); setPanel(panel === 'move' ? null : 'move'); }}>Change broker</button>
             <button type="button" className={btn} onClick={exportCsv}>Export</button>
-            {onBacktestTrades && <button type="button" className={btn} onClick={() => onBacktestTrades(sel)}>Import to Backtest</button>}
             {onReplay && sel.length === 1 && <button type="button" className={btn} title="Practise this trade bar by bar with the date and outcome hidden" onClick={() => onReplay(sel[0])}>Replay this trade blind</button>}
             <button type="button" className={`${btn} text-rose-600`} onClick={() => setPanel(panel === 'delete' ? null : 'delete')}>Delete</button>
             <button type="button" className="px-2 py-1.5 text-xs font-semibold text-slate-500 hover:text-[#0b1c30]" onClick={() => { setSel([]); setPanel(null); }}>Deselect ({sel.length})</button>

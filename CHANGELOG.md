@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.0] - 2026-10-12
+
+### Changed
+
+- Made the Trade Log's Import to Backtest action a prominent purple button aligned to the bottom-right of the selected-trades panel.
+
 ## [1.15.0] - 2026-10-12
 
 ### Added
