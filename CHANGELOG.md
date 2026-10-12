@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.3] - 2026-10-09
+### Changed
+- The AI panel is a fixed 720 × 550, shrinking to the viewport on smaller screens, with the hero and figures sized to match.
+
 ## [1.8.2] - 2026-10-09
 ### Changed
 - Both AI surfaces are smaller: the invite is 340 × 440 with two feature rows as in the design, and the panel is 820 × 620 with a smaller hero, figures and cards.

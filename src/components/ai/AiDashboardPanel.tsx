@@ -85,7 +85,7 @@ export const AiDashboardPanel: React.FC<{
         </div>
       </div>
 
-      <div key={`${active?.id}-${run}`} className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+      <div key={`${active?.id}-${run}`} className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
         {first ? (
           <>
             <div className="flex flex-col-reverse gap-5 lg:flex-row lg:items-start">
@@ -93,14 +93,14 @@ export const AiDashboardPanel: React.FC<{
                 <p className="flex items-center gap-2 text-[14px] text-[#64748b] dark:text-white/70">
                   <Sun className="h-4 w-4" aria-hidden />{greeting}
                 </p>
-                <h2 className="mt-1.5 font-display text-[22px] font-bold leading-tight sm:text-[25px]">{data.headline}</h2>
+                <h2 className="mt-1.5 font-display text-[21px] font-bold leading-tight sm:text-[23px]">{data.headline}</h2>
                 {data.overview && <p className="mt-2.5 max-w-[520px] text-[14px] leading-relaxed text-[#474556] dark:text-white/70">{data.overview}</p>}
               </div>
-              <img src={robot} alt="" aria-hidden className="w-[190px] shrink-0 self-center rounded-xl lg:w-[220px]" />
+              <img src={robot} alt="" aria-hidden className="w-[160px] shrink-0 self-center rounded-xl lg:w-[185px]" />
             </div>
 
             {data.stats && data.stats.length > 0 && (
-              <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
                 {data.stats.slice(0, 4).map((s, i) => {
                   const Icon = ICONS[i % ICONS.length];
                   const colour = TREND[s.tone ?? 'neutral'];
@@ -115,7 +115,7 @@ export const AiDashboardPanel: React.FC<{
                           <span className="mt-1 block font-display text-[20px] font-bold leading-none" style={{ color: s.tone ? colour : undefined }}>{s.value}</span>
                         </span>
                       </div>
-                      <svg viewBox="0 0 160 36" preserveAspectRatio="none" className="mt-2.5 h-7 w-full" aria-hidden>
+                      <svg viewBox="0 0 160 36" preserveAspectRatio="none" className="mt-2 h-6 w-full" aria-hidden>
                         <path d={spark(s.label + s.value)} fill="none" stroke={colour} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </div>
@@ -137,7 +137,7 @@ export const AiDashboardPanel: React.FC<{
 
         {data.suggestions && data.suggestions.length > 0 && (
           <>
-            <p className="mt-6 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#5945F1] dark:text-[#d6f73a]">
+            <p className="mt-5 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#5945F1] dark:text-[#d6f73a]">
               <Compass className="h-4 w-4" aria-hidden />Where to go next
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
