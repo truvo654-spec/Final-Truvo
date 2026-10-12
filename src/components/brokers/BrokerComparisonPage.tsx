@@ -1243,7 +1243,6 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
 
   return (
     <div className="w-full space-y-8 pb-16">
-      {(() => { const n = brokerCompareNote(brokers); return n ? <AiInline text={n.text} tone={n.tone} className="max-w-3xl mx-auto" /> : null; })()}
       {/* ─── Hero Heading (Exact match to 01_Search_Empty State.png: Compare CFD Brokers.) ─── */}
       <div className="text-center max-w-3xl mx-auto pt-2 space-y-2">
         <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold font-display tracking-tight text-[#5945F1]">
@@ -1252,6 +1251,7 @@ export const BrokerComparisonPage: React.FC<BrokerComparisonPageProps> = ({
         <p className="text-sm sm:text-[15px] text-slate-500 dark:text-slate-400 font-normal leading-relaxed max-w-2xl mx-auto">
           See trading conditions, platforms, regulation and cashback side by side before making your decision.
         </p>
+      {(() => { const n = brokerCompareNote(brokers); return n ? <AiInline text={n.text} tone={n.tone} className="max-w-3xl mx-auto" /> : null; })()}
         {onToggleAuthState && (
           <div className="flex justify-center pt-1">
             <button

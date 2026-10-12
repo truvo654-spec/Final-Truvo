@@ -441,7 +441,6 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
 
   return (
     <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
-      {(() => { const n = promotionsNext(undefined, userTierLevel); return n ? <AiNext {...n} tone="amber" className="mb-6" /> : null; })()}
       {detailId && !detail && (
         <div className="flex flex-wrap items-center justify-between gap-3 bg-[#F8F7FF] border border-[#ECEEFA] rounded-2xl px-5 py-3 mb-5">
           <p className="text-sm text-[#0b1c30]">We could not find that offer. It may have ended.</p>
@@ -459,6 +458,7 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
             )}
           </p>
         </div>
+      {(() => { const n = promotionsNext(undefined, userTierLevel); return n ? <AiNext {...n} tone="amber" className="mb-6" /> : null; })()}
         <PillTabs<Tab>
           options={(Object.keys(TAB_INFO) as Tab[]).map((t) => ({ id: t, label: `${TAB_INFO[t].label} (${tabCount(t)})` }))}
           value={tab}

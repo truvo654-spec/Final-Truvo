@@ -129,7 +129,6 @@ export const EducationHubPage: React.FC<EducationHubPageProps> = ({
 
   return (
     <div className="w-full max-w-[1360px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
-      {(() => { const n = educationProgress(undefined, undefined, userTierLevel); return n ? <AiProgress {...n} className="mb-6" /> : null; })()}
       <div className="flex items-start justify-between gap-6 mb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Education Hub</h1>
@@ -146,6 +145,7 @@ export const EducationHubPage: React.FC<EducationHubPageProps> = ({
           </button>
         )}
       </div>
+      {(() => { const n = educationProgress(undefined, undefined, userTierLevel); return n ? <AiProgress {...n} className="mb-6" /> : null; })()}
 
       {/* Coursera-style summary stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">

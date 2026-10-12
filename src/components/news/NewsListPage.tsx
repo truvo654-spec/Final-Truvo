@@ -118,7 +118,6 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
         onDismiss={() => setBannerVisible(false)}
         onUpgrade={onUpgradePrompt}
       />
-      <div className="px-4 sm:px-8 md:px-14 pt-6"><AiVerdict {...newsVerdict(baseArticles)} /></div>
 
       <div className="w-full max-w-[1360px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
         {/* Page title, or the writer header when viewing one writer */}
@@ -148,6 +147,8 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
           </div>
         </div>
         )}
+
+        <AiVerdict {...newsVerdict(baseArticles)} className="mb-6" />
 
         {/* Tabs + category filters */}
         <div className="flex flex-col gap-4 mb-6">

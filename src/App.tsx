@@ -1011,7 +1011,6 @@ export default function App() {
             />
           ) : (
             <div className="space-y-6">
-            <div className="px-4 sm:px-8 md:px-[56px]"><AiSection data={dashboardRead(user, signals)} defaultOpen /></div>
 
             <ReferenceDashboard
               user={user}
@@ -1049,6 +1048,7 @@ export default function App() {
               onShowToast={showToast}
               onSelectLevelScenario={handleSelectLevelScenario}
               onStartTour={handleStartOnboarding}
+              aiSlot={<AiSection data={dashboardRead(user, signals)} defaultOpen />}
             />
             </div>
           )

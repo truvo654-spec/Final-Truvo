@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2026-10-09
+### Changed
+- Every AI summary now sits between the page's short description and its content, instead of above the title. Dashboard, Trading Signals, Market News, Economic Calendar, Education Hub, Instrument Analysis, Broker List, Broker Comparison, Promotions and Points & Credits all moved.
+- `ReferenceDashboard` and `EmptyStateDashboardView` take an `aiSlot`, so the dashboard brief renders under the greeting rather than above it.
+
 ## [1.3.1] - 2026-10-09
 ### Changed
 - AI no longer looks the same on every page. The dark spotlight card is now only on the Dashboard and the Trading Journal, where the read is the point; everywhere else uses a shape that matches what the AI is saying:

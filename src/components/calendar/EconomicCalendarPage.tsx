@@ -552,7 +552,6 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
 
   return (
     <div className="w-full">
-      {(() => { const n = calendarNext(); return n ? <div className="px-4 sm:px-8 md:px-14 pt-6"><AiNext {...n} /></div> : null; })()}
       {/* Sticky tools strip (appears after scrolling) */}
       {scrolled && (
         <div className="fixed top-[68px] left-0 right-0 z-30 bg-white/95 backdrop-blur border-b border-[#e2e8f0] shadow-xs">
@@ -609,6 +608,7 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2" />
           </div>
         </div>
+        {(() => { const n = calendarNext(); return n ? <AiNext {...n} className="mt-4" /> : null; })()}
 
         {/* Page tabs */}
         <div className="flex items-center gap-7 border-b-2 border-[#f1f5f9] mt-6 mb-6 overflow-x-auto">

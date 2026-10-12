@@ -161,7 +161,6 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
 
   return (
     <div id="broker-list-landing-page" className="w-full space-y-8 pb-16">
-      <AiStrip text={brokerListStrip(brokers)} />
       {/* ─────────────────────────────────────────────────────────────
           1. HEADER SECTION (Exact typography: Partner Brokers.)
          ───────────────────────────────────────────────────────────── */}
@@ -174,6 +173,7 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
         <p className="text-slate-600 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed font-medium">
           Explore trusted brokers, discover trading conditions, and find cashback opportunities that fit your trading style.
         </p>
+      <AiStrip text={brokerListStrip(brokers)} />
 
         {/* Search Bar & Filter Button */}
         <div className="flex items-center justify-center gap-2.5 pt-2 relative">

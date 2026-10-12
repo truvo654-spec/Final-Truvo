@@ -41,6 +41,8 @@ import { DashboardRow, DashboardSlot, WidgetType, WidgetSize } from '../types/da
 import { LevelScenarioId } from '../data/levelScenarios';
 
 interface ReferenceDashboardProps {
+  /** Slot rendered under the greeting, used for the MarketSyde AI brief. */
+  aiSlot?: React.ReactNode;
   user: UserProfile;
   brokers: Broker[];
   signals: MarketSignal[];
@@ -569,6 +571,7 @@ function CustomizeRightSidebar({
 }
 
 export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
+  aiSlot,
   user,
   brokers,
   signals,
@@ -933,6 +936,7 @@ export const ReferenceDashboard: React.FC<ReferenceDashboardProps> = ({
         </div>
       ) : (
         <EmptyStateDashboardView
+          aiSlot={aiSlot}
           user={user}
           brokers={brokers}
           signals={signals}

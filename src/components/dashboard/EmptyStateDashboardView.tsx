@@ -64,6 +64,8 @@ export type DashboardStateType =
   | 'active-performance';
 
 interface EmptyStateDashboardViewProps {
+  /** Slot rendered under the greeting, used for the MarketSyde AI brief. */
+  aiSlot?: React.ReactNode;
   user: UserProfile;
   brokers: Broker[];
   signals: MarketSignal[];
@@ -448,6 +450,7 @@ function MiniSparkline({
 }
 
 export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = ({
+  aiSlot,
   user,
   brokers,
   signals,
@@ -681,6 +684,8 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
           </div>
         )}
       </div>
+
+      {aiSlot}
 
       {/* ─── MAIN TWO-COLUMN DASHBOARD LAYOUT (RIGHT SIDEBAR FIXED 300px) ─── */}
       <div className="flex flex-col lg:flex-row items-start gap-5">

@@ -800,7 +800,6 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
 
   return (
     <div className="w-full space-y-8 pb-12">
-      <AiProgress {...pointsProgress(user, missions)} />
       {/* ─── Hero Heading ─── */}
       <div className="text-center max-w-2xl mx-auto pt-0 space-y-2">
         <h1 className="font-display text-3xl sm:text-4xl lg:text-[44px] font-extrabold tracking-tight">
@@ -811,6 +810,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
         <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">
           Everything you’ve earned so far, plus what you’re currently missing out on.
         </p>
+      <AiProgress {...pointsProgress(user, missions)} />
 
         {/* Interactive Earning Modals Trigger Row */}
         {onTriggerEarningModal && (

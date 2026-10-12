@@ -681,7 +681,6 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
 
   return (
     <div className="w-full pb-16 space-y-7 animate-in fade-in duration-200">
-      <div className="px-4 sm:px-8 md:px-[56px]"><AiStrip text={instrumentListStrip(signals)} /></div>
       {/* ─── 1. TITLE & SUBTITLE AREA (Exact match to Reference screenshots) ─── */}
       <div className="text-center max-w-3xl mx-auto px-4 sm:px-8 md:px-[56px] space-y-3 pt-[100px]">
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-display tracking-tight">
@@ -691,6 +690,9 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
         <p className="text-slate-500 text-sm sm:text-base leading-relaxed">
           Review market highlight, Fear &amp; greed, derivatives activity, and 24-hour changes before selecting an instrument.
         </p>
+      </div>
+      <div className="px-4 sm:px-8 md:px-[56px]"><AiStrip text={instrumentListStrip(signals)} /></div>
+      <div className="text-center max-w-3xl mx-auto px-4 sm:px-8 md:px-[56px] space-y-3">
 
         {/* ─── Category Pills Selector (Exact match to Reference Images) ─── */}
         <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap pt-2">

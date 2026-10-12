@@ -401,7 +401,6 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
 
   return (
     <div id="trading-signals-dashboard" className="w-full space-y-8 pb-12">
-      <AiVerdict {...signalsVerdict(initialSignals)} />
       {/* ─── 1. HERO HEADER ─── */}
       <div className="text-center space-y-2 pt-0">
         <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-center">
@@ -414,6 +413,7 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
           Market opportunities, trade ideas and actionable insights designed to help you make more informed trading decisions.
         </p>
       </div>
+      <AiVerdict {...signalsVerdict(initialSignals)} />
 
       {/* ─── 2. CATEGORY TABS (TabMain - 1:1 with reference design) ─── */}
       <div className="pt-2">
