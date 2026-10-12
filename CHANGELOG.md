@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.4] - 2026-10-09
+### Added
+- My Page has a failed state: "Your Posts Didn’t Load — Don’t worry, they’re safe. Try a refresh." with the same wording for the Article and My Activity sections, the sidebar counts at zero and the composer hidden.
+
 ## [1.4.3] - 2026-10-09
 ### Changed
 - Signed out, the Community feed keeps its "Your Feed" heading and the posts; only the composer box is gone, as in the design.

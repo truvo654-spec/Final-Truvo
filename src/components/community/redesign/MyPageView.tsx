@@ -44,11 +44,24 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
   const saved = useMemo(() => posts.filter((p) => p.saved), [posts]);
   const myArticles = articles.filter((a) => a.own);
   const empty = state === 'empty';
-  const nav = MYPAGE_NAV.map((n) => (n.id === 'post' ? { ...n, count: String(42 + Math.max(0, mine.length - 1)) } : n.id === 'article' ? { ...n, count: String(24 - Math.max(0, 3 - myArticles.length)) } : n));
+  const failed = state === 'error';
+  const nav = MYPAGE_NAV.map((n) => (failed || empty
+    ? { ...n, count: '0' }
+    : n.id === 'post' ? { ...n, count: String(42 + Math.max(0, mine.length - 1)) }
+    : n.id === 'article' ? { ...n, count: String(24 - Math.max(0, 3 - myArticles.length)) }
+    : n));
 
   const posts_ = tab === 'mine' ? mine : saved;
   let main: React.ReactNode;
-  if (section === 'article') {
+  const FAIL: Record<string, { title: string; text: string }> = {
+    post: { title: 'Your Posts Didn’t Load', text: 'Don’t worry, they’re safe. Try a refresh.' },
+    article: { title: 'Your Articles Didn’t Load', text: 'Don’t worry, they’re safe. Try a refresh.' },
+    activity: { title: 'Your Activity Didn’t Load', text: 'Don’t worry, it’s safe. Try a refresh.' },
+  };
+
+  if (failed) {
+    main = <EmptyState error image={IMG.errDiscussion} {...FAIL[section]} className="py-24" imgClass="w-[216px]" />;
+  } else if (section === 'article') {
     main = myArticles.length && !empty
       ? <div className="grid sm:grid-cols-2 gap-5">{myArticles.map((a) => <ArticleCard key={a.id} article={a} signedIn onOpen={() => onOpenArticle(a.id)} onToggle={(k) => onToggleArticle(a.id, k)} onMenu={(m) => onArticleMenu(a.id, m)} onShare={() => onShareArticle(a)} />)}</div>
       : <EmptyState image={IMG.emptyArticles} title="You haven’t written an article yet" text="Share what you know and earn credits." className="py-16" imgClass="w-44" />;
@@ -59,7 +72,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
   } else {
     main = (
       <>
-        {tab === 'mine' && <div className="mb-6"><Composer me={me} heading="Share something" onOpenCreate={onOpenCreate} /></div>}
+        {tab === 'mine' && !failed && <div className="mb-6"><Composer me={me} heading="Share something" onOpenCreate={onOpenCreate} /></div>}
         {posts_.length && !empty
           ? <div className="space-y-6">{posts_.map((p) => <PostCard key={p.id} post={p} me={me} onChange={onChangePost} onRemove={onRemovePost} onShare={onSharePost} onToast={onToast} />)}</div>
           : <EmptyState image={IMG.emptyQuiet} title={tab === 'mine' ? 'It’s Quiet in Here' : 'Nothing saved yet'} text={tab === 'mine' ? 'No posts yet. The first word is yours!' : 'Tap the bookmark on a post to keep it here.'} className="py-20" imgClass="w-44" />}
