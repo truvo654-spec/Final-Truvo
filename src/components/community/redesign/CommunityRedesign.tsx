@@ -167,13 +167,13 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
                   <BackLink onClick={() => { setTopic(null); showToast('Feed Opened', 'Back to the community feed'); }} />
                   <TopicHeader title={topic} icon={topicIcon} />
                 </div>
-                <Composer me={me} heading="" onOpenCreate={openCreate} />
+                {signedIn && <Composer me={me} heading="" onOpenCreate={openCreate} />}
                 <div className="mt-[15px]"><FeedList posts={topicPosts} state={preview} me={me} onShare={sharePost} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
               </div>
             ) : (
               <div className="flex flex-col gap-7">
                 <StoriesRow state={preview} onToast={showToast} onAdd={() => openCreate('media')} />
-                <Composer me={me} onOpenCreate={openCreate} />
+                {signedIn && <Composer me={me} onOpenCreate={openCreate} />}
                 <div className="mt-1"><FeedList posts={shownPosts} state={preview} openFirstComments me={me} onShare={sharePost} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
               </div>
             )}

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.2] - 2026-10-09
+### Changed
+- The post composer is hidden when signed out, on both the feed and a topic, since there is nothing to write with until you sign in.
+
 ## [1.4.1] - 2026-10-09
 ### Added
 - Share now opens the share panel from the design instead of silently copying: Embed, Facebook, Telegram, LinkedIn and WhatsApp, with the link in a field and a Copy button that confirms. Embed copies an iframe snippet; the networks open their own share window.
