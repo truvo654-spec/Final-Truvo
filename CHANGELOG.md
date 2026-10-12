@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.2] - 2026-10-09
+### Changed
+- Both AI surfaces are smaller: the invite is 340 × 440 with two feature rows as in the design, and the panel is 820 × 620 with a smaller hero, figures and cards.
+
 ## [1.8.1] - 2026-10-09
 ### Changed
 - The AI invite is now a 400px card docked in the same bottom-right corner the panel opens in, instead of a modal over the page: brand purple on white in light, on black in dark, with the tinted title block, rules and pill button from the design. "Show me" opens the panel there; "Maybe later" leaves the pill.

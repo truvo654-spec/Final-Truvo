@@ -218,14 +218,14 @@ export const AiDock: React.FC<AiDockContext> = (ctx) => {
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 w-[min(1000px,calc(100vw-2rem))] print:hidden">
+    <div className="fixed bottom-4 right-4 z-40 w-[min(820px,calc(100vw-2rem))] print:hidden">
       <AiDashboardPanel
         data={data}
         greeting={greeting}
         storageKey={ctx.tab}
         onClose={() => shut(true)}
         onAsk={() => ctx.go('ai-companion')}
-        className="max-h-[min(82vh,762px)]"
+        className="max-h-[min(78vh,620px)]"
       />
     </div>
   );
