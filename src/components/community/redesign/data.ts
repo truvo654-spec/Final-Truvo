@@ -23,6 +23,7 @@ export const IMG = {
   emptyDebates: img('empty-debates', 'png'),
   emptyStories: img('empty-stories', 'png'),
   emptyQuiet: img('empty-quiet', 'png'),
+  emptyPosts: img('empty-posts', 'png'),
   emptyError: img('empty-error', 'png'),
   emptyArticles: img('empty-articles', 'png'),
   errDiscussion: img('err-discussion', 'png'),

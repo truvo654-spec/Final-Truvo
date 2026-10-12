@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.5] - 2026-10-09
+### Changed
+- My Page, My Post empty state follows the design: "No Posts Yet — Your followers are waiting. No pressure." with the papers illustration and a Write a Post button that opens the composer. The inline composer is hidden in that state; Saved Post keeps its own message.
+### Added
+- `EmptyState` can carry an action button.
+
 ## [1.4.4] - 2026-10-09
 ### Added
 - My Page has a failed state: "Your Posts Didn’t Load — Don’t worry, they’re safe. Try a refresh." with the same wording for the Article and My Activity sections, the sidebar counts at zero and the composer hidden.

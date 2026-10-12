@@ -21,11 +21,24 @@ export const Avatar: React.FC<{ src: string; alt: string; size?: number; ring?: 
   <img src={src} alt={alt} width={size} height={size} style={{ width: size, height: size }} className={`rounded-full object-cover shrink-0 ${ring ? 'ring-2 ring-[#5945F1]' : ''}`} />
 );
 
-export const EmptyState: React.FC<{ image: string; title: string; text: string; error?: boolean; className?: string; imgClass?: string }> = ({ image, title, text, error, className = '', imgClass = 'w-[172px]' }) => (
+export const EmptyState: React.FC<{
+  image: string;
+  title: string;
+  text: string;
+  error?: boolean;
+  className?: string;
+  imgClass?: string;
+  action?: { label: string; onClick: () => void; icon?: React.ReactNode };
+}> = ({ image, title, text, error, className = '', imgClass = 'w-[172px]', action }) => (
   <div className={`flex flex-col items-center justify-center text-center px-6 ${className}`} role={error ? 'alert' : 'status'}>
     <img src={image} alt="" className={`${imgClass} h-auto`} />
     <p className="mt-4 text-[17px] leading-6 font-medium text-[#9a1cc8]">{title}</p>
     <p className="text-xs leading-4 text-[#6b7280] mt-2">{text}</p>
+    {action && (
+      <button type="button" onClick={action.onClick} className="mt-5 inline-flex items-center gap-2 h-10 px-5 rounded-lg bg-[#5945F1] hover:bg-[#4a38d6] text-white text-[15px] font-medium transition-colors">
+        {action.icon}{action.label}
+      </button>
+    )}
   </div>
 );
 

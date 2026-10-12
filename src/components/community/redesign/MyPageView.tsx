@@ -1,6 +1,6 @@
 import { ShowToast } from './Toast';
 import React, { useMemo, useState } from 'react';
-import { CalendarDays, MapPin } from 'lucide-react';
+import { CalendarDays, MapPin, PenLine } from 'lucide-react';
 import { Avatar, Card, EmptyState, BORDER, PreviewState } from './ui';
 import { Article, FeedPost, IMG, ME } from './data';
 import { PostCard } from './PostCard';
@@ -72,10 +72,19 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
   } else {
     main = (
       <>
-        {tab === 'mine' && !failed && <div className="mb-6"><Composer me={me} heading="Share something" onOpenCreate={onOpenCreate} /></div>}
+        {tab === 'mine' && !failed && !empty && <div className="mb-6"><Composer me={me} heading="Share something" onOpenCreate={onOpenCreate} /></div>}
         {posts_.length && !empty
           ? <div className="space-y-6">{posts_.map((p) => <PostCard key={p.id} post={p} me={me} onChange={onChangePost} onRemove={onRemovePost} onShare={onSharePost} onToast={onToast} />)}</div>
-          : <EmptyState image={IMG.emptyQuiet} title={tab === 'mine' ? 'It’s Quiet in Here' : 'Nothing saved yet'} text={tab === 'mine' ? 'No posts yet. The first word is yours!' : 'Tap the bookmark on a post to keep it here.'} className="py-20" imgClass="w-44" />}
+          : tab === 'mine'
+            ? <EmptyState
+                image={IMG.emptyPosts}
+                title="No Posts Yet"
+                text="Your followers are waiting. No pressure."
+                className="py-24"
+                imgClass="w-[253px]"
+                action={{ label: 'Write a Post', onClick: () => onOpenCreate('text'), icon: <PenLine className="w-4 h-4" aria-hidden /> }}
+              />
+            : <EmptyState image={IMG.emptyQuiet} title="Nothing saved yet" text="Tap the bookmark on a post to keep it here." className="py-20" imgClass="w-44" />}
       </>
     );
   }
