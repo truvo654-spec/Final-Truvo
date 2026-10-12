@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2026-10-09
+### Added
+- Write an Article page, built to the designs: three numbered steps (Basic information, Cover Image, Article Content), a headline, a deck with a 150-character counter, a related-topic picker, free tags, a cover uploader with drag and drop, a content editor with a formatting toolbar, a live word count and an autosave marker.
+- Its failed state mirrors the design: publishing with gaps turns the offending fields red, puts the reason under each one and scrolls to the first.
+- Preview renders the article as readers will see it, with a cover placeholder where none is set.
+- Save as Draft and Publish Article both work: publishing adds the piece to the Article tab and pays credits.
+- The editor opens from the "Write An Article" banner, from "Write an Article" on the My Page empty state, from Continue Writing on the draft card, and from Edit on any of your articles or drafts.
+
 ## [1.5.1] - 2026-10-09
 ### Added
 - My Page → My Activity rebuilt to the design: a My Activities tab, filter pills (All, Posts, Articles, Comments, Bookmarks, Topics, Mentions) and a feed of what you did, each row with a thumbnail, the kind of action badged on its corner, the title and how long ago.

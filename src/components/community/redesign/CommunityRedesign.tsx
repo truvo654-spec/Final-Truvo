@@ -4,6 +4,7 @@ import { UserProfile } from '../../../types';
 import { CreatePostModal, NewPostDraft } from './CreatePostModal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { SharePanel } from './SharePanel';
+import { ArticleDraft, WriteArticle } from './WriteArticle';
 import { ARTICLES, Article, FeedPost, IMG, SEED_POSTS, SUGGESTED } from './data';
 import { Me } from './Comments';
 import { PreviewState, BORDER } from './ui';
@@ -44,6 +45,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   const [createIntent, setCreateIntent] = useState<'text' | 'media' | 'poll'>('text');
   const [confirm, setConfirm] = useState<{ kind: 'post' | 'article'; id: string; title: string } | null>(null);
   const [share, setShare] = useState<{ url: string; title: string } | null>(null);
+  const [writing, setWriting] = useState<null | { initial?: Partial<ArticleDraft>; id?: string }>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const { toasts, showToast } = useToasts();
 
@@ -107,8 +109,15 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   };
   const articleMenu = (id: string, action: 'edit' | 'draft' | 'delete') => {
     if (!signedIn) return auth('signin');
-    const title = articles.find((a) => a.id === id)?.title ?? 'Article';
-    if (action === 'edit') return showToast('Editor Opened', title);
+    const found = articles.find((a) => a.id === id);
+    const title = found?.title ?? 'Article';
+    if (action === 'edit') {
+      setTab('article');
+      setArticleId(null);
+      setWriting({ id, initial: found ? { headline: found.title, deck: found.excerpt, topic: found.category, cover: found.cover } : undefined });
+      window.scrollTo({ top: 0 });
+      return showToast('Editor Opened', title);
+    }
     if (action === 'draft') { setArticles((l) => l.filter((a) => a.id !== id)); return showToast('Moved to Drafts', title); }
     setConfirm({ kind: 'article', id, title });
   };
@@ -192,16 +201,46 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
         </div>
       )}
 
-      {activeTab === 'article' && (reading
+      {activeTab === 'article' && writing && (
+        <WriteArticle
+          me={me}
+          initial={writing.initial}
+          onBack={() => setWriting(null)}
+          onToast={showToast}
+          onSaveDraft={() => { setWriting(null); showToast('Saved as Draft', 'Find it under My Page → Article → Drafts'); }}
+          onPublish={(d) => {
+            const a: Article = {
+              id: writing.id ?? `ua${Date.now()}`,
+              category: (d.topic || 'Market News') as Article['category'],
+              title: d.headline,
+              excerpt: d.deck || d.body.slice(0, 160),
+              cover: d.cover ?? '',
+              author: me.name,
+              handle: me.handle,
+              avatar: me.avatar,
+              date: 'Today',
+              views: '0',
+              comments: 0,
+              saves: 0,
+              own: true,
+            };
+            setArticles((l) => [a, ...l.filter((x) => x.id !== a.id)]);
+            setWriting(null);
+            showToast('+25 Credits', 'Article published', { reward: true });
+          }}
+        />
+      )}
+
+      {activeTab === 'article' && !writing && (reading
         ? <ArticleRead article={reading} others={shownArticles.filter((a) => a.id !== reading.id)} state={preview} signedIn={signedIn} me={me} alreadyRewarded={rewarded.has(reading.id)}
             onBack={() => setArticleId(null)} onOpen={openArticle} onOpenShare={() => shareArticle(reading)} onReward={reward} onAuth={auth} onToast={showToast} onNavigate={nav} onRetry={retry}
             onToggleFollow={() => guard(() => setArticles((l) => l.map((a) => (a.id === reading.id ? { ...a, following: !a.following } : a))))}
             onToggle={toggleArticle} />
-        : <ArticleList state={preview} articles={shownArticles} signedIn={signedIn} onOpen={openArticle} onToggle={toggleArticle} onMenu={articleMenu} onShare={shareArticle} onWrite={() => (signedIn ? showToast('Editor Opened', 'Write and share an article') : auth('signin'))} onToast={showToast} onRetry={retry} onNavigate={nav} />)}
+        : <ArticleList state={preview} articles={shownArticles} signedIn={signedIn} onOpen={openArticle} onToggle={toggleArticle} onMenu={articleMenu} onShare={shareArticle} onWrite={() => (signedIn ? (setWriting({}), window.scrollTo({ top: 0 }), showToast('Editor Opened', 'Write and share an article')) : auth('signin'))} onToast={showToast} onRetry={retry} onNavigate={nav} />)}
 
       {activeTab === 'mypage' && signedIn && (
         <MyPageView me={me} posts={shownPosts} articles={shownArticles} state={preview} rankTitle={user.rankTitle} onChangePost={changePost} onRemovePost={removePost} onSharePost={sharePost}
-          onOpenCreate={openCreate} onOpenArticle={openArticle} onToggleArticle={toggleArticle} onArticleMenu={articleMenu} onShareArticle={shareArticle} onToast={showToast} onNavigate={nav} />
+          onOpenCreate={openCreate} onOpenArticle={openArticle} onToggleArticle={toggleArticle} onArticleMenu={articleMenu} onShareArticle={shareArticle} onToast={showToast} onNavigate={nav} onWriteArticle={() => { setTab('article'); setArticleId(null); setWriting({}); window.scrollTo({ top: 0 }); }} />
       )}
 
       <div className={`fixed bottom-4 left-4 z-40 bg-white/95 backdrop-blur border ${BORDER} rounded-xl shadow-lg print:hidden`} role="group" aria-label="Preview design state">

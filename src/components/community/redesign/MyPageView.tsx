@@ -139,9 +139,10 @@ interface Props {
   onShareArticle: (a: Article) => void;
   onToast: ShowToast;
   onNavigate: (tab: string) => void;
+  onWriteArticle?: () => void;
 }
 
-export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTitle, onChangePost, onRemovePost, onSharePost, onOpenCreate, onOpenArticle, onToggleArticle, onArticleMenu, onShareArticle, onToast, onNavigate }) => {
+export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTitle, onChangePost, onRemovePost, onSharePost, onOpenCreate, onOpenArticle, onToggleArticle, onArticleMenu, onShareArticle, onToast, onNavigate, onWriteArticle }) => {
   const [section, setSection] = useState('post');
   const [tab, setTab] = useState<'mine' | 'saved'>('mine');
   const [viewing, setViewing] = useState<'mine' | 'drafts'>('mine');
@@ -196,7 +197,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
             text="Know something we don’t? Write it."
             className="py-24"
             imgClass="w-[253px]"
-            action={{ label: 'Write an Article', onClick: () => onToast('Editor Opened', 'Write and share an article'), icon: <PenLine className="w-4 h-4" aria-hidden /> }}
+            action={{ label: 'Write an Article', onClick: () => (onWriteArticle ? onWriteArticle() : onToast('Editor Opened', 'Write and share an article')), icon: <PenLine className="w-4 h-4" aria-hidden /> }}
           />
         : <EmptyState image={IMG.emptyArticles} title="Nothing saved yet" text="Tap the bookmark on an article to keep it here." className="py-20" imgClass="w-44" />;
   } else if (section === 'activity') {
@@ -300,7 +301,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
       </div>
 
       <aside className="order-3 lg:order-none lg:col-span-2 xl:col-span-1 grid sm:grid-cols-2 xl:grid-cols-1 gap-8 items-start xl:sticky xl:top-[93px] xl:max-h-[calc(100vh-109px)] xl:overflow-y-auto no-scrollbar xl:pb-2">
-        <YourWritingCard onContinue={() => onToast('Draft Opened', 'Continue where you left off')} />
+        <YourWritingCard onContinue={() => (onWriteArticle ? onWriteArticle() : onToast('Draft Opened', 'Continue where you left off'))} />
         <InterestsCard title="My Interests" onToast={onToast} />
       </aside>
     </div>
