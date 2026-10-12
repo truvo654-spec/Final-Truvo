@@ -2,6 +2,213 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0] - 2026-10-12
+
+### Added
+
+- Added 20 streaming technical indicators to the custom backtest rule builder, grouped into categories and available to technical strategy recipes.
+- Added 20 editable technical scenario recommendations across Forex, Indices, Commodities, Crypto, and Stocks. Selecting one saves its recipe ID so Backtest loads the same timeframe and executable rules.
+- Clarified that technical scenarios are testable hypotheses—not live signals, forecasts, or personalized performance rankings.
+
+## [1.10.0] - 2026-10-12
+
+### Added
+
+- Added a light-mode Marketsyde AI strategy setup chooser for Forex, Indices, Commodities, Crypto, and Stocks. It creates editable playbook drafts from eligible journal evidence when the sample is sufficient, otherwise offering a clearly labeled starter framework.
+- Journal-guided recommendations use the full saved journal, require at least five eligible closes and five recorded R results per setup, and do not present recommendations as market forecasts or proven future performance.
+
+## [1.9.9] - 2026-10-12
+
+### Added
+
+- Daily (`1D`) bars to manual replay, including one-bar daily jumps and coverage in replay timeframe tests.
+
+## [1.9.8] - 2026-10-12
+
+### Changed
+
+- Removed the open-position marker checkbox and higher-timeframe overlay control from the replay chart header; active and completed position markers are shown automatically, with closed-trade review available separately.
+
+## [1.9.7] - 2026-10-12
+
+### Changed
+
+- The closed-trade review control now auto-advances the selected journal replay from entry through exit and shows an immediate ticket-scenario versus recorded-result summary.
+- The review explicitly labels generated replay prices as illustrative, not verified historical data or independent evidence of a strategy edge.
+
+## [1.9.6] - 2026-10-12
+
+### Added
+
+- Replay chart controls to show or hide open-position and closed-position markers independently, alongside the existing higher-timeframe view.
+
+## [1.9.5] - 2026-10-12
+
+### Changed
+
+- Moved journal setup selection, recorded parameter reference, and outcome-comparison option into one visible panel beneath the replay chart.
+- Changing the setup checkbox now updates the current order ticket before an order is placed; setup controls lock once a position or pending order exists.
+
+## [1.9.4] - 2026-10-12
+
+### Added
+
+- Blind replay checkboxes let traders opt in to prefilling the ticket from recorded trade setup and, separately, compare their finished practice result with the journal result. The comparison stays hidden until the blind session is finished.
+
+## [1.9.3] - 2026-10-12
+
+### Changed
+
+- Blind replay now loads all matching journal trades without the previous 40-item cap and imports recorded direction, stop, target, risk %, and USD entry equity into the practice ticket when supported.
+- Added a recorded-setup reference with size, commission, margin, account currency, notes, tags, and actual result revealed only after finishing blind replay; missing or incompatible fields remain explicit.
+
+## [1.9.2] - 2026-10-12
+
+### Removed
+
+- Removed the un-aggregated "Per-rule evidence" full-table section from the Playbook tab to declutter the page and keep focus on active playbook strategies and limits.
+
+## [1.9.1] - 2026-10-12
+
+### Changed
+
+- Merged Insights open-position and unrealized P&L toggles into one view with profit/loss bars and position-count labels; both previously saved selections open the merged view.
+- Selecting a chart bar now opens a focused, dismissible position-list popup inside Insights, with per-position P&L, account ROI, and Trade Log review links.
+- Kept the complete open-position list available through a compact disclosure.
+
+## [1.9.0] - 2026-10-12
+
+### Added
+
+- Insights distribution toggles for closed performance, open-position counts, and reported unrealized P&L, with shared report filters, interactive bars, and position-review links.
+- Open-position snapshots distinguish missing P&L and mixed currencies, show monetary P&L and account-equity ROI, and never claim live prices or a historical valuation series.
+
+### Changed
+
+- Closed-trade statistics, benchmarks, cross analysis, and CSV exports remain separate from open-position snapshots. Open hold duration is explicitly unavailable without a valuation timestamp.
+
+## [1.8.9] - 2026-10-12
+
+### Changed
+
+- Added a guarded local-storage migration so existing untouched demo sessions receive the new deterministic loss and open-position scenarios.
+
+## [1.8.8] - 2026-10-12
+
+### Changed
+
+- Open-position margin and risk ratios now use recorded equity after reported unrealized P&L, so losses increase utilization when the denominator shrinks.
+- Added deterministic loss-sequence and multi-position demo scenarios with mixed open P&L and margin utilization.
+
+## [1.8.7] - 2026-10-12
+
+### Changed
+
+- Replaced large static USD axis values in the comparison chart with compact unit labels; exact USD values remain available through interactive hover, focus, and the data table.
+
+## [1.8.6] - 2026-10-12
+
+### Changed
+
+- Consolidated margin, portfolio-size, and open P&L monitoring into one comparative chart with toggles for percentage and USD views.
+- Added open-position-only chart evidence for margin/equity, portfolio size, unrealized P&L, and open P&L ROI.
+
+## [1.8.5] - 2026-10-12
+
+### Changed
+
+- Separated portfolio size from percentage ratios: risk and margin remain percentages of equity, while recorded portfolio size is shown in USD.
+
+## [1.8.4] - 2026-10-12
+
+### Changed
+
+- Renamed the analytics card to “Margin ratio & risk vs portfolio size” and clarified that portfolio size means recorded account equity, not estimated CFD notional.
+
+## [1.8.3] - 2026-10-12
+
+### Added
+
+- Added History / Open positions tabs to the Risk & margin ratios card.
+- Added an open-position table with position-level risk %, margin %, source size, recorded equity basis, and reported open P&L.
+- Clearly labeled portfolio notional and live broker data as unavailable when they are not explicitly recorded or connected.
+
+## [1.8.2] - 2026-10-12
+
+### Changed
+
+- Updated Risk & margin ratios to present recorded risk and margin as percentages of equity.
+- Added an open-position monitor comparing aggregate recorded risk/equity and margin/equity percentages, with reported open P&L where available.
+- Clarified that the monitor does not invent live broker margin level, liquidation thresholds, or missing CFD account data.
+
+## [1.8.1] - 2026-10-12
+
+### Added
+
+- Added deterministic CFD-oriented demo risk, equity-at-entry, and margin-at-entry evidence so the Risk & margin ratios chart is populated for built-in demo records.
+- Added a guarded local-storage backfill that updates only untouched built-in demo records and preserves explicit user/imported values.
+
+## [1.8.0] - 2026-10-12
+
+### Added
+
+- Added a Risk & margin ratios chart to Overview analytics.
+- Added explicit evidence handling for account equity, initial risk and optional recorded margin at entry; missing values remain unknown.
+- Added an optional Margin at entry field to trade review so users can record broker-reported margin without estimates.
+
+## [1.7.9] - 2026-10-12
+
+### Added
+
+- Added a full pending-review popup from the Overview Review queue.
+- Added per-entry lifecycle badges and missing-field details, with direct access to each entry's Review form.
+
+## [1.7.8] - 2026-10-12
+
+### Added
+
+- Added a separately labeled dashed line for explicitly reported open/unrealized P&L on the realized drawdown chart.
+- Added open/unrealized values to the chart data table without mixing them into realized drawdown.
+
+## [1.7.7] - 2026-10-12
+
+### Added
+
+- Replaced the single journal coverage radar with toggleable Profit & risk and Strategy & discipline views.
+- Added clickable radar metric details with recorded values and calculation explanations.
+
+## [1.7.6] - 2026-10-12
+
+### Added
+
+- Added a Review queue “Show more information” disclosure explaining pending criteria, active scope filters, and the review workflow.
+
+## [1.7.5] - 2026-10-12
+
+### Added
+
+- Added small info icons beside daily review metrics, sections, table columns, and ROI values to make hover descriptions discoverable.
+
+## [1.7.4] - 2026-10-12
+
+### Added
+
+- Added hover descriptions for daily review summary metrics, result curve, linked-trade columns, navigation controls, reflection, progress, discipline, and personal-rule sections.
+
+## [1.7.3] - 2026-10-12
+
+### Changed
+
+- Clarified the daily review ROI calculation as net P&L divided by recorded account equity at entry, with actionable explanations when required evidence is missing.
+- Updated trade review guidance to identify equity at entry as required for ROI and risk percentages.
+
+## [1.7.2] - 2026-10-12
+
+### Added
+
+- Added hover and focus descriptions for the cumulative journal chart, chart/table controls, and shared account/filter parameters.
+- Expanded cumulative chart hover details with per-series daily values and eligible entry counts.
+
 ## [1.7.1] - 2026-10-10
 
 ### Changed

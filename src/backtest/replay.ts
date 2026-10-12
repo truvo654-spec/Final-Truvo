@@ -11,6 +11,9 @@ import { pathOf, toMs } from './whatif';
 export interface ReplayTrade {
   id: string; direction: 'BUY' | 'SELL'; entry: number; stop: number | null; exit: number; r: number | null; pnl: number;
   entryIndex: number; exitIndex: number; date: string; strategy: string; mistakes: string[];
+  takeProfit: number | null; size: number; quantityUnit: string | null; commission: number | null;
+  initialRisk: number | null; equityAtEntry: number | null; marginAtEntry: number | null; accountCurrency: string;
+  setupNotes: string; tags: string[];
 }
 
 export interface ReplayData {
@@ -123,9 +126,16 @@ export function replayJournalTrade(e: JournalEntry): ReplayData {
     id: `rp_${e.id}_${Date.now().toString(36)}`, source: 'journal', symbol: e.symbol, tf: '5m', bars, start: 150,
     dp, tick, multiplier: spec?.multiplier ?? (e.assetClass === 'Forex' ? 100000 : 1), sizeUnit: spec?.sizeUnit ?? 'units', minSize: spec?.minSize ?? 0.01,
     label: `${e.symbol} · ${e.strategy}`, dateLabel: new Date(t0).toUTCString().slice(0, 22),
-    trade: { id: e.id, direction: e.direction, entry, stop: e.stopPrice ?? null, exit, r: realizedR(e), pnl: netOf(e), entryIndex: 150, exitIndex: 150 + K - 1, date: e.date, strategy: e.strategy, mistakes: e.mistakes },
+    trade: {
+      id: e.id, direction: e.direction, entry, stop: e.stopPrice ?? null, exit, r: realizedR(e), pnl: netOf(e),
+      entryIndex: 150, exitIndex: 150 + K - 1, date: e.date, strategy: e.strategy, mistakes: e.mistakes,
+      takeProfit: e.takeProfit ?? null, size: e.size, quantityUnit: e.quantityUnit ?? null, commission: e.commission ?? null,
+      initialRisk: e.initialRisk ?? null, equityAtEntry: e.equityAtEntry ?? null, marginAtEntry: e.marginAtEntry ?? null,
+      accountCurrency: e.accountCurrency || 'USD',
+      setupNotes: e.setupNotes, tags: [...e.tags],
+    },
   };
 }
 
-export const replayTimeframes: Timeframe[] = ['5m', '15m', '1h'];
+export const replayTimeframes: Timeframe[] = ['5m', '15m', '1h', '1D'];
 export const dayOfMs = (t: number) => Math.floor(t / dayMs);

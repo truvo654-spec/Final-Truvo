@@ -33,6 +33,7 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,chec
   const save = (complete:boolean) => {
     if (draft.commission != null && (!Number.isFinite(draft.commission) || draft.commission<0)) return setError('Costs must be zero or a positive amount; leave blank if unknown.');
     if (draft.initialRisk != null && (!Number.isFinite(draft.initialRisk) || draft.initialRisk<=0)) return setError('Initial monetary risk must be positive, or left unknown.');
+    if (draft.marginAtEntry != null && (!Number.isFinite(draft.marginAtEntry) || draft.marginAtEntry<0)) return setError('Margin at entry must be zero or positive, or left unknown.');
     if (draft.equityAtEntry != null && (!Number.isFinite(draft.equityAtEntry) || draft.equityAtEntry<=0)) return setError('Equity at entry must be positive, or left unknown.');
     if (tradingStatusOf(draft)==='closed' && (draft.pnlKnown===false || !Number.isFinite(draft.pnl))) return setError('A closed trade needs an explicitly reported gross result.');
     const missing = incompleteFields(draft);
@@ -76,9 +77,10 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,chec
             <label className="text-xs font-semibold">Reported gross P&amp;L<input className={field} type="number" step="any" value={draft.pnlKnown===false?'':draft.pnl} onChange={ev=>patch({pnlKnown:ev.target.value!=='',pnl:ev.target.value===''?0:Number(ev.target.value)})}/></label>
             <label className="text-xs font-semibold">Total costs (fees, commissions, swaps)<input className={field} type="number" min="0" step="any" placeholder="Unknown; enter 0 only if confirmed" value={draft.commission ?? ''} onChange={ev=>patch({commission:ev.target.value===''?undefined:Number(ev.target.value)})}/></label>
             <label className="text-xs font-semibold">Initial monetary risk ({currency})<input className={field} type="number" min="0" step="any" placeholder="Unknown" value={draft.initialRisk ?? ''} onChange={ev=>patch({initialRisk:ev.target.value===''?null:Number(ev.target.value)})}/></label>
-            <label className="text-xs font-semibold">Equity at entry ({currency})<input className={field} type="number" min="0" step="any" placeholder="Unknown; needed for risk %" value={draft.equityAtEntry ?? ''} onChange={ev=>patch({equityAtEntry:ev.target.value===''?null:Number(ev.target.value)})}/></label>
+            <label className="text-xs font-semibold">Margin at entry ({currency})<input className={field} type="number" min="0" step="any" placeholder="Unknown; do not estimate" value={draft.marginAtEntry ?? ''} onChange={ev=>patch({marginAtEntry:ev.target.value===''?null:Number(ev.target.value)})}/></label>
+            <label className="text-xs font-semibold">Equity at entry ({currency})<input className={field} type="number" min="0" step="any" placeholder="Unknown; needed for ROI and risk %" value={draft.equityAtEntry ?? ''} onChange={ev=>patch({equityAtEntry:ev.target.value===''?null:Number(ev.target.value)})}/></label>
           </div>
-          <p className="text-xs text-slate-500">Gross results are source/user reported. No contract multipliers or currency conversions are assumed. R is net ÷ initial monetary risk when known; otherwise a preserved reported R is used.</p>
+          <p className="text-xs text-slate-500">Gross results are source/user reported. Net ROI is net P&amp;L ÷ equity at entry; margin, notional, contract multiplier and currency conversion are never inferred. R is net ÷ initial monetary risk when known; otherwise a preserved reported R is used.</p>
         </section>
         <section className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
           <h3 className="font-bold text-sm">Psychology and review</h3>

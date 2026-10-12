@@ -10,7 +10,7 @@ import {
   IND_HAS_PERIOD, IND_LABEL, JournalRules, OP_LABEL, cond, defaultCostsFor, defaultSettings, describeCondition, describeRules, presetRange, price, ruleCount, val, validateSettings,
 } from '../../backtest/rules';
 import {
-  ALL_TIMEFRAMES, ASSET_CLASSES, AssetClass, BacktestSettings, Condition, Currency, IndType, Op, Operand, SESSIONS, SUPPORTED_TIMEFRAMES, StrategyRules, Timeframe,
+  ALL_TIMEFRAMES, ASSET_CLASSES, AssetClass, BacktestSettings, Condition, Currency, IND_DEFAULT_PERIOD, IndType, Op, Operand, SESSIONS, SUPPORTED_TIMEFRAMES, StrategyRules, Timeframe,
 } from '../../backtest/types';
 import { pct, rr, utcWindow } from '../../backtest/format';
 import { MAX_RULES } from '../../backtest/config';
@@ -63,9 +63,17 @@ const kindOf = (o: Operand): OpKind => (o.kind === 'value' ? 'value' : o.kind ==
 const operandFor = (k: OpKind, prev?: Operand): Operand => {
   if (k === 'value') return val(prev?.kind === 'value' ? prev.value : 30);
   if (k === 'close' || k === 'open' || k === 'high' || k === 'low') return price(k);
-  const period = prev?.kind === 'ind' && prev.ind.period ? prev.ind.period : k === 'RSI' || k === 'ATR' ? 14 : 20;
+  const period = prev?.kind === 'ind' && prev.ind.type === k && prev.ind.period ? prev.ind.period : IND_DEFAULT_PERIOD[k as IndType] ?? 20;
   return { kind: 'ind', ind: { type: k, period: IND_HAS_PERIOD.includes(k) ? period : undefined, session: k === 'SESSION_HIGH' || k === 'SESSION_LOW' ? 'asia' : undefined } };
 };
+
+const INDICATOR_GROUPS: { label: string; types: IndType[] }[] = [
+  { label: 'Moving averages and trend', types: ['SMA', 'EMA', 'VWAP', 'VWMA', 'HMA', 'ICHIMOKU_CONVERSION', 'ICHIMOKU_BASE'] },
+  { label: 'Oscillators and momentum', types: ['RSI', 'MACD', 'STOCH', 'STOCH_RSI', 'CCI', 'ADX', 'MOMENTUM', 'ROC', 'WILLR', 'ULTIMATE', 'BULL_POWER', 'BEAR_POWER', 'MFI'] },
+  { label: 'Volatility', types: ['ATR', 'BB_UPPER', 'BB_MIDDLE', 'BB_LOWER'] },
+  { label: 'Volume', types: ['OBV'] },
+  { label: 'Price action and levels', types: ['PDH', 'PDL', 'SESSION_HIGH', 'SESSION_LOW', 'HIGHEST', 'LOWEST', 'FVG_BULL', 'FVG_BEAR'] },
+];
 
 const OperandPicker: React.FC<{ value: Operand; onChange: (o: Operand) => void; allowValue: boolean; idp: string; label: string }> = ({ value, onChange, allowValue, idp, label }) => {
   const k = kindOf(value);
@@ -75,9 +83,11 @@ const OperandPicker: React.FC<{ value: Operand; onChange: (o: Operand) => void; 
         <optgroup label="Price">
           <option value="close">Close</option><option value="open">Open</option><option value="high">High</option><option value="low">Low</option>
         </optgroup>
-        <optgroup label="Indicators">
-          {(Object.keys(IND_LABEL) as IndType[]).map((t) => <option key={t} value={t}>{IND_LABEL[t]}</option>)}
-        </optgroup>
+        {INDICATOR_GROUPS.map((group) => (
+          <optgroup key={group.label} label={group.label}>
+            {group.types.map((t) => <option key={t} value={t}>{IND_LABEL[t]}</option>)}
+          </optgroup>
+        ))}
         {allowValue && <option value="value">A number</option>}
       </select>
       {value.kind === 'ind' && IND_HAS_PERIOD.includes(value.ind.type) && (

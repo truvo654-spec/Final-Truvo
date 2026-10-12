@@ -6,6 +6,7 @@ import { Broker, JournalEntry } from '../../types';
 import { JOURNAL_STRATEGIES, JOURNAL_TODAY } from '../../data/journalData';
 import { JOURNAL_MARKET_TYPES, UNASSIGNED, addDays, entryCashback, entryPoints, shortDate } from './journalOverview';
 import { TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
+import { JournalOpenInsightsChart, type InsightChartScope } from './JournalOpenInsightsChart';
 
 // Insights › reports. "Day & Time" follows the uploaded concept (light theme): view tabs, benchmark,
 // insight cards, distribution chart, cross-analysis matrix, detailed breakdown with drill-down.
@@ -116,6 +117,8 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const [range, setRange] = useJournalState<'last30' | 'last90' | 'all'>('JournalInsights-range', 'all');
   const [bench, setBench] = useJournalState('JournalInsights-bench', false);
   const [metric, setMetric] = useJournalState<Metric>('JournalInsights-metric', 'net');
+  const [savedChartScope, setChartScope] = useJournalState<InsightChartScope>('JournalInsights-chartScope', 'closed');
+  const chartScope = savedChartScope === 'open' || savedChartScope === 'unrealized' ? 'open' : 'closed';
   const [dim, setDim] = useJournalState<Dim>('JournalInsights-dim', 'playbook');
   const [sessOff, setSessOff] = useJournalState<SessionId[]>('JournalInsights-sessOff', []);
   const [assetOff, setAssetOff] = useJournalState<string[]>('JournalInsights-assetOff', []);
@@ -160,8 +163,10 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const prevTo = days ? addDays(JOURNAL_TODAY, -days) : '';
   const benchOn = bench && days > 0;
 
-  const passFilters = (e: JournalEntry) =>
-    eligible(e) && !assetOff.includes(e.assetClass) && !stratOff.includes(e.strategy) && !sessOff.includes(sessionOf(e));
+  const passReportFilters = (e: JournalEntry) =>
+    !assetOff.includes(e.assetClass) && !stratOff.includes(e.strategy) && !sessOff.includes(sessionOf(e));
+  const passFilters = (e: JournalEntry) => eligible(e) && passReportFilters(e);
+  const openCur = entries.filter(e => tradingStatusOf(e) === 'open' && passReportFilters(e) && e.date >= from && (range === 'all' || e.date <= JOURNAL_TODAY));
   const cur = useMemo(() => entries.filter((e) => passFilters(e) && e.date >= from && (range === 'all' || e.date <= JOURNAL_TODAY)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [entries, assetOff, stratOff, sessOff, from]);
@@ -444,6 +449,21 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
 
             {/* Distribution chart */}
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Distribution">
+              <div className="flex flex-wrap gap-1.5 mb-3" role="group" aria-label="Distribution position scope">
+                {([['closed', 'Closed performance'], ['open', 'Open positions & unrealized P&L']] as const).map(([id, label]) => (
+                  <button key={id} type="button" aria-pressed={chartScope === id} onClick={() => { setChartScope(id); setHover(null); setFocusedBucket(null); }}
+                    className={`px-3 h-8 rounded-lg text-xs font-semibold border ${chartScope === id ? 'bg-[#EEF0FE] border-[#5338ec]/40 text-[#5338ec]' : 'bg-white border-slate-200 text-[#474556] hover:bg-slate-50'}`}>{label}</button>
+                ))}
+              </div>
+              {chartScope !== 'closed' ? (
+                <>
+                  <h4 className="text-sm font-bold mb-2">Open positions & unrealized P&amp;L</h4>
+                  {view === 'duration' && <p className="text-[11px] text-slate-500 mb-2">Open hold time is unavailable without a valuation timestamp; exit-based duration buckets apply only to closed trades.</p>}
+                  <JournalOpenInsightsChart key={`${chartScope}-${view}-${tz}-${resolution}`} entries={openCur}
+                    bucketOf={e => view === 'duration' ? { key: 'open', label: 'Still open', order: 0 } : bucketOf(e)} onDrill={onDrill} />
+                </>
+              ) : (
+                <>
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
                   <h4 className="text-sm font-bold">{view === 'days' ? 'Day of week' : view === 'month' ? 'Monthly' : view === 'time' ? 'Time of day' : 'Hold time'} distribution</h4>
@@ -509,12 +529,14 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                   {worst && worst.s.net < 0 && <> · Leak: <span className="font-semibold text-rose-600">{worst.label}</span> ({money(worst.s.net, 0)})</>}
                 </p>
               )}
+                </>
+              )}
             </section>
 
             {/* Cross analysis matrix */}
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cross analysis matrix">
               <h4 className="text-sm font-bold">Cross analysis matrix</h4>
-              <p className="text-[11px] text-slate-500 mb-3">Each cell is net P&amp;L, trades and win rate for that pair. Click a cell to see its trades.</p>
+              <p className="text-[11px] text-slate-500 mb-3">Closed performance only. Each cell is net P&amp;L, trades and win rate for that pair. Click a cell to see its trades. Open-position chart toggles do not change realized statistics or CSV exports.</p>
               <div className="flex flex-wrap gap-1.5 mb-3" role="tablist" aria-label="Compare by">
                 {DIMS.map(([id, label]) => (
                   <button key={id} type="button" role="tab" aria-selected={dim === id} onClick={() => setDim(id)}

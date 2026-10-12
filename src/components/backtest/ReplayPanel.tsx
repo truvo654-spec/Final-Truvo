@@ -6,6 +6,7 @@ import type { JournalEntry } from '../../types';
 import { eligible, netOf, realizedR } from '../journal/journalMath';
 import { PracticeFilters, matchesJournal, practiceInstruments, DEFAULT_FILTER } from './PracticeFilters';
 import { replayDaysLikeToday, replayJournalTrade, replayRandom, ReplayData, replayTimeframes } from '../../backtest/replay';
+import { symbolSpec } from '../../backtest/marketData';
 import type { PracticeFilter, PracticeTrade, ReplaySession } from '../../backtest/store';
 import { Bar, Timeframe } from '../../backtest/types';
 import { money, pct, priceFmt, rr, tone, dateTime } from '../../backtest/format';
@@ -23,29 +24,35 @@ interface Props {
 type Side = 1 | -1;
 interface Pending { dir: Side; type: 'market' | 'limit' | 'stop'; price: number; stop: number; target: number | null; size: number }
 interface Position { dir: Side; entry: number; size: number; stop: number; target: number | null; entryBar: number; initRisk: number; tags: string[] }
+interface AutoReviewResult { net: number; r: number; exit: number; stop: number; target: number; exitReason: 'stop' | 'target' | 'trade close'; size: number }
 
-const START_BALANCE = 10000;
+const DEFAULT_BALANCE = 10000;
 const WINDOW = 90;
 
-const roundStep = (x: number, step: number) => Math.floor(x / step + 1e-9) * step;
+const roundStep = (x: number, step: number) => Number((Math.floor(x / step + 1e-9) * step).toFixed(8));
 
 export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFinish, onToast }) => {
   const [source, setSource] = useState<'random' | 'similar' | 'journal'>(initialEntryId ? 'journal' : 'random');
   const [filter, setFilter] = useState<PracticeFilter>(DEFAULT_FILTER);
   const [tf, setTf] = useState<Timeframe>('5m');
   const [blind, setBlind] = useState(true);
+  const [useJournalSetup, setUseJournalSetup] = useState(true);
+  const [compareJournalResult, setCompareJournalResult] = useState(false);
   const [pickId, setPickId] = useState<string | null>(initialEntryId);
   const [data, setData] = useState<ReplayData | null>(null);
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<'1' | '3' | '5' | '10'>('3');
-  const [htf, setHtf] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
+  const [autoReview, setAutoReview] = useState(false);
+  const [autoReviewResult, setAutoReviewResult] = useState<AutoReviewResult | null>(null);
   const [drawings, setDrawings] = useState<number[]>([]);
   const [side, setSide] = useState<Side>(1);
   const [otype, setOtype] = useState<'market' | 'limit' | 'stop'>('market');
   const [oprice, setOprice] = useState('');
   const [riskPct, setRiskPct] = useState(1);
+  const [startingBalance, setStartingBalance] = useState(DEFAULT_BALANCE);
+  const [useRecordedSize, setUseRecordedSize] = useState(false);
   const [stopPx, setStopPx] = useState('');
   const [targetPx, setTargetPx] = useState('');
   const [pending, setPending] = useState<Pending | null>(null);
@@ -61,23 +68,42 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
 
   const journalMatches = useMemo(() => entries.filter((e) => eligible(e) && e.exitPrice !== null && matchesJournal(e, filter))
     .sort((a, b) => (b.entryTime || b.date).localeCompare(a.entryTime || a.date)), [entries, filter]);
-  const journalList = journalMatches.slice(0, 40);
+  const journalList = journalMatches;
   const feedMatches = useMemo(() => practiceInstruments(filter), [filter]);
   const allTags = useMemo(() => Array.from(new Set(entries.flatMap((e) => [...e.tags, ...e.mistakes]))).slice(0, 14), [entries]);
 
-  const balance = START_BALANCE + trades.reduce((a, t) => a + t.net, 0);
+  const balance = startingBalance + trades.reduce((a, t) => a + t.net, 0);
   const bars = data?.bars ?? [];
   const last: Bar | undefined = bars[cursor - 1];
+
+  const configureTicketFromTrade = (d: ReplayData, importJournalSetup: boolean) => {
+    const setup = importJournalSetup ? d.trade : null;
+    setStopPx(setup?.stop == null ? '' : String(setup.stop));
+    setTargetPx(setup?.takeProfit == null ? '' : String(setup.takeProfit));
+    setOprice('');
+    setSide(setup?.direction === 'SELL' ? -1 : 1);
+    const spec = symbolSpec(d.symbol);
+    const hasCompatibleRecordedSize = !!setup && setup.quantityUnit === d.sizeUnit && Number.isFinite(setup.size)
+      && setup.size >= d.minSize && !!spec && Math.abs(setup.size / spec.sizeStep - Math.round(setup.size / spec.sizeStep)) < 1e-6;
+    setUseRecordedSize(hasCompatibleRecordedSize);
+    const recordedRiskPct = setup?.initialRisk != null && setup.equityAtEntry != null && setup.equityAtEntry > 0
+      ? setup.initialRisk / setup.equityAtEntry * 100 : null;
+    if (recordedRiskPct != null && Number.isFinite(recordedRiskPct) && recordedRiskPct >= 0.01 && recordedRiskPct <= 100) setRiskPct(recordedRiskPct);
+    else setRiskPct(1);
+    const recordedUsdEquity = setup?.accountCurrency === 'USD' && Number.isFinite(setup.equityAtEntry) && setup.equityAtEntry! > 0
+      ? setup.equityAtEntry! : null;
+    setStartingBalance(recordedUsdEquity ?? DEFAULT_BALANCE);
+  };
 
   const avgRange = useMemo(() => {
     const l = bars.slice(Math.max(0, cursor - 14), cursor);
     return l.length ? l.reduce((a, b) => a + (b.h - b.l), 0) / l.length : 0;
   }, [bars, cursor]);
 
-  const load = (d: ReplayData) => {
+  const load = (d: ReplayData, importJournalSetup = true) => {
     setData(d); setCursor(d.start); setMinCursor(d.start); setPlaying(false); setPending(null); setPos(null); setTrades([]); setDrawings([]);
-    setFinished(false); setNotes(''); setTags(d.trade?.mistakes ?? []); setSessionId(`rs_${Date.now().toString(36)}`);
-    setStopPx(''); setTargetPx(''); setOprice('');
+    setFinished(false); setAutoReview(false); setAutoReviewResult(null); setNotes(''); setTags(d.trade?.mistakes ?? []); setSessionId(`rs_${Date.now().toString(36)}`);
+    configureTicketFromTrade(d, importJournalSetup);
   };
   const loadSource = () => {
     try {
@@ -88,7 +114,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
       } else {
         const e = entries.find((x) => x.id === pickId && journalMatches.some((m) => m.id === x.id)) || journalList[0] || (initialEntryId ? entries.find((x) => x.id === pickId) : undefined);
         if (!e) { onToast('No journal trades match these filters. Loosen one of them.'); return; }
-        setPickId(e.id); load(replayJournalTrade(e));
+        setPickId(e.id); load(replayJournalTrade(e), useJournalSetup);
       }
     } catch (err) { onToast(err instanceof Error ? err.message : 'Could not load the replay'); }
   };
@@ -97,16 +123,57 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
 
   // Default stop/target suggestions follow the market until the user types their own.
   const autoStop = last ? last.c - side * avgRange * 1.5 : NaN;
-  const entryRef = otype === 'market' ? last?.c ?? NaN : Number(oprice) || last?.c || NaN;
-  const stopVal = stopPx === '' ? autoStop : Number(stopPx);
+  const entryRef = autoReview && data?.trade ? data.trade.entry : otype === 'market' ? last?.c ?? NaN : Number(oprice) || last?.c || NaN;
+  const stopVal = autoReviewResult && autoReview ? autoReviewResult.stop : stopPx === '' ? autoStop : Number(stopPx);
   const riskDist = Math.abs(entryRef - stopVal);
-  const targetVal = targetPx === '' ? entryRef + side * 2 * riskDist : Number(targetPx);
+  const targetVal = autoReviewResult && autoReview ? autoReviewResult.target : targetPx === '' ? entryRef + side * 2 * riskDist : Number(targetPx);
   const rrNow = riskDist > 0 && Number.isFinite(targetVal) ? Math.abs(targetVal - entryRef) / riskDist : NaN;
-  const sizeNow = data && riskDist > 0 ? roundStep((balance * riskPct / 100) / (riskDist * data.multiplier), data.minSize) : 0;
-  const ticketProblem = !data ? 'Load a chart first.' : finished ? 'Session finished.' : pos ? 'Close the open position first.' : pending ? 'Cancel the pending order first.'
+  const sizeNow = autoReviewResult && autoReview ? autoReviewResult.size
+    : data && useRecordedSize && data.trade ? data.trade.size
+    : data && riskDist > 0 ? roundStep((balance * riskPct / 100) / (riskDist * data.multiplier), data.minSize) : 0;
+  const ticketProblem = !data ? 'Load a chart first.' : finished ? 'Session finished.' : autoReview ? 'Exit closed-trade review before placing an order.' : pos ? 'Close the open position first.' : pending ? 'Cancel the pending order first.'
+    : !Number.isFinite(riskPct) || riskPct < 0.01 || riskPct > 100 ? 'Risk must be between 0.01% and 100%.'
     : !(riskDist > 0) || side * (entryRef - stopVal) <= 0 ? `The stop must be ${side === 1 ? 'below' : 'above'} the entry.`
     : Number.isFinite(targetVal) && side * (targetVal - entryRef) <= 0 ? `The target must be ${side === 1 ? 'above' : 'below'} the entry.`
     : !(sizeNow >= (data?.minSize ?? 0)) || sizeNow <= 0 ? 'Risk is too small for the minimum size.' : null;
+
+  const toggleAutoReview = () => {
+    if (!data?.trade) return;
+    if (autoReview) {
+      setAutoReview(false); setAutoReviewResult(null); setCursor(data.start); setMinCursor(data.start);
+      return;
+    }
+    const journalTrade = data.trade;
+    const entry = journalTrade.entry;
+    const stop = stopPx === '' ? entry - side * (avgRange || entry * 0.003) * 1.5 : Number(stopPx);
+    const riskDistance = Math.abs(entry - stop);
+    const target = targetPx === '' ? entry + side * 2 * riskDistance : Number(targetPx);
+    if (!(riskDistance > 0) || side * (entry - stop) <= 0 || !Number.isFinite(target) || side * (target - entry) <= 0) {
+      onToast('Set a valid stop and target before reviewing this trade.');
+      return;
+    }
+    const size = useRecordedSize ? journalTrade.size
+      : roundStep((balance * riskPct / 100) / (riskDistance * data.multiplier), data.minSize);
+    if (!(size >= data.minSize) || !Number.isFinite(size)) {
+      onToast('Risk is too small for the minimum size.');
+      return;
+    }
+    let exit = data.bars[journalTrade.exitIndex]?.c ?? journalTrade.exit;
+    let exitReason: AutoReviewResult['exitReason'] = 'trade close';
+    for (let i = journalTrade.entryIndex; i <= journalTrade.exitIndex; i++) {
+      const bar = data.bars[i];
+      if (!bar) continue;
+      const stopHit = side === 1 ? bar.l <= stop : bar.h >= stop;
+      const targetHit = side === 1 ? bar.h >= target : bar.l <= target;
+      if (stopHit) { exit = bar.o < stop && side === 1 || bar.o > stop && side === -1 ? bar.o : stop; exitReason = 'stop'; break; }
+      if (targetHit) { exit = bar.o > target && side === 1 || bar.o < target && side === -1 ? bar.o : target; exitReason = 'target'; break; }
+    }
+    const netResult = (exit - entry) * side * size * data.multiplier;
+    const initialRisk = riskDistance * size * data.multiplier;
+    setAutoReviewResult({ net: netResult, r: initialRisk > 0 ? netResult / initialRisk : 0, exit, stop, target, exitReason, size });
+    setCursor(journalTrade.exitIndex + 1); setMinCursor(journalTrade.entryIndex); setPlaying(false);
+    setAutoReview(true); setCompareJournalResult(true);
+  };
 
   const closeAt = useCallback((p: Position, price: number, bar: number, qty = p.size): PracticeTrade => {
     const mult = stateRef.current.data?.multiplier ?? 1;
@@ -194,33 +261,22 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
     return () => window.removeEventListener('keydown', onKey);
   }, [data, finished, advance, pos, pending, cursor, minCursor]);
 
-  const from = Math.max(0, cursor - WINDOW);
+  const from = autoReview && data?.trade ? data.trade.entryIndex : Math.max(0, cursor - WINDOW);
   const unreal = pos && last ? (last.c - pos.entry) * pos.dir * pos.size * (data?.multiplier ?? 1) : 0;
   const unrealR = pos && pos.initRisk > 0 ? unreal / pos.initRisk : 0;
   const wins = trades.filter((t) => t.net > 0).length;
   const net = trades.reduce((a, t) => a + t.net, 0);
   const avgR = trades.length ? trades.reduce((a, t) => a + (t.r ?? 0), 0) / trades.length : 0;
-  const hidden = blind && !finished;
+  const hidden = blind && !finished && !autoReview;
   const dp = data?.dp ?? 5;
-
-  const htfBars = useMemo(() => {
-    if (!htf || !data) return [];
-    const k = 6, out: Bar[] = [];
-    const vis = bars.slice(0, cursor);
-    for (let i = 0; i < vis.length; i += k) {
-      const g = vis.slice(i, i + k);
-      out.push({ t: g[0].t, o: g[0].o, h: Math.max(...g.map((x) => x.h)), l: Math.min(...g.map((x) => x.l)), c: g[g.length - 1].c, v: 0 });
-    }
-    return out.slice(-50);
-  }, [htf, data, bars, cursor]);
 
   const markers = useMemo(() => {
     const m: { index: number; price: number; kind: 'buy' | 'sell' | 'exit' }[] = [];
     trades.forEach((t) => { m.push({ index: t.entryBar, price: t.entry, kind: t.dir === 'long' ? 'buy' : 'sell' }); m.push({ index: t.exitBar, price: t.exit, kind: 'exit' }); });
     if (pos) m.push({ index: pos.entryBar, price: pos.entry, kind: pos.dir === 1 ? 'buy' : 'sell' });
-    if (finished && data?.trade) { m.push({ index: data.trade.entryIndex, price: data.trade.entry, kind: data.trade.direction === 'BUY' ? 'buy' : 'sell' }); m.push({ index: data.trade.exitIndex, price: data.trade.exit, kind: 'exit' }); }
+    if ((finished || autoReview) && data?.trade) { m.push({ index: data.trade.entryIndex, price: data.trade.entry, kind: data.trade.direction === 'BUY' ? 'buy' : 'sell' }); m.push({ index: data.trade.exitIndex, price: data.trade.exit, kind: 'exit' }); }
     return m;
-  }, [trades, pos, finished, data]);
+  }, [trades, pos, finished, data, autoReview]);
 
   const lines = [
     ...(pos ? [{ price: pos.entry, color: '#5338ec', label: 'Entry' }, { price: pos.stop, color: '#e11d48', label: 'Stop', dashed: true }, ...(pos.target !== null ? [{ price: pos.target, color: '#059669', label: 'Target', dashed: true }] : [])] : []),
@@ -259,7 +315,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
               </div>
             )}
             <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 px-3 py-2.5">
-              <div><p className="text-xs font-bold text-[#0b1c30] flex items-center gap-1.5"><EyeOff className="w-3.5 h-3.5" /> Blind mode</p><p className="text-[11px] text-slate-500">Hides the symbol and dates until you finish.</p></div>
+              <div><p className="text-xs font-bold text-[#0b1c30] flex items-center gap-1.5"><EyeOff className="w-3.5 h-3.5" /> Blind mode</p><p className="text-[11px] text-slate-500">Hides the symbol, date, and recorded result until you finish.</p></div>
               <Toggle label="Blind mode" checked={blind} onChange={setBlind} />
             </div>
             <button type="button" className={`${btnPrimary} w-full`} onClick={loadSource}>{source === 'random' ? <Shuffle className="w-4 h-4" /> : <CalendarSearch className="w-4 h-4" />} Load to chart</button>
@@ -279,7 +335,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
                 <Pill>{data.tf}</Pill>
                 <span className="text-[11px] text-slate-500 tabular-nums">{hidden ? `Bar ${cursor - data.start + 1}` : last ? dateTime(last.t, tz) : ''}</span>
                 {hidden && <Pill tone="accent"><EyeOff className="w-3 h-3" /> Blind</Pill>}
-                <span className="ml-auto flex items-center gap-1.5 text-[11px]"><Toggle label="Higher timeframe" checked={htf} onChange={setHtf} /> Higher timeframe</span>
+                {data.trade && <button type="button" aria-pressed={autoReview} disabled={finished} title="Jump from the recorded entry to exit and compare your ticket scenario" onClick={toggleAutoReview} className="ml-auto rounded-md border px-2 py-0.5 text-[11px] disabled:opacity-50">{autoReview ? 'Review on' : 'Review closed'}</button>}
               </div>
               <div className="flex gap-2">
                 <div className="flex flex-col gap-1 pt-1" role="toolbar" aria-label="Drawing tools">
@@ -289,12 +345,6 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
                 <div className="flex-1 min-w-0 overflow-x-auto">
                   <div className="min-w-[520px] relative">
                     <CandleChart bars={bars} from={from} to={cursor} dp={dp} height={340} label="Replay chart" lines={lines} markers={markers} drawings={drawings} onPick={drawMode ? (p) => { setDrawings((d) => [...d, p]); setDrawMode(false); } : undefined} />
-                    {htf && htfBars.length > 1 && (
-                      <div className="absolute top-1 left-1 w-48 bg-white/95 border border-slate-200 rounded-lg p-1 shadow-sm">
-                        <p className="text-[9px] font-semibold text-slate-500 px-1">Higher timeframe (×6)</p>
-                        <CandleChart bars={htfBars} from={0} to={htfBars.length} dp={dp} height={110} label="Higher timeframe" hidePriceAxis />
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -304,10 +354,65 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
                 <button type="button" className={btnSecondary} title="Next bar (→)" disabled={finished || cursor >= bars.length} onClick={() => advance(1)}><ChevronRight className="w-4 h-4" /></button>
                 <Segmented size="sm" label="Speed" value={speed} onChange={setSpeed} options={(['1', '3', '5', '10'] as const).map((x) => ({ id: x, label: `${x}x`, title: `${x} bar${x === '1' ? '' : 's'} per second` }))} />
                 <select aria-label="Jump ahead" value="" onChange={(e) => { if (e.target.value) advance(Number(e.target.value)); }} className={`${inputBase} w-auto h-8 text-xs`} disabled={finished}>
-                  <option value="">Jump ahead…</option><option value="10">10 bars</option><option value="50">50 bars</option><option value={data.tf === '5m' ? 288 : data.tf === '15m' ? 96 : 24}>1 day</option>
+                  <option value="">Jump ahead…</option><option value="10">10 bars</option><option value="50">50 bars</option><option value={data.tf === '5m' ? 288 : data.tf === '15m' ? 96 : data.tf === '1h' ? 24 : 1}>1 day</option>
                 </select>
                 <span className="text-[10px] text-slate-400 ml-auto hidden lg:inline">Keys: Space play · ← → step · B / S side</span>
               </div>
+              {data.trade && (
+                <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3" aria-label="Trade history setup and comparison">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-xs font-bold text-[#0b1c30]">Trade history setup</h3>
+                      <p className="text-[11px] text-slate-500">{hidden ? 'Trade identity and result are hidden.' : `${data.trade.id} · ${data.trade.date}`}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="flex items-start gap-2 text-xs font-semibold text-[#0b1c30]">
+                        <input type="checkbox" checked={useJournalSetup} disabled={!!pos || !!pending || finished} onChange={(e) => {
+                          setUseJournalSetup(e.target.checked);
+                          if (!pos && !pending && !finished) configureTicketFromTrade(data, e.target.checked);
+                        }} className="mt-0.5 accent-[#5338ec]" />
+                        Use these values in the order ticket
+                      </label>
+                      <label className="flex items-start gap-2 text-xs font-semibold text-[#0b1c30]">
+                        <input type="checkbox" checked={compareJournalResult} onChange={(e) => setCompareJournalResult(e.target.checked)} className="mt-0.5 accent-[#5338ec]" />
+                        Compare replay with the recorded result
+                      </label>
+                    </div>
+                  </div>
+                  <dl className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-[11px]">
+                    <dt className="text-slate-500">Strategy</dt><dd>{data.trade.strategy || 'Unknown'}</dd>
+                    <dt className="text-slate-500">Direction</dt><dd>{hidden ? 'Hidden' : data.trade.direction}</dd>
+                    <dt className="text-slate-500">Entry</dt><dd>{hidden ? 'Hidden' : priceFmt(data.trade.entry, dp)}</dd>
+                    <dt className="text-slate-500">Stop loss</dt><dd>{data.trade.stop == null ? 'Not recorded' : priceFmt(data.trade.stop, dp)}</dd>
+                    <dt className="text-slate-500">Take profit</dt><dd>{data.trade.takeProfit == null ? 'Not recorded' : priceFmt(data.trade.takeProfit, dp)}</dd>
+                    <dt className="text-slate-500">Recorded size</dt><dd>{data.trade.size} {data.trade.quantityUnit ?? '(unit not recorded)'}</dd>
+                    <dt className="text-slate-500">Initial risk</dt><dd>{data.trade.initialRisk == null ? 'Not recorded' : `${data.trade.initialRisk} ${data.trade.accountCurrency}`}</dd>
+                    <dt className="text-slate-500">Entry equity</dt><dd>{data.trade.equityAtEntry == null ? 'Not recorded' : `${data.trade.equityAtEntry} ${data.trade.accountCurrency}`}</dd>
+                    <dt className="text-slate-500">Entry margin</dt><dd>{data.trade.marginAtEntry == null ? 'Not recorded' : `${data.trade.marginAtEntry} ${data.trade.accountCurrency}`}</dd>
+                    <dt className="text-slate-500">Recorded commission</dt><dd>{data.trade.commission == null ? 'Not recorded' : `${data.trade.commission} ${data.trade.accountCurrency}`}</dd>
+                    <dt className="text-slate-500">Journal account currency</dt><dd>{data.trade.accountCurrency}</dd>
+                    <dt className="text-slate-500">Setup notes</dt><dd>{data.trade.setupNotes || 'Not recorded'}</dd>
+                    <dt className="text-slate-500">Tags</dt><dd>{data.trade.tags.length ? data.trade.tags.join(', ') : 'None recorded'}</dd>
+                    {!hidden && <><dt className="text-slate-500">Recorded result</dt><dd>{money(data.trade.pnl)} · {rr(data.trade.r)}</dd></>}
+                  </dl>
+                  <p className="mt-2 text-[10px] text-slate-500">Recorded values are references, not fills on this generated replay. Risk % is derived only from recorded risk and equity. Account equity is applied only for USD. Recorded size is used only when its unit and demo increment match; otherwise replay risk sizing is used. Commission is shown for reference, not applied as a guessed fee. Missing or incompatible values are not guessed.</p>
+                  {autoReview && autoReviewResult && (
+                    <div className="mt-3 rounded-lg border border-[#d9d3ff] bg-white p-3 text-xs" aria-label="Replay and journal result comparison">
+                      <p className="font-bold text-[#0b1c30]">Test scenario vs. recorded trade</p>
+                      <p className="mt-1 text-slate-600">Scenario: {money(autoReviewResult.net)} · {rr(autoReviewResult.r)} · exit at {priceFmt(autoReviewResult.exit, dp)} ({autoReviewResult.exitReason}) · size {autoReviewResult.size} {data.sizeUnit}</p>
+                      <p className="mt-1 text-slate-600">Recorded trade: {money(data.trade.pnl)} · {rr(data.trade.r)} · entry {priceFmt(data.trade.entry, dp)} → exit {priceFmt(data.trade.exit, dp)}</p>
+                      <p className="mt-1 text-[11px] text-slate-500">The chart path is generated from the recorded trade outcome, not verified historical market data. This comparison is illustrative and is not independent evidence of a strategy edge or actual fills.</p>
+                    </div>
+                  )}
+                  {finished && compareJournalResult && !autoReview && (
+                    <div className="mt-3 rounded-lg border border-[#d9d3ff] bg-white p-3 text-xs" aria-label="Replay and journal result comparison">
+                      <p className="font-bold text-[#0b1c30]">Practice vs. recorded trade</p>
+                      <p className="mt-1 text-slate-600">Your practice: {trades.length ? `${money(net)} · ${rr(trades.reduce((sum, trade) => sum + (trade.r ?? 0), 0))}` : 'No practice trades'} · Recorded: {money(data.trade.pnl)} · {rr(data.trade.r)}</p>
+                      <p className="mt-1 text-[11px] text-slate-500">The generated replay is not historical market data or a verified fill simulation.</p>
+                    </div>
+                  )}
+                </section>
+              )}
             </>
           )}
         </section>
@@ -316,20 +421,22 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
         <div className="space-y-5">
           <Card title="Order ticket" sub="Simulated. Sized from your risk %.">
             <div className="space-y-3">
+              <p className="text-[11px] text-slate-500">Practice balance: {money(balance)}{data?.trade && data.trade.accountCurrency !== 'USD' ? ` · recorded account is ${data.trade.accountCurrency}; no conversion applied` : useJournalSetup && data?.trade?.equityAtEntry != null ? ' · from recorded USD entry equity' : ''}</p>
               <div className="grid grid-cols-2 gap-1.5">
-                <button type="button" aria-pressed={side === 1} onClick={() => setSide(1)} className={`h-10 rounded-lg text-sm font-bold ${side === 1 ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>Buy / Long</button>
-                <button type="button" aria-pressed={side === -1} onClick={() => setSide(-1)} className={`h-10 rounded-lg text-sm font-bold ${side === -1 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-500'}`}>Sell / Short</button>
+                <button type="button" aria-pressed={side === 1} disabled={autoReview} onClick={() => setSide(1)} className={`h-10 rounded-lg text-sm font-bold disabled:opacity-50 ${side === 1 ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>Buy / Long</button>
+                <button type="button" aria-pressed={side === -1} disabled={autoReview} onClick={() => setSide(-1)} className={`h-10 rounded-lg text-sm font-bold disabled:opacity-50 ${side === -1 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-500'}`}>Sell / Short</button>
               </div>
-              <Segmented size="sm" label="Order type" value={otype} onChange={setOtype} options={[{ id: 'market', label: 'Market', title: 'Fills at the next bar open' }, { id: 'limit', label: 'Limit', title: 'Fills only if price trades through your price' }, { id: 'stop', label: 'Stop', title: 'Fills when price reaches your price' }]} />
-              {otype !== 'market' && <Field label="Order price"><input type="number" step="any" aria-label="Order price" placeholder={last ? priceFmt(last.c, dp) : ''} value={oprice} onChange={(e) => setOprice(e.target.value)} className={inputCls} /></Field>}
+              <Segmented size="sm" label="Order type" value={otype} onChange={setOtype} disabled={autoReview ? { market: 'Exit closed-trade review to edit the order', limit: 'Exit closed-trade review to edit the order', stop: 'Exit closed-trade review to edit the order' } : {}} options={[{ id: 'market', label: 'Market', title: 'Fills at the next bar open' }, { id: 'limit', label: 'Limit', title: 'Fills only if price trades through your price' }, { id: 'stop', label: 'Stop', title: 'Fills when price reaches your price' }]} />
+              {otype !== 'market' && <Field label="Order price"><input type="number" step="any" aria-label="Order price" disabled={autoReview} placeholder={last ? priceFmt(last.c, dp) : ''} value={oprice} onChange={(e) => setOprice(e.target.value)} className={inputCls} /></Field>}
               <div className="grid grid-cols-2 gap-2">
-                <Field label="Stop loss"><input type="number" step="any" aria-label="Stop loss price" placeholder={Number.isFinite(autoStop) ? priceFmt(autoStop, dp) : ''} value={stopPx} onChange={(e) => setStopPx(e.target.value)} className={inputCls} /></Field>
-                <Field label="Take profit"><input type="number" step="any" aria-label="Take profit price" placeholder={Number.isFinite(targetVal) ? priceFmt(targetVal, dp) : ''} value={targetPx} onChange={(e) => setTargetPx(e.target.value)} className={inputCls} /></Field>
+                <Field label="Stop loss"><input type="number" step="any" aria-label="Stop loss price" disabled={autoReview} placeholder={Number.isFinite(autoStop) ? priceFmt(autoStop, dp) : ''} value={stopPx} onChange={(e) => setStopPx(e.target.value)} className={inputCls} /></Field>
+                <Field label="Take profit"><input type="number" step="any" aria-label="Take profit price" disabled={autoReview} placeholder={Number.isFinite(targetVal) ? priceFmt(targetVal, dp) : ''} value={targetPx} onChange={(e) => setTargetPx(e.target.value)} className={inputCls} /></Field>
               </div>
               <div className="flex items-center gap-2">
-                <Field label="Risk" className="w-24"><div className="flex items-center gap-1"><input type="number" step="0.25" min={0.1} max={5} aria-label="Risk percent" value={riskPct} onChange={(e) => setRiskPct(Number(e.target.value))} className={inputCls} /><span className="text-xs text-slate-500">%</span></div></Field>
+                <Field label="Risk" className="w-24"><div className="flex items-center gap-1"><input type="number" step="0.01" min={0.01} max={100} aria-label="Risk percent" disabled={autoReview} value={riskPct} onChange={(e) => setRiskPct(Number(e.target.value))} className={inputCls} /><span className="text-xs text-slate-500">%</span></div></Field>
                 <div className="flex-1 rounded-lg bg-slate-50 px-3 py-2 text-[11px] tabular-nums">
                   <p>Size <b>{sizeNow > 0 ? sizeNow : '—'}</b> {data?.sizeUnit ?? ''}</p>
+                  {data?.trade && <label className="flex items-center gap-1.5 mt-1 cursor-pointer"><input type="checkbox" aria-label="Use recorded position size" disabled={autoReview || data.trade.quantityUnit !== data.sizeUnit || !symbolSpec(data.symbol) || data.trade.size < data.minSize || Math.abs(data.trade.size / (symbolSpec(data.symbol)?.sizeStep ?? 1) - Math.round(data.trade.size / (symbolSpec(data.symbol)?.sizeStep ?? 1))) >= 1e-6} checked={useRecordedSize} onChange={event => setUseRecordedSize(event.target.checked)} />Use recorded size</label>}
                   <p>Reward:risk <b className={rrNow >= 2 ? 'text-emerald-700' : rrNow >= 1 ? 'text-[#0b1c30]' : 'text-rose-600'}>{Number.isFinite(rrNow) ? `1 : ${rrNow.toFixed(2)}` : '—'}</b></p>
                 </div>
               </div>

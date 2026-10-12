@@ -1,7 +1,7 @@
 // Reads a strategy written in plain English and turns it into rules the user can check before running.
 // Local pattern matching (no network); unknown phrases are reported instead of guessed.
 import { cond, ind, mirrorCondition, price, val } from './rules';
-import { BacktestSettings, Condition, StrategyRules, Timeframe } from './types';
+import { BacktestSettings, Condition, IND_DEFAULT_PERIOD, IndType, StrategyRules, Timeframe } from './types';
 
 export type ParseResult =
   | { ok: true; rules: StrategyRules; notes: string[]; extras: { session?: BacktestSettings['session']; timeframe?: Timeframe; news?: BacktestSettings['news'] } }
@@ -13,7 +13,7 @@ const EXAMPLE = 'Buy when RSI(14) crosses above 30 and price is above the 200 EM
 export function parseStrategy(input: string): ParseResult {
   const t = ` ${input.toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ')} `;
   if (t.trim().length < 8) return { ok: false, message: `Describe when to enter and exit, for example: "${EXAMPLE}"` };
-  const tradeWords = /\b(buy|sell|long|short|enter|entry|break|cross|rsi|ema|sma|vwap|stop|target|fvg|fair value)\b/;
+  const tradeWords = /\b(buy|sell|long|short|enter|entry|break|cross|rsi|ema|sma|vwap|stop|target|fvg|fair value|macd|stoch|cci|adx|momentum|roc|willr|williams|bull power|bear power|ultimate oscillator|bollinger|vwma|hull|ichimoku|obv|mfi)\b/;
   if (!tradeWords.test(t)) return { ok: false, message: `That doesn't read like a trading strategy. Say when to buy or sell and where the stop and target go, for example: "${EXAMPLE}"` };
 
   const notes: string[] = [];
@@ -30,14 +30,56 @@ export function parseStrategy(input: string): ParseResult {
     conds.push(cond(ind(k1, p1), up(m[5]) ? 'crossAbove' : 'crossBelow', ind(k2, p2)));
   }
   // RSI: "RSI(14) crosses above 30", "RSI below 30"
-  for (const m of t.matchAll(new RegExp(`rsi\\s*\\(?(\\d+)?\\)?\\s*(?:is\\s*)?(crosses\\s*|drops\\s*|falls\\s*|rises\\s*)?(below|under|above|over|<|>)\\s*${NUM}`, 'g'))) {
+  for (const m of t.matchAll(new RegExp(`(?<!stochastic )(?<!stoch )\\brsi\\s*\\(?(\\d+)?\\)?\\s*(?:is\\s*)?(crosses\\s*|drops\\s*|falls\\s*|rises\\s*)?(below|under|above|over|<|>)\\s*${NUM}`, 'g'))) {
     const crossing = !!m[2] && /cross|drop|fall|rise/.test(m[2]);
     conds.push(cond(ind('RSI', m[1] ? +m[1] : 14), crossing ? (up(m[3]) ? 'crossAbove' : 'crossBelow') : up(m[3]) ? 'gt' : 'lt', val(+m[4])));
   }
+  const oscillatorPatterns: [RegExp, IndType][] = [
+    [/(?:stochastic|stoch)\s+rsi/, 'STOCH_RSI'],
+    [/(?:stochastic(?:\s+%k)?|stoch)\b(?!\s*rsi)/, 'STOCH'],
+    [/(?:commodity channel index|\bcci\b)/, 'CCI'],
+    [/(?:average directional index|\badx\b)/, 'ADX'],
+    [/(?:macd(?:\s+histogram)?)/, 'MACD'],
+    [/\bmomentum\b/, 'MOMENTUM'],
+    [/(?:rate of change|\broc\b)/, 'ROC'],
+    [/(?:williams(?:\s+percent)?\s*%r|\bwillr\b)/, 'WILLR'],
+    [/\bbull power\b/, 'BULL_POWER'],
+    [/\bbear power\b/, 'BEAR_POWER'],
+    [/\bultimate oscillator\b/, 'ULTIMATE'],
+    [/(?:money flow index|\bmfi\b)/, 'MFI'],
+    [/(?:on[- ]balance volume|\bobv\b)/, 'OBV'],
+  ];
+  oscillatorPatterns.forEach(([pattern, type]) => {
+    const regex = new RegExp(`${pattern.source}\\s*(?:\\(\\s*(\\d+)\\s*\\))?\\s*(?:is\\s*)?(crosses\\s*|cross\\s*|drops\\s*|falls\\s*|rises\\s*)?(below|under|above|over|<|>)\\s*(-?\\d+(?:\\.\\d+)?)`, 'g');
+    for (const match of t.matchAll(regex)) {
+      const crossing = !!match[2] && /cross|drop|fall|rise/.test(match[2]);
+      const period = match[1] ? +match[1] : IND_DEFAULT_PERIOD[type];
+      conds.push(cond(ind(type, period), crossing ? (up(match[3]) ? 'crossAbove' : 'crossBelow') : up(match[3]) ? 'gt' : 'lt', val(+match[4])));
+    }
+  });
   // Price vs moving average: "price is above the 200 EMA", "close crosses above the 20 EMA"
   for (const m of t.matchAll(/(?:price|close|it)\s*(?:is\s*)?(crosses\s*|closes\s*)?(above|over|below|under)\s*(?:the\s*)?(?:(\d+)\s*(ema|sma|ma)|(ema|sma|ma)\s*\(?(\d+)\)?)/g)) {
     const kind = (m[4] || m[5]) === 'ema' ? 'EMA' : 'SMA', p = +(m[3] || m[6]);
     conds.push(cond(price(), m[1] && /cross/.test(m[1]) ? (up(m[2]) ? 'crossAbove' : 'crossBelow') : up(m[2]) ? 'gt' : 'lt', ind(kind, p)));
+  }
+  // Price vs volume-weighted or Hull moving average.
+  for (const m of t.matchAll(/(?:price|close|it)\s*(?:is\s*)?(crosses\s*|closes\s*)?(above|over|below|under)\s*(?:the\s*)?(?:(\d+)\s*(?:-bar\s*)?)?(vwma|volume[- ]weighted moving average|hma|hull(?:\s+moving average)?)\s*(?:\((\d+)\))?/g)) {
+    const type: IndType = /vwma|volume/.test(m[4]) ? 'VWMA' : 'HMA';
+    const period = +(m[3] || m[5]) || IND_DEFAULT_PERIOD[type];
+    conds.push(cond(price(), m[1] && /cross/.test(m[1]) ? (up(m[2]) ? 'crossAbove' : 'crossBelow') : up(m[2]) ? 'gt' : 'lt', ind(type, period)));
+  }
+  // Ichimoku line alignment and price relative to its base line.
+  for (const m of t.matchAll(/(?:ichimoku\s+)?conversion(?:\s+line)?\s*(?:(crosses|cross|is)\s*)?(above|over|below|under)\s*(?:the\s*)?(?:ichimoku\s+)?base(?:\s+line)?/g)) {
+    const crossing = !!m[1] && /cross/.test(m[1]);
+    conds.push(cond(ind('ICHIMOKU_CONVERSION', 9), crossing ? (up(m[2]) ? 'crossAbove' : 'crossBelow') : up(m[2]) ? 'gt' : 'lt', ind('ICHIMOKU_BASE', 26)));
+  }
+  for (const m of t.matchAll(/(?:price|close|it)\s*(?:is\s*)?(crosses\s*|closes\s*)?(above|over|below|under)\s*(?:the\s*)?(?:ichimoku\s+)?base(?:\s+line)?/g)) {
+    conds.push(cond(price(), m[1] && /cross/.test(m[1]) ? (up(m[2]) ? 'crossAbove' : 'crossBelow') : up(m[2]) ? 'gt' : 'lt', ind('ICHIMOKU_BASE', 26)));
+  }
+  // Price relative to the upper, middle or lower Bollinger band.
+  for (const m of t.matchAll(/(?:price|close|it)\s*(?:is\s*)?(crosses\s*|closes\s*)?(above|over|below|under)\s*(?:the\s*)?(upper|middle|lower)\s*(?:\d+[- ]bar\s*)?bollinger(?:\s+band)?/g)) {
+    const type: IndType = m[3] === 'upper' ? 'BB_UPPER' : m[3] === 'middle' ? 'BB_MIDDLE' : 'BB_LOWER';
+    conds.push(cond(price(), m[1] && /cross/.test(m[1]) ? (up(m[2]) ? 'crossAbove' : 'crossBelow') : up(m[2]) ? 'gt' : 'lt', ind(type, 20)));
   }
   // VWAP
   for (const m of t.matchAll(/(crosses\s*)?(above|over|below|under)\s*(?:the\s*)?vwap/g)) {

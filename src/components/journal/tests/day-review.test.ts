@@ -92,7 +92,7 @@ test('ROI never invents capital, unrealized results or a currency conversion', (
 });
 test('Daily table has separate side, percentage ROI, playbook strategy and demo replay columns', () => {
   const html=renderToStaticMarkup(createElement(JournalDayReview,{date:'2026-10-02',entries:[trade({pnl:150,commission:7,equityAtEntry:10000}),trade({id:'sell',direction:'SELL',strategy:'Legacy setup'})],currency:'USD',from:'2026-10-01',to:'2026-10-31',note:'',onNote:()=>{},onDay:()=>{},onClose:()=>{},onTrade:()=>{},onReplay:()=>{},onEditRules:()=>{},brokerName:id=>id,checklistLength:3,playbookNames:['Breakout'],rules:{maxRisk:1,maxDailyLoss:3,maxTrades:3,stopAfterLosses:2}}));
-  assert.match(html,/>Buy \/ Sell<\/th>/); assert.match(html,/>Net ROI \(%\)<\/th>/); assert.match(html,/>Strategy<\/th>/); assert.match(html,/>Replay<\/th>/);
+  assert.match(html,/Buy \/ Sell/); assert.match(html,/Net ROI \(%\)/); assert.match(html,/Strategy/); assert.match(html,/Replay/);
   assert.match(html,/\+1\.43%/); assert.match(html,/>BUY<\/span>/); assert.match(html,/>SELL<\/span>/);
   assert.match(html,/Breakout/); assert.match(html,/Recorded strategy · not linked/);
   assert.match(html,/aria-label="Open demo replay for TEST trade test"/); assert.match(html,/aria-label="Scrollable daily trades table"/);

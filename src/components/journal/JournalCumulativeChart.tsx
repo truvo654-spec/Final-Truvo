@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useId, useMemo, useRef, useState } from 'react';
+import { Info } from 'lucide-react';
 import { JournalEntry } from '../../types';
 import { UNASSIGNED, shortDate } from './journalOverview';
 import { useMoney } from './JournalCurrency';
@@ -45,7 +46,9 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
   const usdAxis = (n: number) => (pts ? `${n < 0 ? '-' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : money(n,0));
   const [active, setActive] = useState<number | null>(null);
   const [table, setTable] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
+  const helpId = useId();
 
   const on = useMemo(() => brokers.filter((b) => !off.includes(b.id)), [brokers, off]);
   const bySeries = on.length > 1; // total line plus one line per ticked broker
@@ -112,12 +115,30 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
     : '';
   const ax = active !== null && geo ? geo.xs[active] : 0;
   const ay = active !== null && geo ? geo.y(series[0]?.pts[active]?.cum ?? 0) : 0;
+  const chartDefinition = `Scope: ${rangeLabel}, using the current currency, account, date range and filters. The x-axis uses recorded UTC entry dates and the y-axis is cumulative ${title}. Each point shows the day's result, cumulative result and eligible entry count. ${bySeries ? 'With multiple brokers selected, the purple line is the total of ticked brokers and the other lines are broker subtotals.' : 'The line represents the selected broker scope.'} Hover or focus the chart for exact values, use the table for every row, and select a day to open its review.`;
 
   return (
-    <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cumulative P&L">
+    <section className="relative bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cumulative P&L">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div>
-          <h4 className="text-sm font-bold">Cumulative {title}</h4>
+          <h4 className="text-sm font-bold flex items-center gap-1">
+            Cumulative {title}
+            <button
+              type="button"
+              aria-label={`About cumulative ${title}`}
+              aria-describedby={helpOpen ? helpId : undefined}
+              onMouseEnter={() => setHelpOpen(true)}
+              onMouseLeave={() => setHelpOpen(false)}
+              onFocus={() => setHelpOpen(true)}
+              onBlur={() => setHelpOpen(false)}
+              onClick={() => setHelpOpen((open) => !open)}
+              onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setHelpOpen(false); } }}
+              className="rounded-full p-1 text-slate-500 focus-visible:outline-2 focus-visible:outline-[#5338ec]"
+            >
+              <Info size={13} aria-hidden="true" />
+            </button>
+            {helpOpen && <span id={helpId} role="tooltip" className="absolute left-5 right-5 top-14 z-20 rounded-xl bg-slate-900 text-white text-xs leading-relaxed p-3 shadow-lg font-normal">{chartDefinition}</span>}
+          </h4>
           <p className="text-[11px] text-[#94a3b8]">{rangeLabel} · running total of daily results</p>
           {bySeries && <p className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-[#474556]"><span className="w-4 h-0.5 rounded" style={{ backgroundColor: LINE }} aria-hidden="true" />Total of ticked brokers</p>}
         </div>
@@ -131,6 +152,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
           <div className="flex rounded-lg border border-slate-200 overflow-hidden" role="group" aria-label="Chart view">
             {([false, true] as const).map((t) => (
               <button key={String(t)} type="button" aria-pressed={table === t} onClick={() => setTable(t)}
+                title={t ? 'Show every chart row with date, broker, entry count, daily result and cumulative result' : 'Show the cumulative chart; hover or focus a point for exact details'}
                 className={`px-2.5 py-1 text-[11px] font-semibold ${table === t ? 'bg-[#0b1c30] text-white' : 'bg-white text-[#474556]'}`}>{t ? 'Table' : 'Chart'}</button>
             ))}
           </div>
@@ -183,6 +205,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
             className="w-full h-auto touch-none select-none"
             role="img"
             aria-label={`Cumulative ${title} from ${shortDate(dates[0])} to ${shortDate(dates[dates.length - 1], true)}${bySeries ? ' by broker' : `, ending at ${usdFull(total)}`}`}
+            title={chartDefinition}
             onMouseMove={(e) => pick(e.clientX)}
             onClick={e => { const i = pick(e.clientX); if (i !== undefined) onDay?.(dates[i]); }}
             onMouseLeave={() => setActive(null)}
@@ -226,7 +249,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
                 <p key={s.key} className="font-mono flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: s.color }} />
                   {s.name} {usdFull(s.pts[active].cum)}
-                  <span className="text-slate-300">({usdFull(s.pts[active].day)} day)</span>
+                  <span className="text-slate-300">({usdFull(s.pts[active].day)} day · {s.pts[active].n} entr{s.pts[active].n === 1 ? 'y' : 'ies'})</span>
                 </p>
               )) : (
                 <>
