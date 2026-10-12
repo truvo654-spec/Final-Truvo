@@ -7,6 +7,9 @@ import { WhatIfComparison } from './WhatIfComparison';
 import { useWhatIfStudy } from './useWhatIfStudy';
 import { ScenarioOutcomeComparison } from './ScenarioOutcomeComparison';
 import {bestValues,BestValueBadge,bestValueClass} from './comparisonHighlights';
+import {SaveScenarioButton} from './SaveScenarioButton';
+import {makeSavedWhatIf,savedWhatIfKey,whatIfSaveKey,type WhatIfStudyRow,type WhatIfSaveContext} from '../../backtest/savedWhatIf';
+import type {WhatIfRun,WhatIfSnapshot} from '../../backtest/store';
 import { compareWhatIfLedgers } from '../../backtest/whatifStudy';
 import { resolveSymbol } from '../../backtest/marketData';
 import { playbookWhatIfSetup, selectWhatIfBenchmark } from '../../backtest/whatifOptimizer';
@@ -29,6 +32,8 @@ interface Props {
   onToast: (m: string) => void;
   onOpenTrades: (ids: string[], label: string) => void;
   onAddRule: (kind: 'rule' | 'checklist', label: string, patch?: Partial<JournalRules>) => void;
+  onSaveScenario?: (run:WhatIfRun)=>boolean;
+  onViewSaved?: ()=>void;
 }
 
 type Kind = WhatIfRule['kind'];
@@ -63,7 +68,7 @@ const MultiPick: React.FC<{ label: string; options: string[]; value: string[]; o
   );
 };
 
-export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlaybookId = '', playbooks, tz, onOpenTrades, onAddRule }) => {
+export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlaybookId = '', playbooks, tz, onOpenTrades, onAddRule,onToast,onSaveScenario,onViewSaved }) => {
   const currency=React.useContext(JournalCurrency);
   const money=(n:number,_currency?:unknown,dp=2,_signed=true)=>Number.isFinite(n)?formatMoney(n,currency,Math.max(2,dp)):'—';
   const describeWhatIf=(r:WhatIfRule)=>r.kind==='dailyLoss'?`Stop after ${money(r.usd)} net loss in a day`:describeRule(r);
@@ -120,6 +125,19 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
   const aiOut=study.aiRow?.output??null;
   const aiName=study.aiRow?describeWhatIf(study.aiRow.rule):'No qualifying AI scenario';
   const comparisonTrades=compareWhatIfLedgers(out,aiOut);
+  const [savedKeys,setSavedKeys]=useState(()=>loadWhatIfs().map(savedWhatIfKey).filter((key):key is string=>key!==null));
+  const saveContext=(source:WhatIfSnapshot['source']):WhatIfSaveContext=>({currency,source,goal:study.goal,
+    benchmark:benchmark==='history'?'All journal history':benchmark==='playbook'?`${transfer?.name||'Selected playbook'} trade history`:benchmark.startsWith('account:')?`Account ${benchmark.slice(8)}`:'Current journal selection',
+    scope:{'Market type':market==='playbook'?setupMarkets.join(', '):market,'Symbols':syms.join(', ')||'All','Direction':direction==='all'?'Long + short':direction==='BUY'?'Long':'Short','Playbook setup':transfer?.name||'Custom setup','Playbook scenario':scenarioId||'Base setup','Date range':range==='all'?'All time':`Last ${range} days (ending on latest benchmark trade)`,'From entry date':fromDate||'Any','To entry date':toDate||'Any','Session (UTC)':sessionOnly?`${params.start}:00–${params.end}:00`:'Any','Playbook filter':pbs.join(', ')||'All','Tags filter':tags.join(', ')||'All','Outcome filter':result}});
+  const isScenarioSaved=(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>savedKeys.includes(whatIfSaveKey(row.rule,saveContext(source),row.output));
+  const saveScenario=(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>{
+    if(isScenarioSaved(row,source))return;
+    const context=saveContext(source);
+    const run=makeSavedWhatIf(row,context,`${source==='ai'?'MarketSyde AI':source==='user'?'Your setup':'Scenario'} · ${describeWhatIf(row.rule)}`);
+    const saved=onSaveScenario?onSaveScenario(run):saveWhatIfs([run,...loadWhatIfs()]);
+    if(saved){setSavedKeys(loadWhatIfs().map(savedWhatIfKey).filter((key):key is string=>key!==null));onToast('Scenario and results saved to Saved runs');}
+    else onToast('Could not save this scenario. Browser storage is full or unavailable.');
+  };
   const selectRule = (r: WhatIfRule) => {
     setKind(r.kind);
     setParams(p => ({ ...p, ...(r.kind === 'target' ? { target: r.r } : r.kind === 'breakeven' ? { be: r.r } : r.kind === 'stop' ? { stop: r.mult } : r.kind === 'dailyLoss' ? { usd: r.usd } : r.kind === 'lossesPerDay' ? { n: r.n } : r.kind === 'hours' ? { start: r.start, end: r.end } : { tags: r.tags }) }));
@@ -230,7 +248,7 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
         </div>
 
         <div className="space-y-5 min-w-0">
-          {picked.length > 0 && <WhatIfComparison entries={picked} rule={rule} model={study} onSelect={selectRule} />}
+          {picked.length > 0 && <WhatIfComparison entries={picked} rule={rule} model={study} onSelect={selectRule} onSave={saveScenario} isSaved={isScenarioSaved}/>}
           <section className={`rounded-2xl border p-5 ${out.saved > 0 ? 'border-emerald-200 bg-emerald-50' : out.saved < 0 ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'}`} aria-live="polite">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Result</p>
             <p className="text-lg font-bold text-[#0b1c30] mt-0.5 flex items-start gap-2">
@@ -238,6 +256,8 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
             </p>
             {picked.length > 0 && <p className="text-xs text-[#474556] mt-1">{out.lossesAvoided} losing trade{out.lossesAvoided === 1 ? '' : 's'} avoided or reduced · {out.winsForfeited} winning trade{out.winsForfeited === 1 ? '' : 's'} given up or cut.{out.estimated ? ' This rule is an estimate based on rebuilt price paths.' : ''}</p>}
             <div className="flex flex-wrap gap-2 mt-3">
+              {picked.length>0&&<SaveScenarioButton name="your scenario" saved={isScenarioSaved(study.rows[0],'user')} onSave={()=>saveScenario(study.rows[0],'user')} label/>}
+              {onViewSaved&&<button type="button" className={btnSecondary} onClick={onViewSaved}>View Saved runs <ArrowRight className="w-3.5 h-3.5"/></button>}
               <button type="button" className={btnPrimary} disabled={!picked.length} onClick={add}><ListPlus className="w-4 h-4" /> Add this as a rule in my checklist</button>
             </div>
           </section>
@@ -248,7 +268,7 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
               <p className="text-[11px] text-slate-500 mb-3">Green = best historical value per measure, shared for ties. Lower drawdown is better; trade counts are context.</p>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-xs tabular-nums">
-                  <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-2 pr-3">Measure</th><th className="text-right py-2 px-2">What you did</th><th className="text-right py-2 px-2">With the rule</th><th className="text-right py-2 px-2 text-[#5338ec] bg-[#F5F2FF]">MarketSyde AI result</th><th className="text-right py-2 px-2">Your Δ actual</th><th className="text-right py-2 pl-2">AI Δ your setup</th></tr></thead>
+                  <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-2 pr-3">Measure</th><th className="text-right py-2 px-2">What you did</th><th className="text-right py-2 px-2">With the rule <SaveScenarioButton name="your scenario" saved={isScenarioSaved(study.rows[0],'user')} onSave={()=>saveScenario(study.rows[0],'user')}/></th><th className="text-right py-2 px-2 text-[#5338ec] bg-[#F5F2FF]">MarketSyde AI result {study.aiRow&&<SaveScenarioButton name="MarketSyde AI scenario" saved={isScenarioSaved(study.aiRow,'ai')} onSave={()=>saveScenario(study.aiRow!,'ai')}/>}</th><th className="text-right py-2 px-2">Your Δ actual</th><th className="text-right py-2 pl-2">AI Δ your setup</th></tr></thead>
                   <tbody>
                     {rows.map(([k, hint, a, b, c, f, hi]) => {
                       const d = b - a;

@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.0] - 2026-10-12
+
+### Added
+
+- Save icons for user, AI and parameter-sweep What-if scenarios, with saved-state feedback and direct access to Saved runs.
+- Saved What-if reports preserve the tested rule, currency, filters, trade ledger, full metrics, training and holdout evidence as a snapshot. Reports show actual-versus-scenario metrics, equity and original trades.
+- Saved What-if list and deletion controls alongside automated saved runs; legacy checklist saves retain their recorded totals without inventing missing context.
+
+### Changed
+
+- Save failures report unavailable browser storage; already saved tests are detected using the scenario context and exact results. Saving scenarios does not consume automated runs or credits.
+- Saved runs navigation includes What-if saves in its count.
+
 ## [1.20.1] - 2026-10-12
 
 ### Added

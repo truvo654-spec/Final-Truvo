@@ -3,7 +3,8 @@
 import { POINTS } from './config';
 import { computeMetrics } from './metrics';
 import { BacktestSettings, JobOutput } from './types';
-import type { WhatIfRule } from './whatif';
+import type { WhatIfOutput, WhatIfRule } from './whatif';
+import type { RecommendationGoal } from './recommender';
 
 const KEYS = {
   runs: 'ms_backtest_runs_v1',
@@ -84,9 +85,29 @@ export const saveReplay = (list: ReplaySession[]) => write(KEYS.replay, list.sli
 
 // ── What-if runs ──
 
-export interface WhatIfRun { id: string; createdAt: string; rule: WhatIfRule; trades: number; actualNet: number; whatIfNet: number; saved: number }
-export const loadWhatIfs = (): WhatIfRun[] => read<WhatIfRun[]>(KEYS.whatif, []);
-export const saveWhatIfs = (list: WhatIfRun[]) => write(KEYS.whatif, list.slice(0, 50));
+export interface WhatIfSnapshot {
+  version: 1;
+  currency: string;
+  source: 'user' | 'ai' | 'parameter';
+  benchmark: string;
+  scope: Record<string,string>;
+  goal: RecommendationGoal;
+  output: WhatIfOutput;
+  training: WhatIfOutput;
+  validation: WhatIfOutput | null;
+  crossingCount: number;
+}
+// Optional snapshot preserves older checklist saves without inventing missing evidence.
+export interface WhatIfRun { id: string; createdAt: string; rule: WhatIfRule; trades: number; actualNet: number; whatIfNet: number; saved: number; name?:string; snapshot?:WhatIfSnapshot }
+export function loadWhatIfs():WhatIfRun[] {
+  try {
+    const list=JSON.parse(localStorage.getItem(KEYS.whatif)||'[]',(_key,value)=>value&&typeof value==='object'&&Object.keys(value).length===1&&value.__whatIfNumber?({Infinity:Infinity,'-Infinity':-Infinity,NaN:NaN}[value.__whatIfNumber as 'Infinity'|'NaN'|'-Infinity']??value):value);
+    return Array.isArray(list)?list:[];
+  }catch{return [];}
+}
+export function saveWhatIfs(list:WhatIfRun[]):boolean {
+  try {localStorage.setItem(KEYS.whatif,JSON.stringify(list.slice(0,50),(_key,value)=>typeof value==='number'&&!Number.isFinite(value)?{__whatIfNumber:String(value)}:value));return true;}catch{return false;}
+}
 
 // ── Playbook expected stats ──
 

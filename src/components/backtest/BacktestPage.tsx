@@ -12,7 +12,7 @@ import { defaultSettings, deepClone, describeCondition, defaultCostsFor, Journal
 import { expectedFromRun } from '../../backtest/gap';
 import { userTz } from '../../backtest/format';
 import {
-  BacktestRun, claimPoints, loadReplay, loadRuns, loadUsage, PlaybookExpectedStats, ReplaySession, saveReplay, saveRuns, saveUsage, summarize, Usage,
+  BacktestRun, claimPoints, loadReplay, loadRuns, loadUsage, PlaybookExpectedStats, ReplaySession, saveReplay, saveRuns, saveUsage, summarize, Usage,loadWhatIfs,saveWhatIfs,WhatIfRun,
 } from '../../backtest/store';
 import { BacktestSettings, JobOutput, Suggestion } from '../../backtest/types';
 import { BacktestHome } from './BacktestHome';
@@ -85,6 +85,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const [comparisonResults, setComparisonResults] = useState<BacktestComparisonItem[] | null>(null);
   const [benchmarkEntries, setBenchmarkEntries] = useState<JournalEntry[]>([]);
   const [runs, setRuns] = useState<BacktestRun[]>(() => loadRuns());
+  const [whatIfRuns,setWhatIfRuns]=useState<WhatIfRun[]>(()=>loadWhatIfs());
   const [usage, setUsage] = useState<Usage>(() => loadUsage());
   const [sessions, setSessions] = useState<ReplaySession[]>(() => loadReplay());
   const [progress, setProgress] = useState(0);
@@ -296,7 +297,8 @@ export const BacktestPage: React.FC<Props> = (p) => {
     else onToast(s.trades.length ? 'Session saved' : 'Session saved. Place at least one trade to earn Points.');
   };
 
-  const NAV: [View, string][] = [['home', 'Home'], ['setup', 'Test a playbook'], ['whatif', 'What-if'], ['replay', 'Practice'], ['demo', 'Demo replay'], ['runs', `Saved runs${runs.length ? ` (${runs.length})` : ''}`]];
+  const savedRunCount=runs.length+whatIfRuns.length;
+  const NAV: [View, string][] = [['home', 'Home'], ['setup', 'Test a playbook'], ['whatif', 'What-if'], ['replay', 'Practice'], ['demo', 'Demo replay'], ['runs', `Saved runs${savedRunCount ? ` (${savedRunCount})` : ''}`]];
   const navOn = (v: View) => view === v || (v === 'setup' && (view === 'running' || view === 'results' || view === 'comparison'));
 
   const curPb = cur ? pb(cur.settings.playbookId) : null;
@@ -309,7 +311,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       <div className="flex flex-wrap items-center gap-3">
         <nav aria-label="Backtest sections" className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
           {NAV.map(([v, label]) => (
-            <button key={v} type="button" aria-current={navOn(v) ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view === 'running') return; if (v === 'setup') { if (view !== 'setup') startSetup(); } else setView(v); }}
+            <button key={v} type="button" aria-current={navOn(v) ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view === 'running') return; if(v==='runs')setWhatIfRuns(loadWhatIfs()); if (v === 'setup') { if (view !== 'setup') startSetup(); } else setView(v); }}
               className={`h-8 px-3 rounded-lg text-xs font-semibold transition-colors ${navOn(v) ? 'bg-white text-[#5338ec] shadow-sm' : 'text-[#474556] hover:text-[#0b1c30]'}`}>{label}</button>
           ))}
         </nav>
@@ -373,6 +375,8 @@ export const BacktestPage: React.FC<Props> = (p) => {
 
       {view === 'whatif' && (
         <WhatIfPanel key={whatIfPlaybookId || 'custom'} initialPlaybookId={whatIfPlaybookId} entries={entries} allEntries={p.allEntries} playbooks={playbooks} journalRules={journalRules} tz={tz} onToast={onToast} onOpenTrades={p.onOpenTrades}
+          onSaveScenario={run=>{const next=[run,...loadWhatIfs()].slice(0,50);if(!saveWhatIfs(next))return false;setWhatIfRuns(next);return true;}}
+          onViewSaved={()=>{setWhatIfRuns(loadWhatIfs());setView('runs');}}
           onAddRule={(kind, label, patch) => { if (patch) p.onUpdateRules(patch); else p.onAddChecklist(label); onToast(kind === 'rule' ? 'Added to your trading rules' : 'Added to your pre-trade checklist'); }} />
       )}
 
@@ -383,7 +387,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       {view === 'demo' && <DemoReplay entries={entries} playbooks={playbooks}/>}
 
       {view === 'runs' && (
-        <SavedRuns runs={runs} playbooks={playbooks} tz={tz} onToast={onToast} onNew={() => startSetup()}
+        <SavedRuns runs={runs} whatIfRuns={whatIfRuns} onDeleteWhatIf={id=>{const next=whatIfRuns.filter(r=>r.id!==id);if(saveWhatIfs(next)){setWhatIfRuns(next);onToast('Saved What-if scenario deleted');}else onToast('Could not delete this saved scenario. Browser storage is unavailable.');}} playbooks={playbooks} tz={tz} onToast={onToast} onNew={() => startSetup()}
           onOpen={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); setComparisonResults(null); setCur({ settings: r.settings, output: r.output, runId: r.id, name: r.name }); setView('results'); } }}
           onDuplicate={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); prepareSetup({ ...deepClone(r.settings), name: `${r.name} (copy)` }); } }}
           onDelete={(id) => { const next = runs.filter((r) => r.id !== id); setRuns(next); saveRuns(next); onToast('Run deleted'); }} />
