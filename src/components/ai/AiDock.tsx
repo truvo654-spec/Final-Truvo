@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { UserProfile, MarketSignal, Broker } from '../../types';
 import { AiSpotlightPanel, SpotlightData } from './AiSpotlightPanel';
+import { AiIntro } from './AiIntro';
 import {
   advisorsRead, alertsRead, calendarRead, communityRead, dashboardRead, educationRead,
   leaderboardRead, newsRead, pointsRead, portfolioRead, promotionsRead, signalsRead,
@@ -158,17 +159,28 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
 }
 
 const STORE = 'marketsyde.aiDock.closed';
+const SEEN = 'marketsyde.aiDock.introSeen';
 
 /** Docks the spotlight panel in the bottom right of every feature page. */
 export const AiDock: React.FC<AiDockContext> = (ctx) => {
   const [closed, setClosed] = useState(false);
+  const [intro, setIntro] = useState(false);
   const data = useMemo(() => {
     try { return dockFor(ctx); } catch { return null; }
   }, [ctx.tab, ctx.user, ctx.signals, ctx.brokers]);
 
   useEffect(() => {
-    try { setClosed(window.localStorage.getItem(STORE) === '1'); } catch { /* ignore */ }
+    try {
+      setClosed(window.localStorage.getItem(STORE) === '1');
+      setIntro(window.localStorage.getItem(SEEN) !== '1');
+    } catch { /* storage can be blocked; show the dock without the invite */ }
   }, []);
+
+  const finishIntro = (start: boolean) => {
+    setIntro(false);
+    try { window.localStorage.setItem(SEEN, '1'); } catch { /* ignore */ }
+    shut(!start);
+  };
 
   const shut = (v: boolean) => {
     setClosed(v);
@@ -176,6 +188,17 @@ export const AiDock: React.FC<AiDockContext> = (ctx) => {
   };
 
   if (!data) return null;
+
+  if (intro) {
+    return (
+      <AiIntro
+        open
+        onStart={() => finishIntro(true)}
+        onLater={() => finishIntro(false)}
+        onLearnMore={() => { finishIntro(true); ctx.go('ai-companion'); }}
+      />
+    );
+  }
 
   if (closed) {
     return (

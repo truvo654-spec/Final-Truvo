@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.1] - 2026-10-09
+### Added
+- A one-time invite before the AI dock appears: what it reads, that it knows your account, and that it is not a chat, with the usual caveat and a Learn more link to the AI Companion. "Show me" opens the dock; "Maybe later" leaves it as the pill in the corner. Either way it is not shown again.
+
 ## [1.7.0] - 2026-10-09
 ### Added
 - `AiSpotlightPanel`: a proposal for one AI shape across the app, borrowing the rhythm of a chat without being one. Header of tabs, a pre-text line saying what was read, lines that arrive one after another, a bottom strip of per-feature suggestions, and a minimise control that remembers its state per feature.
