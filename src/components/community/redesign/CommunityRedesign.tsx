@@ -62,12 +62,15 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   const shownPosts = useMemo(() => posts.map((p) => (p.own ? { ...p, name: me.name, handle: me.handle, avatar: me.avatar } : p)), [posts, me]);
   const shownArticles = useMemo(() => articles.map((a) => (a.own ? { ...a, author: me.name, handle: me.handle, avatar: me.avatar } : a)), [articles, me]);
 
-  const changePost = (p: FeedPost) => setPosts((l) => l.map((x) => (x.id === p.id ? p : x)));
+  /** Anything that writes needs an account; reading does not. */
+  const guard = (run: () => void) => (signedIn ? run() : auth('signin'));
+  const changePost = (p: FeedPost) => guard(() => setPosts((l) => l.map((x) => (x.id === p.id ? p : x))));
   const dropPost = (id: string, mode: 'delete' | 'draft') => {
     setPosts((l) => l.filter((x) => x.id !== id));
     showToast(mode === 'draft' ? 'Moved to Drafts' : 'Post Deleted', mode === 'draft' ? 'Find it in your drafts' : 'It is gone from your feed');
   };
   const removePost = (id: string, mode: 'delete' | 'draft') => {
+    if (!signedIn) return auth('signin');
     if (mode === 'draft') return dropPost(id, 'draft');
     const p = posts.find((x) => x.id === id);
     setConfirm({ kind: 'post', id, title: p ? `${p.name}’s post` : 'this post' });
@@ -94,6 +97,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   };
 
   const toggleArticle = (id: string, key: 'liked' | 'saved') => {
+    if (!signedIn) return auth('signin');
     setArticles((l) => l.map((a) => {
       if (a.id !== id) return a;
       if (key === 'saved') { showToast(a.saved ? 'Removed from Saved' : 'Article Saved', a.title); return { ...a, saved: !a.saved, saves: a.saves + (a.saved ? -1 : 1) }; }
@@ -102,6 +106,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
     }));
   };
   const articleMenu = (id: string, action: 'edit' | 'draft' | 'delete') => {
+    if (!signedIn) return auth('signin');
     const title = articles.find((a) => a.id === id)?.title ?? 'Article';
     if (action === 'edit') return showToast('Editor Opened', title);
     if (action === 'draft') { setArticles((l) => l.filter((a) => a.id !== id)); return showToast('Moved to Drafts', title); }
@@ -167,13 +172,13 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
                   <BackLink onClick={() => { setTopic(null); showToast('Feed Opened', 'Back to the community feed'); }} />
                   <TopicHeader title={topic} icon={topicIcon} />
                 </div>
-                {signedIn && <Composer me={me} heading="" onOpenCreate={openCreate} />}
+                <Composer me={me} heading="" onOpenCreate={openCreate} boxHidden={!signedIn} />
                 <div className="mt-[15px]"><FeedList posts={topicPosts} state={preview} me={me} onShare={sharePost} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
               </div>
             ) : (
               <div className="flex flex-col gap-7">
                 <StoriesRow state={preview} onToast={showToast} onAdd={() => openCreate('media')} />
-                {signedIn && <Composer me={me} onOpenCreate={openCreate} />}
+                <Composer me={me} onOpenCreate={openCreate} boxHidden={!signedIn} />
                 <div className="mt-1"><FeedList posts={shownPosts} state={preview} openFirstComments me={me} onShare={sharePost} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
               </div>
             )}
@@ -190,7 +195,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
       {activeTab === 'article' && (reading
         ? <ArticleRead article={reading} others={shownArticles.filter((a) => a.id !== reading.id)} state={preview} signedIn={signedIn} me={me} alreadyRewarded={rewarded.has(reading.id)}
             onBack={() => setArticleId(null)} onOpen={openArticle} onOpenShare={() => shareArticle(reading)} onReward={reward} onAuth={auth} onToast={showToast} onNavigate={nav} onRetry={retry}
-            onToggleFollow={() => setArticles((l) => l.map((a) => (a.id === reading.id ? { ...a, following: !a.following } : a)))}
+            onToggleFollow={() => guard(() => setArticles((l) => l.map((a) => (a.id === reading.id ? { ...a, following: !a.following } : a))))}
             onToggle={toggleArticle} />
         : <ArticleList state={preview} articles={shownArticles} signedIn={signedIn} onOpen={openArticle} onToggle={toggleArticle} onMenu={articleMenu} onShare={shareArticle} onWrite={() => (signedIn ? showToast('Editor Opened', 'Write and share an article') : auth('signin'))} onToast={showToast} onRetry={retry} onNavigate={nav} />)}
 

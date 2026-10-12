@@ -113,11 +113,12 @@ export const StoriesRow: React.FC<{ state?: PreviewState; onAdd: () => void; onT
 
 /* ───────── Composer ───────── */
 /** The feed composer: a preview of the box. Any control opens the Create Post modal. */
-export const Composer: React.FC<{ me: Me; onOpenCreate: (intent?: 'text' | 'media' | 'poll') => void; heading?: string }> = ({ me, onOpenCreate, heading = 'Your Feed' }) => {
+export const Composer: React.FC<{ me: Me; onOpenCreate: (intent?: 'text' | 'media' | 'poll') => void; heading?: string; boxHidden?: boolean }> = ({ me, onOpenCreate, heading = 'Your Feed', boxHidden }) => {
   const btn = `flex items-center gap-2 h-9 border ${BORDER} text-[#5945F1] hover:bg-[#EEF0FE] rounded-lg text-[14px] font-medium px-4 transition-colors`;
   return (
     <section aria-label={heading || 'Write a post'}>
       {heading && <h2 className="text-[20px] leading-7 text-[#111827] mb-1.5">{heading}</h2>}
+      {boxHidden ? null : (
       <Card className="p-4">
         <div className="flex gap-2.5">
           <Avatar src={me.avatar} alt={me.name} size={38} />
@@ -135,6 +136,7 @@ export const Composer: React.FC<{ me: Me; onOpenCreate: (intent?: 'text' | 'medi
           <PrimaryButton onClick={() => onOpenCreate('text')} className="ml-auto flex items-center gap-2 !h-9 !px-4 !text-[14px] !font-medium"><Send className="w-4 h-4" />Post</PrimaryButton>
         </div>
       </Card>
+      )}
     </section>
   );
 };

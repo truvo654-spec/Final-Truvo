@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.3] - 2026-10-09
+### Changed
+- Signed out, the Community feed keeps its "Your Feed" heading and the posts; only the composer box is gone, as in the design.
+- Any action that writes now opens the sign-in modal instead of silently working: liking, saving, following, voting in a poll, commenting, replying, posting, adding a story, and the article like, save and menu actions. Reading, opening an article and switching tabs still work signed out.
+
 ## [1.4.2] - 2026-10-09
 ### Changed
 - The post composer is hidden when signed out, on both the feed and a topic, since there is nothing to write with until you sign in.
