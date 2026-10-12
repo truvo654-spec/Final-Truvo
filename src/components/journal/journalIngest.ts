@@ -143,7 +143,7 @@ export function convertRows(
   rows: string[][],
   mapping: ColumnMapping[],
   existing: JournalEntry[],
-  defaults: { strategy: string; accountId?: string; currency?: string; timezone?: string; pnlBasis?: 'gross' | 'net'; quantityUnit?: string }
+  defaults: { strategy: string; accountId?: string; currency?: string; timezone?: string; pnlBasis?: 'gross' | 'net' }
 ): ParsedRow[] {
   const col = (f: IngestField) => mapping.findIndex((m) => m.field === f);
   const idx = Object.fromEntries(INGEST_FIELDS.map((f) => [f.key, col(f.key)])) as Record<IngestField, number>;
@@ -183,11 +183,11 @@ export function convertRows(
     const ticket = (get('ticket') || '').trim();
     const entry: JournalEntry = {
       id: crypto.randomUUID(),
-      accountId:defaults.accountId, accountCurrency:defaults.currency || 'USD', sourceTimezone:defaults.timezone || 'UTC', quantityUnit:defaults.quantityUnit || 'unknown',
+      accountId:defaults.accountId, accountCurrency:defaults.currency || 'USD', sourceTimezone:defaults.timezone || 'UTC', quantityUnit:'unknown',
       tradingStatus:hasResult?'closed':'open', pnlKnown:hasResult, reviewState:'needs_review', mistakesReviewed:false,
       date: t.date,
       symbol,
-      assetClass: /^shares?$/i.test(defaults.quantityUnit || '')?'Stocks':guessAssetClass(symbol),
+      assetClass: guessAssetClass(symbol),
       direction: side,
       entryPrice,
       exitPrice,

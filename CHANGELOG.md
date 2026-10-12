@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.4] - 2026-10-12
+
+### Changed
+
+- Removed the quantity-unit override from statement import; imported units are recorded as unknown and asset class is inferred from the symbol.
+
 ## [1.11.3] - 2026-10-12
 
 ### Changed

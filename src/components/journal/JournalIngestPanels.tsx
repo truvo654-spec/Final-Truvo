@@ -24,7 +24,6 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
   const [currency,setCurrency] = useState('USD');
   const [timezone,setTimezone] = useState('UTC');
   const [pnlBasis,setPnlBasis] = useState<'gross'|'net'>('gross');
-  const [unit,setUnit] = useState('');
   const [history,setHistory,historyFailed] = useJournalState<{id:string;at:string;file:string;account:string;currency:string;imported:number;duplicate:number;invalid:number;net:number}[]>('imports',[]);
 
   const handleFile = async (file?: File) => {
@@ -63,8 +62,8 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
     );
 
   const parsed = useMemo(
-    () => (rows.length ? convertRows(rows, mapping, existing, { strategy,accountId,currency,timezone,pnlBasis,quantityUnit:unit || undefined }) : []),
-    [rows, mapping, existing, strategy,accountId,currency,timezone,pnlBasis,unit]
+    () => (rows.length ? convertRows(rows, mapping, existing, { strategy,accountId,currency,timezone,pnlBasis }) : []),
+    [rows, mapping, existing, strategy,accountId,currency,timezone,pnlBasis]
   );
   const ok = parsed.filter((p) => p.status === 'ok');
   const dup = parsed.filter((p) => p.status === 'duplicate');
@@ -89,7 +88,6 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
         <label>Account currency<select aria-label="Import currency" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={currency} onChange={e=>setCurrency(e.target.value)}>{['USD','EUR','GBP','THB','JPY','AUD','CAD','CHF','SGD'].map(c=><option key={c}>{c}</option>)}</select></label>
         <label>Source UTC offset<select aria-label="Source UTC offset" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={timezone} onChange={e=>setTimezone(e.target.value)}>{['UTC','-05:00','-04:00','+01:00','+02:00','+07:00','+08:00','+09:00'].map(t=><option key={t}>{t}</option>)}</select></label>
         <label>Statement P&amp;L basis<select aria-label="Statement P&L basis" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={pnlBasis} onChange={e=>setPnlBasis(e.target.value as 'gross'|'net')}><option value="gross">Gross (fees separate)</option><option value="net">Net (fees already deducted)</option></select></label>
-        <label>Quantity unit<input aria-label="Import quantity unit" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" placeholder="lots, shares, contracts, BTC…" value={unit} onChange={e=>setUnit(e.target.value)}/></label>
       </div>
       <p className="text-xs text-slate-500">ISO dates required. Timestamp offsets take precedence; otherwise the source offset above is used. Use offset-bearing timestamps across daylight-saving changes. Costs must be non-negative expense magnitudes; rebates need separate reconciliation. Net-named columns are treated as net and known costs reconstruct gross. No currency conversion or price-based profit estimates.</p>
       <div
