@@ -1,8 +1,10 @@
 import { ShowToast } from './Toast';
 import React, { useMemo, useState } from 'react';
-import { CalendarDays, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, ImageOff, MapPin, PenLine } from 'lucide-react';
+import { AtSign, Bookmark, CalendarDays, ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, Heart, ImageOff, MapPin, MessageCircle, PenLine, Plus } from 'lucide-react';
 import { Avatar, Card, EmptyState, Verified, BORDER, PreviewState } from './ui';
-import { Article, CATEGORY_STYLE, DRAFT_ARTICLES, FeedPost, IMG, ME } from './data';
+import { ARTICLES, Article, CATEGORY_STYLE, DRAFT_ARTICLES, FeedPost, IMG, ME } from './data';
+
+const ART_COVERS = ARTICLES.map((a) => a.cover);
 import { PostCard } from './PostCard';
 import { ArticleCard } from './ArticleCard';
 import { MoreMenu } from './PostCard';
@@ -50,13 +52,76 @@ const Pager: React.FC<{ page: number; pages: number; onChange: (n: number) => vo
   );
 };
 
-const ACTIVITY = [
-  { text: 'You liked “BTC breaks above $70K – What’s next?”', time: '12 min ago' },
-  { text: 'You commented on a post by BTC Research', time: '1 hour ago' },
-  { text: 'You earned 5 credits for finish reading an article', time: '3 hours ago' },
-  { text: 'You followed Raiden', time: 'Yesterday' },
-  { text: 'You saved “A Beginner’s Guide to RSI (With Examples)”', time: 'Yesterday' },
+type ActivityKind = 'post-liked' | 'post-commented' | 'article-liked' | 'article-saved' | 'article-drafted' | 'comment-replied' | 'topic-followed' | 'mention';
+
+interface ActivityItem {
+  id: string;
+  kind: ActivityKind;
+  label: string;
+  title: string;
+  time: string;
+  thumb?: string;
+  /** Which filter pills this row belongs to. */
+  groups: string[];
+}
+
+const ACTIVITY: ActivityItem[] = [
+  { id: 'a1', kind: 'article-liked', label: 'Article Liked', title: 'BTC breaks above $70K – What’s next?', time: '2 hours ago', thumb: ART_COVERS[0], groups: ['articles'] },
+  { id: 'a2', kind: 'post-commented', label: 'Post Commented', title: 'How I Use Trend Channels for Better Entries', time: '1 day ago', thumb: ART_COVERS[1], groups: ['posts', 'comments'] },
+  { id: 'a3', kind: 'article-saved', label: 'Article Saved', title: 'A Beginner’s Guide to RSI (With Examples)', time: '4 days ago', thumb: ART_COVERS[3], groups: ['articles', 'bookmarks'] },
+  { id: 'a4', kind: 'topic-followed', label: 'Topic Followed', title: '#TechnicalAnalysis', time: '5 days ago', groups: ['topics'] },
+  { id: 'a5', kind: 'article-drafted', label: 'Article Drafted', title: 'Best Low Spread Brokers of 2024 (Comparison)', time: '1 week ago', groups: ['articles'] },
+  { id: 'a6', kind: 'comment-replied', label: 'Comment Replied', title: 'Gold holding key support here. What’s your view?', time: '1 week ago', groups: ['comments'] },
+  { id: 'a7', kind: 'post-liked', label: 'Post Liked', title: 'My Bitcoin rule: decide the downside before the upside. Position size, an invalidation level and…', time: '2 weeks ago', thumb: ART_COVERS[4], groups: ['posts'] },
+  { id: 'a8', kind: 'post-commented', label: 'Post Commented', title: 'How I Use Trend Channels for Better Entries', time: '3 weeks ago', thumb: ART_COVERS[1], groups: ['posts', 'comments'] },
+  { id: 'a9', kind: 'post-commented', label: 'Post Commented', title: 'XAU/USD watchlist: compare gold with the dollar and real yields before choosing a direction. I…', time: '3 weeks ago', thumb: ART_COVERS[2], groups: ['posts', 'comments'] },
+  { id: 'a10', kind: 'mention', label: 'You Were Mentioned', title: 'Raiden replied to your call on EUR/NZD', time: '1 month ago', groups: ['mentions'] },
 ];
+
+const ACTIVITY_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'posts', label: 'Posts' },
+  { id: 'articles', label: 'Articles' },
+  { id: 'comments', label: 'Comments' },
+  { id: 'bookmarks', label: 'Bookmarks' },
+  { id: 'topics', label: 'Topics' },
+  { id: 'mentions', label: 'Mentions' },
+];
+
+/** The little coloured badge on the corner of an activity thumbnail. */
+const BADGE: Record<ActivityKind, { Icon: React.ElementType; bg: string; fg: string; tile: string }> = {
+  'post-liked': { Icon: Heart, bg: 'bg-[#5945F1]', fg: 'text-white', tile: 'bg-[#ece9ff]' },
+  'post-commented': { Icon: MessageCircle, bg: 'bg-[#caeb0e]', fg: 'text-[#1f2a00]', tile: 'bg-[#f4fbcd]' },
+  'article-liked': { Icon: Heart, bg: 'bg-[#5945F1]', fg: 'text-white', tile: 'bg-[#ece9ff]' },
+  'article-saved': { Icon: Bookmark, bg: 'bg-[#fd02b0]', fg: 'text-white', tile: 'bg-[#ffe4f5]' },
+  'article-drafted': { Icon: PenLine, bg: 'bg-[#f59e0b]', fg: 'text-white', tile: 'bg-[#f4fbcd]' },
+  'comment-replied': { Icon: MessageCircle, bg: 'bg-[#caeb0e]', fg: 'text-[#1f2a00]', tile: 'bg-[#ece9ff]' },
+  'topic-followed': { Icon: Plus, bg: 'bg-[#22c55e]', fg: 'text-white', tile: 'bg-[#ffe4f5]' },
+  mention: { Icon: AtSign, bg: 'bg-[#5945F1]', fg: 'text-white', tile: 'bg-[#ece9ff]' },
+};
+
+const ActivityRow: React.FC<{ item: ActivityItem; onOpen: () => void }> = ({ item, onOpen }) => {
+  const { Icon, bg, fg, tile } = BADGE[item.kind];
+  return (
+    <li>
+      <button type="button" onClick={onOpen} className={`w-full flex items-center gap-4 bg-white border ${BORDER} rounded-lg p-3.5 text-left hover:border-[#5945F1] transition-colors`}>
+        <span className="relative shrink-0">
+          {item.thumb
+            ? <img src={item.thumb} alt="" className="w-[52px] h-[52px] rounded-full object-cover" loading="lazy" />
+            : <span className={`w-[52px] h-[52px] rounded-full ${tile} flex items-center justify-center text-[#5945F1] text-lg font-bold`}>{item.kind === 'topic-followed' ? '#' : <Icon className="w-5 h-5" aria-hidden />}</span>}
+          <span className={`absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full ${bg} ${fg} flex items-center justify-center ring-2 ring-white`}>
+            <Icon className="w-3 h-3" aria-hidden />
+          </span>
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[14px] text-[#6b7280]">{item.label}</span>
+          <span className="block text-[15px] font-bold text-[#111827] truncate">{item.title}</span>
+          <span className="block text-[13px] text-[#9ca3af] mt-0.5">{item.time}</span>
+        </span>
+      </button>
+    </li>
+  );
+};
 
 interface Props {
   me: Me;
@@ -80,6 +145,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
   const [section, setSection] = useState('post');
   const [tab, setTab] = useState<'mine' | 'saved'>('mine');
   const [viewing, setViewing] = useState<'mine' | 'drafts'>('mine');
+  const [activityFilter, setActivityFilter] = useState('all');
   const [page, setPage] = useState(1);
   const pickSection = (id: string) => { setSection(id); onToast('Section Opened', MYPAGE_NAV.find((n) => n.id === id)?.label ?? id); };
   const pickTab = (id: 'mine' | 'saved') => {
@@ -103,7 +169,7 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
   const FAIL: Record<string, { title: string; text: string }> = {
     post: { title: 'Your Posts Didn’t Load', text: 'Don’t worry, they’re safe. Try a refresh.' },
     article: { title: 'The Articles Are Hiding', text: 'They’re still here. Refresh to find them.' },
-    activity: { title: 'Your Activity Didn’t Load', text: 'Don’t worry, it’s safe. Try a refresh.' },
+    activity: { title: 'Your Activities Didn’t Load', text: 'Your moves are safe. Refresh to see them.' },
   };
 
   if (failed) {
@@ -134,8 +200,30 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
           />
         : <EmptyState image={IMG.emptyArticles} title="Nothing saved yet" text="Tap the bookmark on an article to keep it here." className="py-20" imgClass="w-44" />;
   } else if (section === 'activity') {
+    const rows = empty ? [] : ACTIVITY.filter((a) => activityFilter === 'all' || a.groups.includes(activityFilter));
     main = (
-      <Card className="p-2"><ul>{ACTIVITY.map((a, i) => <li key={a.text} className={`flex items-center justify-between gap-3 px-3 py-3 text-sm text-[#0b1c30] ${i ? `border-t ${BORDER}` : ''}`}><span>{a.text}</span><span className="text-xs text-[#64748b] shrink-0">{a.time}</span></li>)}</ul></Card>
+      <>
+        {!empty && (
+        <div className="flex flex-wrap gap-2.5">
+          {ACTIVITY_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              aria-pressed={activityFilter === f.id}
+              onClick={() => { setActivityFilter(f.id); onToast('Filter Changed', f.label); }}
+              className={`h-9 px-4 rounded-lg text-[14px] font-medium transition-colors ${activityFilter === f.id ? 'bg-[#5945F1] text-white' : `border ${BORDER} text-[#111827] hover:bg-[#EEF0FE]`}`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        )}
+        {rows.length
+          ? <ul className="space-y-3 mt-5">{rows.map((a) => <ActivityRow key={a.id} item={a} onOpen={() => onToast('Opening', a.title)} />)}</ul>
+          : empty
+            ? <EmptyState image={IMG.emptyPosts} title="No Activities Yet" text="Like, comment, or follow. We’ll keep track." className="py-24" imgClass="w-[253px]" />
+            : <p className="text-center text-sm text-[#6b7280] py-20">Nothing here under that filter yet.</p>}
+      </>
     );
   } else {
     main = (
@@ -179,6 +267,11 @@ export const MyPageView: React.FC<Props> = ({ me, posts, articles, state, rankTi
           </div>
         </section>
 
+        {section === 'activity' && (
+          <div role="tablist" aria-label="Activity" className={`flex items-center gap-1 border-b ${BORDER}`}>
+            <button role="tab" type="button" aria-selected className={`px-4 py-2 text-sm -mb-px text-[#5945F1] font-medium border ${BORDER} border-b-white bg-white rounded-t-lg`}>My Activities</button>
+          </div>
+        )}
         {(section === 'post' || section === 'article') && (
           <div role="tablist" aria-label={section === 'article' ? 'Article lists' : 'Post lists'} className={`flex items-center gap-1 border-b ${BORDER}`}>
             {(section === 'article'

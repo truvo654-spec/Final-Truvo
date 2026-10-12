@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.1] - 2026-10-09
+### Added
+- My Page → My Activity rebuilt to the design: a My Activities tab, filter pills (All, Posts, Articles, Comments, Bookmarks, Topics, Mentions) and a feed of what you did, each row with a thumbnail, the kind of action badged on its corner, the title and how long ago.
+- Its empty state reads "No Activities Yet — Like, comment, or follow. We'll keep track." and its failed state "Your Activities Didn't Load — Your moves are safe. Refresh to see them."
+
 ## [1.5.0] - 2026-10-09
 ### Added
 - My Page → Article rebuilt to the designs, with four states: **default** (your published articles with the Edit / Move to Drafts / Delete menu), **drafts** (cards with a placeholder where there is no cover, "-" where there is no title, no stats, and pagination), **empty** ("Nothing to Read Yet — Know something we don't? Write it." with a Write an Article button) and **failed** ("The Articles Are Hiding — They're still here. Refresh to find them.").
