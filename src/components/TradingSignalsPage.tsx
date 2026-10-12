@@ -1,5 +1,5 @@
-import { AiSection } from './ai/AiSection';
-import { signalsRead } from './ai/aiFeature';
+import { AiVerdict } from './ai/AiWidgets';
+import { signalsVerdict } from './ai/aiFeature';
 import React, { useState, useMemo } from 'react';
 import { MarketSignal, Broker, UserProfile } from '../types';
 import { REFERENCE_SIGNALS } from '../data/signalsReferenceData';
@@ -401,7 +401,7 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
 
   return (
     <div id="trading-signals-dashboard" className="w-full space-y-8 pb-12">
-      <AiSection data={signalsRead(initialSignals, user.tierLevel)} />
+      <AiVerdict {...signalsVerdict(initialSignals)} />
       {/* ─── 1. HERO HEADER ─── */}
       <div className="text-center space-y-2 pt-0">
         <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-center">

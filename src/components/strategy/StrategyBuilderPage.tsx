@@ -1,5 +1,5 @@
-import { AiSection } from '../ai/AiSection';
-import { strategyRead } from '../ai/aiFeature';
+import { AiChecklist } from '../ai/AiWidgets';
+import { backtestChecklist } from '../ai/aiFeature';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Strategy, Trade } from './engine/types';
 import { runBacktest, splitMetrics } from './engine/backtest';
@@ -276,7 +276,7 @@ export const StrategyBuilderPage: React.FC<{ onShowToast: (msg: string) => void 
             </div>
           </div>
 
-          {tab === 'overview' && <AiSection data={strategyRead()} className="mb-5" />}
+          {tab === 'overview' && <AiChecklist {...backtestChecklist()} className="mb-5" />}
           {tab === 'overview' && <OverviewTab result={result} insights={insights} split={split} />}
           {tab === 'trades' && (
             m.trades === 0 ? (

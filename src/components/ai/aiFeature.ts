@@ -864,3 +864,183 @@ export function instrumentListStrip(signals: { ticker: string; action: string; c
   const when = next ? new Date(next.at).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' }) : '';
   return `Biggest 24h move is ${mover.ticker} at ${mover.change24h > 0 ? '+' : ''}${mover.change24h}%, and the highest-conviction call is ${conviction.ticker} ${conviction.action} at ${Math.round(conviction.confidence)}%.${next ? ` ${next.title} lands ${when} and can move ${next.currency} pairs.` : ''} A big move is not an entry on its own.`;
 }
+
+/* ═══════════ Props for the lighter widgets ═══════════ */
+
+export function signalsVerdict(signals: { ticker: string; action: string; confidence: number; timeframe: string; riskReward: string }[]) {
+  const live = signals.filter((s) => s.action !== 'UPGRADE');
+  const buys = live.filter((s) => /buy/i.test(s.action)).length;
+  const sells = live.length - buys;
+  const best = [...live].sort((a, b) => b.confidence - a.confidence)[0];
+  const avg = live.length ? live.reduce((a, s) => a + s.confidence, 0) / live.length : 0;
+  return {
+    headline: !live.length ? 'Signals are locked on your level' : buys === sells ? 'The book is split between longs and shorts' : buys > sells ? `${buys} of ${live.length} calls lean long` : `${sells} of ${live.length} calls lean short`,
+    note: best
+      ? `Highest conviction is ${best.ticker} ${best.action} at ${pct(best.confidence, 0)} on the ${best.timeframe}, reward to risk ${best.riskReward}. Confidence is not a win rate: risk the same amount on every signal you take, and use the stop it comes with.`
+      : 'Earn points or upgrade to see the calls behind the lock.',
+    left: { label: 'Long', value: buys },
+    right: { label: 'Short', value: sells },
+    stats: [
+      { label: 'Open', value: String(live.length) },
+      { label: 'Avg confidence', value: pct(avg, 0) },
+    ],
+  };
+}
+
+export function newsVerdict(articles = NEWS_ARTICLES) {
+  const t = { Bullish: 0, Bearish: 0, Neutral: 0 } as Record<string, number>;
+  articles.forEach((a) => { t[a.sentiment] = (t[a.sentiment] ?? 0) + 1; });
+  const lead = articles[0];
+  return {
+    headline: t.Bullish > t.Bearish ? 'Coverage is leaning bullish today' : t.Bearish > t.Bullish ? 'Coverage is leaning bearish today' : 'Coverage is split today',
+    note: lead ? `Lead story: ${lead.headline} (${lead.source}, ${lead.readTime}). Headlines lag price, so read this for context and tie it to a level before you act on it.` : 'No stories match these filters.',
+    left: { label: 'Bullish', value: t.Bullish },
+    right: { label: 'Bearish', value: t.Bearish },
+    neutral: { label: 'Neutral', value: t.Neutral },
+    stats: [{ label: 'Stories', value: String(articles.length) }],
+  };
+}
+
+export function calendarNext(events = ECONOMIC_EVENTS, now = Date.parse(CALENDAR_NOW)) {
+  const up = events.filter((e) => !e.allDay && Date.parse(e.at) > now).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  const high = up.filter((e) => e.impact === 'High');
+  const first = high[0] ?? up[0];
+  if (!first) return null;
+  const when = new Date(first.at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+  const hours = Math.round((Date.parse(first.at) - now) / 36e5);
+  return {
+    kicker: `${first.currency} · ${first.impact} impact`,
+    title: first.title,
+    meta: `${when}${hours >= 0 && hours < 72 ? ` · in ${plural(hours, 'hour')}` : ''}`,
+    note: `${first.forecast ? `Forecast ${first.forecast} against ${first.previous ?? 'no prior'}. ` : ''}Markets trade the gap from the forecast, not the number itself. Spreads widen either side, so decide now whether you stand aside, cut size, or trade the reaction. ${plural(high.length, 'high-impact print')} ahead in this view.`,
+  };
+}
+
+export function promotionsNext(promos = PROMOTIONS, tierLevel = 1) {
+  const mine = promos.filter((p) => p.startsInDays === 0 && p.minLevel <= Math.max(1, tierLevel)).sort((a, b) => a.endsInDays - b.endsInDays);
+  const first = mine[0];
+  if (!first) return null;
+  const locked = promos.filter((p) => p.startsInDays === 0).length - mine.length;
+  return {
+    kicker: `${first.brokerName} · ${first.type}`,
+    title: first.title,
+    meta: `Ends in ${plural(first.endsInDays, 'day')}`,
+    note: `${first.value} ${first.valueNote}. ${plural(mine.length, 'offer')} is open on your level${locked ? ` and ${locked} needs a higher one` : ''}.${first.requiresConnected ? ' It only tracks on a connected account, so connect before you deposit.' : ''} An offer is not a reason to trade volume you would not otherwise trade.`,
+  };
+}
+
+export function pointsProgress(user: { rankTitle: string; tierLevel: number; currentPoints: number; maxPoints: number; sydeCredits: number; activeStreakDays: number }, missions = INITIAL_MISSIONS) {
+  const i = GAMIFICATION_TIERS.findIndex((t) => t.level === user.tierLevel);
+  const next = i >= 0 ? GAMIFICATION_TIERS[i + 1] : undefined;
+  const toNext = next ? Math.max(0, next.minPoints - user.currentPoints) : 0;
+  const open = missions.filter((m) => m.status !== 'completed' && m.tasks.some((t) => !t.completed));
+  const pts = open.reduce((a, m) => a + m.rewardPoints, 0);
+  return {
+    headline: next ? `${toNext} points from ${next.tier}` : `You are at the top level, ${user.rankTitle}`,
+    valueLabel: `${user.currentPoints} / ${user.maxPoints}`,
+    value: user.currentPoints,
+    max: user.maxPoints,
+    targetLabel: next ? next.tier : user.rankTitle,
+    note: next
+      ? `${next.tier} gives ${next.cashbackBoost} and ${next.signalAccess}. The ${plural(open.length, 'open mission')} here is worth +${pts} points, ${pts >= toNext ? 'enough on its own' : `about ${pct((pts / Math.max(1, toNext)) * 100, 0)} of the gap`}. Your ${user.activeStreakDays}-day streak is the cheapest points on the board, and it resets the moment you skip.`
+      : `Missions are now a credit balance rather than progress. You hold ${user.sydeCredits.toLocaleString()} credits.`,
+  };
+}
+
+export function educationProgress(courses = COURSES, certificates = CERTIFICATES, tierLevel = 1) {
+  const want = tierLevel >= 4 ? 'Advanced' : tierLevel >= 2 ? 'Intermediate' : 'Beginner';
+  const start = courses.filter((c) => c.level === want).sort((a, b) => b.rating - a.rating)[0] ?? courses[0];
+  if (!start) return null;
+  const minutes = courses.reduce((a, c) => a + c.lessons.reduce((m, l) => m + l.durationMinutes, 0), 0);
+  return {
+    headline: `Start with ${start.title}`,
+    value: certificates.length,
+    max: Math.max(1, courses.length),
+    valueLabel: `${certificates.length} / ${courses.length} finished`,
+    targetLabel: 'All courses',
+    note: `${start.level} · ${start.category} · ${start.lessons.length} lessons for +${start.pointsReward} points, rated ${start.rating.toFixed(1)} by ${start.enrolledCount.toLocaleString()} traders. ${courses.length} courses here, about ${Math.round(minutes / 60)} hours in total. Take one idea onto demo the same week or you will forget it.`,
+  };
+}
+
+export function advisorsCompare(list = EXPERT_ADVISORS) {
+  if (list.length < 2) return null;
+  const score = (e: ExpertAdvisor) => e.stats.profitFactor * 10 - e.stats.maxDD + e.stats.liveDays / 30;
+  const best = [...list].sort((a, b) => score(b) - score(a))[0];
+  const riskiest = [...list].sort((a, b) => b.stats.maxDD - a.stats.maxDD)[0];
+  const young = list.filter((e) => e.stats.liveDays < 180).length;
+  return {
+    headline: `${best.name} has the steadiest record, ${riskiest.name} the roughest`,
+    left: {
+      badge: 'Steadiest',
+      title: best.name,
+      text: `${best.strategy} on ${best.pairs.slice(0, 3).join(', ')}. ${best.stats.profitFactor.toFixed(2)} profit factor, ${pct(best.stats.winRate, 0)} wins and ${pct(best.stats.maxDD, 1)} worst drawdown over ${plural(best.stats.liveDays, 'day')} live.`,
+    },
+    right: {
+      badge: 'Roughest ride',
+      title: riskiest.name,
+      text: `${pct(riskiest.stats.maxDD, 1)} at its worst, about $${Math.round((riskiest.stats.maxDD / 100) * 5000).toLocaleString()} down on a $5,000 account before it recovers.`,
+    },
+    note: `${young ? `${plural(young, 'advisor')} here has under six months live, and short records flatter a strategy. ` : ''}Demo it on the pairs and timeframe it was built for before you fund it: published results come from the author, not your broker and your spreads.`,
+  };
+}
+
+export function portfolioMetrics(accountIds: string[] = [], days = 30) {
+  const accounts = accountIds.length ? PORTFOLIO_ACCOUNTS.filter((a) => accountIds.includes(a.id)) : PORTFOLIO_ACCOUNTS;
+  const trades = tradesInRange(PORTFOLIO_TRADES, days);
+  const s = tradeStats(trades);
+  const dd = maxDrawdown(sliceSeries(totalSeries(accountIds), days, 120));
+  const equity = accounts.reduce((a, x) => a + x.endBalance, 0);
+  const start = accounts.reduce((a, x) => a + x.startBalance, 0);
+  const growth = start ? ((equity - start) / start) * 100 : 0;
+  const open = PORTFOLIO_TRADES.filter((t) => !isClosed(t));
+  const float = open.reduce((a, t) => a + t.pnl, 0);
+  const margin = accounts.reduce((a, x) => a + x.marginUsed, 0);
+  return {
+    headline: growth >= 0 ? `Up ${pct(growth, 1)} across ${plural(accounts.length, 'account')}, drawdown held at ${pct(dd, 1)}` : `Down ${pct(Math.abs(growth), 1)} across ${plural(accounts.length, 'account')}, ${pct(dd, 1)} peak drawdown`,
+    metrics: [
+      { label: 'Equity', value: `$${Math.round(equity).toLocaleString()}` },
+      { label: `${days}d net`, value: money(s.realized), tone: (s.realized >= 0 ? 'good' : 'bad') as 'good' | 'bad' },
+      { label: 'Max drawdown', value: pct(dd, 1), tone: (dd > 10 ? 'bad' : 'neutral') as 'bad' | 'neutral' },
+      { label: 'Floating', value: money(float), tone: (float >= 0 ? 'good' : 'bad') as 'good' | 'bad' },
+    ],
+    note: `${plural(s.closed, 'trade')} closed in ${days} days at a ${pct(s.winRate)} win rate, ${plural(open.length, 'position')} still open and $${Math.round(margin).toLocaleString()} tied up as margin.${dd > 10 ? ` Recovering a ${pct(dd, 1)} drawdown needs about ${pct((dd / (100 - dd)) * 100, 1)} back, so cut risk until it is under control.` : margin > equity * 0.3 ? ' Margin over 30% of equity leaves little room for a gap against you.' : ' Keep risk per trade where it is and review at month end.'}`,
+  };
+}
+
+export function backtestChecklist() {
+  const tagged = DEFAULT_PLAYBOOKS.map((p) => {
+    const mine = JOURNAL_ENTRIES.filter((e) => e.strategy === p.name);
+    return { p, n: mine.length, pnl: mine.reduce((a, e) => a + (e.pnl || 0), 0) };
+  });
+  const traded = tagged.filter((t) => t.n > 0).sort((a, b) => b.pnl - a.pnl);
+  const worst = traded[traded.length - 1];
+  const untested = tagged.filter((t) => t.n === 0);
+  const first = worst && worst.pnl < 0 ? worst.p : (traded[0]?.p ?? DEFAULT_PLAYBOOKS[0]);
+  return {
+    headline: first ? `Put ${first.name} through a run next` : 'Tag a playbook and I will tell you what to test',
+    steps: [
+      { title: 'Widen the window first', text: 'Under about 100 trades most of what you see is luck. Test a longer period before you tune anything.' },
+      { title: 'Put your real costs in', text: 'Spread, commission and slippage turn a thin edge into no edge. Use your broker’s numbers, not the defaults.' },
+      { title: 'Change one rule at a time', text: 'Optimising everything at once fits the past. Move one rule, re-run, and keep it only if it survives a different period.' },
+      ...(untested.length ? [{ title: `${plural(untested.length, 'idea')} never traded`, text: `${untested.map((t) => t.p.name).slice(0, 3).join(', ')} have no live trades. A backtest is cheaper than finding out with money.` }] : []),
+    ],
+    note: 'A backtest is a hypothesis, not a forecast. Compare its win rate with your live one before you trust it.',
+  };
+}
+
+export function alertsChecklist(alerts: AlertLike[], limit: number, distanceOf?: (a: AlertLike) => number | null) {
+  const active = alerts.filter((a) => a.status === 'active');
+  const distances = distanceOf ? alerts.map((a) => ({ a, d: distanceOf(a) })).filter((x) => x.d != null) as { a: AlertLike; d: number }[] : [];
+  const nearest = [...distances].sort((x, y) => Math.abs(x.d) - Math.abs(y.d))[0];
+  const far = distances.filter((x) => Math.abs(x.d) > 5);
+  const noChannel = alerts.filter((a) => !a.app && !a.email && !a.sms);
+  const steps = [
+    nearest
+      ? { title: `${nearest.a.symbol} is closest`, text: `About ${pct(Math.abs(nearest.d), 2)} from price. Write the entry, stop and size now, not when it fires.` }
+      : { title: 'Nothing imminent', text: 'No price alert is near its level, so nothing needs a decision today.' },
+    ...(far.length ? [{ title: `${plural(far.length, 'alert')} more than 5% away`, text: 'Those sit quiet and use up your plan limit. Delete the ones you set weeks ago.' }] : []),
+    ...(noChannel.length ? [{ title: `${plural(noChannel.length, 'alert')} fires silently`, text: 'App, email and SMS are all off on those, so nobody will know when they trigger.' }] : []),
+    { title: `${Math.max(0, limit - alerts.length)} slots left`, text: alerts.length >= limit ? 'You are at your plan limit. Delete one before adding another, or upgrade.' : `${active.length} armed and ${alerts.length - active.length} paused of the ${limit} your plan allows.` },
+  ];
+  return { headline: nearest && Math.abs(nearest.d) < 1 ? `${nearest.a.symbol} is about to trigger` : `${plural(active.length, 'alert')} armed`, steps, note: 'An alert tells you to look, not to click.' };
+}

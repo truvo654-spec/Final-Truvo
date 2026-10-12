@@ -1,5 +1,5 @@
-import { AiSection } from '../ai/AiSection';
-import { educationRead } from '../ai/aiFeature';
+import { AiProgress } from '../ai/AiWidgets';
+import { educationProgress } from '../ai/aiFeature';
 import React, { useMemo, useState } from 'react';
 import {
   Star,
@@ -129,7 +129,7 @@ export const EducationHubPage: React.FC<EducationHubPageProps> = ({
 
   return (
     <div className="w-full max-w-[1360px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
-      <AiSection data={educationRead(undefined, undefined, userTierLevel)} className="mb-6" />
+      {(() => { const n = educationProgress(undefined, undefined, userTierLevel); return n ? <AiProgress {...n} className="mb-6" /> : null; })()}
       <div className="flex items-start justify-between gap-6 mb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Education Hub</h1>

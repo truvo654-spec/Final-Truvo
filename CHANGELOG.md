@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2026-10-09
+### Changed
+- AI no longer looks the same on every page. The dark spotlight card is now only on the Dashboard and the Trading Journal, where the read is the point; everywhere else uses a shape that matches what the AI is saying:
+  - **Verdict meter** (Trading Signals, Market News) — a split bar for longs against shorts, or bullish against bearish.
+  - **Next up** (Economic Calendar, Promotions) — an accented strip with the time on it; amber for an offer closing.
+  - **Progress bar** (Points & Credits, Education Hub) — how far to the next level or through the courses.
+  - **Side-by-side** (Expert Advisors) — the steadiest record against the roughest ride.
+  - **Metrics row** (Portfolio Tracker) — four numbers with one line of reading.
+  - **Checklist** (Price Alerts, Backtest, Strategy Builder) — numbered steps.
+  - **Inline note** (Leaderboard, Broker Comparison, Calculator) and **strip** (Broker List, Instrument Analysis) stay as they were.
+
 ## [1.3.0] - 2026-10-09
 ### Added
 - AI now reaches the last six features, each with the UI that suits it rather than the same card everywhere:
