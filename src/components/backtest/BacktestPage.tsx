@@ -69,7 +69,12 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const tz = userTz;
 
   const startSetup = (playbookId?: string) => {
-    const pb = playbooks.find((x) => x.id === playbookId) || null;
+    const journalCounts = new Map<string, number>();
+    entries.forEach((e) => journalCounts.set(e.strategy, (journalCounts.get(e.strategy) || 0) + 1));
+    const requested = playbooks.find((x) => x.id === playbookId && x.status !== 'archived');
+    const pb = requested || (!playbookId
+      ? playbooks.filter((x) => x.status !== 'archived').sort((a, b) => (journalCounts.get(b.name) || 0) - (journalCounts.get(a.name) || 0))[0] || null
+      : null);
     const counts = new Map<string, number>();
     entries.filter((e) => pb && e.strategy === pb.name).forEach((e) => counts.set(e.symbol, (counts.get(e.symbol) || 0) + 1));
     const most = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([s]) => s)[0];
@@ -175,7 +180,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       <div className="flex flex-wrap items-center gap-3">
         <nav aria-label="Backtest sections" className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
           {NAV.map(([v, label]) => (
-            <button key={v} type="button" aria-current={navOn(v) ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view !== 'running') setView(v); }}
+            <button key={v} type="button" aria-current={navOn(v) ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view === 'running') return; if (v === 'setup') { if (view !== 'setup') startSetup(); } else setView(v); }}
               className={`h-8 px-3 rounded-lg text-xs font-semibold transition-colors ${navOn(v) ? 'bg-white text-[#5338ec] shadow-sm' : 'text-[#474556] hover:text-[#0b1c30]'}`}>{label}</button>
           ))}
         </nav>
@@ -194,6 +199,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
         <>
           {error && <Banner tone="bad" icon={<XCircle className="w-4 h-4" />}><b>The backtest didn't run.</b> {error}</Banner>}
           <BacktestSetup settings={draft} onChange={setDraft} playbooks={playbooks} entries={entries} brokers={brokers} journalRules={journalRules} tz={tz} onRun={onRun}
+            onOpenTrades={p.onOpenTrades}
             runHint={left > 0 ? `Uses 1 of your ${left} remaining test run${left === 1 ? '' : 's'} this month. Usually takes a few seconds.` : `You've used this month's test runs. Run one more for ${EXTRA_RUN_CREDITS} Syde Credits.`} />
         </>
       )}
@@ -213,6 +219,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
 
       {view === 'results' && cur && (
         <BacktestResults settings={cur.settings} output={cur.output} name={cur.name} saved={!!cur.runId} playbook={curPb} entries={entries} expected={curPb ? expected[curPb.id] : undefined} tz={tz}
+          onOpenTrades={p.onOpenTrades}
           onSave={save}
           onEdit={() => { setDraft(deepClone(cur.settings)); setView('setup'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           onApplySuggestion={applySuggestion}

@@ -26,6 +26,7 @@ interface Props {
   entries: JournalEntry[];
   expected?: PlaybookExpectedStats;
   tz: string;
+  onOpenTrades: (ids: string[], label: string) => void;
   onSave: () => void;
   onEdit: () => void;
   onApplySuggestion: (s: Suggestion) => void;
@@ -40,7 +41,7 @@ const months = (a: number, b: number) => {
   return m >= 24 && m % 12 === 0 ? `${m / 12} years` : m >= 12 ? `${(m / 12).toFixed(1).replace(/\.0$/, '')} years` : `${Math.max(1, m)} month${m === 1 ? '' : 's'}`;
 };
 
-export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, saved, playbook, entries, expected, tz, onSave, onEdit, onApplySuggestion, onSetExpected, onSendNotes, onAddToPlan, onToast }) => {
+export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, saved, playbook, entries, expected, tz, onOpenTrades, onSave, onEdit, onApplySuggestion, onSetExpected, onSendNotes, onAddToPlan, onToast }) => {
   const r = output.result;
   const cur = r.currency;
   const [unit, setUnit] = useState<'money' | 'r'>('money');
@@ -56,6 +57,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
   const v = useMemo(() => verdictFor(m, rob, rc), [m, rob, rc]);
   const buckets = useMemo(() => breakdown(r.trades, by, tz), [r, by, tz]);
   const live = useMemo(() => (playbook ? liveStats(entries, playbook.name) : null), [playbook, entries]);
+  const matchingEntries = useMemo(() => (playbook ? entries.filter((e) => e.strategy === playbook.name) : []), [playbook, entries]);
 
   const equity = useMemo(() => {
     let cumR = 0;
@@ -212,6 +214,11 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
                 </table>
               </div>
               <p className="text-xs text-[#474556] mt-3">{live.trades < 5 ? 'Too few live trades to compare yet.' : live.avgR >= m.avgR ? 'Your live trading is doing at least as well as the backtest.' : `Live trades average ${rr(live.avgR - m.avgR)} less than the backtest. Check the trades that broke the plan.`}{hl && hl.health !== 'untested' && <> Against the saved expected stats: <b>{HEALTH_LABEL[hl.health]}</b>.</>}</p>
+              {matchingEntries.length > 0 && (
+                <button type="button" className={`${btnSecondary} mt-3`} onClick={() => onOpenTrades(matchingEntries.map((e) => e.id), `${playbook.name} playbook journal`)}>
+                  Open {matchingEntries.length} matching Trade Log entr{matchingEntries.length === 1 ? 'y' : 'ies'}
+                </button>
+              )}
             </Card>
           )}
 

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.0] - 2026-10-12
+
+### Changed
+
+- Reworked automated backtest setup around selecting a playbook, showing its saved hypothesis, the exact rules being simulated, and relevant journal performance; removed the separate rule-builder and freeform-description modes.
+- Added direct links to matching Trade Log entries from setup and the live-versus-backtest comparison, and made generic setup entry points preselect the active playbook with the most journal entries.
+
 ## [1.11.5] - 2026-10-12
 
 ### Added
