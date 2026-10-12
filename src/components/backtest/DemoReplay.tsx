@@ -5,14 +5,19 @@ import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { SYMBOLS, symbolSpec } from '../../backtest/marketData';
 import { compareDemo, createDemoFeed, demoProblem, demoSettings, demoTimeframe } from '../../backtest/demoReplay';
 import { describeCondition, describeRules, mirrorCondition } from '../../backtest/rules';
-import { Timeframe, RunResult, TF_MS } from '../../backtest/types';
+import { Timeframe, TF_MS } from '../../backtest/types';
 import { CandleChart } from './charts';
 import { DemoPositionMonitor } from './DemoPositionMonitor';
 import { TestPositionReplay } from './TestPositionReplay';
 import { defaultPositionSetup, monitorDemo, planPosition, PositionSetup, resolvePositionSetup } from '../../backtest/demoPosition';
 import { Card, Field, Pill, btnPrimary, btnSecondary, inputCls } from './ui';
-import { recommendSetup, runRecommendationCandidate, type RecommendationGoal } from '../../backtest/recommender';
+import { recommendSetup, type RecommendationGoal } from '../../backtest/recommender';
 import { MarketSydeRecommender } from './MarketSydeRecommender';
+import {ReplaySetupTransfer} from './ReplaySetupTransfer';
+import {ReplayAICoach} from './ReplayAICoach';
+import {compareDemoStudy,demoClosedEquity} from '../../backtest/demoReplayStudy';
+import {replayRuleFields,type RelatedReplaySetup} from '../../backtest/replaySetups';
+import {DemoStudyResults,type DemoComparison} from './DemoStudyResults';
 
 interface Props { entries: JournalEntry[]; playbooks: JournalPlaybook[]; initialEntryId?: string; initialMode?: 'position'|'strategy'; }
 const time = (t:number) => new Date(t).toISOString().replace('T',' ').slice(0,16) + ' UTC';
@@ -38,15 +43,27 @@ function StrategyReplay({entries, playbooks, initialEntryId}: Props) {
   const [target,setTarget] = useState(String(initialBook?.benchmarkRR ?? 2));
   const [commission,setCommission] = useState('0');
   const [positionSetup,setPositionSetup] = useState<PositionSetup>(()=>defaultPositionSetup(initialBook,initial));
-  const [result,setResult] = useState<ReturnType<typeof compareDemo> | null>(null);
+  const [result,setResult] = useState<ReturnType<typeof compareDemoStudy> | null>(null);
+  const [direction,setDirection]=useState<'both'|'long'|'short'>(initial?.direction==='SELL'?'short':initial?.direction==='BUY'?'long':'both');
+  const [management,setManagement]=useState({breakeven:'',sessionStart:'',sessionEnd:'',maxTrades:'',dailyLoss:''});
   const [recommendationGoal,setRecommendationGoal] = useState<RecommendationGoal>('net');
   const [error,setError] = useState<string | null>(null);
   const entry = entries.find(e=>e.id===entryId);
   const book = playbooks.find(p=>p.id===bookId) ?? null;
   const feed = useMemo(()=>createDemoFeed(symbol,tf,`${entryId || 'sandbox'}:${scenario}`),[symbol,tf,entryId,scenario]);
-  const baseline = useMemo(()=>demoSettings(feed,book,entry?.direction ?? null),[feed,book,entry?.direction]);
+  const baseline = useMemo(()=>{
+    const settings=demoSettings(feed,book,entry?.direction??null);settings.rules.direction=direction;
+    if(management.breakeven!=='')settings.rules.exits.breakevenAtR=Number(management.breakeven);
+    if(management.maxTrades!=='')settings.rules.maxTradesPerDay=Number(management.maxTrades);
+    if(management.sessionStart!==''&&management.sessionEnd!=='')settings.session={id:'custom',start:Number(management.sessionStart),end:Number(management.sessionEnd)};
+    if(management.dailyLoss!=='')settings.risk.dailyLossPct=Number(management.dailyLoss)/Number(positionSetup.equity)*100;
+    return settings;
+  },[feed,book,entry?.direction,direction,management,positionSetup.equity]);
   const hypothesis = {stopAtr:positionSetup.scenarioKey?1.5:stop.trim() ? Number(stop) : NaN, targetR:positionSetup.scenarioKey?2:target.trim() ? Number(target) : NaN, commission:commission.trim() ? Number(commission) : NaN};
-  const problem = demoProblem(hypothesis);
+  const invalidManagement=Object.entries(management).some(([key,value])=>value!==''&&(!Number.isFinite(Number(value))||Number(value)<0||(!key.startsWith('session')&&Number(value)<=0)))||
+    (management.maxTrades!==''&&!Number.isInteger(Number(management.maxTrades)))||
+    ((management.sessionStart!==''||management.sessionEnd!=='')&&(management.sessionStart===''||management.sessionEnd===''||!Number.isInteger(Number(management.sessionStart))||!Number.isInteger(Number(management.sessionEnd))||Number(management.sessionStart)>23||Number(management.sessionEnd)>24||Number(management.sessionStart)===Number(management.sessionEnd)));
+  const problem = demoProblem(hypothesis)||(invalidManagement?'Enter valid session hours and positive management limits.':null);
   const positionConfig = useMemo(()=>resolvePositionSetup(positionSetup,book,feed.symbol),[positionSetup,book,feed.symbol]);
   const snapshot = useMemo(()=>!problem && positionConfig.config ? monitorDemo(feed,baseline,hypothesis,positionConfig.config,cursor):null,[feed,baseline,positionConfig.config,cursor,stop,target,commission,problem]);
   // ATR still comes from revealed candles when a new, incomplete scenario draft is being edited.
@@ -71,28 +88,47 @@ function StrategyReplay({entries, playbooks, initialEntryId}: Props) {
     const e = entries.find(e=>e.id===id), pb = playbooks.find(p=>p.name===e?.strategy);
     if(pb) {setBookId(pb.id);setTf(demoTimeframe(pb));setTarget(String(pb.benchmarkRR));}
     setPositionSetup(defaultPositionSetup(pb??book,e));
+    setDirection(e?.direction==='SELL'?'short':e?.direction==='BUY'?'long':'both');
     if(e && symbolSpec(e.symbol))setSymbol(symbolSpec(e.symbol)!.symbol);
     reset();
   };
   const change = (set:(s:string)=>void,value:string) => {set(value);setResult(null);setError(null);};
+  const transferSetup=(setup:RelatedReplaySetup|null)=>{
+    if(!setup)return;
+    setEntryId('');
+    if(setup.playbookId)setBookId(setup.playbookId);
+    if(setup.symbols.length)setSymbol(setup.symbols[0]);
+    if(setup.timeframe)setTf(setup.timeframe);
+    setDirection(setup.direction?setup.direction==='BUY'?'long':'short':'both');
+    if(setup.targetR!==undefined)setTarget(String(setup.targetR));
+    if(setup.stopAtr!==undefined)setStop(String(setup.stopAtr));
+    else if(setup.stopFraction!==undefined)setStop(String((Number(stop)||1.5)*setup.stopFraction));
+    setManagement({breakeven:setup.breakevenR===undefined?'':String(setup.breakevenR),sessionStart:setup.session?String(setup.session.start):'',sessionEnd:setup.session?String(setup.session.end):'',maxTrades:setup.maxTrades===undefined?'':String(setup.maxTrades),dailyLoss:setup.dailyLoss===undefined?'':String(setup.dailyLoss)});
+    setPositionSetup(s=>({...s,scenarioKey:setup.prices?'custom':'',mode:setup.riskPercent!==undefined?'risk':s.mode,equity:setup.equity===undefined?s.equity:String(setup.equity),percent:setup.riskPercent===undefined?s.percent:String(setup.riskPercent),...(setup.prices?{bias:setup.direction==='SELL'?'short' as const:'long' as const,entry:String(setup.prices.entry),stop:String(setup.prices.stop),target:String(setup.prices.target)}:{})}));
+    setResult(null);setPlaying(false);setError(null);
+  };
   const test = () => {
     if(problem || positionConfig.error || !positionConfig.config){setError(problem || positionConfig.error || 'Complete the position setup.');return;}
     setPlaying(false);
-    try {setResult(compareDemo(feed,baseline,hypothesis,positionConfig.config));setCursor(feed.bars.length);setError(null);}
+    try {setResult(compareDemoStudy(feed,baseline,hypothesis,positionConfig.config));setCursor(feed.bars.length);setError(null);}
     catch(e){setError(e instanceof Error ? e.message : 'Demo test could not run.');}
   };
-  const last = feed.bars[cursor-1], from = Math.max(0,cursor-85);
+  const last = feed.bars[cursor-1], from = Math.max(0,cursor-(result?feed.bars.length:85));
   const markers = (snapshot?.trades ?? []).flatMap(t=>[
     {index:feed.bars.findIndex(b=>b.t===t.entryTime),price:t.entryPrice,kind:t.direction==='long' ? 'buy' as const : 'sell' as const},
     {index:feed.bars.findIndex(b=>b.t+(t.exitReason==='time'||t.exitReason==='session end'||t.exitReason==='signal'||t.exitReason==='rule limit'||t.exitReason==='end of test' ? TF_MS[tf] : 0)===t.exitTime),price:t.exitPrice,kind:'exit' as const},
   ]);
   if(snapshot?.position)markers.push({index:feed.bars.findIndex(b=>b.t===snapshot.position!.entryTime),price:snapshot.position.entry,kind:snapshot.position.direction==='BUY'?'buy':'sell'});
   const positionLines=snapshot?.position ? [{price:snapshot.position.entry,color:'#5338ec',label:'Entry'},{price:snapshot.position.stop,color:'#e11d48',label:'Stop',dashed:true},...(snapshot.position.target===null?[]:[{price:snapshot.position.target,color:'#059669',label:'Target',dashed:true}])] : [];
-  const net = (r:RunResult) => r.endBalance-r.startBalance;
-  const recommendationBaseline = result ? runRecommendationCandidate('baseline','Strategy baseline',result.baseline).metrics : {netPnl:0,maxDD:0,winRate:0,trades:0};
-  const recommendation = recommendSetup(result ? [runRecommendationCandidate('hypothesis','Stop / target hypothesis',result.variant)] : [],recommendationBaseline,recommendationGoal);
+  const recommendationBaseline = result?.baselineMetrics??{netPnl:0,maxDD:0,winRate:0,trades:0};
+  const recommendation = recommendSetup(result?.candidates??[],recommendationBaseline,recommendationGoal);
+  const aiCandidate=result?.candidates.find(r=>r.id===recommendation.candidate?.id);
+  const comparisons:DemoComparison[]=result?[{name:'Strategy baseline',color:'#64748b',run:result.baseline},{name:'Your hypothesis',color:'#0284c7',run:result.variant},...(aiCandidate?[{name:'MarketSyde AI',color:'#5338ec',run:aiCandidate.output}]:[])]:[];
+  const equitySeries=comparisons.map(r=>({name:r.name,color:r.color,points:demoClosedEquity(feed,r.run,cursor)}));
   return <div className="space-y-4 text-[#0b1c30]" aria-label="Demo replay workspace">
-    {result && <MarketSydeRecommender recommendation={recommendation} baseline={recommendationBaseline} baselineName="strategy baseline on this demo path" goal={recommendationGoal} onGoal={setRecommendationGoal} money={usd} evidence="Compared on one generated demo path. This is a learning comparison with no live performance evidence or independent holdout." />}
+    <ReplaySetupTransfer entries={entries} playbooks={playbooks} onSelect={transferSetup}/>
+    {!result&&<ReplayAICoach entries={entries} symbol={symbol} excludeId={entryId} cutoff={entry?.entryTime?Date.parse(entry.entryTime):Infinity} onUse={rule=>{const fields=replayRuleFields(rule);if(fields.targetR!==undefined)setTarget(String(fields.targetR));if(fields.stopFraction!==undefined)setStop(String((Number(stop)||1.5)*fields.stopFraction));if(fields.breakevenR!==undefined)setManagement(m=>({...m,breakeven:String(fields.breakevenR)}));setResult(null);setPlaying(false);}}/>}
+    {result && <MarketSydeRecommender recommendation={recommendation} baseline={recommendationBaseline} baselineName="your hypothesis on the first 70% of generated candles" goal={recommendationGoal} onGoal={setRecommendationGoal} money={usd} evidence={`${result.candidates.length} bounded exit setups. ${result.trainingBars} training bars; ${result.holdoutBars} holdout bars run independently with fresh balance and indicator warmup. Holdout does not rank candidates. One generated path is learning evidence, not live performance.${positionConfig.config?.scenario?' Absolute scenario levels are fixed, so ATR/target exploration is disabled.':''}`} action="Use AI parameters in my editable hypothesis" onUse={id=>{const candidate=result.candidates.find(c=>c.id===id);if(candidate){setStop(String(candidate.setup.stopAtr));setTarget(String(candidate.setup.targetR));setResult(null);setPlaying(false);setCursor(80);}}}/>}
     <div className="rounded-xl border border-[#5338ec]/20 bg-[#FBFAFF] px-4 py-3 text-xs leading-relaxed"><Pill tone="accent">Simulated demo data</Pill><span className="ml-2">Generated candles, not historical or live prices. Recorded trades are reference only. Tests do not change journal records, playbooks, statistics, credits or points.</span></div>
     <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-4 items-start">
       <Card title="Playback" sub="Select a recorded strategy or practise freely.">
@@ -108,9 +144,9 @@ function StrategyReplay({entries, playbooks, initialEntryId}: Props) {
         </div>
       </Card>
       <div className="min-w-0 space-y-4">
-        <Card title={`${feed.symbol} · ${tf}`} sub="Slide backwards or forwards; future candles stay hidden during playback." right={<Pill tone="accent">Demo</Pill>}>
+        <Card title={`${feed.symbol} · ${tf}`} sub={result?'Price and cumulative closed net P&L on the same generated timeline. Independent price and USD scales.':'Slide backwards or forwards; future candles stay hidden during playback.'} right={<Pill tone="accent">Demo</Pill>}>
           <p className="text-[11px] tabular-nums text-slate-500 mb-2">{time(last.t)} · O {last.o.toFixed(feed.dp)} · H {last.h.toFixed(feed.dp)} · L {last.l.toFixed(feed.dp)} · C {last.c.toFixed(feed.dp)}</p>
-          <CandleChart bars={feed.bars} from={from} to={cursor} dp={feed.dp} height={300} label="Simulated replay candlesticks" markers={markers} lines={positionLines}/>
+          <CandleChart bars={feed.bars} from={from} to={cursor} dp={feed.dp} height={300} label="Simulated replay candlesticks" markers={markers} lines={positionLines} pnl={result?{series:equitySeries,detail:t=><>{equitySeries.map(s=><p key={s.name}>{s.name}: {usd(s.points.find(p=>p.x===t)?.y??0)}</p>)}</>}:undefined}/>
           <svg viewBox="0 0 760 48" role="img" aria-label="Generated demo volume, not market volume" className="w-full h-auto border-t border-slate-100"><title>Generated demo volume; exact values are in visible candle data</title>{feed.bars.slice(from,cursor).map((b,i)=>{const width=690/(cursor-from), h=b.v/1000*42;return <rect key={b.t} x={8+i*width} y={48-h} width={Math.max(1,width*0.7)} height={h} fill={b.c>=b.o?'#059669':'#e11d48'} opacity={0.6}/>;})}</svg>
           <div className="flex justify-between text-[10px] text-slate-500"><span>{time(feed.bars[from].t)}</span><span>{time(last.t)}</span></div>
           <label className="block text-xs font-semibold mt-3">Replay timeline · {cursor} / {feed.bars.length}<input type="range" aria-label="Replay timeline" aria-valuetext={`${cursor} of ${feed.bars.length} bars, ${time(last.t)}`} min={1} max={feed.bars.length} value={cursor} onChange={e=>{setPlaying(false);setCursor(Number(e.target.value));}} className="w-full accent-[#5338ec] mt-2"/></label>
@@ -129,14 +165,17 @@ function StrategyReplay({entries, playbooks, initialEntryId}: Props) {
           <p className="text-xs text-slate-500 mt-1">Simplified executable template, not automatic interpretation of every written playbook rule. {baseline.rules.entry.map(c=>describeCondition(baseline.rules.direction==='short'?mirrorCondition(c):c)).join('; ')}. {baseline.rules.direction==='both'?'Long rules shown; short conditions are mirrored. ':''}{baseline.rules.entryOrder.type==='market'?'Market orders fill at the next bar open.':`Template ${baseline.rules.entryOrder.type} orders become eligible on the next bar; price must reach the order level before expiry.`}</p>
           <p className="text-xs text-slate-500 mt-1">Baseline: {describeRules(baseline.rules).filter(r=>r.label==='Stop loss'||r.label==='Take profit'||r.label==='Manage').map(r=>`${r.label}: ${r.text}`).join(' ')} {book?.window ? `Session: ${book.window.label} (${book.window.start}–${book.window.end} UTC).` : 'Any session.'}</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+            <Field label="Hypothesis direction"><select aria-label="Hypothesis direction" value={direction} onChange={e=>{setDirection(e.target.value as typeof direction);setResult(null);}} className={inputCls}><option value="both">Long + short</option><option value="long">Long</option><option value="short">Short</option></select></Field>
             <Field label="Hypothesis stop (ATR)"><input type="number" aria-label="Hypothesis stop ATR" disabled={!!positionSetup.scenarioKey} min="0.1" max="10" step="0.1" value={stop} onChange={e=>change(setStop,e.target.value)} className={inputCls}/></Field>
             <Field label="Hypothesis target (R)"><input type="number" aria-label="Hypothesis target R" disabled={!!positionSetup.scenarioKey} min="0.1" max="20" step="0.1" value={target} onChange={e=>change(setTarget,e.target.value)} className={inputCls}/></Field>
             <Field label="Commission ($/unit/side)"><input type="number" aria-label="Demo commission per unit per side" min="0" max="100" step="0.01" value={commission} onChange={e=>change(setCommission,e.target.value)} className={inputCls}/></Field>
           </div>
+          <details className="text-xs mt-3"><summary className="cursor-pointer text-[#5338ec] font-semibold">Editable session & management</summary><div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">{([['breakeven','Breakeven at R'],['sessionStart','Session start UTC'],['sessionEnd','Session end UTC'],['maxTrades','Max trades per day'],['dailyLoss','Max daily loss USD']] as const).map(([key,label])=><Field key={key} label={label}><input type="number" aria-label={`Demo ${label}`} value={management[key]} onChange={e=>{setManagement(m=>({...m,[key]:e.target.value}));setResult(null);}} className={inputCls}/></Field>)}</div><p className="text-[11px] text-slate-500 mt-2">Blank uses the strategy default. Daily loss USD is adapted to a percentage of entered demo equity. A losses-in-a-day What-if rule and mistake tags require manual review and are not automatic strategy filters.</p></details>
           <p className="text-[11px] text-slate-500 mt-2">Both tests use the position monitor’s demo equity and sizing settings, with identical commissions and zero spread/slippage. {positionSetup.scenarioKey?'The hypothesis uses the scenario bias and absolute price levels instead of ATR/target-R inputs. ':''}Other template management rules stay unchanged. Stops win same-bar ties; open positions close at the test end.</p>
           {(error || problem) && <p role="alert" className="text-xs text-rose-700 mt-2">{error || problem}</p>}
           <button className={`${btnPrimary} mt-3`} onClick={test} disabled={!!problem||!!positionConfig.error}><FlaskConical size={16}/>Test hypothesis · reveal full demo</button>
-          {result && <div className="mt-4" role="region" aria-label="Demo hypothesis comparison"><p role="status" className="text-xs font-semibold">Demo comparison complete · all {feed.bars.length} bars · no evidence of a live trading edge</p><div className="overflow-x-auto mt-2"><table className="w-full text-xs text-left"><caption className="sr-only">Strategy baseline versus stop and target hypothesis, simulated USD account</caption><thead><tr>{['Test','Trades','Net P&L (USD)','Account return','Average R'].map(h=><th key={h} scope="col" className="p-2 bg-slate-50">{h}</th>)}</tr></thead><tbody>{([['Strategy baseline',result.baseline],['Stop / target hypothesis',result.variant]] as [string,RunResult][]).map(([name,r])=><tr key={name} className="border-t border-slate-100"><th scope="row" className="p-2">{name}</th><td className="p-2">{r.trades.length}</td><td className="p-2 tabular-nums">{usd(net(r))}</td><td className="p-2">{(net(r)/r.startBalance*100).toFixed(2)}%</td><td className="p-2">{r.trades.length ? (r.trades.reduce((s,t)=>s+t.r,0)/r.trades.length).toFixed(2)+'R' : 'Unknown'}</td></tr>)}</tbody></table></div>{result.variant.zeroTradeReason && <p className="text-xs text-slate-500 mt-2">Hypothesis: {result.variant.zeroTradeReason}</p>}<details className="text-xs mt-3"><summary className="text-[#5338ec] cursor-pointer">Hypothesis execution ledger ({result.variant.trades.length})</summary><div className="overflow-x-auto max-h-44 mt-2"><table className="w-full text-left"><thead><tr>{['Side','Entry UTC','Exit UTC','Entry','Exit','Reason','Net USD','R'].map(h=><th scope="col" key={h} className="p-2 whitespace-nowrap">{h}</th>)}</tr></thead><tbody>{result.variant.trades.map(t=><tr key={t.id}><td className="p-2">{t.direction==='long'?'BUY':'SELL'}</td><td className="p-2 whitespace-nowrap">{time(t.entryTime)}</td><td className="p-2 whitespace-nowrap">{time(t.exitTime)}</td><td className="p-2">{t.entryPrice.toFixed(feed.dp)}</td><td className="p-2">{t.exitPrice.toFixed(feed.dp)}</td><td className="p-2">{t.exitReason}{t.ambiguous?' · stop-first tie':''}</td><td className="p-2">{usd(t.net)}</td><td className="p-2">{t.r.toFixed(2)}</td></tr>)}</tbody></table></div></details><p className="text-[11px] text-slate-500 mt-2">Chart markers show hypothesis executions only, not recorded fills. Generated volume is not market volume. No-news rules and other written discretionary rules are not evaluated.</p></div>}
+          {result&&<div className="mt-4"><DemoStudyResults runs={comparisons}/>{!aiCandidate&&<p className="text-xs text-slate-500 mt-2">MarketSyde AI has no qualifying alternative for this goal. Review the evidence above; your hypothesis stays unchanged.</p>}</div>}
+          {result && <div className="mt-4" role="region" aria-label="Demo hypothesis comparison"><p role="status" className="text-xs font-semibold">Demo comparison complete · all {feed.bars.length} bars · no evidence of a live trading edge</p>{result.variant.zeroTradeReason && <p className="text-xs text-slate-500 mt-2">Hypothesis: {result.variant.zeroTradeReason}</p>}<details className="text-xs mt-3"><summary className="text-[#5338ec] cursor-pointer">Hypothesis execution ledger ({result.variant.trades.length})</summary><div className="overflow-x-auto max-h-44 mt-2"><table className="w-full text-left"><thead><tr>{['Side','Entry UTC','Exit UTC','Entry','Exit','Reason','Net USD','R'].map(h=><th scope="col" key={h} className="p-2 whitespace-nowrap">{h}</th>)}</tr></thead><tbody>{result.variant.trades.map(t=><tr key={t.id}><td className="p-2">{t.direction==='long'?'BUY':'SELL'}</td><td className="p-2 whitespace-nowrap">{time(t.entryTime)}</td><td className="p-2 whitespace-nowrap">{time(t.exitTime)}</td><td className="p-2">{t.entryPrice.toFixed(feed.dp)}</td><td className="p-2">{t.exitPrice.toFixed(feed.dp)}</td><td className="p-2">{t.exitReason}{t.ambiguous?' · stop-first tie':''}</td><td className="p-2">{usd(t.net)}</td><td className="p-2">{t.r.toFixed(2)}</td></tr>)}</tbody></table></div></details><p className="text-[11px] text-slate-500 mt-2">Chart markers show hypothesis executions only, not recorded fills. Generated volume is not market volume. No-news rules and other written discretionary rules are not evaluated.</p></div>}
         </Card>
       </div>
     </div>

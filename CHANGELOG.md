@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.0] - 2026-10-12
+
+### Added
+
+- Editable automatic setup transfer in Practice and both Demo replay modes from playbooks, numeric playbook scenarios, saved What-if rules and saved automated tests. Journal history is available independently of the report date filter.
+- MarketSyde AI coaching based on prior closed USD journal evidence, excluding the selected replay trade. Practice advice uses only trades closed before replay begins.
+- Separate AI position exits on the main demo candle / P&L chart, with observed net, initial risk and revealed drawdown comparisons. Applying AI exits to the manual draft is explicit.
+- Bounded strategy AI exploration across nine ATR/target pairs, ranked on the first 70% of generated candles with independent holdout runs. Full-path baseline, user and AI results share sizing and costs; gain/loss, performance and drawdown comparisons highlight the observed winner.
+- Practice target, ATR, stop-fraction, next-bar breakeven, UTC session and daily trade/loss controls. Pending orders recheck limits at execution and partial exits count as one position.
+
+### Changed
+
+- Manual replay edits survive candle stepping and Practice chart reloads. Related setups transfer parameters and compatible prices, never saved profits or executions; unsupported discretionary rules remain reference context.
+- Blind Practice trade selection hides recorded R and mistake tags. Recorded account results retain their currency without conversion; replay uses its own USD valuation.
+- Practice instrument chips recognize canonical symbols and aliases consistently after setup transfer.
+
 ## [1.21.0] - 2026-10-12
 
 ### Added

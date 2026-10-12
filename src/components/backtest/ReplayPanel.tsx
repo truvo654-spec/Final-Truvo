@@ -7,6 +7,12 @@ import { eligible, netOf, realizedR } from '../journal/journalMath';
 import { PracticeFilters, matchesJournal, practiceInstruments, practiceDateRangeError, feedMarket, journalMarket, DEFAULT_FILTER } from './PracticeFilters';
 import { replayDaysLikeToday, replayJournalTrade, replayRandom, ReplayData, replayTimeframes } from '../../backtest/replay';
 import { symbolSpec } from '../../backtest/marketData';
+import {resolveSymbol} from '../../backtest/marketData';
+import type {JournalPlaybook} from '../../data/journalPlaybooks';
+import {ReplaySetupTransfer} from './ReplaySetupTransfer';
+import {ReplayAICoach} from './ReplayAICoach';
+import {replayRuleFields,replayVisibleAtr,type RelatedReplaySetup} from '../../backtest/replaySetups';
+import {practiceEntryBlock,type PracticeGuardrails} from '../../backtest/practiceGuardrails';
 import type { PracticeFilter, PracticeTrade, ReplaySession } from '../../backtest/store';
 import { Bar, Timeframe } from '../../backtest/types';
 import { money, pct, priceFmt, rr, tone, dateTime } from '../../backtest/format';
@@ -20,6 +26,7 @@ interface Props {
   initialEntryId: string | null;
   onFinish: (s: ReplaySession) => void;
   onToast: (m: string) => void;
+  playbooks?:JournalPlaybook[];
 }
 
 type Side = 1 | -1;
@@ -32,7 +39,7 @@ const WINDOW = 90;
 
 const roundStep = (x: number, step: number) => Number((Math.floor(x / step + 1e-9) * step).toFixed(8));
 
-export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEntryId, onFinish, onToast }) => {
+export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEntryId, onFinish, onToast,playbooks=[] }) => {
   const [source, setSource] = useState<'random' | 'similar' | 'journal'>(initialEntryId ? 'journal' : 'random');
   const [filter, setFilter] = useState<PracticeFilter>(DEFAULT_FILTER);
   const [tf, setTf] = useState<Timeframe>('5m');
@@ -56,6 +63,14 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
   const [useRecordedSize, setUseRecordedSize] = useState(false);
   const [stopPx, setStopPx] = useState('');
   const [targetPx, setTargetPx] = useState('');
+  const [related,setRelated]=useState<RelatedReplaySetup|null>(null);
+  const [ticketEdited,setTicketEdited]=useState(false);
+  const [targetR,setTargetR]=useState(2),[stopAtr,setStopAtr]=useState(1.5),[stopFraction,setStopFraction]=useState(1);
+  const [breakevenR,setBreakevenR]=useState('');
+  const [sessionStart,setSessionStart]=useState(''),[sessionEnd,setSessionEnd]=useState('');
+  const [maxTrades,setMaxTrades]=useState(''),[lossLimit,setLossLimit]=useState(''),[dailyLoss,setDailyLoss]=useState('');
+  const positiveLimit=(value:string)=>value.trim()&&Number.isFinite(Number(value))&&Number(value)>0?Number(value):null;
+  const guardrails:PracticeGuardrails={session:sessionStart!==''&&sessionEnd!==''?{start:Number(sessionStart),end:Number(sessionEnd)}:null,maxTrades:positiveLimit(maxTrades),lossesPerDay:positiveLimit(lossLimit),dailyLoss:positiveLimit(dailyLoss)};
   const [pending, setPending] = useState<Pending | null>(null);
   const [pos, setPos] = useState<Position | null>(null);
   const [trades, setTrades] = useState<PracticeTrade[]>([]);
@@ -119,15 +134,50 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
     setStartingBalance(recordedUsdEquity ?? DEFAULT_BALANCE);
   };
 
-  const avgRange = useMemo(() => {
-    const l = bars.slice(Math.max(0, cursor - 14), cursor);
-    return l.length ? l.reduce((a, b) => a + (b.h - b.l), 0) / l.length : 0;
-  }, [bars, cursor]);
+  const avgRange = useMemo(() => replayVisibleAtr(bars,cursor), [bars, cursor]);
+
+  const applyTicketSetup=(setup:Partial<RelatedReplaySetup>,replay:ReplayData|null=data)=>{
+    if(setup.riskPercent!==undefined)setRiskPct(setup.riskPercent);
+    if(setup.equity!==undefined)setStartingBalance(setup.equity);
+    if(setup.direction)setSide(setup.direction==='BUY'?1:-1);
+    if(setup.targetR!==undefined){setTargetR(setup.targetR);setTargetPx('');}
+    if(setup.stopAtr!==undefined){setStopAtr(setup.stopAtr);setStopPx('');}
+    if(setup.stopFraction!==undefined){
+      setStopFraction(setup.stopFraction);
+      const reference=replay===data?entryRef:replay?.bars[replay.start-1]?.c;
+      const original=replay===data?stopVal:replay?.trade?.stop;
+      const direction=setup.direction?setup.direction==='BUY'?1:-1:replay===data?side:replay?.trade?.direction==='SELL'?-1:1;
+      const previousFraction=replay===data&&Number.isFinite(stopFraction)&&stopFraction>0?stopFraction:1;
+      setStopPx(reference!==undefined&&original!=null&&Number.isFinite(reference)&&Number.isFinite(original)?String(reference-direction*Math.abs(reference-original)*setup.stopFraction/previousFraction):'');
+    }
+    if(setup.breakevenR!==undefined)setBreakevenR(String(setup.breakevenR));
+    if(setup.session){setSessionStart(String(setup.session.start));setSessionEnd(String(setup.session.end));}
+    if(setup.maxTrades!==undefined)setMaxTrades(String(setup.maxTrades));
+    if(setup.lossesPerDay!==undefined)setLossLimit(String(setup.lossesPerDay));
+    if(setup.dailyLoss!==undefined)setDailyLoss(String(setup.dailyLoss));
+    if(setup.prices&&replay&&setup.symbols?.length===1&&resolveSymbol(setup.symbols[0])===resolveSymbol(replay.symbol)){
+      setOtype('limit');setOprice(String(setup.prices.entry));setStopPx(String(setup.prices.stop));setTargetPx(String(setup.prices.target));
+    }
+    setUseRecordedSize(false);
+  };
+  const transferSetup=(setup:RelatedReplaySetup|null)=>{
+    setRelated(setup);if(!setup)return;setTicketEdited(false);
+    setTargetR(2);setStopAtr(1.5);setStopFraction(1);setBreakevenR('');setSessionStart('');setSessionEnd('');setMaxTrades('');setLossLimit('');setDailyLoss('');
+    setOtype('market');setOprice('');setStopPx('');setTargetPx('');
+    setSide(1);
+    if(setup.timeframe&&replayTimeframes.includes(setup.timeframe))setTf(setup.timeframe);
+    if(setup.symbols.length)setFilter(f=>({...f,symbols:setup.symbols,markets:[],result:'all',playbook:setup.playbookId?playbooks.find(p=>p.id===setup.playbookId)?.name||'':''}));
+    if(data&&setup.symbols.length&&!setup.symbols.includes(resolveSymbol(data.symbol)||data.symbol)){setData(null);setPlaying(false);}
+    applyTicketSetup(setup);
+  };
 
   const load = (d: ReplayData, importJournalSetup = true) => {
     setData(d); setCursor(d.start); setMinCursor(d.start); setPlaying(false); setPending(null); setPos(null); setTrades([]); setDrawings([]);
     setFinished(false); setAutoReview(false); setAutoReviewResult(null); setNotes(''); setTags(d.trade?.mistakes ?? []); setSessionId(`rs_${Date.now().toString(36)}`); sessionStartedAt.current = new Date().toISOString();
-    configureTicketFromTrade(d, importJournalSetup);
+    if(!ticketEdited){configureTicketFromTrade(d, importJournalSetup);if(related)applyTicketSetup(related,d);}
+    else if(data&&resolveSymbol(data.symbol)!==resolveSymbol(d.symbol)){
+      setStopPx('');setTargetPx('');setOprice('');setOtype('market');setUseRecordedSize(false);
+    }
   };
   const loadSource = () => {
     try {
@@ -148,16 +198,19 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
   useEffect(() => { if (initialEntryId) { const e = entries.find((x) => x.id === initialEntryId); if (e) { setBlind(true); load(replayJournalTrade(e)); } } }, [initialEntryId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Default stop/target suggestions follow the market until the user types their own.
-  const autoStop = last ? last.c - side * avgRange * 1.5 : NaN;
+  const autoStop = last ? last.c - side * avgRange * stopAtr * stopFraction : NaN;
   const entryRef = autoReview && data?.trade ? data.trade.entry : otype === 'market' ? last?.c ?? NaN : Number(oprice) || last?.c || NaN;
   const stopVal = autoReviewResult && autoReview ? autoReviewResult.stop : stopPx === '' ? autoStop : Number(stopPx);
   const riskDist = Math.abs(entryRef - stopVal);
-  const targetVal = autoReviewResult && autoReview ? autoReviewResult.target : targetPx === '' ? entryRef + side * 2 * riskDist : Number(targetPx);
+  const targetVal = autoReviewResult && autoReview ? autoReviewResult.target : targetPx === '' ? entryRef + side * targetR * riskDist : Number(targetPx);
   const rrNow = riskDist > 0 && Number.isFinite(targetVal) ? Math.abs(targetVal - entryRef) / riskDist : NaN;
   const sizeNow = autoReviewResult && autoReview ? autoReviewResult.size
     : data && useRecordedSize && data.trade ? data.trade.size
     : data && riskDist > 0 ? roundStep((balance * riskPct / 100) / (riskDist * data.multiplier), data.minSize) : 0;
   const ticketProblem = !data ? 'Load a chart first.' : finished ? 'Session finished.' : autoReview ? 'Exit closed-trade review before placing an order.' : pos ? 'Close the open position first.' : pending ? 'Cancel the pending order first.'
+    : ![stopAtr,stopFraction,targetR].every(v=>Number.isFinite(v)&&v>0)||[breakevenR,maxTrades,lossLimit,dailyLoss].some(v=>v!==''&&(!Number.isFinite(Number(v))||Number(v)<=0))||[maxTrades,lossLimit].some(v=>v!==''&&!Number.isInteger(Number(v)))?'Enter positive replay parameters and whole-number trade limits.'
+    : (sessionStart!==''||sessionEnd!=='')&&(sessionStart===''||sessionEnd===''||!Number.isInteger(Number(sessionStart))||!Number.isInteger(Number(sessionEnd))||Number(sessionStart)<0||Number(sessionStart)>23||Number(sessionEnd)<0||Number(sessionEnd)>24||Number(sessionStart)===Number(sessionEnd))?'Enter a valid UTC session, or leave both hours blank.'
+    : last&&practiceEntryBlock(trades,last.t,guardrails)?practiceEntryBlock(trades,last.t,guardrails)
     : !Number.isFinite(riskPct) || riskPct < 0.01 || riskPct > 100 ? 'Risk must be between 0.01% and 100%.'
     : !(riskDist > 0) || side * (entryRef - stopVal) <= 0 ? `The stop must be ${side === 1 ? 'below' : 'above'} the entry.`
     : Number.isFinite(targetVal) && side * (targetVal - entryRef) <= 0 ? `The target must be ${side === 1 ? 'above' : 'below'} the entry.`
@@ -171,9 +224,9 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
     }
     const journalTrade = data.trade;
     const entry = journalTrade.entry;
-    const stop = stopPx === '' ? entry - side * (avgRange || entry * 0.003) * 1.5 : Number(stopPx);
+    const stop = stopPx === '' ? entry - side * (avgRange || entry * 0.003) * stopAtr * stopFraction : Number(stopPx);
     const riskDistance = Math.abs(entry - stop);
-    const target = targetPx === '' ? entry + side * 2 * riskDistance : Number(targetPx);
+    const target = targetPx === '' ? entry + side * targetR * riskDistance : Number(targetPx);
     if (!(riskDistance > 0) || side * (entry - stop) <= 0 || !Number.isFinite(target) || side * (target - entry) <= 0) {
       onToast('Set a valid stop and target before reviewing this trade.');
       return;
@@ -185,14 +238,16 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
       return;
     }
     let exit = data.bars[journalTrade.exitIndex]?.c ?? journalTrade.exit;
+    let managedStop=stop;
     let exitReason: AutoReviewResult['exitReason'] = 'trade close';
     for (let i = journalTrade.entryIndex; i <= journalTrade.exitIndex; i++) {
       const bar = data.bars[i];
       if (!bar) continue;
-      const stopHit = side === 1 ? bar.l <= stop : bar.h >= stop;
+      const stopHit = side === 1 ? bar.l <= managedStop : bar.h >= managedStop;
       const targetHit = side === 1 ? bar.h >= target : bar.l <= target;
-      if (stopHit) { exit = bar.o < stop && side === 1 || bar.o > stop && side === -1 ? bar.o : stop; exitReason = 'stop'; break; }
+      if (stopHit) { exit = side*(bar.o-managedStop)<0?bar.o:managedStop; exitReason = 'stop'; break; }
       if (targetHit) { exit = bar.o > target && side === 1 || bar.o < target && side === -1 ? bar.o : target; exitReason = 'target'; break; }
+      if(positiveLimit(breakevenR)!==null&&side*((side===1?bar.h:bar.l)-entry)>=Number(breakevenR)*riskDistance)managedStop=side===1?Math.max(managedStop,entry):Math.min(managedStop,entry);
     }
     const netResult = (exit - entry) * side * size * data.multiplier;
     const initialRisk = riskDistance * size * data.multiplier;
@@ -222,6 +277,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
     const done: PracticeTrade[] = [];
     for (let k = 0; k < n && cur < st.data.bars.length; k++) {
       const b = st.data.bars[cur];
+      if(pd&&practiceEntryBlock([...st.trades,...done],b.t,guardrails)){pd=null;onToast('Pending practice order cancelled by your session or risk limits.');}
       if (pd && !p) {
         const fill = pd.type === 'market' ? b.o
           : pd.type === 'limit' ? ((pd.dir === 1 ? b.l < pd.price : b.h > pd.price) ? (pd.dir === 1 ? Math.min(b.o, pd.price) : Math.max(b.o, pd.price)) : null)
@@ -236,6 +292,8 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
         if (p.dir * (b.o - p.stop) <= 0 && p.entryBar !== cur) { done.push(closeAt(p, b.o, cur)); p = null; }
         else if (p.dir * (adv - p.stop) <= 0) { done.push(closeAt(p, p.stop, cur)); p = null; }
         else if (p.target !== null && p.dir * (fav - p.target) >= 0) { done.push(closeAt(p, p.target, cur)); p = null; }
+        // A newly reached breakeven threshold changes the stop for the next bar only.
+        if(p&&positiveLimit(breakevenR)!==null&&p.dir*(fav-p.entry)>=Number(breakevenR)*p.initRisk/(p.size*st.data.multiplier))p={...p,stop:p.dir===1?Math.max(p.stop,p.entry):Math.min(p.stop,p.entry)};
       }
       cur++;
     }
@@ -246,7 +304,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
       done.forEach((d) => onToast(`Practice trade closed: ${rr(d.r)} (${money(d.net)})`));
     }
     if (cur >= st.data.bars.length) setPlaying(false);
-  }, [closeAt, onToast, tags]);
+  }, [closeAt, onToast, tags,breakevenR,sessionStart,sessionEnd,maxTrades,lossLimit,dailyLoss]);
 
   // Playback timer
   useEffect(() => {
@@ -293,8 +351,8 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
       if (e.key === ' ') { e.preventDefault(); setPlaying((x) => !x); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); advance(1); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); if (!pos && !pending && cursor > minCursor) setCursor(cursor - 1); }
-      else if (e.key.toLowerCase() === 'b') { setSide(1); }
-      else if (e.key.toLowerCase() === 's') { setSide(-1); }
+      else if (e.key.toLowerCase() === 'b') { setSide(1); setTicketEdited(true); }
+      else if (e.key.toLowerCase() === 's') { setSide(-1); setTicketEdited(true); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -326,6 +384,8 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
   return (
     <div className="space-y-5">
       <div className="md:hidden"><Banner tone="info" icon={<Monitor className="w-4 h-4" />}>Replay works best on a larger screen. Everything still works here; the chart scrolls sideways.</Banner></div>
+      <ReplaySetupTransfer entries={entries} playbooks={playbooks} onSelect={transferSetup} disabled={!!pos||!!pending||(!finished&&trades.length>0)||autoReview}/>
+      {data?<ReplayAICoach entries={entries} symbol={data.symbol} cutoff={data.bars[data.start].t} excludeId={data.trade?.id||pickId||''} playbook={filter.playbook} onUse={!pos&&!pending&&!finished&&!autoReview?rule=>{applyTicketSetup(replayRuleFields(rule));setTicketEdited(true);}:undefined} action="Apply AI suggestion to order ticket"/>:<p className="text-xs text-slate-500">Load a practice chart to see MarketSyde AI guidance based on trades closed before that replay starts.</p>}
 
       <div className="grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)_300px] gap-5 items-start">
         {/* Source */}
@@ -344,8 +404,8 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
                   {journalList.map((e) => (
                     <li key={e.id}>
                       <button type="button" aria-pressed={pickId === e.id} onClick={() => setPickId(e.id)} className={`w-full text-left rounded-lg border px-2.5 py-2 text-[11px] ${pickId === e.id ? 'border-[#5338ec] bg-[#FBFAFF]' : 'border-slate-200 hover:bg-slate-50'}`}>
-                        <span className="flex justify-between gap-2 font-semibold text-[#0b1c30]"><span className="truncate">{blind ? `Trade #${e.id.replace(/\D/g, '') || e.id}` : `${e.symbol} · ${e.date}`}</span><span className={tone(netOf(e))}>{rr(realizedR(e), 1)}</span></span>
-                        <span className="text-slate-500">{e.strategy}{e.mistakes[0] ? ` · ${e.mistakes[0]}` : ''}</span>
+                        <span className="flex justify-between gap-2 font-semibold text-[#0b1c30]"><span className="truncate">{blind ? `Trade #${e.id.replace(/\D/g, '') || e.id}` : `${e.symbol} · ${e.date}`}</span>{!blind&&<span className={tone(netOf(e))}>{rr(realizedR(e), 1)}</span>}</span>
+                        <span className="text-slate-500">{e.strategy}{!blind&&e.mistakes[0] ? ` · ${e.mistakes[0]}` : ''}</span>
                       </button>
                     </li>
                   ))}
@@ -432,21 +492,21 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
                     <dt className="text-slate-500">Journal account currency</dt><dd>{data.trade.accountCurrency}</dd>
                     <dt className="text-slate-500">Setup notes</dt><dd>{data.trade.setupNotes || 'Not recorded'}</dd>
                     <dt className="text-slate-500">Tags</dt><dd>{data.trade.tags.length ? data.trade.tags.join(', ') : 'None recorded'}</dd>
-                    {!hidden && <><dt className="text-slate-500">Recorded result</dt><dd>{money(data.trade.pnl)} · {rr(data.trade.r)}</dd></>}
+                    {!hidden && <><dt className="text-slate-500">Recorded result</dt><dd>{`${data.trade.pnl.toFixed(2)} ${data.trade.accountCurrency}`} · {rr(data.trade.r)}</dd></>}
                   </dl>
-                  <p className="mt-2 text-[10px] text-slate-500">Recorded values are references, not fills on this generated replay. Risk % is derived only from recorded risk and equity. Account equity is applied only for USD. Recorded size is used only when its unit and demo increment match; otherwise replay risk sizing is used. Commission is shown for reference, not applied as a guessed fee. Missing or incompatible values are not guessed.</p>
+                  <p className="mt-2 text-[10px] text-slate-500">Recorded values are references, not fills on this generated replay. Risk % is derived only from recorded risk and equity. Practice results use USD demo valuation; recorded results retain their account currency without conversion. Account equity is applied only for USD. Recorded size is used only when its unit and demo increment match; otherwise replay risk sizing is used. Commission is shown for reference, not applied as a guessed fee. Missing or incompatible values are not guessed.</p>
                   {autoReview && autoReviewResult && (
                     <div className="mt-3 rounded-lg border border-[#d9d3ff] bg-white p-3 text-xs" aria-label="Replay and journal result comparison">
                       <p className="font-bold text-[#0b1c30]">Test scenario vs. recorded trade</p>
                       <p className="mt-1 text-slate-600">Scenario: {money(autoReviewResult.net)} · {rr(autoReviewResult.r)} · exit at {priceFmt(autoReviewResult.exit, dp)} ({autoReviewResult.exitReason}) · size {autoReviewResult.size} {data.sizeUnit}</p>
-                      <p className="mt-1 text-slate-600">Recorded trade: {money(data.trade.pnl)} · {rr(data.trade.r)} · entry {priceFmt(data.trade.entry, dp)} → exit {priceFmt(data.trade.exit, dp)}</p>
+                      <p className="mt-1 text-slate-600">Recorded trade: {`${data.trade.pnl.toFixed(2)} ${data.trade.accountCurrency}`} · {rr(data.trade.r)} · entry {priceFmt(data.trade.entry, dp)} → exit {priceFmt(data.trade.exit, dp)}</p>
                       <p className="mt-1 text-[11px] text-slate-500">The chart path is generated from the recorded trade outcome, not verified historical market data. This comparison is illustrative and is not independent evidence of a strategy edge or actual fills.</p>
                     </div>
                   )}
                   {finished && compareJournalResult && !autoReview && (
                     <div className="mt-3 rounded-lg border border-[#d9d3ff] bg-white p-3 text-xs" aria-label="Replay and journal result comparison">
                       <p className="font-bold text-[#0b1c30]">Practice vs. recorded trade</p>
-                      <p className="mt-1 text-slate-600">Your practice: {trades.length ? `${money(net)} · ${rr(trades.reduce((sum, trade) => sum + (trade.r ?? 0), 0))}` : 'No practice trades'} · Recorded: {money(data.trade.pnl)} · {rr(data.trade.r)}</p>
+                      <p className="mt-1 text-slate-600">Your practice: {trades.length ? `${money(net)} · ${rr(trades.reduce((sum, trade) => sum + (trade.r ?? 0), 0))}` : 'No practice trades'} · Recorded: {`${data.trade.pnl.toFixed(2)} ${data.trade.accountCurrency}`} · {rr(data.trade.r)}</p>
                       <p className="mt-1 text-[11px] text-slate-500">The generated replay is not historical market data or a verified fill simulation.</p>
                     </div>
                   )}
@@ -459,16 +519,18 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
         {/* Ticket + position */}
         <div className="space-y-5">
           <Card title="Order ticket" sub="Simulated. Sized from your risk %.">
-            <div className="space-y-3">
+            <div className="space-y-3" onChangeCapture={()=>setTicketEdited(true)}>
+              <div className="grid grid-cols-2 gap-2" aria-label="Editable practice scenario parameters">{([['Target R',targetR,setTargetR],['Stop distance ATR',stopAtr,setStopAtr],['Stop risk fraction',stopFraction,setStopFraction]] as const).map(([label,value,set])=><Field key={label} label={label}><input type="number" aria-label={`Practice ${label}`} min="0.01" step="0.1" value={value} disabled={autoReview} onChange={e=>{set(Number(e.target.value));if(label==='Target R')setTargetPx('');else setStopPx('');}} className={inputCls}/></Field>)}<Field label="Breakeven at R (optional)"><input type="number" aria-label="Practice breakeven at R" min="0.01" step="0.1" value={breakevenR} onChange={e=>setBreakevenR(e.target.value)} className={inputCls}/></Field></div>
+              <details className="text-xs"><summary className="cursor-pointer text-[#5338ec] font-semibold">Session & risk guardrails</summary><div className="grid grid-cols-2 gap-2 mt-2">{([['Session start UTC',sessionStart,setSessionStart],['Session end UTC',sessionEnd,setSessionEnd],['Max trades per day',maxTrades,setMaxTrades],['Stop after daily losses',lossLimit,setLossLimit],['Max daily loss USD',dailyLoss,setDailyLoss]] as const).map(([label,value,set])=><Field key={label} label={label}><input type="number" aria-label={`Practice ${label}`} value={value} onChange={e=>set(e.target.value)} className={inputCls}/></Field>)}</div><p className="text-[10px] text-slate-500 mt-2">Blank disables a limit. Limits use closed practice results on the UTC entry day; pending orders are checked again at execution. Breakeven applies from the next bar after its threshold.</p></details>
               <p className="text-[11px] text-slate-500">Practice balance: {money(balance)}{data?.trade && data.trade.accountCurrency !== 'USD' ? ` · recorded account is ${data.trade.accountCurrency}; no conversion applied` : useJournalSetup && data?.trade?.equityAtEntry != null ? ' · from recorded USD entry equity' : ''}</p>
               <div className="grid grid-cols-2 gap-1.5">
-                <button type="button" aria-pressed={side === 1} disabled={autoReview} onClick={() => setSide(1)} className={`h-10 rounded-lg text-sm font-bold disabled:opacity-50 ${side === 1 ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>Buy / Long</button>
-                <button type="button" aria-pressed={side === -1} disabled={autoReview} onClick={() => setSide(-1)} className={`h-10 rounded-lg text-sm font-bold disabled:opacity-50 ${side === -1 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-500'}`}>Sell / Short</button>
+                <button type="button" aria-pressed={side === 1} disabled={autoReview} onClick={() => {setSide(1);setTicketEdited(true);}} className={`h-10 rounded-lg text-sm font-bold disabled:opacity-50 ${side === 1 ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>Buy / Long</button>
+                <button type="button" aria-pressed={side === -1} disabled={autoReview} onClick={() => {setSide(-1);setTicketEdited(true);}} className={`h-10 rounded-lg text-sm font-bold disabled:opacity-50 ${side === -1 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-500'}`}>Sell / Short</button>
               </div>
-              <Segmented size="sm" label="Order type" value={otype} onChange={setOtype} disabled={autoReview ? { market: 'Exit closed-trade review to edit the order', limit: 'Exit closed-trade review to edit the order', stop: 'Exit closed-trade review to edit the order' } : {}} options={[{ id: 'market', label: 'Market', title: 'Fills at the next bar open' }, { id: 'limit', label: 'Limit', title: 'Fills only if price trades through your price' }, { id: 'stop', label: 'Stop', title: 'Fills when price reaches your price' }]} />
+              <Segmented size="sm" label="Order type" value={otype} onChange={v=>{setOtype(v);setTicketEdited(true);}} disabled={autoReview ? { market: 'Exit closed-trade review to edit the order', limit: 'Exit closed-trade review to edit the order', stop: 'Exit closed-trade review to edit the order' } : {}} options={[{ id: 'market', label: 'Market', title: 'Fills at the next bar open' }, { id: 'limit', label: 'Limit', title: 'Fills only if price trades through your price' }, { id: 'stop', label: 'Stop', title: 'Fills when price reaches your price' }]} />
               {otype !== 'market' && <Field label="Order price"><input type="number" step="any" aria-label="Order price" disabled={autoReview} placeholder={last ? priceFmt(last.c, dp) : ''} value={oprice} onChange={(e) => setOprice(e.target.value)} className={inputCls} /></Field>}
               <div className="grid grid-cols-2 gap-2">
-                <Field label="Stop loss"><input type="number" step="any" aria-label="Stop loss price" disabled={autoReview} placeholder={Number.isFinite(autoStop) ? priceFmt(autoStop, dp) : ''} value={stopPx} onChange={(e) => setStopPx(e.target.value)} className={inputCls} /></Field>
+                <Field label="Stop loss"><input type="number" step="any" aria-label="Stop loss price" disabled={autoReview} placeholder={Number.isFinite(autoStop) ? priceFmt(autoStop, dp) : ''} value={stopPx} onChange={(e) => {setStopPx(e.target.value);setStopFraction(1);}} className={inputCls} /></Field>
                 <Field label="Take profit"><input type="number" step="any" aria-label="Take profit price" disabled={autoReview} placeholder={Number.isFinite(targetVal) ? priceFmt(targetVal, dp) : ''} value={targetPx} onChange={(e) => setTargetPx(e.target.value)} className={inputCls} /></Field>
               </div>
               <div className="flex items-center gap-2">

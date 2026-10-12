@@ -381,10 +381,10 @@ export const BacktestPage: React.FC<Props> = (p) => {
       )}
 
       {view === 'replay' && (
-        <ReplayPanel entries={entries} sessions={sessions} tz={tz} initialEntryId={replayEntry} onFinish={finishSession} onToast={onToast} />
+        <ReplayPanel entries={p.allEntries} playbooks={playbooks} sessions={sessions} tz={tz} initialEntryId={replayEntry} onFinish={finishSession} onToast={onToast} />
       )}
 
-      {view === 'demo' && <DemoReplay entries={entries} playbooks={playbooks}/>}
+      {view === 'demo' && <DemoReplay entries={p.allEntries} playbooks={playbooks}/>}
 
       {view === 'runs' && (
         <SavedRuns runs={runs} whatIfRuns={whatIfRuns} onDeleteWhatIf={id=>{const next=whatIfRuns.filter(r=>r.id!==id);if(saveWhatIfs(next)){setWhatIfRuns(next);onToast('Saved What-if scenario deleted');}else onToast('Could not delete this saved scenario. Browser storage is unavailable.');}} playbooks={playbooks} tz={tz} onToast={onToast} onNew={() => startSetup()}

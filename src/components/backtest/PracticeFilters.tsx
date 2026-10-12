@@ -95,7 +95,9 @@ export const PracticeFilters: React.FC<Props> = ({ source, value: f, onChange, e
     };
     onChange({ ...f, markets, symbols: f.symbols.filter(keep) });
   };
-  const toggleSymbol = (s: string) => onChange({ ...f, symbols: f.symbols.includes(s) ? f.symbols.filter((x) => x !== s) : [...f.symbols, s] });
+  const sameSymbol=(a:string,b:string)=>(resolveSymbol(a)||a)===(resolveSymbol(b)||b);
+  const symbolSelected=(s:string)=>f.symbols.some(x=>sameSymbol(x,s));
+  const toggleSymbol = (s: string) => onChange({ ...f, symbols: symbolSelected(s) ? f.symbols.filter((x) => !sameSymbol(x,s)) : [...f.symbols, s] });
 
   const save = () => {
     const n = name.trim();
@@ -137,7 +139,7 @@ export const PracticeFilters: React.FC<Props> = ({ source, value: f, onChange, e
         <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto" role="group" aria-label="Instrument">
           <button type="button" aria-pressed={!f.symbols.length} onClick={() => onChange({ ...f, symbols: [] })} className={chip(!f.symbols.length)}>All</button>
           {shown.map((i) => (
-            <button key={i.id} type="button" aria-pressed={f.symbols.includes(i.id)} onClick={() => toggleSymbol(i.id)} className={chip(f.symbols.includes(i.id))} title={journal ? `${i.sub} trades` : i.sub ? `Also matches your journal's ${i.sub}` : undefined}>
+            <button key={i.id} type="button" aria-pressed={symbolSelected(i.id)} onClick={() => toggleSymbol(i.id)} className={chip(symbolSelected(i.id))} title={journal ? `${i.sub} trades` : i.sub ? `Also matches your journal's ${i.sub}` : undefined}>
               {i.label}{i.sub && <span className="ml-1 font-normal opacity-60">{i.sub}</span>}
             </button>
           ))}
