@@ -37,10 +37,11 @@ interface Props {
   me: Me;
   onChange: (p: FeedPost) => void;
   onRemove: (id: string, mode: 'delete' | 'draft') => void;
+  onShare?: (id: string, who: string) => void;
   onToast: ShowToast;
 }
 
-export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, onRemove, onToast }) => {
+export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, onRemove, onShare, onToast }) => {
   const [showComments, setShowComments] = useState(!!openComments);
   const [slide, setSlide] = useState(0);
   const media = post.media ?? [];
@@ -50,6 +51,7 @@ export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, on
   const shareCredits = 25 + (post.id.charCodeAt(post.id.length - 1) % 40);
   const set = (patch: Partial<FeedPost>) => onChange({ ...post, ...patch });
   const share = async () => {
+    if (onShare) return onShare(post.id, post.name);
     try { await navigator.clipboard.writeText(`${window.location.origin}/community?post=${post.id}`); onToast('Link Copied', 'Share it anywhere'); } catch { onToast('Could Not Copy', 'Copy the link from the address bar'); }
   };
   const stat = 'flex items-center gap-1.5 text-[13px] leading-5';

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 2026-10-09
+### Added
+- Share now opens the share panel from the design instead of silently copying: Embed, Facebook, Telegram, LinkedIn and WhatsApp, with the link in a field and a Copy button that confirms. Embed copies an iframe snippet; the networks open their own share window.
+- It is used by article cards, the article reading page's share rail, and posts in the feed and on My Page.
+
 ## [1.4.0] - 2026-10-09
 ### Added
 - Create Post modal gained the optional **Market or Asset Sentiment** section from the design: search an instrument, see its quote, then tag the post Bullish, Neutral or Bearish.

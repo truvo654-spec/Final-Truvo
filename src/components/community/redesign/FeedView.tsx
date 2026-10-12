@@ -190,8 +190,8 @@ export const TopicHeader: React.FC<{ title: string; icon: SuggestIcon }> = ({ ti
 );
 
 /* ───────── Feed posts ───────── */
-export const FeedList: React.FC<{ posts: FeedPost[]; state?: PreviewState; openFirstComments?: boolean; me: Me; onChange: (p: FeedPost) => void; onRemove: (id: string, mode: 'delete' | 'draft') => void; onToast: ShowToast }> = ({ posts, state, openFirstComments, me, onChange, onRemove, onToast }) => {
+export const FeedList: React.FC<{ posts: FeedPost[]; state?: PreviewState; openFirstComments?: boolean; me: Me; onChange: (p: FeedPost) => void; onRemove: (id: string, mode: 'delete' | 'draft') => void; onShare?: (id: string, who: string) => void; onToast: ShowToast }> = ({ posts, state, openFirstComments, me, onChange, onRemove, onShare, onToast }) => {
   if (state === 'error') return <EmptyState error image={IMG.errFeed} {...STATE_COPY.feedError} className="pt-[163px] pb-24" imgClass="w-[198px]" />;
   if (state === 'empty' || posts.length === 0) return <EmptyState image={IMG.emptyQuiet} {...STATE_COPY.feedEmpty} className="pt-[168px] pb-24" imgClass="w-[213px]" />;
-  return <div className="space-y-6">{posts.map((p, i) => <PostCard key={p.id} post={p} openComments={!!openFirstComments && i === 0} me={me} onChange={onChange} onRemove={onRemove} onToast={onToast} />)}</div>;
+  return <div className="space-y-6">{posts.map((p, i) => <PostCard key={p.id} post={p} openComments={!!openFirstComments && i === 0} me={me} onChange={onChange} onRemove={onRemove} onShare={onShare} onToast={onToast} />)}</div>;
 };

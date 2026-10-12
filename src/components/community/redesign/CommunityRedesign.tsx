@@ -3,6 +3,7 @@ import { Home, ScrollText, UserCircle2 } from 'lucide-react';
 import { UserProfile } from '../../../types';
 import { CreatePostModal, NewPostDraft } from './CreatePostModal';
 import { ConfirmDialog } from './ConfirmDialog';
+import { SharePanel } from './SharePanel';
 import { ARTICLES, Article, FeedPost, IMG, SEED_POSTS, SUGGESTED } from './data';
 import { Me } from './Comments';
 import { PreviewState, BORDER } from './ui';
@@ -42,6 +43,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   const [createOpen, setCreateOpen] = useState(false);
   const [createIntent, setCreateIntent] = useState<'text' | 'media' | 'poll'>('text');
   const [confirm, setConfirm] = useState<{ kind: 'post' | 'article'; id: string; title: string } | null>(null);
+  const [share, setShare] = useState<{ url: string; title: string } | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const { toasts, showToast } = useToasts();
 
@@ -105,9 +107,8 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
     if (action === 'draft') { setArticles((l) => l.filter((a) => a.id !== id)); return showToast('Moved to Drafts', title); }
     setConfirm({ kind: 'article', id, title });
   };
-  const shareArticle = async (a: Article) => {
-    try { await navigator.clipboard.writeText(`${window.location.origin}/community?article=${a.id}`); showToast('Link Copied', a.title); } catch { showToast('Could Not Copy', 'Copy the link from the address bar'); }
-  };
+  const shareArticle = (a: Article) => setShare({ url: `${window.location.origin}/community?article=${a.id}`, title: a.title });
+  const sharePost = (id: string, who: string) => setShare({ url: `${window.location.origin}/community?post=${id}`, title: `${who}’s post` });
   const openArticle = (id: string) => { setTab('article'); setArticleId(id); showToast('Article Opened', articles.find((a) => a.id === id)?.title ?? 'Reading now'); };
   const reading = shownArticles.find((a) => a.id === articleId) ?? null;
   const retry = () => { setPreview('default'); showToast('Refreshed', 'Content loaded again'); };
@@ -167,13 +168,13 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
                   <TopicHeader title={topic} icon={topicIcon} />
                 </div>
                 <Composer me={me} heading="" onOpenCreate={openCreate} />
-                <div className="mt-[15px]"><FeedList posts={topicPosts} state={preview} me={me} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
+                <div className="mt-[15px]"><FeedList posts={topicPosts} state={preview} me={me} onShare={sharePost} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
               </div>
             ) : (
               <div className="flex flex-col gap-7">
                 <StoriesRow state={preview} onToast={showToast} onAdd={() => openCreate('media')} />
                 <Composer me={me} onOpenCreate={openCreate} />
-                <div className="mt-1"><FeedList posts={shownPosts} state={preview} openFirstComments me={me} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
+                <div className="mt-1"><FeedList posts={shownPosts} state={preview} openFirstComments me={me} onShare={sharePost} onChange={changePost} onRemove={removePost} onToast={showToast} /></div>
               </div>
             )}
           </div>
@@ -188,13 +189,13 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
 
       {activeTab === 'article' && (reading
         ? <ArticleRead article={reading} others={shownArticles.filter((a) => a.id !== reading.id)} state={preview} signedIn={signedIn} me={me} alreadyRewarded={rewarded.has(reading.id)}
-            onBack={() => setArticleId(null)} onOpen={openArticle} onReward={reward} onAuth={auth} onToast={showToast} onNavigate={nav} onRetry={retry}
+            onBack={() => setArticleId(null)} onOpen={openArticle} onOpenShare={() => shareArticle(reading)} onReward={reward} onAuth={auth} onToast={showToast} onNavigate={nav} onRetry={retry}
             onToggleFollow={() => setArticles((l) => l.map((a) => (a.id === reading.id ? { ...a, following: !a.following } : a)))}
             onToggle={toggleArticle} />
         : <ArticleList state={preview} articles={shownArticles} signedIn={signedIn} onOpen={openArticle} onToggle={toggleArticle} onMenu={articleMenu} onShare={shareArticle} onWrite={() => (signedIn ? showToast('Editor Opened', 'Write and share an article') : auth('signin'))} onToast={showToast} onRetry={retry} onNavigate={nav} />)}
 
       {activeTab === 'mypage' && signedIn && (
-        <MyPageView me={me} posts={shownPosts} articles={shownArticles} state={preview} rankTitle={user.rankTitle} onChangePost={changePost} onRemovePost={removePost}
+        <MyPageView me={me} posts={shownPosts} articles={shownArticles} state={preview} rankTitle={user.rankTitle} onChangePost={changePost} onRemovePost={removePost} onSharePost={sharePost}
           onOpenCreate={openCreate} onOpenArticle={openArticle} onToggleArticle={toggleArticle} onArticleMenu={articleMenu} onShareArticle={shareArticle} onToast={showToast} onNavigate={nav} />
       )}
 
@@ -208,6 +209,8 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
           </div>
         )}
       </div>
+
+      <SharePanel open={!!share} url={share?.url ?? ''} title={share?.title ?? ''} onClose={() => setShare(null)} onToast={showToast} />
 
       <ConfirmDialog
         open={!!confirm}

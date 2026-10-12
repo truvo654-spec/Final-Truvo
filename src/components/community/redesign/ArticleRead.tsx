@@ -72,16 +72,16 @@ const SnapshotCard: React.FC<{ onDetails: () => void }> = ({ onDetails }) => {
 };
 
 /* ───────── Share rail ───────── */
-const ShareRail: React.FC<{ title: string; onToast: ShowToast }> = ({ title, onToast }) => {
+const ShareRail: React.FC<{ title: string; onToast: ShowToast; onOpenShare?: () => void }> = ({ title, onToast, onOpenShare }) => {
   const url = typeof window !== 'undefined' ? window.location.href : '';
-  const open = (u: string) => { window.open(u, '_blank', 'noopener,noreferrer,width=600,height=500'); onToast('Share Opened', title); };
+  const open = (u: string) => { if (onOpenShare) return onOpenShare(); window.open(u, '_blank', 'noopener,noreferrer,width=600,height=500'); onToast('Share Opened', title); };
   const btn = 'w-9 h-9 flex items-center justify-center text-[#0b1c30] hover:text-[#5945F1] hover:bg-[#EEF0FE] rounded-lg transition-colors';
   return (
     <Card className="p-1.5 flex flex-row lg:flex-col gap-0.5 w-fit">
       <button type="button" aria-label="Share on X" className={btn} onClick={() => open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`)}><Twitter className="w-4 h-4" /></button>
       <button type="button" aria-label="Share on Facebook" className={btn} onClick={() => open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`)}><Facebook className="w-4 h-4" /></button>
       <button type="button" aria-label="Share on LinkedIn" className={btn} onClick={() => open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`)}><Linkedin className="w-4 h-4" /></button>
-      <button type="button" aria-label="Copy link" className={btn} onClick={async () => { try { await navigator.clipboard.writeText(url); onToast('Link Copied', title); } catch { onToast('Could Not Copy', 'Copy the link from the address bar'); } }}><Link2 className="w-4 h-4" /></button>
+      <button type="button" aria-label="Copy link" className={btn} onClick={() => (onOpenShare ? onOpenShare() : navigator.clipboard.writeText(url).then(() => onToast('Link Copied', title), () => onToast('Could Not Copy', 'Copy the link from the address bar')))}><Link2 className="w-4 h-4" /></button>
     </Card>
   );
 };
@@ -141,9 +141,10 @@ interface Props {
   onToast: ShowToast;
   onNavigate: (tab: string) => void;
   onRetry: () => void;
+  onOpenShare?: () => void;
 }
 
-export const ArticleRead: React.FC<Props> = ({ article: a, others, state, signedIn, me, alreadyRewarded, onBack, onOpen, onReward, onAuth, onToggleFollow, onToggle, onToast, onNavigate, onRetry }) => {
+export const ArticleRead: React.FC<Props> = ({ article: a, others, state, signedIn, me, alreadyRewarded, onBack, onOpen, onReward, onAuth, onToggleFollow, onToggle, onToast, onNavigate, onRetry, onOpenShare }) => {
   const [comments, setComments] = useState<CommentItem[]>(SEED_COMMENTS.slice(0, 3));
   const [credit, setCredit] = useState(false);
   const sentinel = useRef<HTMLDivElement>(null);
@@ -216,11 +217,11 @@ export const ArticleRead: React.FC<Props> = ({ article: a, others, state, signed
 
         <aside className="hidden lg:block">
           <div className="sticky top-24 space-y-4">
-            <ShareRail title={a.title} onToast={onToast} />
+            <ShareRail title={a.title} onToast={onToast} onOpenShare={onOpenShare} />
             {!error && <SnapshotCard onDetails={() => onNavigate('signals')} />}
           </div>
         </aside>
-        {!error && <div className="lg:hidden mt-8 space-y-4"><ShareRail title={a.title} onToast={onToast} /><SnapshotCard onDetails={() => onNavigate('signals')} /></div>}
+        {!error && <div className="lg:hidden mt-8 space-y-4"><ShareRail title={a.title} onToast={onToast} onOpenShare={onOpenShare} /><SnapshotCard onDetails={() => onNavigate('signals')} /></div>}
       </div>
       {credit && <CreditModal onClose={() => setCredit(false)} />}
     </div>
