@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.3] - 2026-10-12
+
+### Changed
+
+- Removed manual-entry and portfolio-sample import paths from the journal dialog and their entry points; account linking and CSV statement imports remain available.
+
+## [1.11.2] - 2026-10-12
+
+### Changed
+
+- Removed the New trade shortcut from the Trade Log action row.
+
 ## [1.11.1] - 2026-10-12
 
 ### Changed

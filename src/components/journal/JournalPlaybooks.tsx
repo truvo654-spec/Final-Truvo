@@ -4,7 +4,6 @@ import React, { useMemo, useState } from 'react';
 import { ChevronRight, Search, Sparkles, X } from 'lucide-react';
 import { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
 import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, PLAYBOOK_TEMPLATES, ReviewDecision, ScenarioStatus } from '../../data/journalPlaybooks';
-import { guessAssetClass } from './journalIngest';
 import { PlaybookAnalytics } from './PlaybookAnalytics';
 import { PlaybookBacktestPanel } from '../backtest/PlaybookBacktestPanel';
 import type { PlaybookExpectedStats } from '../../backtest/store';
@@ -114,10 +113,6 @@ interface Props {
   houseChecklist: JournalChecklistItem[];
   recordings: Record<string, string>;
   onSetRecording: (entryId: string, blob: Blob | null) => void;
-  onLogTrade: (prefill: {
-    strategy: string; checklist: string[]; symbol?: string; assetClass?: PortfolioAssetClass; direction?: 'BUY' | 'SELL';
-    entryPrice?: number; stopPrice?: number; takeProfit?: number; notes?: string; scenarioId?: string;
-  }) => void;
   /** Saved backtest expectations by playbook id. */
   expected?: Record<string, PlaybookExpectedStats>;
   onBacktest?: (playbookId: string) => void;
@@ -128,7 +123,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, onLogTrade, recordings, onSetRecording, expected = {}, onBacktest }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -369,18 +364,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     setPlaybooks((prev) => prev.map((p) => (p.id === sel.id ? { ...p, scenarios: (p.scenarios || []).filter((x) => x.id !== id) } : p)));
     if (activeSc[sel.id] === id) setActiveSc((a) => ({ ...a, [sel.id]: '' }));
   };
-  const scenarioPrefill = (sc: PlaybookScenario) => ({
-    symbol: sc.symbol, assetClass: guessAssetClass(sc.symbol), direction: (sc.bias === 'long' ? 'BUY' : 'SELL') as 'BUY' | 'SELL',
-    entryPrice: sc.entry, stopPrice: sc.stop, takeProfit: sc.target, scenarioId: sc.id,
-    notes: `Scenario: ${sc.hypothesis}${sc.trigger ? `\nTrigger: ${sc.trigger}` : ''}`,
-  });
   const curSc = sel ? (sel.scenarios || []).find((x) => x.id === activeSc[sel.id]) : undefined;
-  const logTrade = () => {
-    if (!sel) return;
-    if (curSc) setScStatus(curSc.id, 'triggered');
-    const first = (sel.symbols || [])[0];
-    onLogTrade({ strategy: sel.name, checklist: houseChecked, ...(curSc ? scenarioPrefill(curSc) : first ? { symbol: first, assetClass: guessAssetClass(first) } : {}) });
-  };
 
   // ── Edit / create form ──
   const form = editing && (
@@ -872,8 +856,9 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                           </div>
                           <div className="flex flex-wrap gap-2 mt-3">
                             {(sc.status === 'watching' || sc.status === 'triggered') && (
-                              <button type="button" onClick={() => { setActiveSc((a) => ({ ...a, [sel.id]: sc.id })); setStep('checklist'); }} className="h-8 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Check and trade</button>
+                              <button type="button" onClick={() => { setActiveSc((a) => ({ ...a, [sel.id]: sc.id })); setStep('checklist'); }} className="h-8 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Check setup</button>
                             )}
+                            {sc.status === 'watching' && <button type="button" onClick={() => setScStatus(sc.id, 'triggered')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Mark triggered</button>}
                             {sc.status === 'watching' && <button type="button" onClick={() => setScStatus(sc.id, 'invalidated')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Invalidated</button>}
                             {sc.status === 'triggered' && <button type="button" onClick={() => setScStatus(sc.id, 'closed')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Mark closed</button>}
                             {(sc.status === 'invalidated' || sc.status === 'closed') && <button type="button" onClick={() => setScStatus(sc.id, 'watching')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Reopen</button>}
@@ -901,7 +886,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                   <div className="rounded-xl border border-slate-200 px-4 py-3">
                     <div className="flex flex-wrap items-center gap-3">
                     <span className={`text-sm font-bold ${quality.cls}`}>{metAll} of {totalChecks} ticked · {quality.label}</span>
-                    <span className="text-[11px] text-[#474556]">Tick what applies. You don't need all of them; the score is saved with the trade for later review.</span>
+                    <span className="text-[11px] text-[#474556]">Tick what applies to check this setup against your rules. This checklist is a preparation aid, not a journal trade.</span>
                     {(checked.length > 0 || houseChecked.length > 0) && <button type="button" onClick={() => { setChecks((c) => ({ ...c, [sel.id]: [] })); setHouseChecks((c) => ({ ...c, [sel.id]: [] })); }} className="ml-auto text-xs font-semibold text-[#474556] hover:underline">Reset</button>}
                     </div>
                     <div className="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={totalChecks} aria-valuenow={metAll} aria-label="Checklist completion">
@@ -937,12 +922,6 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                     </div>
                   </div>
                   {(sel.avoid || []).length > 0 && <p className="text-[11px] text-rose-600">Also check you are not in a no-trade condition: {(sel.avoid || []).join(' · ')}.</p>}
-                  <div className="flex flex-wrap items-center gap-3 pt-1">
-                    <button type="button" onClick={logTrade} className="h-9 px-4 rounded-lg text-xs font-semibold text-white bg-[#5338ec] hover:bg-[#4326d8]">
-                      Log trade with this playbook
-                    </button>
-                    <span className="text-[11px] text-slate-500">Opens a new journal entry with this playbook and your ticked checklist{curSc ? `, plus ${curSc.symbol}, direction and levels from the scenario` : ''} filled in.</span>
-                  </div>
                 </div>
               )}
 
@@ -967,7 +946,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                       {selTrades.length > 0 && <button type="button" onClick={() => onShowTrades(selTrades.map((e) => e.id), `${sel.name} playbook`)} className="text-xs font-semibold text-[#5338ec] hover:underline">All {selTrades.length} in Trade Log</button>}
                     </div>
                     {selTrades.length === 0 ? (
-                      <p className="text-sm text-slate-500 border border-dashed border-slate-200 rounded-xl p-4 text-center">No trades with this playbook yet. Use the Checklist step to log one.</p>
+                      <p className="text-sm text-slate-500 border border-dashed border-slate-200 rounded-xl p-4 text-center">No trades with this playbook yet. Matching executions will appear here after they are added to the journal.</p>
                     ) : (
                       <div className="rounded-xl border border-slate-200 divide-y divide-slate-100">
                         {[...selTrades].sort((a, b) => (b.entryTime || b.date).localeCompare(a.entryTime || a.date)).slice(0, 6).map((e) => (

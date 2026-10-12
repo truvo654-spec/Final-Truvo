@@ -76,7 +76,6 @@ interface Props {
   brokers: Broker[];
   onChange: (updater: (prev: JournalEntry[]) => JournalEntry[]) => void;
   onOpen: (id: string, cohort?: string[]) => void;
-  onNew: () => void;
   onToast: (msg: string) => void;
   preset?: { ids: string[]; label: string } | null;
   onClearPreset?: () => void;
@@ -84,7 +83,7 @@ interface Props {
   onReplay?: (id: string) => void;
 }
 
-export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onNew, onToast, preset, onClearPreset, onReplay }) => {
+export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay }) => {
   const money = useMoney();
   const tradingPlain = (n:number,dp=2)=>money(Math.abs(n),dp).replace(/^\+/, '');
 
@@ -441,7 +440,6 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
           <>
             <span className="text-[11px] text-slate-500">Tick trades to tag, move to another broker, export or delete them.</span>
             <button type="button" className={`${btn} ml-auto`} onClick={exportCsv}>Export all</button>
-            <button type="button" className="px-3 py-1.5 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white" onClick={onNew}>New trade</button>
           </>
         )}
       </div>

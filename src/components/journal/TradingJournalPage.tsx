@@ -14,7 +14,6 @@ import {
 import { FolderTabs, FolderTabItem } from '../common/FolderTabs';
 import { JournalEntryWizard } from './JournalEntryWizard';
 
-type WizardPrefill = React.ComponentProps<typeof JournalEntryWizard>['prefill'];
 import { JournalEntryDetail } from './JournalEntryDetail';
 import { JournalCalendar } from './JournalCalendar';
 import { JournalTradeLog } from './JournalTradeLog';
@@ -125,13 +124,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const hasAdvanced = isLoggedIn && userTierLevel >= 3;
 
   // Overview toolbar + calendar state
-  const [wizardMode, setWizardMode] = useState<'auto' | 'upload' | 'import' | 'manual'>('import');
-  const [wizardPreset, setWizardPreset] = useState<WizardPrefill>(null);
-  const openWizard = (m: 'auto' | 'upload' | 'import' | 'manual' = 'import', preset: WizardPrefill = null) => {
-    setWizardPreset(preset);
-    setWizardMode(m);
-    setWizardOpen(true);
-  };
   const [pnlMode, setPnlMode] = useJournalState<PnlMode>('TradingJournalPage-pnlMode', 'net');
   const [calMonth, setCalMonth] = useJournalState('TradingJournalPage-calMonth', JOURNAL_TODAY.slice(0, 7));
   const [rangeMode, setRangeMode] = useJournalState<RangeMode>('range', 'month');
@@ -389,7 +381,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         </div>
         <button
           type="button"
-          onClick={() => openWizard('auto')}
+          onClick={() => setWizardOpen(true)}
           className="shrink-0 text-sm font-semibold bg-[#5338ec] hover:bg-[#4326d8] text-white rounded-xl px-4 py-2.5 transition-colors"
         >
           Import / link
@@ -491,7 +483,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                 dayEntries.length === 0 ? (
                   <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-6 text-center">
                     <p className="text-sm text-[#474556]">No entries on this day.</p>
-                    <button onClick={() => openWizard('manual')} className="mt-2 text-xs font-semibold text-[#5338ec] hover:underline">Add one</button>
                   </div>
                 ) : (
                   <>
@@ -555,7 +546,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           brokers={brokers || []}
           onChange={setEntries}
           onOpen={openEntry}
-          onNew={() => openWizard('manual')}
           onToast={onShowToast}
           preset={logPreset}
           onClearPreset={() => setLogPreset(null)}
@@ -711,7 +701,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             if (blob) next[id] = URL.createObjectURL(blob); else delete next[id];
             return next;
           })}
-          onLogTrade={(pre) => openWizard('manual', pre)}
           expected={expected}
           onBacktest={(id) => goBacktest({ view: 'setup', playbookId: id })}
           houseRules={(
@@ -896,11 +885,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {apiReplayId && tab === 'overview' && dayReviewOpen && (() => { const trade = dayEntries.find(e => e.id === apiReplayId); return trade ? <JournalReplayAvailability entry={trade} entries={dayEntries} playbooks={playbooks} onClose={() => setApiReplayId(null)}/> : null; })()}
       {wizardOpen && (
         <JournalEntryWizard
-          initialMode={wizardMode}
-          prefill={wizardPreset}
           strategies={playbooks.filter((p) => p.status !== 'archived').map((p) => p.name)}
-          checklist={checklist}
-          journaledTradeIds={entries.map((e) => e.linkedTradeId).filter((x): x is string => !!x)}
           onClose={() => setWizardOpen(false)}
           existingEntries={entries}
           brokers={brokers}
@@ -910,12 +895,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             setWizardOpen(false);
             setTab('entries');
             onShowToast(`${list.length} trade${list.length === 1 ? '' : 's'} imported`);
-          }}
-          onSave={(entry) => {
-            setEntries((prev) => [entry, ...prev]);
-            setWizardOpen(false);
-            setTab('entries');
-            onShowToast('Journal entry saved');
           }}
         />
       )}
