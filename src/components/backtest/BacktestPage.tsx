@@ -26,11 +26,12 @@ import { ReplayPanel } from './ReplayPanel';
 import { DemoReplay } from './DemoReplay';
 import { Banner, Modal, btnPrimary, btnSecondary } from './ui';
 
-export type BacktestIntent = { view: 'setup'; playbookId?: string; benchmarkTradeIds?: string[] } | { view: 'replay'; entryId?: string } | { view: 'whatif' } | { view: 'home' };
+export type BacktestIntent = { view: 'setup'; playbookId?: string; benchmarkTradeIds?: string[] } | { view: 'replay'; entryId?: string } | { view: 'whatif'; playbookId?: string } | { view: 'home' };
 type View = 'home' | 'setup' | 'running' | 'results' | 'comparison' | 'whatif' | 'replay' | 'demo' | 'runs';
 
 interface Props {
   entries: JournalEntry[];
+  allEntries: JournalEntry[];
   playbooks: JournalPlaybook[];
   setPlaybooks: (fn: (prev: JournalPlaybook[]) => JournalPlaybook[]) => void;
   journalRules: JournalRules;
@@ -76,6 +77,7 @@ const addDays = (d: string, n: number) => { const x = new Date(`${d}T00:00:00Z`)
 export const BacktestPage: React.FC<Props> = (p) => {
   const { entries, playbooks, setPlaybooks, journalRules, brokers, userTierLevel, sydeCredits, onSpendCredits, onRewardPoints, onToast, expected, onSetExpected } = p;
   const [view, setView] = useState<View>('home');
+  const [whatIfPlaybookId, setWhatIfPlaybookId] = useState('');
   const [draft, setDraft] = useState<BacktestSettings>(() => defaultSettings({ journalRules }));
   const [draftsByPlaybook, setDraftsByPlaybook] = useState<Record<string, BacktestSettings>>({});
   const [selectedPlaybookIds, setSelectedPlaybookIds] = useState<string[]>([]);
@@ -164,6 +166,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
     const it = p.intent;
     if (it.view === 'setup') startSetup(it.playbookId, it.benchmarkTradeIds);
     else if (it.view === 'replay') { setBenchmarkEntries([]); setReplayEntry(it.entryId ?? null); setView('replay'); }
+    else if (it.view === 'whatif') { setWhatIfPlaybookId(it.playbookId ?? ''); setBenchmarkEntries([]); setView('whatif'); }
     else { setBenchmarkEntries([]); setView(it.view); }
     p.onIntentDone();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -369,7 +372,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       )}
 
       {view === 'whatif' && (
-        <WhatIfPanel entries={entries} playbooks={playbooks} journalRules={journalRules} tz={tz} onToast={onToast} onOpenTrades={p.onOpenTrades}
+        <WhatIfPanel key={whatIfPlaybookId || 'custom'} initialPlaybookId={whatIfPlaybookId} entries={entries} allEntries={p.allEntries} playbooks={playbooks} journalRules={journalRules} tz={tz} onToast={onToast} onOpenTrades={p.onOpenTrades}
           onAddRule={(kind, label, patch) => { if (patch) p.onUpdateRules(patch); else p.onAddChecklist(label); onToast(kind === 'rule' ? 'Added to your trading rules' : 'Added to your pre-trade checklist'); }} />
       )}
 

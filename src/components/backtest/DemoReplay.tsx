@@ -11,6 +11,8 @@ import { DemoPositionMonitor } from './DemoPositionMonitor';
 import { TestPositionReplay } from './TestPositionReplay';
 import { defaultPositionSetup, monitorDemo, planPosition, PositionSetup, resolvePositionSetup } from '../../backtest/demoPosition';
 import { Card, Field, Pill, btnPrimary, btnSecondary, inputCls } from './ui';
+import { recommendSetup, runRecommendationCandidate, type RecommendationGoal } from '../../backtest/recommender';
+import { MarketSydeRecommender } from './MarketSydeRecommender';
 
 interface Props { entries: JournalEntry[]; playbooks: JournalPlaybook[]; initialEntryId?: string; initialMode?: 'position'|'strategy'; }
 const time = (t:number) => new Date(t).toISOString().replace('T',' ').slice(0,16) + ' UTC';
@@ -37,6 +39,7 @@ function StrategyReplay({entries, playbooks, initialEntryId}: Props) {
   const [commission,setCommission] = useState('0');
   const [positionSetup,setPositionSetup] = useState<PositionSetup>(()=>defaultPositionSetup(initialBook,initial));
   const [result,setResult] = useState<ReturnType<typeof compareDemo> | null>(null);
+  const [recommendationGoal,setRecommendationGoal] = useState<RecommendationGoal>('net');
   const [error,setError] = useState<string | null>(null);
   const entry = entries.find(e=>e.id===entryId);
   const book = playbooks.find(p=>p.id===bookId) ?? null;
@@ -86,7 +89,10 @@ function StrategyReplay({entries, playbooks, initialEntryId}: Props) {
   if(snapshot?.position)markers.push({index:feed.bars.findIndex(b=>b.t===snapshot.position!.entryTime),price:snapshot.position.entry,kind:snapshot.position.direction==='BUY'?'buy':'sell'});
   const positionLines=snapshot?.position ? [{price:snapshot.position.entry,color:'#5338ec',label:'Entry'},{price:snapshot.position.stop,color:'#e11d48',label:'Stop',dashed:true},...(snapshot.position.target===null?[]:[{price:snapshot.position.target,color:'#059669',label:'Target',dashed:true}])] : [];
   const net = (r:RunResult) => r.endBalance-r.startBalance;
+  const recommendationBaseline = result ? runRecommendationCandidate('baseline','Strategy baseline',result.baseline).metrics : {netPnl:0,maxDD:0,winRate:0,trades:0};
+  const recommendation = recommendSetup(result ? [runRecommendationCandidate('hypothesis','Stop / target hypothesis',result.variant)] : [],recommendationBaseline,recommendationGoal);
   return <div className="space-y-4 text-[#0b1c30]" aria-label="Demo replay workspace">
+    {result && <MarketSydeRecommender recommendation={recommendation} baseline={recommendationBaseline} baselineName="strategy baseline on this demo path" goal={recommendationGoal} onGoal={setRecommendationGoal} money={usd} evidence="Compared on one generated demo path. This is a learning comparison with no live performance evidence or independent holdout." />}
     <div className="rounded-xl border border-[#5338ec]/20 bg-[#FBFAFF] px-4 py-3 text-xs leading-relaxed"><Pill tone="accent">Simulated demo data</Pill><span className="ml-2">Generated candles, not historical or live prices. Recorded trades are reference only. Tests do not change journal records, playbooks, statistics, credits or points.</span></div>
     <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-4 items-start">
       <Card title="Playback" sub="Select a recorded strategy or practise freely.">

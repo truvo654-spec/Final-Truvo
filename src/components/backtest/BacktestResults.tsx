@@ -18,6 +18,8 @@ import type { Marker } from './charts';
 import { Banner, Card, Hint, Kpi, Pill, Segmented, btnPrimary, btnSecondary } from './ui';
 import { BacktestTradeLog } from './BacktestTradeLog';
 import { JournalTradeBenchmark } from './JournalTradeBenchmark';
+import { recommendSetup, type RecommendationGoal } from '../../backtest/recommender';
+import { MarketSydeRecommender } from './MarketSydeRecommender';
 
 interface Props {
   settings: BacktestSettings;
@@ -67,8 +69,10 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
   const [more, setMore] = useState(false);
   const [showLive, setShowLive] = useState(false);
   const [chartEnd, setChartEnd] = useState<number | null>(null);
+  const [recommendationGoal, setRecommendationGoal] = useState<RecommendationGoal>('net');
 
   const m = useMemo(() => computeMetrics(r.trades, r.startBalance, r.rangeStart, r.rangeEnd), [r]);
+  const recommendation = recommendSetup(output.suggestions.filter(sg=>sg.metrics).map(sg=>({id:sg.id,name:sg.label,metrics:sg.metrics!})),m,recommendationGoal);
   const ddLimit = s.risk.maxDrawdownPct ?? s.prop?.maxDrawdownPct ?? 20;
   const rob = useMemo(() => robustness(r.trades, r.rangeStart, r.rangeEnd, r.startBalance, ddLimit), [r, ddLimit]);
   const rc = ruleCount(s);
@@ -201,6 +205,9 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
       </div>
 
       {benchmarkEntries.length > 0 && <JournalTradeBenchmark entries={benchmarkEntries} />}
+
+      <MarketSydeRecommender recommendation={recommendation} baseline={m} baselineName="this playbook's current rules" goal={recommendationGoal} onGoal={setRecommendationGoal} money={value=>money(value,cur,2)}
+        evidence={output.suggestions.some(sg=>!sg.metrics) ? 'Re-run older saved reports to include candidate net and drawdown evidence. Existing suggestion buttons remain available below.' : 'Ranked among up to three qualifying changes to target, stop, session, news, direction or breakeven on generated demo prices. In-sample selection; the current report’s robustness checks do not validate a changed setup.'} action="Set up AI candidate test" onUse={id=>{const sg=output.suggestions.find(sg=>sg.id===id);if(sg)onApplySuggestion(sg);}} />
 
       {/* Warnings */}
       {r.zeroTradeReason && <Banner tone="bad" icon={<XCircle className="w-4 h-4" />} action={<button type="button" className={btnSecondary} onClick={onEdit}>Change the setup</button>}><b>No trades.</b> {r.zeroTradeReason}</Banner>}

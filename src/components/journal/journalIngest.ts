@@ -12,7 +12,7 @@ export type IngestField =
   | 'qty'
   | 'pnl'
   | 'fee'
-  | 'ticket';
+  | 'ticket' | 'exitTime' | 'initialRisk' | 'stop' | 'target' | 'strategy' | 'tags' | 'mistakes' | 'notes' | 'assetClass';
 
 export const INGEST_FIELDS: { key: IngestField; label: string; type: string; aliases: string[] }[] = [
   { key: 'time', label: 'Execution time', type: 'Timestamp', aliases: ['datetime', 'datetimeutc', 'executiontime', 'exectime', 'entrytime', 'opentime', 'timestamp', 'time', 'date'] },
@@ -24,6 +24,15 @@ export const INGEST_FIELDS: { key: IngestField; label: string; type: string; ali
   { key: 'pnl', label: 'Reported P&L (gross / net)', type: 'Currency', aliases: ['realizedpnlusd', 'realizedpnl', 'grosspnl', 'pnl', 'profitloss', 'profit', 'netpnl'] },
   { key: 'fee', label: 'Commissions / fees', type: 'Currency', aliases: ['exchangefeetotal', 'commissions', 'commission', 'fees', 'fee'] },
   { key: 'ticket', label: 'Ticket / order ID', type: 'ID', aliases: ['orderticketid', 'ticketid', 'ticket', 'orderid', 'tradeid', 'dealid', 'id'] },
+  { key: 'exitTime', label: 'Exit time', type: 'Timestamp', aliases: ['exittime', 'closetime', 'closedat'] },
+  { key: 'initialRisk', label: 'Initial monetary risk (1R)', type: 'Currency', aliases: ['initialrisk', 'monetaryrisk', 'riskamount', 'riskusd'] },
+  { key: 'stop', label: 'Original stop price', type: 'Decimal', aliases: ['stopprice', 'stoploss', 'sl'] },
+  { key: 'target', label: 'Original target price', type: 'Decimal', aliases: ['takeprofit', 'targetprice', 'tp'] },
+  { key: 'strategy', label: 'Playbook / strategy', type: 'Text', aliases: ['strategy', 'playbook', 'setupname'] },
+  { key: 'tags', label: 'Tags (separate with |)', type: 'Text', aliases: ['tags', 'tradetags'] },
+  { key: 'mistakes', label: 'Mistakes (separate with |)', type: 'Text', aliases: ['mistakes', 'mistaketags'] },
+  { key: 'notes', label: 'Journal notes', type: 'Text', aliases: ['setupnotes', 'journalnotes', 'notes', 'log'] },
+  { key: 'assetClass', label: 'Market type', type: 'Enum', aliases: ['assetclass', 'markettype'] },
 ];
 
 export interface ColumnMapping {
@@ -110,8 +119,8 @@ const toSide = (v: string | undefined): 'BUY' | 'SELL' | null => {
 export const guessAssetClass = (symbol: string): PortfolioAssetClass => {
   const s = symbol.toUpperCase();
   if (/^(BTC|ETH|SOL|USDT|USDC|XRP)(?:[\/-]?(USD|USDT|USDC|EUR|GBP|BTC|ETH))?$/.test(s)) return 'Crypto';
-  if (/^(XAU|XAG|WTI|BRENT|CL|GC|SI|NG)/.test(s)) return 'Commodity';
-  if (/^(NQ|ES|YM|RTY|US500|NAS100|US30|GER40|DAX|SPX|NDX)/.test(s)) return 'Indices';
+  if (/^(XAU|XAG|WTI|BRENT|CL|MGC|GC|SI|NG)/.test(s)) return 'Commodity';
+  if (/^(MNQ|MES|NQ|ES|YM|RTY|US500|NAS100|US30|GER40|DAX|SPX|NDX)/.test(s)) return 'Indices';
   if (/^[A-Z]{3}\/?[A-Z]{3}$/.test(s)) return 'Forex';
   return 'Stocks';
 };
@@ -167,6 +176,16 @@ export function convertRows(
     const fee = toNum(get('fee'));
     const t = toIso(get('time'),defaults.timezone || 'UTC');
     if(!t)return out.push({line,status:'invalid',reason:'Missing/invalid ISO execution date or time; no date was invented'});
+    const exitTimestamp = get('exitTime')?.trim() ? toIso(get('exitTime'), defaults.timezone || 'UTC') : null;
+    if (get('exitTime')?.trim() && (!exitTimestamp?.time || (t.time && timestampMs(exitTimestamp.time) < timestampMs(t.time)) || exitTimestamp.date < t.date)) return out.push({line,status:'invalid',reason:'Exit time must be a valid timestamp on or after entry'});
+    const initialRisk = toNum(get('initialRisk')), stop = toNum(get('stop')), target = toNum(get('target'));
+    for (const [field, value] of [['initialRisk', initialRisk], ['stop', stop], ['target', target]] as [IngestField, number][]) {
+      if (get(field)?.trim() && (!Number.isFinite(value) || value <= 0)) return out.push({line,status:'invalid',reason:`Invalid positive ${field}`});
+    }
+    const marketRaw = get('assetClass')?.trim();
+    const assetClass = ['Forex','Crypto','Stocks','Commodity','Indices'].find(m => m.toLowerCase() === marketRaw?.toLowerCase()) as PortfolioAssetClass | undefined;
+    if (marketRaw && !assetClass) return out.push({line,status:'invalid',reason:'Market type must be Forex, Crypto, Stocks, Commodity or Indices'});
+    const list = (field: IngestField) => [...new Set((get(field) || '').split('|').map(v => v.trim()).filter(Boolean))];
     if(get('fee')?.trim() && !Number.isFinite(fee))return out.push({line,status:'invalid',reason:'Invalid fee'});
     if(Number.isFinite(fee) && fee<0)return out.push({line,status:'invalid',reason:'Use non-negative cost magnitudes. Negative expense signs or rebates need source reconciliation before import.'});
     if(get('pnl')?.trim() && !Number.isFinite(pnlRaw))return out.push({line,status:'invalid',reason:'Invalid reported P&L'});
@@ -187,7 +206,7 @@ export function convertRows(
       tradingStatus:hasResult?'closed':'open', pnlKnown:hasResult, reviewState:'needs_review', mistakesReviewed:false,
       date: t.date,
       symbol,
-      assetClass: guessAssetClass(symbol),
+      assetClass: assetClass || guessAssetClass(symbol),
       direction: side,
       entryPrice,
       exitPrice,
@@ -195,19 +214,23 @@ export function convertRows(
       pnl,
       rMultiple: null,
       outcome,
-      strategy: defaults.strategy,
-      tags: ['Imported'],
-      setupNotes: '',
+      strategy: get('strategy')?.trim() || defaults.strategy,
+      tags: [...new Set(['Imported', ...list('tags')])],
+      setupNotes: get('notes')?.trim() || '',
       emotionBefore: null,
       emotionAfter: null,
       followedPlan: null,
       checklistDone: [],
-      mistakes: [],
+      mistakes: list('mistakes'),
       lessons: '',
       rating: null,
       source: 'manual',
       commission: isNaN(fee) ? undefined : Math.abs(fee),
       entryTime: t.time,
+      exitTime: exitTimestamp?.time,
+      initialRisk: Number.isFinite(initialRisk) ? initialRisk : null,
+      stopPrice: Number.isFinite(stop) ? stop : undefined,
+      takeProfit: Number.isFinite(target) ? target : undefined,
       ticketId: ticket || undefined,
     };
     const key = dedupeKey(entry);
@@ -219,8 +242,8 @@ export function convertRows(
 }
 
 export const SAMPLE_CSV = [
-  'DateTime_UTC,Instrument / Contract,Order_Side,Exec_Avg_Price,Contract_Size_Qty,Realized_PnL_USD,Exchange_Fee_Total,Order_Ticket_ID',
-  '2026-10-07 14:32:04,NQZ26,BUY,20412.50,3,1315.00,12.60,TRD-88231',
-  '2026-10-07 15:10:41,ESZ26,SELL,5832.25,2,-212.50,8.40,TRD-88244',
-  '2026-10-07 16:02:19,EUR/USD,BUY,1.0912,1,64.00,3.50,TRD-88260',
+  'DateTime_UTC,Instrument / Contract,Order_Side,Exec_Avg_Price,Contract_Size_Qty,Realized_PnL_USD,Exchange_Fee_Total,Order_Ticket_ID,ExitTime,ExitPrice,InitialRisk,StopPrice,TakeProfit,Strategy,Tags,Mistakes,JournalNotes',
+  '2026-10-05 14:32:04,MNQ,BUY,20412.50,3,1315.00,12.60,TRD-88231,2026-10-05 15:30:00,20631.67,600,20312.50,20712.50,Breakout,NY open,,Waited for retest',
+  '2026-10-06 15:10:41,MES,SELL,5832.25,2,-212.50,8.40,TRD-88244,2026-10-06 15:45:00,5853.50,200,5852.25,5792.25,Breakout,NY open,Chased price,Entered before confirmation',
+  '2026-10-07 16:02:19,EUR/USD,BUY,1.0912,1,64.00,3.50,TRD-88260,2026-10-07 17:00:00,1.09184,60,1.0906,1.0924,Scalping,London,,Followed plan',
 ].join('\n');

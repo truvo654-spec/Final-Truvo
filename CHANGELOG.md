@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.0] - 2026-10-12
+
+### Added
+
+- MarketSyde AI beta recommendation cards for What-if, single playbook reports, multi-playbook comparisons, saved-run comparisons and demo hypothesis comparisons.
+- Goal-based local statistical selection for net result, drawdown and win rate, with measured benchmark deltas, sample limits, clear reasons and candidate actions.
+- Highlighted candidate rows and chart legends, independent What-if holdout evidence, and comparability checks for saved and multi-playbook tests.
+- Persisted suggestion net, drawdown, win-rate and trade-count evidence for newly completed playbook tests; older reports retain their existing suggestions.
+
+### Changed
+
+- Recommendation labels distinguish exploratory samples, in-sample demo tests and reconstructed price paths. No performance superiority or future-return claims are fabricated.
+
+## [1.18.2] - 2026-10-12
+
+### Changed
+
+- Merged What-if equity and candle comparisons into one main chart above the parameter table, defaulting to equity for all filtered benchmark trades.
+- Added equity scope and chart view controls for instrument-specific contributions and full-history equity, with an equity fallback when demo candles are unavailable.
+- Extended the candle timeline through recorded trade exit dates and retained explicit independent price and equity scales.
+
+## [1.18.1] - 2026-10-12
+
+### Changed
+
+- What-if now automatically applies selected playbook and scenario setups, with direct navigation from the playbook’s Optimize in What-if action.
+- Replaced separate history import and setup-load buttons with live journal benchmarks: current selection, all history, selected playbook history, or account history.
+- Benchmark selections automatically include newly recorded and imported journal trades in the chosen currency, while preserving independently editable setup filters.
+
+## [1.18.0] - 2026-10-12
+
+### Added
+
+- What-if scenario lab with market, instrument, history source, direction, date and UTC session filters.
+- Playbook and scenario setup transfer for numeric target R, instrument scope, direction and session, with written risk and exit rules shown as reference.
+- Bounded parameter sweeps, training-ranked comparison tables, independent chronological holdout results, equity comparisons and the shared interactive candle chart.
+- In-place history import with persistent imported cohorts and CSV mappings for monetary risk, stops, targets, exit times, playbooks, tags, mistakes, notes and market type.
+
+### Changed
+
+- Reused statement validation and candle rendering; generated market candles and reconstructed price-path estimates are explicitly distinguished from recorded journal results.
+- Replaced repeated trade-source scans with an indexed lookup for larger imported-history comparisons.
+- Daily-loss guardrails now wait for recorded exits before using outcomes, preventing an overlapping trade's future loss from skipping an earlier entry.
+
 ## [1.17.8] - 2026-10-12
 
 ### Added

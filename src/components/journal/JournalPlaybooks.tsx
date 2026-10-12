@@ -116,6 +116,7 @@ interface Props {
   /** Saved backtest expectations by playbook id. */
   expected?: Record<string, PlaybookExpectedStats>;
   onBacktest?: (playbookId: string) => void;
+  onWhatIf?: (playbookId: string) => void;
 }
 
 const blank = (): JournalPlaybook => ({
@@ -123,7 +124,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -685,7 +686,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                     <span>Min reward:risk: <b className="text-[#0b1c30]">1:{sel.benchmarkRR}</b></span>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {onWhatIf && <button type="button" onClick={() => onWhatIf(sel.id)} className={btn}>Optimize in What-if</button>}
                   {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className={btn} title="Test these rules on past prices">Backtest this playbook</button>}
                   <button type="button" onClick={exportMd} className={btn}>Export</button>
                   <button type="button" onClick={startEdit} className={btn}>Edit playbook</button>

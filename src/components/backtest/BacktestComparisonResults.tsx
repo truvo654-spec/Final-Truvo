@@ -10,6 +10,8 @@ import { ACCENT, DOWN, UP, CandleChart } from './charts';
 import { Card, btnSecondary, inputBase, Pill } from './ui';
 import { JournalTradeBenchmark } from './JournalTradeBenchmark';
 import type { BacktestSettings, JobOutput } from '../../backtest/types';
+import { comparableSetups, recommendSetup, type RecommendationGoal } from '../../backtest/recommender';
+import { MarketSydeRecommender, RecommendationBadge } from './MarketSydeRecommender';
 
 const SCENARIO_COLORS = [ACCENT, UP, DOWN, '#0284c7', '#d97706', '#7c3aed', '#0f766e', '#ea580c'];
 const CHART_WINDOW = 85;
@@ -36,6 +38,7 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
   const [visibleScenarios, setVisibleScenarios] = useState<Set<string>>(() => new Set(items.map(scenarioId)));
   const [instrumentQuery, setInstrumentQuery] = useState('');
   const [chartEnd, setChartEnd] = useState<number | null>(null);
+  const [recommendationGoal, setRecommendationGoal] = useState<RecommendationGoal>('net');
   const rows = useMemo(() => items.map((item) => {
     const { settings, output } = item;
     const result = output.result;
@@ -49,6 +52,8 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
     return { item, metrics, playbook, matchingEntries, live, session, currency: result.currency };
   }), [items, playbooks, entries, tz]);
   const shared = items[0]?.settings;
+  const recommendationBaseline = rows[0]?.metrics ?? {netPnl:0,maxDD:0,winRate:0,trades:0};
+  const recommendation = recommendSetup(rows.slice(1).map((row,i) => ({id:scenarioId(row.item,i+1),name:row.playbook?.name ?? row.item.settings.name,metrics:row.metrics})), recommendationBaseline, recommendationGoal, comparableSetups(items.map(item=>item.settings)));
   const chartBars = useMemo((): Bar[] => {
     if (!shared) return [];
     const series = marketData.seriesSync(shared.symbol, '1D');
@@ -102,6 +107,8 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
 
   return (
     <div className="space-y-5">
+      <MarketSydeRecommender recommendation={recommendation} baseline={recommendationBaseline} baselineName={rows[0]?.playbook?.name ?? shared.name} goal={recommendationGoal} onGoal={setRecommendationGoal} money={value=>money(value,shared.risk.currency,2)}
+        evidence="Compared among these completed playbook tests on generated demo prices. Selection is in-sample; no independent candidate holdout has been run." action="Inspect AI candidate" onUse={id=>{const item=items.find((item,i)=>scenarioId(item,i)===id);if(item)onViewResult(item);}} />
       {benchmarkEntries.length > 0 && <JournalTradeBenchmark entries={benchmarkEntries} />}
       <Card title="Scenario comparison" sub="Daily generated candles show the selected instrument; colored lines show each playbook's cumulative net P&L. Hover for candle prices and scenario results."
         right={
@@ -163,7 +170,7 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
                 className="accent-[#5338ec]"
               />
               <span className="inline-block h-0.5 w-4" style={{ backgroundColor: scenario.color }} aria-hidden />
-              {scenario.name}
+              {scenario.name} {scenario.key === recommendation.candidate?.id && <RecommendationBadge exploratory={recommendation.status === 'exploratory'} />}
             </label>
           ))}
         </div>
@@ -227,10 +234,11 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ item, metrics: m, playbook, matchingEntries, live, session, currency }) => (
-                <tr key={item.settings.playbookId} className="border-b border-slate-100 align-top">
+              {rows.map(({ item, metrics: m, playbook, matchingEntries, live, session, currency }, index) => (
+                <tr key={scenarioId(item,index)} className={`border-b border-slate-100 align-top ${scenarioId(item,index) === recommendation.candidate?.id ? 'bg-[#F1EDFF]' : ''}`}>
                   <td className="py-3 pr-3">
                     <p className="font-bold text-[#0b1c30]">{playbook?.name ?? item.settings.name}</p>
+                    {scenarioId(item,index) === recommendation.candidate?.id && <RecommendationBadge exploratory={recommendation.status === 'exploratory'} />}
                     <p className="mt-0.5 text-[10px] text-slate-400">{item.settings.symbol} · {item.settings.from} → {item.settings.to}</p>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">{item.settings.timeframe}<p className="mt-0.5 text-[10px] text-slate-500">{session}</p></td>

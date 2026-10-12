@@ -144,6 +144,10 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
 
   return (
     <div className="max-w-5xl mx-auto space-y-4 pb-28">
+      <section aria-label="MarketSyde AI test guidance" className="rounded-2xl border border-[#5338ec]/25 bg-[#F5F2FF] p-4">
+        <p className="flex items-center gap-2 text-sm font-bold text-[#5338ec]"><Sparkles size={16} aria-hidden />MarketSyde AI · compare before you commit</p>
+        <p className="text-xs text-slate-600 mt-2">Test a playbook to evaluate small rule changes, or select several playbooks to compare their results on the same market and dates. The recommender will highlight a qualifying candidate, explain its trade-offs, and open an editable setup for your next test.</p>
+      </section>
       {/* STEP 1 */}
       <Step n={1} title="Market, dates, risk and costs" sub="Choose your instrument and date range, then set account risk and costs. Each playbook keeps its own timeframe.">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

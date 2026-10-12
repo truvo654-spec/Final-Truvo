@@ -220,6 +220,6 @@ export interface RunResult {
   tradingDays: number;
 }
 
-export interface Suggestion { id: string; label: string; detail: string; deltaR: number; trades: number; patch: Partial<BacktestSettings> & { rulesPatch?: Partial<StrategyRules>; exitsPatch?: Partial<ExitRules> } }
+export interface Suggestion { id: string; label: string; detail: string; deltaR: number; trades: number; metrics?: { netPnl: number; maxDD: number; winRate: number; trades: number }; patch: Partial<BacktestSettings> & { rulesPatch?: Partial<StrategyRules>; exitsPatch?: Partial<ExitRules> } }
 
 export interface JobOutput { result: RunResult; suggestions: Suggestion[] }

@@ -73,13 +73,21 @@ export function pathOf(e: JournalEntry, steps = 48): number[] {
 
 export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalance = 1): WhatIfOutput {
   journalMetrics(entries); // refuses to combine currencies without a conversion policy
+  const sources = new Map(entries.map(e => [e.id, e]));
   const closed = entries.filter((e) => eligible(e))
     .map((e) => ({ e, t0: toMs(e.entryTime, e.date), t1: toMs(e.exitTime, e.date, 13) }))
     .sort((a, b) => a.t0 - b.t0);
 
   const dayLosses = new Map<string, number>();
   const dayPnl = new Map<string, number>();
+  let pending: { trade: WhatIfTrade; day: string }[] = [];
   const out: WhatIfTrade[] = closed.map(({ e, t0, t1 }) => {
+    // A later entry can only react to outcomes that have already closed.
+    for (const {trade, day} of pending.filter(p => p.trade.exitTime <= t0)) {
+      if (trade.newNet < 0) dayLosses.set(day, (dayLosses.get(day) || 0) + 1);
+      dayPnl.set(day, (dayPnl.get(day) || 0) + trade.newNet);
+    }
+    pending = pending.filter(p => p.trade.exitTime > t0);
     const risk = riskOf(e, NaN);
     const base: WhatIfTrade = {
       id: e.id, symbol: e.symbol, strategy: e.strategy, direction: e.direction, entryTime: t0, exitTime: Math.max(t1, t0),
@@ -89,10 +97,7 @@ export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalanc
     const change = (rr: number, note: string): WhatIfTrade => (Math.abs(rr - (realizedR(e) ?? 0)) < 0.005 ? base : { ...base, newNet: Math.round(rr * risk * 100) / 100, newR: rr, status: 'changed', note });
     const day = e.date;
     const record = (t: WhatIfTrade) => {
-      if (t.status !== 'skipped') {
-        if (t.newNet < 0) dayLosses.set(day, (dayLosses.get(day) || 0) + 1);
-        dayPnl.set(day, (dayPnl.get(day) || 0) + t.newNet);
-      }
+      if (t.status !== 'skipped') pending.push({trade:t, day});
       return t;
     };
     switch (rule.kind) {
@@ -138,7 +143,7 @@ export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalanc
   // The internal numerical anchor is not evidence of an account balance.
   const sharedMetrics=(sel:'actual'|'new')=>{
     const selected=out.filter(t=>sel==='actual' || t.status!=='skipped');
-    const m=journalMetrics(selected.map(t=>{const source=entries.find(e=>e.id===t.id)!;return {...source,pnl:sel==='actual'?t.actualNet:t.newNet,commission:0,initialRisk:null,rMultiple:sel==='actual'?t.actualR:t.newR};}));
+    const m=journalMetrics(selected.map(t=>{const source=sources.get(t.id)!;return {...source,pnl:sel==='actual'?t.actualNet:t.newNet,commission:0,initialRisk:null,rMultiple:sel==='actual'?t.actualR:t.newR};}));
     return {...computeMetrics(mt(sel),startBalance,rs,re),trades:m.n,wins:m.wins,losses:m.losses,breakevens:m.be,winRate:m.winRate==null?NaN:m.winRate/100,profitFactor:m.pf,avgR:m.avgR ?? NaN,expectancy:m.expectancy ?? NaN,netPnl:m.total,maxDD:m.drawdown,maxDDPct:NaN,netPct:NaN,endBalance:NaN};
   };
   const actual = sharedMetrics('actual');

@@ -664,6 +664,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {tab === 'backtest' && (
         <BacktestPage
           entries={scoped}
+          allEntries={entries}
           playbooks={playbooks}
           setPlaybooks={setVersionedPlaybooks}
           journalRules={rules}
@@ -704,6 +705,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           })}
           expected={expected}
           onBacktest={(id) => goBacktest({ view: 'setup', playbookId: id })}
+          onWhatIf={id => goBacktest({ view: 'whatif', playbookId: id })}
           houseRules={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
