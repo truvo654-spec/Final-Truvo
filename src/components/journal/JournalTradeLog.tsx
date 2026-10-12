@@ -422,18 +422,6 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
           <p className="text-[10px] text-slate-500 mt-1">Base rate, before boosters</p>
         </div>
       </div>
-      {hasSel && onBacktestTrades && (
-        <div className="flex justify-end -mb-2">
-          <button
-            type="button"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#5338ec] px-4 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#4326d8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5338ec]"
-            onClick={() => onBacktestTrades(sel)}
-          >
-            Import to Backtest <ArrowRight className="h-4 w-4" aria-hidden />
-          </button>
-        </div>
-      )}
-
       {/* Bulk actions */}
       <div className="flex flex-wrap items-center gap-2 min-h-[36px]">
         {hasSel ? (
@@ -617,12 +605,23 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
           </select>
         </label>
         <span className="hidden lg:inline text-slate-500">Net of commissions · cashback and points are estimates</span>
-        <div className="ml-auto flex items-center gap-1" role="navigation" aria-label="Pagination">
-          <button type="button" aria-label="Previous page" disabled={curPage <= 1} onClick={() => setPage(curPage - 1)} className="w-7 h-7 rounded-md border border-slate-200 bg-white disabled:opacity-40">‹</button>
-          {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
-            <button key={p} type="button" aria-current={p === curPage ? 'page' : undefined} onClick={() => setPage(p)} className={`w-7 h-7 rounded-md border text-xs font-semibold ${p === curPage ? 'bg-[#5338ec] border-[#5338ec] text-[#0b1c30]' : 'border-slate-200 bg-white text-slate-700'}`}>{p}</button>
-          ))}
-          <button type="button" aria-label="Next page" disabled={curPage >= pages} onClick={() => setPage(curPage + 1)} className="w-7 h-7 rounded-md border border-slate-200 bg-white disabled:opacity-40">›</button>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+          <div className="flex items-center gap-1" role="navigation" aria-label="Pagination">
+            <button type="button" aria-label="Previous page" disabled={curPage <= 1} onClick={() => setPage(curPage - 1)} className="w-7 h-7 rounded-md border border-slate-200 bg-white disabled:opacity-40">‹</button>
+            {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
+              <button key={p} type="button" aria-current={p === curPage ? 'page' : undefined} onClick={() => setPage(p)} className={`w-7 h-7 rounded-md border text-xs font-semibold ${p === curPage ? 'bg-[#5338ec] border-[#5338ec] text-[#0b1c30]' : 'border-slate-200 bg-white text-slate-700'}`}>{p}</button>
+            ))}
+            <button type="button" aria-label="Next page" disabled={curPage >= pages} onClick={() => setPage(curPage + 1)} className="w-7 h-7 rounded-md border border-slate-200 bg-white disabled:opacity-40">›</button>
+          </div>
+          {hasSel && onBacktestTrades && (
+            <button
+              type="button"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#5338ec] px-4 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#4326d8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5338ec]"
+              onClick={() => onBacktestTrades(sel)}
+            >
+              Import to Backtest <ArrowRight className="h-4 w-4" aria-hidden />
+            </button>
+          )}
         </div>
       </div>
     </div>

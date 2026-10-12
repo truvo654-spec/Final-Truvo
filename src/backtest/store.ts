@@ -74,10 +74,10 @@ export const saveUsage = (u: Usage) => write(KEYS.usage, u);
 
 // ── Replay sessions ──
 
-export interface PracticeTrade { dir: 'long' | 'short'; entry: number; exit: number; size: number; net: number; r: number | null; entryBar: number; exitBar: number; tags: string[] }
+export interface PracticeTrade { dir: 'long' | 'short'; entry: number; exit: number; size: number; net: number; r: number | null; entryBar: number; exitBar: number; tags: string[]; entryTime?: string; exitTime?: string }
 export interface ReplaySession {
   id: string; source: 'random' | 'similar' | 'journal'; symbol: string; label: string; startedAt: string; finishedAt: string | null;
-  trades: PracticeTrade[]; net: number; notes: string; tags: string[]; pointsAwarded: boolean; journalTradeId?: string;
+  trades: PracticeTrade[]; net: number; notes: string; tags: string[]; pointsAwarded: boolean; journalTradeId?: string; marketDate?: string; timeframe?: string;
 }
 export const loadReplay = (): ReplaySession[] => read<ReplaySession[]>(KEYS.replay, []);
 export const saveReplay = (list: ReplaySession[]) => write(KEYS.replay, list.slice(0, 100));
@@ -110,7 +110,7 @@ export function claimPoints(kind: 'replay' | 'backtest', id: string): number {
 // ── Practice (replay) custom filters ──
 
 export type PracticeMarket = 'Forex' | 'Indices' | 'Commodities' | 'Crypto' | 'Stocks';
-export interface PracticeFilter { markets: PracticeMarket[]; symbols: string[]; result: 'all' | 'losses' | 'wins'; playbook: string; mistake: string }
+export interface PracticeFilter { markets: PracticeMarket[]; symbols: string[]; result: 'all' | 'losses' | 'wins'; playbook: string; mistake: string; from?: string; to?: string }
 export interface SavedPracticeFilter { id: string; name: string; filter: PracticeFilter }
 const PRACTICE_FILTERS = 'ms_backtest_practice_filters_v1';
 export const loadPracticeFilters = (): SavedPracticeFilter[] => read<SavedPracticeFilter[]>(PRACTICE_FILTERS, []);

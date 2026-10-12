@@ -1,10 +1,10 @@
-// Setup for an automated backtest: three short steps on one page, everything pre-filled.
+// Setup for an automated backtest: two short steps on one page, everything pre-filled.
 import React, { useMemo, useState } from 'react';
 import { ChevronDown, Sparkles, AlertCircle, Play } from 'lucide-react';
 import type { Broker, JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { eligible, metrics } from '../journal/journalMath';
-import { SYMBOLS, marketGroupOf, symbolSpec } from '../../backtest/marketData';
+import { SYMBOLS, marketGroupOf, resolveSymbol, symbolSpec } from '../../backtest/marketData';
 import {
   JournalRules, defaultCostsFor, describeCondition, describeRules, presetRange, validateSettings,
 } from '../../backtest/rules';
@@ -13,6 +13,7 @@ import {
 } from '../../backtest/types';
 import { pct, rr, utcWindow } from '../../backtest/format';
 import { Field, Hint, Pill, Segmented, Toggle, btnPrimary, btnSecondary, inputBase, inputCls } from './ui';
+import { JournalTradeBenchmark } from './JournalTradeBenchmark';
 
 type PresetId = '3' | '6' | '12' | '24' | 'max';
 
@@ -24,6 +25,8 @@ interface Props {
   settingsByPlaybook: Record<string, BacktestSettings>;
   onSelectionChange: (ids: string[]) => void;
   entries: JournalEntry[];
+  benchmarkEntries: JournalEntry[];
+  onClearBenchmark: () => void;
   brokers: Broker[];
   journalRules: JournalRules;
   onRun: () => void;
@@ -39,7 +42,7 @@ const PROP_TEMPLATES = [
 ];
 
 /** Costs from a broker's account types (raw/zero accounts: commission + tight spread). */
-function brokerCosts(b: Broker, symbol: string): { commissionPerSide: number; spread: number; slippage: number } {
+export function brokerCosts(b: Broker, symbol: string): { commissionPerSide: number; spread: number; slippage: number } {
   const base = defaultCostsFor(symbol);
   const spec = symbolSpec(symbol);
   if (spec?.assetClass !== 'Forex') return base;
@@ -60,8 +63,8 @@ const sizeText = (sym: string) => {
 };
 
 const Step: React.FC<{ n: number; title: string; sub: string; children: React.ReactNode; right?: React.ReactNode }> = ({ n, title, sub, children, right }) => (
-  <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5 min-w-0" aria-label={title}>
-    <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+  <section className="bg-white border border-[#e2e8f0] rounded-2xl p-4 min-w-0" aria-label={title}>
+    <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
       <div className="flex items-start gap-3">
         <span className="grid place-items-center w-7 h-7 rounded-full bg-[#EEF0FE] text-[#5338ec] text-xs font-bold shrink-0" aria-hidden>{n}</span>
         <div>
@@ -71,7 +74,7 @@ const Step: React.FC<{ n: number; title: string; sub: string; children: React.Re
       </div>
       {right}
     </div>
-    <div className="space-y-4">{children}</div>
+    <div className="space-y-3">{children}</div>
   </section>
 );
 
@@ -86,7 +89,7 @@ const Fold: React.FC<{ title: string; summary: string; open: boolean; onToggle: 
   </div>
 );
 
-export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbooks, selectedPlaybookIds, settingsByPlaybook, onSelectionChange, entries, brokers, journalRules, onRun, onOpenTrades, runHint, tz }) => {
+export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbooks, selectedPlaybookIds, settingsByPlaybook, onSelectionChange, entries, benchmarkEntries, onClearBenchmark, brokers, journalRules, onRun, onOpenTrades, runHint, tz }) => {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const toggle = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
@@ -98,12 +101,13 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
     const book = choosable.find((x) => x.id === id);
     const settings = settingsByPlaybook[id] ?? (s.playbookId === id ? s : null);
     if (!book || !settings) return [];
-    const journalEntries = entries.filter((e) => e.strategy === book.name);
+    const bookEntries = entries.filter((e) => e.strategy === book.name);
+    const journalEntries = bookEntries.filter((e) => resolveSymbol(e.symbol) === settings.symbol);
     const list = journalEntries.filter(eligible);
     const shared = metrics(list);
     const m = { trades: shared.n, winRate: (shared.winRate ?? 0) / 100, avgR: shared.avgR, pf: shared.pf };
     const counts = new Map<string, number>();
-    list.forEach((e) => counts.set(e.symbol, (counts.get(e.symbol) || 0) + 1));
+    bookEntries.filter(eligible).forEach((e) => counts.set(e.symbol, (counts.get(e.symbol) || 0) + 1));
     const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];
     return [{ book, settings, journalEntries, live: { m, top: top ? { symbol: top[0], n: top[1] } : null } }];
   }), [selectedPlaybookIds, choosable, settingsByPlaybook, s, entries]);
@@ -139,130 +143,9 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
   const matchesDaily = s.risk.dailyLossPct === journalRules.maxDailyLoss;
 
   return (
-    <div className="space-y-5 pb-28">
-      {selectedSetups.length > 0 && (
-        <div className="flex flex-wrap items-center gap-4 bg-[#FBFAFF] border border-[#5338ec]/20 rounded-2xl px-5 py-4">
-          <Sparkles className="w-5 h-5 text-[#5338ec] shrink-0" aria-hidden />
-          <div className="flex-1 min-w-[14rem]">
-            <p className="text-sm font-bold text-[#0b1c30]">{selectedSetups.length === 1 ? <>Filled in from your <span className="text-[#5338ec]">{pb?.name}</span> playbook</> : `Comparing ${selectedSetups.length} playbooks`}</p>
-            <p className="text-xs text-[#474556]">The market, dates, balance, risk and costs are shared. Each playbook keeps its own rules, timeframe and session.</p>
-          </div>
-          {selectedSetups.length === 1 && live && live.m.trades > 0 && (
-            <div className="text-xs text-[#474556]" title="How this playbook has done in your real journal trades">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Your journal so far</p>
-              <p className="tabular-nums"><b className="text-[#0b1c30]">{pct(live.m.winRate, 0)}</b> win rate · <b className="text-[#0b1c30]">{rr(live.m.avgR)}</b> avg · {live.m.trades} trades</p>
-            </div>
-          )}
-        </div>
-      )}
-
+    <div className="max-w-5xl mx-auto space-y-4 pb-28">
       {/* STEP 1 */}
-      <Step n={1} title="What to test" sub="Select one or more playbooks. Compare them under the same market and account conditions." right={<span className="text-[11px] text-slate-500 tabular-nums">{selectedSetups.length} selected</span>}>
-        <Field label="Playbooks" hint="Each playbook contributes its hypothesis, executable rules, timeframe and session. Shared settings are configured below.">
-          {choosable.length ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2" role="group" aria-label="Playbooks to test">
-              {choosable.map((option) => {
-                const checked = selectedPlaybookIds.includes(option.id);
-                return (
-                  <label key={option.id} className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${checked ? 'border-[#5338ec]/50 bg-[#FBFAFF]' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
-                    <input type="checkbox" checked={checked} onChange={(e) => onSelectionChange(e.target.checked ? [...selectedPlaybookIds, option.id] : selectedPlaybookIds.filter((id) => id !== option.id))} className="accent-[#5338ec]" />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-[#0b1c30]">{option.name}</span>
-                      <span className="block text-[10px] text-slate-500">{option.grade} · {option.status === 'testing' ? 'Testing' : 'Active'}</span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No active or testing playbooks are available. Create or reactivate one in Playbook to build a test hypothesis.</p>
-          )}
-        </Field>
-
-        {selectedSetups.length ? (
-          <div className="space-y-3">
-            {selectedSetups.map(({ book, settings, journalEntries: matching, live: journal }) => {
-              const settingsUnit = symbolSpec(settings.symbol)?.costUnit.label ?? 'pips';
-              return (
-                <section key={book.id} className="rounded-xl border border-slate-200 p-4 space-y-3" aria-label={`${book.name} test setup`}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h4 className="text-sm font-bold text-[#0b1c30]">{book.name} <span className="font-normal text-slate-500">· {settings.timeframe} · {sessionTextFor(settings)}</span></h4>
-                      <p className="mt-1 text-[10px] text-slate-500">Its timeframe and session stay separate from the other selected playbooks.</p>
-                    </div>
-                    <button type="button" disabled={!matching.length} onClick={() => onOpenTrades(matching.map((e) => e.id), `${book.name} playbook journal`)} className={`${btnSecondary} disabled:cursor-not-allowed`}>
-                      {matching.length ? `View ${matching.length} journal entr${matching.length === 1 ? 'y' : 'ies'}` : 'No matching journal entries'}
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-3">
-                    <div className="space-y-3">
-                      <div className="rounded-xl border border-[#5338ec]/20 bg-[#FBFAFF] p-3.5">
-                        <div className="flex items-start gap-2.5">
-                          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#5338ec]" aria-hidden />
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-[#0b1c30]">Playbook hypothesis</p>
-                            <p className="mt-1 text-sm leading-relaxed text-[#474556]">{book.thesis || book.entryTrigger || 'No written hypothesis is saved in this playbook yet.'}</p>
-                          </div>
-                        </div>
-                        <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-                          {book.technicalRecipeId
-                            ? 'The simulation rules below are transferred from this playbook’s saved technical recipe.'
-                            : 'No technical recipe is saved. The simulation uses a starter rule set matched to the playbook name and style; discretionary notes are shown for context but are not simulated.'}
-                        </p>
-                      </div>
-
-                      <div className="rounded-xl border border-slate-200 p-3.5">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Rules this test will simulate</p>
-                        <ol className="mt-2 space-y-2">
-                          {describeRules(settings.rules, settingsUnit).map((r, i) => (
-                            <li key={r.label} className="flex gap-3 rounded-lg bg-slate-50 px-3 py-2">
-                              <span className="w-5 shrink-0 pt-0.5 text-[10px] font-mono font-bold text-slate-400">{String(i + 1).padStart(2, '0')}</span>
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{r.label}</p>
-                                <p className="text-sm text-[#0b1c30]">{r.text}</p>
-                              </div>
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
-
-                      <details className="rounded-xl border border-slate-200 px-3.5 py-2.5">
-                        <summary className="cursor-pointer text-xs font-semibold text-[#474556]">View written playbook rules and execution notes</summary>
-                        <div className="mt-3 space-y-3 text-xs leading-relaxed text-[#474556]">
-                          {book.entryTrigger && <p><b>Entry trigger:</b> {book.entryTrigger}</p>}
-                          {book.stopRule && <p><b>Stop / invalidation:</b> {book.stopRule}</p>}
-                          {book.targetRule && <p><b>Profit taking:</b> {book.targetRule}</p>}
-                          {book.rules.length > 0 && <ul className="space-y-2">{book.rules.map((rule) => <li key={rule.id}><b>{rule.title}:</b> {rule.detail}</li>)}</ul>}
-                        </div>
-                      </details>
-                    </div>
-
-                    <aside className="rounded-xl border border-slate-200 p-3.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Journal comparison</p>
-                      {journal.m.trades > 0 ? (
-                        <dl className="mt-2 grid grid-cols-2 gap-3 text-xs tabular-nums">
-                          <div><dt className="text-slate-500">Closed trades</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{journal.m.trades}</dd></div>
-                          <div><dt className="text-slate-500">Win rate</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{pct(journal.m.winRate, 0)}</dd></div>
-                          <div><dt className="text-slate-500">Average R</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{rr(journal.m.avgR)}</dd></div>
-                          <div><dt className="text-slate-500">Profit factor</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{journal.m.pf === null ? '—' : Number.isFinite(journal.m.pf) ? journal.m.pf.toFixed(2) : '∞'}</dd></div>
-                        </dl>
-                      ) : <p className="mt-2 text-xs text-slate-500">No eligible closed journal trades for this playbook yet.</p>}
-                    </aside>
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
-            {choosable.length ? 'Select at least one playbook to build the test hypothesis from its saved data.' : 'Create or reactivate a playbook to build a test hypothesis.'}
-          </div>
-        )}
-      </Step>
-
-      {/* STEP 2 */}
-      <Step n={2} title="Market and dates" sub="The market and date range are shared; each playbook keeps its own timeframe.">
+      <Step n={1} title="Market, dates, risk and costs" sub="Choose your instrument and date range, then set account risk and costs. Each playbook keeps its own timeframe.">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Field label="Market type">
             <Segmented label="Asset class" value={spec ? marketGroupOf(spec) : 'Forex'} onChange={chooseClass} options={ASSET_CLASSES.map((c) => ({ id: c, label: c }))} />
@@ -333,92 +216,221 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
             </Field>
           </div>
         </Fold>
+        <section aria-labelledby="bt-money-risk-heading" className="border-t border-slate-200 pt-3 space-y-3">
+          <div>
+            <h4 id="bt-money-risk-heading" className="text-sm font-bold text-[#0b1c30]">Money, risk and costs</h4>
+            <p className="text-xs text-slate-500">Defaults come from your journal rules and your broker.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Field label="Starting balance" htmlFor="bt-bal">
+              <div className="flex gap-1.5">
+                <input id="bt-bal" type="number" min={0} step={1000} value={s.risk.startBalance} onChange={(e) => set({ risk: { ...s.risk, startBalance: Number(e.target.value) } })} className={inputCls} />
+                <select aria-label="Account currency" value={s.risk.currency} onChange={(e) => set({ risk: { ...s.risk, currency: e.target.value as Currency } })} className={`${inputBase} w-auto`}><option>USD</option><option>EUR</option><option>GBP</option></select>
+              </div>
+            </Field>
+            <Field label="Risk per trade" className="lg:col-span-2" hint="% of balance: each trade risks this share of the current balance (sizes grow and shrink with it). Fixed $: the same dollar risk every time. Fixed size: the same position size every time."
+              aside={matchesRisk ? <Pill tone="good" title="Same as Max risk per trade in your journal's Trading rules">Matches your journal rules</Pill> : null}>
+              <div className="flex flex-wrap items-center gap-2">
+                <Segmented size="sm" label="Position sizing" value={s.risk.mode} onChange={(m) => set({ risk: { ...s.risk, mode: m } })} options={[{ id: 'percent', label: '% of balance' }, { id: 'fixedR', label: 'Fixed $' }, { id: 'fixedQty', label: 'Fixed size' }]} />
+                <div className="flex items-center gap-1.5 w-36">
+                  <input type="number" step="any" min={0} aria-label="Risk amount" value={s.risk.mode === 'percent' ? s.risk.percent : s.risk.mode === 'fixedR' ? s.risk.fixedR : s.risk.qty}
+                    onChange={(e) => { const v = Number(e.target.value); set({ risk: { ...s.risk, ...(s.risk.mode === 'percent' ? { percent: v } : s.risk.mode === 'fixedR' ? { fixedR: v } : { qty: v }) } }); }} className={inputCls} />
+                  <span className="text-xs text-slate-500 whitespace-nowrap">{s.risk.mode === 'percent' ? '%' : s.risk.mode === 'fixedR' ? s.risk.currency : spec?.sizeUnit}</span>
+                </div>
+                {s.risk.mode === 'percent' && <span className="text-[11px] text-slate-500 tabular-nums">≈ {(s.risk.startBalance * s.risk.percent / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })} {s.risk.currency} at the start</span>}
+              </div>
+            </Field>
+            <Field label="Daily loss limit" hint="Stop trading for the day once losses reach this % of the day's starting balance. Leave empty for no limit." aside={matchesDaily ? <Pill tone="good" title="Same as Max daily loss in your journal's Trading rules">Journal rule</Pill> : null}>
+              <div className="flex items-center gap-1.5"><input type="number" step="0.5" min={0} placeholder="Off" aria-label="Daily loss limit percent" value={s.risk.dailyLossPct ?? ''} onChange={(e) => set({ risk: { ...s.risk, dailyLossPct: e.target.value === '' ? null : Number(e.target.value) } })} className={inputCls} /><span className="text-xs text-slate-500">%</span></div>
+            </Field>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Field label="Max drawdown limit" hint="End the whole test if the balance falls this % below its highest point. Leave empty to run to the end.">
+              <div className="flex items-center gap-1.5"><input type="number" step="1" min={0} placeholder="Off" aria-label="Max drawdown limit percent" value={s.risk.maxDrawdownPct ?? ''} onChange={(e) => set({ risk: { ...s.risk, maxDrawdownPct: e.target.value === '' ? null : Number(e.target.value) } })} className={inputCls} /><span className="text-xs text-slate-500">%</span></div>
+            </Field>
+          </div>
+          <Fold id="bt-costs" title="Costs" open={!!open.costs} onToggle={() => toggle('costs')} summary={s.costs.enabled ? `On · ${brokers.find((b) => b.id === s.costs.brokerId)?.name ?? 'typical costs'} · ${roundTrip}` : 'Off (results will look better than real trading)'}>
+            <div className="flex items-center gap-2">
+              <Toggle id="bt-costs-on" label="Include costs" checked={s.costs.enabled} onChange={(v) => set({ costs: { ...s.costs, enabled: v } })} />
+              <label htmlFor="bt-costs-on" className="text-sm font-semibold text-[#0b1c30]">Include commission, spread and slippage</label>
+            </div>
+            {s.costs.enabled && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Field label="Use costs from my broker" htmlFor="bt-broker" hint="Pre-fills commission and spread from your broker's raw-spread account. You can still change the numbers.">
+                  <select id="bt-broker" value={s.costs.brokerId ?? ''} onChange={(e) => { const b = brokers.find((x) => x.id === e.target.value); set({ costs: { ...s.costs, brokerId: b?.id ?? null, ...(b ? brokerCosts(b, s.symbol) : defaultCostsFor(s.symbol)) } }); }} className={inputCls}>
+                    <option value="">Typical costs for this market</option>
+                    {brokerOptions.map((b) => <option key={b.id} value={b.id}>{b.name}{b.connected ? ' (connected)' : ''}</option>)}
+                  </select>
+                </Field>
+                <Field label="Commission" hint={`USD per ${spec?.sizeUnit.replace(/s$/, '') ?? 'unit'} per side (charged on entry and on exit).`}>
+                  <div className="flex items-center gap-1.5"><input type="number" step="any" min={0} aria-label="Commission per side" value={s.costs.commissionPerSide} onChange={(e) => set({ costs: { ...s.costs, commissionPerSide: Number(e.target.value) } })} className={inputCls} /><span className="text-[11px] text-slate-500 whitespace-nowrap">$ / side</span></div>
+                </Field>
+                <Field label="Spread" hint={`Typical bid/ask spread in ${unit}. Half is paid on entry and half on exit.`}>
+                  <div className="flex items-center gap-1.5"><input type="number" step="any" min={0} aria-label="Spread" value={s.costs.spread} onChange={(e) => set({ costs: { ...s.costs, spread: Number(e.target.value) } })} className={inputCls} /><span className="text-[11px] text-slate-500">{unit}</span></div>
+                </Field>
+                <Field label="Slippage" hint={`Extra ${unit} lost on market and stop orders (limit orders and targets have none).`}>
+                  <div className="flex items-center gap-1.5"><input type="number" step="any" min={0} aria-label="Slippage" value={s.costs.slippage} onChange={(e) => set({ costs: { ...s.costs, slippage: Number(e.target.value) } })} className={inputCls} /><span className="text-[11px] text-slate-500">{unit}</span></div>
+                </Field>
+              </div>
+            )}
+            <Field label="Fill model" hint="Next bar open is the realistic default: a signal at a bar's close can only be traded on the next bar. Same bar close assumes you get the closing price.">
+              <Segmented label="Fill model" value={s.costs.fillModel} onChange={(f) => set({ costs: { ...s.costs, fillModel: f } })} options={[{ id: 'nextOpen', label: 'Next bar open' }, { id: 'sameClose', label: 'Same bar close' }]} />
+              <p className="text-[11px] text-slate-500 mt-1">Limit orders fill only if price trades through them. If a stop and a target are both hit in one bar, the stop counts first.</p>
+            </Field>
+          </Fold>
+          <Fold id="bt-prop" title="Prop-firm challenge" open={!!open.prop} onToggle={() => toggle('prop')} summary={s.prop ? `On · ${s.prop.account}` : 'Off'}>
+            <div className="flex flex-wrap items-center gap-3">
+              <Toggle id="bt-prop-on" label="Prop-firm mode" checked={!!s.prop} onChange={(v) => set({ prop: v ? { ...PROP_TEMPLATES[0] } : null, risk: v ? { ...s.risk, startBalance: 50000 } : s.risk })} />
+              <label htmlFor="bt-prop-on" className="text-sm font-semibold text-[#0b1c30]">Test against prop-firm rules</label>
+              {s.prop && (
+                <select aria-label="Prop account template" value={s.prop.account} onChange={(e) => { const t = PROP_TEMPLATES.find((p) => p.account === e.target.value); if (t) set({ prop: { ...t }, risk: { ...s.risk, startBalance: /100K/.test(t.account) ? 100000 : 50000 } }); }} className={`${inputBase} w-auto`}>
+                  {PROP_TEMPLATES.map((p) => <option key={p.account}>{p.account}</option>)}
+                </select>
+              )}
+            </div>
+            {s.prop && (
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                {([['profitTargetPct', 'Profit target', '%', 'Pass when the balance is up this much (after the minimum days).'], ['maxDrawdownPct', 'Max drawdown', '%', 'Fail if the balance falls this far below the start (or below the peak if trailing).'], ['dailyLossPct', 'Daily loss', '%', 'Fail if one day loses this % of that day\'s starting balance.'], ['minDays', 'Min trading days', 'days', 'Days with at least one trade needed before passing.']] as const).map(([k, label, u, hint]) => (
+                  <Field key={k} label={label} hint={hint}>
+                    <div className="flex items-center gap-1.5"><input type="number" step="any" min={0} aria-label={label} value={s.prop![k]} onChange={(e) => set({ prop: { ...s.prop!, [k]: Number(e.target.value) } })} className={inputCls} /><span className="text-xs text-slate-500">{u}</span></div>
+                  </Field>
+                ))}
+                <Field label="Trailing drawdown" hint="Measure the drawdown from the highest balance instead of the starting balance.">
+                  <Toggle label="Trailing drawdown" checked={s.prop.trailing} onChange={(v) => set({ prop: { ...s.prop!, trailing: v } })} />
+                </Field>
+              </div>
+            )}
+          </Fold>
+        </section>
       </Step>
 
-      {/* STEP 3 */}
-      <Step n={3} title="Money, risk and costs" sub="Defaults come from your journal rules and your broker.">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Field label="Starting balance" htmlFor="bt-bal">
-            <div className="flex gap-1.5">
-              <input id="bt-bal" type="number" min={0} step={1000} value={s.risk.startBalance} onChange={(e) => set({ risk: { ...s.risk, startBalance: Number(e.target.value) } })} className={inputCls} />
-              <select aria-label="Account currency" value={s.risk.currency} onChange={(e) => set({ risk: { ...s.risk, currency: e.target.value as Currency } })} className={`${inputBase} w-auto`}><option>USD</option><option>EUR</option><option>GBP</option></select>
+      {/* STEP 2 */}
+      <Step n={2} title="What to test" sub="Select one or more playbooks. Compare them under the same market and account conditions." right={<span className="text-[11px] text-slate-500 tabular-nums">{selectedSetups.length} selected</span>}>
+        {selectedSetups.length > 0 && (
+          <div className="flex flex-wrap items-center gap-4 bg-[#FBFAFF] border border-[#5338ec]/20 rounded-2xl px-5 py-4">
+            <Sparkles className="w-5 h-5 text-[#5338ec] shrink-0" aria-hidden />
+            <div className="flex-1 min-w-[14rem]">
+              <p className="text-sm font-bold text-[#0b1c30]">{selectedSetups.length === 1 ? <>Filled in from your <span className="text-[#5338ec]">{pb?.name}</span> playbook</> : `Comparing ${selectedSetups.length} playbooks`}</p>
+              <p className="text-xs text-[#474556]">The market, dates, balance, risk and costs are shared. Each playbook keeps its own rules, timeframe and session.</p>
             </div>
-          </Field>
-          <Field label="Risk per trade" className="lg:col-span-2" hint="% of balance: each trade risks this share of the current balance (sizes grow and shrink with it). Fixed $: the same dollar risk every time. Fixed size: the same position size every time."
-            aside={matchesRisk ? <Pill tone="good" title="Same as Max risk per trade in your journal's Trading rules">Matches your journal rules</Pill> : null}>
-            <div className="flex flex-wrap items-center gap-2">
-              <Segmented size="sm" label="Position sizing" value={s.risk.mode} onChange={(m) => set({ risk: { ...s.risk, mode: m } })} options={[{ id: 'percent', label: '% of balance' }, { id: 'fixedR', label: 'Fixed $' }, { id: 'fixedQty', label: 'Fixed size' }]} />
-              <div className="flex items-center gap-1.5 w-36">
-                <input type="number" step="any" min={0} aria-label="Risk amount" value={s.risk.mode === 'percent' ? s.risk.percent : s.risk.mode === 'fixedR' ? s.risk.fixedR : s.risk.qty}
-                  onChange={(e) => { const v = Number(e.target.value); set({ risk: { ...s.risk, ...(s.risk.mode === 'percent' ? { percent: v } : s.risk.mode === 'fixedR' ? { fixedR: v } : { qty: v }) } }); }} className={inputCls} />
-                <span className="text-xs text-slate-500 whitespace-nowrap">{s.risk.mode === 'percent' ? '%' : s.risk.mode === 'fixedR' ? s.risk.currency : spec?.sizeUnit}</span>
+            {selectedSetups.length === 1 && live && live.m.trades > 0 && (
+              <div className="text-xs text-[#474556]" title="How this playbook has done in your real journal trades">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Your journal on {s.symbol}</p>
+                <p className="tabular-nums"><b className="text-[#0b1c30]">{pct(live.m.winRate, 0)}</b> win rate · <b className="text-[#0b1c30]">{rr(live.m.avgR)}</b> avg · {live.m.trades} trades</p>
               </div>
-              {s.risk.mode === 'percent' && <span className="text-[11px] text-slate-500 tabular-nums">≈ {(s.risk.startBalance * s.risk.percent / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })} {s.risk.currency} at the start</span>}
-            </div>
-          </Field>
-          <Field label="Daily loss limit" hint="Stop trading for the day once losses reach this % of the day's starting balance. Leave empty for no limit." aside={matchesDaily ? <Pill tone="good" title="Same as Max daily loss in your journal's Trading rules">Journal rule</Pill> : null}>
-            <div className="flex items-center gap-1.5"><input type="number" step="0.5" min={0} placeholder="Off" aria-label="Daily loss limit percent" value={s.risk.dailyLossPct ?? ''} onChange={(e) => set({ risk: { ...s.risk, dailyLossPct: e.target.value === '' ? null : Number(e.target.value) } })} className={inputCls} /><span className="text-xs text-slate-500">%</span></div>
-          </Field>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Field label="Max drawdown limit" hint="End the whole test if the balance falls this % below its highest point. Leave empty to run to the end.">
-            <div className="flex items-center gap-1.5"><input type="number" step="1" min={0} placeholder="Off" aria-label="Max drawdown limit percent" value={s.risk.maxDrawdownPct ?? ''} onChange={(e) => set({ risk: { ...s.risk, maxDrawdownPct: e.target.value === '' ? null : Number(e.target.value) } })} className={inputCls} /><span className="text-xs text-slate-500">%</span></div>
-          </Field>
-        </div>
-
-        <Fold id="bt-costs" title="Costs" open={!!open.costs} onToggle={() => toggle('costs')} summary={s.costs.enabled ? `On · ${brokers.find((b) => b.id === s.costs.brokerId)?.name ?? 'typical costs'} · ${roundTrip}` : 'Off (results will look better than real trading)'}>
-          <div className="flex items-center gap-2">
-            <Toggle id="bt-costs-on" label="Include costs" checked={s.costs.enabled} onChange={(v) => set({ costs: { ...s.costs, enabled: v } })} />
-            <label htmlFor="bt-costs-on" className="text-sm font-semibold text-[#0b1c30]">Include commission, spread and slippage</label>
-          </div>
-          {s.costs.enabled && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Field label="Use costs from my broker" htmlFor="bt-broker" hint="Pre-fills commission and spread from your broker's raw-spread account. You can still change the numbers.">
-                <select id="bt-broker" value={s.costs.brokerId ?? ''} onChange={(e) => { const b = brokers.find((x) => x.id === e.target.value); set({ costs: { ...s.costs, brokerId: b?.id ?? null, ...(b ? brokerCosts(b, s.symbol) : defaultCostsFor(s.symbol)) } }); }} className={inputCls}>
-                  <option value="">Typical costs for this market</option>
-                  {brokerOptions.map((b) => <option key={b.id} value={b.id}>{b.name}{b.connected ? ' (connected)' : ''}</option>)}
-                </select>
-              </Field>
-              <Field label="Commission" hint={`USD per ${spec?.sizeUnit.replace(/s$/, '') ?? 'unit'} per side (charged on entry and on exit).`}>
-                <div className="flex items-center gap-1.5"><input type="number" step="any" min={0} aria-label="Commission per side" value={s.costs.commissionPerSide} onChange={(e) => set({ costs: { ...s.costs, commissionPerSide: Number(e.target.value) } })} className={inputCls} /><span className="text-[11px] text-slate-500 whitespace-nowrap">$ / side</span></div>
-              </Field>
-              <Field label="Spread" hint={`Typical bid/ask spread in ${unit}. Half is paid on entry and half on exit.`}>
-                <div className="flex items-center gap-1.5"><input type="number" step="any" min={0} aria-label="Spread" value={s.costs.spread} onChange={(e) => set({ costs: { ...s.costs, spread: Number(e.target.value) } })} className={inputCls} /><span className="text-[11px] text-slate-500">{unit}</span></div>
-              </Field>
-              <Field label="Slippage" hint={`Extra ${unit} lost on market and stop orders (limit orders and targets have none).`}>
-                <div className="flex items-center gap-1.5"><input type="number" step="any" min={0} aria-label="Slippage" value={s.costs.slippage} onChange={(e) => set({ costs: { ...s.costs, slippage: Number(e.target.value) } })} className={inputCls} /><span className="text-[11px] text-slate-500">{unit}</span></div>
-              </Field>
-            </div>
-          )}
-          <Field label="Fill model" hint="Next bar open is the realistic default: a signal at a bar's close can only be traded on the next bar. Same bar close assumes you get the closing price.">
-            <Segmented label="Fill model" value={s.costs.fillModel} onChange={(f) => set({ costs: { ...s.costs, fillModel: f } })} options={[{ id: 'nextOpen', label: 'Next bar open' }, { id: 'sameClose', label: 'Same bar close' }]} />
-            <p className="text-[11px] text-slate-500 mt-1">Limit orders fill only if price trades through them. If a stop and a target are both hit in one bar, the stop counts first.</p>
-          </Field>
-        </Fold>
-
-        <Fold id="bt-prop" title="Prop-firm challenge" open={!!open.prop} onToggle={() => toggle('prop')} summary={s.prop ? `On · ${s.prop.account}` : 'Off'}>
-          <div className="flex flex-wrap items-center gap-3">
-            <Toggle id="bt-prop-on" label="Prop-firm mode" checked={!!s.prop} onChange={(v) => set({ prop: v ? { ...PROP_TEMPLATES[0] } : null, risk: v ? { ...s.risk, startBalance: 50000 } : s.risk })} />
-            <label htmlFor="bt-prop-on" className="text-sm font-semibold text-[#0b1c30]">Test against prop-firm rules</label>
-            {s.prop && (
-              <select aria-label="Prop account template" value={s.prop.account} onChange={(e) => { const t = PROP_TEMPLATES.find((p) => p.account === e.target.value); if (t) set({ prop: { ...t }, risk: { ...s.risk, startBalance: /100K/.test(t.account) ? 100000 : 50000 } }); }} className={`${inputBase} w-auto`}>
-                {PROP_TEMPLATES.map((p) => <option key={p.account}>{p.account}</option>)}
-              </select>
             )}
           </div>
-          {s.prop && (
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-              {([['profitTargetPct', 'Profit target', '%', 'Pass when the balance is up this much (after the minimum days).'], ['maxDrawdownPct', 'Max drawdown', '%', 'Fail if the balance falls this far below the start (or below the peak if trailing).'], ['dailyLossPct', 'Daily loss', '%', 'Fail if one day loses this % of that day\'s starting balance.'], ['minDays', 'Min trading days', 'days', 'Days with at least one trade needed before passing.']] as const).map(([k, label, u, hint]) => (
-                <Field key={k} label={label} hint={hint}>
-                  <div className="flex items-center gap-1.5"><input type="number" step="any" min={0} aria-label={label} value={s.prop![k]} onChange={(e) => set({ prop: { ...s.prop!, [k]: Number(e.target.value) } })} className={inputCls} /><span className="text-xs text-slate-500">{u}</span></div>
-                </Field>
-              ))}
-              <Field label="Trailing drawdown" hint="Measure the drawdown from the highest balance instead of the starting balance.">
-                <Toggle label="Trailing drawdown" checked={s.prop.trailing} onChange={(v) => set({ prop: { ...s.prop!, trailing: v } })} />
-              </Field>
+        )}
+
+        <Field label="Playbooks" hint="Each playbook contributes its hypothesis, executable rules, timeframe and session. Shared settings are configured below.">
+          {choosable.length ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2" role="group" aria-label="Playbooks to test">
+              {choosable.map((option) => {
+                const checked = selectedPlaybookIds.includes(option.id);
+                return (
+                  <label key={option.id} className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${checked ? 'border-[#5338ec]/50 bg-[#FBFAFF]' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+                    <input type="checkbox" checked={checked} onChange={(e) => onSelectionChange(e.target.checked ? [...selectedPlaybookIds, option.id] : selectedPlaybookIds.filter((id) => id !== option.id))} className="accent-[#5338ec]" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-[#0b1c30]">{option.name}</span>
+                      <span className="block text-[10px] text-slate-500">{option.grade} · {option.status === 'testing' ? 'Testing' : 'Active'}</span>
+                    </span>
+                  </label>
+                );
+              })}
             </div>
+          ) : (
+            <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No active or testing playbooks are available. Create or reactivate one in Playbook to build a test hypothesis.</p>
           )}
-        </Fold>
+        </Field>
+
+        {!selectedSetups.length && benchmarkEntries.length > 0 && (
+          <JournalTradeBenchmark entries={benchmarkEntries} onClear={onClearBenchmark} />
+        )}
+
+        {selectedSetups.length ? (
+          <div className="space-y-3">
+            {selectedSetups.map(({ book, settings, journalEntries: matching, live: journal }, setupIndex) => {
+              const settingsUnit = symbolSpec(settings.symbol)?.costUnit.label ?? 'pips';
+              return (
+                <section key={book.id} className="rounded-xl border border-slate-200 p-4 space-y-3" aria-label={`${book.name} test setup`}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-[#0b1c30]">{book.name} <span className="font-normal text-slate-500">· {settings.timeframe} · {sessionTextFor(settings)}</span></h4>
+                      <p className="mt-1 text-[10px] text-slate-500">Its timeframe and session stay separate from the other selected playbooks.</p>
+                    </div>
+                    <button type="button" disabled={!matching.length} onClick={() => onOpenTrades(matching.map((e) => e.id), `${book.name} playbook journal`)} className={`${btnSecondary} disabled:cursor-not-allowed`}>
+                      {matching.length ? `View ${matching.length} journal entr${matching.length === 1 ? 'y' : 'ies'}` : 'No matching journal entries'}
+                    </button>
+                  </div>
+
+                  {setupIndex === 0 && benchmarkEntries.length > 0 && (
+                    <JournalTradeBenchmark entries={benchmarkEntries} onClear={onClearBenchmark} />
+                  )}
+
+                  <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-3">
+                    <div className="space-y-3">
+                      <div className="rounded-xl border border-[#5338ec]/20 bg-[#FBFAFF] p-3.5">
+                        <div className="flex items-start gap-2.5">
+                          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#5338ec]" aria-hidden />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-[#0b1c30]">Playbook hypothesis</p>
+                            <p className="mt-1 text-sm leading-relaxed text-[#474556]">{book.thesis || book.entryTrigger || 'No written hypothesis is saved in this playbook yet.'}</p>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
+                          {book.technicalRecipeId
+                            ? 'The simulation rules below are transferred from this playbook’s saved technical recipe.'
+                            : 'No technical recipe is saved. The simulation uses a starter rule set matched to the playbook name and style; discretionary notes are shown for context but are not simulated.'}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-slate-200 p-3.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Rules this test will simulate</p>
+                        <ol className="mt-2 grid grid-cols-1 lg:grid-cols-2 gap-2">
+                          {describeRules(settings.rules, settingsUnit).map((r, i) => (
+                            <li key={r.label} className="min-w-0 flex gap-3 rounded-lg bg-slate-50 px-3 py-2">
+                              <span className="w-5 shrink-0 pt-0.5 text-[10px] font-mono font-bold text-slate-400">{String(i + 1).padStart(2, '0')}</span>
+                              <div className="min-w-0">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{r.label}</p>
+                                <p className="text-sm text-[#0b1c30]">{r.text}</p>
+                              </div>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+
+                      <details className="rounded-xl border border-slate-200 px-3.5 py-2.5">
+                        <summary className="cursor-pointer text-xs font-semibold text-[#474556]">View written playbook rules and execution notes</summary>
+                        <div className="mt-3 space-y-3 text-xs leading-relaxed text-[#474556]">
+                          {book.entryTrigger && <p><b>Entry trigger:</b> {book.entryTrigger}</p>}
+                          {book.stopRule && <p><b>Stop / invalidation:</b> {book.stopRule}</p>}
+                          {book.targetRule && <p><b>Profit taking:</b> {book.targetRule}</p>}
+                          {book.rules.length > 0 && <ul className="space-y-2">{book.rules.map((rule) => <li key={rule.id}><b>{rule.title}:</b> {rule.detail}</li>)}</ul>}
+                        </div>
+                      </details>
+                    </div>
+
+                    <aside className="rounded-xl border border-slate-200 p-3.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Journal comparison · {settings.symbol}</p>
+                      {journal.m.trades > 0 ? (
+                        <dl className="mt-2 grid grid-cols-2 gap-3 text-xs tabular-nums">
+                          <div><dt className="text-slate-500">Closed trades</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{journal.m.trades}</dd></div>
+                          <div><dt className="text-slate-500">Win rate</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{pct(journal.m.winRate, 0)}</dd></div>
+                          <div><dt className="text-slate-500">Average R</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{rr(journal.m.avgR)}</dd></div>
+                          <div><dt className="text-slate-500">Profit factor</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{journal.m.pf === null ? '—' : Number.isFinite(journal.m.pf) ? journal.m.pf.toFixed(2) : '∞'}</dd></div>
+                        </dl>
+                      ) : <p className="mt-2 text-xs text-slate-500">No eligible closed journal trades for {settings.symbol} in this playbook yet.</p>}
+                    </aside>
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
+            {choosable.length ? 'Select at least one playbook to build the test hypothesis from its saved data.' : 'Create or reactivate a playbook to build a test hypothesis.'}
+          </div>
+        )}
       </Step>
 
       {/* Sticky run bar */}

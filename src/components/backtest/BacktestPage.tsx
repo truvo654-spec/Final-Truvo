@@ -8,7 +8,7 @@ import { JOURNAL_TODAY } from '../../data/journalData';
 import { EXTRA_RUN_CREDITS, runLimitFor } from '../../backtest/config';
 import { applyPatch } from '../../backtest/job';
 import { runBacktest, CancelledError } from '../../backtest/service';
-import { defaultSettings, deepClone, describeCondition, JournalRules } from '../../backtest/rules';
+import { defaultSettings, deepClone, describeCondition, defaultCostsFor, JournalRules } from '../../backtest/rules';
 import { expectedFromRun } from '../../backtest/gap';
 import { userTz } from '../../backtest/format';
 import {
@@ -16,8 +16,7 @@ import {
 } from '../../backtest/store';
 import { BacktestSettings, JobOutput, Suggestion } from '../../backtest/types';
 import { BacktestHome } from './BacktestHome';
-import { BacktestSetup } from './BacktestSetup';
-import { JournalTradeBenchmark } from './JournalTradeBenchmark';
+import { BacktestSetup, brokerCosts } from './BacktestSetup';
 import { BacktestComparisonResults } from './BacktestComparisonResults';
 import type { BacktestComparisonItem } from './BacktestComparisonResults';
 import { BacktestResults } from './BacktestResults';
@@ -231,6 +230,30 @@ export const BacktestPage: React.FC<Props> = (p) => {
     setTimeout(start, 0);
   };
 
+  const editComparisonInstrument = (symbol: string) => {
+    const items = comparisonResults;
+    const first = items?.[0];
+    if (!first) return;
+    const broker = brokers.find((candidate) => candidate.id === first.settings.costs.brokerId);
+    const shared = {
+      ...first.settings,
+      symbol,
+      costs: { ...first.settings.costs, ...(broker ? brokerCosts(broker, symbol) : defaultCostsFor(symbol)) },
+    };
+    const nextDrafts = { ...draftsByPlaybook };
+    const ids = items.map(({ settings }) => settings.playbookId).filter((id): id is string => !!id);
+    items.forEach(({ settings }) => {
+      if (settings.playbookId) nextDrafts[settings.playbookId] = withSharedSetup(settings, shared);
+    });
+    setSelectedPlaybookIds(ids);
+    setDraftsByPlaybook(nextDrafts);
+    setDraft(nextDrafts[ids[0]] ?? withSharedSetup(first.settings, shared));
+    setError(null);
+    setView('setup');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    onToast(`${symbol} selected. Review the setup and run the comparison to generate new results.`);
+  };
+
   const pb = (id: string | null) => playbooks.find((x) => x.id === id) || null;
 
   const save = () => {
@@ -301,8 +324,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       {view === 'setup' && (
         <>
           {error && <Banner tone="bad" icon={<XCircle className="w-4 h-4" />}><b>The backtest didn't run.</b> {error}</Banner>}
-          {benchmarkEntries.length > 0 && <JournalTradeBenchmark entries={benchmarkEntries} onClear={() => setBenchmarkEntries([])} />}
-          <BacktestSetup settings={draft} onChange={updateDraft} playbooks={playbooks} selectedPlaybookIds={selectedPlaybookIds} settingsByPlaybook={draftsByPlaybook} onSelectionChange={changeSelection} entries={entries} brokers={brokers} journalRules={journalRules} tz={tz} onRun={onRun}
+          <BacktestSetup settings={draft} onChange={updateDraft} playbooks={playbooks} selectedPlaybookIds={selectedPlaybookIds} settingsByPlaybook={draftsByPlaybook} onSelectionChange={changeSelection} entries={entries} benchmarkEntries={benchmarkEntries} onClearBenchmark={() => setBenchmarkEntries([])} brokers={brokers} journalRules={journalRules} tz={tz} onRun={onRun}
             onOpenTrades={p.onOpenTrades}
             runHint={setupRunHint} />
         </>
@@ -342,6 +364,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       {view === 'comparison' && comparisonResults && (
         <BacktestComparisonResults items={comparisonResults} playbooks={playbooks} entries={entries} benchmarkEntries={benchmarkEntries} tz={tz} onOpenTrades={p.onOpenTrades}
           onEditSetup={() => setView('setup')}
+          onChangeInstrument={editComparisonInstrument}
           onViewResult={(item) => { setCur({ settings: item.settings, output: item.output, runId: null, name: item.settings.name }); setView('results'); }} />
       )}
 
@@ -351,7 +374,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       )}
 
       {view === 'replay' && (
-        <ReplayPanel entries={entries} tz={tz} initialEntryId={replayEntry} onFinish={finishSession} onToast={onToast} />
+        <ReplayPanel entries={entries} sessions={sessions} tz={tz} initialEntryId={replayEntry} onFinish={finishSession} onToast={onToast} />
       )}
 
       {view === 'demo' && <DemoReplay entries={entries} playbooks={playbooks}/>}

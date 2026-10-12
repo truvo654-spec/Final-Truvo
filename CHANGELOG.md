@@ -2,6 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.17.8] - 2026-10-12
+
+### Added
+
+- Added replay-date filtering, persistent simulated trade details, and basic practice performance analysis.
+
+## [1.17.7] - 2026-10-12
+
+### Changed
+
+- Combined market, date, risk and cost settings into one Backtest setup step.
+
+## [1.17.6] - 2026-10-12
+
+### Changed
+
+- Replaced the backtest equity and drawdown plots with an interactive instrument candlestick chart and trade markers.
+
+## [1.17.5] - 2026-10-12
+
+### Changed
+
+- Filter playbook journal metrics and entry links by the selected instrument.
+
+## [1.17.4] - 2026-10-12
+
+### Changed
+
+- Compacted the backtest setup cards with a narrower layout, tighter spacing, and a two-column rule list.
+
+## [1.17.3] - 2026-10-12
+
+### Changed
+
+- Put market and instrument setup before playbook selection in the backtest setup flow.
+
+## [1.17.2] - 2026-10-12
+
+### Added
+
+- Added instrument symbols and market-type filtering to the Backtest trades table.
+
+## [1.17.1] - 2026-10-12
+
+### Changed
+
+- Show imported journal trade benchmarks inside the selected playbook's test setup card.
+
+## [1.17.0] - 2026-10-12
+
+### Added
+
+- Added searchable market-instrument selection and a Demo Replay-style candlestick chart with net P&L overlays in comparison results.
+
+### Changed
+
+- Moved the Trade Log's Import to Backtest action to the bottom-right footer beside pagination.
+
 ## [1.16.0] - 2026-10-12
 
 ### Changed

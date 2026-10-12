@@ -4,13 +4,14 @@ import React, { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import type { JournalEntry } from '../../types';
 import { eligible, resultOf } from '../journal/journalMath';
+import { DATA_END, DATA_START } from '../../backtest/config';
 import { SYMBOLS, resolveSymbol } from '../../backtest/marketData';
 import type { SymbolSpec } from '../../backtest/types';
 import { loadPracticeFilters, PracticeFilter, PracticeMarket, savePracticeFilters, SavedPracticeFilter } from '../../backtest/store';
 import { Field, Segmented, btnLink, btnSecondary, inputBase, inputCls } from './ui';
 
 export const PRACTICE_MARKETS: PracticeMarket[] = ['Forex', 'Indices', 'Commodities', 'Crypto', 'Stocks'];
-export const DEFAULT_FILTER: PracticeFilter = { markets: [], symbols: [], result: 'losses', playbook: '', mistake: '' };
+export const DEFAULT_FILTER: PracticeFilter = { markets: [], symbols: [], result: 'losses', playbook: '', mistake: '', from: '', to: '' };
 
 const MARKET_HINT: Record<PracticeMarket, string> = {
   Forex: 'Currency pairs such as EUR/USD',
@@ -32,9 +33,20 @@ export const practiceInstruments = (f: PracticeFilter): SymbolSpec[] =>
 export const matchesJournal = (e: JournalEntry, f: PracticeFilter): boolean =>
   (!f.markets.length || f.markets.includes(journalMarket(e)))
   && (!f.symbols.length || f.symbols.includes(e.symbol) || f.symbols.includes(resolveSymbol(e.symbol) ?? ''))
+  && (!f.from || e.date >= f.from)
+  && (!f.to || e.date <= f.to)
   && eligible(e) && (f.result === 'all' || (f.result === 'losses' ? resultOf(e)==='loss' : resultOf(e)==='win'))
   && (!f.playbook || e.strategy === f.playbook)
   && (!f.mistake || e.mistakes.includes(f.mistake) || e.tags.includes(f.mistake));
+
+export const practiceDateRangeError = (source: Props['source'], filter: PracticeFilter): string | null => {
+  const from = filter.from ?? '';
+  const to = filter.to ?? '';
+  if (from && to && from > to) return 'Start date must be on or before end date.';
+  if (source !== 'journal' && from && (from < DATA_START || from > DATA_END)) return `Choose a start date from ${DATA_START} to ${DATA_END}.`;
+  if (source !== 'journal' && to && (to < DATA_START || to > DATA_END)) return `Choose an end date from ${DATA_START} to ${DATA_END}.`;
+  return null;
+};
 
 const chip = (on: boolean) => `h-7 px-2.5 rounded-full text-[11px] font-semibold border transition-colors ${on ? 'bg-[#EEF0FE] border-[#5338ec]/40 text-[#5338ec]' : 'bg-white border-slate-200 text-[#474556] hover:bg-slate-50'}`;
 
@@ -53,6 +65,7 @@ export const PracticeFilters: React.FC<Props> = ({ source, value: f, onChange, e
   const [name, setName] = useState('');
   const [q, setQ] = useState('');
   const journal = source === 'journal';
+  const dateError = practiceDateRangeError(source, f);
   const closed = useMemo(() => entries.filter((e) => eligible(e) && e.exitPrice !== null), [entries]);
 
   const marketCount = (m: PracticeMarket) => (journal ? closed.filter((e) => journalMarket(e) === m).length : SYMBOLS.filter((s) => feedMarket(s) === m).length);
@@ -92,7 +105,7 @@ export const PracticeFilters: React.FC<Props> = ({ source, value: f, onChange, e
     onToast(`Filter "${n}" saved`);
   };
   const remove = (id: string) => { const next = saved.filter((x) => x.id !== id); setSaved(next); savePracticeFilters(next); };
-  const same = (a: PracticeFilter) => JSON.stringify(a) === JSON.stringify(f);
+  const same = (a: PracticeFilter) => JSON.stringify({ ...DEFAULT_FILTER, ...a }) === JSON.stringify({ ...DEFAULT_FILTER, ...f });
 
   return (
     <div className="space-y-4">
@@ -101,7 +114,7 @@ export const PracticeFilters: React.FC<Props> = ({ source, value: f, onChange, e
           <div className="flex flex-wrap gap-1.5">
             {saved.map((s) => (
               <span key={s.id} className={`inline-flex items-center ${chip(same(s.filter))} pr-1`}>
-                <button type="button" onClick={() => onChange(s.filter)} title="Apply this filter">{s.name}</button>
+                <button type="button" onClick={() => onChange({ ...DEFAULT_FILTER, ...s.filter })} title="Apply this filter">{s.name}</button>
                 <button type="button" aria-label={`Delete filter ${s.name}`} title="Delete this filter" onClick={() => remove(s.id)} className="ml-1 p-0.5 rounded-full hover:bg-black/5"><X className="w-3 h-3" /></button>
               </span>
             ))}
@@ -129,6 +142,14 @@ export const PracticeFilters: React.FC<Props> = ({ source, value: f, onChange, e
             </button>
           ))}
         </div>
+      </Field>
+
+      <Field label={journal ? 'Trade date range' : 'Replay date range'} hint={journal ? 'Filter journal trades by entry date.' : `Choose dates for the replay chart. Demo data covers ${DATA_START} to ${DATA_END}.`}>
+        <div className="grid grid-cols-2 gap-2">
+          <input type="date" aria-label="Practice start date" min={journal ? undefined : DATA_START} max={journal ? undefined : DATA_END} value={f.from ?? ''} onChange={(e) => onChange({ ...f, from: e.target.value })} className={`${inputBase} w-full h-8 text-xs`} />
+          <input type="date" aria-label="Practice end date" min={journal ? undefined : DATA_START} max={journal ? undefined : DATA_END} value={f.to ?? ''} onChange={(e) => onChange({ ...f, to: e.target.value })} className={`${inputBase} w-full h-8 text-xs`} />
+        </div>
+        {dateError && <p className="mt-1 text-[11px] text-rose-600" role="alert">{dateError}</p>}
       </Field>
 
       {journal && (

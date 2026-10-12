@@ -1,6 +1,6 @@
 // Lightweight SVG charts for the Backtesting screens: equity / drawdown lines, bar breakdowns and candles.
 import React, { useMemo, useRef, useState } from 'react';
-import type { Bar } from '../../backtest/types';
+import type { Bar, Currency } from '../../backtest/types';
 
 const GRID = '#E2E8F0';
 const AXIS = '#64748b';
@@ -178,8 +178,10 @@ export const CandleChart: React.FC<{
   onPick?: (price: number) => void;
   label: string;
   hidePriceAxis?: boolean;
-  pnl?: { series: LineSeries[]; detail: (time: number) => React.ReactNode };
-}> = ({ bars, from, to, height = 320, dp, lines = [], markers = [], drawings = [], onPick, label, hidePriceAxis, pnl }) => {
+  interactive?: boolean;
+  tooltipDetail?: (time: number) => React.ReactNode;
+  pnl?: { series: LineSeries[]; detail: (time: number) => React.ReactNode; currency?: Currency };
+}> = ({ bars, from, to, height = 320, dp, lines = [], markers = [], drawings = [], onPick, label, hidePriceAxis, pnl, interactive = Boolean(pnl), tooltipDetail }) => {
   const W = 760, H = height, M = { t: pnl ? 30 : 10, r: hidePriceAxis ? 8 : pnl ? 72 : 64, b: pnl ? 28 : 10, l: pnl ? 76 : 8 };
   const vis = bars.slice(Math.max(0, from), Math.max(from, to));
   const ref = useRef<SVGSVGElement>(null);
@@ -203,15 +205,16 @@ export const CandleChart: React.FC<{
   const values = overlays.flatMap(s=>s.points.map(p=>p.y));
   const minPnl = Math.min(0,...values), maxPnl = Math.max(0,...values), pnlPad = (maxPnl-minPnl)*0.08 || 1;
   const pnlY = (v:number) => M.t+(1-(v-minPnl+pnlPad)/(maxPnl-minPnl+2*pnlPad))*(H-M.t-M.b);
-  const money = (v:number) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2,notation:Math.abs(v)>=10000?'compact':'standard'}).format(v);
+  const pnlCurrency = pnl?.currency ?? 'USD';
+  const money = (v:number) => new Intl.NumberFormat('en-US',{style:'currency',currency:pnlCurrency,maximumFractionDigits:2,notation:Math.abs(v)>=10000?'compact':'standard'}).format(v);
   const hovered = vis.find(b=>b.t===hoverTime);
   return (
     <div className="relative">
-    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className={`w-full h-auto select-none ${onPick || pnl ? 'cursor-crosshair' : ''}`} role="img" aria-label={label} onClick={click}
-      tabIndex={pnl?0:undefined} onFocus={()=>pnl&&setHoverTime(last.t)} onBlur={()=>setHoverTime(null)}
-      onKeyDown={e=>{if(!pnl||!['ArrowLeft','ArrowRight','Home','End','Escape'].includes(e.key))return;e.preventDefault();if(e.key==='Escape'){setHoverTime(null);return;}const i=hovered?vis.indexOf(hovered):vis.length-1;setHoverTime(vis[e.key==='Home'?0:e.key==='End'?vis.length-1:Math.max(0,Math.min(vis.length-1,i+(e.key==='ArrowLeft'?-1:1)))].t);}}
-      onMouseLeave={()=>setHoverTime(null)} onMouseMove={e=>{if(!pnl)return;const r=ref.current?.getBoundingClientRect();if(!r)return;const i=Math.floor((((e.clientX-r.left)/r.width)*W-M.l)/bw);setHoverTime(vis[Math.max(0,Math.min(vis.length-1,i))].t);}}>
-      {pnl&&<><text x={M.l} y={14} fill={ACCENT} fontSize="11">Net P&amp;L · USD (left)</text><text x={W-M.r} y={14} textAnchor="end" fill={AXIS} fontSize="11">Price (right)</text>
+    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className={`w-full h-auto select-none ${onPick || interactive ? 'cursor-crosshair' : ''}`} role="img" aria-label={label} onClick={click}
+      tabIndex={interactive?0:undefined} onFocus={()=>interactive&&setHoverTime(last.t)} onBlur={()=>setHoverTime(null)}
+      onKeyDown={e=>{if(!interactive||!['ArrowLeft','ArrowRight','Home','End','Escape'].includes(e.key))return;e.preventDefault();if(e.key==='Escape'){setHoverTime(null);return;}const i=hovered?vis.indexOf(hovered):vis.length-1;setHoverTime(vis[e.key==='Home'?0:e.key==='End'?vis.length-1:Math.max(0,Math.min(vis.length-1,i+(e.key==='ArrowLeft'?-1:1)))].t);}}
+      onMouseLeave={()=>setHoverTime(null)} onMouseMove={e=>{if(!interactive)return;const r=ref.current?.getBoundingClientRect();if(!r)return;const i=Math.floor((((e.clientX-r.left)/r.width)*W-M.l)/bw);setHoverTime(vis[Math.max(0,Math.min(vis.length-1,i))].t);}}>
+      {pnl&&<><text x={M.l} y={14} fill={ACCENT} fontSize="11">Net P&amp;L · {pnlCurrency} (left)</text><text x={W-M.r} y={14} textAnchor="end" fill={AXIS} fontSize="11">Price (right)</text>
         {niceTicks(minPnl-pnlPad,maxPnl+pnlPad).map(v=><text key={v} x={M.l-8} y={pnlY(v)+3} textAnchor="end" fill={ACCENT} fontSize="10">{money(v)}</text>)}
         {[vis[0],...(vis.length>1?[last]:[])].map((b,i)=><text key={b.t} x={sx(times.get(b.t)!)} y={H-6} textAnchor={i?'end':'start'} fill={AXIS} fontSize="10">{new Date(b.t).toISOString().slice(5,16).replace('T',' ')} UTC</text>)}
       </>}
@@ -253,9 +256,9 @@ export const CandleChart: React.FC<{
           <text x={W - M.r + 6} y={sy(last.c) + 3} fontSize="9" fill="#fff" fontWeight={700}>{last.c.toFixed(dp)}</text>
         </g>
       )}
-      {hovered&&<line x1={sx(times.get(hovered.t)!)} x2={sx(times.get(hovered.t)!)} y1={M.t} y2={H-M.b} stroke={AXIS} strokeDasharray="3 3"/>}
+      {hovered&&interactive&&<line x1={sx(times.get(hovered.t)!)} x2={sx(times.get(hovered.t)!)} y1={M.t} y2={H-M.b} stroke={AXIS} strokeDasharray="3 3"/>}
     </svg>
-    {hovered&&pnl&&<div role="status" className="pointer-events-none absolute top-6 left-2 right-2 sm:right-auto rounded-lg bg-[#0b1c30] text-white text-[11px] p-3 shadow-lg"><p>{new Date(hovered.t).toISOString().slice(0,16).replace('T',' ')} UTC</p><p>O {hovered.o.toFixed(dp)} · H {hovered.h.toFixed(dp)} · L {hovered.l.toFixed(dp)} · C {hovered.c.toFixed(dp)}</p>{pnl.detail(hovered.t)}</div>}
+    {hovered&&interactive&&<div role="status" className="pointer-events-none absolute top-6 left-2 right-2 sm:right-auto rounded-lg bg-[#0b1c30] text-white text-[11px] p-3 shadow-lg"><p>{new Date(hovered.t).toISOString().slice(0,16).replace('T',' ')} UTC</p><p>O {hovered.o.toFixed(dp)} · H {hovered.h.toFixed(dp)} · L {hovered.l.toFixed(dp)} · C {hovered.c.toFixed(dp)}</p><p>Volume {hovered.v.toLocaleString()}</p>{tooltipDetail?.(hovered.t)}{pnl?.detail(hovered.t)}</div>}
     {pnl&&<div className="flex flex-wrap gap-4 text-[11px] mt-2"><span>Candles · price</span>{overlays.map(s=><span key={s.name} className="flex items-center gap-1"><span className="w-4 border-t-2" style={{borderColor:s.color,borderStyle:s.dashed?'dashed':'solid'}}/>{s.name} · net P&amp;L</span>)}<span className="text-slate-500">Independent scales · hover or focus chart and use ← / →</span></div>}
     </div>
   );

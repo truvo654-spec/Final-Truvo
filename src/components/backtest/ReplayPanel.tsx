@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, EyeOff, Flag, Minus, Pause, Play, Shuffle, CalendarSearch, NotebookPen, Trash2, Monitor, ShieldCheck, Scissors, X } from 'lucide-react';
 import type { JournalEntry } from '../../types';
 import { eligible, netOf, realizedR } from '../journal/journalMath';
-import { PracticeFilters, matchesJournal, practiceInstruments, DEFAULT_FILTER } from './PracticeFilters';
+import { PracticeFilters, matchesJournal, practiceInstruments, practiceDateRangeError, feedMarket, journalMarket, DEFAULT_FILTER } from './PracticeFilters';
 import { replayDaysLikeToday, replayJournalTrade, replayRandom, ReplayData, replayTimeframes } from '../../backtest/replay';
 import { symbolSpec } from '../../backtest/marketData';
 import type { PracticeFilter, PracticeTrade, ReplaySession } from '../../backtest/store';
@@ -15,6 +15,7 @@ import { Card, Field, Pill, Segmented, Toggle, btnPrimary, btnSecondary, inputBa
 
 interface Props {
   entries: JournalEntry[];
+  sessions: ReplaySession[];
   tz: string;
   initialEntryId: string | null;
   onFinish: (s: ReplaySession) => void;
@@ -31,7 +32,7 @@ const WINDOW = 90;
 
 const roundStep = (x: number, step: number) => Number((Math.floor(x / step + 1e-9) * step).toFixed(8));
 
-export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFinish, onToast }) => {
+export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEntryId, onFinish, onToast }) => {
   const [source, setSource] = useState<'random' | 'similar' | 'journal'>(initialEntryId ? 'journal' : 'random');
   const [filter, setFilter] = useState<PracticeFilter>(DEFAULT_FILTER);
   const [tf, setTf] = useState<Timeframe>('5m');
@@ -63,6 +64,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
   const [finished, setFinished] = useState(false);
   const [sessionId, setSessionId] = useState('');
   const [minCursor, setMinCursor] = useState(0);
+  const sessionStartedAt = useRef<string | null>(null);
   const stateRef = useRef({ pending, pos, cursor, data, trades });
   stateRef.current = { pending, pos, cursor, data, trades };
 
@@ -71,6 +73,28 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
   const journalList = journalMatches;
   const feedMatches = useMemo(() => practiceInstruments(filter), [filter]);
   const allTags = useMemo(() => Array.from(new Set(entries.flatMap((e) => [...e.tags, ...e.mistakes]))).slice(0, 14), [entries]);
+  const dateRangeError = practiceDateRangeError(source, filter);
+  const logSessions = useMemo(() => {
+    const selectedSymbols = new Set(filter.symbols.map((symbol) => symbolSpec(symbol)?.symbol ?? symbol));
+    return sessions.filter((session) => {
+      const spec = symbolSpec(session.symbol);
+      const journalEntry = session.journalTradeId ? entries.find((entry) => entry.id === session.journalTradeId) : undefined;
+      const sessionMarket = spec ? feedMarket(spec) : journalEntry ? journalMarket(journalEntry) : null;
+      const sessionSymbol = spec?.symbol ?? session.symbol;
+      return (!selectedSymbols.size || selectedSymbols.has(sessionSymbol))
+        && (!filter.markets.length || (sessionMarket !== null && filter.markets.includes(sessionMarket)))
+        && (!filter.from || (!!session.marketDate && session.marketDate >= filter.from))
+        && (!filter.to || (!!session.marketDate && session.marketDate <= filter.to));
+    });
+  }, [sessions, entries, filter.markets, filter.symbols, filter.from, filter.to]);
+  const logTrades = useMemo(() => logSessions.flatMap((session) => session.trades), [logSessions]);
+  const logWins = logTrades.filter((trade) => trade.net > 0).length;
+  const logNet = logTrades.reduce((sum, trade) => sum + trade.net, 0);
+  const logGrossProfit = logTrades.reduce((sum, trade) => sum + Math.max(0, trade.net), 0);
+  const logGrossLoss = logTrades.reduce((sum, trade) => sum + Math.max(0, -trade.net), 0);
+  const logR = logTrades.flatMap((trade) => trade.r !== null && Number.isFinite(trade.r) ? [trade.r] : []);
+  const logAvgR = logR.length ? logR.reduce((sum, value) => sum + value, 0) / logR.length : null;
+  const logProfitFactor = logGrossLoss > 0 ? logGrossProfit / logGrossLoss : logGrossProfit > 0 ? Infinity : null;
 
   const balance = startingBalance + trades.reduce((a, t) => a + t.net, 0);
   const bars = data?.bars ?? [];
@@ -102,15 +126,17 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
 
   const load = (d: ReplayData, importJournalSetup = true) => {
     setData(d); setCursor(d.start); setMinCursor(d.start); setPlaying(false); setPending(null); setPos(null); setTrades([]); setDrawings([]);
-    setFinished(false); setAutoReview(false); setAutoReviewResult(null); setNotes(''); setTags(d.trade?.mistakes ?? []); setSessionId(`rs_${Date.now().toString(36)}`);
+    setFinished(false); setAutoReview(false); setAutoReviewResult(null); setNotes(''); setTags(d.trade?.mistakes ?? []); setSessionId(`rs_${Date.now().toString(36)}`); sessionStartedAt.current = new Date().toISOString();
     configureTicketFromTrade(d, importJournalSetup);
   };
   const loadSource = () => {
     try {
+      if (dateRangeError) { onToast(dateRangeError); return; }
       if (source !== 'journal') {
         if (!feedMatches.length) { onToast('No instruments match these filters. Pick another market or instrument.'); return; }
         const sym = feedMatches[Math.floor(Math.random() * feedMatches.length)].symbol;
-        load(source === 'random' ? replayRandom(sym, tf) : replayDaysLikeToday(sym, tf));
+        const dateRange = { from: filter.from, to: filter.to };
+        load(source === 'random' ? replayRandom(sym, tf, Date.now(), dateRange) : replayDaysLikeToday(sym, tf, dateRange));
       } else {
         const e = entries.find((x) => x.id === pickId && journalMatches.some((m) => m.id === x.id)) || journalList[0] || (initialEntryId ? entries.find((x) => x.id === pickId) : undefined);
         if (!e) { onToast('No journal trades match these filters. Loosen one of them.'); return; }
@@ -176,9 +202,16 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
   };
 
   const closeAt = useCallback((p: Position, price: number, bar: number, qty = p.size): PracticeTrade => {
-    const mult = stateRef.current.data?.multiplier ?? 1;
+    const data = stateRef.current.data;
+    const mult = data?.multiplier ?? 1;
     const net = (price - p.entry) * p.dir * qty * mult;
-    return { dir: p.dir === 1 ? 'long' : 'short', entry: p.entry, exit: price, size: qty, net, r: p.initRisk > 0 ? net / (p.initRisk * (qty / p.size)) : null, entryBar: p.entryBar, exitBar: bar, tags: p.tags };
+    return {
+      dir: p.dir === 1 ? 'long' : 'short', entry: p.entry, exit: price, size: qty, net,
+      r: p.initRisk > 0 ? net / (p.initRisk * (qty / p.size)) : null,
+      entryBar: p.entryBar, exitBar: bar, tags: p.tags,
+      entryTime: data?.bars[p.entryBar] ? new Date(data.bars[p.entryBar].t).toISOString() : undefined,
+      exitTime: data?.bars[bar] ? new Date(data.bars[bar].t).toISOString() : undefined,
+    };
   }, []);
 
   /** Reveal the next bar and run orders/position against it (stop first if both stop and target are inside the bar). */
@@ -243,7 +276,13 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
     let all = trades;
     if (pos && last) { const t = closeAt(pos, last.c, cursor - 1); all = [...trades, { ...t, tags }]; setTrades(all); setPos(null); }
     setPending(null); setPlaying(false); setFinished(true);
-    onFinish({ id: sessionId, source: data.source, symbol: data.symbol, label: data.label, startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), trades: all, net: all.reduce((a, t) => a + t.net, 0), notes, tags, pointsAwarded: false, journalTradeId: data.trade?.id });
+    const finishedAt = new Date().toISOString();
+    onFinish({
+      id: sessionId, source: data.source, symbol: data.symbol, label: data.label,
+      startedAt: sessionStartedAt.current ?? finishedAt, finishedAt,
+      trades: all, net: all.reduce((a, t) => a + t.net, 0), notes, tags, pointsAwarded: false,
+      journalTradeId: data.trade?.id, marketDate: new Date(data.bars[data.start]?.t ?? Date.now()).toISOString().slice(0, 10), timeframe: data.tf,
+    });
   };
 
   // Keyboard: Space play/pause, → next bar, ← back, B buy, S sell
@@ -318,7 +357,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
               <div><p className="text-xs font-bold text-[#0b1c30] flex items-center gap-1.5"><EyeOff className="w-3.5 h-3.5" /> Blind mode</p><p className="text-[11px] text-slate-500">Hides the symbol, date, and recorded result until you finish.</p></div>
               <Toggle label="Blind mode" checked={blind} onChange={setBlind} />
             </div>
-            <button type="button" className={`${btnPrimary} w-full`} onClick={loadSource}>{source === 'random' ? <Shuffle className="w-4 h-4" /> : <CalendarSearch className="w-4 h-4" />} Load to chart</button>
+            <button type="button" className={`${btnPrimary} w-full`} disabled={!!dateRangeError} onClick={loadSource}>{source === 'random' ? <Shuffle className="w-4 h-4" /> : <CalendarSearch className="w-4 h-4" />} Load to chart</button>
           </div>
         </Card>
 
@@ -500,6 +539,96 @@ export const ReplayPanel: React.FC<Props> = ({ entries, tz, initialEntryId, onFi
             <button type="button" className={`${btnSecondary} mt-2`} onClick={loadSource}>Practise another</button>
           </div>
         )}
+      </section>
+
+      <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Practice log and performance">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-[#0b1c30]">Practice log and performance</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">Completed simulated sessions matching the selected market, instrument and replay dates.</p>
+          </div>
+          <span className="text-[11px] text-slate-500 tabular-nums">{logSessions.length} session{logSessions.length === 1 ? '' : 's'}</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
+          {[
+            ['Sim trades', `${logTrades.length}`],
+            ['Win rate', logTrades.length ? pct(logWins / logTrades.length, 0) : '—'],
+            ['Net P&L', money(logNet)],
+            ['Average R', logAvgR !== null ? rr(logAvgR) : '—'],
+            ['Profit factor', logProfitFactor === null ? '—' : Number.isFinite(logProfitFactor) ? logProfitFactor.toFixed(2) : '∞'],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl bg-slate-50 px-3 py-2.5 tabular-nums">
+              <p className={`text-base font-bold ${label === 'Net P&L' ? tone(logNet) : 'text-[#0b1c30]'}`}>{value}</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500">{label}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-[10px] text-slate-500">Practice uses simulated fills on generated replay data; these results are not verified historical fills or evidence of future performance.</p>
+        {logSessions.length ? (
+          <>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[720px] text-xs tabular-nums">
+                <thead>
+                  <tr className="border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500">
+                    <th className="py-2 pr-3 text-left">Replay date</th>
+                    <th className="px-3 py-2 text-left">Instrument</th>
+                    <th className="px-3 py-2 text-left">Source</th>
+                    <th className="px-3 py-2 text-right">Trades</th>
+                    <th className="px-3 py-2 text-right">Win rate</th>
+                    <th className="px-3 py-2 text-right">Net</th>
+                    <th className="py-2 pl-3 text-right">Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logSessions.slice(0, 20).map((session) => {
+                    const count = session.trades.length;
+                    const wins = session.trades.filter((trade) => trade.net > 0).length;
+                    const sessionDp = symbolSpec(session.symbol)?.priceDp ?? dp;
+                    return (
+                      <tr key={session.id} className="border-b border-slate-100 align-top">
+                        <td className="py-2.5 pr-3">
+                          <span className="font-semibold text-[#0b1c30]">{session.marketDate ?? 'Date not recorded'}</span>
+                          <span className="block text-[10px] text-slate-400">{session.timeframe ?? session.label}</span>
+                        </td>
+                        <td className="px-3 py-2.5 font-semibold">{session.symbol}</td>
+                        <td className="px-3 py-2.5 capitalize">{session.source}</td>
+                        <td className="px-3 py-2.5 text-right">{count}</td>
+                        <td className="px-3 py-2.5 text-right">{count ? pct(wins / count, 0) : '—'}</td>
+                        <td className={`px-3 py-2.5 text-right font-semibold ${tone(session.net)}`}>{money(session.net)}</td>
+                        <td className="py-2.5 pl-3 text-right">
+                          <details className="text-left">
+                            <summary className="cursor-pointer text-[#5338ec] font-semibold">{count ? 'View trades' : 'View notes'}</summary>
+                            {count > 0 && (
+                              <div className="mt-2 min-w-[360px] rounded-lg border border-slate-200 p-2">
+                                <table className="w-full text-[10px] tabular-nums">
+                                  <thead><tr className="text-slate-500"><th className="py-1 text-left">Opened</th><th className="py-1 text-left">Side</th><th className="py-1 text-right">Entry</th><th className="py-1 text-right">Exit</th><th className="py-1 text-right">R</th><th className="py-1 text-right">Net</th></tr></thead>
+                                  <tbody>{session.trades.map((trade, index) => (
+                                    <tr key={`${session.id}-${index}`} className="border-t border-slate-100">
+                                      <td className="py-1">{trade.entryTime ? dateTime(Date.parse(trade.entryTime), tz) : `Bar ${trade.entryBar + 1}`}</td>
+                                      <td className="py-1 capitalize">{trade.dir}</td>
+                                      <td className="py-1 text-right">{priceFmt(trade.entry, sessionDp)}</td>
+                                      <td className="py-1 text-right">{priceFmt(trade.exit, sessionDp)}</td>
+                                      <td className="py-1 text-right">{trade.r === null ? '—' : rr(trade.r)}</td>
+                                      <td className={`py-1 text-right font-semibold ${tone(trade.net)}`}>{money(trade.net)}</td>
+                                    </tr>
+                                  ))}</tbody>
+                                </table>
+                                {session.notes && <p className="mt-2 whitespace-pre-wrap text-[10px] text-slate-600">{session.notes}</p>}
+                                {session.tags.length > 0 && <p className="mt-1 text-[10px] text-slate-500">Tags: {session.tags.join(', ')}</p>}
+                              </div>
+                            )}
+                            {!count && <p className="mt-2 min-w-[180px] whitespace-pre-wrap text-[10px] text-slate-600">{session.notes || 'No notes saved.'}</p>}
+                          </details>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {logSessions.length > 20 && <p className="mt-2 text-[11px] text-slate-500">Showing the 20 most recent matching sessions of {logSessions.length}.</p>}
+          </>
+        ) : <p className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-xs text-slate-500">No saved practice sessions match the current instrument and replay date filters yet.</p>}
       </section>
     </div>
   );
