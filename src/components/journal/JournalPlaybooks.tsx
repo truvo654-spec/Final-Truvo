@@ -206,19 +206,19 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     setStatus('all'); setMarket('all'); setQuery(''); setSelId(pb.id); setTplOpen(false);
     onToast(`Imported "${name}" as a testing playbook`);
   };
-  const save = () => {
+  const save = (statusOverride?: PlaybookStatus) => {
     if (!editing) return;
     const name = editing.name.trim();
     if (!name) { onToast('Give the playbook a name'); return; }
     if (playbooks.some((p) => p.id !== editing.id && p.name.toLowerCase() === name.toLowerCase())) { onToast('A playbook with that name already exists'); return; }
-    const clean: JournalPlaybook = { ...editing, name, avoid: (editing.avoid || []).map((a) => a.trim()).filter(Boolean), rules: editing.rules.filter((r) => r.title.trim()).map((r, i) => ({ ...r, id: `r${i + 1}` })) };
+    const clean: JournalPlaybook = { ...editing, name, status: statusOverride ?? editing.status, avoid: (editing.avoid || []).map((a) => a.trim()).filter(Boolean), rules: editing.rules.filter((r) => r.title.trim()).map((r, i) => ({ ...r, id: `r${i + 1}` })) };
     if (isNew) {
       clean.id = nextId();
       setPlaybooks((prev) => [...prev, clean]);
       setStatus('all'); setMarket('all'); setQuery('');
     } else setPlaybooks((prev) => prev.map((p) => (p.id === clean.id ? clean : p)));
     setSelId(clean.id); setEditing(null);
-    onToast(isNew ? `Created "${name}"` : `Saved "${name}"`);
+    onToast(statusOverride === 'archived' ? `Archived "${name}"` : isNew ? `Created "${name}"` : `Saved "${name}"`);
   };
   const remove = () => {
     if (!sel) return;
@@ -466,14 +466,25 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
       <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
         <button type="button" onClick={save} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">{isNew ? 'Create playbook' : 'Save changes'}</button>
         <button type="button" onClick={() => setEditing(null)} className={btn}>Cancel</button>
-        {!isNew && (selTrades.length === 0 ? (
-          confirmDelete ? (
-            <span className="ml-auto flex items-center gap-2 text-xs text-rose-700">Delete this playbook?
-              <button type="button" onClick={remove} className="h-8 px-3 rounded-lg bg-rose-600 text-white font-semibold">Delete</button>
-              <button type="button" onClick={() => setConfirmDelete(false)} className="font-semibold text-[#474556] hover:underline">Keep</button>
-            </span>
-          ) : <button type="button" onClick={() => setConfirmDelete(true)} className="ml-auto text-xs font-semibold text-rose-600 hover:underline">Delete playbook</button>
-        ) : <span className="ml-auto text-[11px] text-slate-400">Has trades, so it can be archived but not deleted.</span>)}
+        {!isNew && (
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            {selTrades.length === 0 && (confirmDelete ? (
+              <span className="flex items-center gap-2 text-xs text-rose-700">Delete this playbook?
+                <button type="button" onClick={remove} className="h-8 px-3 rounded-lg bg-rose-600 text-white font-semibold">Delete</button>
+                <button type="button" onClick={() => setConfirmDelete(false)} className="font-semibold text-[#474556] hover:underline">Keep</button>
+              </span>
+            ) : <button type="button" onClick={() => setConfirmDelete(true)} className="text-xs font-semibold text-rose-600 hover:underline">Delete playbook</button>)}
+            <button
+              type="button"
+              aria-label={editing.status === 'archived' ? 'Playbook archived' : 'Archive playbook'}
+              disabled={editing.status === 'archived'}
+              onClick={() => save('archived')}
+              className={`h-9 px-4 rounded-lg border text-xs font-semibold ${editing.status === 'archived' ? 'border-slate-200 bg-slate-50 text-slate-400' : 'border-[#5338ec] text-[#5338ec] hover:bg-[#F7F5FF]'}`}
+            >
+              {editing.status === 'archived' ? 'Archived' : 'Archive'}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

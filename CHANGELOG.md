@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.5] - 2026-10-12
+
+### Added
+
+- Added an Archive action to the playbook editor footer; archiving saves the current edits and changes the playbook status.
+
 ## [1.11.4] - 2026-10-12
 
 ### Changed
