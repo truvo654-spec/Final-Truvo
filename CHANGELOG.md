@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.1] - 2026-10-12
+
+### Added
+
+- Value-based best-result highlights in the What-if aggregate, changed-trade table and gain/loss, risk and performance charts. Any setup can win; partial ties share the highlight and unavailable results are excluded.
+- Lower drawdown and closed losses win risk comparisons; trade counts and identical results remain neutral. Skipped trades show zero net explicitly.
+
+## [1.20.0] - 2026-10-12
+
+### Added
+
+- MarketSyde AI result columns and explicit AI-versus-user deltas in the What-if aggregate and changed-trade tables.
+- Gain/loss, closed-result risk and performance charts below the scenario controls, comparing actual history, the user's setup and the AI setup on the same filtered trades.
+- Independent bounded AI exploration across supported rule families, with tags and monetary loss thresholds learned from training data only.
+
+### Changed
+
+- Shared one What-if study between tables, charts and recommendation cards to keep AI setup and results consistent.
+- Matched trade comparisons by journal ID and included trades changed by either setup. Missing AI evidence remains unavailable.
+- Comparing the AI scenario preserves the user's chosen rule; deliberately applying a setup remains a separate action.
+
 ## [1.19.0] - 2026-10-12
 
 ### Added

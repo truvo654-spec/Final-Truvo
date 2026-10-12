@@ -2,23 +2,22 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { JournalEntry } from '../../types';
 import type { WhatIfRule } from '../../backtest/whatif';
 import { describeWhatIf as describeRule } from '../../backtest/whatif';
-import { compareParameters, parameterRules } from '../../backtest/whatifOptimizer';
 import { dayMs, marketData, resolveSymbol, symbolSpec } from '../../backtest/marketData';
 import type { Bar } from '../../backtest/types';
 import { JournalCurrency, formatMoney } from '../journal/JournalCurrency';
 import { CandleChart, LineChart } from './charts';
 import { Card, Field, Pill, inputBase, btnSecondary } from './ui';
-import { recommendSetup, type RecommendationGoal } from '../../backtest/recommender';
 import { MarketSydeRecommender, RecommendationBadge } from './MarketSydeRecommender';
+import type { WhatIfStudyModel } from './useWhatIfStudy';
 
 const COLORS = ['#5338ec', '#059669', '#0284c7', '#d97706', '#db2777', '#7c3aed'];
-const defaults = (rule: WhatIfRule) => rule.kind === 'stop' ? [0.5, 1, 0.25] : rule.kind === 'dailyLoss' ? [100, 500, 100] : rule.kind === 'hours' ? [2, 10, 2] : rule.kind === 'lossesPerDay' ? [1, 4, 1] : [0.5, 3, 0.5];
-
-export const WhatIfComparison: React.FC<{ entries: JournalEntry[]; rule: WhatIfRule; onSelect: (rule: WhatIfRule) => void }> = ({ entries, rule, onSelect }) => {
+export const WhatIfComparison: React.FC<{ entries: JournalEntry[]; rule: WhatIfRule; model:WhatIfStudyModel; onSelect: (rule: WhatIfRule) => void }> = ({ entries, rule, model, onSelect }) => {
   const currency = React.useContext(JournalCurrency);
   const money = (n: number) => Number.isFinite(n) ? formatMoney(n, currency, 2) : '—';
   const describeWhatIf = (rule: WhatIfRule) => rule.kind === 'dailyLoss' ? `Stop after ${money(rule.usd)} net loss in a day` : describeRule(rule);
-  const [bounds, setBounds] = useState(() => defaults(rule));
+  const {bounds,setBounds,goal:recommendationGoal,setGoal:setRecommendationGoal,baseline:recommendationBaseline}=model;
+  const comparison={rows:model.rows,error:model.error};
+  const recommendation={...model.recommendation,candidate:model.recommendation.candidate&&model.aiRow?{...model.recommendation.candidate,name:describeWhatIf(model.aiRow.rule)}:null};
   const [score, setScore] = useState('net');
   const [improvedOnly, setImprovedOnly] = useState(false);
   const [visible, setVisible] = useState<string[] | null>(null);
@@ -26,20 +25,12 @@ export const WhatIfComparison: React.FC<{ entries: JournalEntry[]; rule: WhatIfR
   const [chartEnd, setChartEnd] = useState<number | null>(null);
   const [equityScope, setEquityScope] = useState('benchmark');
   const [chartView, setChartView] = useState('combined');
-  const [recommendationGoal, setRecommendationGoal] = useState<RecommendationGoal>('net');
-  useEffect(() => { setBounds(defaults(rule)); setVisible(null); }, [rule.kind]);
+  useEffect(() => { setVisible(null); }, [rule.kind]);
   useEffect(() => { setChartEnd(null); }, [chartSymbol, entries]);
-  const comparison = useMemo(() => {
-    try { return { rows: compareParameters(entries, parameterRules(rule, ...bounds as [number, number, number])), error: '' }; }
-    catch (e) { return { rows: [], error: e instanceof Error ? e.message : 'Unable to compare these parameters.' }; }
-  }, [entries, JSON.stringify(rule), bounds]);
   const rank = (row: typeof comparison.rows[number]) => score === 'drawdown' ? -row.training.whatIf.maxDD : score === 'win' ? row.training.whatIf.winRate : row.training.whatIf.netPnl;
   const ranked = [...comparison.rows].sort((a, b) => rank(b) - rank(a));
   const shown = ranked.filter(r => !improvedOnly || r.output.saved > 0);
-  const recommendationBaseline = comparison.rows[0]?.training.actual ?? {netPnl:0,maxDD:0,winRate:0,trades:0};
-  const recommendation = recommendSetup(comparison.rows.map(row => ({ id:row.id, name:describeWhatIf(row.rule), metrics:row.training.whatIf, estimated:row.output.estimated,
-    validation:row.validation ? {baseline:row.validation.actual,candidate:row.validation.whatIf} : null })), recommendationBaseline, recommendationGoal);
-  const selected = shown.filter(r => visible ? visible.includes(r.id) : shown.indexOf(r) < 3 || r.id === recommendation.candidate?.id).slice(0,6);
+  const selected = shown.filter(r => visible ? visible.includes(r.id) : shown.indexOf(r) < 3 || r.id === recommendation.candidate?.id || r.id === JSON.stringify(rule)).slice(0,6);
   const symbols = Array.from(new Set(entries.map(e => e.symbol))).sort();
   const instrument = symbols.includes(chartSymbol) ? chartSymbol : symbols[0] || '';
   const canonical = resolveSymbol(instrument);
@@ -61,7 +52,7 @@ export const WhatIfComparison: React.FC<{ entries: JournalEntry[]; rule: WhatIfR
   const actualCurve = (() => { let total = 0; return [...origin, ...[...scopedTrades(actualTrades)].sort((a,b) => a.exitTime-b.exitTime).map(t => ({ x: t.exitTime, y: total += t.actualNet }))]; })();
   const portfolioSeries = [{ name: 'Actual', color: '#94a3b8', dashed: true, points: actualCurve }, ...selected.map((row, i) => {
     let total = 0;
-    return { name: describeWhatIf(row.rule) + (row.id === recommendation.candidate?.id ? (recommendation.status === 'exploratory' ? ' · AI exploration' : ' · AI candidate') : ''), color: row.id === recommendation.candidate?.id ? '#5338ec' : COLORS[(i + 1) % COLORS.length], points: [...origin, ...[...scopedTrades(row.output.trades)].sort((a,b) => a.exitTime-b.exitTime).map(t => ({ x: t.exitTime, y: total += t.newNet }))] };
+    return { name: (row.id === JSON.stringify(rule) ? 'Your setup · ' : '') + describeWhatIf(row.rule) + (row.id === recommendation.candidate?.id ? (recommendation.status === 'exploratory' ? ' · AI exploration' : ' · MarketSyde AI') : ''), color: row.id === recommendation.candidate?.id ? '#5338ec' : row.id === JSON.stringify(rule) ? '#0284c7' : COLORS[(i + 1) % COLORS.length], points: [...origin, ...[...scopedTrades(row.output.trades)].sort((a,b) => a.exitTime-b.exitTime).map(t => ({ x: t.exitTime, y: total += t.newNet }))] };
   })];
   const dailyPoints = (trades: typeof actualTrades, actual: boolean) => {
     const sorted = [...scopedTrades(trades)].sort((a,b) => a.exitTime-b.exitTime);
@@ -71,13 +62,13 @@ export const WhatIfComparison: React.FC<{ entries: JournalEntry[]; rule: WhatIfR
       return { x: bar.t, y: total };
     });
   };
-  const candleSeries = [{ name: 'Actual', color: '#94a3b8', dashed: true, points: dailyPoints(actualTrades, true) }, ...selected.map((row, i) => ({ name: describeWhatIf(row.rule) + (row.id === recommendation.candidate?.id ? (recommendation.status === 'exploratory' ? ' · AI exploration' : ' · AI candidate') : ''), color: row.id === recommendation.candidate?.id ? '#5338ec' : COLORS[(i + 1) % COLORS.length], points: dailyPoints(row.output.trades, false) }))];
+  const candleSeries = [{ name: 'Actual', color: '#94a3b8', dashed: true, points: dailyPoints(actualTrades, true) }, ...selected.map((row, i) => ({ name: (row.id === JSON.stringify(rule) ? 'Your setup · ' : '') + describeWhatIf(row.rule) + (row.id === recommendation.candidate?.id ? (recommendation.status === 'exploratory' ? ' · AI exploration' : ' · MarketSyde AI') : ''), color: row.id === recommendation.candidate?.id ? '#5338ec' : row.id === JSON.stringify(rule) ? '#0284c7' : COLORS[(i + 1) % COLORS.length], points: dailyPoints(row.output.trades, false) }))];
   const to = Math.max(Math.min(chartEnd ?? bars.length, bars.length), Math.min(70, bars.length));
   const from = Math.max(0, to - 70);
   const first = comparison.rows[0];
   return <div className="space-y-5">
     <MarketSydeRecommender recommendation={recommendation} baseline={recommendationBaseline} baselineName="actual journal history on the training days" goal={recommendationGoal} onGoal={setRecommendationGoal} money={money}
-      evidence="Selection uses the first 70% of entry days. The remaining days are checked independently; crossing trades stay in full-history results only. Candidates use the parameter range below." action="Compare AI candidate" onUse={id => {const row=comparison.rows.find(r=>r.id===id);if(row){setImprovedOnly(false);setVisible([id]);onSelect(row.rule);}}} />
+      evidence={`Selection uses the first 70% of entry days. The remaining days are checked independently; crossing trades stay in full-history results only. AI explores ${model.tested} supported setups across guardrails, session, tags and price-dependent rules, including your parameter range.`} action="Compare AI scenario" onUse={id => {setImprovedOnly(false);setVisible([...new Set([JSON.stringify(rule),id])]);}} />
     <Card title="Candles & scenario comparison" sub="Compare actual and What-if equity alongside market candles on one timeline.">
       <div className="flex flex-wrap items-end gap-3 mb-3">
         <Field label="Candle instrument" htmlFor="wi-chart-symbol"><select id="wi-chart-symbol" className={inputBase} value={instrument} onChange={e => setChartSymbol(e.target.value)}>{symbols.map(s => <option key={s}>{s}</option>)}</select></Field>
@@ -98,7 +89,7 @@ export const WhatIfComparison: React.FC<{ entries: JournalEntry[]; rule: WhatIfR
         <Field label="Rank by training result" htmlFor="wi-rank"><select id="wi-rank" className={inputBase} value={score} onChange={e => setScore(e.target.value)}><option value="net">Highest net P&amp;L</option><option value="drawdown">Lowest drawdown</option><option value="win">Highest win rate</option></select></Field>
         <label className="flex items-center gap-2 h-9 text-xs"><input type="checkbox" checked={improvedOnly} onChange={e => setImprovedOnly(e.target.checked)} />Improved net only</label>
       </div>
-      <p className="text-[11px] text-slate-500 mb-3">{rule.kind === 'hours' ? 'Range is session duration in hours, from the selected UTC start.' : rule.kind === 'dailyLoss' ? `Range is daily loss in ${currency}.` : rule.kind === 'lossesPerDay' ? 'Range is the number of losses allowed each day.' : rule.kind !== 'mistakes' ? 'Range is measured in R, relative to each recorded trade’s initial risk.' : ''} The current setup is included alongside the range.</p>
+      <p className="text-[11px] text-slate-500 mb-3">{rule.kind === 'hours' ? 'Range is session duration in hours, from the selected UTC start.' : rule.kind === 'dailyLoss' ? `Range is daily loss in ${currency}.` : rule.kind === 'lossesPerDay' ? 'Range is the number of losses allowed each day.' : rule.kind !== 'mistakes' ? 'Range is measured in R, relative to each recorded trade’s initial risk.' : ''} The current setup is included alongside the range. A highlighted AI scenario can use another supported rule.</p>
       {['stop','target','breakeven'].includes(rule.kind) && <p className="text-[11px] text-amber-700 mb-3">Price-path coverage: {entries.filter(e => Number.isFinite(e.initialRisk) && e.initialRisk! > 0).length} / {entries.length} trades have initial monetary risk. Missing-risk trades stay unchanged. Paths are reconstructed estimates, not recorded candles.</p>}
       {comparison.error && <p role="alert" className="text-xs text-rose-600">{comparison.error}</p>}
       {first && <div className="flex flex-wrap gap-2 mb-3"><Pill tone="info">{first.trainingCount} training trades</Pill><Pill tone="neutral">{first.validationCount} holdout trades</Pill><span className="text-[11px] text-slate-500">First 70% of entry days train; remaining days validate independently. {first.validationCount ? 'Holdout results do not determine ranking.' : 'More entry days are needed for a holdout.'} {first.crossingCount ? `${first.crossingCount} trades cross the split and appear only in full-history results.` : ''}</span></div>}

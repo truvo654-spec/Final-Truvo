@@ -50,7 +50,7 @@ export function parameterRules(rule: WhatIfRule, min: number, max: number, step:
   return [rule, ...candidates].filter((item, i, all) => all.findIndex(x => JSON.stringify(x) === JSON.stringify(item)) === i);
 }
 
-export function compareParameters(entries: JournalEntry[], rules: WhatIfRule[]) {
+export function splitWhatIfHistory(entries: JournalEntry[]) {
   const sorted = [...entries].sort((a, b) => toMs(a.entryTime, a.date) - toMs(b.entryTime, b.date));
   // Keep a UTC entry day intact so daily guardrails cannot leak across the split.
   const days = [...new Set(sorted.map(e => e.date))];
@@ -58,10 +58,15 @@ export function compareParameters(entries: JournalEntry[], rules: WhatIfRule[]) 
   const cutoff = splitDay ? Date.parse(`${splitDay}T00:00:00Z`) : Infinity;
   const train = sorted.filter(e => (!splitDay || e.date < splitDay) && toMs(e.exitTime, e.date, 13) < cutoff);
   const validation = sorted.filter(e => splitDay && e.date >= splitDay);
+  return { sorted, train, validation, crossingCount: sorted.length - train.length - validation.length };
+}
+
+export function compareParameters(entries: JournalEntry[], rules: WhatIfRule[]) {
+  const { sorted, train, validation, crossingCount } = splitWhatIfHistory(entries);
   return rules.map(rule => ({
     id: JSON.stringify(rule), rule, output: runWhatIf(sorted, rule),
     training: runWhatIf(train, rule), validation: validation.length ? runWhatIf(validation, rule) : null,
     trainingCount: train.length, validationCount: validation.length,
-    crossingCount: sorted.length - train.length - validation.length,
+    crossingCount,
   }));
 }

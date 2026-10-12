@@ -4,6 +4,10 @@ import { ArrowRight, ChevronDown, Info, ListPlus, TrendingDown, TrendingUp } fro
 import type { JournalEntry } from '../../types';
 import { currencyOf, eligible, resultOf, timestampMs } from '../journal/journalMath';
 import { WhatIfComparison } from './WhatIfComparison';
+import { useWhatIfStudy } from './useWhatIfStudy';
+import { ScenarioOutcomeComparison } from './ScenarioOutcomeComparison';
+import {bestValues,BestValueBadge,bestValueClass} from './comparisonHighlights';
+import { compareWhatIfLedgers } from '../../backtest/whatifStudy';
 import { resolveSymbol } from '../../backtest/marketData';
 import { playbookWhatIfSetup, selectWhatIfBenchmark } from '../../backtest/whatifOptimizer';
 import { JournalCurrency, formatMoney } from '../journal/JournalCurrency';
@@ -111,7 +115,11 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
 
   const rule: WhatIfRule = kind === 'lossesPerDay' ? { kind, n: params.n } : kind === 'dailyLoss' ? { kind, usd: params.usd } : kind === 'hours' ? { kind, start: params.start, end: params.end }
     : kind === 'mistakes' ? { kind, tags: params.tags } : kind === 'breakeven' ? { kind, r: params.be } : kind === 'target' ? { kind, r: params.target } : { kind, mult: params.stop };
-  const out = useMemo(() => runWhatIf(picked, rule), [picked, JSON.stringify(rule)]); // eslint-disable-line react-hooks/exhaustive-deps
+  const study=useWhatIfStudy(picked,rule);
+  const out=study.rows[0].output;
+  const aiOut=study.aiRow?.output??null;
+  const aiName=study.aiRow?describeWhatIf(study.aiRow.rule):'No qualifying AI scenario';
+  const comparisonTrades=compareWhatIfLedgers(out,aiOut);
   const selectRule = (r: WhatIfRule) => {
     setKind(r.kind);
     setParams(p => ({ ...p, ...(r.kind === 'target' ? { target: r.r } : r.kind === 'breakeven' ? { be: r.r } : r.kind === 'stop' ? { stop: r.mult } : r.kind === 'dailyLoss' ? { usd: r.usd } : r.kind === 'lossesPerDay' ? { n: r.n } : r.kind === 'hours' ? { start: r.start, end: r.end } : { tags: r.tags }) }));
@@ -140,14 +148,15 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
     onAddRule('checklist', ruleText);
   };
 
-  const rows: [string, string, number, number, (x: number) => string, boolean][] = [
-    ['Net P&L', 'Total result of the trades', out.actual.netPnl, out.whatIf.netPnl, (x) => money(x, 'USD', 0), true],
-    ['Win rate', 'Winning trades ÷ trades taken', out.actual.winRate, out.whatIf.winRate, (x) => pct(x, 1), true],
-    ['Profit factor', 'Positive net ÷ absolute negative net', out.actual.profitFactor ?? NaN, out.whatIf.profitFactor ?? NaN, (x) => x===Infinity?'∞':num(x), true],
-    ['Average R', 'Average result per trade in units of risk', out.actual.avgR, out.whatIf.avgR, (x) => rr(x), true],
-    ['Max drawdown', 'Daily closed-result drawdown by UTC entry date; no account-equity assumption', out.actual.maxDD, out.whatIf.maxDD, (x) => money(-x, 'USD', 0), false],
-    ['Trades', 'Trades taken', out.actual.trades, out.whatIf.trades, (x) => `${x}`, true],
+  const rows: [string, string, number, number, number, (x: number) => string, boolean][] = [
+    ['Net P&L', 'Total result of the trades', out.actual.netPnl, out.whatIf.netPnl, aiOut?.whatIf.netPnl??NaN, (x) => money(x, 'USD', 0), true],
+    ['Win rate', 'Winning trades ÷ trades taken', out.actual.winRate, out.whatIf.winRate, aiOut?.whatIf.winRate??NaN, (x) => pct(x, 1), true],
+    ['Profit factor', 'Positive net ÷ absolute negative net', out.actual.profitFactor ?? NaN, out.whatIf.profitFactor ?? NaN, aiOut?.whatIf.profitFactor??NaN, (x) => x===Infinity?'∞':num(x), true],
+    ['Average R', 'Average result per trade in units of risk', out.actual.avgR, out.whatIf.avgR, aiOut?.whatIf.avgR??NaN, (x) => rr(x), true],
+    ['Max drawdown', 'Daily closed-result drawdown by UTC entry date; no account-equity assumption', out.actual.maxDD, out.whatIf.maxDD, aiOut?.whatIf.maxDD??NaN, (x) => money(-x, 'USD', 0), false],
+    ['Trades', 'Trades taken', out.actual.trades, out.whatIf.trades, aiOut?.whatIf.trades??NaN, (x) => `${x}`, true],
   ];
+  const delta=(key:string,d:number)=>!Number.isFinite(d)?'—':Math.abs(d)<1e-9?'same':key==='Net P&L'||key==='Max drawdown'?money(d):`${d>0?'+':'−'}${key==='Win rate'?`${Math.abs(d*100).toFixed(1)} pts`:key==='Average R'?`${Math.abs(d).toFixed(2)}R`:key==='Trades'?Math.abs(d):Math.abs(d).toFixed(2)}`;
 
   return (
     <div className="space-y-5">
@@ -177,6 +186,7 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-5 items-start">
+        <div className="space-y-5 min-w-0">
         <Card title="Scenario parameter" sub="Choose a rule, then compare its parameter range below.">
           <div className="space-y-2" role="radiogroup" aria-label="Rule to change">
             {RULES.map((r) => {
@@ -216,9 +226,11 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
             })}
           </div>
         </Card>
+        {picked.length>0&&<ScenarioOutcomeComparison user={out} ai={aiOut} aiName={aiName} userName={describeWhatIf(rule)}/>}
+        </div>
 
         <div className="space-y-5 min-w-0">
-          {picked.length > 0 && <WhatIfComparison entries={picked} rule={rule} onSelect={selectRule} />}
+          {picked.length > 0 && <WhatIfComparison entries={picked} rule={rule} model={study} onSelect={selectRule} />}
           <section className={`rounded-2xl border p-5 ${out.saved > 0 ? 'border-emerald-200 bg-emerald-50' : out.saved < 0 ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'}`} aria-live="polite">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Result</p>
             <p className="text-lg font-bold text-[#0b1c30] mt-0.5 flex items-start gap-2">
@@ -231,23 +243,31 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
           </section>
 
           {picked.length > 0 && (<>
-            <Card title="Actual vs what-if" sub="Same trades, one rule changed.">
+            <Card title="Actual vs what-if" sub="Full filtered history: actual trades, your selected rule and the independently selected MarketSyde AI scenario.">
+              <p className="text-[11px] text-[#5338ec] mb-3">MarketSyde AI: {aiName}{aiOut?.estimated?' · Estimated price path':''}. Selection uses training results; totals below also include holdout trades.</p>
+              <p className="text-[11px] text-slate-500 mb-3">Green = best historical value per measure, shared for ties. Lower drawdown is better; trade counts are context.</p>
               <div className="overflow-x-auto">
-                <table className="w-full text-xs tabular-nums">
-                  <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-2">Measure</th><th className="text-right py-2">What you did</th><th className="text-right py-2">With the rule</th><th className="text-right py-2">Change</th></tr></thead>
+                <table className="w-full min-w-[720px] text-xs tabular-nums">
+                  <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-2 pr-3">Measure</th><th className="text-right py-2 px-2">What you did</th><th className="text-right py-2 px-2">With the rule</th><th className="text-right py-2 px-2 text-[#5338ec] bg-[#F5F2FF]">MarketSyde AI result</th><th className="text-right py-2 px-2">Your Δ actual</th><th className="text-right py-2 pl-2">AI Δ your setup</th></tr></thead>
                   <tbody>
-                    {rows.map(([k, hint, a, b, f, hi]) => {
+                    {rows.map(([k, hint, a, b, c, f, hi]) => {
                       const d = b - a;
                       const good = hi ? d > 1e-9 : d < -1e-9;
                       const bad = hi ? d < -1e-9 : d > 1e-9;
+                      const aiDelta=c-b;
+                      const aiGood=hi?aiDelta>1e-9:aiDelta<-1e-9;
+                      const aiBad=hi?aiDelta<-1e-9:aiDelta>1e-9;
+                      const highlight=k==='Trades'?null:bestValues([a,b,c],hi);
                       return (
                         <tr key={k} className="border-b border-slate-100">
-                          <td className="py-2 font-semibold"><Hint text={hint}>{k}</Hint></td>
-                          <td className="py-2 text-right">{f(a)}</td>
-                          <td className="py-2 text-right font-bold">{f(b)}</td>
-                          <td className={`py-2 text-right font-bold ${k === 'Trades' ? 'text-slate-500' : good ? 'text-emerald-600' : bad ? 'text-rose-600' : 'text-slate-400'}`}>
-                            {!Number.isFinite(d)?'—':Math.abs(d) < 1e-9 ? 'same' : `${d > 0 ? '+' : '−'}${k === 'Win rate' ? `${Math.abs(d * 100).toFixed(1)} pts` : k === 'Max drawdown' || k === 'Net P&L' ? money(Math.abs(d), 'USD', 0, false) : k === 'Average R' ? `${Math.abs(d).toFixed(2)}R` : k === 'Trades' ? Math.abs(d) : Math.abs(d).toFixed(2)}`}
+                          <td className="py-2 pr-3 font-semibold"><Hint text={hint}>{k}</Hint></td>
+                          {[a,b,c].map((value,index)=><td key={index} className={`py-2 px-2 text-right ${index?'font-bold':''} ${highlight?.winners.includes(index)?bestValueClass:index===2?'text-[#5338ec] bg-[#F5F2FF]':''}`}>
+                            {Number.isNaN(value)?'—':f(value)}{highlight?.winners.includes(index)&&<span className="block mt-1"><BestValueBadge tied={highlight.tied}/></span>}
+                          </td>)}
+                          <td className={`py-2 px-2 text-right font-bold ${k === 'Trades' ? 'text-slate-500' : good ? 'text-emerald-600' : bad ? 'text-rose-600' : 'text-slate-400'}`}>
+                            {delta(k,d)}
                           </td>
+                          <td className={`py-2 pl-2 text-right font-bold ${k==='Trades'?'text-slate-500':aiGood?'text-emerald-600':aiBad?'text-rose-600':'text-slate-400'}`}>{delta(k,aiDelta)}</td>
                         </tr>
                       );
                     })}
@@ -256,25 +276,30 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
               </div>
             </Card>
 
-            <Card title={`Trades that changed (${changed.length})`} right={changed.length > 0 ? <button type="button" className={btnSecondary} onClick={() => onOpenTrades(changed.map((t) => t.id), `What-if: ${ruleText}`)}>Open in Trade Log <ArrowRight className="w-3.5 h-3.5" /></button> : undefined}>
-              {changed.length === 0 ? <p className="text-xs text-slate-500 flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> This rule wouldn't have changed any of these trades.</p> : (
+            <Card title={`Trades that changed (${comparisonTrades.length})`} sub="Trades changed by either your setup or MarketSyde AI, matched by journal trade ID. Green highlights the highest net result for each trade; ties share it." right={comparisonTrades.length > 0 ? <button type="button" className={btnSecondary} onClick={() => onOpenTrades(comparisonTrades.map(({user}) => user.id), `What-if: your setup vs MarketSyde AI`)}>Open in Trade Log <ArrowRight className="w-3.5 h-3.5" /></button> : undefined}>
+              {comparisonTrades.length === 0 ? <p className="text-xs text-slate-500 flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Neither available setup changed these trades.</p> : (
                 <div className="overflow-x-auto -mx-5 px-5">
-                  <table className="w-full text-xs tabular-nums">
-                    <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-2 pr-2">Date</th><th className="text-left py-2 px-2">Symbol</th><th className="text-left py-2 px-2">Playbook</th><th className="text-right py-2 px-2">Actual</th><th className="text-right py-2 px-2">With the rule</th><th className="text-left py-2 pl-2">What happened</th></tr></thead>
+                  <table className="w-full min-w-[1000px] text-xs tabular-nums">
+                    <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-2 pr-2">Date</th><th className="text-left py-2 px-2">Symbol</th><th className="text-left py-2 px-2">Playbook</th><th className="text-right py-2 px-2">Actual</th><th className="text-right py-2 px-2">With the rule</th><th className="text-right py-2 px-2 text-[#5338ec] bg-[#F5F2FF]">MarketSyde AI result</th><th className="text-right py-2 px-2">AI Δ your setup</th><th className="text-left py-2 pl-2">What happened</th></tr></thead>
                     <tbody>
-                      {changed.slice(0, 15).map((t) => (
+                      {comparisonTrades.slice(0, 15).map(({user:t,ai}) => {
+                        const highlight=bestValues([t.actualNet,t.newNet,ai?.newNet??NaN]);
+                        const badge=(index:number)=>highlight.winners.includes(index)?<span className="block mt-1"><BestValueBadge tied={highlight.tied}/></span>:null;
+                        return (
                         <tr key={t.id} className="border-b border-slate-100">
                           <td className="py-2 pr-2 whitespace-nowrap">{dateOnly(t.entryTime, tz)}</td>
                           <td className="py-2 px-2 font-semibold">{t.symbol} <span className={t.direction === 'BUY' ? 'text-emerald-700' : 'text-rose-700'}>{t.direction === 'BUY' ? 'Long' : 'Short'}</span></td>
                           <td className="py-2 px-2">{t.strategy}</td>
-                          <td className={`py-2 px-2 text-right ${tone(t.actualNet)}`}>{money(t.actualNet, 'USD', 0)} <span className="text-slate-400">{rr(t.actualR, 1)}</span></td>
-                          <td className={`py-2 px-2 text-right font-bold ${t.status === 'skipped' ? 'text-slate-500' : tone(t.newNet)}`}>{t.status === 'skipped' ? 'Skipped' : <>{money(t.newNet, 'USD', 0)} <span className="text-slate-400 font-normal">{rr(t.newR, 1)}</span></>}</td>
-                          <td className="py-2 pl-2 text-[#474556]">{t.note}</td>
+                          <td className={`py-2 px-2 text-right ${highlight.winners.includes(0)?bestValueClass:tone(t.actualNet)}`}>{money(t.actualNet, 'USD', 0)} <span className="text-slate-400">{rr(t.actualR, 1)}</span>{badge(0)}</td>
+                          <td className={`py-2 px-2 text-right font-bold ${highlight.winners.includes(1)?bestValueClass:t.status === 'skipped' ? 'text-slate-500' : tone(t.newNet)}`}>{t.status === 'skipped' ? `Skipped · ${money(0)} net` : <>{money(t.newNet, 'USD', 0)} <span className="text-slate-400 font-normal">{rr(t.newR, 1)}</span></>}{badge(1)}</td>
+                          <td className={`py-2 px-2 text-right font-bold ${highlight.winners.includes(2)?bestValueClass:'text-[#5338ec] bg-[#F5F2FF]'}`}>{!ai?'—':ai.status==='skipped'?`Skipped · ${money(0)} net`:<>{money(ai.newNet)} <span className="text-slate-400 font-normal">{rr(ai.newR,1)}</span></>}{badge(2)}</td>
+                          <td className={`py-2 px-2 text-right font-semibold ${ai?tone(ai.newNet-t.newNet):'text-slate-400'}`}>{ai?money(ai.newNet-t.newNet):'—'}</td>
+                          <td className="py-2 pl-2 text-[#474556]"><p>Your setup: {t.note||'Unchanged'}</p><p className="text-[#5338ec] mt-1">AI: {ai?(ai.note||'Unchanged'):'Unavailable'}</p></td>
                         </tr>
-                      ))}
+                      );})}
                     </tbody>
                   </table>
-                  {changed.length > 15 && <p className="text-[11px] text-slate-500 mt-2">+{changed.length - 15} more. Open them in the Trade Log to see all.</p>}
+                  {comparisonTrades.length > 15 && <p className="text-[11px] text-slate-500 mt-2">+{comparisonTrades.length - 15} more. Open them in the Trade Log to see all.</p>}
                 </div>
               )}
             </Card>
