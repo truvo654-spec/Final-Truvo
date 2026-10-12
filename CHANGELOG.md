@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 2026-10-12
+
+### Added
+
+- Multi-playbook backtest comparisons: share the market, date range, account/risk and costs while preserving each playbook's rules, timeframe and session; one comparison batch uses one monthly test run.
+- Added a side-by-side comparison summary with live journal metrics, full-report links and direct Trade Log links for each selected playbook.
+
 ## [1.12.0] - 2026-10-12
 
 ### Changed

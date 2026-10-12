@@ -1,7 +1,7 @@
 // Results of an automated backtest: one sentence, four numbers, the curve, a verdict with
 // clickable improvements, robustness checks, breakdowns and the trade log.
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, ChevronDown, Copy, Download, Mail, Pencil, Save, ShieldCheck, Sparkles, XCircle, CalendarPlus, NotebookPen, Target, GitCompare, Info } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, Copy, Download, Mail, Pencil, Save, ShieldCheck, Sparkles, XCircle, CalendarPlus, NotebookPen, Target, GitCompare, Info } from 'lucide-react';
 import type { JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { BacktestSettings, JobOutput, Suggestion } from '../../backtest/types';
@@ -27,6 +27,7 @@ interface Props {
   expected?: PlaybookExpectedStats;
   tz: string;
   onOpenTrades: (ids: string[], label: string) => void;
+  onBackToComparison?: () => void;
   onSave: () => void;
   onEdit: () => void;
   onApplySuggestion: (s: Suggestion) => void;
@@ -41,7 +42,7 @@ const months = (a: number, b: number) => {
   return m >= 24 && m % 12 === 0 ? `${m / 12} years` : m >= 12 ? `${(m / 12).toFixed(1).replace(/\.0$/, '')} years` : `${Math.max(1, m)} month${m === 1 ? '' : 's'}`;
 };
 
-export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, saved, playbook, entries, expected, tz, onOpenTrades, onSave, onEdit, onApplySuggestion, onSetExpected, onSendNotes, onAddToPlan, onToast }) => {
+export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, saved, playbook, entries, expected, tz, onOpenTrades, onBackToComparison, onSave, onEdit, onApplySuggestion, onSetExpected, onSendNotes, onAddToPlan, onToast }) => {
   const r = output.result;
   const cur = r.currency;
   const [unit, setUnit] = useState<'money' | 'r'>('money');
@@ -132,6 +133,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {onBackToComparison && <button type="button" className={btnSecondary} onClick={onBackToComparison}><ArrowLeft className="w-3.5 h-3.5" /> Back to comparison</button>}
           <button type="button" className={btnSecondary} onClick={onEdit}><Pencil className="w-3.5 h-3.5" /> Edit and re-run</button>
           {playbook && <button type="button" className={btnSecondary} aria-pressed={showLive} onClick={() => setShowLive((x) => !x)}><GitCompare className="w-3.5 h-3.5" /> Compare with my live trades</button>}
           <div className="relative">

@@ -6,7 +6,8 @@ Backtesting lives inside the Trading Journal as its own tab (Overview · Trade L
 
 | Screen | Layout regions | Components | States shown | Functions implied |
 |---|---|---|---|---|
-| New backtest run (setup) | Breadcrumb; "Rules pre-filled from playbook" banner with journal benchmark; two columns: Market data + Costs (left), Strategy rules + Risk (right); sticky footer with run profile and Run button | Segmented controls (asset class, timeframe, news), symbol search, date presets + from/to, weekday chips, numbered rule rows with Edit, broker cost tiles, sizing mode tabs, prop-firm card | Pre-filled from playbook, live broker sync, prop mode on | Playbook pre-fill, broker cost import, prop-firm rules, AI run quota on the Run button |
+| New backtest run (setup) | Three steps: select one or more playbooks, choose shared market and dates, configure shared money/risk/costs; sticky Run button | Playbook checkboxes with each hypothesis, simulated rules, timeframe/session, journal metrics and Trade Log link | One playbook or multi-playbook comparison | Playbook rules/timeframe/session remain individual; market, dates, risk and costs are shared |
+| Comparison results | Side-by-side metrics for each selected playbook, with links to a full report and matching Trade Log entries | Net P&L/ROI, win rate, average R, profit factor, drawdown, trade count and live journal stats | Completed batch comparison | One monthly run is charged per comparison |
 | Strategy lab (home + results) | Header with actions; tabs (Simulations, Playbook verification, Stress test, Forward tests); formula strip; 7 KPI cards; equity vs live chart; "Journal bridge" side panel; executions table | KPI cards with sample size, equity overlay, drawdown strip, leak card, push-to-playbook button, filterable table | Results with live comparison | Backtest vs live gap, push rules to playbook, export to journal |
 | Replay | Practice source list (left), chart with controls (centre), order ticket + open position (right), session telemetry + tags + notes (bottom) | Source tabs, blind toggle, trade cards, play/step/speed/jump, drawing tools, HTF mini chart, buy/sell ticket with R:R, position card, tag chips, notes, toast | Blind mode active, open short position, auto-saved toast | Replay journal losses blind, tag practice trades, notes to Notebook, Points |
 | What-if | Filter bar (range, account, symbols, playbook, mistake tags); "Change one rule" list (left); AI insight + comparison matrix + equity overlay + changed trades (right) | Rule cards with inputs/toggles, KPI deltas, overlaid equity, table of changed trades | Rule 4 active, 2 mistake tags selected | One-rule counterfactual on real trades, add rule to tracker |
@@ -24,9 +25,10 @@ Backtesting lives inside the Trading Journal as its own tab (Overview · Trade L
 
 ## 3. Simplifications (the user-friendly version)
 
-- **One home, three plain questions.** "Test a playbook on past prices", "What if I followed one rule?", "Practice on past charts". Each opens a single page; there are no nested tabs.
-- **Run in one click.** Coming from a playbook, every field is already filled (symbol, timeframe, session, rules, risk from your journal rules, costs from your broker). The setup page is three short steps on one screen with the less common settings folded away (market filters, costs detail, prop-firm mode, exits).
-- **Rules read as sentences.** Rules are shown as "Buy when the close crosses above the 20-bar high", not as code. You can switch to the rule builder or type the strategy in your own words.
+- **One home, three plain questions.** "Compare playbooks on past prices", "What if I followed one rule?", "Practice on past charts". Each opens a single page; there are no nested tabs.
+- **Playbook-first comparisons.** Select one or more playbooks. Each keeps its own strategy rules, timeframe and session, while symbol, date range, account/risk and costs are shared. A multi-playbook comparison consumes one monthly run.
+- **Transparent rules.** Executable technical recipes transfer directly. When a playbook has no technical recipe, the test uses a starter template and clearly says that discretionary notes are context only, not simulated rules.
+- **Run in one click.** Coming from a playbook, its settings are prefilled; the setup page keeps common settings together and folds less-used filters away (market filters, costs detail, prop-firm mode, exits).
 - **Results start with one sentence**, then four numbers (net P&L, win rate, average R, max drawdown), each with its sample size. Everything else sits behind "Show all stats".
 - **The verdict says what to do next** with clickable suggestions that start a new run with that change.
 - **Trade log filters** are two controls plus one "More filters" drawer, with removable chips and totals for what you see.
@@ -38,6 +40,7 @@ See `src/backtest/config.ts` for every configurable value.
 | Item | Value | Where |
 |---|---|---|
 | Automated runs per month by member level | Level 1: 3 · Level 2: 5 · Level 3: 10 · Level 4+: 30 | `PLAN_RUN_LIMITS` |
+| Monthly run charge for multiple selected playbooks | One run per comparison batch | `BacktestPage` |
 | Extra run price | 15 Syde Credits | `EXTRA_RUN_CREDITS` |
 | Points for a finished replay session / saved backtest | 10 / 5, once per session or run | `POINTS` |
 | Out-of-sample split | 70 / 30 | `OOS_SPLIT` |
