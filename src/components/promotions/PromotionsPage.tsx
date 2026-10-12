@@ -1,5 +1,3 @@
-import { AiNext } from '../ai/AiWidgets';
-import { promotionsNext } from '../ai/aiFeature';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, X, Clock, ShieldCheck, Lock } from 'lucide-react';
 import { Broker, Mission } from '../../types';
@@ -458,7 +456,6 @@ export const PromotionsPage: React.FC<PromotionsPageProps> = ({
             )}
           </p>
         </div>
-      {(() => { const n = promotionsNext(undefined, userTierLevel); return n ? <AiNext {...n} tone="amber" className="mb-6" /> : null; })()}
         <PillTabs<Tab>
           options={(Object.keys(TAB_INFO) as Tab[]).map((t) => ({ id: t, label: `${TAB_INFO[t].label} (${tabCount(t)})` }))}
           value={tab}

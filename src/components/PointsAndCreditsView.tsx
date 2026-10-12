@@ -1,5 +1,3 @@
-import { AiProgress } from './ai/AiWidgets';
-import { pointsProgress } from './ai/aiFeature';
 import React, { useState, useRef, useMemo } from 'react';
 import { UserProfile, Mission, ActivityLogItem, MarketSignal } from '../types';
 import {
@@ -810,7 +808,6 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
         <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">
           Everything you’ve earned so far, plus what you’re currently missing out on.
         </p>
-      <AiProgress {...pointsProgress(user, missions)} />
 
         {/* Interactive Earning Modals Trigger Row */}
         {onTriggerEarningModal && (

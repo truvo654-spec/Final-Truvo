@@ -1,5 +1,3 @@
-import { AiVerdict } from '../ai/AiWidgets';
-import { newsVerdict } from '../ai/aiFeature';
 import React, { useMemo, useState } from 'react';
 import {
   Flame,
@@ -148,7 +146,6 @@ export const NewsListPage: React.FC<NewsListPageProps> = ({
         </div>
         )}
 
-        <AiVerdict {...newsVerdict(baseArticles)} className="mb-6" />
 
         {/* Tabs + category filters */}
         <div className="flex flex-col gap-4 mb-6">

@@ -1,5 +1,3 @@
-import { AiProgress } from '../ai/AiWidgets';
-import { educationProgress } from '../ai/aiFeature';
 import React, { useMemo, useState } from 'react';
 import {
   Star,
@@ -145,7 +143,6 @@ export const EducationHubPage: React.FC<EducationHubPageProps> = ({
           </button>
         )}
       </div>
-      {(() => { const n = educationProgress(undefined, undefined, userTierLevel); return n ? <AiProgress {...n} className="mb-6" /> : null; })()}
 
       {/* Coursera-style summary stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">

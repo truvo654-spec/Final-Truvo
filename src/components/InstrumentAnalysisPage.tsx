@@ -1,5 +1,3 @@
-import { AiStrip } from './ai/AiSection';
-import { instrumentListStrip } from './ai/aiFeature';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { MarketSignal, Broker, UserProfile } from '../types';
 import {
@@ -691,7 +689,6 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
           Review market highlight, Fear &amp; greed, derivatives activity, and 24-hour changes before selecting an instrument.
         </p>
       </div>
-      <div className="px-4 sm:px-8 md:px-[56px]"><AiStrip text={instrumentListStrip(signals)} /></div>
       <div className="text-center max-w-3xl mx-auto px-4 sm:px-8 md:px-[56px] space-y-3">
 
         {/* ─── Category Pills Selector (Exact match to Reference Images) ─── */}

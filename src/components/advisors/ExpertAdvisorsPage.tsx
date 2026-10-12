@@ -1,5 +1,3 @@
-import { AiCompare } from '../ai/AiWidgets';
-import { advisorsCompare } from '../ai/aiFeature';
 import React, { useMemo, useState } from 'react';
 import { Search, Lock, Star, X, BadgeCheck, Upload, Check, Trash2, AlertTriangle } from 'lucide-react';
 import { EXPERT_ADVISORS, ExpertAdvisor, EaReview, eaSeries } from '../../data/expertAdvisorData';
@@ -93,7 +91,6 @@ export const ExpertAdvisorsPage: React.FC<ExpertAdvisorsPageProps> = ({ userTier
 
       {tab === 'library' && (
         <>
-          {(() => { const n = advisorsCompare(list); return n ? <AiCompare {...n} className="mb-6" /> : null; })()}
           <div className="flex flex-wrap items-center gap-2 mb-5">
             <div className="relative w-full sm:w-64">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2026-10-09
+### Added
+- `AiSpotlightPanel`: a proposal for one AI shape across the app, borrowing the rhythm of a chat without being one. Header of tabs, a pre-text line saying what was read, lines that arrive one after another, a bottom strip of per-feature suggestions, and a minimise control that remembers its state per feature.
+- The panel is docked bottom right on every feature page: dashboard, signals, instrument analysis, calendar, news, education, brokers, broker comparison, promotions, portfolio, alerts, expert advisors, strategy builder, backtest, journal, points, leaderboard and community. Each page supplies its own pre-text and its own suggestions.
+- Minimise collapses it to the headline and is remembered per page; close drops it to a pill in the corner and is remembered across pages.
+### Removed
+- The inline AI blocks on those pages, now that the dock carries the same read.
+
 ## [1.6.0] - 2026-10-09
 ### Added
 - Write an Article page, built to the designs: three numbered steps (Basic information, Cover Image, Article Content), a headline, a deck with a 150-character counter, a related-topic picker, free tags, a cover uploader with drag and drop, a content editor with a formatting toolbar, a live word count and an autosave marker.

@@ -9,6 +9,7 @@ import { NEWS_ARTICLES } from '../../data/newsData';
 import { PROMOTIONS } from '../../data/promotionsData';
 import { GAMIFICATION_TIERS, INITIAL_MISSIONS, LEADERBOARD_USERS } from '../../data/mockData';
 import { AiSectionData, ACCENT } from './AiSection';
+import type { SpotlightData, SpotlightSuggestion } from './AiSpotlightPanel';
 
 const money = (v: number) => `${v < 0 ? '-' : v > 0 ? '+' : ''}$${Math.abs(Math.round(v)).toLocaleString()}`;
 const pct = (v: number, d = 0) => `${v.toFixed(d)}%`;
@@ -1104,4 +1105,44 @@ export function articleSummary(a: ReadableArticle): { title: string; lines: stri
     lines,
     footnote: `Pulled from the article’s own sentences, not rewritten. Reporting, not advice.`,
   };
+}
+
+/* ═══════════ Spotlight panel data, per feature ═══════════ */
+
+
+/** Turns one of the reads above into the spotlight panel's shape. */
+export function toSpotlight(d: AiSectionData, pretext: string, suggestions: SpotlightSuggestion[] = []): SpotlightData {
+  return {
+    pretext,
+    headline: d.headline,
+    overview: d.overview,
+    stats: (d.chips ?? []).map((c) => ({ label: c.label, value: c.value, tone: c.tone === 'lime' ? 'good' : c.tone === 'pink' ? 'bad' : 'neutral' })),
+    tabs: [
+      { id: 'summary', label: 'Summary', lines: [] },
+      ...(d.columns ?? []).map((c, i) => ({
+        id: `c${i}`,
+        label: c.title,
+        lines: c.items.map((it) => ({ label: it.title, body: it.text })),
+      })),
+    ],
+    suggestions,
+    footnote: d.footnote,
+  };
+}
+
+/** The signals page as a spotlight panel, with its own pre-text and suggestions. */
+export function signalsSpotlight(
+  signals: { ticker: string; action: string; confidence: number; timeframe: string; riskReward: string; change24h: number; assetClass: string; analysis?: string }[],
+  tierLevel: number,
+  onBrokers: () => void,
+  onCompare: () => void,
+  onUpgrade: () => void,
+): SpotlightData {
+  const live = signals.filter((s) => s.action !== 'UPGRADE');
+  const locked = signals.length - live.length;
+  return toSpotlight(signalsRead(signals, tierLevel), `Read ${plural(live.length, 'open signal')}`, [
+    { label: 'Find a broker for this', onClick: onBrokers },
+    { label: 'Compare execution costs', onClick: onCompare },
+    ...(locked ? [{ label: `Unlock ${plural(locked, 'signal')}`, onClick: onUpgrade }] : []),
+  ]);
 }

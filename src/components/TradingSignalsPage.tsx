@@ -1,5 +1,3 @@
-import { AiVerdict } from './ai/AiWidgets';
-import { signalsVerdict } from './ai/aiFeature';
 import React, { useState, useMemo } from 'react';
 import { MarketSignal, Broker, UserProfile } from '../types';
 import { REFERENCE_SIGNALS } from '../data/signalsReferenceData';
@@ -413,7 +411,6 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
           Market opportunities, trade ideas and actionable insights designed to help you make more informed trading decisions.
         </p>
       </div>
-      <AiVerdict {...signalsVerdict(initialSignals)} />
 
       {/* ─── 2. CATEGORY TABS (TabMain - 1:1 with reference design) ─── */}
       <div className="pt-2">

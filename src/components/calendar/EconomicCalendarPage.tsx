@@ -1,5 +1,3 @@
-import { AiNext } from '../ai/AiWidgets';
-import { calendarNext } from '../ai/aiFeature';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Info,
@@ -608,7 +606,6 @@ export const EconomicCalendarPage: React.FC<EconomicCalendarPageProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2" />
           </div>
         </div>
-        {(() => { const n = calendarNext(); return n ? <AiNext {...n} className="mt-4" /> : null; })()}
 
         {/* Page tabs */}
         <div className="flex items-center gap-7 border-b-2 border-[#f1f5f9] mt-6 mb-6 overflow-x-auto">

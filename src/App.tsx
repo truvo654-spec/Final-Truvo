@@ -62,8 +62,7 @@ import { EconomicCalendarPage } from './components/calendar/EconomicCalendarPage
 import { EducationHubPage } from './components/education/EducationHubPage';
 import { PortfolioTrackerPage } from './components/portfolio/PortfolioTrackerPage';
 import { TradingJournalPage } from './components/journal/TradingJournalPage';
-import { AiSection, AiInline } from './components/ai/AiSection';
-import { dashboardRead, leaderboardRead } from './components/ai/aiFeature';
+import { AiDock } from './components/ai/AiDock';
 import { PromotionsPage } from './components/promotions/PromotionsPage';
 import { ExpertAdvisorsPage } from './components/advisors/ExpertAdvisorsPage';
 import { AlertsPage } from './components/alerts/AlertsPage';
@@ -1048,7 +1047,6 @@ export default function App() {
               onShowToast={showToast}
               onSelectLevelScenario={handleSelectLevelScenario}
               onStartTour={handleStartOnboarding}
-              aiSlot={<AiSection data={dashboardRead(user, signals)} defaultOpen />}
             />
             </div>
           )
@@ -1889,7 +1887,6 @@ export default function App() {
         {/* ─── TAB 5: Leaderboard ─── */}
         {activeTab === 'leaderboard' && (
           <div className="space-y-6">
-          {(() => { const me = LEADERBOARD_USERS.find((u) => u.isCurrentUser); const ahead = me ? LEADERBOARD_USERS.find((u) => u.rank === me.rank - 1) : undefined; const top = [...LEADERBOARD_USERS].sort((a, b) => a.rank - b.rank)[0]; return <AiInline text={me ? `You are #${me.rank} with ${me.points.toLocaleString()} points.${ahead ? ` ${ahead.username} is one place ahead, ${(ahead.points - me.points).toLocaleString()} points up.` : ''} Points measure activity, not trading results, so trading more to climb only costs you spread.` : `${top.username} leads on ${top.points.toLocaleString()} points. The board measures activity, not how well anyone trades.`} />; })()}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-7">
               <LeaderboardCard
@@ -2223,6 +2220,16 @@ export default function App() {
           showToast('Browse all broker deals!');
         }}
       />
+
+      {isLoggedIn && (
+        <AiDock
+          tab={activeTab}
+          user={user}
+          signals={signals}
+          brokers={brokers}
+          go={(t) => setActiveTab(t)}
+        />
+      )}
     </div>
   );
 }
