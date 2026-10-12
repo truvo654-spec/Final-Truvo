@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.3] - 2026-10-09
+### Added
+- Articles now carry a MarketSyde AI summary of that piece, above the body: three of the article's own sentences picked for the ones carrying figures, levels and named drivers, plus the expert highlight where there is one and a line on what the coverage leans towards. It shows on Market News stories the reader has access to, and on Community articles.
+- The summary is extractive, so every line is the article's own wording rather than something invented.
+
 ## [1.3.2] - 2026-10-09
 ### Changed
 - Every AI summary now sits between the page's short description and its content, instead of above the title. Dashboard, Trading Signals, Market News, Economic Calendar, Education Hub, Instrument Analysis, Broker List, Broker Comparison, Promotions and Points & Credits all moved.

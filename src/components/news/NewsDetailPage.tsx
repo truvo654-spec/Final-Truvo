@@ -1,3 +1,5 @@
+import { AiNote } from '../ai/AiSection';
+import { articleSummary } from '../ai/aiFeature';
 import React, { useState } from 'react';
 import {
   ArrowLeft,
@@ -193,6 +195,8 @@ export const NewsDetailPage: React.FC<NewsDetailPageProps> = ({
             <div className="rounded-2xl overflow-hidden aspect-video w-full bg-slate-100 border border-slate-200 mb-6">
               <img src={article.heroImage} alt={article.headline} className="w-full h-full object-cover" />
             </div>
+
+            {hasAccess && (() => { const n = articleSummary(article); return <AiNote title={n.title} lines={n.lines} footnote={n.footnote} className="mb-6" />; })()}
 
             <div className={`space-y-5 text-[#0b1c30] text-[17px] leading-[1.75] ${!hasAccess ? 'relative' : ''}`}>
               {article.content.map((para, i) => (

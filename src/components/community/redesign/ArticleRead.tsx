@@ -1,6 +1,6 @@
 import { ShowToast } from './Toast';
 import { AiNote } from '../../ai/AiSection';
-import { articleNote } from '../../ai/aiFeature';
+import { articleSummary } from '../../ai/aiFeature';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Facebook, Link2, Linkedin, Minus, Plus, Sparkles, TrendingUp, Twitter, Info } from 'lucide-react';
 import { Avatar, Card, EmptyState, OutlineButton, PrimaryButton, Verified, BORDER, PreviewState } from './ui';
@@ -186,7 +186,7 @@ export const ArticleRead: React.FC<Props> = ({ article: a, others, state, signed
           ) : (
             <>
               <img src={a.cover} alt="" className="w-full rounded-xl mt-6" />
-              {!gated && (() => { const n = articleNote(a); return <AiNote title={n.title} lines={n.lines} footnote={n.footnote} className="mt-5" />; })()}
+              {!gated && (() => { const n = articleSummary({ headline: a.title, excerpt: a.excerpt, content: body.flatMap((s) => s.p), tags: [a.category], source: a.author, readTime: '8 min' }); return <AiNote title={n.title} lines={n.lines} footnote={n.footnote} className="mt-5" />; })()}
               <div className={`mt-6 space-y-5 ${gated ? 'select-none' : ''}`}>
                 {visible.map((s, i) => (
                   <section key={i}>

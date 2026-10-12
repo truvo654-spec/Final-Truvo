@@ -1044,3 +1044,64 @@ export function alertsChecklist(alerts: AlertLike[], limit: number, distanceOf?:
   ];
   return { headline: nearest && Math.abs(nearest.d) < 1 ? `${nearest.a.symbol} is about to trigger` : `${plural(active.length, 'alert')} armed`, steps, note: 'An alert tells you to look, not to click.' };
 }
+
+/* ───────────── One article, summarised ───────────── */
+
+export interface ReadableArticle {
+  headline: string;
+  excerpt?: string;
+  content?: string[];
+  sentiment?: string;
+  assetClass?: string;
+  tags?: string[];
+  source?: string;
+  readTime?: string;
+  expertSummary?: string;
+}
+
+const sentences = (text: string) =>
+  text.replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/).map((x) => x.trim()).filter((x) => x.length > 40);
+
+/** Score sentences by how much signal they carry: numbers, levels, named drivers. */
+function keySentences(parts: string[], want: number): string[] {
+  const all = parts.flatMap(sentences);
+  if (!all.length) return [];
+  const scored = all.map((s, i) => {
+    let score = 0;
+    if (/\d/.test(s)) score += 2;
+    if (/%|\$|bps|pips?/.test(s)) score += 2;
+    if (/\b(said|expects?|forecast|guidance|warned|announced|raised|cut|data|report)\b/i.test(s)) score += 2;
+    if (/\b(support|resistance|breakout|level|target|range)\b/i.test(s)) score += 1;
+    score -= Math.min(2, Math.floor(i / 4)); // earlier paragraphs carry the news
+    if (s.length > 240) score -= 1;
+    return { s, score, i };
+  });
+  return scored.sort((a, b) => b.score - a.score || a.i - b.i).slice(0, want).sort((a, b) => a.i - b.i).map((x) => x.s);
+}
+
+/**
+ * Three lines on one article: what it says, what moves because of it, and how to read it.
+ * Extractive, so every line is the article's own wording rather than something invented.
+ */
+export function articleSummary(a: ReadableArticle): { title: string; lines: string[]; footnote: string } {
+  const body = a.content?.length ? a.content : a.excerpt ? [a.excerpt] : [];
+  const key = keySentences(body, 3);
+  const lines: string[] = [];
+
+  if (key.length) lines.push(...key);
+  else if (a.excerpt) lines.push(a.excerpt);
+  else lines.push('This piece has no body text to summarise here, so read it in full.');
+
+  if (a.expertSummary) lines.push(`Expert highlight: ${a.expertSummary}`);
+
+  const lean = a.sentiment === 'Bullish' ? 'reads bullish' : a.sentiment === 'Bearish' ? 'reads bearish' : 'reads neutral';
+  const tags = (a.tags ?? []).filter((t) => t && t.toLowerCase() !== (a.assetClass ?? '').toLowerCase()).slice(0, 3);
+  const scope = a.assetClass ? `${a.assetClass}${tags.length ? ` (${tags.join(', ')})` : ''}` : tags.join(', ');
+  lines.push(`${a.source ? `${a.source} ` : ''}${lean}${scope ? ` and is about ${scope}` : ''}. Coverage follows a move more often than it leads one, so mark the level you would act on rather than trading the headline.`);
+
+  return {
+    title: `${a.readTime ? `The ${a.readTime} version` : 'The short version'}`,
+    lines,
+    footnote: `Pulled from the article’s own sentences, not rewritten. Reporting, not advice.`,
+  };
+}
