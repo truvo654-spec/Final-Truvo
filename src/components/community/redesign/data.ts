@@ -126,6 +126,8 @@ export interface FeedPost {
   /** Uploads attached to the post: images and videos from the person's device. */
   media?: { id: string; url: string; kind: 'image' | 'video'; name?: string }[];
   poll?: { question: string; options: { id: string; text: string; votes: number }[]; votedId?: string; endsIn?: string };
+  /** Optional call on one instrument, attached from the composer. */
+  sentiment?: { symbol: string; price: string; view: 'bullish' | 'neutral' | 'bearish' };
   tags: string[];
   likes: number;
   views: string;

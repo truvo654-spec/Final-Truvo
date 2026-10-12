@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-10-09
+### Added
+- Create Post modal gained the optional **Market or Asset Sentiment** section from the design: search an instrument, see its quote, then tag the post Bullish, Neutral or Bearish.
+- It has three steps. Empty: a search field, a line explaining it is optional and the three buttons greyed out with "Choose an instrument first." Searching: matching instruments with their quotes. Picked: the symbol and price with a clear button, and the three buttons live.
+- A post carries its sentiment through to the feed, where it shows as a coloured tag under the text, and the publish toast names the call.
+
 ## [1.3.4] - 2026-10-09
 ### Added
 - Polls render their results in the feed to the design: a vote count above, a filled bar and percentage per option, the ticked circle on your choice, and "Voting ends in 1 day · You can change your vote anytime". Changing your vote moves the count instead of locking it.

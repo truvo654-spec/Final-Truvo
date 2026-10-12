@@ -76,11 +76,12 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
       text: draft.text,
       media: draft.media.length ? draft.media : undefined,
       poll: draft.poll,
+      sentiment: draft.sentiment,
       tags: draft.text.match(/#[A-Za-z][A-Za-z0-9_]*/g) ?? [],
       likes: 0, views: '1', saves: 0, own: true, comments: [],
     };
     setPosts((l) => [p, ...l]);
-    const what = draft.poll ? 'Poll published' : draft.media.length ? `${draft.media.length} attachment${draft.media.length === 1 ? '' : 's'} published` : 'First post published';
+    const what = draft.sentiment ? `${draft.sentiment.view[0].toUpperCase()}${draft.sentiment.view.slice(1)} call on ${draft.sentiment.symbol}` : draft.poll ? 'Poll published' : draft.media.length ? `${draft.media.length} attachment${draft.media.length === 1 ? '' : 's'} published` : 'First post published';
     showToast('+10 Credits', what, { reward: true });
   };
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChartNoAxesColumnIncreasing, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Send, X } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, ArrowDownRight, Brain, ChartNoAxesColumnIncreasing, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Search, Send, X } from 'lucide-react';
 import { Avatar, PrimaryButton, Verified, BORDER } from './ui';
 import { Me } from './Comments';
 import { ShowToast } from './Toast';
@@ -8,7 +8,23 @@ export interface NewPostDraft {
   text: string;
   media: { id: string; url: string; kind: 'image' | 'video'; name?: string }[];
   poll?: { question: string; options: { id: string; text: string; votes: number }[] };
+  sentiment?: { symbol: string; price: string; view: SentimentView };
 }
+
+export type SentimentView = 'bullish' | 'neutral' | 'bearish';
+
+/** Instruments the sentiment picker can tag, with a demo quote. */
+const INSTRUMENTS: { symbol: string; price: string }[] = [
+  { symbol: 'EUR/NZD', price: '2.00000' },
+  { symbol: 'EUR/USD', price: '1.08520' },
+  { symbol: 'GBP/USD', price: '1.26430' },
+  { symbol: 'USD/JPY', price: '151.280' },
+  { symbol: 'XAU/USD', price: '2890.40' },
+  { symbol: 'BTC/USD', price: '67,420.00' },
+  { symbol: 'ETH/USD', price: '3,280.00' },
+  { symbol: 'S&P 500', price: '5,842.10' },
+  { symbol: 'NVDA', price: '128.44' },
+];
 
 const MAX_MB = 5;
 const MAX_OPTIONS = 6;
@@ -31,6 +47,9 @@ export const CreatePostModal: React.FC<Props> = ({ open, me, intent = 'text', on
   const [pollOpen, setPollOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']);
+  const [symbol, setSymbol] = useState<{ symbol: string; price: string } | null>(null);
+  const [symbolQuery, setSymbolQuery] = useState('');
+  const [view, setView] = useState<SentimentView | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLDivElement>(null);
   const area = useRef<HTMLTextAreaElement>(null);
@@ -40,6 +59,7 @@ export const CreatePostModal: React.FC<Props> = ({ open, me, intent = 'text', on
     urls.current.forEach((u) => URL.revokeObjectURL(u));
     urls.current = [];
     setText(''); setMedia([]); setSlide(0); setPollOpen(false); setQuestion(''); setOptions(['', '']);
+    setSymbol(null); setSymbolQuery(''); setView(null);
   };
 
   useEffect(() => {
@@ -83,7 +103,7 @@ export const CreatePostModal: React.FC<Props> = ({ open, me, intent = 'text', on
   };
 
   const pollReady = pollOpen && question.trim().length > 0 && options.filter((o) => o.trim()).length >= 2;
-  const canPost = text.trim().length > 0 || media.length > 0 || pollReady;
+  const canPost = text.trim().length > 0 || media.length > 0 || pollReady || !!(symbol && view);
 
   const submit = () => {
     if (!canPost) return;
@@ -93,6 +113,7 @@ export const CreatePostModal: React.FC<Props> = ({ open, me, intent = 'text', on
       poll: pollReady
         ? { question: question.trim(), options: options.filter((o) => o.trim()).map((o, i) => ({ id: `o${i}`, text: o.trim(), votes: 0 })) }
         : undefined,
+      sentiment: symbol && view ? { symbol: symbol.symbol, price: symbol.price, view } : undefined,
     });
     urls.current = []; // ownership passes to the post
     reset();
@@ -176,6 +197,77 @@ export const CreatePostModal: React.FC<Props> = ({ open, me, intent = 'text', on
               )}
             </section>
           )}
+
+          <section className={`mt-[22px] border ${BORDER} rounded-lg px-[17px] pt-[18px] pb-[15px]`} aria-label="Market or asset sentiment">
+            <div className="flex items-center justify-between gap-3">
+              <p className="flex items-center gap-2 text-[17px] leading-[18px] font-semibold text-[#5945F1]"><Brain className="w-[18px] h-[18px]" />Market or Asset Sentiment</p>
+              <span className="text-[14px] text-[#6b7280]">(Optional)</span>
+            </div>
+
+            {symbol ? (
+              <div className={`flex items-center gap-2 h-[44px] mt-[18px] border ${BORDER} rounded-lg px-3.5`}>
+                <Search className="w-4 h-4 text-[#9ca3af] shrink-0" aria-hidden />
+                <span className="text-[16px] font-bold text-[#111827] flex-1 min-w-0 truncate">{symbol.symbol}</span>
+                <span className="text-[16px] text-[#111827] tabular-nums">{symbol.price}</span>
+                <button type="button" aria-label="Clear instrument" onClick={() => { setSymbol(null); setView(null); setSymbolQuery(''); }} className="text-[#9ca3af] hover:text-[#5945F1]"><X className="w-4 h-4" /></button>
+              </div>
+            ) : (
+              <>
+                <div className={`flex items-center gap-2 h-[44px] mt-[18px] border ${BORDER} rounded-lg px-3.5 focus-within:ring-2 focus-within:ring-[#5945F1]/30`}>
+                  <Search className="w-4 h-4 text-[#9ca3af] shrink-0" aria-hidden />
+                  <input
+                    value={symbolQuery}
+                    onChange={(e) => setSymbolQuery(e.target.value)}
+                    placeholder="Search an instrument, e.g. EUR/NZD"
+                    aria-label="Search an instrument"
+                    className="flex-1 min-w-0 text-[15px] text-[#111827] placeholder:text-[#9ca3af] outline-none bg-transparent"
+                  />
+                </div>
+                {(() => {
+                  const q = symbolQuery.trim().toLowerCase();
+                  const hits = q ? INSTRUMENTS.filter((i) => i.symbol.toLowerCase().includes(q)) : [];
+                  if (!q) {
+                    return <p className="text-[13px] leading-relaxed text-[#6b7280] mt-2.5">Pick an instrument to say where you think it goes. Leave it blank if the post is not about one.</p>;
+                  }
+                  if (!hits.length) {
+                    return <p className="text-[13px] leading-relaxed text-[#6b7280] mt-2.5">Nothing matches “{symbolQuery.trim()}”. Try a pair like EUR/USD, or a symbol like XAU/USD.</p>;
+                  }
+                  return (
+                    <ul className={`mt-2 border ${BORDER} rounded-lg divide-y divide-[#ece9ff] overflow-hidden`}>
+                      {hits.slice(0, 5).map((i) => (
+                        <li key={i.symbol}>
+                          <button type="button" onClick={() => { setSymbol(i); setSymbolQuery(''); }} className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 text-left hover:bg-[#faf9ff]">
+                            <span className="text-[15px] font-semibold text-[#111827]">{i.symbol}</span>
+                            <span className="text-[14px] text-[#6b7280] tabular-nums">{i.price}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                })()}
+              </>
+            )}
+
+            <div className="grid grid-cols-3 gap-3 mt-3.5">
+              {([
+                { id: 'bullish' as const, label: 'Bullish', Icon: ArrowUpRight, base: 'bg-[#e5f586] text-[#4d5d00]', on: 'ring-2 ring-[#9cb400]' },
+                { id: 'neutral' as const, label: 'Neutral', Icon: ArrowRight, base: 'bg-[#f3f4f6] text-[#111827]', on: 'ring-2 ring-[#9ca3af]' },
+                { id: 'bearish' as const, label: 'Bearish', Icon: ArrowDownRight, base: 'bg-[#ece9ff] text-[#5945F1]', on: 'ring-2 ring-[#5945F1]' },
+              ]).map(({ id, label, Icon, base, on }) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={view === id}
+                  disabled={!symbol}
+                  onClick={() => { setView(view === id ? null : id); if (view !== id && symbol) onToast('Sentiment Set', `${label} on ${symbol.symbol}`); }}
+                  className={`h-[42px] rounded-lg text-[15px] font-medium flex items-center justify-center gap-2 transition-all ${base} ${view === id ? on : ''} ${symbol ? 'hover:brightness-95' : 'opacity-50 cursor-not-allowed'}`}
+                >
+                  <Icon className="w-4 h-4" aria-hidden />{label}
+                </button>
+              ))}
+            </div>
+            {!symbol && <p className="text-[12px] text-[#9ca3af] mt-2">Choose an instrument first.</p>}
+          </section>
         </div>
 
         <footer className={`flex items-center gap-[9px] border-t ${BORDER} px-[17px] py-[17px]`}>

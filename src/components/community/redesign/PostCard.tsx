@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bookmark, ChartNoAxesColumnIncreasing, Check, ChevronLeft, ChevronRight, Eye, Gift, Heart, MessageCircle, MoreVertical, Share2 } from 'lucide-react';
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Bookmark, ChartNoAxesColumnIncreasing, Check, ChevronLeft, ChevronRight, Eye, Gift, Heart, MessageCircle, MoreVertical, Share2 } from 'lucide-react';
 import { HashtagLink } from '../../hashtag/HashtagText';
 import { Avatar, Card, Verified, BORDER } from './ui';
 import { CommentThread, Me } from './Comments';
@@ -69,6 +69,18 @@ export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, on
       </header>
 
       <p className="text-[16px] leading-5 text-[#111827] mt-[18px]">{post.text}</p>
+      {post.sentiment && (() => {
+        const v = post.sentiment.view;
+        const style = v === 'bullish' ? 'bg-[#e5f586] text-[#4d5d00]' : v === 'bearish' ? 'bg-[#ece9ff] text-[#5945F1]' : 'bg-[#f3f4f6] text-[#111827]';
+        const Icon = v === 'bullish' ? ArrowUpRight : v === 'bearish' ? ArrowDownRight : ArrowRight;
+        return (
+          <p className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 mt-3 text-[13px] font-medium ${style}`}>
+            <Icon className="w-4 h-4" aria-hidden />
+            {v[0].toUpperCase() + v.slice(1)} on {post.sentiment.symbol}
+            <span className="opacity-70 tabular-nums">{post.sentiment.price}</span>
+          </p>
+        );
+      })()}
       {post.image && <img src={post.image} alt="" className="w-full rounded-lg mt-[15px]" loading="lazy" />}
 
       {media.length > 0 && (
