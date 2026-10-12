@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Home, ScrollText, UserCircle2 } from 'lucide-react';
 import { UserProfile } from '../../../types';
 import { CreatePostModal, NewPostDraft } from './CreatePostModal';
+import { ConfirmDialog } from './ConfirmDialog';
 import { ARTICLES, Article, FeedPost, IMG, SEED_POSTS, SUGGESTED } from './data';
 import { Me } from './Comments';
 import { PreviewState, BORDER } from './ui';
@@ -40,6 +41,7 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   const [rewarded, setRewarded] = useState<Set<string>>(new Set());
   const [createOpen, setCreateOpen] = useState(false);
   const [createIntent, setCreateIntent] = useState<'text' | 'media' | 'poll'>('text');
+  const [confirm, setConfirm] = useState<{ kind: 'post' | 'article'; id: string; title: string } | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const { toasts, showToast } = useToasts();
 
@@ -59,7 +61,15 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   const shownArticles = useMemo(() => articles.map((a) => (a.own ? { ...a, author: me.name, handle: me.handle, avatar: me.avatar } : a)), [articles, me]);
 
   const changePost = (p: FeedPost) => setPosts((l) => l.map((x) => (x.id === p.id ? p : x)));
-  const removePost = (id: string, mode: 'delete' | 'draft') => { setPosts((l) => l.filter((x) => x.id !== id)); showToast(mode === 'draft' ? 'Moved to Drafts' : 'Post Deleted', mode === 'draft' ? 'Find it in your drafts' : 'It is gone from your feed'); };
+  const dropPost = (id: string, mode: 'delete' | 'draft') => {
+    setPosts((l) => l.filter((x) => x.id !== id));
+    showToast(mode === 'draft' ? 'Moved to Drafts' : 'Post Deleted', mode === 'draft' ? 'Find it in your drafts' : 'It is gone from your feed');
+  };
+  const removePost = (id: string, mode: 'delete' | 'draft') => {
+    if (mode === 'draft') return dropPost(id, 'draft');
+    const p = posts.find((x) => x.id === id);
+    setConfirm({ kind: 'post', id, title: p ? `${p.name}’s post` : 'this post' });
+  };
   const addPost = (draft: NewPostDraft) => {
     const p: FeedPost = {
       id: `up${Date.now()}`, name: me.name, handle: me.handle, avatar: me.avatar, verified: true, time: 'Just now',
@@ -91,8 +101,8 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
   const articleMenu = (id: string, action: 'edit' | 'draft' | 'delete') => {
     const title = articles.find((a) => a.id === id)?.title ?? 'Article';
     if (action === 'edit') return showToast('Editor Opened', title);
-    setArticles((l) => l.filter((a) => a.id !== id));
-    showToast(action === 'draft' ? 'Moved to Drafts' : 'Article Deleted', title);
+    if (action === 'draft') { setArticles((l) => l.filter((a) => a.id !== id)); return showToast('Moved to Drafts', title); }
+    setConfirm({ kind: 'article', id, title });
   };
   const shareArticle = async (a: Article) => {
     try { await navigator.clipboard.writeText(`${window.location.origin}/community?article=${a.id}`); showToast('Link Copied', a.title); } catch { showToast('Could Not Copy', 'Copy the link from the address bar'); }
@@ -197,6 +207,31 @@ export const CommunityRedesign: React.FC<CommunityRedesignProps> = ({ user, isLo
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.kind === 'article' ? 'Confirm Article Deletion' : 'Confirm Post Deletion'}
+        body={confirm?.kind === 'article'
+          ? 'Are you sure you want to delete this article? Once deleted, it can’t be recovered.'
+          : 'Are you sure you want to delete this post? Once deleted, it can’t be recovered.'}
+        secondary={{
+          label: 'Move to Draft',
+          onClick: () => {
+            if (!confirm) return;
+            if (confirm.kind === 'article') { setArticles((l) => l.filter((a) => a.id !== confirm.id)); showToast('Moved to Drafts', confirm.title); }
+            else dropPost(confirm.id, 'draft');
+            setConfirm(null);
+          },
+        }}
+        confirmLabel={confirm?.kind === 'article' ? 'Delete Article' : 'Delete Post'}
+        onConfirm={() => {
+          if (!confirm) return;
+          if (confirm.kind === 'article') { setArticles((l) => l.filter((a) => a.id !== confirm.id)); showToast('Article Deleted', confirm.title); }
+          else dropPost(confirm.id, 'delete');
+          setConfirm(null);
+        }}
+        onCancel={() => setConfirm(null)}
+      />
 
       <CreatePostModal open={createOpen} me={me} intent={createIntent} onClose={() => setCreateOpen(false)} onSubmit={addPost} onToast={showToast} />
     </div>

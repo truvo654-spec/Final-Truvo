@@ -190,7 +190,7 @@ export const AdCarousel: React.FC<{ onOpen: () => void }> = ({ onOpen }) => {
 /* ───────── Your Writing ───────── */
 export const YourWritingCard: React.FC<{ onContinue: () => void }> = ({ onContinue }) => (
   <Card className="p-4">
-    <CardTitle className="mb-3">Your Writing</CardTitle>
+    <CardTitle className="mb-3">Your Latest Draft</CardTitle>
     <p className="flex items-center gap-2 text-[10px] text-[#64748b] mb-2"><span className="inline-flex items-center gap-1 border border-slate-200 rounded px-1.5 py-0.5 text-[#0b1c30]"><Pencil className="w-3 h-3" />Draft</span>2 days ago</p>
     <img src={IMG.writing} alt="" className="w-full aspect-[198/115] object-cover rounded-lg" />
     <p className="text-[13px] font-semibold text-[#0b1c30] mt-2 mb-3 truncate">How I Use Trend Channels for Better Entries</p>

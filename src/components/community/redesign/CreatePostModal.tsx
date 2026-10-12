@@ -159,9 +159,9 @@ export const CreatePostModal: React.FC<Props> = ({ open, me, intent = 'text', on
 
           {pollOpen && (
             <section className={`mt-3 border ${BORDER} rounded-lg px-[17px] pt-4 pb-[15px]`} aria-label="Poll">
-              <p className="flex items-center gap-2 text-[17px] leading-[18px] font-semibold text-[#5945F1]"><ChartNoAxesColumnIncreasing className="w-[18px] h-[18px]" />Add an Interest</p>
+              <p className="flex items-center gap-2 text-[17px] leading-[18px] font-semibold text-[#5945F1]"><ChartNoAxesColumnIncreasing className="w-[18px] h-[18px]" />Create a Poll</p>
               <div className={`flex items-center h-[37px] mt-[19px] border ${BORDER} rounded-lg bg-white focus-within:ring-2 focus-within:ring-[#5945F1]/30`}>
-                <input value={question} onChange={(e) => setQuestion(e.target.value.slice(0, 200))} placeholder="Poll Question" aria-label="Poll question" className="flex-1 min-w-0 px-3.5 text-[15px] text-[#111827] placeholder:text-[#9ca3af] outline-none bg-transparent" />
+                <input value={question} onChange={(e) => setQuestion(e.target.value.slice(0, 200))} placeholder="Ask the community something..." aria-label="Poll question" className="flex-1 min-w-0 px-3.5 text-[15px] text-[#111827] placeholder:text-[#9ca3af] outline-none bg-transparent" />
                 {counter(question, 200)}
               </div>
               {options.map((o, i) => (

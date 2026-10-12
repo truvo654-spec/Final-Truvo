@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.4] - 2026-10-09
+### Added
+- Polls render their results in the feed to the design: a vote count above, a filled bar and percentage per option, the ticked circle on your choice, and "Voting ends in 1 day · You can change your vote anytime". Changing your vote moves the count instead of locking it.
+- A "Share to get +N free credits" pill in the post action row.
+- Deleting a post or an article now asks first, with Cancel, Move to Draft and the destructive button, as in the Confirm Article Deletion design.
+### Changed
+- Create Post modal poll section reads "Create a Poll" with the "Ask the community something..." placeholder.
+- The article sidebar card is "Your Latest Draft".
+
 ## [1.3.3] - 2026-10-09
 ### Added
 - Articles now carry a MarketSyde AI summary of that piece, above the body: three of the article's own sentences picked for the ones carrying figures, levels and named drivers, plus the expert highlight where there is one and a line on what the coverage leans towards. It shows on Market News stories the reader has access to, and on Community articles.

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bookmark, ChevronLeft, ChevronRight, Eye, Heart, MessageCircle, MoreVertical, Share2 } from 'lucide-react';
+import { Bookmark, ChartNoAxesColumnIncreasing, Check, ChevronLeft, ChevronRight, Eye, Gift, Heart, MessageCircle, MoreVertical, Share2 } from 'lucide-react';
 import { HashtagLink } from '../../hashtag/HashtagText';
 import { Avatar, Card, Verified, BORDER } from './ui';
 import { CommentThread, Me } from './Comments';
@@ -46,6 +46,8 @@ export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, on
   const media = post.media ?? [];
   const poll = post.poll;
   const votes = poll ? poll.options.reduce((a, o) => a + o.votes, 0) : 0;
+  // A small, stable reward per post so the pill does not jump around on re-render.
+  const shareCredits = 25 + (post.id.charCodeAt(post.id.length - 1) % 40);
   const set = (patch: Partial<FeedPost>) => onChange({ ...post, ...patch });
   const share = async () => {
     try { await navigator.clipboard.writeText(`${window.location.origin}/community?post=${post.id}`); onToast('Link Copied', 'Share it anywhere'); } catch { onToast('Could Not Copy', 'Copy the link from the address bar'); }
@@ -87,9 +89,12 @@ export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, on
       )}
 
       {poll && (
-        <section className={`mt-[15px] border ${BORDER} rounded-lg p-4`} aria-label="Poll">
-          <p className="text-[15px] font-semibold text-[#111827] mb-3">{poll.question}</p>
-          <div className="space-y-2">
+        <section className="mt-[15px]" aria-label="Poll">
+          <p className="flex items-center gap-2 text-[13px] text-[#6b7280] mb-2.5">
+            <ChartNoAxesColumnIncreasing className="w-4 h-4 text-[#5945F1]" aria-hidden />
+            Poll · {votes.toLocaleString()} {votes === 1 ? 'vote' : 'votes'}
+          </p>
+          <div className="space-y-1.5">
             {poll.options.map((o) => {
               const share = votes ? Math.round((o.votes / votes) * 100) : 0;
               const mine = poll.votedId === o.id;
@@ -98,26 +103,46 @@ export const PostCard: React.FC<Props> = ({ post, openComments, me, onChange, on
                   key={o.id}
                   type="button"
                   aria-pressed={mine}
-                  disabled={!!poll.votedId}
-                  onClick={() => { onChange({ ...post, poll: { ...poll, votedId: o.id, options: poll.options.map((x) => (x.id === o.id ? { ...x, votes: x.votes + 1 } : x)) } }); onToast('Vote Counted', o.text); }}
-                  className={`relative w-full overflow-hidden border ${BORDER} rounded-lg px-3 py-2.5 text-left text-[14px] ${poll.votedId ? 'cursor-default' : 'hover:border-[#5945F1]'} ${mine ? 'text-[#5945F1] font-semibold' : 'text-[#111827]'}`}
+                  onClick={() => {
+                    if (mine) return;
+                    const was = poll.votedId;
+                    onChange({
+                      ...post,
+                      poll: {
+                        ...poll,
+                        votedId: o.id,
+                        options: poll.options.map((x) => ({ ...x, votes: x.votes + (x.id === o.id ? 1 : 0) - (was && x.id === was ? 1 : 0) })),
+                      },
+                    });
+                    onToast(was ? 'Vote Changed' : 'Vote Counted', o.text);
+                  }}
+                  className="w-full flex items-center gap-3 text-left group"
                 >
-                  {poll.votedId && <span className="absolute inset-y-0 left-0 bg-[#EEF0FE]" style={{ width: `${share}%` }} aria-hidden="true" />}
-                  <span className="relative flex items-center justify-between gap-3"><span className="truncate">{o.text}</span>{poll.votedId && <span className="shrink-0 tabular-nums">{share}%</span>}</span>
+                  <span className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${mine ? 'bg-[#5945F1] border-[#5945F1]' : 'border-[#d0cbfb] group-hover:border-[#5945F1]'}`}>
+                    {mine && <Check className="w-3 h-3 text-white" strokeWidth={3} aria-hidden />}
+                  </span>
+                  <span className="relative flex-1 min-w-0 h-[30px] rounded-md bg-[#f1f0fe] overflow-hidden">
+                    <span style={{ width: `${share}%` }} className={`absolute inset-y-0 left-0 rounded-md transition-all ${mine ? 'bg-[#c7c0fb]' : 'bg-[#ddd9fd]'}`} aria-hidden />
+                    <span className="relative flex items-center h-full px-3 text-[14px] text-[#111827] truncate">{o.text}</span>
+                  </span>
+                  <span className={`shrink-0 w-11 text-right text-[15px] font-bold tabular-nums ${mine ? 'text-[#5945F1]' : 'text-[#111827]'}`}>{share}%</span>
+                  <span className="shrink-0 w-16 text-[12px] text-[#6b7280] tabular-nums">{o.votes} votes</span>
                 </button>
               );
             })}
           </div>
-          <p className="text-xs text-[#6b7280] mt-2.5">{votes} {votes === 1 ? 'vote' : 'votes'}{poll.votedId ? '' : ' · pick one'}</p>
+          <p className="text-[12px] text-[#6b7280] mt-2.5">{poll.endsIn ? `Voting ends in ${poll.endsIn} · ` : ''}You can change your vote anytime</p>
         </section>
       )}
-      <p className="flex flex-wrap gap-x-2 gap-y-1 mt-[15px] text-[13px] leading-5 text-[#5945F1]">{post.tags.map((t) => <HashtagLink key={t} tag={t} />)}</p>
 
       <div className="flex items-center gap-6 mt-3.5 text-[#111827]">
         <button type="button" aria-pressed={!!post.liked} aria-label="Like" onClick={() => { set({ liked: !post.liked, likes: post.likes + (post.liked ? -1 : 1) }); onToast(post.liked ? 'Like Removed' : 'Post Liked', post.liked ? `You unliked ${post.name}’s post` : `You liked ${post.name}’s post`); }} className={`${stat} ${post.liked ? 'text-[#5945F1]' : 'hover:text-[#5945F1]'}`}><Heart className={`w-4 h-4 ${post.liked ? 'fill-current' : ''}`} />{fmt(post.likes)}</button>
         <span className={stat}><Eye className="w-4 h-4" />{post.views}</span>
         <button type="button" aria-expanded={showComments} aria-label="Comments" onClick={() => setShowComments((v) => !v)} className={`${stat} hover:text-[#5945F1]`}><MessageCircle className="w-4 h-4" />{post.comments.length + (post.commentBase ?? 0)}</button>
         <button type="button" aria-pressed={!!post.saved} aria-label="Save" onClick={() => { set({ saved: !post.saved, saves: post.saves + (post.saved ? -1 : 1) }); onToast(post.saved ? 'Removed from Saved' : 'Post Saved', post.saved ? 'No longer in your saved posts' : 'Find it on My Page'); }} className={`${stat} ${post.saved ? 'text-[#5945F1]' : 'hover:text-[#5945F1]'}`}><Bookmark className={`w-4 h-4 ${post.saved ? 'fill-current' : ''}`} />{post.saves}</button>
+        <button type="button" onClick={share} className="flex items-center gap-2 rounded-full bg-[#f1f0fe] hover:bg-[#e6e2fd] px-3 py-1.5 text-[13px] text-[#111827] transition-colors">
+          <Gift className="w-4 h-4 text-[#5945F1]" aria-hidden />Share to get +{shareCredits} free credits
+        </button>
         <button type="button" aria-label="Share" onClick={share} className="ml-auto hover:text-[#5945F1]"><Share2 className="w-4 h-4" /></button>
       </div>
 

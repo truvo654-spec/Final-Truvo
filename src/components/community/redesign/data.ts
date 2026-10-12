@@ -125,7 +125,7 @@ export interface FeedPost {
   image?: string;
   /** Uploads attached to the post: images and videos from the person's device. */
   media?: { id: string; url: string; kind: 'image' | 'video'; name?: string }[];
-  poll?: { question: string; options: { id: string; text: string; votes: number }[]; votedId?: string };
+  poll?: { question: string; options: { id: string; text: string; votes: number }[]; votedId?: string; endsIn?: string };
   tags: string[];
   likes: number;
   views: string;
@@ -151,7 +151,18 @@ export const SEED_POSTS: FeedPost[] = [
   {
     id: 'fp1', name: 'BTC Research', handle: '@btc_research', avatar: IMG.btcResearch, verified: true, time: '12 min ago', precision: 87,
     text: 'Bitcoin watchlist: look for a confirmed breakout, not just a spike. Volume, liquidity and a retest of resistance matter more than a single green candle. What would confirm your BTC thesis?',
-    image: IMG.postBtc, tags: ['#Bitcoin', '#BTC', '#Crypto', '#MarketWatch'], likes: 1200, views: '24.8k', saves: 214, liked: true, saved: true, commentBase: 83, comments: SEED_COMMENTS,
+    image: IMG.postBtc,
+    poll: {
+      question: 'How are you playing BTC from here?',
+      endsIn: '1 day',
+      votedId: 'o1',
+      options: [
+        { id: 'o1', text: 'Long term hold', votes: 57 },
+        { id: 'o2', text: 'Swing trading', votes: 35 },
+        { id: 'o3', text: 'Day trading', votes: 19 },
+        { id: 'o4', text: 'Stay in cash', votes: 13 },
+      ],
+    }, tags: ['#Bitcoin', '#BTC', '#Crypto', '#MarketWatch'], likes: 1200, views: '24.8k', saves: 214, liked: true, saved: true, commentBase: 83, comments: SEED_COMMENTS,
   },
   {
     id: 'fp2', name: 'Josh', handle: '@joshtrades', avatar: IMG.josh, verified: true, time: '45 min ago', precision: 87, own: true,
