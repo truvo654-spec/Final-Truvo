@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-10-09
+### Added
+- My Page → Article rebuilt to the designs, with four states: **default** (your published articles with the Edit / Move to Drafts / Delete menu), **drafts** (cards with a placeholder where there is no cover, "-" where there is no title, no stats, and pagination), **empty** ("Nothing to Read Yet — Know something we don't? Write it." with a Write an Article button) and **failed** ("The Articles Are Hiding — They're still here. Refresh to find them.").
+- A "Viewing" switch above the grid, between "Articles by me" and "Drafts".
+### Changed
+- My Page tabs follow the section: My Article / Saved Article under Article, My Post / Saved Post under Post.
+- The My Page sidebar card is titled "My Items".
+
 ## [1.4.5] - 2026-10-09
 ### Changed
 - My Page, My Post empty state follows the design: "No Posts Yet — Your followers are waiting. No pressure." with the papers illustration and a Write a Post button that opens the composer. The inline composer is hidden in that state; Saved Post keeps its own message.

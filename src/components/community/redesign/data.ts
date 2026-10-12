@@ -219,6 +219,14 @@ export const ARTICLES: Article[] = [
   { id: 'a6', category: 'Technical Analysis', title: 'Breakout or Fakeout? What to Watch', excerpt: 'Not every break of a level is real. Here are the signs I look for before trusting a breakout.', cover: img('cover6'), author: 'James', handle: '@joshtrades', avatar: IMG.reptile, date: 'Oct 4', views: '3.1k', comments: 15, saves: 61 },
 ];
 
+/** Unpublished drafts shown under My Page → Article → Drafts. */
+export const DRAFT_ARTICLES: Article[] = [
+  { id: 'd1', category: 'Market News', title: '', excerpt: 'Bitcoin has surged past the $70,000 resistance level, reigniting bullish sentiment across the market. Here’s a look at the key factors…', cover: '', author: 'Josh', handle: '@joshtrades', avatar: IMG.josh, date: 'Oct 5', views: '0', comments: 0, saves: 0, own: true },
+  { id: 'd2', category: 'Technical Analysis', title: 'How I Use Trend Channels for Better Entries', excerpt: 'This article covers one of the simplest yet most effective tools in technical analysis. In this article, I’ll show you how I use them…', cover: img('cover2'), author: 'Josh', handle: '@joshtrades', avatar: IMG.josh, date: 'Oct 5', views: '0', comments: 0, saves: 0, own: true },
+  { id: 'd3', category: 'Education', title: 'Best Low Spread Brokers of 2027 (Comparison)', excerpt: 'Bitcoin has surged past the $70,000 resistance level, reigniting bullish sentiment across the market. Here’s a look at the key factors…', cover: img('cover3'), author: 'Josh', handle: '@joshtrades', avatar: IMG.josh, date: 'Oct 5', views: '0', comments: 0, saves: 0, own: true },
+  { id: 'd4', category: 'Trading Strategy', title: '', excerpt: 'The Relative Strength Index (RSI) is a powerful momentum indicator. In this guide, you’ll learn what RSI is, how to use it, and real examples…', cover: '', author: 'Josh', handle: '@joshtrades', avatar: IMG.josh, date: 'Oct 5', views: '0', comments: 0, saves: 0, own: true },
+];
+
 export const ARTICLE_FILTERS = [
   { id: 'all', label: 'All Articles', count: '1.2K' },
   { id: 'Market News', label: 'Market News', count: '324' },

@@ -265,6 +265,8 @@ export const ARTICLE_NAV = ARTICLE_FILTERS.map((f, i) => ({
   tint: ['', 'text-[#16a34a]', 'text-[#ec4899]', 'text-[#2563eb]', 'text-[#ea580c]', 'text-[#dc2626]'][i],
 }));
 
+export const MYPAGE_NAV_TITLE = 'My Items';
+
 export const MYPAGE_NAV = [
   { id: 'post', label: 'Post', count: '42', icon: ScrollText },
   { id: 'article', label: 'Article', count: '24', icon: PenLine },
