@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { JournalEntry } from '../../../types';
-import { JournalInsights } from '../JournalInsights';
+import { InsightsDrillDialog, JournalInsights } from '../JournalInsights';
 import { JOURNAL_MARKET_TYPES } from '../journalOverview';
 import { JournalOpenInsightsChart, openInsightGroups } from '../JournalOpenInsightsChart';
 
@@ -90,6 +90,44 @@ test('Insights chart scope toggles share filters but do not change closed perfor
     assert.doesNotMatch(html,/NaN|Infinity/);
   }
 });
+test('Closed distribution defaults to net P&L bars and exposes chart groups as dialog actions',()=>{
+  const {html}=render([
+    trade({id:'profit',date:'2026-10-01',pnl:80}),
+    trade({id:'loss',date:'2026-10-02',pnl:-30,outcome:'loss'}),
+  ],{'JournalInsights-metric':'trades'});
+  assert.match(html,/aria-pressed="true"[^>]*>Net P&amp;L<\/button>/);
+  assert.match(html,/fill="#10b981"/);
+  assert.match(html,/fill="#f43f5e"/);
+  assert.match(html,/aria-haspopup="dialog" aria-label="Thursday: 1 closed trades/);
+  assert.match(html,/aria-haspopup="dialog" aria-label="Friday: 1 closed trades/);
+});
+test('Distribution popup lists all selected trades with realized profit, loss, and R',()=>{
+  const entries=Array.from({length:11},(_,i)=>trade({
+    id:`closed-${i}`,
+    symbol:`SYM${i}`,
+    pnl:i===0?-25:i*10,
+    outcome:i===0?'loss':'win',
+    rMultiple:i===0?-1:i/2,
+  }));
+  const summary={n:11,wins:10,losses:1,be:0,net:525,gross:525,pf:4,winRate:90.9,lossRate:9.1,beRate:0,avgR:2.3,cb:0,pts:0,avgDur:null};
+  const html=renderToStaticMarkup(createElement(InsightsDrillDialog,{
+    label:'Thursday',
+    entries,
+    summary,
+    formatMoney:value=>`${value<0?'-':'+'}$${Math.abs(value).toFixed(2)}`,
+    formatEntryTime:entry=>entry.date,
+    onClose:()=>{},
+    onOpenAll:()=>{},
+    onOpenTrade:()=>{},
+  }));
+  assert.match(html,/role="dialog" aria-modal="true"/);
+  assert.match(html,/Closed trade results · Thursday/);
+  assert.match(html,/SYM0/);
+  assert.match(html,/SYM10/);
+  assert.match(html,/Net P&amp;L/);
+  assert.match(html,/Open all in Trade Log/);
+  assert.doesNotMatch(html,/more\. Open in Trade Log/);
+});
 test('Open Insights respects report subranges, session filters, and missing exit times',()=>{
   const entries=[trade({id:'recent',symbol:'RECENT',date:'2026-10-01',entryTime:'2026-10-01T08:00:00Z',tradingStatus:'open'}),
     trade({id:'old',symbol:'OLD',date:'2026-01-01',tradingStatus:'open'}),
@@ -103,5 +141,5 @@ test('Open Insights respects report subranges, session filters, and missing exit
 });
 test('Open Insights renders an honest empty scope and tolerates an invalid saved toggle',()=>{
   assert.match(render([],{'JournalInsights-chartScope':'open'}).text,/No open positions match/);
-  assert.match(render([trade()],{'JournalInsights-chartScope':'invalid'}).text,/Net of commissions/);
+  assert.match(render([trade()],{'JournalInsights-chartScope':'invalid'}).text,/Bars show realized net profit or loss/);
 });

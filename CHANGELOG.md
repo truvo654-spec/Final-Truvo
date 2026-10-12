@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.1] - 2026-10-12
+
+### Changed
+
+- The closed Insights distribution chart defaults to realized Net P&L with green profit and red loss bars; selecting a bar opens a complete popup list of that group's closed trades and net results.
+
 ## [1.11.0] - 2026-10-12
 
 ### Added
