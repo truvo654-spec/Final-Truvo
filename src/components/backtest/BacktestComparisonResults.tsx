@@ -1,13 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { computeMetrics } from '../../backtest/metrics';
 import { liveStats } from '../../backtest/gap';
-import { money, num, pct, rr, tone, utcWindow } from '../../backtest/format';
+import { dateOnly, money, num, pct, rr, tone, utcWindow } from '../../backtest/format';
 import { SESSIONS } from '../../backtest/types';
 import { Card, btnSecondary } from './ui';
 import { JournalTradeBenchmark } from './JournalTradeBenchmark';
 import type { BacktestSettings, JobOutput } from '../../backtest/types';
+import { ACCENT, DOWN, LineChart, UP } from './charts';
+
+const SCENARIO_COLORS = [ACCENT, UP, DOWN, '#0284c7', '#d97706', '#7c3aed', '#0f766e', '#ea580c'];
+const scenarioId = (item: BacktestComparisonItem, index: number) => item.settings.playbookId ?? `scenario-${index}`;
 
 export interface BacktestComparisonItem {
   settings: BacktestSettings;
@@ -26,6 +30,7 @@ interface Props {
 }
 
 export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, entries, benchmarkEntries, tz, onOpenTrades, onEditSetup, onViewResult }) => {
+  const [visibleScenarios, setVisibleScenarios] = useState<Set<string>>(() => new Set(items.map(scenarioId)));
   const rows = useMemo(() => items.map((item) => {
     const { settings, output } = item;
     const result = output.result;
@@ -38,6 +43,21 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
       : `${settings.session.id === 'custom' ? 'Custom hours' : SESSIONS[settings.session.id].label} ${utcWindow(settings.session.start, settings.session.end, tz)}`;
     return { item, metrics, playbook, matchingEntries, live, session, currency: result.currency };
   }), [items, playbooks, entries, tz]);
+  const scenarios = useMemo(() => items.map((item, index) => {
+    const result = item.output.result;
+    const playbook = playbooks.find((p) => p.id === item.settings.playbookId);
+    const key = scenarioId(item, index);
+    return {
+      key,
+      name: `${playbook?.name ?? item.settings.name} · ${item.settings.symbol}`,
+      color: SCENARIO_COLORS[index % SCENARIO_COLORS.length],
+      points: [
+        { x: result.rangeStart, y: result.startBalance },
+        ...result.trades.map((trade) => ({ x: trade.exitTime, y: trade.balance })),
+      ],
+    };
+  }), [items, playbooks]);
+  const shownSeries = scenarios.filter((scenario) => visibleScenarios.has(scenario.key));
 
   const shared = items[0]?.settings;
   if (!shared) return null;
@@ -45,6 +65,34 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
   return (
     <div className="space-y-5">
       {benchmarkEntries.length > 0 && <JournalTradeBenchmark entries={benchmarkEntries} />}
+      <Card title="Scenario comparison" sub="Each line shows the simulated account balance for one playbook on its selected instrument. All scenarios start with the same balance; hover the chart for values by date.">
+        <div className="mb-3 flex flex-wrap gap-x-4 gap-y-2" role="group" aria-label="Scenarios shown on chart">
+          {scenarios.map((scenario) => (
+            <label key={scenario.key} className="inline-flex items-center gap-2 text-xs font-semibold text-[#0b1c30]">
+              <input
+                type="checkbox"
+                checked={visibleScenarios.has(scenario.key)}
+                onChange={() => setVisibleScenarios((current) => {
+                  const next = new Set(current);
+                  if (next.has(scenario.key)) next.delete(scenario.key);
+                  else next.add(scenario.key);
+                  return next;
+                })}
+                className="accent-[#5338ec]"
+              />
+              <span className="inline-block h-0.5 w-4" style={{ backgroundColor: scenario.color }} aria-hidden />
+              {scenario.name}
+            </label>
+          ))}
+        </div>
+        <LineChart
+          label="Simulated balance by playbook scenario"
+          series={shownSeries}
+          yFmt={(value) => money(value, shared.risk.currency, 0, false)}
+          xFmt={(value) => dateOnly(value, tz)}
+          area={false}
+        />
+      </Card>
       <Card title="Playbook comparison" sub="Each playbook used the same market, dates, balance, risk and costs; its own rules, timeframe and session were preserved."
         right={<button type="button" className={btnSecondary} onClick={onEditSetup}>Edit comparison setup</button>}>
         <p className="mb-3 text-[11px] text-slate-500">Historical simulations are comparisons, not forecasts. Open a full report for robustness checks and the simulated trade log.</p>

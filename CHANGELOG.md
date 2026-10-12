@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0] - 2026-10-12
+
+### Added
+
+- Added an interactive multi-playbook scenario chart to comparison reports, with a selectable checkbox for each instrument-specific equity curve.
+
 ## [1.14.0] - 2026-10-12
 
 ### Added
