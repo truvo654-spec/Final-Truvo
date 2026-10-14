@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { AiGhost } from './AiGhost';
 import { UserProfile, MarketSignal, Broker } from '../../types';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiDashboardPanel } from './AiDashboardPanel';
@@ -204,6 +204,22 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
 const STORE = 'marketsyde.aiDock.closed';
 const SEEN = 'marketsyde.aiDock.introSeen';
 
+/** The mascot bobs, blinks and sends out a ring so the pill reads as live. */
+const AI_PILL_CSS = `
+@keyframes ai-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes ai-blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(0.1)}}
+@keyframes ai-ring{0%{transform:scale(.85);opacity:.45}70%{transform:scale(1.25);opacity:0}100%{opacity:0}}
+.ai-pill{position:fixed}
+.ai-pill-ghost{animation:ai-bob 2.8s ease-in-out infinite}
+.ai-pill:hover .ai-pill-ghost{animation-duration:1.1s}
+.ai-ghost-eyes{animation:ai-blink 5s ease-in-out infinite}
+.ai-pill-ring{position:absolute;inset:0;border-radius:9999px;border:2px solid #5945F1;animation:ai-ring 2.8s ease-out infinite;pointer-events:none}
+@media (prefers-reduced-motion: reduce){
+  .ai-pill-ghost,.ai-ghost-eyes,.ai-pill-ring{animation:none}
+  .ai-pill-ring{opacity:0}
+}
+`;
+
 /** Docks the spotlight panel in the bottom right of every feature page. */
 export const AiDock: React.FC<AiDockContext> = (ctx) => {
   const [closed, setClosed] = useState(false);
@@ -245,14 +261,20 @@ export const AiDock: React.FC<AiDockContext> = (ctx) => {
 
   if (closed) {
     return (
-      <button
-        type="button"
-        onClick={() => shut(false)}
-        aria-label="Show the MarketSyde AI summary"
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border border-[#d0cbfb] bg-white px-4 py-2.5 text-[13px] font-semibold text-[#5945F1] shadow-[0_6px_24px_rgba(11,28,48,0.12)] transition hover:bg-[#f7f6ff] print:hidden"
-      >
-        <Sparkles className="h-4 w-4" aria-hidden />MarketSyde AI
-      </button>
+      <>
+        <style>{AI_PILL_CSS}</style>
+        <button
+          type="button"
+          onClick={() => shut(false)}
+          aria-label="Show the MarketSyde AI summary"
+          data-keep-button-icons
+          className="ai-pill group fixed bottom-5 right-5 z-40 flex items-center gap-2.5 rounded-full border border-[#d0cbfb] bg-white py-3 pl-4 pr-5 text-[15px] font-bold text-[#5945F1] shadow-[0_10px_30px_rgba(89,69,241,0.18)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(89,69,241,0.26)] active:translate-y-0 active:scale-[0.98] dark:border-[#2a1a66] dark:bg-[#0f0726] dark:text-[#a99bff] print:hidden"
+        >
+          <span className="ai-pill-ring" aria-hidden />
+          <AiGhost className="ai-pill-ghost h-5 w-5 shrink-0" />
+          <span>MarketSyde AI</span>
+        </button>
+      </>
     );
   }
 

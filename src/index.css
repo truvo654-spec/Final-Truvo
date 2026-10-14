@@ -691,13 +691,14 @@ svg[data-btn-has-text-icon="true"] {
   display: none !important;
 }
 
+
 /* Immediate CSS pseudo-class selector rule for buttons with text content */
-button:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
-button:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > span > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
-button:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > div > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
-[role="button"]:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
-[role="button"]:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > span > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
-[role="button"]:not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > div > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up) {
+button:not([data-keep-button-icons]):not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+button:not([data-keep-button-icons]):not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > span > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+button:not([data-keep-button-icons]):not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > div > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+[role="button"]:not([data-keep-button-icons]):not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+[role="button"]:not([data-keep-button-icons]):not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > span > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up),
+[role="button"]:not([data-keep-button-icons]):not([data-dropdown-trigger]):not(.dropdown-trigger):not([aria-haspopup]):has(span, p, b, strong) > div > svg:not([data-dropdown-arrow="true"]):not(.dropdown-arrow):not(.lucide-chevron-down):not(.lucide-chevron-up) {
   display: none !important;
 }
 
@@ -927,3 +928,11 @@ select:not(.appearance-none) {
 /* Hide the scrollbar on horizontal strips and the sticky Community sidebars. */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+/* ── Opt-out: areas that keep their icons, whatever the cleaner marked ── */
+[data-keep-button-icons] svg,
+[data-keep-button-icons] svg[data-btn-has-text-icon="true"],
+[data-keep-button-icons] > svg,
+[data-keep-button-icons] > span > svg {
+  display: inline-block !important;
+}

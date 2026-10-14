@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, RefreshCw, Shield, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
+import { AiGhost } from './AiGhost';
 import robot from '../../assets/community/ai-robot.png';
 
 /**
@@ -61,14 +62,8 @@ export const AiDashboardPanel: React.FC<{
       {/* header — brand purple, with the MarketSyde glyph */}
       <div className="flex shrink-0 items-center gap-2.5 bg-[#5945F1] px-3.5 py-2.5">
         <span className="flex shrink-0 items-center gap-2">
-          <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">
-            <svg viewBox="0 0 32 32" className="h-5 w-5 fill-none" aria-hidden>
-              <path
-                d="M 8 20 C 8 14.5, 9.5 11.5, 12 11.5 C 14 11.5, 15.5 13.5, 16.5 16 C 17.5 13.5, 19 11.5, 21 11.5 C 23 11.5, 24 14.5, 24 18.5"
-                stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"
-              />
-              <circle cx="24.5" cy="19.5" r="2.2" fill="#bef226" />
-            </svg>
+          <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25">
+            <AiGhost className="h-4 w-4" />
           </span>
           <span className="hidden font-display text-[15px] font-bold tracking-tight text-white sm:inline">
             market<span className="text-[#bef226]">syde</span>

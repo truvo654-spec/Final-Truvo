@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Gauge, ScanText } from 'lucide-react';
+import { AiGhost } from './AiGhost';
 
 /**
  * The one-time invite, docked in the same corner the panel will appear in.
@@ -38,6 +39,7 @@ export const AiIntro: React.FC<{
       className="fixed bottom-4 right-4 z-40 w-[min(340px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#e4e0fa] bg-white p-4 shadow-[0_18px_50px_rgba(11,28,48,0.18)] dark:border-[#2a1a66] dark:bg-black print:hidden"
     >
       <div className="rounded-xl bg-[#f0efff] px-4 py-3.5 text-center dark:bg-[#170345]">
+        <AiGhost className="mx-auto mb-2 h-7 w-7 text-[#5945F1] dark:text-[#a99bff]" />
         <h2 id="ai-intro-title" className="text-[17px] font-bold leading-snug text-[#5945F1] dark:text-[#a99bff]">
           You&rsquo;re invited to try<br />
           <span className="text-[#5945F1] dark:text-white">MarketSyde AI</span>

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.2] - 2026-10-09
+### Changed
+- The collapsed AI button now carries the MarketSyde ghost, drawn the same way as the one on the error pages, and so do the panel header and the invite.
+- It is alive: the ghost bobs, blinks every few seconds and sends out a ring, the button lifts on hover and presses in on click, and all of it stops under prefers-reduced-motion.
+### Fixed
+- Opted-out areas keep their icons again: the platform-wide icon removal no longer beats `data-keep-button-icons` on specificity.
+
 ## [1.9.1] - 2026-10-09
 ### Changed
 - Each page's AI read now matches the AI map: the journal reads your journal (closed trades, net, win rate, average R, what is working and what costs you) instead of borrowing the playbook read, instrument analysis reads the movers and the next release, alerts read real alerts instead of an empty list, and strategy keeps the backtest checklist.
