@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.3] - 2026-10-09
+### Changed
+- The first-run invite follows the attached design in both themes: the tinted title block reading "You're invited to try advanced MarketSyde AI", rules above and below two feature rows with 52px tiles, the "may make mistakes" line, the Learn more line and the pill button, at 400px wide.
+
 ## [1.9.2] - 2026-10-09
 ### Changed
 - The collapsed AI button now carries the MarketSyde ghost, drawn the same way as the one on the error pages, and so do the panel header and the invite.
