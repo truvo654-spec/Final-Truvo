@@ -1,4 +1,9 @@
 import React, { useState, useEffect , useMemo} from 'react';
+import { COURSES } from './data/educationData';
+import { PROMOTIONS } from './data/promotionsData';
+import { COMMUNITY_ARTICLES } from './data/communityData';
+import { EXPERT_ADVISORS } from './data/expertAdvisorData';
+import { DEFAULT_PLAYBOOKS } from './data/journalPlaybooks';
 import { pointsForTrade } from './data/pointsPerLot';
 import {
   INITIAL_USER,
@@ -87,7 +92,15 @@ import { CashbackLedgerModal } from './components/CashbackLedgerModal';
 import { BrokerComparisonModal } from './components/BrokerComparisonModal';
 import { SearchModal } from './components/SearchModal';
 import { CommandPalette, navigationItems, PaletteItem } from './components/CommandPalette';
-import { Briefcase as BriefcaseIcon, LineChart as LineChartIcon } from 'lucide-react';
+import { Briefcase as BriefcaseIcon, LineChart as LineChartIcon ,
+  Newspaper as NewspaperIcon,
+  BookOpen as BookOpenIcon,
+  Gift as GiftIcon,
+  Users as UsersIcon,
+  Bot as BotIcon,
+  NotebookPen as NotebookIcon,
+  Sparkles as SparklesIcon
+} from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { WelcomeOnboardingModal } from './components/onboarding/WelcomeOnboardingModal';
 import { DashboardTourOverlay, TourStepId } from './components/onboarding/DashboardTourOverlay';
@@ -584,8 +597,67 @@ export default function App() {
       broker: b.name,
       run: () => { setSelectedBrokerForDetail(b); setActiveTab('broker-detail'); },
     }));
+
+    // Everything else a reader might be looking for, so search covers the whole app
+    NEWS_ARTICLES.slice(0, 40).forEach((a) => out.push({
+      id: `news-${a.id}`,
+      label: a.headline,
+      sub: `${a.source} · ${a.assetClass}`,
+      group: 'News',
+      icon: NewspaperIcon,
+      run: () => { setSelectedNewsArticle(a); setActiveTab('news-detail'); },
+    }));
+    COURSES.slice(0, 40).forEach((c) => out.push({
+      id: `course-${c.id}`,
+      label: c.title,
+      sub: `${c.category} · ${c.level}`,
+      group: 'Education',
+      icon: BookOpenIcon,
+      run: () => setActiveTab('education-hub'),
+    }));
+    PROMOTIONS.slice(0, 40).forEach((pr) => out.push({
+      id: `promo-${pr.id}`,
+      label: pr.title,
+      sub: `${pr.brokerName ?? 'MarketSyde'} · ${pr.kind}`,
+      group: 'Promotions',
+      icon: GiftIcon,
+      broker: pr.brokerName,
+      run: () => { setPromotionDetailId(pr.id); setActiveTab('promotions'); },
+    }));
+    COMMUNITY_ARTICLES.slice(0, 30).forEach((a) => out.push({
+      id: `cart-${a.id}`,
+      label: a.title,
+      sub: `Community article · ${a.publisher?.name ?? 'MarketSyde'}`,
+      group: 'Community',
+      icon: UsersIcon,
+      run: () => setActiveTab('community'),
+    }));
+    EXPERT_ADVISORS.slice(0, 30).forEach((ea) => out.push({
+      id: `ea-${ea.id}`,
+      label: ea.name,
+      sub: `${ea.strategy} · ${ea.platform} · ${ea.risk} risk`,
+      group: 'Expert Advisors',
+      icon: BotIcon,
+      run: () => setActiveTab('expert-advisors'),
+    }));
+    DEFAULT_PLAYBOOKS.slice(0, 20).forEach((pb) => out.push({
+      id: `pb-${pb.id}`,
+      label: pb.name,
+      sub: 'Journal playbook',
+      group: 'Journal',
+      icon: NotebookIcon,
+      run: () => setActiveTab('trading-journal'),
+    }));
+    missions.slice(0, 20).forEach((m) => out.push({
+      id: `mis-${m.id}`,
+      label: m.title,
+      sub: `Mission · +${m.rewardPoints} pts · +${m.rewardCredits} credits`,
+      group: 'Missions',
+      icon: SparklesIcon,
+      run: () => setActiveTab('points-credits'),
+    }));
     return out;
-  }, [signals, brokers]);
+  }, [signals, brokers, missions]);
 
   // Global Keyboard Shortcut: Cmd+K / Ctrl+K opens Search Modal
   useEffect(() => {

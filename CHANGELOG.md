@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.0] - 2026-10-09
+### Added
+- Search now reaches the whole app, not just pages, signals and brokers. News headlines, education courses, promotions, community articles, expert advisors, journal playbooks and missions are all indexed, each in its own group and each opening the thing it names.
+
 ## [1.18.0] - 2026-10-09
 ### Added
 - A command palette: one box that searches and jumps, opened with Cmd or Ctrl + K anywhere, or with / when the person is not already typing.
