@@ -681,90 +681,126 @@ export function InstrumentDetail({
         ))}
       </div>
       <div className="concept-instrument">
-        <section className="concept-quote">
-        <div className="concept-identity">
-          <button onClick={onBack} className="concept-back">
+        <section className="concept-quote !block rounded-2xl border border-[#e4e0fa] bg-white p-5 sm:p-6">
+          <button onClick={onBack} className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-500 transition hover:text-[#5945F1]">
             <ArrowLeft size={14} /> Markets / {kind}
           </button>
-          <div className="concept-name">
-            <div className="concept-symbol">
-              {instrument.symbol.slice(0, 4)}
-            </div>
-            <div>
-              <h1>{instrumentTitle}</h1>
-              <div className="concept-tags">
-                <span>
-                  {instrument.primaryMarket ?? instrument.market}:{" "}
-                  {instrument.symbol}
-                </span>
-                <span>{instrument.subSector ?? instrument.sector}</span>
+
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-center">
+            {/* who it is */}
+            <div className="flex min-w-0 items-start gap-4 xl:w-[330px] xl:shrink-0">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#f7931a] font-display text-[22px] font-bold text-white">
+                {instrument.symbol.replace(/[^A-Za-z]/g, '').slice(0, 1) || 'M'}
+              </span>
+              <div className="min-w-0">
+                <h1 className="font-display text-[26px] font-bold leading-tight text-slate-900">{instrumentTitle}</h1>
+                <p className="mt-0.5 text-[14px] text-slate-500">
+                  {kind === 'Crypto' ? 'Cryptocurrency' : kind} &nbsp;&middot;&nbsp; {instrument.symbol}
+                </p>
+                <p className="mt-2 max-w-[310px] text-[12.5px] leading-relaxed text-slate-500">
+                  {`${instrumentTitle} trades on the ${kind.toLowerCase()} market. The figures here are a demo snapshot, not a live quote.`}
+                </p>
               </div>
-              <p>
-                Demo quote ·{" "}
-                {kind === "Crypto" ? "24/7 market" : "Regular market session"} ·
-                USD
-              </p>
+            </div>
+
+            {/* what it costs */}
+            <div className="min-w-0 flex-1 border-slate-200 xl:border-l xl:pl-6">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                <div>
+                  <h2 className="font-display text-[34px] font-bold leading-none text-slate-900">
+                    {kind === 'Forex' ? '' : '$'}{displayValue(instrument)}
+                  </h2>
+                  <p className="mt-2.5 flex items-center gap-2 text-[15px]">
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-full ${positive ? 'bg-[#eaf7a8] text-[#5f7a00]' : 'bg-[#ffe4f1] text-[#c026d3]'}`} aria-hidden>
+                      {positive ? '\u2197' : '\u2198'}
+                    </span>
+                    <b className={positive ? 'text-[#5f7a00]' : 'text-[#c026d3]'}>
+                      {positive ? '+' : ''}{instrument.change.toFixed(2)}%
+                    </b>
+                    <span className="text-slate-500">
+                      ({positive ? '+' : ''}{(instrument.price * instrument.change / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })})
+                    </span>
+                    <span className="text-slate-700">Today</span>
+                  </p>
+                </div>
+                <svg viewBox="0 0 160 46" preserveAspectRatio="none" className="h-12 w-[190px] shrink-0" aria-hidden>
+                  <defs>
+                    <linearGradient id="quoteSpark" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#caeb0e" stopOpacity="0.85" />
+                      <stop offset="100%" stopColor="#caeb0e" stopOpacity="0.05" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,34 L18,30 L34,18 L52,22 L70,20 L88,26 L104,34 L120,22 L140,8 L160,4 L160,46 L0,46 Z" fill="url(#quoteSpark)" />
+                  <path d="M0,34 L18,30 L34,18 L52,22 L70,20 L88,26 L104,34 L120,22 L140,8 L160,4" fill="none" stroke="#a9cc13" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+
+              <dl className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
+                {[
+                  ['Market Cap', instrument.marketCap ? (instrument.marketCap >= 1000 ? `$${(instrument.marketCap / 1000).toFixed(2)}T` : `$${instrument.marketCap.toFixed(1)}B`) : '\u2014'],
+                  ['Volume (24h)', instrument.volume >= 1000 ? `$${(instrument.volume / 1000).toFixed(1)}B` : `$${instrument.volume.toFixed(1)}M`],
+                  ['Relative Volume', `${instrument.rvol.toFixed(2)}x`],
+                  ['1M Return', `${instrument.return1m > 0 ? '+' : ''}${instrument.return1m}%`],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-[12.5px] text-slate-500">{label}</dt>
+                    <dd className="mt-0.5 font-display text-[16px] font-bold text-slate-900">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            {/* what to do about it */}
+            <div className="flex shrink-0 flex-col gap-3 xl:w-[310px]">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={toggleWatching}
+                  aria-label={watching ? 'Remove from watchlist' : 'Add to watchlist'}
+                  aria-pressed={watching}
+                  data-keep-button-icons
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${watching ? 'border-[#5945F1] bg-[#f1f0fe] text-[#5945F1]' : 'border-[#d7d3fb] text-[#5945F1] hover:bg-[#f7f6ff]'}`}
+                >
+                  <Star size={16} fill={watching ? 'currentColor' : 'none'} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onToast(`Demo price alert created for ${instrument.symbol}`)}
+                  aria-label="Create a price alert"
+                  data-keep-button-icons
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d7d3fb] text-[#5945F1] transition hover:bg-[#f7f6ff]"
+                >
+                  <Bell size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={openBrokerAccess}
+                  className="h-10 flex-1 rounded-xl bg-gradient-to-r from-[#5945F1] to-[#c026d3] px-5 text-[14px] font-bold text-white transition hover:brightness-110 active:scale-[0.99]"
+                >
+                  Trade via Brokers
+                </button>
+              </div>
+
+              {/* the broker paying the most on this asset */}
+              <div className="flex items-center gap-3 rounded-xl border border-[#5945F1] p-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#f5d800] font-display text-[15px] font-bold text-slate-900">ex</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-bold leading-tight">
+                    <span className="text-[#5945F1]">Earn $6.20/Lot</span> <span className="text-slate-900">Cashback</span><span className="text-[#c026d3]">.</span>
+                  </p>
+                  <p className="mt-0.5 text-[12px] leading-snug text-slate-500">Let your trades do the work!</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={openBrokerAccess}
+                  className="shrink-0 rounded-lg bg-[#5945F1] px-3 py-1.5 text-[12.5px] font-bold text-white transition hover:bg-[#4a38d6]"
+                >
+                  Trade Now
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="concept-price">
-          <h2>
-            {kind === "Forex" ? "" : "$"}
-            {displayValue(instrument)}
-          </h2>
-          <span className={positive ? "concept-up" : "concept-down"}>
-            {positive ? "↗ +" : "↘ "}
-            {instrument.change.toFixed(2)}%
-          </span>
-          <small> Today · demo snapshot</small>
-          <div className="concept-quote-stats">
-            <div>
-              <small>MARKET CAP</small>
-              <b>
-                {instrument.marketCap
-                  ? `$${instrument.marketCap.toLocaleString()}B`
-                  : "—"}
-              </b>
-            </div>
-            <div>
-              <small>VOLUME</small>
-              <b>{instrument.volume.toLocaleString()}M</b>
-            </div>
-            <div>
-              <small>RELATIVE VOLUME</small>
-              <b>{instrument.rvol.toFixed(2)}×</b>
-            </div>
-            <div>
-              <small>1 MONTH RETURN</small>
-              <b>
-                {instrument.return1m > 0 ? "+" : ""}
-                {instrument.return1m}%
-              </b>
-            </div>
-          </div>
-          <div className="concept-actions">
-            <button
-              onClick={toggleWatching}
-            >
-              <Star size={15} fill={watching ? "currentColor" : "none"} />
-              {watching ? "Watching" : "Watchlist"}
-            </button>
-            <button
-              onClick={() =>
-                onToast(`Demo price alert created for ${instrument.symbol}`)
-              }
-            >
-              <Bell size={15} /> Alert
-            </button>
-            <button
-              className="concept-primary"
-              onClick={openBrokerAccess}
-            >
-              Trade via broker <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
-      </section>
+        </section>
       <div className="concept-columns flex flex-col lg:flex-row items-start gap-6 w-full" ref={conceptColumnsRef}>
         {/* 1. LEFT SIDEBAR: Current right-side bar content (Community, Sentiment & Discussions) - 300px fixed width & sticky */}
         <aside

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.17.0] - 2026-10-09
+### Changed
+- The instrument detail header follows the design: a round coin mark, the name with "Cryptocurrency · BTC/USD" and a line of description, the price with the move as a tinted pill and the cash figure beside it, a sparkline, and the four figures labelled Market Cap, Volume (24h), Relative Volume and 1M Return in trillions and billions rather than raw numbers.
+- Watchlist and alert are icon buttons, "Trade via Brokers" is the gradient button, and the broker paying the most on the asset sits beneath them as its own card with a Trade Now button.
+
 ## [1.16.1] - 2026-10-09
 ### Added
 - The remaining three empty states on the instrument detail page: "The Votes Aren't Showing" on sentiment, "Oops! The Chart Didn't Load" on the overview chart, and "The News Didn't Load, Yet." on the news panel. All four now switch together from the preview control.
