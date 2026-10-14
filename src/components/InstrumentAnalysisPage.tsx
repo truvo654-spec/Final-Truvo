@@ -1526,6 +1526,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                   {/* Glassmorphism Preview: properly blurred */}
                   <div className="filter blur-[5px] opacity-45 pointer-events-none select-none max-h-[650px] overflow-hidden">
                     <InstrumentScatterView
+                  state={preview}
                       onSelectInstrument={() => {}}
                     />
                   </div>

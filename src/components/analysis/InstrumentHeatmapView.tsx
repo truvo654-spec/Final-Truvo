@@ -12,7 +12,7 @@ interface InstrumentHeatmapViewProps {
   onSelectInstrument?: (symbol: string) => void;
 }
 
-interface Asset {
+export interface Asset {
   name: string;
   symbol: string;
   iconType: string;
@@ -25,7 +25,7 @@ interface Asset {
   pe: number;
 }
 
-const ASSETS: Asset[] = [
+export const ASSETS: Asset[] = [
   { name: 'Bitcoin', symbol: 'BTC/USD', iconType: 'btc', change: 2.34, volume: 1540, marketCap: 1540, perf1M: 21.77, pe: 38 },
   { name: 'Binance', symbol: 'BNB/USD', iconType: 'bnb', change: 1.87, volume: 950, marketCap: 95, perf1M: 18.72, pe: 24 },
   { name: 'Tether', symbol: 'USDT/USD', iconType: 'usdt', change: 3.42, volume: 760, marketCap: 140, perf1M: 0.1, pe: 11 },
@@ -63,9 +63,9 @@ const REMAINING_ASSETS = [
   { name: 'Litecoin', change: '-0.92%', value: '$6.54B', tint: '#345d9d' },
 ];
 
-const FIELDS = ['Change 1D(%)', 'Performance 1M (%)', 'Market Cap ($B)', 'P/E Ratio (x)', 'Relative volume (x)'] as const;
+export const FIELDS = ['Change 1D(%)', 'Performance 1M (%)', 'Market Cap ($B)', 'P/E Ratio (x)', 'Relative volume (x)'] as const;
 
-const fieldValue = (a: Asset, field: string): number => {
+export const fieldValue = (a: Asset, field: string): number => {
   switch (field) {
     case 'Change 1D(%)': return a.change;
     case 'Performance 1M (%)': return a.perf1M;
@@ -140,7 +140,7 @@ function squarify(items: { a: Asset; v: number }[], x: number, y: number, w: num
   return out;
 }
 
-const Dropdown: React.FC<{ label: string; value: string; onChange: (v: string) => void }> = ({ label, value, onChange }) => {
+export const FieldDropdown: React.FC<{ label: string; value: string; options?: readonly string[]; onChange: (v: string) => void }> = ({ label, value, options = FIELDS, onChange }) => {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex flex-col gap-1.5">
@@ -161,7 +161,7 @@ const Dropdown: React.FC<{ label: string; value: string; onChange: (v: string) =
             <span className="fixed inset-0 z-10" aria-hidden onClick={() => setOpen(false)} />
             <ul role="listbox" className="absolute left-0 top-[calc(100%+6px)] z-20 w-[190px] overflow-hidden rounded-xl border border-[#d7d3fb] bg-white py-1 shadow-xl">
               <li className="px-3.5 py-2 text-[14px] text-slate-400">Choose</li>
-              {FIELDS.map((o) => (
+              {options.map((o) => (
                 <li key={o}>
                   <button
                     type="button"
@@ -193,8 +193,8 @@ const Header: React.FC<{
       <p className="mt-0.5 text-xs text-slate-500">Tile size and color update based on your selections below.</p>
     </div>
     <div className={`flex flex-wrap items-start gap-4 sm:gap-6 ${muted ? 'pointer-events-none opacity-60' : ''}`}>
-      <Dropdown label="Size by" value={sizeBy} onChange={setSizeBy} />
-      <Dropdown label="Color by" value={colorBy} onChange={setColorBy} />
+      <FieldDropdown label="Size by" value={sizeBy} onChange={setSizeBy} />
+      <FieldDropdown label="Color by" value={colorBy} onChange={setColorBy} />
     </div>
   </div>
 );

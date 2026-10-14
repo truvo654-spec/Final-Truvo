@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.0] - 2026-10-09
+### Added
+- Scatter tab rebuilt to the design: "Market Scatter" with its subtitle and the Gain / Loss key, three custom pickers for X axis, Y axis and Point size, a dashed grid with axis ticks, dots coloured lime for a gain and violet for a loss and sized by the third field, and the "X: … Y: … Size: …" line beneath.
+- Hovering a dot draws a crosshair and opens the read-out from the design: the instrument with its sector, three trading signals with confidence and reward-to-risk, and the asset information table.
+- Its Not found and Error states match the table and heatmap, driven by the same preview switch.
+
 ## [1.11.1] - 2026-10-09
 ### Changed
 - The heatmap is a real treemap now: a squarified layout over 25 assets, so a tile's area reflects the field chosen under "Size by" and the board rearranges when that changes.

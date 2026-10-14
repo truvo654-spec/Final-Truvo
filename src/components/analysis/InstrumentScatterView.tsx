@@ -1,250 +1,229 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useMemo, useRef, useState } from 'react';
+import { InstrumentIcon } from './InstrumentIcon';
+import { ASSETS, Asset, FieldDropdown, fieldValue } from './InstrumentHeatmapView';
+import SC_NOT_FOUND from '../../assets/community/ia-notfound.png';
+import SC_ERROR from '../../assets/community/ia-error.png';
 
-interface ScatterPoint {
-  id: string;
-  name: string;
-  symbol: string;
-  xVal: number; // percentage (-3% to 9%)
-  yVal: number; // percentage (-3% to 9%)
-  marketCap: string;
-  size: number; // pixel radius
-  color: string;
-  winRate: string;
-}
+export type ScatterState = 'default' | 'notfound' | 'error';
 
 interface InstrumentScatterViewProps {
+  /** Lets the page preview the empty and failed states. */
+  state?: ScatterState;
   onSelectInstrument?: (symbol: string) => void;
 }
 
-export const InstrumentScatterView: React.FC<InstrumentScatterViewProps> = ({
-  onSelectInstrument,
-}) => {
-  const [xAxis, setXAxis] = useState<string>('Change 1D (%)');
-  const [yAxis, setYAxis] = useState<string>('Change 1D (%)');
-  const [pointSize, setPointSize] = useState<string>('Market cap ($B)');
-  const [hoveredPoint, setHoveredPoint] = useState<ScatterPoint | null>(null);
+/** The fields the three pickers offer, as in the design. */
+const AXIS_FIELDS = ['Change 1D(%)', 'Relative volume (x)', 'Market Cap ($B)', 'Last price'] as const;
 
-  // Exact distribution matching Frame 427322387 (2).png
-  const points: ScatterPoint[] = [
-    // Negative cluster (loss - purple/indigo dots)
-    { id: 'ltc', name: 'Litecoin', symbol: 'LTC/USD', xVal: -2.3, yVal: -2.2, marketCap: '$4.08B', size: 8, color: '#5046E5', winRate: '>50%' },
-    { id: 'xmr', name: 'Monero', symbol: 'XMR/USD', xVal: -2.0, yVal: -1.9, marketCap: '$2.80B', size: 7, color: '#5046E5', winRate: '48%' },
-    { id: 'ton', name: 'Toncoin', symbol: 'TON/USD', xVal: -1.7, yVal: -1.8, marketCap: '$14.2B', size: 9, color: '#5046E5', winRate: '>50%' },
-    { id: 'avax', name: 'Avalanche', symbol: 'AVAX/USD', xVal: -1.5, yVal: -1.5, marketCap: '$9.56B', size: 10, color: '#6366F1', winRate: '>50%' },
-    { id: 'dot', name: 'Polkadot', symbol: 'DOT/USD', xVal: -1.2, yVal: -1.3, marketCap: '$6.20B', size: 7, color: '#6366F1', winRate: '46%' },
-    { id: 'pol', name: 'Polygon', symbol: 'POL/USD', xVal: -0.9, yVal: -0.8, marketCap: '$57.8B', size: 12, color: '#6366F1', winRate: '>50%' },
-    { id: 'hbar', name: 'Hedera', symbol: 'HBAR/USD', xVal: -0.6, yVal: -0.5, marketCap: '$3.50B', size: 8, color: '#818CF8', winRate: '>50%' },
-    { id: 'near', name: 'NEAR Protocol', symbol: 'NEAR/USD', xVal: -0.4, yVal: -0.3, marketCap: '$4.80B', size: 9, color: '#818CF8', winRate: '49%' },
+const axisValue = (a: Asset, field: string): number => {
+  if (field === 'Last price') return Math.max(0.5, a.marketCap / 2 + a.pe);
+  return fieldValue(a, field);
+};
 
-    // Centered around 0%
-    { id: 'link', name: 'Chainlink', symbol: 'LINK/USD', xVal: -0.1, yVal: 0.1, marketCap: '$7.40B', size: 10, color: '#BEF226', winRate: '>50%' },
-    { id: 'ada', name: 'Cardano', symbol: 'ADA/USD', xVal: 0.2, yVal: 0.3, marketCap: '$12.5B', size: 10, color: '#BEF226', winRate: '>50%' },
-    { id: 'doge', name: 'Dogecoin', symbol: 'DOGE/USD', xVal: 0.4, yVal: 0.4, marketCap: '$14.2B', size: 9, color: '#BEF226', winRate: '>50%' },
-    { id: 'xrp', name: 'Ripple', symbol: 'XRP/USD', xVal: 0.7, yVal: 0.7, marketCap: '$83.88B', size: 12, color: '#A3E635', winRate: 'Neutral' },
-    { id: 'uni', name: 'Uniswap', symbol: 'UNI/USD', xVal: 1.0, yVal: 0.9, marketCap: '$3.71B', size: 8, color: '#A3E635', winRate: '>50%' },
+/** Signals shown in the read-out, so the hover is useful rather than decorative. */
+const SIGNALS = [
+  { side: 'Sell', confidence: 79, level: 'L1', detail: 'Sell - Target / Entry / Stop 4,198', rr: 'R:R 1:1.8', tone: 'violet' },
+  { side: 'Buy', confidence: 73, level: 'L1', detail: 'Buy - Target / Entry / Stop 4,522', rr: 'R:R 1:2.4', tone: 'lime' },
+  { side: 'Sell', confidence: 72, level: 'L1', detail: 'Sell - Target / Entry / Stop 4,065', rr: 'R:R 1:2.1', tone: 'violet' },
+] as const;
 
-    // Positive cluster (gain - lime green dots)
-    { id: 'sol', name: 'Solana', symbol: 'SOL/USD', xVal: 1.5, yVal: 1.3, marketCap: '$60.3B', size: 10, color: '#A3E635', winRate: '>50%' },
-    { id: 'bnb', name: 'Binance Coin', symbol: 'BNB/USD', xVal: 1.8, yVal: 1.4, marketCap: '$84.04B', size: 11, color: '#A3E635', winRate: '>50%' },
-    { id: 'aave', name: 'Aave', symbol: 'AAVE/USD', xVal: 2.1, yVal: 1.5, marketCap: '$2.10B', size: 8, color: '#84CC16', winRate: '>50%' },
-    { id: 'usdt', name: 'Tether USD', symbol: 'USDT/USD', xVal: 3.2, yVal: 2.0, marketCap: '$118B', size: 11, color: '#84CC16', winRate: '>50%' },
-    { id: 'eth', name: 'Ethereum', symbol: 'ETH/USD', xVal: 4.6, yVal: 2.4, marketCap: '$297.46B', size: 14, color: '#84CC16', winRate: '>50%' },
-    { id: 'btc', name: 'Bitcoin', symbol: 'BTC/USD', xVal: 5.0, yVal: 2.7, marketCap: '$1.54T', size: 20, color: '#84CC16', winRate: '>50%' },
-  ];
+const PAD = { left: 56, right: 24, top: 18, bottom: 44 };
+const W = 1000;
+const H = 470;
 
-  // Grid bounds: Y runs from 9% down to -3% (span of 12%)
-  // X runs from -3% up to 9% (span of 12%)
-  const minRange = -3;
-  const maxRange = 9;
-  const span = maxRange - minRange; // 12
+export const InstrumentScatterView: React.FC<InstrumentScatterViewProps> = ({ onSelectInstrument, state = 'default' }) => {
+  const [xField, setXField] = useState<string>('Change 1D(%)');
+  const [yField, setYField] = useState<string>('Change 1D(%)');
+  const [sizeField, setSizeField] = useState<string>('Market Cap ($B)');
+  const [hover, setHover] = useState<{ a: Asset; px: number; py: number } | null>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
 
-  const getYPercent = (val: number) => {
-    // 9 is at top (0%), -3 is at bottom (100%)
-    return ((maxRange - val) / span) * 100;
+  const points = useMemo(() => {
+    const xs = ASSETS.map((a) => axisValue(a, xField));
+    const ys = ASSETS.map((a) => axisValue(a, yField));
+    const sizes = ASSETS.map((a) => axisValue(a, sizeField));
+    const nice = (lo: number, hi: number) => {
+      const span = Math.max(1e-6, hi - lo);
+      const pad = span * 0.12;
+      return [lo - pad, hi + pad] as const;
+    };
+    const [x0, x1] = nice(Math.min(...xs), Math.max(...xs));
+    const [y0, y1] = nice(Math.min(...ys), Math.max(...ys));
+    const s0 = Math.min(...sizes);
+    const s1 = Math.max(...sizes);
+    const plotW = W - PAD.left - PAD.right;
+    const plotH = H - PAD.top - PAD.bottom;
+    return {
+      x0, x1, y0, y1,
+      items: ASSETS.map((a) => {
+        const xv = axisValue(a, xField);
+        const yv = axisValue(a, yField);
+        const sv = axisValue(a, sizeField);
+        return {
+          a,
+          px: PAD.left + ((xv - x0) / (x1 - x0)) * plotW,
+          py: PAD.top + plotH - ((yv - y0) / (y1 - y0)) * plotH,
+          r: 4 + ((sv - s0) / Math.max(1e-6, s1 - s0)) * 9,
+          gain: a.change >= 0,
+        };
+      }),
+    };
+  }, [xField, yField, sizeField]);
+
+  const ticks = (lo: number, hi: number) => {
+    const out: number[] = [];
+    for (let i = 0; i <= 4; i += 1) out.push(lo + ((hi - lo) / 4) * i);
+    return out;
   };
+  const fmt = (v: number, field: string) => (field.includes('%') ? `${v.toFixed(0)}%` : field.includes('$') ? `$${v.toFixed(0)}B` : v.toFixed(1));
 
-  const getXPercent = (val: number) => {
-    // -3 is at left (0%), 9 is at right (100%)
-    return ((val - minRange) / span) * 100;
-  };
-
-  const ySteps = [9, 6, 3, 0, -3];
-  const xSteps = [-3, 0, 3, 6, 9];
-
-  return (
-    <div className="w-full bg-white rounded-2xl border border-[#8B5CF6]/30 p-5 sm:p-7 shadow-2xs space-y-6">
-      {/* ─── Top Header Bar: Title + Subtitle + 3 Selects ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-base sm:text-lg font-bold font-display text-slate-900 select-none">
-            Market Scatter
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Compare available market metrics with native units
-          </p>
-          <div className="flex items-center gap-3.5 mt-2 text-xs font-bold text-slate-700 select-none">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#BEF226] border border-[#a2bf06]" />
-              <span>Gain</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#5046E5]" />
-              <span>Loss</span>
-            </span>
-          </div>
-        </div>
-
-        {/* 3 Dropdowns */}
-        <div className="flex flex-wrap items-center gap-3 sm:gap-5">
-          {/* X axis */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-medium">X axis</span>
-            <select
-              value={xAxis}
-              onChange={(e) => setXAxis(e.target.value)}
-              className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]/40 cursor-pointer shadow-2xs"
-            >
-              <option value="Change 1D (%)">Change 1D (%)</option>
-              <option value="1M Return (%)">1M Return (%)</option>
-              <option value="RSI">RSI</option>
-              <option value="RoL Volume">RoL Volume</option>
-            </select>
-          </div>
-
-          {/* Y axis */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-medium">Y axis</span>
-            <select
-              value={yAxis}
-              onChange={(e) => setYAxis(e.target.value)}
-              className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]/40 cursor-pointer shadow-2xs"
-            >
-              <option value="Change 1D (%)">Change 1D (%)</option>
-              <option value="1M Return (%)">1M Return (%)</option>
-              <option value="RSI">RSI</option>
-              <option value="RoL Volume">RoL Volume</option>
-            </select>
-          </div>
-
-          {/* Point size */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-medium">Point size:</span>
-            <select
-              value={pointSize}
-              onChange={(e) => setPointSize(e.target.value)}
-              className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]/40 cursor-pointer shadow-2xs"
-            >
-              <option value="Market cap ($B)">Market cap ($B)</option>
-              <option value="Relative Volume ($B)">Relative Volume ($B)</option>
-              <option value="24h Volume ($B)">24h Volume ($B)</option>
-            </select>
-          </div>
+  const header = (
+    <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+      <div>
+        <h2 className="select-none font-display text-base font-bold text-slate-900 sm:text-lg">Market Scatter</h2>
+        <p className="mt-0.5 text-xs text-slate-500">Pick two metrics to compare, and a third to size the dots.</p>
+        <div className="mt-2.5 flex items-center gap-4 text-xs font-medium text-slate-700">
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#caeb0e]" />Gain</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#5945F1]" />Loss</span>
         </div>
       </div>
+      <div className={`flex flex-wrap items-start gap-4 sm:gap-6 ${state !== 'default' ? 'pointer-events-none opacity-60' : ''}`}>
+        <FieldDropdown label="X axis" value={xField} options={AXIS_FIELDS} onChange={setXField} />
+        <FieldDropdown label="Y axis" value={yField} options={AXIS_FIELDS} onChange={setYField} />
+        <FieldDropdown label="Point size:" value={sizeField} options={AXIS_FIELDS} onChange={setSizeField} />
+      </div>
+    </div>
+  );
 
-      {/* ─── Scatter Plot Visual Stage (Exact match to Frame 427322387 (2).png) ─── */}
-      <div className="relative w-full pt-4 pb-2 select-none">
-        <div className="flex w-full">
-          {/* Y Axis Labels Column */}
-          <div className="w-10 sm:w-12 shrink-0 flex flex-col justify-between text-right pr-3 sm:pr-4 text-xs font-medium text-slate-700 h-[260px] sm:h-[300px]">
-            {ySteps.map((step) => (
-              <span key={step} className="leading-none -translate-y-1/2">
-                {step}%
-              </span>
+  if (state !== 'default') {
+    return (
+      <div className="w-full space-y-6 rounded-2xl border border-[#e0e7ff] bg-white p-5 shadow-xs sm:p-7">
+        {header}
+        <div className="flex min-h-[470px] flex-col items-center justify-center px-6 text-center">
+          <img src={state === 'error' ? SC_ERROR : SC_NOT_FOUND} alt="" className={state === 'error' ? 'h-auto w-[270px]' : 'h-auto w-[200px]'} />
+          <p className="mt-6 font-display text-[34px] font-bold text-[#c026d3]">
+            {state === 'error' ? 'Well, that didn’t load' : 'Data not found'}
+          </p>
+          <p className="mt-2 max-w-[320px] text-sm text-slate-500">
+            {state === 'error'
+              ? 'It’s not you, it’s us. Try refreshing again in a bit.'
+              : 'No instruments match these filters. Try loosening them up a bit.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full space-y-6 rounded-2xl border border-[#e0e7ff] bg-white p-5 shadow-xs sm:p-7">
+      {header}
+
+      <div className="border-t border-[#eef1f5] pt-5">
+        <div ref={boardRef} className="relative w-full select-none" style={{ aspectRatio: `${W} / ${H}` }}>
+          <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full" role="img" aria-label="Market scatter">
+            {/* horizontal grid */}
+            {ticks(points.y0, points.y1).map((t, i) => {
+              const y = PAD.top + (H - PAD.top - PAD.bottom) * (1 - i / 4);
+              return (
+                <g key={`y${i}`}>
+                  <line x1={PAD.left} x2={W - PAD.right} y1={y} y2={y} stroke="#cbd5e1" strokeDasharray="6 6" strokeWidth="1" />
+                  <text x={PAD.left - 12} y={y + 4} textAnchor="end" className="fill-slate-500" style={{ fontSize: 13 }}>{fmt(t, yField)}</text>
+                </g>
+              );
+            })}
+            {/* vertical ticks */}
+            {ticks(points.x0, points.x1).map((t, i) => {
+              const x = PAD.left + (W - PAD.left - PAD.right) * (i / 4);
+              return (
+                <text key={`x${i}`} x={x} y={H - PAD.bottom + 24} textAnchor="middle" className="fill-slate-500" style={{ fontSize: 13 }}>
+                  {fmt(t, xField)}
+                </text>
+              );
+            })}
+            <line x1={PAD.left} x2={W - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} stroke="#e2e8f0" strokeWidth="1" />
+
+            {/* crosshair for whatever is hovered */}
+            {hover && (
+              <g>
+                <line x1={hover.px} x2={hover.px} y1={PAD.top} y2={H - PAD.bottom} stroke="#5945F1" strokeDasharray="5 5" strokeWidth="1" />
+                <line x1={PAD.left} x2={W - PAD.right} y1={hover.py} y2={hover.py} stroke="#5945F1" strokeDasharray="5 5" strokeWidth="1" />
+              </g>
+            )}
+
+            {points.items.map(({ a, px, py, r, gain }) => (
+              <circle
+                key={a.symbol}
+                cx={px}
+                cy={py}
+                r={r}
+                fill={gain ? '#caeb0e' : '#5945F1'}
+                stroke="#fff"
+                strokeWidth="1.5"
+                className="cursor-pointer transition-[r] hover:brightness-95"
+                onMouseEnter={() => setHover({ a, px, py })}
+                onMouseLeave={() => setHover(null)}
+                onClick={() => onSelectInstrument?.(a.symbol)}
+              >
+                <title>{`${a.name} ${a.change > 0 ? '+' : ''}${a.change}%`}</title>
+              </circle>
             ))}
-          </div>
+          </svg>
 
-          {/* Chart Plot Area */}
-          <div className="relative flex-1 h-[260px] sm:h-[300px] border-b border-indigo-200/80">
-            {/* Horizontal Dashed Gridlines */}
-            {ySteps.map((step) => {
-              const topPct = getYPercent(step);
-              return (
-                <div
-                  key={step}
-                  className={`absolute left-0 right-0 border-t ${
-                    step === 0
-                      ? 'border-indigo-300/80'
-                      : 'border-dashed border-indigo-200/60'
-                  }`}
-                  style={{ top: `${topPct}%` }}
-                />
-              );
-            })}
+          {hover && (
+            <div
+              className="pointer-events-none absolute z-30 w-[290px] rounded-xl border border-[#e4e0fa] bg-white p-4 text-left shadow-2xl"
+              style={{
+                left: `min(${(hover.px / W) * 100}%, calc(100% - 300px))`,
+                top: `min(${(hover.py / H) * 100}%, calc(100% - 330px))`,
+              }}
+              role="status"
+            >
+              <p className="flex items-center gap-2 text-[15px] font-bold text-slate-900">
+                <InstrumentIcon iconType={hover.a.iconType} name={hover.a.name} className="h-5 w-5" />
+                {hover.a.name}
+                <span className="text-[13px] font-medium text-slate-500">{hover.a.symbol}</span>
+              </p>
+              <p className="mt-1 text-[13px] text-slate-700">Smart Contract Platforms - Layer 1</p>
+              <p className="text-[13px] text-slate-500">Crypto Spot - Country unavailable</p>
 
-            {/* Plotted Scatter Circles */}
-            {points.map((pt) => {
-              const xPos = getXPercent(pt.xVal);
-              const yPos = getYPercent(pt.yVal);
-              const isHovered = hoveredPoint?.id === pt.id;
+              <p className="mt-3 border-l-2 border-[#5945F1] pl-2 text-[13px] font-semibold text-slate-900">Trading Signals</p>
+              <ul className="mt-2 space-y-2">
+                {SIGNALS.map((s) => (
+                  <li key={s.detail} className={`rounded-lg p-2 ${s.tone === 'lime' ? 'bg-[#f4fbcd]' : 'bg-[#f1f0fe]'}`}>
+                    <p className="flex items-center justify-between text-[13px] font-bold">
+                      <span className={s.tone === 'lime' ? 'text-[#5f7a00]' : 'text-[#5945F1]'}>{s.side}</span>
+                      <span className="text-slate-700">{s.confidence}% <span className="ml-1 text-slate-500">{s.level}</span></span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-600">{s.detail} &nbsp; {s.rr}</p>
+                  </li>
+                ))}
+              </ul>
 
-              return (
-                <motion.div
-                  key={pt.id}
-                  onMouseEnter={() => setHoveredPoint(pt)}
-                  onMouseLeave={() => setHoveredPoint(null)}
-                  onClick={() => onSelectInstrument?.(pt.symbol)}
-                  whileHover={{ scale: 1.3 }}
-                  style={{
-                    left: `${xPos}%`,
-                    top: `${yPos}%`,
-                    width: `${pt.size}px`,
-                    height: `${pt.size}px`,
-                    backgroundColor: pt.color,
-                  }}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full cursor-pointer transition-shadow shadow-xs hover:shadow-md hover:ring-3 hover:ring-indigo-300/50 z-20"
-                />
-              );
-            })}
-
-            {/* Hover Tooltip Popup */}
-            <AnimatePresence>
-              {hoveredPoint && (
-                <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 5 }}
-                  style={{
-                    left: `${getXPercent(hoveredPoint.xVal)}%`,
-                    top: `${getYPercent(hoveredPoint.yVal)}%`,
-                  }}
-                  className="absolute -translate-x-1/2 -translate-y-[120%] z-30 pointer-events-none bg-slate-900 text-white rounded-xl px-3 py-2 text-xs shadow-xl min-w-[130px] border border-slate-700/60"
-                >
-                  <div className="font-bold text-white flex items-center justify-between gap-2">
-                    <span>{hoveredPoint.name}</span>
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      {hoveredPoint.symbol}
-                    </span>
+              <p className="mt-3 border-l-2 border-[#5945F1] pl-2 text-[13px] font-semibold text-slate-900">Asset information</p>
+              <dl className="mt-1.5 space-y-1 text-[12.5px]">
+                {[
+                  ['Price', `${(hover.a.marketCap * 3).toFixed(0)}`],
+                  ['Market Cap', `$${hover.a.marketCap}B`],
+                  ['P/E Ratio', hover.a.pe ? `${hover.a.pe}x` : 'N/A'],
+                  ['Change ID', `${hover.a.change > 0 ? '+' : ''}${hover.a.change.toFixed(2)}%`],
+                  ['Performance 1M', `${hover.a.perf1M > 0 ? '+' : ''}${hover.a.perf1M.toFixed(2)}%`],
+                  ['Relative Volume', `${(hover.a.volume / 500).toFixed(2)}x`],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-3">
+                    <dt className="text-slate-500">{k}</dt>
+                    <dd className="font-semibold tabular-nums text-slate-900">{v}</dd>
                   </div>
-                  <div className="text-[11px] text-emerald-400 font-semibold mt-1">
-                    Change 1D: {hoveredPoint.xVal >= 0 ? `+${hoveredPoint.xVal}%` : `${hoveredPoint.xVal}%`}
-                  </div>
-                  <div className="text-[11px] text-slate-300 flex items-center justify-between gap-2 mt-0.5">
-                    <span>Market Cap:</span>
-                    <span className="font-bold text-white">{hoveredPoint.marketCap}</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                ))}
+              </dl>
+            </div>
+          )}
         </div>
 
-        {/* X Axis Labels Row */}
-        <div className="flex pl-10 sm:pl-12 w-full justify-between pt-2 text-xs font-medium text-slate-600">
-          {xSteps.map((step) => (
-            <span key={step} className="text-center w-8 -translate-x-1/2">
-              {step}%
-            </span>
-          ))}
-        </div>
-
-        {/* Axis Legend Caption (Exact match to Frame 427322387 (2).png) */}
-        <div className="text-center text-xs font-medium text-slate-600 pt-5 select-none flex items-center justify-center gap-6">
-          <span>X: Change 1D [%]</span>
-          <span>Y: Change 1D [%]</span>
-          <span>Size: Market cap [$B]</span>
-        </div>
+        <p className="mt-2 flex flex-wrap justify-center gap-x-6 gap-y-1 text-[13px] text-slate-500">
+          <span>X: <span className="text-slate-700">{xField.replace('(%)', '[%]').replace('($B)', '[$B]')}</span></span>
+          <span>Y: <span className="text-slate-700">{yField.replace('(%)', '[%]').replace('($B)', '[$B]')}</span></span>
+          <span>Size: <span className="text-slate-700">{sizeField.replace('(%)', '[%]').replace('($B)', '[$B]')}</span></span>
+        </p>
       </div>
     </div>
   );
