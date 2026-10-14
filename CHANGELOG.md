@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] - 2026-10-09
+### Added
+- Every feature now renders its own presentation inside the AI card, as the AI map describes: the verdict meter on signals and news, next-up on the calendar and promotions, the progress bar on education and points, side-by-side on expert advisors, the metrics row on portfolio and broker comparison, the checklist on alerts and the strategy builder, and the strip on brokers and instrument analysis. The dashboard and journal keep the figure tiles.
+- Each widget gained a chrome-less mode and dark styles so it sits inside the panel without a card inside a card.
+
 ## [1.9.5] - 2026-10-09
 ### Removed
 - "Ask the AI Companion" is gone from the panel, along with the Ask tab and the invite's link, so nothing in the panel sends people to the AI page.

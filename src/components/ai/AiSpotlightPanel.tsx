@@ -45,6 +45,8 @@ export interface SpotlightData {
   suggestions?: SpotlightSuggestion[];
   /** One line explaining a figure, keyed by its label. */
   statNotes?: Record<string, string>;
+  /** The feature's own presentation, shown instead of the stat tiles. */
+  visual?: React.ReactNode;
   footnote?: string;
 }
 

@@ -120,7 +120,9 @@ export const AiDashboardPanel: React.FC<{
               <img src={robot} alt="" aria-hidden className="w-[160px] shrink-0 self-center rounded-xl lg:w-[185px]" />
             </div>
 
-            {data.stats && data.stats.length > 0 && (
+            {data.visual && <div className="mt-4">{data.visual}</div>}
+
+            {!data.visual && data.stats && data.stats.length > 0 && (
               <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
                 {data.stats.slice(0, 4).map((s, i) => {
                   const Icon = ICONS[i % ICONS.length];
