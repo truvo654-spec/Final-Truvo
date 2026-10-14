@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.31.1] - 2026-10-14
+
+### Changed
+
+- Removed Compare selected from AI Coach. Scenario checkboxes now update the comparison table, candle overlays, per-trade ledger and saved comparison selection immediately.
+
+## [1.31.0] - 2026-10-14
+
+### Changed
+
+- AI Coach now selects one source trade using radios or row clicks; choosing another trade replaces the baseline and refreshes its scenario ideas. Scenario checkboxes still support multiple alternatives.
+- Replaced the daily comparison curve with the existing interactive candle chart: recorded entry/exit anchors, colored scenario exit markers, price levels, net P&L overlays and replay timeline/playback controls. All paths share the What-if estimator, remain labeled reconstructions, and reconcile with the comparison table.
+
+## [1.30.0] - 2026-10-14
+
+### Changed
+
+- Merged AI Coach's filters and source-trade list into one panel. Select trades with row checkboxes, dates or Select all; selection persists across pages and totals reflect the selected baseline.
+- Matching scenarios refresh automatically from the selected trades. Show other matching ideas varies supported parameters while preserving the evidence-based recommendation and recalculating every comparison for the same selection.
+
+## [1.29.1] - 2026-10-14
+
+### Changed
+
+- Replaced AI Coach's market/instrument summary cards with a compact Trade Log-style source list: date/time, instrument with market badge, side, playbook, net P&L and realized R. Added date sorting, pagination and baseline totals.
+
+## [1.29.0] - 2026-10-14
+
+### Added
+
+- Replaced the Weekly Review tab with MarketSyde AI Coach: a journal-based scenario workspace with goals, playbook context, evidence drilldowns, chronological cohort comparisons, and market-compatible strategy alternatives. Existing reviews remain available under Saved reviews & reflection.
+- Added personalized coaching to the Overview sidebar. Scenario drafts link to their source playbook and trades, save independently, and open directly in Practice or a two-playbook backtest comparison.
+- Added explicit sample thresholds, missing-data coverage and later-period checks. This Beta uses local pattern rules; behavioral changes remain manual checklists and untested library strategies have no invented results.
+- Added a one-log-to-many scenario lab: weekly/custom history, market/instrument summaries, single-trade selection, scenario checkboxes, comparative metrics and cumulative curves, per-trade outcomes, and saved comparison snapshots. Price-dependent alternatives are explicitly labeled synthetic-path estimates.
+- Fixed missing ADX periods in catalogue recipes so transferred setups pass backtest validation.
+
+## [1.28.0] - 2026-10-14
+
+### Fixed
+
+- Removed the simulated broker verification that falsely marked accounts connected and claimed automatic trade tracking. The local build now explains that live sync is unavailable and directs users to CSV statement import.
+- Open the journal import dialog on statement upload and show Trade Log / Insights scope counts with a one-click all-history reset. Trade Log now offers a direct reset when its saved filters hide every row.
+
 ## [1.22.0] - 2026-10-12
 
 ### Added

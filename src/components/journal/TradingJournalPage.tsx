@@ -18,6 +18,8 @@ import { JournalEntryDetail } from './JournalEntryDetail';
 import { JournalCalendar } from './JournalCalendar';
 import { JournalTradeLog } from './JournalTradeLog';
 import { JournalInsights } from './JournalInsights';
+import { JournalAICoach, CoachOverviewCard } from './JournalAICoach';
+import { createCoachDraft, type CoachScenario } from './aiCoach';
 import { JournalPlaybooks } from './JournalPlaybooks';
 import { DEFAULT_PLAYBOOKS, JournalPlaybook } from '../../data/journalPlaybooks';
 import { JournalCumulativeChart } from './JournalCumulativeChart';
@@ -86,6 +88,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   onRewardPoints,
 }) => {
   const [tab, setTab] = useJournalState<JournalTab>('tab', 'overview');
+  const coachToday = new Date().toISOString().slice(0, 10);
   const [entries, setEntries, storageFailed] = useJournalState<JournalEntry[]>('entries', JOURNAL_ENTRIES);
   useEffect(() => { setEntries(current => hydrateDemoCfdEvidence(current)); }, [setEntries]);
   const [reviewCohort, setReviewCohort] = useState<string[]>([]);
@@ -112,6 +115,14 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [expected, setExpected] = useState<Record<string, PlaybookExpectedStats>>(() => loadExpected());
   const [btIntent, setBtIntent] = useState<BacktestIntent | null>(null);
   const goBacktest = (intent: BacktestIntent) => { setBtIntent(intent); setSelectedId(null); setTab('backtest'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const useCoachScenario = (scenario: CoachScenario, action: 'save' | 'practice' | 'test') => {
+    const existing = playbooks.find(p => p.status === 'testing' && p.coachOrigin?.scenarioId === scenario.id && p.coachOrigin?.sourcePlaybookId === scenario.sourcePlaybookId && p.thesis === scenario.draft.thesis && JSON.stringify(p.rules) === JSON.stringify(scenario.draft.rules));
+    const draft = existing || createCoachDraft(scenario, crypto.randomUUID(), playbooks.map(p => p.name));
+    if (!existing) setVersionedPlaybooks(previous => [...previous, draft]);
+    onShowToast(existing ? `Using saved experiment: ${draft.name}` : `Testing draft saved: ${draft.name}`);
+    if (action === 'practice') goBacktest({ view: 'replay', playbookId: draft.id });
+    if (action === 'test') goBacktest({ view: 'setup', playbookId: draft.id, comparePlaybookId: scenario.sourcePlaybookId, benchmarkTradeIds: scenario.evidenceIds });
+  };
   const setExpectedFor = (st: PlaybookExpectedStats) => setExpected((m) => { const next = { ...m, [st.playbookId]: st }; saveExpected(next); return next; });
 
 
@@ -188,6 +199,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   );
   const rangeLabel =
     rangeMode === 'all' ? 'All time' : `${shortDate(rangeFrom)} – ${shortDate(rangeTo, true)}`;
+  const currentCurrencyCount=entries.filter(e=>currencyOf(e)===currency).length;
+  const resetJournalScope=()=>{setRangeMode('all');setAccount('all');setStrategyOff([]);setAssetOff([]);setOutcomeOff([]);setTradingStatusOff([]);setBrokerOff([]);setSelectedDay(null);setOpenMenu(null);setLogPreset(null);};
   const dayEntries = useMemo(
     () => (selectedDay ? scoped.filter((e) => e.date === selectedDay) : []),
     [scoped, selectedDay]
@@ -271,7 +284,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     { id: 'insights', label: 'Insights' },
     { id: 'playbook', label: 'Playbook' },
     { id: 'backtest', label: 'Backtest' },
-    { id: 'review', label: 'Weekly Review' },
+    { id: 'review', label: 'AI Coach' },
   ];
 
   const sorted = useMemo(() => [...entries].sort((a, b) => b.date.localeCompare(a.date)), [entries]);
@@ -399,6 +412,13 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         <span>{currency} only · entry-date basis (UTC) · no currency conversion · net win rate includes breakeven</span>
       </div>
 
+      {(tab==='entries'||tab==='insights')&&<section className={`mb-4 flex flex-wrap items-center gap-3 rounded-xl border p-3 text-xs ${entries.length===0?'border-amber-200 bg-amber-50 text-amber-900':'border-[#5338ec]/20 bg-[#FBFAFF] text-slate-700'}`} aria-label="Journal data coverage">
+        {entries.length===0?<><div className="min-w-0 flex-1"><p className="font-semibold">No journal trades are saved in this browser.</p><p className="mt-1">Broker sync is not active in this build. Import a CSV statement or add journal trades to populate these reports.</p></div><button type="button" onClick={()=>setWizardOpen(true)} className="h-8 rounded-lg bg-[#5338ec] px-3 font-semibold text-white hover:bg-[#4326d8]">Import trades</button></>:<>
+          <div className="min-w-0 flex-1"><p><strong>{scoped.length} shown of {entries.length} saved trades.</strong> Current view: {rangeLabel} · {currency} · {account==='all'?'all accounts':account}.</p><p className="mt-1 text-[11px] text-slate-500">{currentCurrencyCount===0?`No saved trades use ${currency}; choose a currency with records above.`:`${currentCurrencyCount} saved trades use ${currency}.`} Date, account, and journal filters affect both Trade Log and Insights.</p></div>
+          {scoped.length<entries.length&&<button type="button" onClick={resetJournalScope} className="h-8 rounded-lg border border-[#5338ec]/30 bg-white px-3 font-semibold text-[#5338ec] hover:bg-[#F7F5FF]">Show all saved trades</button>}
+        </>}
+      </section>}
+
       {/* ───── OVERVIEW ───── */}
         <div className="space-y-6">
           {/* Toolbar */}
@@ -503,6 +523,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             </div>
 
             <aside className="space-y-5">
+              <CoachOverviewCard entries={scoped} playbooks={playbooks} currency={currency} today={coachToday} onOpen={() => { setTab('review'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}/>
               <JournalCalendar
                 month={calMonth}
                 onMonthChange={(ym) => { setCalMonth(ym); setSelectedDay(null); }}
@@ -770,8 +791,11 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         />
       )}
 
-      {/* ───── WEEKLY REVIEW ───── */}
+      {/* ───── AI COACH ───── */}
       {tab === 'review' && (
+        <div className="space-y-5">
+          <JournalAICoach entries={scoped} history={calEntries} playbooks={playbooks} currency={currency} today={coachToday} rangeLabel={rangeLabel} onImport={() => setWizardOpen(true)} onToast={onShowToast} onScenario={useCoachScenario} onEvidence={(ids, label) => { resetJournalScope(); setLogPreset({ ids, label }); setTab('entries'); }}/>
+          <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold">Saved reviews & reflection</summary>
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6">
           <div className="space-y-5">
             <p className="text-sm font-semibold mt-5">Week {weekStart} – {weekEnd} · {currency} · net realized results</p>
@@ -840,6 +864,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               </div>
             ))}
           </aside>
+        </div>
+          </details>
         </div>
       )}
 

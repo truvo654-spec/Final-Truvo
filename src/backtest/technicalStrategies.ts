@@ -20,7 +20,7 @@ type RecipeInput = Omit<TechnicalStrategyRecipe, 'rules'> & { entry: Condition[]
 
 const close = (): Operand => ({ kind: 'price', field: 'close' });
 const value = (n: number): Operand => ({ kind: 'value', value: n });
-const indicator = (type: IndType, period?: number): Operand => ({ kind: 'ind', ind: { type, period } });
+const indicator = (type: IndType, period?: number): Operand => ({ kind: 'ind', ind: { type, period: period ?? (type === 'ADX' ? 14 : undefined) } });
 const condition = (id: string, left: Operand, op: Condition['op'], right: Operand): Condition => ({ id, left, op, right });
 const priceVs = (id: string, op: Condition['op'], type: IndType, period?: number) => condition(id, close(), op, indicator(type, period));
 const indVs = (id: string, type: IndType, op: Condition['op'], threshold: number, period?: number) => condition(id, indicator(type, period), op, value(threshold));

@@ -11,12 +11,12 @@ import {resolveSymbol} from '../../backtest/marketData';
 import type {JournalPlaybook} from '../../data/journalPlaybooks';
 import {ReplaySetupTransfer} from './ReplaySetupTransfer';
 import {ReplayAICoach} from './ReplayAICoach';
-import {replayRuleFields,replayVisibleAtr,type RelatedReplaySetup} from '../../backtest/replaySetups';
+import {relatedReplaySetups,replayRuleFields,replayVisibleAtr,type RelatedReplaySetup} from '../../backtest/replaySetups';
 import {practiceEntryBlock,type PracticeGuardrails} from '../../backtest/practiceGuardrails';
 import type { PracticeFilter, PracticeTrade, ReplaySession } from '../../backtest/store';
 import { Bar, Timeframe } from '../../backtest/types';
 import { money, pct, priceFmt, rr, tone, dateTime } from '../../backtest/format';
-import { CandleChart } from './charts';
+import { CandleChart, LineChart } from './charts';
 import { Card, Field, Pill, Segmented, Toggle, btnPrimary, btnSecondary, inputBase, inputCls, Banner } from './ui';
 
 interface Props {
@@ -24,6 +24,7 @@ interface Props {
   sessions: ReplaySession[];
   tz: string;
   initialEntryId: string | null;
+  initialPlaybookId?: string | null;
   onFinish: (s: ReplaySession) => void;
   onToast: (m: string) => void;
   playbooks?:JournalPlaybook[];
@@ -39,7 +40,7 @@ const WINDOW = 90;
 
 const roundStep = (x: number, step: number) => Number((Math.floor(x / step + 1e-9) * step).toFixed(8));
 
-export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEntryId, onFinish, onToast,playbooks=[] }) => {
+export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEntryId, initialPlaybookId, onFinish, onToast,playbooks=[] }) => {
   const [source, setSource] = useState<'random' | 'similar' | 'journal'>(initialEntryId ? 'journal' : 'random');
   const [filter, setFilter] = useState<PracticeFilter>(DEFAULT_FILTER);
   const [tf, setTf] = useState<Timeframe>('5m');
@@ -103,6 +104,15 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
     });
   }, [sessions, entries, filter.markets, filter.symbols, filter.from, filter.to]);
   const logTrades = useMemo(() => logSessions.flatMap((session) => session.trades), [logSessions]);
+  const practicePerformanceSessions = useMemo(() => [...logSessions].sort((a, b) =>
+    (a.finishedAt ?? a.startedAt).localeCompare(b.finishedAt ?? b.startedAt)), [logSessions]);
+  const practicePerformancePoints = useMemo(() => {
+    let cumulative = 0;
+    return [{ x: 0, y: 0 }, ...practicePerformanceSessions.map((session, index) => ({
+      x: index + 1,
+      y: (cumulative += session.net),
+    }))];
+  }, [practicePerformanceSessions]);
   const logWins = logTrades.filter((trade) => trade.net > 0).length;
   const logNet = logTrades.reduce((sum, trade) => sum + trade.net, 0);
   const logGrossProfit = logTrades.reduce((sum, trade) => sum + Math.max(0, trade.net), 0);
@@ -110,6 +120,8 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
   const logR = logTrades.flatMap((trade) => trade.r !== null && Number.isFinite(trade.r) ? [trade.r] : []);
   const logAvgR = logR.length ? logR.reduce((sum, value) => sum + value, 0) / logR.length : null;
   const logProfitFactor = logGrossLoss > 0 ? logGrossProfit / logGrossLoss : logGrossProfit > 0 ? Infinity : null;
+  const guidedPlaybook = related?.playbookId ? playbooks.find((book) => book.id === related.playbookId) : undefined;
+  const guidedScenario = guidedPlaybook?.scenarios?.find((scenario) => related?.id === `scenario:${guidedPlaybook.id}:${scenario.id}`);
 
   const balance = startingBalance + trades.reduce((a, t) => a + t.net, 0);
   const bars = data?.bars ?? [];
@@ -166,10 +178,17 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
     setOtype('market');setOprice('');setStopPx('');setTargetPx('');
     setSide(1);
     if(setup.timeframe&&replayTimeframes.includes(setup.timeframe))setTf(setup.timeframe);
-    if(setup.symbols.length)setFilter(f=>({...f,symbols:setup.symbols,markets:[],result:'all',playbook:setup.playbookId?playbooks.find(p=>p.id===setup.playbookId)?.name||'':''}));
+    const book = playbooks.find(p=>p.id===setup.playbookId);
+    const sourceBook = playbooks.find(p=>p.id===book?.coachOrigin?.sourcePlaybookId);
+    setFilter(f=>({...f,symbols:setup.symbols,markets:[],result:'all',playbook:sourceBook?.name||book?.name||''}));
     if(data&&setup.symbols.length&&!setup.symbols.includes(resolveSymbol(data.symbol)||data.symbol)){setData(null);setPlaying(false);}
     applyTicketSetup(setup);
   };
+  useEffect(() => {
+    if (!initialPlaybookId) return;
+    const setup = relatedReplaySetups(playbooks, entries, [], []).find(s => s.id === `playbook:${initialPlaybookId}`);
+    if (setup) transferSetup(setup);
+  }, [initialPlaybookId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = (d: ReplayData, importJournalSetup = true) => {
     setData(d); setCursor(d.start); setMinCursor(d.start); setPlaying(false); setPending(null); setPos(null); setTrades([]); setDrawings([]);
@@ -384,7 +403,21 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
   return (
     <div className="space-y-5">
       <div className="md:hidden"><Banner tone="info" icon={<Monitor className="w-4 h-4" />}>Replay works best on a larger screen. Everything still works here; the chart scrolls sideways.</Banner></div>
-      <ReplaySetupTransfer entries={entries} playbooks={playbooks} onSelect={transferSetup} disabled={!!pos||!!pending||(!finished&&trades.length>0)||autoReview}/>
+      <ReplaySetupTransfer entries={entries} playbooks={playbooks} initialId={initialPlaybookId ? `playbook:${initialPlaybookId}` : ''} onSelect={transferSetup} disabled={!!pos||!!pending||(!finished&&trades.length>0)||autoReview}/>
+      {guidedPlaybook&&<section className="rounded-2xl border border-[#5338ec]/25 bg-[#FBFAFF] p-4 space-y-3" aria-label={`${guidedPlaybook.name} playbook practice guide`}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-[#5338ec]">Playbook practice guide</p><h3 className="mt-0.5 text-sm font-bold text-[#0b1c30]">{guidedPlaybook.name}</h3><p className="mt-1 text-xs text-slate-600">{guidedPlaybook.thesis}</p></div>
+          <Pill tone="accent">{guidedPlaybook.status}</Pill>
+        </div>
+        {guidedScenario&&<div className="rounded-xl border border-[#5338ec]/15 bg-white p-3 text-xs"><p className="font-semibold text-[#0b1c30]">Scenario · {guidedScenario.symbol} · {guidedScenario.bias}</p><p className="mt-1 text-slate-600">{guidedScenario.hypothesis}</p><p className="mt-1 text-slate-500"><b>Trigger:</b> {guidedScenario.trigger}</p>{related?.prices&&<p className="mt-1 text-slate-500">Reference levels: entry {priceFmt(related.prices.entry,symbolSpec(guidedScenario.symbol)?.priceDp??dp)} · stop {priceFmt(related.prices.stop,symbolSpec(guidedScenario.symbol)?.priceDp??dp)} · target {priceFmt(related.prices.target,symbolSpec(guidedScenario.symbol)?.priceDp??dp)}</p>}</div>}
+        <div className="grid gap-2 sm:grid-cols-3">
+          <div className="rounded-xl bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Entry trigger</p><p className="mt-1 text-xs text-[#0b1c30]">{guidedScenario?.trigger||guidedPlaybook.entryTrigger||'No entry trigger recorded.'}</p></div>
+          <div className="rounded-xl bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Stop rule</p><p className="mt-1 text-xs text-[#0b1c30]">{guidedPlaybook.stopRule||'No stop rule recorded.'}</p></div>
+          <div className="rounded-xl bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Target rule</p><p className="mt-1 text-xs text-[#0b1c30]">{guidedPlaybook.targetRule||'No target rule recorded.'}</p></div>
+        </div>
+        {guidedPlaybook.rules.length>0&&<details className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"><summary className="cursor-pointer font-semibold text-[#5338ec]">Checklist · {guidedPlaybook.rules.length} rules</summary><ol className="mt-2 space-y-2">{guidedPlaybook.rules.map((rule,index)=><li key={rule.id} className="flex gap-2"><span className="font-bold text-slate-400">{index+1}.</span><span><b className="text-[#0b1c30]">{rule.title}</b><span className="block text-slate-600">{rule.detail}</span></span></li>)}</ol>{guidedPlaybook.avoid?.length>0&&<p className="mt-3 border-t border-slate-100 pt-2 text-slate-600"><b>Avoid:</b> {guidedPlaybook.avoid.join(' · ')}</p>}</details>}
+        <p className="text-[10px] text-slate-500">Use this guide to make your own decisions. Written rules are not automatically scored; replay orders use simulated fills.</p>
+      </section>}
       {data?<ReplayAICoach entries={entries} symbol={data.symbol} cutoff={data.bars[data.start].t} excludeId={data.trade?.id||pickId||''} playbook={filter.playbook} onUse={!pos&&!pending&&!finished&&!autoReview?rule=>{applyTicketSetup(replayRuleFields(rule));setTicketEdited(true);}:undefined} action="Apply AI suggestion to order ticket"/>:<p className="text-xs text-slate-500">Load a practice chart to see MarketSyde AI guidance based on trades closed before that replay starts.</p>}
 
       <div className="grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)_300px] gap-5 items-start">
@@ -573,6 +606,30 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
           </Card>
         </div>
       </div>
+
+      <Card title="Practice performance" sub="Cumulative simulated net P&L across completed sessions matching your filters.">
+        {practicePerformanceSessions.length ? (
+          <LineChart
+            label="Cumulative net profit and loss across completed practice sessions"
+            height={240}
+            area
+            yFmt={money}
+            xFmt={(x) => `Session ${Math.round(x)}`}
+            hLines={[{ y: 0, label: 'Break-even', color: '#94a3b8' }]}
+            series={[{ name: 'Cumulative net', color: '#5338ec', points: practicePerformancePoints }]}
+            tooltipDetail={(x) => {
+              const sessionNumber = Math.round(x);
+              if (sessionNumber < 1) return null;
+              const index = Math.min(practicePerformanceSessions.length - 1, sessionNumber - 1);
+              const session = practicePerformanceSessions[index];
+              return session ? <p>{session.symbol} · {session.marketDate ?? session.finishedAt?.slice(0, 10) ?? 'Date unavailable'} · {money(session.net)} this session</p> : null;
+            }}
+          />
+        ) : (
+          <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-xs text-slate-500">Finish a practice session to build your performance chart.</p>
+        )}
+        <p className="mt-2 text-[10px] text-slate-500">Results use simulated fills on generated replay data and do not represent verified historical performance.</p>
+      </Card>
 
       {/* Session telemetry */}
       <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Practice session">

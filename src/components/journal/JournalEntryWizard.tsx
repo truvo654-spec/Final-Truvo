@@ -28,7 +28,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
   strategies,
 }) => {
   const dialogRef = useDialogFocus(onClose);
-  const [mode, setMode] = useState<'auto' | 'upload'>('auto');
+  const [mode, setMode] = useState<'auto' | 'upload'>('upload');
   const strategy = strategies?.[0] ?? JOURNAL_STRATEGIES[0] ?? 'Unassigned';
 
   return (

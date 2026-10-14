@@ -200,7 +200,7 @@ export const AutoSyncPanel: React.FC<AutoSyncProps> = ({ brokers, onConnect }) =
   return (
     <div className="space-y-3">
       <div role="note" className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] text-amber-800">
-        Linking records your trading account with MarketSyde. Automatic trade sync isn't live in this build yet, so bring trades in with <strong>Upload Statement</strong> for now.
+        Live broker connection and automatic trade sync are not available in this build. No account is verified and no trades are fetched here. Import your CSV statement with <strong>Upload Statement</strong>; imported journal records are stored in this browser.
       </div>
       <div className="flex items-center justify-between gap-3">
         <input

@@ -26,7 +26,7 @@ import { ReplayPanel } from './ReplayPanel';
 import { DemoReplay } from './DemoReplay';
 import { Banner, Modal, btnPrimary, btnSecondary } from './ui';
 
-export type BacktestIntent = { view: 'setup'; playbookId?: string; benchmarkTradeIds?: string[] } | { view: 'replay'; entryId?: string } | { view: 'whatif'; playbookId?: string } | { view: 'home' };
+export type BacktestIntent = { view: 'setup'; playbookId?: string; comparePlaybookId?: string; benchmarkTradeIds?: string[] } | { view: 'replay'; entryId?: string; playbookId?: string } | { view: 'whatif'; playbookId?: string } | { view: 'home' };
 type View = 'home' | 'setup' | 'running' | 'results' | 'comparison' | 'whatif' | 'replay' | 'demo' | 'runs';
 
 interface Props {
@@ -93,6 +93,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const [error, setError] = useState<string | null>(null);
   const [gate, setGate] = useState(false);
   const [replayEntry, setReplayEntry] = useState<string | null>(null);
+  const [replayPlaybook, setReplayPlaybook] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
   const limit = runLimitFor(userTierLevel);
   const tz = userTz;
@@ -139,8 +140,8 @@ export const BacktestPage: React.FC<Props> = (p) => {
     setView('setup');
   };
 
-  const startSetup = (playbookId?: string, benchmarkTradeIds?: string[]) => {
-    const imported = benchmarkTradeIds?.length ? entries.filter((e) => benchmarkTradeIds.includes(e.id)) : [];
+  const startSetup = (playbookId?: string, benchmarkTradeIds?: string[], comparePlaybookId?: string) => {
+    const imported = benchmarkTradeIds?.length ? p.allEntries.filter((e) => benchmarkTradeIds.includes(e.id)) : [];
     const strategyNames = [...new Set(imported.map((e) => e.strategy).filter(Boolean))];
     const linkedBook = strategyNames.length === 1 ? playbooks.find((x) => x.name === strategyNames[0] && x.status !== 'archived') : undefined;
     const requestedId = playbookId ?? linkedBook?.id;
@@ -151,10 +152,12 @@ export const BacktestPage: React.FC<Props> = (p) => {
       ? playbooks.filter((x) => x.status !== 'archived').sort((a, b) => (journalCounts.get(b.name) || 0) - (journalCounts.get(a.name) || 0))[0] || null
       : null);
     const settings = defaultsForPlaybook(pb, entries, journalRules);
+    const comparison = playbooks.find(x => x.id === comparePlaybookId && x.id !== pb?.id && x.status !== 'archived');
+    const comparisonSettings = comparison ? withSharedSetup(defaultsForPlaybook(comparison, entries, journalRules), settings) : null;
     setBenchmarkEntries(imported);
     setDraft(settings);
-    setSelectedPlaybookIds(pb ? [pb.id] : []);
-    setDraftsByPlaybook(pb ? { [pb.id]: settings } : {});
+    setSelectedPlaybookIds(pb ? [pb.id, ...(comparison ? [comparison.id] : [])] : []);
+    setDraftsByPlaybook(pb ? { [pb.id]: settings, ...(comparisonSettings && comparison ? { [comparison.id]: comparisonSettings } : {}) } : {});
     setComparisonResults(null);
     setError(null);
     setView('setup');
@@ -165,8 +168,8 @@ export const BacktestPage: React.FC<Props> = (p) => {
   useEffect(() => {
     if (!p.intent) return;
     const it = p.intent;
-    if (it.view === 'setup') startSetup(it.playbookId, it.benchmarkTradeIds);
-    else if (it.view === 'replay') { setBenchmarkEntries([]); setReplayEntry(it.entryId ?? null); setView('replay'); }
+    if (it.view === 'setup') startSetup(it.playbookId, it.benchmarkTradeIds, it.comparePlaybookId);
+    else if (it.view === 'replay') { setBenchmarkEntries([]); setReplayEntry(it.entryId ?? null); setReplayPlaybook(it.playbookId ?? null); setView('replay'); }
     else if (it.view === 'whatif') { setWhatIfPlaybookId(it.playbookId ?? ''); setBenchmarkEntries([]); setView('whatif'); }
     else { setBenchmarkEntries([]); setView(it.view); }
     p.onIntentDone();
@@ -381,7 +384,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       )}
 
       {view === 'replay' && (
-        <ReplayPanel entries={p.allEntries} playbooks={playbooks} sessions={sessions} tz={tz} initialEntryId={replayEntry} onFinish={finishSession} onToast={onToast} />
+        <ReplayPanel entries={p.allEntries} playbooks={playbooks} sessions={sessions} tz={tz} initialEntryId={replayEntry} initialPlaybookId={replayPlaybook} onFinish={finishSession} onToast={onToast} />
       )}
 
       {view === 'demo' && <DemoReplay entries={p.allEntries} playbooks={playbooks}/>}

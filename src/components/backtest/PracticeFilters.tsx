@@ -1,7 +1,7 @@
 // Practice (replay) filters: market type and instrument as separate filters, journal-only filters
 // (result, playbook, mistake), and named custom filters the user can save and reuse.
 import React, { useMemo, useState } from 'react';
-import { X } from 'lucide-react';
+import { Check, ChevronDown, Search, X } from 'lucide-react';
 import type { JournalEntry } from '../../types';
 import { eligible, resultOf } from '../journal/journalMath';
 import { DATA_END, DATA_START } from '../../backtest/config';
@@ -12,14 +12,6 @@ import { Field, Segmented, btnLink, btnSecondary, inputBase, inputCls } from './
 
 export const PRACTICE_MARKETS: PracticeMarket[] = ['Forex', 'Indices', 'Commodities', 'Crypto', 'Stocks'];
 export const DEFAULT_FILTER: PracticeFilter = { markets: [], symbols: [], result: 'losses', playbook: '', mistake: '', from: '', to: '' };
-
-const MARKET_HINT: Record<PracticeMarket, string> = {
-  Forex: 'Currency pairs such as EUR/USD',
-  Indices: 'Stock-index futures and CFDs (MNQ / NAS100, MES / US500)',
-  Commodities: 'Gold and other commodities (MGC / XAU/USD)',
-  Crypto: 'Bitcoin and other crypto pairs',
-  Stocks: 'Single shares such as NVDA',
-};
 
 export const feedMarket = (s: SymbolSpec): PracticeMarket =>
   s.assetClass === 'Futures' ? (s.symbol === 'MGC' ? 'Commodities' : 'Indices') : s.assetClass === 'Forex' ? 'Forex' : s.assetClass === 'Crypto' ? 'Crypto' : 'Stocks';
@@ -48,6 +40,7 @@ export const practiceDateRangeError = (source: Props['source'], filter: Practice
   return null;
 };
 
+const sameSymbol=(a:string,b:string)=>(resolveSymbol(a)||a)===(resolveSymbol(b)||b);
 const chip = (on: boolean) => `h-7 px-2.5 rounded-full text-[11px] font-semibold border transition-colors ${on ? 'bg-[#EEF0FE] border-[#5338ec]/40 text-[#5338ec]' : 'bg-white border-slate-200 text-[#474556] hover:bg-slate-50'}`;
 
 interface Props {
@@ -84,20 +77,18 @@ export const PracticeFilters: React.FC<Props> = ({ source, value: f, onChange, e
   const playbooks = useMemo(() => Array.from(new Set(closed.map((e) => e.strategy))).sort(), [closed]);
   const mistakes = useMemo(() => Array.from(new Set(closed.flatMap((e) => e.mistakes))).sort(), [closed]);
 
-  const toggleMarket = (m: PracticeMarket) => {
-    const markets = f.markets.includes(m) ? f.markets.filter((x) => x !== m) : [...f.markets, m];
-    // Drop instruments that no longer belong to a chosen market.
-    const keep = (sym: string) => {
-      if (!markets.length) return true;
-      const spec = SYMBOLS.find((s) => s.symbol === sym || s.aliases.includes(sym));
-      const e = closed.find((x) => x.symbol === sym);
-      return (spec && markets.includes(feedMarket(spec))) || (e && markets.includes(journalMarket(e)));
-    };
-    onChange({ ...f, markets, symbols: f.symbols.filter(keep) });
-  };
-  const sameSymbol=(a:string,b:string)=>(resolveSymbol(a)||a)===(resolveSymbol(b)||b);
   const symbolSelected=(s:string)=>f.symbols.some(x=>sameSymbol(x,s));
   const toggleSymbol = (s: string) => onChange({ ...f, symbols: symbolSelected(s) ? f.symbols.filter((x) => !sameSymbol(x,s)) : [...f.symbols, s] });
+  const changeMarket = (market: string) => {
+    const markets = market ? [market as PracticeMarket] : [];
+    const belongs = (symbol: string) => {
+      if (!market) return true;
+      const spec = SYMBOLS.find((s) => s.symbol === symbol || s.aliases.includes(symbol));
+      const trade = closed.find((e) => e.symbol === symbol);
+      return (spec && feedMarket(spec) === market) || (trade && journalMarket(trade) === market);
+    };
+    onChange({ ...f, markets, symbols: f.symbols.filter(belongs) });
+  };
 
   const save = () => {
     const n = name.trim();
@@ -124,26 +115,48 @@ export const PracticeFilters: React.FC<Props> = ({ source, value: f, onChange, e
         </Field>
       )}
 
-      <Field label="Market type" hint="Narrow the practice to one or more kinds of market.">
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Market type">
-          <button type="button" aria-pressed={!f.markets.length} onClick={() => onChange({ ...f, markets: [] })} className={chip(!f.markets.length)}>All</button>
+      <Field label="Market type" hint="Choose a market to narrow the instrument list.">
+        <select aria-label="Market type" value={f.markets.length > 1 ? '__multiple' : f.markets[0] ?? ''} onChange={(e) => changeMarket(e.target.value)} className={`${inputCls} h-9 text-xs`}>
+          <option value="">All markets</option>
+          {f.markets.length > 1 && <option value="__multiple" disabled>Multiple markets saved</option>}
           {PRACTICE_MARKETS.map((m) => {
             const n = marketCount(m);
-            return <button key={m} type="button" aria-pressed={f.markets.includes(m)} disabled={!n} title={n ? MARKET_HINT[m] : `No ${journal ? 'journal trades' : 'price data'} for ${m.toLowerCase()}`} onClick={() => toggleMarket(m)} className={`${chip(f.markets.includes(m))} disabled:opacity-40 disabled:cursor-not-allowed`}>{m}</button>;
+            return <option key={m} value={m} disabled={!n}>{m} ({n})</option>;
           })}
-        </div>
+        </select>
       </Field>
 
-      <Field label="Instrument" hint={journal ? 'Symbols you traded, with how many trades each.' : 'Pick one or more. With several, one is chosen at random, so blind mode keeps you guessing.'}>
-        {instruments.length > 8 && <input type="search" aria-label="Search instruments" placeholder="Search instruments" value={q} onChange={(e) => setQ(e.target.value)} className={`${inputCls} h-8 text-xs mb-1.5`} />}
-        <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto" role="group" aria-label="Instrument">
-          <button type="button" aria-pressed={!f.symbols.length} onClick={() => onChange({ ...f, symbols: [] })} className={chip(!f.symbols.length)}>All</button>
-          {shown.map((i) => (
-            <button key={i.id} type="button" aria-pressed={symbolSelected(i.id)} onClick={() => toggleSymbol(i.id)} className={chip(symbolSelected(i.id))} title={journal ? `${i.sub} trades` : i.sub ? `Also matches your journal's ${i.sub}` : undefined}>
-              {i.label}{i.sub && <span className="ml-1 font-normal opacity-60">{i.sub}</span>}
-            </button>
-          ))}
-        </div>
+      <Field label="Instrument" hint={journal ? 'Search your traded symbols and choose one or more.' : 'Search and choose instruments. Replay picks one at random when several are selected.'}>
+        <details className="group relative">
+          <summary aria-label="Choose instruments" className={`${inputBase} h-9 w-full cursor-pointer list-none flex items-center justify-between gap-2 text-xs hover:border-slate-300 [&::-webkit-details-marker]:hidden`}>
+            <span className="truncate text-left">{f.symbols.length === 0 ? `All instruments (${instruments.length})` : f.symbols.length === 1 ? f.symbols[0] : `${f.symbols.length} instruments selected`}</span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden="true" />
+          </summary>
+          <div className="absolute left-0 top-full z-30 mt-1 w-full min-w-[16rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+            <div className="border-b border-slate-100 p-2">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+                <input type="search" aria-label="Search instruments" placeholder="Search symbols" value={q} onChange={(e) => setQ(e.target.value)} className={`${inputCls} h-8 pl-8 text-xs`} />
+              </div>
+              <button type="button" onClick={() => onChange({ ...f, symbols: [] })} aria-pressed={!f.symbols.length} className="mt-1.5 flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-[#5338ec] hover:bg-[#F7F5FF]">
+                <span>All instruments <span className="font-normal text-slate-400">({instruments.length})</span></span>
+                {!f.symbols.length && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+              </button>
+            </div>
+            <div className="max-h-52 overflow-y-auto p-1.5" role="group" aria-label="Choose instruments">
+              {shown.map((i) => {
+                const selected = symbolSelected(i.id);
+                return <button key={i.id} type="button" aria-pressed={selected} onClick={() => toggleSymbol(i.id)} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec]">
+                  <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${selected ? 'border-[#5338ec] bg-[#5338ec] text-white' : 'border-slate-300 bg-white'}`}>{selected && <Check className="h-3 w-3" aria-hidden="true" />}</span>
+                  <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[#0b1c30]">{i.label}</span>
+                  {i.sub && <span className="truncate text-[10px] text-slate-400" title={journal ? `${i.sub} trades` : `Also matches ${i.sub}`}>{journal ? `${i.sub} trades` : i.sub}</span>}
+                </button>;
+              })}
+              {shown.length === 0 && <p className="px-2 py-4 text-center text-xs text-slate-500">No matching instruments.</p>}
+            </div>
+            {f.symbols.length > 0 && <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2 text-[10px] text-slate-500"><span>{f.symbols.length} selected</span><button type="button" onClick={() => onChange({ ...f, symbols: [] })} className="font-semibold text-[#5338ec] hover:underline">Clear selection</button></div>}
+          </div>
+        </details>
       </Field>
 
       <Field label={journal ? 'Trade date range' : 'Replay date range'} hint={journal ? 'Filter journal trades by entry date.' : `Choose dates for the replay chart. Demo data covers ${DATA_START} to ${DATA_END}.`}>

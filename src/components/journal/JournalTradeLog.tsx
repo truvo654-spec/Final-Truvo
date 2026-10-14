@@ -236,6 +236,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries, brokerMap]);
   const toggleIn = (set: React.Dispatch<React.SetStateAction<string[]>>, id: string) => set((o) => (o.includes(id) ? o.filter((x) => x !== id) : [...o, id]));
+  const resetLogFilters=()=>{setQuery('');setNeedsReview(false);setFOutcome('all');setFTradingStatus('all');setMarketOff([]);setBrokerOff([]);setPage(1);setSel([]);setPanel(null);onClearPreset?.();};
 
   const btn = 'h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-[#0b1c30] disabled:opacity-40 disabled:hover:bg-white';
   const [openMenu, setOpenMenu] = useState<null | 'market' | 'broker' | 'cols'>(null);
@@ -575,7 +576,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
               </React.Fragment>
             ))}
             {visible.length === 0 && (
-              <tr><td colSpan={shownCols.length + 1} className="px-3 py-12 text-center text-slate-500">No trades match these filters.</td></tr>
+              <tr><td colSpan={shownCols.length + 1} className="px-3 py-10 text-center text-slate-500"><p>{entries.length?'No trades match these Trade Log filters.':'No trades are available in the current journal scope.'}</p>{entries.length>0&&<button type="button" onClick={resetLogFilters} className="mt-2 font-semibold text-[#5338ec] hover:underline">Clear Trade Log filters</button>}</td></tr>
             )}
           </tbody>
           {sorted.length > 0 && (

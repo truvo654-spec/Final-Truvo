@@ -1,6 +1,6 @@
 // Lightweight SVG charts for the Backtesting screens: equity / drawdown lines, bar breakdowns and candles.
 import React, { useMemo, useRef, useState } from 'react';
-import type { Bar, Currency } from '../../backtest/types';
+import type { Bar } from '../../backtest/types';
 
 const GRID = '#E2E8F0';
 const AXIS = '#64748b';
@@ -163,7 +163,7 @@ export const BarBreakdown: React.FC<{ buckets: { label: string; value: number; n
 };
 
 export interface PriceLine { price: number; color: string; label: string; dashed?: boolean }
-export interface Marker { index: number; price: number; kind: 'buy' | 'sell' | 'exit' }
+export interface Marker { index: number; price: number; kind: 'buy' | 'sell' | 'exit'; color?: string; label?: string }
 
 export const CandleChart: React.FC<{
   bars: Bar[];
@@ -180,7 +180,7 @@ export const CandleChart: React.FC<{
   hidePriceAxis?: boolean;
   interactive?: boolean;
   tooltipDetail?: (time: number) => React.ReactNode;
-  pnl?: { series: LineSeries[]; detail: (time: number) => React.ReactNode; currency?: Currency };
+  pnl?: { series: LineSeries[]; detail: (time: number) => React.ReactNode; currency?: string };
 }> = ({ bars, from, to, height = 320, dp, lines = [], markers = [], drawings = [], onPick, label, hidePriceAxis, pnl, interactive = Boolean(pnl), tooltipDetail }) => {
   const W = 760, H = height, M = { t: pnl ? 30 : 10, r: hidePriceAxis ? 8 : pnl ? 72 : 64, b: pnl ? 28 : 10, l: pnl ? 76 : 8 };
   const vis = bars.slice(Math.max(0, from), Math.max(from, to));
@@ -246,8 +246,8 @@ export const CandleChart: React.FC<{
       ))}
       {markers.filter((m) => m.index >= from && m.index < to).map((m, k) => (
         <g key={`m${k}`}>
-          <circle cx={sx(m.index)} cy={sy(m.price)} r={5} fill={m.kind === 'buy' ? UP : m.kind === 'sell' ? DOWN : '#0b1c30'} stroke="#fff" strokeWidth={1.5} />
-          <text x={sx(m.index)} y={sy(m.price) + (m.kind === 'sell' ? -9 : 15)} textAnchor="middle" fontSize="9" fontWeight={700} fill={m.kind === 'buy' ? UP : m.kind === 'sell' ? DOWN : '#0b1c30'}>{m.kind === 'buy' ? 'BUY' : m.kind === 'sell' ? 'SELL' : 'EXIT'}</text>
+          <circle cx={sx(m.index)} cy={sy(m.price)} r={5} fill={m.color || (m.kind === 'buy' ? UP : m.kind === 'sell' ? DOWN : '#0b1c30')} stroke="#fff" strokeWidth={1.5} />
+          <text x={sx(m.index)} y={sy(m.price) + (m.kind === 'sell' ? -9 : 15)} textAnchor="middle" fontSize="9" fontWeight={700} fill={m.color || (m.kind === 'buy' ? UP : m.kind === 'sell' ? DOWN : '#0b1c30')}>{m.label || (m.kind === 'buy' ? 'BUY' : m.kind === 'sell' ? 'SELL' : 'EXIT')}</text>
         </g>
       ))}
       {!hidePriceAxis && (

@@ -682,33 +682,6 @@ export default function App() {
     });
   };
 
-  // Connect broker callback
-  const handleBrokerConnected = (brokerId: string, accountId: string) => {
-    setBrokers((prev) =>
-      prev.map((b) =>
-        b.id === brokerId ? { ...b, connected: true, connectedAccountId: accountId } : b
-      )
-    );
-
-    // Update user points and step
-    handleRewardPoints(50, `Linked Account ${accountId}`);
-    setUser((prev) => ({
-      ...prev,
-      connectedBrokersCount: prev.connectedBrokersCount + 1,
-    }));
-
-    setQuickSteps((prev) =>
-      prev.map((s) => (s.step === 2 ? { ...s, completed: true } : s))
-    );
-
-    // Trigger Trade Active modal reward!
-    handleTriggerEarningReward({
-      type: 'trade',
-      points: 20,
-      credits: 10,
-    });
-  };
-
   const handleStepClick = (index: number) => {
     if (index === 0) {
       setActiveTab('brokers');
@@ -1876,9 +1849,7 @@ export default function App() {
       <ConnectBrokerModal
         isOpen={isConnectModalOpen}
         onClose={() => setIsConnectModalOpen(false)}
-        brokers={brokers}
         selectedBroker={selectedBrokerForConnect}
-        onSuccess={handleBrokerConnected}
       />
 
       <ViewPlanModal
