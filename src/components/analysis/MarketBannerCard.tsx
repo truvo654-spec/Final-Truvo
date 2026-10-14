@@ -175,7 +175,6 @@ export const MarketBannerCard: React.FC<MarketBannerCardProps> = ({
                 const opt = DURATION_OPTIONS.find((o) => o.id === tab.id);
                 if (opt) setLockedModalTarget(opt);
               }}
-              prefixLabel="DURATION"
               size="sm"
             />
           </div>

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.1] - 2026-10-09
+### Changed
+- Instrument Analysis moved towards the new design, UI only: the title is one purple-to-magenta gradient with the design's subtitle, the asset pills sit in a single rounded container, Export CSV moved up beside the filter on the tab bar, the results count sits to the left of the pagination under the table, and the DURATION label is gone from the range switcher.
+- The table's no-match state is now the designed one: the magnifier illustration with "Data not found — No instruments match these filters. Try loosening them up a bit."
+
 ## [1.10.0] - 2026-10-09
 ### Added
 - Every feature now renders its own presentation inside the AI card, as the AI map describes: the verdict meter on signals and news, next-up on the calendar and promotions, the progress bar on education and points, side-by-side on expert advisors, the metrics row on portfolio and broker comparison, the checklist on alerts and the strategy builder, and the strip on brokers and instrument analysis. The dashboard and journal keep the figure tiles.

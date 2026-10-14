@@ -11,6 +11,8 @@ import { InstrumentIcon } from './analysis/InstrumentIcon';
 import { TodaysCryptoWidget } from './analysis/TodaysCryptoWidget';
 import { TradeVolumeComparisonWidget } from './analysis/TradeVolumeComparisonWidget';
 import { MeetingTradingPartnerSection } from './analysis/MeetingTradingPartnerSection';
+import IA_NOT_FOUND from '../assets/community/ia-notfound.png';
+import IA_ERROR from '../assets/community/ia-error.png';
 import { InstrumentHeatmapView } from './analysis/InstrumentHeatmapView';
 import { InstrumentScatterView } from './analysis/InstrumentScatterView';
 import { InstrumentCorrelationView } from './analysis/InstrumentCorrelationView';
@@ -681,18 +683,17 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
     <div className="w-full pb-16 space-y-7 animate-in fade-in duration-200">
       {/* ─── 1. TITLE & SUBTITLE AREA (Exact match to Reference screenshots) ─── */}
       <div className="text-center max-w-3xl mx-auto px-4 sm:px-8 md:px-[56px] space-y-3 pt-[100px]">
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-display tracking-tight">
-          <span className="text-slate-900">Instrument</span>{' '}
-          <span className="text-[#FD02B0]">Analysis</span>
+        <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold font-display tracking-tight bg-gradient-to-r from-[#5945F1] to-[#c026d3] bg-clip-text text-transparent">
+          Instrument Analysis
         </h1>
         <p className="text-slate-500 text-sm sm:text-base leading-relaxed">
-          Review market highlight, Fear &amp; greed, derivatives activity, and 24-hour changes before selecting an instrument.
+          Check market sentiment, volume, and 24-hour activity before you pick an instrument.
         </p>
       </div>
       <div className="text-center max-w-3xl mx-auto px-4 sm:px-8 md:px-[56px] space-y-3">
 
         {/* ─── Category Pills Selector (Exact match to Reference Images) ─── */}
-        <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap pt-2">
+        <div className="inline-flex items-center justify-center gap-1 flex-wrap rounded-xl border border-[#e4e0fa] bg-white p-1 mt-2">
           {categoryPills.map((cat) => {
             const isSelected = activeCategory.id === cat.id;
             return (
@@ -913,6 +914,17 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
             }}
             showBadgeOnActiveOnly={true}
             rightContent={
+              <div className="flex items-center gap-2.5">
+              {activeViewTab === 'table' && (
+                <button
+                  type="button"
+                  onClick={handleExportCSV}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#d7d3fb] text-[#5945F1] hover:bg-[#f1f0fe] font-semibold text-sm rounded-xl transition-all cursor-pointer select-none"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Export CSV</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setIsFilterOpen(true)}
@@ -925,6 +937,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
               >
                 <Filter className="w-4 h-4 text-[#5945F1]" />
               </button>
+              </div>
             }
           />
         </div>
@@ -978,7 +991,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
             {activeViewTab === 'table' && (
               <>
                 {/* ─── TABLE VIEW SUBHEADER: "15 of 463 Results Shown" + Live Orderbook Pill + Action Buttons ─── */}
-                <div className="flex items-center justify-between gap-4 select-none px-1 pt-1 flex-wrap">
+                <div className="hidden items-center justify-between gap-4 select-none px-1 pt-1 flex-wrap">
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-slate-500">
                       15 of {activeCategory.totalResults || 463} Results Shown
@@ -1131,8 +1144,12 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                   <tbody className="divide-y divide-slate-100 text-sm">
                     {filteredInstruments.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="py-12 text-center text-slate-400">
-                          No instruments found matching filter.
+                        <td colSpan={8} className="py-24">
+                          <div className="flex flex-col items-center text-center px-6">
+                            <img src={IA_NOT_FOUND} alt="" className="w-[265px] h-auto" />
+                            <p className="mt-6 font-display text-[28px] font-bold text-[#c026d3]">Data not found</p>
+                            <p className="mt-2 text-sm text-slate-500">No instruments match these filters. Try loosening them up a bit.</p>
+                          </div>
                         </td>
                       </tr>
                     ) : (
@@ -1354,8 +1371,11 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
               </div>
             </div>
 
-            {/* ─── Bottom Pagination (Exact match to Reference Screenshot) ─── */}
-            <div className="flex items-center justify-center gap-1.5 select-none pt-2">
+            {/* ─── Results count and pagination, as in the design ─── */}
+            <div className="relative flex items-center justify-center gap-1.5 select-none pt-2">
+                <span className="absolute left-0 hidden text-sm text-slate-500 sm:block">
+                  15 of {activeCategory.totalResults || 463} results shown
+                </span>
                 {/* |< */}
                 <button
                   type="button"
