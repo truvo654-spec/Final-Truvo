@@ -43,6 +43,8 @@ export interface SpotlightData {
   stats?: { label: string; value: string; tone?: 'good' | 'bad' | 'neutral' }[];
   tabs: SpotlightTab[];
   suggestions?: SpotlightSuggestion[];
+  /** One line explaining a figure, keyed by its label. */
+  statNotes?: Record<string, string>;
   footnote?: string;
 }
 

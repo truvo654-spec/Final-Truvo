@@ -1111,7 +1111,7 @@ export function articleSummary(a: ReadableArticle): { title: string; lines: stri
 
 
 /** Turns one of the reads above into the spotlight panel's shape. */
-export function toSpotlight(d: AiSectionData, pretext: string, suggestions: SpotlightSuggestion[] = []): SpotlightData {
+export function toSpotlight(d: AiSectionData, pretext: string, suggestions: SpotlightSuggestion[] = [], statNotes?: Record<string, string>): SpotlightData {
   return {
     pretext,
     headline: d.headline,
@@ -1126,6 +1126,7 @@ export function toSpotlight(d: AiSectionData, pretext: string, suggestions: Spot
       })),
     ],
     suggestions,
+    statNotes,
     footnote: d.footnote,
   };
 }

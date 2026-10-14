@@ -36,6 +36,15 @@ export const AiDashboardPanel: React.FC<{
 }> = ({ data, greeting, onClose, onAsk, storageKey, className = '' }) => {
   const [tab, setTab] = useState(data.tabs[0]?.id ?? 'summary');
   const [run, setRun] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [openStat, setOpenStat] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (run === 0) return;
+    setBusy(true);
+    const t = window.setTimeout(() => setBusy(false), 700);
+    return () => window.clearTimeout(t);
+  }, [run]);
   const active = useMemo(() => data.tabs.find((t) => t.id === tab) ?? data.tabs[0], [data.tabs, tab]);
   const first = active?.id === data.tabs[0]?.id;
 
@@ -49,43 +58,62 @@ export const AiDashboardPanel: React.FC<{
       data-keep-button-icons
       className={`flex flex-col overflow-hidden rounded-2xl border border-[#e4e0fa] bg-[#fbfbff] text-[#0b1c30] shadow-[0_18px_50px_rgba(11,28,48,0.18)] dark:border-[#2a1a66] dark:bg-[#090119] dark:text-white ${className}`}
     >
-      {/* header */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-[#ece9fb] px-4 py-2.5 dark:border-[#1d1046]">
+      {/* header — brand purple, with the MarketSyde glyph */}
+      <div className="flex shrink-0 items-center gap-2.5 bg-[#5945F1] px-3.5 py-2.5">
         <span className="flex shrink-0 items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#5945F1] text-[13px] font-black text-white">M</span>
-          <span className="hidden text-[15px] font-bold sm:inline">market<span className="text-[#5945F1] dark:text-[#a99bff]">syde</span></span>
+          <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">
+            <svg viewBox="0 0 32 32" className="h-5 w-5 fill-none" aria-hidden>
+              <path
+                d="M 8 20 C 8 14.5, 9.5 11.5, 12 11.5 C 14 11.5, 15.5 13.5, 16.5 16 C 17.5 13.5, 19 11.5, 21 11.5 C 23 11.5, 24 14.5, 24 18.5"
+                stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"
+              />
+              <circle cx="24.5" cy="19.5" r="2.2" fill="#bef226" />
+            </svg>
+          </span>
+          <span className="hidden font-display text-[15px] font-bold tracking-tight text-white sm:inline">
+            market<span className="text-[#bef226]">syde</span>
+          </span>
         </span>
-        <span className="shrink-0 rounded-md bg-[#efecff] px-2 py-0.5 text-[11px] font-bold text-[#5945F1] dark:bg-[#1d1046] dark:text-[#a99bff]">AI</span>
+        <span className="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-bold text-white">AI</span>
+        <span className="shrink-0 rounded-full border border-white/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white/85">Beta</span>
 
-        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto no-scrollbar">
+        <nav aria-label="AI panel sections" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto no-scrollbar">
           {data.tabs.map((t) => (
             <button
               key={t.id}
               type="button"
               aria-pressed={active?.id === t.id}
+              title={t.label}
               onClick={() => setTab(t.id)}
-              className={`${pill} shrink-0 ${active?.id === t.id
-                ? 'bg-white font-semibold text-[#5945F1] shadow-sm dark:bg-[#170345] dark:text-white'
-                : 'text-[#64748b] hover:bg-white/70 dark:text-white/70 dark:hover:bg-white/5'}`}
+              className={`shrink-0 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${active?.id === t.id
+                ? 'bg-white font-semibold text-[#5945F1] shadow-sm'
+                : 'text-white/75 hover:bg-white/15 hover:text-white'}`}
             >
               {t.label}
             </button>
           ))}
-          <button type="button" onClick={onAsk} className={`${pill} shrink-0 text-[#64748b] hover:bg-white/70 dark:text-white/70 dark:hover:bg-white/5`}>Ask</button>
-          <span className="shrink-0 rounded-full border border-[#d7d3fb] px-2.5 py-0.5 text-[11px] font-semibold text-[#64748b] dark:border-white/25 dark:text-white/70">Beta</span>
+          <button type="button" onClick={onAsk} className="shrink-0 rounded-lg px-3 py-1.5 text-[13px] text-white/75 transition-colors hover:bg-white/15 hover:text-white">Ask</button>
         </nav>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <button type="button" aria-label="Analyze again" onClick={() => setRun((r) => r + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#d7d3fb] text-[#5945F1] transition hover:bg-[#f1f0fe] dark:border-white/20 dark:text-white dark:hover:bg-white/10">
-            <RefreshCw className="h-4 w-4" />
+          <button type="button" aria-label="Analyze again" onClick={() => setRun((r) => r + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/30 text-white transition hover:bg-white/15 active:scale-95">
+            <RefreshCw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} />
           </button>
-          <button type="button" aria-label="Close the MarketSyde AI panel" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#d7d3fb] text-[#5945F1] transition hover:bg-[#f1f0fe] dark:border-white/20 dark:text-white dark:hover:bg-white/10">
+          <button type="button" aria-label="Close the MarketSyde AI panel" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/30 text-white transition hover:bg-white/15 active:scale-95">
             <X className="h-4 w-4" />
           </button>
         </div>
       </div>
 
       <div key={`${active?.id}-${run}`} className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        {busy && (
+          <div role="status" aria-live="polite" className="mb-4">
+            <p className="text-[12px] font-semibold text-[#5945F1] dark:text-[#a99bff]">{data.pretext}…</p>
+            <div className="mt-2 space-y-2" aria-hidden>
+              {[86, 62].map((w) => <div key={w} className="h-2.5 animate-pulse rounded-full bg-[#f1f0fe] dark:bg-white/10" style={{ width: `${w}%` }} />)}
+            </div>
+          </div>
+        )}
         {first ? (
           <>
             <div className="flex flex-col-reverse gap-5 lg:flex-row lg:items-start">
@@ -104,8 +132,15 @@ export const AiDashboardPanel: React.FC<{
                 {data.stats.slice(0, 4).map((s, i) => {
                   const Icon = ICONS[i % ICONS.length];
                   const colour = TREND[s.tone ?? 'neutral'];
+                  const open = openStat === s.label;
                   return (
-                    <div key={s.label} className="rounded-xl border border-[#e4e0fa] bg-[#f8f7ff] p-3.5 dark:border-[#2a1a66] dark:bg-[#170345]">
+                    <button
+                      key={s.label}
+                      type="button"
+                      aria-expanded={open}
+                      onClick={() => setOpenStat(open ? null : s.label)}
+                      className={`rounded-xl border bg-[#f8f7ff] p-3.5 text-left transition dark:bg-[#170345] ${open ? 'border-[#5945F1] dark:border-[#6b5bff]' : 'border-[#e4e0fa] hover:border-[#bdb4fa] dark:border-[#2a1a66] dark:hover:border-[#4a35b5]'}`}
+                    >
                       <div className="flex items-start gap-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#5945F1] dark:bg-white/5 dark:text-white">
                           <Icon className="h-[18px] w-[18px]" aria-hidden />
@@ -118,7 +153,12 @@ export const AiDashboardPanel: React.FC<{
                       <svg viewBox="0 0 160 36" preserveAspectRatio="none" className="mt-2 h-6 w-full" aria-hidden>
                         <path d={spark(s.label + s.value)} fill="none" stroke={colour} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                    </div>
+                      {open && (
+                        <p className="mt-2 text-[12px] leading-relaxed text-[#64748b] dark:text-white/60">
+                          {data.statNotes?.[s.label] ?? 'Taken from this page. Open the full view for the workings.'}
+                        </p>
+                      )}
+                    </button>
                   );
                 })}
               </div>

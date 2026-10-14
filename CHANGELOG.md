@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2026-10-09
+### Changed
+- The AI panel header is brand purple, carrying the MarketSyde glyph with its lime dot and the wordmark, with the AI and Beta marks beside it and white tabs on the bar.
+### Added
+- The panel is interactive: each figure opens a line saying what it is and where it came from, re-analyse shows the pre-text and a skeleton while it re-reads, and tabs, cards and controls all have hover and pressed states.
+- Figures carry their own explanation per page, so what the panel shows always refers to the page you are on.
+
 ## [1.8.3] - 2026-10-09
 ### Changed
 - The AI panel is a fixed 720 × 550, shrinking to the viewport on smaller screens, with the hero and figures sized to match.

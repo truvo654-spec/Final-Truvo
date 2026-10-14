@@ -29,11 +29,16 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
   switch (tab) {
     case 'dashboard': {
       const d = dashboardRead(user, signals as never);
-      return toSpotlight(d, 'Read your morning', [
+      return toSpotlight(d, 'Read your trades, the calendar and today\u2019s news', [
         { label: 'Open my journal', sub: 'Log trades, review results and track your progress.', onClick: () => go('trading-journal') },
         { label: 'See the calendar', sub: 'Check upcoming news, earnings and events.', onClick: () => go('economic-calendar') },
         ask,
-      ]);
+      ], {
+        Open: 'Positions still running across your connected accounts.',
+        Floating: 'Unrealised profit and loss on those open positions.',
+        '7d net': 'Realised result from trades you closed in the last seven days.',
+        '30d drawdown': 'The deepest fall from a peak in your equity over 30 days.',
+      });
     }
     case 'signals': {
       const live = signals.filter((s) => s.action !== 'UPGRADE');
@@ -41,7 +46,12 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
         { label: 'Find a broker', sub: 'Compare spreads, cashback and regulation.', onClick: () => go('brokers') },
         { label: 'Check the calendar', sub: 'See what can move your positions today.', onClick: () => go('economic-calendar') },
         ask,
-      ]);
+      ], {
+        'Open signals': 'Calls currently published for your level.',
+        Long: 'How many of them point up.',
+        Short: 'How many point down.',
+        'Avg confidence': 'The average confidence the desk put on these calls. Not a win rate.',
+      });
     }
     case 'instrument-analysis':
       return toSpotlight(signalsRead(signals as never, user.tierLevel), 'Read the instrument list', [
