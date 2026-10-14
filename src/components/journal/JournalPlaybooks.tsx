@@ -3,11 +3,12 @@ import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './jo
 import React, { useMemo, useState } from 'react';
 import { ChevronRight, Search, Sparkles, X } from 'lucide-react';
 import { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
-import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, PLAYBOOK_TEMPLATES, ReviewDecision, ScenarioStatus } from '../../data/journalPlaybooks';
+import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, ReviewDecision, ScenarioStatus } from '../../data/journalPlaybooks';
 import { PlaybookAnalytics } from './PlaybookAnalytics';
 import { PlaybookBacktestPanel } from '../backtest/PlaybookBacktestPanel';
 import type { PlaybookExpectedStats } from '../../backtest/store';
-import { TradeReplayModal } from './TradeReplayModal';
+
+import { JournalReplayAvailability } from './JournalReplayAvailability';
 import { JOURNAL_TODAY } from '../../data/journalData';
 import { TradingStatusBadge, tradingStatusOf } from './tradingStatus';
 import { buildPlaybookRecommendations, RECOMMENDATION_MARKETS } from './playbookRecommendations';
@@ -135,13 +136,14 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const [checks, setChecks] = useState<Record<string, string[]>>({});
   const [editing, setEditing] = useState<JournalPlaybook | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [tplOpen, setTplOpen] = useState(false);
+
   const [recommendationOpen, setRecommendationOpen] = useState(false);
   const [recommendationMarket, setRecommendationMarket] = useState<'all' | PortfolioAssetClass>('all');
   const [recommendationQuery, setRecommendationQuery] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [step, setStep] = useState<Step>('setup');
   const [replayId, setReplayId] = useState<string | null>(null);
+
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [gradeTip, setGradeTip] = useState<{ id: string; x: number; y: number } | null>(null);
   const [houseChecks, setHouseChecks] = useState<Record<string, string[]>>({});
@@ -198,15 +200,6 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     window.requestAnimationFrame(() => document.getElementById('playbook-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
   const startEdit = () => { if (sel) { setEditing(JSON.parse(JSON.stringify(sel))); setIsNew(false); setConfirmDelete(false); } };
-  const importTpl = (i: number) => {
-    const t = PLAYBOOK_TEMPLATES[i];
-    let name = t.name; let k = 2;
-    while (playbooks.some((p) => p.name.toLowerCase() === name.toLowerCase())) name = `${t.name} (${k++})`;
-    const pb: JournalPlaybook = { ...JSON.parse(JSON.stringify(t)), name, id: nextId(), createdAt: JOURNAL_TODAY };
-    setPlaybooks((prev) => [...prev, pb]);
-    setStatus('all'); setMarket('all'); setQuery(''); setSelId(pb.id); setTplOpen(false);
-    onToast(`Imported "${name}" as a testing playbook`);
-  };
   const save = (statusOverride?: PlaybookStatus) => {
     if (!editing) return;
     const name = editing.name.trim();
@@ -227,30 +220,6 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     setEditing(null); setConfirmDelete(false);
     onToast(`Deleted "${sel.name}"`);
   };
-  const exportMd = () => {
-    if (!sel || !s) return;
-    const md = [
-      `# ${sel.name} (${sel.id})`, '',
-      `Grade: ${sel.grade} · Style: ${sel.style} · Status: ${STATUS_LABEL[sel.status]}`,
-      `Markets: ${sel.markets.join(', ')} · Window: ${windowText(sel)} · Benchmark R:R 1:${sel.benchmarkRR}`, '',
-      `Instruments: ${(sel.symbols || []).join(', ') || '—'}`, '',
-      '## Thesis', sel.thesis, '',
-      '## Execution rules', ...sel.rules.map((r, i) => `${i + 1}. **${r.title}**: ${r.detail}`), '',
-      '## Risk limits', `Risk per trade: ${sel.riskPerTrade !== undefined ? `${sel.riskPerTrade}%` : 'house limit'} · Max trades per day: ${sel.maxTradesPerDay ?? 'house limit'}`, '',
-      '## Do not trade when', ...(sel.avoid || []).map((a) => `- ${a}`), '',
-      '## Entry trigger', sel.entryTrigger, '', '## Stop / invalidation', sel.stopRule, '', '## Profit taking', sel.targetRule, '',
-      '## Journal stats', `Trades: ${s.n} · Win rate: ${s.winRate}% · Profit factor: ${s.pf === null ? '—' : s.pf.toFixed(2)} · Net: ${money(s.net, 2)} · Total R: ${s.totalR.toFixed(1)}R`,
-      `Plan followed on ${s.followed} of ${s.n} trades.`, '',
-      '## Scenarios', ...(sel.scenarios || []).map((x) => `- [${SC_LABEL[x.status]}] ${x.symbol} ${x.bias}: ${x.hypothesis} (entry ${x.entry ?? '—'}, stop ${x.stop ?? '—'}, target ${x.target ?? '—'}, valid until ${x.validUntil})`), '',
-      '## Review log', ...(sel.reviews || []).map((rv) => `- ${rv.date} [${DECISION_LABEL[rv.decision]}] ${rv.note}`),
-    ].join('\n');
-    const url = URL.createObjectURL(new Blob([md], { type: 'text/markdown;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = `${sel.name.replace(/[^\w]+/g, '-').toLowerCase()}-playbook.md`; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    onToast('Playbook exported');
-  };
-
   const chip = (on: boolean) => `h-8 px-3 rounded-lg text-xs font-semibold border ${on ? 'bg-[#EEF0FE] border-[#5338ec]/40 text-[#5338ec]' : 'bg-white border-slate-200 text-[#474556] hover:bg-slate-50'}`;
   const btn = 'h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-[#0b1c30]';
   const input = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30';
@@ -579,9 +548,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
           </section>
         </div>
       )}
-      {replayId && (() => { const re = entries.find((x) => x.id === replayId); const pb = re ? playbooks.find((p) => p.name === re.strategy) : undefined; return re ? (
-        <TradeReplayModal entry={re} targetRR={pb?.benchmarkRR ?? 2} recording={recordings[re.id]} onAttach={(b) => onSetRecording(re.id, b)} onRemove={() => onSetRecording(re.id, null)} onClose={() => setReplayId(null)} />
-      ) : null; })()}
+      {replayId&&(()=>{const trade=allJournalEntries.find(e=>e.id===replayId)??entries.find(e=>e.id===replayId);return trade?<JournalReplayAvailability entry={trade} entries={allJournalEntries} playbooks={playbooks} returnLabel="Return to playbook" recording={recordings[trade.id]} onAttachRecording={blob=>onSetRecording(trade.id,blob)} onRemoveRecording={()=>onSetRecording(trade.id,null)} onClose={()=>setReplayId(null)}/>:null;})()}
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -591,19 +558,6 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter setups, symbols, scenarios..." aria-label="Filter playbooks" className="h-9 w-60 border border-slate-200 rounded-lg px-3 text-xs bg-white" />
-          <div className="relative">
-            <button type="button" aria-expanded={tplOpen} onClick={() => setTplOpen((o) => !o)} className={btn}>Import template</button>
-            {tplOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-72 rounded-xl bg-white border border-slate-200 shadow-xl p-2">
-                {PLAYBOOK_TEMPLATES.map((t, i) => (
-                  <button key={t.name} type="button" onClick={() => importTpl(i)} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50">
-                    <span className="block text-sm font-semibold text-[#0b1c30]">{t.name}</span>
-                    <span className="block text-[11px] text-slate-500">{t.style} · {t.markets.join(', ')} · {t.rules.length} rules</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
           <button type="button" onClick={() => setRecommendationOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]"><Sparkles className="h-3.5 w-3.5" /> Create new playbook</button>
         </div>
       </div>
@@ -689,7 +643,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                 <div className="flex flex-wrap gap-2">
                   {onWhatIf && <button type="button" onClick={() => onWhatIf(sel.id)} className={btn}>Optimize in What-if</button>}
                   {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className={btn} title="Test these rules on past prices">Backtest this playbook</button>}
-                  <button type="button" onClick={exportMd} className={btn}>Export</button>
+
                   <button type="button" onClick={startEdit} className={btn}>Edit playbook</button>
                 </div>
               </div>
@@ -972,7 +926,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                             {e.mistakes[0] && <span className="text-[10px] text-rose-600 truncate">{e.mistakes[0]}</span>}
                             <span className={`ml-auto font-mono font-bold ${tone(netOf(e))}`}>{money(netOf(e), 2)}</span>
                           </button>
-                          <button type="button" onClick={() => setReplayId(e.id)} className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold ${recordings[e.id] ? 'bg-emerald-50 text-emerald-700' : 'text-[#5338ec] hover:bg-[#EEF0FE]'}`}>{recordings[e.id] ? '▶ Recorded' : '▶ Replay'}</button>
+                          <button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} onClick={() => setReplayId(e.id)} className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold ${recordings[e.id] ? 'bg-emerald-50 text-emerald-700' : 'text-[#5338ec] hover:bg-[#EEF0FE]'}`}>▶ Replay</button>
                           </div>
                         ))}
                       </div>
@@ -1074,7 +1028,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
 
                   {selTrades.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-bold text-[#0b1c30] mb-2">Best executions <span className="font-normal text-[11px] text-slate-500">· replay or record each one</span></h4>
+                      <h4 className="text-sm font-bold text-[#0b1c30] mb-2">Best executions <span className="font-normal text-[11px] text-slate-500">· replay each trade</span></h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {[...selTrades].sort((a, b) => netOf(b) - netOf(a)).slice(0, 2).map((e) => (
                           <div key={e.id} className="rounded-xl border border-slate-200 p-3">
@@ -1092,7 +1046,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                             <div className="flex items-center justify-between gap-2">
                               <span className="flex flex-wrap gap-1">{e.tags.slice(0, 2).map((t) => <span key={t} className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-600">#{t.replace(/\s+/g, '_')}</span>)}</span>
                               <span className="flex gap-3">
-                                <button type="button" onClick={() => setReplayId(e.id)} className={`text-xs font-semibold hover:underline whitespace-nowrap ${recordings[e.id] ? 'text-emerald-700' : 'text-[#5338ec]'}`}>{recordings[e.id] ? '▶ Watch replay' : '▶ Replay'}</button>
+                                <button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} onClick={() => setReplayId(e.id)} className={`text-xs font-semibold hover:underline whitespace-nowrap ${recordings[e.id] ? 'text-emerald-700' : 'text-[#5338ec]'}`}>▶ Replay</button>
                                 <button type="button" onClick={() => onOpenEntry(e.id)} className="text-xs font-semibold text-[#5338ec] hover:underline whitespace-nowrap">View trade</button>
                               </span>
                             </div>

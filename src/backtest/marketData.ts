@@ -20,6 +20,11 @@ export const SYMBOLS: SymbolSpec[] = [
   { symbol: 'MGC', name: 'Micro Gold futures', assetClass: 'Futures', aliases: ['XAU/USD', 'XAUUSD', 'GC', 'GOLD'], tickSize: 0.1, multiplier: 10, sizeUnit: 'contracts', minSize: 1, sizeStep: 1, costUnit: { label: 'ticks', size: 0.1 }, priceDp: 1, hours: 'cme', startPrice: 2660, annualVol: 0.15 },
   { symbol: 'BTC/USDT', name: 'Bitcoin / Tether', assetClass: 'Crypto', aliases: ['BTCUSDT', 'BTC-PERP'], tickSize: 0.01, multiplier: 1, sizeUnit: 'coins', minSize: 0.001, sizeStep: 0.001, costUnit: { label: 'USD', size: 1 }, priceDp: 2, hours: 'crypto', startPrice: 63000, annualVol: 0.5 },
   { symbol: 'NVDA', name: 'NVIDIA Corp.', assetClass: 'Stocks', aliases: [], tickSize: 0.01, multiplier: 1, sizeUnit: 'shares', minSize: 1, sizeStep: 1, costUnit: { label: 'cents', size: 0.01 }, priceDp: 2, hours: 'us-stocks', startPrice: 122, annualVol: 0.48 },
+  // Reference conversion multipliers are for generated USD demo valuation only.
+  { symbol: 'USD/JPY', name: 'US Dollar / Japanese Yen', assetClass: 'Forex', aliases: ['USDJPY'], tickSize: 0.001, multiplier: 100000/150, sizeUnit: 'lots', minSize: 0.01, sizeStep: 0.01, costUnit: { label: 'pips', size: 0.01 }, priceDp: 3, hours: 'fx', startPrice: 150, annualVol: 0.09 },
+  { symbol: 'GBP/JPY', name: 'British Pound / Japanese Yen', assetClass: 'Forex', aliases: ['GBPJPY'], tickSize: 0.001, multiplier: 100000/150, sizeUnit: 'lots', minSize: 0.01, sizeStep: 0.01, costUnit: { label: 'pips', size: 0.01 }, priceDp: 3, hours: 'fx', startPrice: 195, annualVol: 0.1 },
+  { symbol: 'USD/CAD', name: 'US Dollar / Canadian Dollar', assetClass: 'Forex', aliases: ['USDCAD'], tickSize: 0.00001, multiplier: 100000/1.35, sizeUnit: 'lots', minSize: 0.01, sizeStep: 0.01, costUnit: { label: 'pips', size: 0.0001 }, priceDp: 5, hours: 'fx', startPrice: 1.35, annualVol: 0.07 },
+  { symbol: 'ETH/USDT', name: 'Ethereum / Tether', assetClass: 'Crypto', aliases: ['ETHUSDT'], tickSize: 0.01, multiplier: 1, sizeUnit: 'coins', minSize: 0.001, sizeStep: 0.001, costUnit: { label: 'USD', size: 1 }, priceDp: 2, hours: 'crypto', startPrice: 2600, annualVol: 0.55 },
 ];
 
 export const symbolSpec = (symbol: string): SymbolSpec | undefined =>

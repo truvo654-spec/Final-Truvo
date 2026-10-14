@@ -2,7 +2,7 @@ import { useJournalState } from './journalStorage';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics, currencyOf } from './journalMath';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, PlayCircle } from 'lucide-react';
 import { Broker, JournalEntry } from '../../types';
 import { UNASSIGNED, brokerColor, entryCashback, entryPoints } from './journalOverview';
 import { TradingStatusBadge, ReviewStateBadge, reviewStateOf, TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
@@ -82,10 +82,11 @@ interface Props {
   onClearPreset?: () => void;
   /** Replay one trade blind in Backtest → Practice. */
   onReplay?: (id: string) => void;
+  onReplayLog?: (id:string) => void;
   onBacktestTrades?: (ids: string[]) => void;
 }
 
-export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay, onBacktestTrades }) => {
+export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay, onReplayLog, onBacktestTrades }) => {
   const money = useMoney();
   const tradingPlain = (n:number,dp=2)=>money(Math.abs(n),dp).replace(/^\+/, '');
 
@@ -532,7 +533,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
         <table className="w-full text-xs">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
-              <th className="w-10 px-3 py-2.5">
+              <th className="w-20 px-3 py-2.5">
                 <input type="checkbox" aria-label="Select all on this page" checked={allVisibleSelected} ref={(el) => { if (el) el.indeterminate = !allVisibleSelected && someVisibleSelected; }} onChange={toggleAll} />
               </th>
               {shownCols.map((c) => (
@@ -565,9 +566,9 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
                 {g.list.map((e) => {
                   const on = sel.includes(e.id);
                   return (
-                    <tr key={e.id} tabIndex={0} aria-label={`Review ${e.symbol} ${e.date}`} onKeyDown={ev => { if (ev.key === 'Enter') onOpen(e.id, sorted.map(x=>x.id)); }} onClick={() => onOpen(e.id, sorted.map(x=>x.id))} className={`border-t border-[#e2e8f0] cursor-pointer focus:outline-2 focus:outline-[#5338ec] ${on ? 'bg-[#EEF0FE]' : 'hover:bg-slate-50'}`}>
+                    <tr key={e.id} tabIndex={0} aria-label={`Review ${e.symbol} ${e.date}`} onKeyDown={ev => { if (ev.target===ev.currentTarget&&ev.key === 'Enter') onOpen(e.id, sorted.map(x=>x.id)); }} onClick={() => onOpen(e.id, sorted.map(x=>x.id))} className={`border-t border-[#e2e8f0] cursor-pointer focus:outline-2 focus:outline-[#5338ec] ${on ? 'bg-[#EEF0FE]' : 'hover:bg-slate-50'}`}>
                       <td className="px-3 py-2.5" onClick={(ev) => ev.stopPropagation()}>
-                        <input type="checkbox" aria-label={`Select ${e.symbol} ${e.date}`} checked={on} onChange={() => toggleRow(e.id)} />
+                        <div className="flex items-center gap-2"><input type="checkbox" aria-label={`Select ${e.symbol} ${e.date}`} checked={on} onChange={() => toggleRow(e.id)} />{onReplayLog&&<button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} title="Replay log" onClick={()=>onReplayLog(e.id)} className="rounded-lg p-1.5 text-[#5338ec] hover:bg-purple-50"><PlayCircle size={17}/></button>}</div>
                       </td>
                       {shownCols.map((c) => cell(e, c.key))}
                     </tr>

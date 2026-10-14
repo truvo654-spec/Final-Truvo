@@ -248,7 +248,7 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
         </div>
 
         <div className="space-y-5 min-w-0">
-          {picked.length > 0 && <WhatIfComparison entries={picked} rule={rule} model={study} onSelect={selectRule} onSave={saveScenario} isSaved={isScenarioSaved}/>}
+          {picked.length > 0 && <WhatIfComparison entries={picked} selectedSymbols={syms} instrumentOptions={symbols} onInstrument={symbol=>setSyms([symbol])} rule={rule} model={study} onSelect={selectRule} onSave={saveScenario} isSaved={isScenarioSaved}/>}
           <section className={`rounded-2xl border p-5 ${out.saved > 0 ? 'border-emerald-200 bg-emerald-50' : out.saved < 0 ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'}`} aria-live="polite">
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Result</p>
             <p className="text-lg font-bold text-[#0b1c30] mt-0.5 flex items-start gap-2">
@@ -330,4 +330,3 @@ export const WhatIfPanel: React.FC<Props> = ({ entries, allEntries, initialPlayb
     </div>
   );
 };
-

@@ -1,6 +1,64 @@
+## 1.31.19
+- Remove Import template from the Playbook toolbar and remove its unused dropdown state and import handler.
+
+## 1.31.18
+- Merge Playbook recording controls into the full Replay log workspace and remove separate Recording row actions. Replay loads the complete recorded position; video capture, attachment, playback and removal remain available in a collapsible Trade recording panel. Stop capture streams when the panel unmounts.
+
+## 1.31.17
+- Route Playbook trade replay actions to the full candle/strategy comparison workspace with the selected Trade Log baseline, automatic activation, editable playbooks, AI overlays and final results. Keep recording attachment/watch controls separately available, and return replay users to their playbook. Add generated USD/JPY, GBP/JPY, USD/CAD and ETH/USDT replay paths; reference FX valuation stays explicitly simulated.
+
+## 1.31.16
+- Start valid position replay setups automatically, including standalone playbook setups. Replace manual start with Final results, offering an immediate full-chart comparison summary without playback or moving the chart cursor. Final scope closes remaining positions at the final candle and preserves playbook breakeven/holding-time rules.
+
+## 1.31.15
+- Replace position setup market chips and instrument cards with a compact Market type / Instrument filter bar. Instrument options follow the market; recorded-source selections remain fixed.
+
+## 1.31.14
+- Synchronize What-if candle instrument with scenario-lab symbol selection. Candle selection updates the benchmark filter and recalculates comparisons; market/playbook changes update available instruments and reset the chart timeline.
+
+## 1.31.13
+- Remove Export from the playbook detail toolbar and its unused Markdown download handler.
+
+## 1.31.12
+- Add direct Replay log icons to recent entries and Trade Log rows. Replay opens from either tab without selecting a calendar day.
+- Fix Insights recent subranges to use the latest connected trade date, include custom playbooks, validate saved timezone and show data counts plus recovery for saved report filters.
+
+## 1.31.11
+- Add Market type and dependent Symbol filters to Pending reviews, with matching counts, reset and empty state. Review navigation follows the filtered list.
+
+## 1.31.10
+- Remove the redundant Generate comparison button from linked replay and remove the sample AI mode checkbox. Keep target selection, sample labeling and automatic comparison updates.
+
+## 1.31.9
+- Enable sample valuation by default and open Candles & setup levels first. Add independently selectable sample AI profit targets to the AI filter, synchronized with the AI card, chart overlays and comparison rows.
+
+## 1.31.8
+- Compact replay comparison filters into Trade Log, Playbooks and AI suggestions. Nest multi-playbook selection and AI visibility/sample settings in dropdowns, with selection summaries and outside-click/Escape dismissal.
+
+## 1.31.7
+- Merge sample profit-target controls into the established AI card. Move sample AI selection into the chart checklist. Simplify linked replay into a comparison workspace with P&L/candle views, a shared results table and separate parameter editing; collapse detailed historical results and remove redundant fixed-market filters and replay modes.
+
+## 1.31.6
+- Rename linked replay to Replay log. Add sample AI exit suggestions, per-source chart checkboxes, multiple editable playbooks, and advanced breakeven/holding-time exits. Offer opt-in sample valuation for missing sizing inputs without changing journal records.
+
+## 1.31.5
+- Use journal position values in linked replay and compare an editable playbook exit setup and evidence-based AI exits on shared, entry-anchored generated candles.
+
+## 1.31.4
+- Keep recorded position details read-only and sourced from the selected Trade Log. Prevent demo valuation and AI draft actions from overwriting the recorded baseline.
+
+## 1.31.3
+- Add an imported playbook practice guide and matched entry/exit result overlay in strategy replay; preserve the selected trade, candles and sizing.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [1.31.2] - 2026-10-14
+
+### Fixed
+
+- Journal-linked demo replay now pins its recorded-trade selector and instrument to the entry opened from the journal. Position and strategy modes retain that baseline; reopening another entry resets the replay draft and comparison. Standalone replay selectors remain editable.
 
 ## [1.31.1] - 2026-10-14
 

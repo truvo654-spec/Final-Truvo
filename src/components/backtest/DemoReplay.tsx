@@ -19,20 +19,24 @@ import {compareDemoStudy,demoClosedEquity} from '../../backtest/demoReplayStudy'
 import {replayRuleFields,type RelatedReplaySetup} from '../../backtest/replaySetups';
 import {DemoStudyResults,type DemoComparison} from './DemoStudyResults';
 
-interface Props { entries: JournalEntry[]; playbooks: JournalPlaybook[]; initialEntryId?: string; initialMode?: 'position'|'strategy'; }
+interface Props { entries: JournalEntry[]; playbooks: JournalPlaybook[]; initialEntryId?: string; initialMode?: 'position'|'strategy'; lockRecordedTrade?: boolean; }
 const time = (t:number) => new Date(t).toISOString().replace('T',' ').slice(0,16) + ' UTC';
 const usd = (n:number) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n);
 
-export function DemoReplay(props:Props) {
+export const DemoReplay: React.FC<Props> = (props) => {
   const [mode,setMode]=useState(props.initialMode??'position');
-  return <div className="space-y-4"><div className="flex flex-wrap gap-2" role="group" aria-label="Replay mode"><button className={mode==='position'?btnPrimary:btnSecondary} aria-pressed={mode==='position'} onClick={()=>setMode('position')}>Position replay</button><button className={mode==='strategy'?btnPrimary:btnSecondary} aria-pressed={mode==='strategy'} onClick={()=>setMode('strategy')}>Strategy simulation</button></div>{mode==='position'?<TestPositionReplay {...props}/>:<StrategyReplay {...props}/>}</div>;
+  if(props.lockRecordedTrade)return <TestPositionReplay {...props}/>;
+  return <div className="space-y-4"><div className="flex flex-wrap gap-2" role="group" aria-label="Replay mode"><button className={mode==='position'?btnPrimary:btnSecondary} aria-pressed={mode==='position'} onClick={()=>setMode('position')}>Position replay</button><button className={mode==='strategy'?btnPrimary:btnSecondary} aria-pressed={mode==='strategy'} onClick={()=>setMode('strategy')}>Strategy simulation</button></div>{mode==='position'?<TestPositionReplay key={props.lockRecordedTrade?props.initialEntryId:'position'} {...props}/>:<StrategyReplay key={props.lockRecordedTrade?props.initialEntryId:'strategy'} {...props}/>}</div>;
 }
 
-function StrategyReplay({entries, playbooks, initialEntryId}: Props) {
+const StrategyReplay: React.FC<Props> = props => props.lockRecordedTrade ? <TestPositionReplay {...props}/> : <StandaloneStrategyReplay {...props}/>;
+
+const StandaloneStrategyReplay: React.FC<Props> = ({entries, playbooks, initialEntryId, lockRecordedTrade = false}) => {
   const initial = entries.find(e=>e.id===initialEntryId);
   const initialBook = playbooks.find(p=>p.name===initial?.strategy) ?? playbooks[0] ?? null;
   const [entryId,setEntryId] = useState(initial?.id ?? '');
   const [bookId,setBookId] = useState(initialBook?.id ?? playbooks[0]?.id ?? '');
+  const [importedBookId,setImportedBookId] = useState('');
   const [symbol,setSymbol] = useState(symbolSpec(initial?.symbol ?? '')?.symbol ?? 'EUR/USD');
   const [tf,setTf] = useState<Timeframe>(demoTimeframe(initialBook));
   const [scenario,setScenario] = useState(1);
@@ -50,6 +54,7 @@ function StrategyReplay({entries, playbooks, initialEntryId}: Props) {
   const [error,setError] = useState<string | null>(null);
   const entry = entries.find(e=>e.id===entryId);
   const book = playbooks.find(p=>p.id===bookId) ?? null;
+  const importedBook = playbooks.find(p=>p.id===importedBookId);
   const feed = useMemo(()=>createDemoFeed(symbol,tf,`${entryId || 'sandbox'}:${scenario}`),[symbol,tf,entryId,scenario]);
   const baseline = useMemo(()=>{
     const settings=demoSettings(feed,book,entry?.direction??null);settings.rules.direction=direction;
@@ -124,20 +129,22 @@ function StrategyReplay({entries, playbooks, initialEntryId}: Props) {
   const recommendation = recommendSetup(result?.candidates??[],recommendationBaseline,recommendationGoal);
   const aiCandidate=result?.candidates.find(r=>r.id===recommendation.candidate?.id);
   const comparisons:DemoComparison[]=result?[{name:'Strategy baseline',color:'#64748b',run:result.baseline},{name:'Your hypothesis',color:'#0284c7',run:result.variant},...(aiCandidate?[{name:'MarketSyde AI',color:'#5338ec',run:aiCandidate.output}]:[])]:[];
+  if(result&&importedBook)comparisons.push({name:`Imported playbook · ${importedBook.name}`,color:'#a855f7',run:result.variant});
   const equitySeries=comparisons.map(r=>({name:r.name,color:r.color,points:demoClosedEquity(feed,r.run,cursor)}));
   return <div className="space-y-4 text-[#0b1c30]" aria-label="Demo replay workspace">
-    <ReplaySetupTransfer entries={entries} playbooks={playbooks} onSelect={transferSetup}/>
+    {!lockRecordedTrade&&<ReplaySetupTransfer entries={entries} playbooks={playbooks} onSelect={transferSetup}/>}
     {!result&&<ReplayAICoach entries={entries} symbol={symbol} excludeId={entryId} cutoff={entry?.entryTime?Date.parse(entry.entryTime):Infinity} onUse={rule=>{const fields=replayRuleFields(rule);if(fields.targetR!==undefined)setTarget(String(fields.targetR));if(fields.stopFraction!==undefined)setStop(String((Number(stop)||1.5)*fields.stopFraction));if(fields.breakevenR!==undefined)setManagement(m=>({...m,breakeven:String(fields.breakevenR)}));setResult(null);setPlaying(false);}}/>}
     {result && <MarketSydeRecommender recommendation={recommendation} baseline={recommendationBaseline} baselineName="your hypothesis on the first 70% of generated candles" goal={recommendationGoal} onGoal={setRecommendationGoal} money={usd} evidence={`${result.candidates.length} bounded exit setups. ${result.trainingBars} training bars; ${result.holdoutBars} holdout bars run independently with fresh balance and indicator warmup. Holdout does not rank candidates. One generated path is learning evidence, not live performance.${positionConfig.config?.scenario?' Absolute scenario levels are fixed, so ATR/target exploration is disabled.':''}`} action="Use AI parameters in my editable hypothesis" onUse={id=>{const candidate=result.candidates.find(c=>c.id===id);if(candidate){setStop(String(candidate.setup.stopAtr));setTarget(String(candidate.setup.targetR));setResult(null);setPlaying(false);setCursor(80);}}}/>}
     <div className="rounded-xl border border-[#5338ec]/20 bg-[#FBFAFF] px-4 py-3 text-xs leading-relaxed"><Pill tone="accent">Simulated demo data</Pill><span className="ml-2">Generated candles, not historical or live prices. Recorded trades are reference only. Tests do not change journal records, playbooks, statistics, credits or points.</span></div>
     <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-4 items-start">
       <Card title="Playback" sub="Select a recorded strategy or practise freely.">
         <div className="space-y-3">
-          <Field label="Recorded trade"><select aria-label="Replay recorded trade" value={entryId} onChange={e=>chooseEntry(e.target.value)} className={inputCls}><option value="">Free demo</option>{entries.map(e=><option key={e.id} value={e.id}>{e.date} · {e.symbol} · {e.strategy || 'No strategy'} · {e.direction} · {e.assetClass} · #{e.id.slice(-6)}</option>)}</select></Field>
+          <Field label={lockRecordedTrade?'Selected Trade Log entry':'Recorded trade'} hint={lockRecordedTrade?'Linked to the trade you opened. Close this replay to choose another journal entry.':undefined}><select aria-label="Replay recorded trade" disabled={lockRecordedTrade} value={entryId} onChange={e=>chooseEntry(e.target.value)} className={inputCls}>{!lockRecordedTrade&&<option value="">Free demo</option>}{entries.filter(e=>!lockRecordedTrade||e.id===initialEntryId).map(e=><option key={e.id} value={e.id}>{e.date} · {e.symbol} · {e.strategy || 'No strategy'} · {e.direction} · {e.assetClass} · #{e.id.slice(-6)}</option>)}</select></Field>
           {entry && <div className="text-xs rounded-lg bg-slate-50 p-3 space-y-1"><p className="font-semibold">Recorded reference · {entry.direction}</p><p>{entry.symbol} · {entry.strategy || 'No strategy recorded'}</p><p>Entry: {Number.isFinite(entry.entryPrice) ? entry.entryPrice : 'Unknown'}</p><p>Exit: {entry.exitPrice ?? 'Not recorded'}</p><p className="text-slate-500">These prices are not executions on the demo chart.</p>{!symbolSpec(entry.symbol) && <p className="text-amber-700">No instrument mapping. Select a separate demo instrument below.</p>}{!playbooks.some(p=>p.name===entry.strategy) && <p className="text-amber-700">Recorded strategy has no linked playbook. Choose a demo template; it does not evaluate the original strategy.</p>}</div>}
-          <Field label="Demo instrument"><select aria-label="Demo instrument" value={symbol} onChange={e=>{setSymbol(e.target.value);setPositionSetup(s=>({...s,quantity:''}));}} className={inputCls}>{SYMBOLS.map(s=><option key={s.symbol}>{s.symbol}</option>)}</select></Field>
+          <Field label="Demo instrument"><select aria-label="Demo instrument" disabled={lockRecordedTrade} value={symbol} onChange={e=>{setSymbol(e.target.value);setPositionSetup(s=>({...s,quantity:''}));}} className={inputCls}>{SYMBOLS.map(s=><option key={s.symbol}>{s.symbol}</option>)}</select></Field>
           {entry && symbol !== entry.symbol && symbolSpec(entry.symbol) && <p className="text-xs text-slate-500">Demo instrument: {symbol}. Valuation uses its own contract specification, not the recorded account.</p>}
-          <Field label="Strategy template"><select aria-label="Demo strategy template" value={bookId} onChange={e=>{setBookId(e.target.value);const b=playbooks.find(p=>p.id===e.target.value)??null;setTf(demoTimeframe(b));setTarget(String(b?.benchmarkRR??2));setPositionSetup(s=>({...defaultPositionSetup(b,entry),equity:s.equity}));}} className={inputCls}>{!playbooks.length && <option value="">Generic breakout</option>}{playbooks.map(p=><option key={p.id} value={p.id}>{p.name} · {p.style}</option>)}</select></Field>
+          <Field label="Import playbook setup" hint="Keep the selected trade and compare with the same entry and exit setup."><select aria-label="Import playbook setup" value={importedBookId} onChange={e=>setImportedBookId(e.target.value)} className={inputCls}><option value="">Choose a playbook…</option>{playbooks.map(p=><option key={p.id} value={p.id}>{p.name} · {p.style}</option>)}</select></Field>
+          <p className="text-xs text-slate-500">Source strategy: {book?.name ?? 'Generic breakout'}</p>
           <Field label="Demo bar size"><select aria-label="Demo bar size" value={tf} onChange={e=>setTf(e.target.value as Timeframe)} className={inputCls}>{['1m','5m','15m','1h','4h','1D'].map(t=><option key={t}>{t}</option>)}</select></Field>
           <button className={`${btnSecondary} w-full`} onClick={()=>setScenario(s=>s+1)}><RotateCcw size={14}/>New demo path</button>
           <p className="text-[11px] text-slate-500">Demo path {scenario} · {feed.bars.length} generated bars · UTC</p>
@@ -147,7 +154,7 @@ function StrategyReplay({entries, playbooks, initialEntryId}: Props) {
         <Card title={`${feed.symbol} · ${tf}`} sub={result?'Price and cumulative closed net P&L on the same generated timeline. Independent price and USD scales.':'Slide backwards or forwards; future candles stay hidden during playback.'} right={<Pill tone="accent">Demo</Pill>}>
           <p className="text-[11px] tabular-nums text-slate-500 mb-2">{time(last.t)} · O {last.o.toFixed(feed.dp)} · H {last.h.toFixed(feed.dp)} · L {last.l.toFixed(feed.dp)} · C {last.c.toFixed(feed.dp)}</p>
           <CandleChart bars={feed.bars} from={from} to={cursor} dp={feed.dp} height={300} label="Simulated replay candlesticks" markers={markers} lines={positionLines} pnl={result?{series:equitySeries,detail:t=><>{equitySeries.map(s=><p key={s.name}>{s.name}: {usd(s.points.find(p=>p.x===t)?.y??0)}</p>)}</>}:undefined}/>
-          <svg viewBox="0 0 760 48" role="img" aria-label="Generated demo volume, not market volume" className="w-full h-auto border-t border-slate-100"><title>Generated demo volume; exact values are in visible candle data</title>{feed.bars.slice(from,cursor).map((b,i)=>{const width=690/(cursor-from), h=b.v/1000*42;return <rect key={b.t} x={8+i*width} y={48-h} width={Math.max(1,width*0.7)} height={h} fill={b.c>=b.o?'#059669':'#e11d48'} opacity={0.6}/>;})}</svg>
+          {importedBook&&<div className="mt-3 rounded-xl border border-purple-200 bg-purple-50/40 p-3" aria-label="Imported playbook comparison"><p className="text-sm font-semibold">{importedBook.name} · matched execution comparison</p><p className="text-xs text-slate-500 mt-1">Uses your hypothesis entries, exits, quantity and costs on the same candles. Results match because execution settings are shared; curves overlap. Imported playbook rules are a practice guide, not separately executed signals.</p>{result?<div className="mt-3"><DemoStudyResults runs={comparisons.filter(r=>r.name==='Your hypothesis'||r.name.startsWith('Imported playbook'))}/></div>:<p className="text-xs mt-2">Test the hypothesis below to display both results on this chart.</p>}<details className="text-xs mt-2"><summary className="cursor-pointer text-purple-700">Imported playbook rules</summary><p className="mt-2">{describeRules(demoSettings(feed,importedBook,entry?.direction??null).rules).map(r=>`${r.label}: ${r.text}`).join(' · ')}</p></details></div>}          <svg viewBox="0 0 760 48" role="img" aria-label="Generated demo volume, not market volume" className="w-full h-auto border-t border-slate-100"><title>Generated demo volume; exact values are in visible candle data</title>{feed.bars.slice(from,cursor).map((b,i)=>{const width=690/(cursor-from), h=b.v/1000*42;return <rect key={b.t} x={8+i*width} y={48-h} width={Math.max(1,width*0.7)} height={h} fill={b.c>=b.o?'#059669':'#e11d48'} opacity={0.6}/>;})}</svg>
           <div className="flex justify-between text-[10px] text-slate-500"><span>{time(feed.bars[from].t)}</span><span>{time(last.t)}</span></div>
           <label className="block text-xs font-semibold mt-3">Replay timeline · {cursor} / {feed.bars.length}<input type="range" aria-label="Replay timeline" aria-valuetext={`${cursor} of ${feed.bars.length} bars, ${time(last.t)}`} min={1} max={feed.bars.length} value={cursor} onChange={e=>{setPlaying(false);setCursor(Number(e.target.value));}} className="w-full accent-[#5338ec] mt-2"/></label>
           <div className="flex flex-wrap justify-center gap-2 mt-2" role="toolbar" aria-label="Demo playback controls">

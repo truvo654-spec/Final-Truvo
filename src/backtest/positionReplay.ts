@@ -18,7 +18,7 @@ const value=(s:string)=>s.trim()?Number(s):NaN;
 export function recordedPositionDraft(entry:JournalEntry):PositionDraft {
   const spec=symbolSpec(entry.symbol);
   // Aliases can represent different broker contracts (e.g. US500 CFDs versus MES).
-  const exact=spec?.symbol===entry.symbol && entry.quantityUnit===spec.sizeUnit;
+  const exact=spec?.symbol===entry.symbol && entry.quantityUnit===spec.sizeUnit&&!['USD/JPY','GBP/JPY','USD/CAD'].includes(entry.symbol);
   const usd=(entry.accountCurrency||'USD')==='USD';
   return {direction:entry.direction,entry:positive(entry.entryPrice)?String(entry.entryPrice):'',
     quantity:positive(entry.size)?String(entry.size):'',unit:entry.quantityUnit||'',multiplier:exact?String(spec.multiplier):'',
@@ -60,19 +60,21 @@ export function parsePositionDraft(d:PositionDraft):{position:TestPosition|null;
 export interface PositionPoint {index:number;time:number;price:number;priceChange:number;holdNet:number;managedNet:number;openNet:number;realizedNet:number;remaining:number;}
 export interface PositionPath {points:PositionPoint[];exit:{index:number;price:number;reason:string}|null;status:'before'|'open'|'closed';}
 /** Inspect only revealed bars. The first bar is a close-time starting snapshot, not an invented historical fill. */
-export function positionPath(bars:Bar[],p:TestPosition,start:number,cursor:number,manualExit:number|null=null):PositionPath {
+export function positionPath(bars:Bar[],p:TestPosition,start:number,cursor:number,manualExit:number|null=null,breakevenAtR:number|null=null):PositionPath {
   const points:PositionPoint[]=[],dir=p.direction==='BUY'?1:-1;
   let exit:PositionPath['exit']=null;
+  let stop=p.stop;
   const net=(price:number)=>(price-p.entry)*dir*p.quantity*p.multiplier-p.costs;
   for(let i=start;i<Math.min(cursor,bars.length);i++) {
     const b=bars[i];
     if(!exit) {
       // Monitoring starts at this bar's close; prior intrabar highs/lows cannot trigger an exit.
-      const stopHit=p.stop!==null&&(i===start?dir*(b.c-p.stop)<=0:dir*((dir===1?b.l:b.h)-p.stop)<=0);
+      const stopHit=stop!==null&&(i===start?dir*(b.c-stop)<=0:dir*((dir===1?b.l:b.h)-stop)<=0);
       const targetHit=p.target!==null&&(i===start?dir*(b.c-p.target)>=0:dir*((dir===1?b.h:b.l)-p.target)>=0);
-      if(stopHit)exit={index:i,price:i===start?b.c:dir*(b.o-p.stop!)<0?b.o:p.stop!,reason:targetHit?'Stop · both levels touched':'Stop'};
+      if(stopHit)exit={index:i,price:i===start?b.c:dir*(b.o-stop!)<0?b.o:stop!,reason:targetHit?'Stop · both levels touched':stop===p.entry?'Breakeven stop':'Stop'};
       else if(targetHit)exit={index:i,price:i===start?b.c:p.target!,reason:'Target'};
       else if(manualExit!==null&&i>=manualExit)exit={index:i,price:b.c,reason:'Closed at chart price'};
+      if(!exit&&breakevenAtR!==null&&p.stop!==null&&dir*(b.c-p.entry)>=Math.abs(p.entry-p.stop)*breakevenAtR)stop=p.entry;
     }
     const holdNet=net(b.c),managedNet=exit?net(exit.price):holdNet;
     points.push({index:i,time:b.t,price:b.c,priceChange:(b.c/p.entry-1)*100,holdNet,managedNet,

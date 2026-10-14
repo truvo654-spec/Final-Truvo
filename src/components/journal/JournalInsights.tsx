@@ -165,7 +165,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
 
   const [report, setReport] = useJournalState<Report>('JournalInsights-report', 'daytime');
   const [tz, setTzState] = useState<string>(() => {
-    try { return localStorage.getItem('ms-journal-tz') || 'UTC'; } catch { return 'UTC'; }
+    try { const saved=localStorage.getItem('ms-journal-tz');return TIMEZONES.some(z=>z.id===saved)?saved!:'UTC'; } catch { return 'UTC'; }
   });
   const setTz = (v: string) => { setTzState(v); try { localStorage.setItem('ms-journal-tz', v); } catch { /* storage unavailable */ } };
   const offNow = tzOffset(tz, `${JOURNAL_TODAY}T12:00:00`);
@@ -221,17 +221,18 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   };
 
   // ── date range + benchmark window ──
+  const reportEnd=entries.reduce((latest,e)=>e.date>latest?e.date:latest,entries.length?'0000-01-01':JOURNAL_TODAY);
   const days = range === 'last30' ? 30 : range === 'last90' ? 90 : 0;
-  const from = days ? addDays(JOURNAL_TODAY, -(days - 1)) : '0000-01-01';
-  const prevFrom = days ? addDays(JOURNAL_TODAY, -(2 * days - 1)) : '';
-  const prevTo = days ? addDays(JOURNAL_TODAY, -days) : '';
+  const from = days ? addDays(reportEnd, -(days - 1)) : '0000-01-01';
+  const prevFrom = days ? addDays(reportEnd, -(2 * days - 1)) : '';
+  const prevTo = days ? addDays(reportEnd, -days) : '';
   const benchOn = bench && days > 0;
 
   const passReportFilters = (e: JournalEntry) =>
     !assetOff.includes(e.assetClass) && !stratOff.includes(e.strategy) && !sessOff.includes(sessionOf(e));
   const passFilters = (e: JournalEntry) => eligible(e) && passReportFilters(e);
-  const openCur = entries.filter(e => tradingStatusOf(e) === 'open' && passReportFilters(e) && e.date >= from && (range === 'all' || e.date <= JOURNAL_TODAY));
-  const cur = useMemo(() => entries.filter((e) => passFilters(e) && e.date >= from && (range === 'all' || e.date <= JOURNAL_TODAY)),
+  const openCur = entries.filter(e => tradingStatusOf(e) === 'open' && passReportFilters(e) && e.date >= from && (range === 'all' || e.date <= reportEnd));
+  const cur = useMemo(() => entries.filter((e) => passFilters(e) && e.date >= from && (range === 'all' || e.date <= reportEnd)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [entries, assetOff, stratOff, sessOff, from]);
   const prev = useMemo(() => (benchOn ? entries.filter((e) => passFilters(e) && e.date >= prevFrom && e.date <= prevTo) : []),
@@ -375,7 +376,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
     </div>
   );
   const assetOpts = JOURNAL_MARKET_TYPES.map((id) => ({ id, label: id }));
-  const stratOpts = JOURNAL_STRATEGIES.filter((s) => entries.some((e) => e.strategy === s)).map((id) => ({ id, label: id }));
+  const stratOpts = [...new Set<string>(entries.map(e=>e.strategy).filter(Boolean))].sort().map(id=>({id,label:id}));
 
   const delta = (a: number, b: number, fmt: (n: number) => string) => {
     const d = a - b;
@@ -439,6 +440,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
       </aside>
 
       <div className="min-w-0 space-y-5">
+        <section aria-label="Insights data connection" className="rounded-xl border border-purple-200 bg-purple-50/50 p-3 text-xs"><p><strong>{entries.length} Trade Log records connected.</strong> {entries.filter(e=>eligible(e)).length} have eligible closed net results; {cur.length} match Day &amp; Time report filters.</p>{(activeFilters>0||range!=='all'||rowFilter)&&<div className="mt-2 flex flex-wrap items-center justify-between gap-2"><p className="text-slate-500">Saved report filters can narrow these results independently of the journal filters.</p><button type="button" className="font-semibold text-purple-700" onClick={()=>{setRange('all');setAssetOff([]);setStratOff([]);setSessOff([]);setRowFilter('');setDrill(null);}}>Reset Insights filters</button></div>}{!cur.length&&entries.length>0&&<p className="mt-2 text-slate-600">{entries.some(e=>eligible(e))?'No closed results match the report filters. Reset Insights filters to restore this journal scope.':'Recorded trades are open/planned or missing realized P&L or costs. They remain in Trade Log; closed net calculations exclude them.'}</p>}</section>
         {report === 'overview' ? overview : (
           <>
             {/* Toolbar */}
@@ -466,7 +468,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               <button type="button" onClick={exportCsv} className={`${btn} ml-auto`}>Export CSV</button>
             </div>
             <p className="text-[11px] text-slate-500 -mt-2">
-              {total.n} eligible closed trades · {range === 'all' ? 'entire journal scope' : `${shortDate(from)} – ${shortDate(JOURNAL_TODAY, true)} within journal scope`}
+              {total.n} eligible closed trades · {range === 'all' ? 'entire journal scope' : `${shortDate(from)} – ${shortDate(reportEnd, true)} within journal scope`}
               {benchOn && <> · compared with {shortDate(prevFrom)} – {shortDate(prevTo, true)} ({prevTotal.n} trades)</>}
               {activeFilters > 0 && <> · {activeFilters} filter{activeFilters === 1 ? '' : 's'} off</>}
             </p>

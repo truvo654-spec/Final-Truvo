@@ -14,7 +14,7 @@ import type {WhatIfSnapshot} from '../../backtest/store';
 import {SaveScenarioButton} from './SaveScenarioButton';
 
 const COLORS = ['#5338ec', '#059669', '#0284c7', '#d97706', '#db2777', '#7c3aed'];
-export const WhatIfComparison: React.FC<{ entries: JournalEntry[]; rule: WhatIfRule; model:WhatIfStudyModel; onSelect: (rule: WhatIfRule) => void; onSave:(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>void; isSaved:(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>boolean }> = ({ entries, rule, model, onSelect,onSave,isSaved }) => {
+export const WhatIfComparison: React.FC<{ entries: JournalEntry[]; selectedSymbols:string[]; instrumentOptions:string[]; onInstrument:(symbol:string)=>void; rule: WhatIfRule; model:WhatIfStudyModel; onSelect: (rule: WhatIfRule) => void; onSave:(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>void; isSaved:(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>boolean }> = ({ entries, selectedSymbols,instrumentOptions,onInstrument,rule, model, onSelect,onSave,isSaved }) => {
   const currency = React.useContext(JournalCurrency);
   const money = (n: number) => Number.isFinite(n) ? formatMoney(n, currency, 2) : '—';
   const describeWhatIf = (rule: WhatIfRule) => rule.kind === 'dailyLoss' ? `Stop after ${money(rule.usd)} net loss in a day` : describeRule(rule);
@@ -24,18 +24,19 @@ export const WhatIfComparison: React.FC<{ entries: JournalEntry[]; rule: WhatIfR
   const [score, setScore] = useState('net');
   const [improvedOnly, setImprovedOnly] = useState(false);
   const [visible, setVisible] = useState<string[] | null>(null);
-  const [chartSymbol, setChartSymbol] = useState('');
+
   const [chartEnd, setChartEnd] = useState<number | null>(null);
   const [equityScope, setEquityScope] = useState('benchmark');
   const [chartView, setChartView] = useState('combined');
   useEffect(() => { setVisible(null); }, [rule.kind]);
-  useEffect(() => { setChartEnd(null); }, [chartSymbol, entries]);
+
   const rank = (row: typeof comparison.rows[number]) => score === 'drawdown' ? -row.training.whatIf.maxDD : score === 'win' ? row.training.whatIf.winRate : row.training.whatIf.netPnl;
   const ranked = [...comparison.rows].sort((a, b) => rank(b) - rank(a));
   const shown = ranked.filter(r => !improvedOnly || r.output.saved > 0);
   const selected = shown.filter(r => visible ? visible.includes(r.id) : shown.indexOf(r) < 3 || r.id === recommendation.candidate?.id || r.id === JSON.stringify(rule)).slice(0,6);
-  const symbols = Array.from(new Set(entries.map(e => e.symbol))).sort();
-  const instrument = symbols.includes(chartSymbol) ? chartSymbol : symbols[0] || '';
+  const symbols = Array.from(new Set<string>(entries.map(e => e.symbol))).sort();
+  const instrument=selectedSymbols.map(selected=>symbols.find(symbol=>symbol===selected||(!!resolveSymbol(selected)&&resolveSymbol(selected)===resolveSymbol(symbol)))).find(Boolean)||symbols[0]||'';
+  useEffect(()=>{setChartEnd(null);},[instrument,entries]);
   const canonical = resolveSymbol(instrument);
   const matchesSymbol = (symbol: string) => canonical ? resolveSymbol(symbol) === canonical : symbol === instrument;
   const actualTrades = comparison.rows[0]?.output.trades ?? [];
@@ -75,11 +76,11 @@ export const WhatIfComparison: React.FC<{ entries: JournalEntry[]; rule: WhatIfR
       evidence={`Selection uses the first 70% of entry days. The remaining days are checked independently; crossing trades stay in full-history results only. AI explores ${model.tested} supported setups across guardrails, session, tags and price-dependent rules, including your parameter range.`} action="Compare AI scenario" onUse={id => {setImprovedOnly(false);setVisible([...new Set([JSON.stringify(rule),id])]);}} />
     <Card title="Candles & scenario comparison" sub="Compare actual and What-if equity alongside market candles on one timeline.">
       <div className="flex flex-wrap items-end gap-3 mb-3">
-        <Field label="Candle instrument" htmlFor="wi-chart-symbol"><select id="wi-chart-symbol" className={inputBase} value={instrument} onChange={e => setChartSymbol(e.target.value)}>{symbols.map(s => <option key={s}>{s}</option>)}</select></Field>
+        <Field label="Candle instrument · linked to setup" htmlFor="wi-chart-symbol"><select id="wi-chart-symbol" className={inputBase} value={instrument} onChange={e => onInstrument(e.target.value)}>{instrumentOptions.map(s => <option key={s}>{s}</option>)}</select></Field>
         <Field label="Equity scope" htmlFor="wi-equity-scope"><select id="wi-equity-scope" className={inputBase} value={equityScope} onChange={e => setEquityScope(e.target.value)}><option value="benchmark">All filtered benchmark trades</option><option value="instrument">Selected instrument only</option></select></Field>
         <Field label="Chart view" htmlFor="wi-chart-view"><select id="wi-chart-view" className={inputBase} value={chartView} onChange={e => setChartView(e.target.value)}><option value="combined">Candles + equity</option><option value="equity">Equity only · full history</option></select></Field>
       </div>
-      <p className="text-[11px] text-slate-500 mb-3">{equityScope === 'benchmark' ? 'Lines include all filtered benchmark trades across instruments.' : `Lines include only ${instrument || 'the selected instrument'} trades.`} {chartView === 'combined' && bars.length ? `Candles show ${instrument || 'the selected instrument'} prices on an independent right axis; equity uses ${currency} on the left.` : `Cumulative realized net P&L in ${currency}, ordered by recorded exit time.`}</p>
+      <p className="text-[11px] text-slate-500 mb-3">Changing the candle instrument updates the scenario lab symbol filter. {equityScope === 'benchmark' ? 'Lines include all filtered benchmark trades across instruments.' : `Lines include only ${instrument || 'the selected instrument'} trades.`} {chartView === 'combined' && bars.length ? `Candles show ${instrument || 'the selected instrument'} prices on an independent right axis; equity uses ${currency} on the left.` : `Cumulative realized net P&L in ${currency}, ordered by recorded exit time.`}</p>
       {chartView === 'combined' && bars.length ? <><CandleChart label={`${instrument} demo candles and ${equityScope === 'benchmark' ? 'benchmark' : 'instrument'} scenario equity`} bars={bars} from={from} to={to} height={380} dp={symbolSpec(instrument)?.priceDp ?? 2} pnl={{ currency, series: candleSeries, detail: time => <div>{candleSeries.map(s => <p key={s.name}>{s.name}: {money(s.points.find(p => p.x === time)?.y ?? NaN)}</p>)}</div> }} />
         <label className="block text-[11px] text-slate-500 mt-3">Chart timeline<input type="range" aria-label="What-if candle timeline" min={Math.min(70,bars.length)} max={bars.length} value={to} onChange={e => setChartEnd(Number(e.target.value))} className="w-full accent-[#5338ec]" /></label></> : <>
         {chartView === 'combined' && <p role="status" className="text-xs text-slate-500 mb-3">No demo candles for this instrument and date range. Showing full-history equity.</p>}

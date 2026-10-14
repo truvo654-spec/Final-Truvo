@@ -65,3 +65,23 @@ test('Playbook setups use template stops and targets, while missing saved scenar
   assert.equal(playbookPositionDraft(feed,missing,80,'BUY',missing.scenarios[0].id).entry,'');
   assert.doesNotThrow(()=>playbookPositionDraft(feed,{...book,riskPerTrade:20},80));
 });
+
+test('breakeven activates only after the threshold close and stops on the next candle',()=>{
+  const bars=[bar(0,100,110,80,100),bar(1,100,107,96,106),bar(2,106,108,99,101)];
+  const p={...position,stop:95,target:120};
+  assert.equal(positionPath(bars,p,0,2,null,1).exit,null);
+  assert.deepEqual(positionPath(bars,p,0,3,null,1).exit,{index:2,price:100,reason:'Breakeven stop'});
+  assert.equal(positionPath(bars,p,0,3).exit,null);
+  assert.equal(positionPath(bars,p,0,3,null,1).points.at(-1)!.managedNet,-4);
+  assert.equal(p.stop,95);
+});
+test('additional journal symbols have generated replay paths without treating reference FX multipliers as recorded evidence',()=>{
+  for(const symbol of ['USD/JPY','GBP/JPY','USD/CAD','ETH/USDT']){
+    const feed=createDemoFeed(symbol,'15m','journal-playbook-replay');
+    assert.equal(feed.symbol,symbol);
+    assert.equal(feed.bars.length,360);
+    assert.ok(feed.bars.every(b=>Number.isFinite(b.c)&&b.c>0));
+  }
+  const fx=recordedPositionDraft({symbol:'USD/JPY',entryPrice:150,size:1,quantityUnit:'lots',direction:'BUY',commission:0,accountCurrency:'USD'} as JournalEntry);
+  assert.equal(fx.multiplier,'');
+});

@@ -9,6 +9,8 @@ import { JournalDayReview } from '../JournalDayReview';
 import { addMonth, monthBounds, monthCells } from '../journalOverview';
 import { RulesMonitor } from '../JournalMonitors';
 import { JournalReplayAvailability } from '../JournalReplayAvailability';
+import { DemoReplay } from '../../backtest/DemoReplay';
+import { DEFAULT_PLAYBOOKS } from '../../../data/journalPlaybooks';
 
 const trade = (patch: Partial<JournalEntry> = {}): JournalEntry => ({ id:'test', date:'2026-10-02', symbol:'TEST', assetClass:'Stocks', direction:'BUY', entryPrice:10, exitPrice:12, size:1, pnl:20, rMultiple:null, outcome:'win', tradingStatus:'closed', commission:2, strategy:'Breakout', tags:[], setupNotes:'', emotionBefore:null, emotionAfter:null, followedPlan:null, checklistDone:[], mistakes:[], lessons:'', rating:null, source:'manual', accountCurrency:'USD', ...patch });
 
@@ -100,7 +102,32 @@ test('Daily table has separate side, percentage ROI, playbook strategy and demo 
 test('Replay window supplies an explicit simulated sandbox, never an API claim', () => {
   const html=renderToStaticMarkup(createElement(JournalReplayAvailability,{entry:trade(),onClose:()=>{}}));
   assert.match(html,/Simulated demo data/); assert.match(html,/not historical or live prices/);
-  assert.match(html,/aria-label="Position test price history"/); assert.match(html,/aria-label="Position replay timeline"/);
+  assert.match(html,/aria-label="Comparison chart view"/); assert.match(html,/aria-label="Position replay timeline"/);
   assert.doesNotMatch(html,/Custom replay API not connected/);
   assert.match(html,/Return to daily review/);
+});
+
+test('journal-linked replay keeps the selected trade as its baseline instead of offering other records', () => {
+  const selected = trade({ id: 'selected-log', symbol: 'GBP/USD', strategy: 'Swing', entryPrice: 1.23456, direction: 'SELL' });
+  const unrelated = trade({ id: 'other-log', symbol: 'XAU/USD', strategy: 'Breakout' });
+  const html = renderToStaticMarkup(createElement(JournalReplayAvailability, { entry: selected, entries: [unrelated], onClose: () => {} }));
+  assert.match(html, /Selected Trade Log entry/);
+  const selector = html.match(/<select[^>]*aria-label="Position recorded trade"[^>]*>[\s\S]*?<\/select>/)?.[0] || '';
+  assert.match(selector, /disabled=""/);
+  assert.match(selector, /value="selected-log" selected=""/);
+  assert.doesNotMatch(selector, /other-log|Select a trade/);
+  assert.match(html, /Historical reference · GBP\/USD SELL/);
+  assert.match(html, /entry 1\.23456/);
+});
+
+test('linked strategy comparison uses read-only journal sizing and separate editable playbook exits', () => {
+  const selected=trade({symbol:'NVDA',entryPrice:120,size:3,quantityUnit:'shares',stopPrice:115,takeProfit:130,equityAtEntry:4500});
+  const html=renderToStaticMarkup(createElement(DemoReplay,{entries:[selected],playbooks:DEFAULT_PLAYBOOKS,initialEntryId:selected.id,initialMode:'strategy',lockRecordedTrade:true}));
+  assert.match(html, /Comparative results/);
+  assert.match(html, /<fieldset disabled=""/);
+  assert.match(html, /aria-label="Test Position size"[^>]*value="3"/);
+  assert.match(html, /aria-label="Test Account equity \(USD, optional\)"[^>]*value="4500"/);
+  assert.match(html, /Advanced edit · What-if exits/);
+  assert.doesNotMatch(html, /Demo equity \(USD\)|Position size &amp; setup monitor/);
+  assert.match(html, /aria-label="Chart comparison overlays"/); assert.match(html, /Sample AI suggestions/);
 });

@@ -143,3 +143,16 @@ test('Open Insights renders an honest empty scope and tolerates an invalid saved
   assert.match(render([],{'JournalInsights-chartScope':'open'}).text,/No open positions match/);
   assert.match(render([trade()],{'JournalInsights-chartScope':'invalid'}).text,/Bars show realized net profit or loss/);
 });
+
+test('recent Insights subranges follow the supplied Trade Log dates instead of a fixed demo date',()=>{
+  const result=render([trade({date:'2020-04-10'}),trade({id:'b',date:'2020-04-01'}),trade({id:'old',date:'2020-01-01'})],{'JournalInsights-range':'last30'});
+  assert.ok(result.text.includes('2 eligible closed trades'));
+  assert.ok(result.text.includes('3 Trade Log records connected.'));
+});
+test('custom playbooks and saved filter recovery remain visible in Insights',()=>{
+  const result=render([trade({strategy:'My custom setup'})],{'JournalInsights-assetOff':['Stocks']});
+  assert.ok(result.text.includes('Playbook (1/1)'));
+  assert.ok(result.text.includes('Reset Insights filters'));
+  assert.ok(result.text.includes('1 Trade Log records connected.'));
+  assert.ok(result.text.includes('0 match Day &amp; Time report filters.'));
+});
