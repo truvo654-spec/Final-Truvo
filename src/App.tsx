@@ -571,6 +571,7 @@ export default function App() {
       sub: `${sig.action} · ${sig.confidence}% confidence · ${sig.timeframe}`,
       group: 'Signals',
       icon: LineChartIcon,
+      instrument: sig.ticker,
       meta: `${sig.change24h > 0 ? '+' : ''}${sig.change24h}%`,
       run: () => { setSelectedSignal(sig); setActiveTab('signal-detail'); },
     }));
@@ -580,6 +581,7 @@ export default function App() {
       sub: `From ${b.spreadFrom} · ${b.maxCashback} cashback`,
       group: 'Brokers',
       icon: BriefcaseIcon,
+      broker: b.name,
       run: () => { setSelectedBrokerForDetail(b); setActiveTab('broker-detail'); },
     }));
     return out;

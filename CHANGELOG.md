@@ -12,6 +12,13 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Cmd+K and the header search box now open the palette; the full search modal is one keystroke further in, behind "Advanced search".
 
+## [1.18.0] - 2026-10-09
+### Changed
+- Search results carry the real mark: a signal shows its instrument's own logo, drawn with the same component the analysis pages use, and a broker shows its brand square rather than a generic briefcase.
+### Added
+- src/components/brokers/brokerMark.ts, one place for each broker's colours and short name, so every surface draws the same mark. The mock logo URLs point at unrelated stock photos and are no longer used here.
+- src/components/analysis/instrumentIconType.ts, which maps a ticker to its mark, including gold, silver, oil and the major currencies.
+
 ## [1.17.0] - 2026-10-09
 ### Changed
 - The instrument detail header follows the design: a round coin mark, the name with "Cryptocurrency · BTC/USD" and a line of description, the price with the move as a tinted pill and the cash figure beside it, a sparkline, and the four figures labelled Market Cap, Volume (24h), Relative Volume and 1M Return in trillions and billions rather than raw numbers.

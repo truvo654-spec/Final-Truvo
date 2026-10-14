@@ -1,4 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { InstrumentIcon } from './analysis/InstrumentIcon';
+import { iconTypeFor } from './analysis/instrumentIconType';
+import { brokerMark } from './brokers/brokerMark';
 import {
   ArrowRight, BarChart3, Bell, BookOpen, Briefcase, Calculator, CalendarDays, ChevronRight,
   Clock, Gift, LayoutGrid, LineChart, Newspaper, NotebookPen, Search, SlidersHorizontal,
@@ -26,6 +29,10 @@ export interface PaletteItem {
   sub?: string;
   group: string;
   icon: React.ElementType;
+  /** A broker's name, drawn with its own brand mark instead of the generic icon. */
+  broker?: string;
+  /** An instrument symbol, drawn with the same mark the analysis pages use. */
+  instrument?: string;
   /** Shown on the right: a shortcut, a tag, or a price. */
   meta?: string;
   /** True when choosing this opens another screen rather than acting in place. */
@@ -64,6 +71,30 @@ function score(label: string, sub: string | undefined, q: string): number {
   if (s.includes(n)) return 20;
   return -1;
 }
+
+/** The picture at the start of a row: a broker's logo, an instrument's mark, or the generic icon. */
+const PaletteMark: React.FC<{ item: PaletteItem; Icon: React.ElementType }> = ({ item, Icon }) => {
+  if (item.instrument) {
+    return (
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#f1f0fe] dark:bg-white/10">
+        <InstrumentIcon iconType={iconTypeFor(item.instrument)} name={item.instrument} className="h-5 w-5" />
+      </span>
+    );
+  }
+  if (item.broker) {
+    const mark = brokerMark(item.broker);
+    return (
+      <span
+        className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg font-bold leading-none"
+        style={{ background: mark.bg, color: mark.color, fontSize: mark.tight ? 8 : 11 }}
+        aria-hidden
+      >
+        {mark.text}
+      </span>
+    );
+  }
+  return <Icon className="h-[18px] w-[18px] shrink-0 text-slate-500 dark:text-white/60" aria-hidden />;
+};
 
 export const CommandPalette: React.FC<{
   open: boolean;
@@ -242,7 +273,7 @@ export const CommandPalette: React.FC<{
                     onClick={() => choose(item)}
                     className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left transition ${on ? 'bg-[#f1f0fe] dark:bg-white/10' : 'hover:bg-slate-50 dark:hover:bg-white/5'}`}
                   >
-                    <Icon className="h-[18px] w-[18px] shrink-0 text-slate-500 dark:text-white/60" aria-hidden />
+                    <PaletteMark item={item} Icon={Icon} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] text-slate-900 dark:text-white">{markMatch(item.label, query)}</span>
                       {item.sub && <span className="block truncate text-[12.5px] text-slate-500 dark:text-white/50">{item.sub}</span>}
