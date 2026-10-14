@@ -144,6 +144,8 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
 
   // Pagination state (Page 1 active)
   const [currentPage, setCurrentPage] = useState<number>(1);
+  /** Lets the table's states be reviewed without breaking the data. */
+  const [preview, setPreview] = useState<'default' | 'notfound' | 'error'>('default');
 
   // View tab state (Table | Heatmap | Scatter | Correlation)
   const [activeViewTab, setActiveViewTab] = useState<'table' | 'heatmap' | 'scatter' | 'correlation'>('table');
@@ -902,10 +904,25 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
         </div>
       )}
 
+      <div className="fixed bottom-4 left-4 z-30 flex items-center gap-1 rounded-xl border border-[#d7d3fb] bg-white/95 p-1 shadow-lg backdrop-blur print:hidden" role="group" aria-label="Preview table state">
+        <span className="px-2 text-[10px] font-bold uppercase tracking-wide text-[#94a3b8]">Preview state</span>
+        {([['default', 'Default'], ['notfound', 'Not found'], ['error', 'Error']] as const).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={preview === id}
+            onClick={() => setPreview(id)}
+            className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors ${preview === id ? 'bg-[#5945F1] text-white' : 'text-[#475569] hover:bg-[#f1f0fe]'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* ─── 3. LOWER SECTION CONTAINER (Full Width matching other pages) ─── */}
       <div className="w-full px-4 sm:px-8 md:px-[56px] space-y-5">
         {/* ─── VIEW TABS: Table | Heatmap | 🔒 Scatter | 🔒 Correlation (Using TabMain Component) ─── */}
-        <div className="-mx-2 sm:mx-0">
+        <div data-keep-button-icons className="-mx-2 sm:mx-0">
           <TabMain<ViewTabType>
             tabs={viewTabs}
             activeTab={activeViewTab}
@@ -1142,7 +1159,17 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                   </thead>
 
                   <tbody className="divide-y divide-slate-100 text-sm">
-                    {filteredInstruments.length === 0 ? (
+                    {preview === 'error' ? (
+                      <tr>
+                        <td colSpan={8} className="py-24">
+                          <div className="flex flex-col items-center text-center px-6">
+                            <img src={IA_ERROR} alt="" className="w-[270px] h-auto" />
+                            <p className="mt-6 font-display text-[28px] font-bold text-[#c026d3]">Well, that didn&rsquo;t load</p>
+                            <p className="mt-2 text-sm text-slate-500">It&rsquo;s not you, it&rsquo;s us. Try refreshing again in a bit.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : preview === 'notfound' || filteredInstruments.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="py-24">
                           <div className="flex flex-col items-center text-center px-6">

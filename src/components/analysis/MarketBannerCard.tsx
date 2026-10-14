@@ -197,28 +197,28 @@ export const MarketBannerCard: React.FC<MarketBannerCardProps> = ({
           <div className="space-y-2.5">
             {/* Market Size Row */}
             <div className="flex items-center gap-2.5">
-              <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+              <div className="w-7 h-7 rounded-full bg-[#eaf7a8] flex items-center justify-center shrink-0">
+                <ArrowUpRight className="w-3.5 h-3.5 text-[#5f7a00] stroke-[2.5]" />
               </div>
               <div className="flex items-baseline justify-between flex-1">
-                <span className="text-xs text-slate-500 font-medium">Market Size</span>
+                <span className="text-[13px] text-slate-500 font-medium">Market Size</span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-sm font-bold text-slate-900">{category.entryVal?.split(' ')[0] || '+$2.0T'}</span>
-                  <span className="text-xs font-bold text-emerald-500">{category.statChange || '+0.45%'}</span>
+                  <span className="text-xs font-bold text-[#8cb300]">{category.statChange || '+0.45%'}</span>
                 </div>
               </div>
             </div>
 
             {/* Volume Row */}
             <div className="flex items-center gap-2.5">
-              <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+              <div className="w-7 h-7 rounded-full bg-[#eaf7a8] flex items-center justify-center shrink-0">
+                <ArrowUpRight className="w-3.5 h-3.5 text-[#5f7a00] stroke-[2.5]" />
               </div>
               <div className="flex items-baseline justify-between flex-1">
-                <span className="text-xs text-slate-500 font-medium">Volume</span>
+                <span className="text-[13px] text-slate-500 font-medium">Volume</span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-sm font-bold text-slate-900">{category.volumeVal?.split(' ')[0] || '+$2.0T'}</span>
-                  <span className="text-xs font-bold text-emerald-500">{category.statChange || '+0.45%'}</span>
+                  <span className="text-xs font-bold text-[#8cb300]">{category.statChange || '+0.45%'}</span>
                 </div>
               </div>
             </div>
@@ -240,24 +240,24 @@ export const MarketBannerCard: React.FC<MarketBannerCardProps> = ({
             {/* Left Sub-column (Long & Open Interest) */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                  <ArrowUpRight className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                <div className="w-7 h-7 rounded-full bg-[#eaf7a8] flex items-center justify-center shrink-0">
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#5f7a00] stroke-[2.5]" />
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-400 block">Long</span>
-                  <span className="text-xs font-bold text-slate-900">+$2.0T</span>
+                  <span className="text-[12px] text-slate-500 block">Long</span>
+                  <span className="text-[15px] font-bold text-slate-900">+$2.0T</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                  <ArrowUpRight className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                <div className="w-7 h-7 rounded-full bg-[#eaf7a8] flex items-center justify-center shrink-0">
+                  <ArrowUpRight className="w-3.5 h-3.5 text-[#5f7a00] stroke-[2.5]" />
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-400 block">Open Interest</span>
+                  <span className="text-[12px] text-slate-500 block">Open Interest</span>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-xs font-bold text-slate-900">+$2.0T</span>
-                    <span className="text-[10px] font-bold text-emerald-500">+0.45%</span>
+                    <span className="text-[15px] font-bold text-slate-900">+$2.0T</span>
+                    <span className="text-[10px] font-bold text-[#8cb300]">+0.45%</span>
                   </div>
                 </div>
               </div>
@@ -266,24 +266,24 @@ export const MarketBannerCard: React.FC<MarketBannerCardProps> = ({
             {/* Right Sub-column (Short & Volume) */}
             <div className="space-y-2.5">
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full bg-pink-100 flex items-center justify-center shrink-0">
-                  <ArrowDownRight className="w-3 h-3 text-[#FD02B0] stroke-[2.5]" />
+                <div className="w-7 h-7 rounded-full bg-[#e7e3ff] flex items-center justify-center shrink-0">
+                  <ArrowDownRight className="w-3.5 h-3.5 text-[#5945F1] stroke-[2.5]" />
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-400 block">Short</span>
-                  <span className="text-xs font-bold text-[#FD02B0]">+$2.0T</span>
+                  <span className="text-[12px] text-slate-500 block">Short</span>
+                  <span className="text-[15px] font-bold text-slate-900">+$2.0T</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full bg-pink-100 flex items-center justify-center shrink-0">
-                  <ArrowDownRight className="w-3 h-3 text-[#FD02B0] stroke-[2.5]" />
+                <div className="w-7 h-7 rounded-full bg-[#e7e3ff] flex items-center justify-center shrink-0">
+                  <ArrowDownRight className="w-3.5 h-3.5 text-[#5945F1] stroke-[2.5]" />
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-400 block">Volume</span>
+                  <span className="text-[12px] text-slate-500 block">Volume</span>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-xs font-bold text-[#FD02B0]">+$2.0T</span>
-                    <span className="text-[10px] font-bold text-[#FD02B0]">+0.45%</span>
+                    <span className="text-[15px] font-bold text-slate-900">+$2.0T</span>
+                    <span className="text-[10px] font-bold text-[#5945F1]">+0.45%</span>
                   </div>
                 </div>
               </div>
@@ -380,45 +380,33 @@ export const MarketBannerCard: React.FC<MarketBannerCardProps> = ({
         <div className="border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6 flex flex-col items-center justify-center">
           <span className="text-xs font-semibold text-slate-500 mb-1">Fear &amp; Greed</span>
 
-          <div className="relative w-28 h-14 flex items-end justify-center overflow-hidden">
-            <svg viewBox="0 0 100 50" className="w-28 h-14">
+          <div className="relative w-[104px] h-[104px] flex items-center justify-center">
+            <svg viewBox="0 0 120 120" className="w-[104px] h-[104px] -rotate-[135deg]">
               <defs>
-                <linearGradient id={`fearGreedArc-${category.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#EF4444" />
-                  <stop offset="35%" stopColor="#F59E0B" />
-                  <stop offset="70%" stopColor="#BEF226" />
-                  <stop offset="100%" stopColor="#10B981" />
+                <linearGradient id={`fearGreedArc-${category.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#ff2d87" />
+                  <stop offset="40%" stopColor="#ff8a3d" />
+                  <stop offset="70%" stopColor="#d8e84a" />
+                  <stop offset="100%" stopColor="#8cb300" />
                 </linearGradient>
               </defs>
-              <path
-                d="M 12 48 A 38 38 0 0 1 88 48"
-                fill="none"
+              <circle cx="60" cy="60" r="48" fill="none" stroke="#f1f0fe" strokeWidth="11" strokeLinecap="round" strokeDasharray="226 302" />
+              <circle
+                cx="60" cy="60" r="48" fill="none"
                 stroke={`url(#fearGreedArc-${category.id})`}
-                strokeWidth="7"
-                strokeLinecap="round"
+                strokeWidth="11" strokeLinecap="round"
+                strokeDasharray={`${(score / 100) * 226} 302`}
+              />
+              <circle
+                cx={60 + 48 * Math.cos((score / 100) * 2.356)}
+                cy={60 + 48 * Math.sin((score / 100) * 2.356)}
+                r="6" fill="#bef226" stroke="#fff" strokeWidth="2.5"
               />
             </svg>
-
-            {/* Live Swaying Pressure Needle */}
-            <motion.div
-              className="absolute bottom-0 left-1/2 w-[2.5px] h-11 bg-slate-900 rounded-full z-10"
-              style={{ transformOrigin: 'bottom center' }}
-              initial={{ rotate: -180 }}
-              animate={{
-                rotate: [needleAngle, needleAngle - 3.5, needleAngle + 2.5, needleAngle - 1.5, needleAngle],
-              }}
-              transition={{
-                duration: 4.5,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            >
-              <div className="w-2.5 h-2.5 bg-slate-950 rounded-full -top-1 -left-[4px] absolute shadow-xs border border-white" />
-            </motion.div>
+            <span className="absolute font-display text-[26px] font-bold text-slate-900">{score}</span>
           </div>
 
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="text-lg font-black text-slate-900">{score}</span>
+          <div className="flex items-center gap-2 -mt-3">
             <motion.span
               animate={{ scale: [1, 1.06, 1] }}
               transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}

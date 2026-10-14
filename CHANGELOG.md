@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.2] - 2026-10-09
+### Changed
+- Instrument Analysis banner figures follow the design: lime circles for what is rising, violet for what is falling, bigger values, and the Fear & Greed gauge is now a gradient ring with the score inside and the label beneath.
+- The view tabs keep their lock marks on Scatter and Correlation again.
+### Added
+- The table's failed state: "Well, that didn't load — It's not you, it's us. Try refreshing again in a bit." with the mascot, plus a preview switch (Default / Not found / Error) for reviewing all three.
+
 ## [1.10.1] - 2026-10-09
 ### Changed
 - Instrument Analysis moved towards the new design, UI only: the title is one purple-to-magenta gradient with the design's subtitle, the asset pills sit in a single rounded container, Export CSV moved up beside the filter on the tab bar, the results count sits to the left of the pagination under the table, and the DURATION label is gone from the range switcher.
