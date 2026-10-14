@@ -226,3 +226,8 @@ export function getNextTierInfo(level: number, currentPoints: number): {
   }
 }
 
+
+
+/** Saved calculator slots a level is worth. The demo switcher and a real level-up now agree. */
+export const SLOTS_BY_LEVEL: Record<number, number> = { 1: 5, 2: 10, 3: 20, 4: 50 };
+export const slotsForLevel = (level: number): number => SLOTS_BY_LEVEL[level] ?? SLOTS_BY_LEVEL[1];

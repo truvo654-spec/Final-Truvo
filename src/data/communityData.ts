@@ -1416,12 +1416,12 @@ export const TIER_UNLOCK_MATRIX: TierUnlockItem[] = [
     minPoints: 500,
     badge: '👑',
     color: '#5046E5',
-    cashbackBoost: 20,
+    cashbackBoost: 15,
     unlockedFeatures: [
       { name: 'Verified Boss Badge', description: 'Distinguished Boss crown badge next to your handle across the platform', unlocked: true },
       { name: 'Host Your Own Live Spaces', description: 'Open your own live audio streams with audience recording', unlocked: true },
       { name: 'Private Alpha Lounge & VIP Insights', description: 'Institutional level quantitative models, correlation matrix & scatter plots', unlocked: true },
-      { name: '+20% Cashback Booster (Max)', description: 'Maximum +20% rebate booster and zero-fee instant withdrawals', unlocked: true },
+      { name: '+15% Cashback Booster (Max)', description: 'Maximum +15% rebate booster and zero-fee instant withdrawals', unlocked: true },
     ],
   },
 ];

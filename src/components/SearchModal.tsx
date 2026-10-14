@@ -1060,7 +1060,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
     brokers.some(
       (b) =>
         b.name.toLowerCase().includes(query) ||
-        b.regulation?.toLowerCase().includes(query)
+        b.regulations?.join(' ').toLowerCase().includes(query)
     ) ||
     filteredNews.length > 0 ||
     filteredCourses.length > 0 ||

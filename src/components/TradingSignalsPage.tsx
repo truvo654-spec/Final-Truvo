@@ -77,10 +77,22 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
   const [insufficientCreditTargetSignal, setInsufficientCreditTargetSignal] = useState<MarketSignal | null>(null);
   const [isUnlockedToastVisible, setIsUnlockedToastVisible] = useState<boolean>(false);
 
+  const UNLOCK_HOURS = 24;
+
+  /** Unlocks are stored with the moment they lapse, so the 24 hours the screen sells are real. */
   const [unlockedSignalIds, setUnlockedSignalIds] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem('marketsyde_unlocked_signals');
-      return saved ? new Set(JSON.parse(saved)) : new Set<string>();
+      if (!saved) return new Set<string>();
+      const parsed = JSON.parse(saved);
+      const now = Date.now();
+      if (Array.isArray(parsed)) {
+        // Older format: plain ids with no expiry. Treat them as lapsed.
+        return new Set<string>();
+      }
+      const live = Object.entries(parsed as Record<string, number>).filter(([, until]) => until > now);
+      localStorage.setItem('marketsyde_unlocked_signals', JSON.stringify(Object.fromEntries(live)));
+      return new Set(live.map(([id]) => id));
     } catch {
       return new Set<string>();
     }
@@ -112,8 +124,11 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
       const next = new Set(prev);
       next.add(sig.id);
       try {
-        localStorage.setItem('marketsyde_unlocked_signals', JSON.stringify(Array.from(next)));
-      } catch {}
+        const saved = localStorage.getItem('marketsyde_unlocked_signals');
+        const store: Record<string, number> = saved && !saved.startsWith('[') ? JSON.parse(saved) : {};
+        store[sig.id] = Date.now() + UNLOCK_HOURS * 3600_000;
+        localStorage.setItem('marketsyde_unlocked_signals', JSON.stringify(store));
+      } catch { /* storage can be blocked; the unlock still holds for this session */ }
       return next;
     });
     // Show green toast notification matching Trading Signals; Desktop; Signal Unlocked.png
@@ -1000,11 +1015,11 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
                   <ul className="text-xs space-y-1 text-slate-700">
                     <li className="flex items-center justify-between">
                       <span>• Premium</span>
-                      <HelpCircle className="w-3 h-3 text-slate-400" title="Low spreads, zero commission" />
+                      <HelpCircle className="w-3 h-3 text-slate-400" aria-label="Low spreads, zero commission" />
                     </li>
                     <li className="flex items-center justify-between">
                       <span>• Pro</span>
-                      <HelpCircle className="w-3 h-3 text-slate-400" title="Ultra tight raw spreads" />
+                      <HelpCircle className="w-3 h-3 text-slate-400" aria-label="Ultra tight raw spreads" />
                     </li>
                     <li>• Pro Plus</li>
                   </ul>

@@ -1106,7 +1106,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
               <div className="border-t border-white/20 pt-3 mt-4 space-y-1.5 text-xs text-white/95 font-medium">
                 <div className="flex items-center gap-2">
                   <span className="font-black text-sm">$</span>
-                  <span>+{user.boostPercentage || 10}% Cashback Boost</span>
+                  <span>+{user.boostPercentage ?? 0}% Cashback Boost</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-black text-sm">%</span>

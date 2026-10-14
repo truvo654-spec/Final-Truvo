@@ -153,7 +153,7 @@ export const LevelPointsGuideView: React.FC<LevelPointsGuideViewProps> = ({
     },
     {
       q: 'Do all instruments earn the same points?',
-      a: 'No. Major forex pairs earn a baseline of 50 points per standard lot, whereas selected exotic pairs, indices, precious metals (such as XAU/USD), and cryptos may yield higher base rates or feature temporary 1.25x–1.5x boosters.',
+      a: 'No. Major forex pairs earn a baseline of 50 points per standard lot, whereas selected exotic pairs, indices, precious metals (such as XAU/USD), and cryptos may yield higher base rates or carry a 1.25x booster.',
     },
     {
       q: 'Can I earn points from multiple brokers?',
@@ -161,7 +161,7 @@ export const LevelPointsGuideView: React.FC<LevelPointsGuideViewProps> = ({
     },
     {
       q: 'What happens when I reach a new level?',
-      a: 'Reaching higher levels (from Level 1 Rookie to Level 2 Climber, Level 3 Player, and Level 4 Boss) permanently increases your cashback boost rate (up to +20%), unlocks exclusive trading perks, and grants priority rebate processing.',
+      a: 'Reaching higher levels (from Level 1 Rookie to Level 2 Climber, Level 3 Player, and Level 4 Boss) permanently increases your cashback boost rate (up to +15%), unlocks exclusive trading perks, and grants priority rebate processing.',
     },
   ];
 

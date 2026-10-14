@@ -299,7 +299,7 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
           <div className="border-t border-white/20 pt-3 mt-4 space-y-1.5 text-xs text-white/95 font-medium">
             <div className="flex items-center gap-2">
               <span className="font-black text-sm">$</span>
-              <span>+{user.boostPercentage || 10}% Cashback Boost</span>
+              <span>+{user.boostPercentage ?? 0}% Cashback Boost</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-amber-300 text-sm leading-none">⚡</span>
@@ -599,7 +599,7 @@ export const CustomizableWidget: React.FC<CustomizableWidgetProps> = ({
               {brokers.slice(0, 3).map((b) => (
                 <div key={b.id} className="p-2.5 rounded-xl bg-white border border-slate-200 text-center space-y-1">
                   <div className="font-bold text-xs text-[#0b1c30]">{b.name}</div>
-                  <div className="text-[10px] text-emerald-600 font-bold">${b.maxCashbackRate}/lot</div>
+                  <div className="text-[10px] text-emerald-600 font-bold">${b.maxCashback}/lot</div>
                   <button
                     onClick={() => onOpenConnectModal(b)}
                     className="w-full py-1 rounded-lg bg-[#5945F1] text-white text-[10px] font-bold"

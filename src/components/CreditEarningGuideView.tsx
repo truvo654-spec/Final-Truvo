@@ -17,16 +17,20 @@ interface CreditActivityItem {
 }
 
 const CREDIT_ACTIVITIES: CreditActivityItem[] = [
-  { activity: 'Daily Login', credits: 25 },
-  { activity: '7-Day Streak', credits: 300 },
-  { activity: 'Read Market Analysis', credits: 40 },
-  { activity: 'Watch Education', credits: 60 },
-  { activity: 'Save Watchlist', credits: 15 },
-  { activity: 'Create Price Alert', credits: 20 },
-  { activity: 'Connect Broker', credits: 400 },
-  { activity: 'Share Achievement', credits: 75 },
-  { activity: 'Community Poll', credits: 50 },
-  { activity: 'Weekly Mission', credits: 500 },
+  { activity: 'Daily Login', credits: 5 },
+  { activity: 'Connect a Broker', credits: 10 },
+  { activity: 'Finish Reading an Article', credits: 5 },
+  { activity: 'Mission Task', credits: 15 },
+  { activity: 'Complete a Mission', credits: 25 },
+];
+
+/** Earned as points rather than credits, listed so the two currencies are not confused. */
+export const POINT_ACTIVITIES: CreditActivityItem[] = [
+  { activity: 'Connect a Broker (points)', credits: 70 },
+  { activity: 'Trade One Lot (points)', credits: 50 },
+  { activity: 'Save a Backtest (points)', credits: 5 },
+  { activity: 'Finish a Replay Session (points)', credits: 10 },
+  { activity: 'Finish a Lesson (points)', credits: 30 },
 ];
 
 function FacetedGemIcon({ className = 'w-4 h-4' }: { className?: string }) {

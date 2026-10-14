@@ -898,7 +898,7 @@ export const GAMIFICATION_TIERS = [
   {
     tier: 'Climber',
     level: 2,
-    minPoints: 101,
+    minPoints: 100,
     maxPoints: 250,
     cashbackBoost: '+5% Boost',
     signalAccess: '75% - 79% Signal Confidence',
@@ -909,7 +909,7 @@ export const GAMIFICATION_TIERS = [
   {
     tier: 'Player',
     level: 3,
-    minPoints: 251,
+    minPoints: 250,
     maxPoints: 500,
     cashbackBoost: '+10% Boost',
     signalAccess: '80% - 89% Signal Confidence',
@@ -920,7 +920,7 @@ export const GAMIFICATION_TIERS = [
   {
     tier: 'Boss',
     level: 4,
-    minPoints: 501,
+    minPoints: 500,
     maxPoints: 1000,
     cashbackBoost: '+15% Boost',
     signalAccess: '90%+ Confidence Signals Full Access',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { pointsForTrade } from './data/pointsPerLot';
 import {
   INITIAL_USER,
   INITIAL_BROKERS,
@@ -24,7 +25,7 @@ import {
   ActivityLogItem,
   NewsArticle,
 } from './types';
-import { LEVEL_SCENARIOS, LevelScenarioId, applyLevelScenarioToUser, getTierForPoints } from './data/levelScenarios';
+import { LEVEL_SCENARIOS, LevelScenarioId, applyLevelScenarioToUser, getTierForPoints, slotsForLevel } from './data/levelScenarios';
 import { Header } from './components/Header';
 import { ReferenceDashboard } from './components/ReferenceDashboard';
 import { DashboardBentoGrid } from './components/DashboardBentoGrid';
@@ -35,7 +36,6 @@ import { BrokerRebateTablePage } from './components/brokers/BrokerRebateTablePag
 import { BrokerComparisonPage } from './components/brokers/BrokerComparisonPage';
 import { MembershipPlanPage } from './components/membership/MembershipPlanPage';
 import { SignalsList } from './components/SignalsList';
-import { CommunityHub } from './components/CommunityHub';
 import { CommunityPage } from './components/community/CommunityPage';
 import { LeaderboardCard } from './components/LeaderboardCard';
 import { PointsAndCreditsView } from './components/PointsAndCreditsView';
@@ -651,6 +651,7 @@ export default function App() {
         maxPoints: tierInfo.maxPoints,
         boostPercentage: tierInfo.boostPercentage,
         perks: tierInfo.perks,
+        slotsTotal: slotsForLevel(tierInfo.level),
       };
     });
 
@@ -690,7 +691,7 @@ export default function App() {
     const newLogItem: ActivityLogItem = {
       id: `act-${Date.now()}`,
       title: reason || 'Credit Unlock',
-      description: `Unlocked premium trading signal telemetry for 24h`,
+      description: reason ? `Spent ${amount} credits: ${reason}.` : `Spent ${amount} credits.`,
       pointsChange: 0,
       creditsChange: -amount,
       timestamp: 'Just now',
@@ -704,15 +705,11 @@ export default function App() {
 
   // Trigger Earning Modals (Quest Complete, Mission Complete, Trade Complete)
   const handleTriggerEarningReward = (data: EarningRewardData) => {
+    // The modal only announces the reward. Whoever opened it has already paid it,
+    // so paying again here is what made every mission task worth double.
     setEarningRewardModal(data);
-    if (data.credits) {
-      setUser((prev) => ({
-        ...prev,
-        sydeCredits: prev.sydeCredits + data.credits!,
-      }));
-    }
-    if (data.points) {
-      handleRewardPoints(data.points, data.title || 'Reward Earning');
+    if (data.grant) {
+      handleRewardPointsAndCredits(data.points || 0, data.credits || 0, data.title || 'Reward Earning');
     }
   };
 
@@ -755,6 +752,7 @@ export default function App() {
       type: 'trade',
       points: 20,
       credits: 10,
+      grant: true,
     });
   };
 
@@ -1245,7 +1243,7 @@ export default function App() {
                 totalCashbackEarned: +(prev.totalCashbackEarned + rebateAmount).toFixed(2),
                 lotsTradedTotal: +(prev.lotsTradedTotal + lotSize).toFixed(1),
               }));
-              handleRewardPoints(Math.round(lotSize * 15), `Live Trade via ${brokerName}`);
+              handleRewardPoints(pointsForTrade(selectedSignal?.ticker, lotSize), `Live Trade via ${brokerName}`);
               showToast(`🎉 +$${rebateAmount.toFixed(2)} Cashback earned via ${brokerName}!`);
             }}
             onSpendCredits={handleSpendCredits}
@@ -1413,6 +1411,7 @@ export default function App() {
             isBroker={false}
             onUpgradePrompt={() => setActiveTab('member-plan')}
             onShowToast={showToast}
+            onRewardPoints={handleRewardPoints}
           />
         )}
 
@@ -1598,6 +1597,7 @@ export default function App() {
         {/* ─── TAB: Instrument Analysis (Deep Technical Telemetry, Key Levels & Multi-Asset Structure) ─── */}
         {activeTab === 'instrument-analysis' && (
           <InstrumentAnalysisPage
+            onSpendCredits={handleSpendCredits}
             initialInstrumentSymbol={selectedInstrumentSymbol}
             user={user}
             signals={signals}
@@ -1753,7 +1753,7 @@ export default function App() {
             }}
             onBackToDashboard={() => setActiveTab('dashboard')}
             onSimulateTradeCashback={() => {
-              handleRewardPoints(50, 'Live Broker Trade Rebate Credited');
+              handleRewardPoints(pointsForTrade('EUR/USD', 1), 'Live Broker Trade Rebate Credited');
               setUser((prev) => ({
                 ...prev,
                 totalCashbackEarned: +(prev.totalCashbackEarned + 12.0).toFixed(2),

@@ -36,6 +36,8 @@ interface EducationHubPageProps {
   isBroker?: boolean;
   onUpgradePrompt: () => void;
   onShowToast: (msg: string) => void;
+  /** Pays the points a finished lesson is worth. */
+  onRewardPoints?: (points: number, reason: string) => void;
 }
 
 const HOST_STYLES: Record<LiveClass['hostType'], string> = {
@@ -51,6 +53,7 @@ export const EducationHubPage: React.FC<EducationHubPageProps> = ({
   isBroker = false,
   onUpgradePrompt,
   onShowToast,
+  onRewardPoints,
 }) => {
   const [tab, setTab] = useState<HubTab>('explore');
   const [category, setCategory] = useState<(typeof EDUCATION_CATEGORIES)[number]>('All');
@@ -95,11 +98,21 @@ export const EducationHubPage: React.FC<EducationHubPageProps> = ({
     return course.lessons.length > 0 ? Math.round((done / course.lessons.length) * 100) : 0;
   };
 
+  /** Lessons already paid for, so re-ticking one cannot be farmed. */
+  const [paidLessons, setPaidLessons] = useState<Record<string, boolean>>({});
+
   const toggleLesson = (courseId: string, lessonId: string) => {
     setEnrolledIds((prev) => ({ ...prev, [courseId]: true }));
     setCompletedLessons((prev) => {
       const courseMap = { ...(prev[courseId] || {}) };
-      courseMap[lessonId] = !courseMap[lessonId];
+      const nowDone = !courseMap[lessonId];
+      courseMap[lessonId] = nowDone;
+      if (nowDone && !paidLessons[`${courseId}:${lessonId}`]) {
+        const course = COURSES.find((c) => c.id === courseId);
+        const points = course ? Math.max(1, Math.round(course.pointsReward / Math.max(1, course.lessons.length))) : 0;
+        if (points && onRewardPoints) onRewardPoints(points, 'Finished a lesson');
+        setPaidLessons((paid) => ({ ...paid, [`${courseId}:${lessonId}`]: true }));
+      }
       return { ...prev, [courseId]: courseMap };
     });
   };

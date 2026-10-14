@@ -81,6 +81,8 @@ interface MarketBannerCardProps {
   onOpenHighlight?: () => void;
   onOpenETF?: () => void;
   onShowToast?: (msg: string) => void;
+  /** Charges the credits a longer timeframe costs. Returns false when the balance is short. */
+  onSpendCredits?: (amount: number, reason: string) => boolean;
 }
 
 export const MarketBannerCard: React.FC<MarketBannerCardProps> = ({
@@ -91,6 +93,7 @@ export const MarketBannerCard: React.FC<MarketBannerCardProps> = ({
   onOpenHighlight,
   onOpenETF,
   onShowToast,
+  onSpendCredits,
 }) => {
   const [selectedDuration, setSelectedDuration] = useState<AnalysisDuration>(currentDuration || '24H');
   const [unlockedDurations, setUnlockedDurations] = useState<Set<AnalysisDuration>>(new Set());
@@ -107,10 +110,17 @@ export const MarketBannerCard: React.FC<MarketBannerCardProps> = ({
     onDurationChange?.(id);
   };
 
+  /** What a longer timeframe costs for a day. */
+  const TIMEFRAME_UNLOCK_CREDITS = 60;
+
   const handleUnlockModalDuration = () => {
     if (!lockedModalTarget) return;
     const targetId = lockedModalTarget.id;
     const targetLabel = lockedModalTarget.label;
+    if (onSpendCredits && !onSpendCredits(TIMEFRAME_UNLOCK_CREDITS, `Unlocked the ${targetLabel} timeframe for a day`)) {
+      onShowToast?.(`You need ${TIMEFRAME_UNLOCK_CREDITS} credits to unlock ${targetLabel}.`);
+      return;
+    }
 
     setUnlockedDurations((prev) => {
       const next = new Set(prev);
@@ -477,7 +487,7 @@ export const MarketBannerCard: React.FC<MarketBannerCardProps> = ({
                 className="w-full flex-1 relative group overflow-hidden py-3 px-5 rounded-xl bg-[#5945F1] hover:bg-[#4a36e2] text-white font-bold text-sm shadow-md hover:shadow-lg hover:shadow-[#5945F1]/25 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
               >
                 <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                <span>Unlock with Credits</span>
+                <span>Unlock with 60 Credits</span>
               </button>
               <button
                 type="button"

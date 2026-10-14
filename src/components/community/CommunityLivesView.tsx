@@ -130,8 +130,8 @@ export const CommunityLivesView: React.FC<CommunityLivesViewProps> = ({
         {/* Host Live Button (Tier 5 Unlock) */}
         <button
           onClick={() => {
-            if (user.level < 5) {
-              onShowToast('🔒 Host Spaces unlocks at Gold Master Tier (Level 5)!');
+            if (user.tierLevel < 4) {
+              onShowToast('🔒 Host Spaces unlocks at Gold Master Tier (Level 4)!');
               if (onOpenTierModal) onOpenTierModal();
             } else {
               onShowToast('🎙️ Starting your custom Live Audio Space...');
@@ -139,7 +139,7 @@ export const CommunityLivesView: React.FC<CommunityLivesViewProps> = ({
           }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#3861fb] to-[#5338ec] hover:opacity-95 text-white shadow-md transition-all group"
         >
-          {user.level < 5 ? (
+          {user.tierLevel < 4 ? (
             <>
               <Lock className="w-3.5 h-3.5 text-amber-300" />
               <span>Host a Space (Lvl 5)</span>

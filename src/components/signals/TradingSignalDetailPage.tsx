@@ -472,7 +472,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
   // Quick execution modal handler
   const handleExecuteTrade = () => {
     const lot = parseFloat(tradeLotSize) || 1.0;
-    const estimatedCashback = (lot * 8.5 * (1 + (user.boostPercentage || 10) / 100)).toFixed(2);
+    const estimatedCashback = (lot * 8.5 * (1 + (user.boostPercentage ?? 0) / 100)).toFixed(2);
     onShowToast(`🚀 Order placed with ${selectedTradeBrokerName}: ${activeSignal.action} ${lot} lot(s) of ${activeSignal.ticker}! Cashback +$${estimatedCashback}`);
     setIsQuickTradeModalOpen(false);
   };
@@ -2551,7 +2551,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
                   {(
                     (parseFloat(tradeLotSize) || 1.0) *
                     8.0 *
-                    (1 + (user.boostPercentage || 10) / 100)
+                    (1 + (user.boostPercentage ?? 0) / 100)
                   ).toFixed(2)}
                 </span>
               </div>

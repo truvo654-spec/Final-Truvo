@@ -11,6 +11,8 @@ export interface EarningRewardData {
   points?: number;
   questName?: string;
   brokerName?: string;
+  /** True only when the caller has not already paid the reward itself. */
+  grant?: boolean;
 }
 
 interface EarningRewardModalProps {

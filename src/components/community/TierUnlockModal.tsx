@@ -30,7 +30,7 @@ export const TierUnlockModal: React.FC<TierUnlockModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const currentLevel = user.level || 1;
+  const currentLevel = user.tierLevel || 1;
   const currentTierMeta = TIER_UNLOCK_MATRIX.find((t) => t.level === currentLevel) || TIER_UNLOCK_MATRIX[0];
   const nextTierMeta = TIER_UNLOCK_MATRIX.find((t) => t.level === currentLevel + 1);
 

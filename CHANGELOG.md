@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0] - 2026-10-09
+### Fixed
+- Mission tasks paid double. The reward modal now only announces; whoever opened it has already paid. Measured before and after in the app: a task advertising +10 points paid 20, now it pays 10.
+- Premium feature unlocks on an instrument page deducted credits only inside that page's own state, so the account never actually paid. They now go through the shared handler and land in the activity log.
+- Unlocking a longer timeframe on the market banner charged nothing. It now costs 60 credits a day and says so on the button.
+- Signal unlocks never expired and analysis tab unlocks died on reload. Both now store the moment they lapse and are restored, or dropped, on load.
+- The conversion criteria were text and a demo toggle. They now read the real account: one trade, one linked broker, 250 credits.
+- boostPercentage || 10 showed every Rookie a 10% boost, because zero is falsy. Fixed in all three places.
+- Finishing a lesson announced points but added none. It now pays, once per lesson.
+- A real level-up did not change the calculator slot count. It does now.
+- Converting credits took the remainder below 5 without paying for it.
+- Every credit charge was logged with the same sentence about signal telemetry.
+- The daily login reward was unreachable code. It is a button now, claimable once a day, and its log entry uses a category the type actually has.
+### Changed
+- One source of truth for points per lot (src/data/pointsPerLot.ts), matching the published table. The flat 15 per lot and flat 50 are gone.
+- The tier tables agree: mockData starts the levels at 100 / 250 / 500, and the Boss boost is 15% everywhere, including the FAQ.
+- The Credit Earning Guide lists what the code actually pays, with the points activities separated from the credit ones.
+- Correlation requires level 4 in both the feature table and the analysis page.
+- Removed the dead CommunityHub import, and the two screens that compared a non-existent user.level now use tierLevel.
+### Added
+- @types/react and @types/react-dom, so type checking is no longer blind. It surfaced 39 hidden errors; the 9 that could bite at runtime are fixed. The remaining 30 are generic-inference complaints in the newly merged backtest UI and do not affect the build.
+
 ## [1.13.0] - 2026-10-09
 ### Added
 - Merged the Trading Journal work from the Trading_journal_7.10.2026 branch: the What-if lab and MarketSyde recommender, practice and demo replay with editable setup transfer, saved what-if scenarios and reports, personalised AI Coach candle comparisons, unified replay comparisons, and the backtest import in the summary area. 59 new files, 39 updated.

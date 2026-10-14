@@ -161,11 +161,13 @@ export const AiInline: React.FC<{ text: string; tone?: 'neutral' | 'warn' | 'goo
   );
 };
 
-export const AiStrip: React.FC<{ text: string; action?: { label: string; onClick: () => void }; className?: string }> = ({ text, action, className = '' }) => (
+export const AiStrip: React.FC<{ text: string; action?: { label: string; onClick: () => void }; bare?: boolean; className?: string }> = ({ text, action, bare = false, className = '' }) => (
   <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-[#d7d3fb] bg-gradient-to-r from-[#f3f1ff] to-[#fdf2fb] px-4 py-3 ${className}`} role="note">
-    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#5945F1] shrink-0">
-      <Sparkles className="w-3.5 h-3.5" aria-hidden />MarketSyde AI
-    </span>
+    {!bare && (
+      <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-[#5945F1] shrink-0">
+        <Sparkles className="w-3.5 h-3.5" aria-hidden />MarketSyde AI
+      </span>
+    )}
     <span className="text-[13px] leading-relaxed text-[#0b1c30] flex-1 min-w-[200px]">{text}</span>
     {action && <button type="button" onClick={action.onClick} className="text-[13px] font-semibold text-[#5945F1] hover:underline shrink-0">{action.label}</button>}
   </div>

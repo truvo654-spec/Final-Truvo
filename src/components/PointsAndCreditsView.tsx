@@ -580,7 +580,14 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
   // 1: 'not-met' -> If the Users Have Not Met Criteria for Converter
   // 2: 'met' -> If the Users Have Met Criteria for Converter
   // 3: 'insufficient' -> If the Users Have Met Criteria but Have Insufficient Credits
-  const [converterScenario, setConverterScenario] = useState<'not-met' | 'met' | 'insufficient'>('not-met');
+  const [scenarioOverride, setScenarioOverride] = useState<'not-met' | 'met' | 'insufficient' | null>(null);
+  /** The three criteria the modal lists, read from the account rather than a demo toggle. */
+  const hasTraded = (user.lotsTradedTotal ?? 0) > 0;
+  const hasBroker = (user.connectedBrokersCount ?? 0) > 0;
+  const hasCredits = user.sydeCredits >= 250;
+  const converterScenario: 'not-met' | 'met' | 'insufficient' =
+    scenarioOverride ?? (!hasTraded || !hasBroker ? 'not-met' : hasCredits ? 'met' : 'insufficient');
+  const setConverterScenario = (v: 'not-met' | 'met' | 'insufficient') => setScenarioOverride(v);
   const [isCriteriaModalOpen, setIsCriteriaModalOpen] = useState<boolean>(false);
   const [converterCredits, setConverterCredits] = useState<number>(500);
   const [conversionSuccess, setConversionSuccess] = useState<string | null>(null);
@@ -651,7 +658,9 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
     }
 
     const pointsToAdd = Math.floor(creditsToDeduct / 5);
-    const newCredits = user.sydeCredits - creditsToDeduct;
+    // Only charge for the points actually given; the remainder below 5 stays in the balance.
+    const creditsSpent = pointsToAdd * 5;
+    const newCredits = user.sydeCredits - creditsSpent;
     const newPoints = user.currentPoints + pointsToAdd;
 
     // Check if new points level up user according to system tiers (Rookie -> Climber -> Player -> Boss)
@@ -674,24 +683,33 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
 
     onAddActivityLog({
       id: `conv-${Date.now()}`,
-      title: `Converted ${creditsToDeduct} Syde Credits to Points`,
+      title: `Converted ${creditsSpent} Syde Credits to Points`,
       description: `Exchanged ecosystem credits at 5:1 ratio for +${pointsToAdd} Tier Points.${levelUpMsg}`,
       timestamp: 'Just now',
       type: 'both',
       pointsChange: pointsToAdd,
-      creditsChange: -creditsToDeduct,
+      creditsChange: -creditsSpent,
       category: 'Conversion',
     });
 
     setConversionSuccess(
-      `🎉 Converted ${creditsToDeduct} Credits to +${pointsToAdd} Points!${levelUpMsg}`
+      `🎉 Converted ${creditsSpent} Credits to +${pointsToAdd} Points!${levelUpMsg}`
     );
     setTimeout(() => setConversionSuccess(null), 5000);
   };
 
   // Claim Instant Demo Bonus Credits (ensures user always has credits to play with)
+  const DAILY_KEY = 'marketsyde_daily_login_claimed';
+  const today = new Date().toISOString().slice(0, 10);
+  const [dailyClaimed, setDailyClaimed] = useState<string | null>(() => {
+    try { return window.localStorage.getItem(DAILY_KEY); } catch { return null; }
+  });
+
   const handleClaimBonusCredits = () => {
+    if (dailyClaimed === today) return;
     const bonus = 5;
+    setDailyClaimed(today);
+    try { window.localStorage.setItem(DAILY_KEY, today); } catch { /* storage can be blocked */ }
     onUpdateUser({
       sydeCredits: user.sydeCredits + bonus,
     });
@@ -703,7 +721,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
       type: 'credits',
       pointsChange: 0,
       creditsChange: bonus,
-      category: 'Reward',
+      category: 'Bonus',
     });
     if (onTriggerEarningModal) {
       onTriggerEarningModal({
@@ -808,6 +826,22 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
         <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">
           Everything you’ve earned so far, plus what you’re currently missing out on.
         </p>
+
+        {/* Daily login, claimable once a day */}
+        <div className="flex justify-center pt-2">
+          <button
+            type="button"
+            onClick={handleClaimBonusCredits}
+            disabled={dailyClaimed === today}
+            className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+              dailyClaimed === today
+                ? 'bg-[#f1f0fe] text-[#94a3b8] cursor-default'
+                : 'bg-[#5945F1] text-white hover:bg-[#4a38d6] active:scale-95 cursor-pointer'
+            }`}
+          >
+            {dailyClaimed === today ? 'Daily reward claimed. Back tomorrow.' : 'Claim your daily +5 credits'}
+          </button>
+        </div>
 
         {/* Interactive Earning Modals Trigger Row */}
         {onTriggerEarningModal && (

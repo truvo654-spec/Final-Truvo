@@ -16,7 +16,7 @@ export const PREMIUM_FEATURES: Record<
   marketScreener: { title: 'Advanced market screener', dailyPrice: 120, includedLevel: 2, description: 'Multi-variable screening and custom metric presets.' },
   heatmap: { title: 'Market heatmap', dailyPrice: 100, includedLevel: 2, description: 'Hierarchical market capitalization & performance treemaps.' },
   scatter: { title: 'Scatter visualization', dailyPrice: 120, includedLevel: 3, description: 'Correlation & distribution scatter matrix.' },
-  correlation: { title: 'Correlation analytics', dailyPrice: 180, includedLevel: 3, description: 'Cross-asset and peer matrix correlations.' },
+  correlation: { title: 'Correlation analytics', dailyPrice: 180, includedLevel: 4, description: 'Cross-asset and peer matrix correlations.' },
   advancedFilters: { title: 'Advanced screener filters', dailyPrice: 100, includedLevel: 2, description: 'Sophisticated multi-parameter screener filters.' },
   alerts: { title: 'Advanced alerts', dailyPrice: 140, includedLevel: 2, description: 'Real-time multi-condition price & indicator alerts.' },
   brokerComparison: { title: 'Advanced broker comparison', dailyPrice: 100, includedLevel: 2, description: 'Deep fee, spread, and platform comparison tools.' },
@@ -106,6 +106,8 @@ interface MarketEngagementProviderProps {
   onOpenConnectBrokerModal?: (broker?: Broker) => void;
   onViewPlans?: () => void;
   onShowToast?: (msg: string) => void;
+  /** Charges the account, so an unlock leaves the real balance and the activity log. */
+  onSpendCredits?: (amount: number, reason: string) => boolean;
 }
 
 export const MarketEngagementProvider: React.FC<MarketEngagementProviderProps> = ({
@@ -114,6 +116,7 @@ export const MarketEngagementProvider: React.FC<MarketEngagementProviderProps> =
   onOpenConnectBrokerModal,
   onViewPlans,
   onShowToast,
+  onSpendCredits,
 }) => {
   const [credits, setCredits] = useState<number>(user.sydeCredits ?? 100);
   const [entitlements, setEntitlements] = useState<Entitlement[]>([]);
@@ -167,7 +170,15 @@ export const MarketEngagementProvider: React.FC<MarketEngagementProviderProps> =
     const durationInfo = DURATION_MULTIPLIERS[duration];
     const expiryDate = new Date(Date.now() + durationInfo.ms).toISOString();
 
-    setCredits(prev => prev - cost);
+    if (onSpendCredits) {
+      if (!onSpendCredits(cost, `Unlocked ${feat.title} for ${durationInfo.label}`)) {
+        const short = `You need ${cost} credits to unlock ${feat.title}.`;
+        onShowToast?.(short);
+        return { ok: false, message: short };
+      }
+    } else {
+      setCredits(prev => prev - cost);
+    }
     setEntitlements(prev => [...prev.filter(e => e.feature !== feature), { feature, expiresAt: expiryDate }]);
 
     const formattedExpiry = new Date(expiryDate).toLocaleString(undefined, {

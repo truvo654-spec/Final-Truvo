@@ -66,6 +66,8 @@ interface InstrumentAnalysisPageProps {
   onShowToast?: (msg: string) => void;
   onOpenViewPlan?: () => void;
   onUpdateUser?: (updated: Partial<UserProfile>) => void;
+  /** Charges credits through the shared handler, so the balance and the log stay in step. */
+  onSpendCredits?: (amount: number, reason: string) => boolean;
 }
 
 type SortField = 'name' | 'price' | 'change' | 'return1M' | 'rolVolume' | 'rsi';
@@ -84,6 +86,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
   onShowToast,
   onOpenViewPlan,
   onUpdateUser,
+  onSpendCredits,
 }) => {
   // Market categories order matching the user's reference pills:
   // Forex | Crypto | Commodities | Indicies | Stock
@@ -527,15 +530,47 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
     }
   };
 
+  /** Tools unlocked earlier and not yet lapsed. */
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('marketsyde_unlocked_tools');
+      if (!saved) return;
+      const store: Record<string, number> = JSON.parse(saved);
+      const now = Date.now();
+      const live = Object.entries(store).filter(([, until]) => until > now);
+      window.localStorage.setItem('marketsyde_unlocked_tools', JSON.stringify(Object.fromEntries(live)));
+      live.forEach(([id]) => {
+        if (id === 'heatmap' || id === 'scatter' || id === 'correlation') setUnlockedTabs((prev) => new Set(prev).add(id));
+        if (id === 'volume') setIsVolumeUnlocked(true);
+        if (id === 'news') setIsNewsUnlocked(true);
+      });
+    } catch { /* ignore */ }
+  }, []);
+
   const handleConfirmUnlock = (
     tool: UnlockableTool,
     duration: UnlockDurationOption,
     cost: number
   ) => {
-    // 1. Deduct credits from user profile
-    const currentCredits = user.sydeCredits ?? 154;
-    const remainingCredits = Math.max(0, currentCredits - cost);
-    onUpdateUser?.({ sydeCredits: remainingCredits });
+    // 1. Charge through the shared handler, so the balance, the log and the toast agree
+    if (onSpendCredits) {
+      if (!onSpendCredits(cost, `Unlocked ${tool.title} for ${duration}`)) {
+        onShowToast?.(`You need ${cost.toLocaleString()} credits to unlock ${tool.title}.`);
+        return;
+      }
+    } else {
+      const currentCredits = user.sydeCredits ?? 154;
+      onUpdateUser?.({ sydeCredits: Math.max(0, currentCredits - cost) });
+    }
+
+    // Remember when the access lapses, so a reload cannot resurrect or lose it
+    try {
+      const ms = duration === '1d' ? 86400000 : duration === '7d' ? 7 * 86400000 : 30 * 86400000;
+      const saved = window.localStorage.getItem('marketsyde_unlocked_tools');
+      const store: Record<string, number> = saved ? JSON.parse(saved) : {};
+      store[tool.id] = Date.now() + ms;
+      window.localStorage.setItem('marketsyde_unlocked_tools', JSON.stringify(store));
+    } catch { /* storage can be blocked; the unlock still holds for this session */ }
 
     // 2. Mark feature as unlocked
     if (tool.id === 'heatmap') {
@@ -654,6 +689,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
   if (selectedDetailInstrument) {
     return (
       <MarketEngagementProvider
+        onSpendCredits={onSpendCredits}
         user={user}
         onOpenConnectBrokerModal={onOpenConnectModal}
         onShowToast={onShowToast}
@@ -734,6 +770,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
             onOpenETF={() => {
               onShowToast?.(`Viewing ETF statistics for ${activeCategory.name}`);
             }}
+            onSpendCredits={onSpendCredits}
           />
         </div>
       ) : (
