@@ -31,10 +31,9 @@ export const AiDashboardPanel: React.FC<{
   data: SpotlightData;
   greeting: string;
   onClose: () => void;
-  onAsk: () => void;
   storageKey?: string;
   className?: string;
-}> = ({ data, greeting, onClose, onAsk, storageKey, className = '' }) => {
+}> = ({ data, greeting, onClose, storageKey, className = '' }) => {
   const [tab, setTab] = useState(data.tabs[0]?.id ?? 'summary');
   const [run, setRun] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -87,7 +86,6 @@ export const AiDashboardPanel: React.FC<{
               {t.label}
             </button>
           ))}
-          <button type="button" onClick={onAsk} className="shrink-0 rounded-lg px-3 py-1.5 text-[13px] text-white/75 transition-colors hover:bg-white/15 hover:text-white">Ask</button>
         </nav>
 
         <div className="flex shrink-0 items-center gap-1.5">

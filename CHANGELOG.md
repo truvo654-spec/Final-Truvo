@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.5] - 2026-10-09
+### Removed
+- "Ask the AI Companion" is gone from the panel, along with the Ask tab and the invite's link, so nothing in the panel sends people to the AI page.
+### Changed
+- The third card is now a neighbouring page that follows on from what was just read: signals offer setting an alert, alerts offer writing the trade up, news offers the instrument list, the calendar offers the coverage, brokers offer cashback, comparison offers connecting an account, and so on.
+
 ## [1.9.4] - 2026-10-09
 ### Changed
 - The collapsed AI control is now a 56px orb holding only the mascot: a gradient ring in the brand colours rotating around it, a blurred halo of the same gradient behind, and a pulse that goes out every few seconds. The ghost bobs and blinks, hover brightens the halo and speeds everything up, and the press scales it down. All of it stops under prefers-reduced-motion.
