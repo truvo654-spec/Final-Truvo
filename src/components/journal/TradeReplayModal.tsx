@@ -7,6 +7,7 @@ import { JournalEntry } from '../../types';
 //   journal numbers only (no tick data), and says so.
 
 interface Props {
+  embedded?:boolean;
   entry: JournalEntry;
   targetRR: number;
   recording?: string; // object URL
@@ -18,8 +19,8 @@ interface Props {
 const MAX_SECONDS = 60;
 const netOf = (e: JournalEntry) => e.pnl - (e.commission ?? 0);
 
-export const TradeReplayModal: React.FC<Props> = ({ entry: e, targetRR, recording, onAttach, onRemove, onClose }) => {
-  const [tab, setTab] = useState<'video' | 'path'>(recording ? 'video' : 'path');
+export const TradeReplayModal: React.FC<Props> = ({ entry: e, targetRR, recording, onAttach, onRemove, onClose, embedded=false }) => {
+  const [tab, setTab] = useState<'video' | 'path'>(embedded||recording ? 'video' : 'path');
   const [rec, setRec] = useState<{ recorder: MediaRecorder; stream: MediaStream; started: number } | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [err, setErr] = useState('');
@@ -53,10 +54,13 @@ export const TradeReplayModal: React.FC<Props> = ({ entry: e, targetRR, recordin
   }, [rec]);
 
   useEffect(() => {
+    if(embedded)return;
     const onKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape' && !rec) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [rec, onClose]);
+  }, [rec, onClose,embedded]);
+
+  useEffect(()=>()=>{if(rec){if(rec.recorder.state!=='inactive')rec.recorder.stop();rec.stream.getTracks().forEach(track=>track.stop());}},[rec]);
 
   const startRec = async () => {
     setErr('');
@@ -93,9 +97,9 @@ export const TradeReplayModal: React.FC<Props> = ({ entry: e, targetRR, recordin
   const time = (iso?: string) => (iso ? iso.replace('T', ' ').slice(0, 16) : '—');
 
   return (
-    <div className="fixed inset-0 z-[60] bg-slate-900/50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`Replay ${e.symbol}`}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
-        <div className="flex items-start justify-between gap-3 px-5 pt-4">
+    <div className={embedded?'':"fixed inset-0 z-[60] bg-slate-900/50 flex items-center justify-center p-4"} role={embedded?undefined:"dialog"} aria-modal={embedded?undefined:true} aria-label={embedded?"Trade recording":`Replay ${e.symbol}`}>
+      <div className={embedded?"bg-white rounded-xl w-full":"bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto"}>
+        {!embedded&&<><div className="flex items-start justify-between gap-3 px-5 pt-4">
           <div>
             <p className="text-[10px] font-bold tracking-wider uppercase text-[#5338ec]">Execution replay</p>
             <p className="text-lg font-bold text-[#0b1c30]">{e.symbol} <span className={`text-xs font-bold ${e.direction === 'BUY' ? 'text-emerald-700' : 'text-rose-700'}`}>{e.direction === 'BUY' ? 'LONG' : 'SHORT'}</span> <span className={`text-sm font-mono ${win ? 'text-emerald-600' : 'text-rose-600'}`}>{win ? '+' : ''}{netOf(e).toFixed(2)}{e.rMultiple !== null ? ` (${e.rMultiple >= 0 ? '+' : ''}${e.rMultiple}R)` : ''}</span></p>
@@ -110,6 +114,7 @@ export const TradeReplayModal: React.FC<Props> = ({ entry: e, targetRR, recordin
           ))}
         </div>
 
+        </>}
         <div className="p-5">
           {tab === 'video' ? (
             <div className="space-y-3">

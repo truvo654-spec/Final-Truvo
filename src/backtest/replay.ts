@@ -3,7 +3,7 @@
 import type { JournalEntry } from '../types';
 import { netOf, realizedR } from '../components/journal/journalMath';
 import { DATA_END } from './config';
-import { aggregate, dayMs, marketData, parseDay, symbolSpec } from './marketData';
+import { aggregate, dayKey, dayMs, marketData, parseDay, symbolSpec } from './marketData';
 import { hashSeed, normal, rng } from './rng';
 import { Bar, TF_MS, Timeframe } from './types';
 import { pathOf, toMs } from './whatif';
@@ -11,6 +11,9 @@ import { pathOf, toMs } from './whatif';
 export interface ReplayTrade {
   id: string; direction: 'BUY' | 'SELL'; entry: number; stop: number | null; exit: number; r: number | null; pnl: number;
   entryIndex: number; exitIndex: number; date: string; strategy: string; mistakes: string[];
+  takeProfit: number | null; size: number; quantityUnit: string | null; commission: number | null;
+  initialRisk: number | null; equityAtEntry: number | null; marginAtEntry: number | null; accountCurrency: string;
+  setupNotes: string; tags: string[];
 }
 
 export interface ReplayData {
@@ -31,6 +34,8 @@ export interface ReplayData {
   trade?: ReplayTrade;
 }
 
+export interface ReplayDateRange { from?: string; to?: string }
+
 const toBars = (symbol: string, tf: Timeframe, a: number, b: number): Bar[] => {
   const s = marketData.seriesSync(symbol, tf);
   const out: Bar[] = [];
@@ -39,11 +44,17 @@ const toBars = (symbol: string, tf: Timeframe, a: number, b: number): Bar[] => {
 };
 
 const fmtDay = (t: number) => new Date(t).toUTCString().slice(0, 16);
+const lowerBoundTime = (times: Float64Array, target: number) => {
+  let lo = 0, hi = times.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (times[mid] < target) lo = mid + 1; else hi = mid; }
+  return lo;
+};
 
-function fromFeed(source: ReplayData['source'], symbol: string, tf: Timeframe, idx: number, label: string): ReplayData {
+function fromFeed(source: ReplayData['source'], symbol: string, tf: Timeframe, idx: number, label: string, endDate?: string): ReplayData {
   const spec = symbolSpec(symbol)!;
-  const before = 150, after = 300;
-  const bars = toBars(spec.symbol, tf, idx - before, idx + after);
+  const before = Math.min(150, idx), after = 300;
+  const endIndex = endDate ? lowerBoundTime(marketData.seriesSync(spec.symbol, tf).t, parseDay(endDate) + dayMs) : undefined;
+  const bars = toBars(spec.symbol, tf, idx - before, Math.min(idx + after, endIndex ?? Infinity));
   return {
     id: `rp_${Date.now().toString(36)}`, source, symbol: spec.symbol, tf, bars, start: Math.min(before, bars.length - 1),
     dp: spec.priceDp, tick: spec.tickSize, multiplier: spec.multiplier, sizeUnit: spec.sizeUnit, minSize: spec.minSize,
@@ -51,15 +62,25 @@ function fromFeed(source: ReplayData['source'], symbol: string, tf: Timeframe, i
   };
 }
 
-export function replayRandom(symbol: string, tf: Timeframe, seed = Date.now()): ReplayData {
+export function replayRandom(symbol: string, tf: Timeframe, seed = Date.now(), dateRange?: ReplayDateRange): ReplayData {
   const s = marketData.seriesSync(symbol, tf);
   const r = rng(seed >>> 0);
-  const idx = 200 + Math.floor(r() * Math.max(1, s.length - 600));
-  return fromFeed('random', symbol, tf, idx, 'Random date');
+  let idx: number;
+  if (!dateRange?.from && !dateRange?.to) {
+    idx = 200 + Math.floor(r() * Math.max(1, s.length - 600));
+  } else {
+    const first = dateRange.from ? lowerBoundTime(s.t, parseDay(dateRange.from)) : 0;
+    const end = dateRange.to ? lowerBoundTime(s.t, parseDay(dateRange.to) + dayMs) : s.length;
+    const minIndex = first;
+    const maxIndex = Math.min(s.length - 1, end - 1);
+    if (minIndex > maxIndex) throw new Error('No replay bars are available in that date range. Try a wider range.');
+    idx = minIndex + Math.floor(r() * (maxIndex - minIndex + 1));
+  }
+  return fromFeed('random', symbol, tf, idx, 'Random date', dateRange?.to);
 }
 
 /** A past day whose range and direction looked most like the latest day in the data. */
-export function replayDaysLikeToday(symbol: string, tf: Timeframe): ReplayData {
+export function replayDaysLikeToday(symbol: string, tf: Timeframe, dateRange?: ReplayDateRange): ReplayData {
   const spec = symbolSpec(symbol)!;
   const base = marketData.seriesSync(spec.symbol, '5m');
   const daily = aggregate(base, '1D');
@@ -68,15 +89,18 @@ export function replayDaysLikeToday(symbol: string, tf: Timeframe): ReplayData {
   const today = feat(n - 1);
   let best = -1, bestScore = Infinity;
   for (let i = 1; i < n - 10; i++) {
+    if (dateRange?.from && daily.t[i] < parseDay(dateRange.from)) continue;
+    if (dateRange?.to && daily.t[i] >= parseDay(dateRange.to) + dayMs) continue;
     const f = feat(i);
     const score = Math.abs(f.range - today.range) / today.range + (f.prevDir === today.prevDir ? 0 : 0.5) + (f.dow === today.dow ? 0 : 0.3);
     if (score < bestScore) { bestScore = score; best = i; }
   }
+  if (best < 0) throw new Error('No similar replay days are available in that date range. Try a wider range.');
   const s = marketData.seriesSync(spec.symbol, tf);
-  const target = daily.t[Math.max(0, best)] + 7 * 3600000; // that day's London open
+  const target = parseDay(dayKey(daily.t[best])) + (tf === '1D' ? 0 : 7 * 3600000);
   let idx = 0;
   while (idx < s.length - 1 && s.t[idx] < target) idx++;
-  return fromFeed('similar', spec.symbol, tf, idx, `A day like ${fmtDay(parseDay(DATA_END)).slice(0, 11)}`);
+  return fromFeed('similar', spec.symbol, tf, idx, `A day like ${fmtDay(parseDay(DATA_END)).slice(0, 11)}`, dateRange?.to);
 }
 
 /** Rebuild one of your journal trades as 5-minute bars: 150 bars before the entry, the trade, then 60 bars after. */
@@ -123,9 +147,16 @@ export function replayJournalTrade(e: JournalEntry): ReplayData {
     id: `rp_${e.id}_${Date.now().toString(36)}`, source: 'journal', symbol: e.symbol, tf: '5m', bars, start: 150,
     dp, tick, multiplier: spec?.multiplier ?? (e.assetClass === 'Forex' ? 100000 : 1), sizeUnit: spec?.sizeUnit ?? 'units', minSize: spec?.minSize ?? 0.01,
     label: `${e.symbol} · ${e.strategy}`, dateLabel: new Date(t0).toUTCString().slice(0, 22),
-    trade: { id: e.id, direction: e.direction, entry, stop: e.stopPrice ?? null, exit, r: realizedR(e), pnl: netOf(e), entryIndex: 150, exitIndex: 150 + K - 1, date: e.date, strategy: e.strategy, mistakes: e.mistakes },
+    trade: {
+      id: e.id, direction: e.direction, entry, stop: e.stopPrice ?? null, exit, r: realizedR(e), pnl: netOf(e),
+      entryIndex: 150, exitIndex: 150 + K - 1, date: e.date, strategy: e.strategy, mistakes: e.mistakes,
+      takeProfit: e.takeProfit ?? null, size: e.size, quantityUnit: e.quantityUnit ?? null, commission: e.commission ?? null,
+      initialRisk: e.initialRisk ?? null, equityAtEntry: e.equityAtEntry ?? null, marginAtEntry: e.marginAtEntry ?? null,
+      accountCurrency: e.accountCurrency || 'USD',
+      setupNotes: e.setupNotes, tags: [...e.tags],
+    },
   };
 }
 
-export const replayTimeframes: Timeframe[] = ['5m', '15m', '1h'];
+export const replayTimeframes: Timeframe[] = ['5m', '15m', '1h', '1D'];
 export const dayOfMs = (t: number) => Math.floor(t / dayMs);

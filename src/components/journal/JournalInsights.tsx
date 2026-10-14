@@ -1,11 +1,13 @@
 import { useJournalState } from './journalStorage';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
-import React, { useMemo, useState } from 'react';
+import React, { useId, useMemo, useState } from 'react';
 import { Broker, JournalEntry } from '../../types';
 import { JOURNAL_STRATEGIES, JOURNAL_TODAY } from '../../data/journalData';
-import { UNASSIGNED, addDays, brokerColor, entryCashback, entryPoints, shortDate } from './journalOverview';
+import { JOURNAL_MARKET_TYPES, UNASSIGNED, addDays, entryCashback, entryPoints, shortDate } from './journalOverview';
 import { TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
+import { JournalOpenInsightsChart, type InsightChartScope } from './JournalOpenInsightsChart';
+import { useDialogFocus } from './useDialogFocus';
 
 // Insights › reports. "Day & Time" follows the uploaded concept (light theme): view tabs, benchmark,
 // insight cards, distribution chart, cross-analysis matrix, detailed breakdown with drill-down.
@@ -82,6 +84,69 @@ const fmtPf = (n:number|null) => n==null?'—':n===Infinity?'∞':n.toFixed(2);
 
 interface Stats { n: number; wins: number; losses: number; be: number; net: number; gross: number; pf: number | null; winRate: number; lossRate: number; beRate: number; avgR: number | null; cb: number; pts: number; avgDur: number | null }
 
+interface InsightsDrillDialogProps {
+  label: string;
+  entries: JournalEntry[];
+  summary: Stats;
+  formatMoney: (amount: number) => string;
+  formatEntryTime: (entry: JournalEntry) => string;
+  onClose: () => void;
+  onOpenAll: () => void;
+  onOpenTrade: (entry: JournalEntry) => void;
+}
+
+export const InsightsDrillDialog: React.FC<InsightsDrillDialogProps> = ({
+  label, entries, summary, formatMoney, formatEntryTime, onClose, onOpenAll, onOpenTrade,
+}) => {
+  const ref = useDialogFocus(onClose);
+  const titleId = useId();
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white p-5 text-[#0b1c30] shadow-2xl outline-none">
+        <header className="flex items-start justify-between gap-3">
+          <div>
+            <h2 id={titleId} className="text-sm font-bold">Closed trade results · {label}</h2>
+            <p className="mt-1 text-xs text-slate-600">
+              {summary.n} trades · {summary.wins} wins / {summary.losses} losses / {summary.be} breakeven · Net P&amp;L <strong className={summary.net >= 0 ? 'text-emerald-700' : 'text-rose-700'}>{formatMoney(summary.net)}</strong>
+            </p>
+          </div>
+          <button type="button" onClick={onClose} className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50">Close</button>
+        </header>
+        <div className="mt-4 min-h-0 flex-1 overflow-auto rounded-lg border border-slate-200">
+          <table className="w-full text-xs">
+            <caption className="sr-only">Closed trades in this chart group with realized net profit or loss</caption>
+            <thead className="sticky top-0 bg-slate-50 text-left text-slate-500">
+              <tr><th className="p-2">Entry time</th><th className="p-2">Trade</th><th className="p-2">Strategy</th><th className="p-2">Outcome</th><th className="p-2 text-right">Net P&amp;L</th><th className="p-2 text-right">R</th></tr>
+            </thead>
+            <tbody>
+              {entries.map(entry => {
+                const net = netOf(entry);
+                const r = realizedR(entry);
+                const outcome = resultOf(entry);
+                return (
+                  <tr key={entry.id} className="border-t border-slate-100">
+                    <td className="whitespace-nowrap p-2 text-slate-600">{formatEntryTime(entry)}</td>
+                    <td className="p-2"><button type="button" className="font-semibold text-[#5338ec] hover:underline" onClick={() => onOpenTrade(entry)}>{entry.symbol} · {entry.direction === 'BUY' ? 'LONG' : 'SHORT'}</button></td>
+                    <td className="p-2 text-slate-600">{entry.strategy || 'Unassigned'}</td>
+                    <td className={`p-2 capitalize ${outcome === 'win' ? 'text-emerald-700' : outcome === 'loss' ? 'text-rose-700' : 'text-slate-500'}`}>{outcome === 'breakeven' ? 'Breakeven' : outcome}</td>
+                    <td className={`whitespace-nowrap p-2 text-right font-mono font-semibold ${net >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatMoney(net)}</td>
+                    <td className="whitespace-nowrap p-2 text-right font-mono">{r == null ? '—' : `${r > 0 ? '+' : ''}${r.toFixed(2)}R`}</td>
+                  </tr>
+                );
+              })}
+              {!entries.length && <tr><td colSpan={6} className="p-6 text-center text-slate-500">No eligible closed trades in this group.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <footer className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] text-slate-500">Values use realized net P&amp;L after recorded costs; missing costs are not inferred.</p>
+          <button type="button" onClick={onOpenAll} className="rounded-lg bg-[#5338ec] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4326d8]">Open all in Trade Log</button>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
 interface Props {
   entries: JournalEntry[];
   brokers: Broker[];
@@ -96,12 +161,11 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const money = useMoney();
 
   const brokerMap = useMemo(() => new Map(brokers.map((b) => [b.id, b] as const)), [brokers]);
-  const brokerOrder = useMemo(() => brokers.map((b) => b.id), [brokers]);
   const brokerName = (id: string) => (id === UNASSIGNED ? 'Unassigned' : brokerMap.get(id)?.name || id);
 
   const [report, setReport] = useJournalState<Report>('JournalInsights-report', 'daytime');
   const [tz, setTzState] = useState<string>(() => {
-    try { return localStorage.getItem('ms-journal-tz') || 'UTC'; } catch { return 'UTC'; }
+    try { const saved=localStorage.getItem('ms-journal-tz');return TIMEZONES.some(z=>z.id===saved)?saved!:'UTC'; } catch { return 'UTC'; }
   });
   const setTz = (v: string) => { setTzState(v); try { localStorage.setItem('ms-journal-tz', v); } catch { /* storage unavailable */ } };
   const offNow = tzOffset(tz, `${JOURNAL_TODAY}T12:00:00`);
@@ -116,13 +180,14 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const [resolution, setResolution] = useJournalState('JournalInsights-resolution', 2);
   const [range, setRange] = useJournalState<'last30' | 'last90' | 'all'>('JournalInsights-range', 'all');
   const [bench, setBench] = useJournalState('JournalInsights-bench', false);
-  const [metric, setMetric] = useJournalState<Metric>('JournalInsights-metric', 'net');
+  const [metric, setMetric] = useJournalState<Metric>('JournalInsights-metric-v2', 'net');
+  const [savedChartScope, setChartScope] = useJournalState<InsightChartScope>('JournalInsights-chartScope', 'closed');
+  const chartScope = savedChartScope === 'open' || savedChartScope === 'unrealized' ? 'open' : 'closed';
   const [dim, setDim] = useJournalState<Dim>('JournalInsights-dim', 'playbook');
   const [sessOff, setSessOff] = useJournalState<SessionId[]>('JournalInsights-sessOff', []);
-  const [brokerOff, setBrokerOff] = useJournalState<string[]>('JournalInsights-brokerOff', []);
   const [assetOff, setAssetOff] = useJournalState<string[]>('JournalInsights-assetOff', []);
   const [stratOff, setStratOff] = useJournalState<string[]>('JournalInsights-stratOff', []);
-  const [openMenu, setOpenMenu] = useState<null | 'broker' | 'asset' | 'strategy'>(null);
+  const [openMenu, setOpenMenu] = useState<null | 'asset' | 'strategy'>(null);
   const [mouseHover, setHover] = useState<number | null>(null);
   const [focusedBucket,setFocusedBucket] = useState<number|null>(null);
   const hover=focusedBucket===-1?null:focusedBucket ?? mouseHover;
@@ -156,20 +221,23 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   };
 
   // ── date range + benchmark window ──
+  const reportEnd=entries.reduce((latest,e)=>e.date>latest?e.date:latest,entries.length?'0000-01-01':JOURNAL_TODAY);
   const days = range === 'last30' ? 30 : range === 'last90' ? 90 : 0;
-  const from = days ? addDays(JOURNAL_TODAY, -(days - 1)) : '0000-01-01';
-  const prevFrom = days ? addDays(JOURNAL_TODAY, -(2 * days - 1)) : '';
-  const prevTo = days ? addDays(JOURNAL_TODAY, -days) : '';
+  const from = days ? addDays(reportEnd, -(days - 1)) : '0000-01-01';
+  const prevFrom = days ? addDays(reportEnd, -(2 * days - 1)) : '';
+  const prevTo = days ? addDays(reportEnd, -days) : '';
   const benchOn = bench && days > 0;
 
-  const passFilters = (e: JournalEntry) =>
-    eligible(e) && !brokerOff.includes(e.brokerId || UNASSIGNED) && !assetOff.includes(e.assetClass) && !stratOff.includes(e.strategy) && !sessOff.includes(sessionOf(e));
-  const cur = useMemo(() => entries.filter((e) => passFilters(e) && e.date >= from && (range === 'all' || e.date <= JOURNAL_TODAY)),
+  const passReportFilters = (e: JournalEntry) =>
+    !assetOff.includes(e.assetClass) && !stratOff.includes(e.strategy) && !sessOff.includes(sessionOf(e));
+  const passFilters = (e: JournalEntry) => eligible(e) && passReportFilters(e);
+  const openCur = entries.filter(e => tradingStatusOf(e) === 'open' && passReportFilters(e) && e.date >= from && (range === 'all' || e.date <= reportEnd));
+  const cur = useMemo(() => entries.filter((e) => passFilters(e) && e.date >= from && (range === 'all' || e.date <= reportEnd)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [entries, brokerOff, assetOff, stratOff, sessOff, from]);
+    [entries, assetOff, stratOff, sessOff, from]);
   const prev = useMemo(() => (benchOn ? entries.filter((e) => passFilters(e) && e.date >= prevFrom && e.date <= prevTo) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [entries, brokerOff, assetOff, stratOff, sessOff, benchOn, prevFrom, prevTo]);
+    [entries, assetOff, stratOff, sessOff, benchOn, prevFrom, prevTo]);
 
   // ── buckets for the current view ──
   const bucketOf = (e: JournalEntry): { key: string; label: string; order: number } => {
@@ -280,12 +348,12 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
     onToast(`Exported ${rows.length} rows to CSV`);
   };
 
-  const resetFilters = () => { setBrokerOff([]); setAssetOff([]); setStratOff([]); setSessOff([]); setRowFilter(''); setRange('all'); setBench(false); setDrill(null); };
-  const activeFilters = brokerOff.length + assetOff.length + stratOff.length + sessOff.length;
+  const resetFilters = () => { setAssetOff([]); setStratOff([]); setSessOff([]); setRowFilter(''); setRange('all'); setBench(false); setDrill(null); };
+  const activeFilters = assetOff.length + stratOff.length + sessOff.length;
 
   // ── small UI helpers ──
   const btn = 'h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-[#0b1c30]';
-  const menu = (id: 'broker' | 'asset' | 'strategy', title: string, opts: { id: string; label: string; color?: string }[], off: string[], set: (v: string[]) => void) => (
+  const menu = (id: 'asset' | 'strategy', title: string, opts: { id: string; label: string; color?: string }[], off: string[], set: (v: string[]) => void) => (
     <div className="relative">
       <button type="button" aria-expanded={openMenu === id} onClick={() => setOpenMenu(openMenu === id ? null : id)} className={`${btn} ${off.length ? 'border-[#5338ec] text-[#5338ec]' : ''}`}>
         {title} ({opts.length - off.length}/{opts.length})
@@ -296,7 +364,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
             <label key={o.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 text-xs text-[#0b1c30] cursor-pointer">
               <input type="checkbox" checked={!off.includes(o.id)} onChange={() => set(off.includes(o.id) ? off.filter((x) => x !== o.id) : [...off, o.id])} style={o.color ? { accentColor: o.color } : undefined} />
               <span className="flex-1">{o.label}</span>
-              <span className="text-[10px] font-mono text-slate-400">{entries.filter((e) => (id === 'broker' ? (e.brokerId || UNASSIGNED) : id === 'asset' ? e.assetClass : e.strategy) === o.id).length}</span>
+              <span className="text-[10px] font-mono text-slate-400">{entries.filter((e) => (id === 'asset' ? e.assetClass : e.strategy) === o.id).length}</span>
             </label>
           ))}
           <div className="flex justify-between px-2 pt-1.5">
@@ -307,9 +375,8 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
       )}
     </div>
   );
-  const brokerOpts = Array.from(new Set<string>(entries.map((e) => e.brokerId || UNASSIGNED))).map((id) => ({ id, label: brokerName(id), color: brokerColor(id, brokerOrder) }));
-  const assetOpts = Array.from(new Set<string>(entries.map((e) => e.assetClass))).map((id) => ({ id, label: id }));
-  const stratOpts = JOURNAL_STRATEGIES.filter((s) => entries.some((e) => e.strategy === s)).map((id) => ({ id, label: id }));
+  const assetOpts = JOURNAL_MARKET_TYPES.map((id) => ({ id, label: id }));
+  const stratOpts = [...new Set<string>(entries.map(e=>e.strategy).filter(Boolean))].sort().map(id=>({id,label:id}));
 
   const delta = (a: number, b: number, fmt: (n: number) => string) => {
     const d = a - b;
@@ -373,6 +440,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
       </aside>
 
       <div className="min-w-0 space-y-5">
+        <section aria-label="Insights data connection" className="rounded-xl border border-purple-200 bg-purple-50/50 p-3 text-xs"><p><strong>{entries.length} Trade Log records connected.</strong> {entries.filter(e=>eligible(e)).length} have eligible closed net results; {cur.length} match Day &amp; Time report filters.</p>{(activeFilters>0||range!=='all'||rowFilter)&&<div className="mt-2 flex flex-wrap items-center justify-between gap-2"><p className="text-slate-500">Saved report filters can narrow these results independently of the journal filters.</p><button type="button" className="font-semibold text-purple-700" onClick={()=>{setRange('all');setAssetOff([]);setStratOff([]);setSessOff([]);setRowFilter('');setDrill(null);}}>Reset Insights filters</button></div>}{!cur.length&&entries.length>0&&<p className="mt-2 text-slate-600">{entries.some(e=>eligible(e))?'No closed results match the report filters. Reset Insights filters to restore this journal scope.':'Recorded trades are open/planned or missing realized P&L or costs. They remain in Trade Log; closed net calculations exclude them.'}</p>}</section>
         {report === 'overview' ? overview : (
           <>
             {/* Toolbar */}
@@ -391,7 +459,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               <select aria-label="Report subrange" value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="h-9 text-xs font-semibold border border-slate-200 rounded-lg px-3 bg-white">
                 <option value="last30">Last 30 days within scope</option><option value="last90">Last 90 days within scope</option><option value="all">Entire journal scope</option>
               </select>
-              {menu('broker', 'Broker', brokerOpts, brokerOff, setBrokerOff)}
               {menu('asset', 'Market type', assetOpts, assetOff, setAssetOff)}
               {menu('strategy', 'Playbook', stratOpts, stratOff, setStratOff)}
               <label className={`${btn} flex items-center gap-2 cursor-pointer ${days ? '' : 'opacity-50 cursor-not-allowed'}`} title={days ? '' : 'Pick Last 30 or 90 days to compare with the period before'}>
@@ -401,7 +468,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               <button type="button" onClick={exportCsv} className={`${btn} ml-auto`}>Export CSV</button>
             </div>
             <p className="text-[11px] text-slate-500 -mt-2">
-              {total.n} eligible closed trades · {range === 'all' ? 'entire journal scope' : `${shortDate(from)} – ${shortDate(JOURNAL_TODAY, true)} within journal scope`}
+              {total.n} eligible closed trades · {range === 'all' ? 'entire journal scope' : `${shortDate(from)} – ${shortDate(reportEnd, true)} within journal scope`}
               {benchOn && <> · compared with {shortDate(prevFrom)} – {shortDate(prevTo, true)} ({prevTotal.n} trades)</>}
               {activeFilters > 0 && <> · {activeFilters} filter{activeFilters === 1 ? '' : 's'} off</>}
             </p>
@@ -448,10 +515,25 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
 
             {/* Distribution chart */}
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Distribution">
+              <div className="flex flex-wrap gap-1.5 mb-3" role="group" aria-label="Distribution position scope">
+                {([['closed', 'Closed performance'], ['open', 'Open positions & unrealized P&L']] as const).map(([id, label]) => (
+                  <button key={id} type="button" aria-pressed={chartScope === id} onClick={() => { setChartScope(id); setHover(null); setFocusedBucket(null); }}
+                    className={`px-3 h-8 rounded-lg text-xs font-semibold border ${chartScope === id ? 'bg-[#EEF0FE] border-[#5338ec]/40 text-[#5338ec]' : 'bg-white border-slate-200 text-[#474556] hover:bg-slate-50'}`}>{label}</button>
+                ))}
+              </div>
+              {chartScope !== 'closed' ? (
+                <>
+                  <h4 className="text-sm font-bold mb-2">Open positions & unrealized P&amp;L</h4>
+                  {view === 'duration' && <p className="text-[11px] text-slate-500 mb-2">Open hold time is unavailable without a valuation timestamp; exit-based duration buckets apply only to closed trades.</p>}
+                  <JournalOpenInsightsChart key={`${chartScope}-${view}-${tz}-${resolution}`} entries={openCur}
+                    bucketOf={e => view === 'duration' ? { key: 'open', label: 'Still open', order: 0 } : bucketOf(e)} onDrill={onDrill} />
+                </>
+              ) : (
+                <>
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
                   <h4 className="text-sm font-bold">{view === 'days' ? 'Day of week' : view === 'month' ? 'Monthly' : view === 'time' ? 'Time of day' : 'Hold time'} distribution</h4>
-                  <p className="text-[11px] text-slate-500">Net of commissions · hover a bar for details · click to drill down</p>
+                  <p className="text-[11px] text-slate-500">{metric === 'net' ? 'Bars show realized net profit or loss: green for profit, red for loss.' : metric === 'avgR' ? 'Bars show average realized R: green for positive, red for negative.' : 'Bars show the selected distribution metric.'} Click a bar or press Enter to see every closed trade in that group.</p>
                 </div>
                 <div className="flex h-8 rounded-lg border border-slate-200 overflow-hidden" role="group" aria-label="Metric">
                   {([['net', 'Net P&L'], ['winRate', 'Win rate %'], ['trades', 'Trades'], ['avgR', 'Avg R']] as const).map(([id, label]) => (
@@ -482,7 +564,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                     const fill = metric === 'net' || metric === 'avgR' ? (v >= 0 ? '#10b981' : '#f43f5e') : '#5338ec';
                     const pv = metricVal(b.ps);
                     return (
-                      <g key={b.key} role="button" tabIndex={0} aria-label={`${b.label}: ${b.s.n} realized trades, net ${money(b.s.net)}; open cohort`} onFocus={()=>setFocusedBucket(i)} onBlur={()=>setFocusedBucket(null)} onKeyDown={ev=>{if(ev.key==='Escape'){setFocusedBucket(-1);setHover(null);}if((ev.key==='Enter'||ev.key===' ')&&b.s.n){ev.preventDefault();setDrill({label:b.label,ids:b.list.map(e=>e.id)});}}} onMouseEnter={() => setHover(i)} onClick={() => b.s.n && setDrill({ label: b.label, ids: b.list.map((e) => e.id) })} style={{ cursor: b.s.n ? 'pointer' : 'default' }}>
+                      <g key={b.key} role="button" tabIndex={0} aria-haspopup="dialog" aria-label={`${b.label}: ${b.s.n} closed trades, net ${money(b.s.net)}; open trade results`} onFocus={()=>setFocusedBucket(i)} onBlur={()=>setFocusedBucket(null)} onKeyDown={ev=>{if(ev.key==='Escape'){setFocusedBucket(-1);setHover(null);}if((ev.key==='Enter'||ev.key===' ')&&b.s.n){ev.preventDefault();setDrill({label:b.label,ids:b.list.map(e=>e.id)});}}} onMouseEnter={() => setHover(i)} onClick={() => b.s.n && setDrill({ label: b.label, ids: b.list.map((e) => e.id) })} style={{ cursor: b.s.n ? 'pointer' : 'default' }}>
                         <rect x={x} y={M.t} width={bw} height={H - M.t - M.b} fill={hover === i ? '#f1f5f9' : 'transparent'} />
                         {b.s.n > 0 && <rect x={x + (bw - inner) / 2} y={Math.min(yS(v), yS(0))} width={inner} height={Math.max(1.5, Math.abs(yS(v) - yS(0)))} rx={4} fill={fill} />}
                         {benchOn && b.ps.n > 0 && <rect x={x + (bw - inner) / 2 - 3} y={Math.min(yS(pv), yS(0))} width={inner + 6} height={Math.max(1.5, Math.abs(yS(pv) - yS(0)))} rx={4} fill="none" stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 3" />}
@@ -513,12 +595,14 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                   {worst && worst.s.net < 0 && <> · Leak: <span className="font-semibold text-rose-600">{worst.label}</span> ({money(worst.s.net, 0)})</>}
                 </p>
               )}
+                </>
+              )}
             </section>
 
             {/* Cross analysis matrix */}
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cross analysis matrix">
               <h4 className="text-sm font-bold">Cross analysis matrix</h4>
-              <p className="text-[11px] text-slate-500 mb-3">Each cell is net P&amp;L, trades and win rate for that pair. Click a cell to see its trades.</p>
+              <p className="text-[11px] text-slate-500 mb-3">Closed performance only. Each cell is net P&amp;L, trades and win rate for that pair. Click a cell to see its trades. Open-position chart toggles do not change realized statistics or CSV exports.</p>
               <div className="flex flex-wrap gap-1.5 mb-3" role="tablist" aria-label="Compare by">
                 {DIMS.map(([id, label]) => (
                   <button key={id} type="button" role="tab" aria-selected={dim === id} onClick={() => setDim(id)}
@@ -567,34 +651,23 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               </div>
             </section>
 
-            {/* Drill-down panel */}
             {drill && (() => {
               const list = entries.filter((e) => drill.ids.includes(e.id)).sort((a, b) => (b.entryTime || b.date).localeCompare(a.entryTime || a.date));
               const s = stats(list);
+              const formatEntryTime = (entry: JournalEntry) => entry.entryTime
+                ? `${loc(entry).date} ${pad(loc(entry).hour ?? 0)}:${loc(entry).minute} ${tz}`
+                : `${entry.date} · no time`;
               return (
-                <section className="bg-[#F8F7FF] border border-[#5338ec]/30 rounded-2xl p-4" aria-label="Drill-down">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold tracking-wider uppercase text-[#5338ec]">Drill-down</p>
-                      <p className="text-sm font-bold text-[#0b1c30]">{drill.label}</p>
-                    </div>
-                    <span className="text-xs text-[#474556]">{s.n} trade{s.n === 1 ? '' : 's'} · <span className={`font-mono font-bold ${tone(s.net)}`}>{money(s.net)}</span> · win {s.winRate.toFixed(0)}%</span>
-                    <button type="button" onClick={() => onDrill(drill.ids, drill.label)} className="ml-auto h-9 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Open in Trade Log</button>
-                    <button type="button" onClick={() => setDrill(null)} className="text-xs font-semibold text-[#474556] hover:underline">Close</button>
-                  </div>
-                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {list.slice(0, 8).map((e) => (
-                      <div key={e.id} className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs">
-                        <span className="font-mono text-slate-500 w-32 shrink-0">{e.entryTime ? `${loc(e).date} ${pad(loc(e).hour ?? 0)}:${loc(e).minute}` : e.date}</span>
-                        <span className="font-bold text-[#0b1c30] w-20 shrink-0">{e.symbol}</span>
-                        <span className={`text-[10px] font-bold ${e.direction === 'BUY' ? 'text-emerald-700' : 'text-rose-700'}`}>{e.direction === 'BUY' ? 'LONG' : 'SHORT'}</span>
-                        <span className="text-slate-500 truncate">{e.strategy}</span>
-                        <span className={`ml-auto font-mono font-bold ${tone(netOf(e))}`}>{money(netOf(e))}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {list.length > 8 && <p className="text-[11px] text-slate-500 mt-2">+{list.length - 8} more. Open in Trade Log to see all.</p>}
-                </section>
+                <InsightsDrillDialog
+                  label={drill.label}
+                  entries={list}
+                  summary={s}
+                  formatMoney={value => money(value)}
+                  formatEntryTime={formatEntryTime}
+                  onClose={() => setDrill(null)}
+                  onOpenAll={() => { setDrill(null); onDrill(drill.ids, drill.label); }}
+                  onOpenTrade={entry => { setDrill(null); onDrill([entry.id], `Trade · ${entry.symbol}`); }}
+                />
               );
             })()}
 

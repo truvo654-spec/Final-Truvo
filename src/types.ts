@@ -582,6 +582,7 @@ export interface JournalEntry {
   sourceTimezone?: string;
   pnlKnown?: boolean;
   initialRisk?: number | null;
+  marginAtEntry?: number | null;
   equityAtEntry?: number | null;
   mistakesReviewed?: boolean;
   ruleEvidence?: { ruleId: string; label: string; version: string; effectiveAt: string; state: 'pass' | 'fail' | 'unknown' | 'not_applicable'; source: 'user' }[];

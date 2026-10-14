@@ -8,6 +8,12 @@ export const eligible = (e: JournalEntry, basis: 'gross' | 'net' = 'net') => rea
 export const rawNet = (e: JournalEntry) => Math.round((e.pnl - (e.commission ?? 0)) * 100) / 100;
 // Additive value only: callers display ineligible observations as unknown, not a closed zero result.
 export const netOf = (e: JournalEntry) => eligible(e) ? rawNet(e) : 0;
+// Account return, not return on margin/notional: those valuation prerequisites are not recorded.
+export const netRoiOf = (e: JournalEntry): number | null => {
+  if (!eligible(e) || !Number.isFinite(e.equityAtEntry) || e.equityAtEntry! <= 0) return null;
+  const value = rawNet(e) / e.equityAtEntry! * 100;
+  return Number.isFinite(value) ? value : null;
+};
 export const resultOf = (e: JournalEntry, basis: 'gross' | 'net' = 'net'): JournalEntry['outcome'] => {
   if (!eligible(e, basis)) return 'open';
   const p = basis === 'net' ? rawNet(e) : e.pnl;

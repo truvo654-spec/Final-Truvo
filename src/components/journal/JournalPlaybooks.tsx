@@ -1,15 +1,17 @@
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
 import React, { useMemo, useState } from 'react';
+import { ChevronRight, Search, Sparkles, X } from 'lucide-react';
 import { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
-import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, PLAYBOOK_TEMPLATES, ReviewDecision, ScenarioStatus } from '../../data/journalPlaybooks';
-import { guessAssetClass } from './journalIngest';
+import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, ReviewDecision, ScenarioStatus } from '../../data/journalPlaybooks';
 import { PlaybookAnalytics } from './PlaybookAnalytics';
 import { PlaybookBacktestPanel } from '../backtest/PlaybookBacktestPanel';
 import type { PlaybookExpectedStats } from '../../backtest/store';
-import { TradeReplayModal } from './TradeReplayModal';
+
+import { JournalReplayAvailability } from './JournalReplayAvailability';
 import { JOURNAL_TODAY } from '../../data/journalData';
 import { TradingStatusBadge, tradingStatusOf } from './tradingStatus';
+import { buildPlaybookRecommendations, RECOMMENDATION_MARKETS } from './playbookRecommendations';
 
 // Strategy playbooks (light theme, after the uploaded concept): library with market/status filters,
 // search and sort; detail with thesis, a live pre-trade rules check, entry/stop/target, edge metrics
@@ -102,6 +104,7 @@ const windowText = (pb: JournalPlaybook) => (pb.window ? `${pb.window.label} (${
 
 interface Props {
   entries: JournalEntry[];
+  allJournalEntries?: JournalEntry[];
   playbooks: JournalPlaybook[];
   setPlaybooks: (fn: (prev: JournalPlaybook[]) => JournalPlaybook[]) => void;
   onOpenEntry: (id: string) => void;
@@ -111,13 +114,10 @@ interface Props {
   houseChecklist: JournalChecklistItem[];
   recordings: Record<string, string>;
   onSetRecording: (entryId: string, blob: Blob | null) => void;
-  onLogTrade: (prefill: {
-    strategy: string; checklist: string[]; symbol?: string; assetClass?: PortfolioAssetClass; direction?: 'BUY' | 'SELL';
-    entryPrice?: number; stopPrice?: number; takeProfit?: number; notes?: string; scenarioId?: string;
-  }) => void;
   /** Saved backtest expectations by playbook id. */
   expected?: Record<string, PlaybookExpectedStats>;
   onBacktest?: (playbookId: string) => void;
+  onWhatIf?: (playbookId: string) => void;
 }
 
 const blank = (): JournalPlaybook => ({
@@ -125,7 +125,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, onLogTrade, recordings, onSetRecording, expected = {}, onBacktest }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -136,10 +136,14 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
   const [checks, setChecks] = useState<Record<string, string[]>>({});
   const [editing, setEditing] = useState<JournalPlaybook | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [tplOpen, setTplOpen] = useState(false);
+
+  const [recommendationOpen, setRecommendationOpen] = useState(false);
+  const [recommendationMarket, setRecommendationMarket] = useState<'all' | PortfolioAssetClass>('all');
+  const [recommendationQuery, setRecommendationQuery] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [step, setStep] = useState<Step>('setup');
   const [replayId, setReplayId] = useState<string | null>(null);
+
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [gradeTip, setGradeTip] = useState<{ id: string; x: number; y: number } | null>(null);
   const [houseChecks, setHouseChecks] = useState<Record<string, string[]>>({});
@@ -148,6 +152,14 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
   const [scFilter, setScFilter] = useState<'open' | 'all'>('open');
   const [scDraft, setScDraft] = useState<PlaybookScenario | null>(null);
   const [activeSc, setActiveSc] = useState<Record<string, string>>({});
+  const recommendations = useMemo(
+    () => buildPlaybookRecommendations(allJournalEntries, playbooks, JOURNAL_TODAY),
+    [allJournalEntries, playbooks],
+  );
+  const shownRecommendations = recommendations.filter((recommendation) =>
+    (recommendationMarket === 'all' || recommendation.market === recommendationMarket) &&
+    (!recommendationQuery.trim() || `${recommendation.title} ${recommendation.description} ${recommendation.market} ${recommendation.tools.join(' ')}`.toLowerCase().includes(recommendationQuery.trim().toLowerCase()))
+  );
 
   const stats = useMemo(() => {
     const m = new Map<string, PbStats>();
@@ -175,30 +187,32 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
 
   const nextId = () => `PB-${pad(Math.max(0, ...playbooks.map((p) => Number(p.id.replace(/\D/g, '')) || 0)) + 1).padStart(3, '0')}`;
 
-  const startNew = () => { setEditing(blank()); setIsNew(true); setConfirmDelete(false); };
-  const startEdit = () => { if (sel) { setEditing(JSON.parse(JSON.stringify(sel))); setIsNew(false); setConfirmDelete(false); } };
-  const importTpl = (i: number) => {
-    const t = PLAYBOOK_TEMPLATES[i];
-    let name = t.name; let k = 2;
-    while (playbooks.some((p) => p.name.toLowerCase() === name.toLowerCase())) name = `${t.name} (${k++})`;
-    const pb: JournalPlaybook = { ...JSON.parse(JSON.stringify(t)), name, id: nextId(), createdAt: JOURNAL_TODAY };
-    setPlaybooks((prev) => [...prev, pb]);
-    setStatus('all'); setMarket('all'); setQuery(''); setSelId(pb.id); setTplOpen(false);
-    onToast(`Imported "${name}" as a testing playbook`);
+  const startNew = () => { setEditing(blank()); setIsNew(true); setConfirmDelete(false); setRecommendationOpen(false); };
+  const useRecommendation = (recommendation: (typeof recommendations)[number]) => {
+    const baseName = recommendation.draft.name;
+    let name = baseName;
+    let suffix = 2;
+    while (playbooks.some((playbook) => playbook.name.toLowerCase() === name.toLowerCase())) name = `${baseName} (${suffix++})`;
+    setEditing({ ...recommendation.draft, name });
+    setIsNew(true);
+    setConfirmDelete(false);
+    setRecommendationOpen(false);
+    window.requestAnimationFrame(() => document.getElementById('playbook-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
-  const save = () => {
+  const startEdit = () => { if (sel) { setEditing(JSON.parse(JSON.stringify(sel))); setIsNew(false); setConfirmDelete(false); } };
+  const save = (statusOverride?: PlaybookStatus) => {
     if (!editing) return;
     const name = editing.name.trim();
     if (!name) { onToast('Give the playbook a name'); return; }
     if (playbooks.some((p) => p.id !== editing.id && p.name.toLowerCase() === name.toLowerCase())) { onToast('A playbook with that name already exists'); return; }
-    const clean: JournalPlaybook = { ...editing, name, avoid: (editing.avoid || []).map((a) => a.trim()).filter(Boolean), rules: editing.rules.filter((r) => r.title.trim()).map((r, i) => ({ ...r, id: `r${i + 1}` })) };
+    const clean: JournalPlaybook = { ...editing, name, status: statusOverride ?? editing.status, avoid: (editing.avoid || []).map((a) => a.trim()).filter(Boolean), rules: editing.rules.filter((r) => r.title.trim()).map((r, i) => ({ ...r, id: `r${i + 1}` })) };
     if (isNew) {
       clean.id = nextId();
       setPlaybooks((prev) => [...prev, clean]);
       setStatus('all'); setMarket('all'); setQuery('');
     } else setPlaybooks((prev) => prev.map((p) => (p.id === clean.id ? clean : p)));
     setSelId(clean.id); setEditing(null);
-    onToast(isNew ? `Created "${name}"` : `Saved "${name}"`);
+    onToast(statusOverride === 'archived' ? `Archived "${name}"` : isNew ? `Created "${name}"` : `Saved "${name}"`);
   };
   const remove = () => {
     if (!sel) return;
@@ -206,30 +220,6 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
     setEditing(null); setConfirmDelete(false);
     onToast(`Deleted "${sel.name}"`);
   };
-  const exportMd = () => {
-    if (!sel || !s) return;
-    const md = [
-      `# ${sel.name} (${sel.id})`, '',
-      `Grade: ${sel.grade} · Style: ${sel.style} · Status: ${STATUS_LABEL[sel.status]}`,
-      `Markets: ${sel.markets.join(', ')} · Window: ${windowText(sel)} · Benchmark R:R 1:${sel.benchmarkRR}`, '',
-      `Instruments: ${(sel.symbols || []).join(', ') || '—'}`, '',
-      '## Thesis', sel.thesis, '',
-      '## Execution rules', ...sel.rules.map((r, i) => `${i + 1}. **${r.title}**: ${r.detail}`), '',
-      '## Risk limits', `Risk per trade: ${sel.riskPerTrade !== undefined ? `${sel.riskPerTrade}%` : 'house limit'} · Max trades per day: ${sel.maxTradesPerDay ?? 'house limit'}`, '',
-      '## Do not trade when', ...(sel.avoid || []).map((a) => `- ${a}`), '',
-      '## Entry trigger', sel.entryTrigger, '', '## Stop / invalidation', sel.stopRule, '', '## Profit taking', sel.targetRule, '',
-      '## Journal stats', `Trades: ${s.n} · Win rate: ${s.winRate}% · Profit factor: ${s.pf === null ? '—' : s.pf.toFixed(2)} · Net: ${money(s.net, 2)} · Total R: ${s.totalR.toFixed(1)}R`,
-      `Plan followed on ${s.followed} of ${s.n} trades.`, '',
-      '## Scenarios', ...(sel.scenarios || []).map((x) => `- [${SC_LABEL[x.status]}] ${x.symbol} ${x.bias}: ${x.hypothesis} (entry ${x.entry ?? '—'}, stop ${x.stop ?? '—'}, target ${x.target ?? '—'}, valid until ${x.validUntil})`), '',
-      '## Review log', ...(sel.reviews || []).map((rv) => `- ${rv.date} [${DECISION_LABEL[rv.decision]}] ${rv.note}`),
-    ].join('\n');
-    const url = URL.createObjectURL(new Blob([md], { type: 'text/markdown;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = `${sel.name.replace(/[^\w]+/g, '-').toLowerCase()}-playbook.md`; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    onToast('Playbook exported');
-  };
-
   const chip = (on: boolean) => `h-8 px-3 rounded-lg text-xs font-semibold border ${on ? 'bg-[#EEF0FE] border-[#5338ec]/40 text-[#5338ec]' : 'bg-white border-slate-200 text-[#474556] hover:bg-slate-50'}`;
   const btn = 'h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-[#0b1c30]';
   const input = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30';
@@ -344,22 +334,11 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
     setPlaybooks((prev) => prev.map((p) => (p.id === sel.id ? { ...p, scenarios: (p.scenarios || []).filter((x) => x.id !== id) } : p)));
     if (activeSc[sel.id] === id) setActiveSc((a) => ({ ...a, [sel.id]: '' }));
   };
-  const scenarioPrefill = (sc: PlaybookScenario) => ({
-    symbol: sc.symbol, assetClass: guessAssetClass(sc.symbol), direction: (sc.bias === 'long' ? 'BUY' : 'SELL') as 'BUY' | 'SELL',
-    entryPrice: sc.entry, stopPrice: sc.stop, takeProfit: sc.target, scenarioId: sc.id,
-    notes: `Scenario: ${sc.hypothesis}${sc.trigger ? `\nTrigger: ${sc.trigger}` : ''}`,
-  });
   const curSc = sel ? (sel.scenarios || []).find((x) => x.id === activeSc[sel.id]) : undefined;
-  const logTrade = () => {
-    if (!sel) return;
-    if (curSc) setScStatus(curSc.id, 'triggered');
-    const first = (sel.symbols || [])[0];
-    onLogTrade({ strategy: sel.name, checklist: houseChecked, ...(curSc ? scenarioPrefill(curSc) : first ? { symbol: first, assetClass: guessAssetClass(first) } : {}) });
-  };
 
   // ── Edit / create form ──
   const form = editing && (
-    <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-4" aria-label={isNew ? 'New playbook' : 'Edit playbook'}>
+    <section id="playbook-editor" className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-4 scroll-mt-24" aria-label={isNew ? 'New playbook' : 'Edit playbook'}>
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-[#0b1c30]">{isNew ? 'New playbook' : `Edit ${editing.name}`}</h3>
         <button type="button" onClick={() => setEditing(null)} className="text-xs font-semibold text-[#474556] hover:underline">Cancel</button>
@@ -457,14 +436,25 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
       <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
         <button type="button" onClick={save} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">{isNew ? 'Create playbook' : 'Save changes'}</button>
         <button type="button" onClick={() => setEditing(null)} className={btn}>Cancel</button>
-        {!isNew && (selTrades.length === 0 ? (
-          confirmDelete ? (
-            <span className="ml-auto flex items-center gap-2 text-xs text-rose-700">Delete this playbook?
-              <button type="button" onClick={remove} className="h-8 px-3 rounded-lg bg-rose-600 text-white font-semibold">Delete</button>
-              <button type="button" onClick={() => setConfirmDelete(false)} className="font-semibold text-[#474556] hover:underline">Keep</button>
-            </span>
-          ) : <button type="button" onClick={() => setConfirmDelete(true)} className="ml-auto text-xs font-semibold text-rose-600 hover:underline">Delete playbook</button>
-        ) : <span className="ml-auto text-[11px] text-slate-400">Has trades, so it can be archived but not deleted.</span>)}
+        {!isNew && (
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            {selTrades.length === 0 && (confirmDelete ? (
+              <span className="flex items-center gap-2 text-xs text-rose-700">Delete this playbook?
+                <button type="button" onClick={remove} className="h-8 px-3 rounded-lg bg-rose-600 text-white font-semibold">Delete</button>
+                <button type="button" onClick={() => setConfirmDelete(false)} className="font-semibold text-[#474556] hover:underline">Keep</button>
+              </span>
+            ) : <button type="button" onClick={() => setConfirmDelete(true)} className="text-xs font-semibold text-rose-600 hover:underline">Delete playbook</button>)}
+            <button
+              type="button"
+              aria-label={editing.status === 'archived' ? 'Playbook archived' : 'Archive playbook'}
+              disabled={editing.status === 'archived'}
+              onClick={() => save('archived')}
+              className={`h-9 px-4 rounded-lg border text-xs font-semibold ${editing.status === 'archived' ? 'border-slate-200 bg-slate-50 text-slate-400' : 'border-[#5338ec] text-[#5338ec] hover:bg-[#F7F5FF]'}`}
+            >
+              {editing.status === 'archived' ? 'Archived' : 'Archive'}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -494,9 +484,71 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
   return (
     <div className="space-y-5">
       {tip}
-      {replayId && (() => { const re = entries.find((x) => x.id === replayId); const pb = re ? playbooks.find((p) => p.name === re.strategy) : undefined; return re ? (
-        <TradeReplayModal entry={re} targetRR={pb?.benchmarkRR ?? 2} recording={recordings[re.id]} onAttach={(b) => onSetRecording(re.id, b)} onRemove={() => onSetRecording(re.id, null)} onClose={() => setReplayId(null)} />
-      ) : null; })()}
+      {recommendationOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-3 sm:p-6" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setRecommendationOpen(false); }}>
+          <section className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-[#0b1c30] shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="strategy-recommendation-title">
+            <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-7">
+              <div>
+                <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-[#5338ec]"><Sparkles className="h-4 w-4" /> MARKETSYDE AI</div>
+                <h2 id="strategy-recommendation-title" className="text-xl font-bold">Set up a strategy</h2>
+                <p className="mt-1 text-sm text-slate-600">Explore journal patterns and 20 technical scenarios, or start with your own rules.</p>
+              </div>
+              <button type="button" aria-label="Close strategy recommendations" onClick={() => setRecommendationOpen(false)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-[#0b1c30]"><X className="h-5 w-5" /></button>
+            </header>
+            <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[205px_minmax(0,1fr)]">
+              <aside className="flex flex-col border-b border-slate-200 bg-slate-50 p-3 md:border-b-0 md:border-r">
+                <p className="px-2 pb-2 text-[10px] font-bold tracking-wider text-slate-500">BROWSE MARKETS</p>
+                <button type="button" aria-pressed={recommendationMarket === 'all'} onClick={() => setRecommendationMarket('all')} className={`mb-2 rounded-lg px-3 py-2 text-left text-xs font-semibold ${recommendationMarket === 'all' ? 'bg-[#F0EDFF] text-[#5338ec]' : 'text-slate-700 hover:bg-white'}`}>All markets</button>
+                <p className="px-2 pb-1 pt-2 text-[10px] font-bold tracking-wider text-slate-500">ASSET CLASS</p>
+                <div className="grid grid-cols-2 gap-1 md:grid-cols-1">
+                  {RECOMMENDATION_MARKETS.map((assetClass) => (
+                    <button key={assetClass} type="button" aria-pressed={recommendationMarket === assetClass} onClick={() => setRecommendationMarket(assetClass)} className={`rounded-lg px-3 py-2 text-left text-xs font-semibold ${recommendationMarket === assetClass ? 'bg-[#F0EDFF] text-[#5338ec]' : 'text-slate-700 hover:bg-white'}`}>
+                      {assetClass === 'Commodity' ? 'Commodities' : assetClass}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" onClick={startNew} className="mt-4 flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-3 text-left text-xs font-semibold text-[#0b1c30] hover:border-[#5338ec]/50 hover:bg-[#FBFAFF] md:mt-auto">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5338ec] text-base text-white">+</span>
+                  Create your own
+                </button>
+              </aside>
+              <div className="flex min-h-0 flex-col">
+                <div className="border-b border-slate-200 p-4 sm:px-5">
+                  <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 focus-within:border-[#5338ec] focus-within:ring-2 focus-within:ring-[#5338ec]/15">
+                    <Search className="h-4 w-4 shrink-0 text-slate-400" />
+                    <input value={recommendationQuery} onChange={(event) => setRecommendationQuery(event.target.value)} placeholder="Search scenarios, indicators, or asset class" aria-label="Search strategy recommendations" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
+                  </label>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+                  <p className="mb-3 text-xs text-slate-500">Journal patterns use your full saved history. Technical scenarios use the same computed tools available in the backtest rule builder.</p>
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    {shownRecommendations.map((recommendation) => (
+                      <article key={recommendation.id} className="flex min-h-48 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <h3 className="text-sm font-bold text-[#0b1c30]">{recommendation.title}</h3>
+                          <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${recommendation.personalized ? 'bg-emerald-50 text-emerald-700' : recommendation.kind === 'technical' ? 'bg-[#F0EDFF] text-[#5338ec]' : 'bg-slate-100 text-slate-600'}`}>{recommendation.personalized ? 'Journal-guided' : recommendation.kind === 'technical' ? 'Technical scenario' : 'Starter framework'}</span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <span className="rounded-full border border-[#5338ec]/25 bg-[#F7F5FF] px-2 py-0.5 text-[10px] font-semibold text-[#5338ec]">{recommendation.market === 'Commodity' ? 'Commodities' : recommendation.market}</span>
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-600">{recommendation.evidence}</span>
+                        </div>
+                        {recommendation.tools.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{recommendation.tools.map((tool) => <span key={tool} className="rounded border border-violet-100 bg-violet-50 px-1.5 py-0.5 text-[9px] font-medium text-violet-700">{tool}</span>)}</div>}
+                        <p className="mt-3 text-xs leading-relaxed text-slate-600">{recommendation.description}</p>
+                        <button type="button" onClick={() => useRecommendation(recommendation)} className="mt-auto self-start pt-4 text-xs font-semibold text-[#5338ec] hover:underline">Use this draft <ChevronRight className="ml-0.5 inline h-3.5 w-3.5" /></button>
+                      </article>
+                    ))}
+                    {shownRecommendations.length === 0 && <p className="col-span-full rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No recommendations match that search.</p>}
+                  </div>
+                  <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2.5 text-[11px] leading-relaxed text-slate-600">
+                    This chooser is local and rule-based, not generated by a connected AI model or a source of live signals or forecasts. Journal rankings require at least 5 eligible closed trades and 5 recorded R results for a setup; technical scenarios are hypotheses, not performance rankings. Selecting one stores its exact computed indicators in the playbook so Backtest can load the same rules. Review every rule and test costs, gaps, and market conditions before trading.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+      {replayId&&(()=>{const trade=allJournalEntries.find(e=>e.id===replayId)??entries.find(e=>e.id===replayId);return trade?<JournalReplayAvailability entry={trade} entries={allJournalEntries} playbooks={playbooks} returnLabel="Return to playbook" recording={recordings[trade.id]} onAttachRecording={blob=>onSetRecording(trade.id,blob)} onRemoveRecording={()=>onSetRecording(trade.id,null)} onClose={()=>setReplayId(null)}/>:null;})()}
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -506,20 +558,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter setups, symbols, scenarios..." aria-label="Filter playbooks" className="h-9 w-60 border border-slate-200 rounded-lg px-3 text-xs bg-white" />
-          <div className="relative">
-            <button type="button" aria-expanded={tplOpen} onClick={() => setTplOpen((o) => !o)} className={btn}>Import template</button>
-            {tplOpen && (
-              <div className="absolute right-0 z-30 mt-2 w-72 rounded-xl bg-white border border-slate-200 shadow-xl p-2">
-                {PLAYBOOK_TEMPLATES.map((t, i) => (
-                  <button key={t.name} type="button" onClick={() => importTpl(i)} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50">
-                    <span className="block text-sm font-semibold text-[#0b1c30]">{t.name}</span>
-                    <span className="block text-[11px] text-slate-500">{t.style} · {t.markets.join(', ')} · {t.rules.length} rules</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <button type="button" onClick={startNew} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Create new playbook</button>
+          <button type="button" onClick={() => setRecommendationOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]"><Sparkles className="h-3.5 w-3.5" /> Create new playbook</button>
         </div>
       </div>
 
@@ -601,9 +640,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                     <span>Min reward:risk: <b className="text-[#0b1c30]">1:{sel.benchmarkRR}</b></span>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {onWhatIf && <button type="button" onClick={() => onWhatIf(sel.id)} className={btn}>Optimize in What-if</button>}
                   {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className={btn} title="Test these rules on past prices">Backtest this playbook</button>}
-                  <button type="button" onClick={exportMd} className={btn}>Export</button>
+
                   <button type="button" onClick={startEdit} className={btn}>Edit playbook</button>
                 </div>
               </div>
@@ -783,8 +823,9 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                           </div>
                           <div className="flex flex-wrap gap-2 mt-3">
                             {(sc.status === 'watching' || sc.status === 'triggered') && (
-                              <button type="button" onClick={() => { setActiveSc((a) => ({ ...a, [sel.id]: sc.id })); setStep('checklist'); }} className="h-8 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Check and trade</button>
+                              <button type="button" onClick={() => { setActiveSc((a) => ({ ...a, [sel.id]: sc.id })); setStep('checklist'); }} className="h-8 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Check setup</button>
                             )}
+                            {sc.status === 'watching' && <button type="button" onClick={() => setScStatus(sc.id, 'triggered')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Mark triggered</button>}
                             {sc.status === 'watching' && <button type="button" onClick={() => setScStatus(sc.id, 'invalidated')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Invalidated</button>}
                             {sc.status === 'triggered' && <button type="button" onClick={() => setScStatus(sc.id, 'closed')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Mark closed</button>}
                             {(sc.status === 'invalidated' || sc.status === 'closed') && <button type="button" onClick={() => setScStatus(sc.id, 'watching')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Reopen</button>}
@@ -812,7 +853,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                   <div className="rounded-xl border border-slate-200 px-4 py-3">
                     <div className="flex flex-wrap items-center gap-3">
                     <span className={`text-sm font-bold ${quality.cls}`}>{metAll} of {totalChecks} ticked · {quality.label}</span>
-                    <span className="text-[11px] text-[#474556]">Tick what applies. You don't need all of them; the score is saved with the trade for later review.</span>
+                    <span className="text-[11px] text-[#474556]">Tick what applies to check this setup against your rules. This checklist is a preparation aid, not a journal trade.</span>
                     {(checked.length > 0 || houseChecked.length > 0) && <button type="button" onClick={() => { setChecks((c) => ({ ...c, [sel.id]: [] })); setHouseChecks((c) => ({ ...c, [sel.id]: [] })); }} className="ml-auto text-xs font-semibold text-[#474556] hover:underline">Reset</button>}
                     </div>
                     <div className="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={totalChecks} aria-valuenow={metAll} aria-label="Checklist completion">
@@ -848,12 +889,6 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                     </div>
                   </div>
                   {(sel.avoid || []).length > 0 && <p className="text-[11px] text-rose-600">Also check you are not in a no-trade condition: {(sel.avoid || []).join(' · ')}.</p>}
-                  <div className="flex flex-wrap items-center gap-3 pt-1">
-                    <button type="button" onClick={logTrade} className="h-9 px-4 rounded-lg text-xs font-semibold text-white bg-[#5338ec] hover:bg-[#4326d8]">
-                      Log trade with this playbook
-                    </button>
-                    <span className="text-[11px] text-slate-500">Opens a new journal entry with this playbook and your ticked checklist{curSc ? `, plus ${curSc.symbol}, direction and levels from the scenario` : ''} filled in.</span>
-                  </div>
                 </div>
               )}
 
@@ -878,7 +913,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                       {selTrades.length > 0 && <button type="button" onClick={() => onShowTrades(selTrades.map((e) => e.id), `${sel.name} playbook`)} className="text-xs font-semibold text-[#5338ec] hover:underline">All {selTrades.length} in Trade Log</button>}
                     </div>
                     {selTrades.length === 0 ? (
-                      <p className="text-sm text-slate-500 border border-dashed border-slate-200 rounded-xl p-4 text-center">No trades with this playbook yet. Use the Checklist step to log one.</p>
+                      <p className="text-sm text-slate-500 border border-dashed border-slate-200 rounded-xl p-4 text-center">No trades with this playbook yet. Matching executions will appear here after they are added to the journal.</p>
                     ) : (
                       <div className="rounded-xl border border-slate-200 divide-y divide-slate-100">
                         {[...selTrades].sort((a, b) => (b.entryTime || b.date).localeCompare(a.entryTime || a.date)).slice(0, 6).map((e) => (
@@ -891,7 +926,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                             {e.mistakes[0] && <span className="text-[10px] text-rose-600 truncate">{e.mistakes[0]}</span>}
                             <span className={`ml-auto font-mono font-bold ${tone(netOf(e))}`}>{money(netOf(e), 2)}</span>
                           </button>
-                          <button type="button" onClick={() => setReplayId(e.id)} className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold ${recordings[e.id] ? 'bg-emerald-50 text-emerald-700' : 'text-[#5338ec] hover:bg-[#EEF0FE]'}`}>{recordings[e.id] ? '▶ Recorded' : '▶ Replay'}</button>
+                          <button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} onClick={() => setReplayId(e.id)} className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold ${recordings[e.id] ? 'bg-emerald-50 text-emerald-700' : 'text-[#5338ec] hover:bg-[#EEF0FE]'}`}>▶ Replay</button>
                           </div>
                         ))}
                       </div>
@@ -993,7 +1028,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
 
                   {selTrades.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-bold text-[#0b1c30] mb-2">Best executions <span className="font-normal text-[11px] text-slate-500">· replay or record each one</span></h4>
+                      <h4 className="text-sm font-bold text-[#0b1c30] mb-2">Best executions <span className="font-normal text-[11px] text-slate-500">· replay each trade</span></h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {[...selTrades].sort((a, b) => netOf(b) - netOf(a)).slice(0, 2).map((e) => (
                           <div key={e.id} className="rounded-xl border border-slate-200 p-3">
@@ -1011,7 +1046,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, playbooks, setPlayb
                             <div className="flex items-center justify-between gap-2">
                               <span className="flex flex-wrap gap-1">{e.tags.slice(0, 2).map((t) => <span key={t} className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-600">#{t.replace(/\s+/g, '_')}</span>)}</span>
                               <span className="flex gap-3">
-                                <button type="button" onClick={() => setReplayId(e.id)} className={`text-xs font-semibold hover:underline whitespace-nowrap ${recordings[e.id] ? 'text-emerald-700' : 'text-[#5338ec]'}`}>{recordings[e.id] ? '▶ Watch replay' : '▶ Replay'}</button>
+                                <button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} onClick={() => setReplayId(e.id)} className={`text-xs font-semibold hover:underline whitespace-nowrap ${recordings[e.id] ? 'text-emerald-700' : 'text-[#5338ec]'}`}>▶ Replay</button>
                                 <button type="button" onClick={() => onOpenEntry(e.id)} className="text-xs font-semibold text-[#5338ec] hover:underline whitespace-nowrap">View trade</button>
                               </span>
                             </div>

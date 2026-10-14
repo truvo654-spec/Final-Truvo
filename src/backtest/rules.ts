@@ -3,8 +3,9 @@
 import type { JournalPlaybook } from '../data/journalPlaybooks';
 import { DATA_END, DATA_START, MAX_RULES } from './config';
 import { parseDay, resolveSymbol, symbolSpec } from './marketData';
+import { getTechnicalStrategyRecipe } from './technicalStrategies';
 import {
-  BacktestSettings, Condition, IndSpec, IndType, Operand, Op, SESSIONS, SessionId, StrategyRules, SUPPORTED_TIMEFRAMES, Timeframe,
+  BacktestSettings, Condition, IND_DEFAULT_PERIOD, IndSpec, IndType, Operand, Op, SESSIONS, SessionId, StrategyRules, SUPPORTED_TIMEFRAMES, Timeframe,
 } from './types';
 
 let uid = 0;
@@ -21,8 +22,16 @@ export const IND_LABEL: Record<IndType, string> = {
   SMA: 'Simple moving average', EMA: 'Exponential moving average', RSI: 'RSI', ATR: 'ATR (volatility)', VWAP: 'VWAP',
   PDH: "Yesterday's high", PDL: "Yesterday's low", SESSION_HIGH: 'Session high', SESSION_LOW: 'Session low',
   HIGHEST: 'N-bar high', LOWEST: 'N-bar low', FVG_BULL: 'Bullish fair value gap', FVG_BEAR: 'Bearish fair value gap',
+  MACD: 'MACD histogram (12, 26, 9)', STOCH: 'Stochastic %K', CCI: 'Commodity Channel Index',
+  ADX: 'Average Directional Index', MOMENTUM: 'Momentum', ROC: 'Rate of change',
+  STOCH_RSI: 'Stochastic RSI', WILLR: 'Williams %R', BULL_POWER: 'Bull power (Elder)',
+  BEAR_POWER: 'Bear power (Elder)', ULTIMATE: 'Ultimate Oscillator (7, 14, 28)',
+  VWMA: 'Volume-weighted moving average', HMA: 'Hull moving average',
+  ICHIMOKU_CONVERSION: 'Ichimoku conversion line', ICHIMOKU_BASE: 'Ichimoku base line',
+  BB_UPPER: 'Bollinger upper band', BB_MIDDLE: 'Bollinger middle band', BB_LOWER: 'Bollinger lower band',
+  OBV: 'On-balance volume', MFI: 'Money Flow Index',
 };
-export const IND_HAS_PERIOD: IndType[] = ['SMA', 'EMA', 'RSI', 'ATR', 'HIGHEST', 'LOWEST'];
+export const IND_HAS_PERIOD: IndType[] = Object.keys(IND_DEFAULT_PERIOD) as IndType[];
 
 export function describeOperand(o: Operand): string {
   if (o.kind === 'value') return String(o.value);
@@ -43,6 +52,26 @@ export function describeOperand(o: Operand): string {
     case 'LOWEST': return `the ${period ?? 20}-bar low`;
     case 'FVG_BULL': return 'a bullish fair value gap';
     case 'FVG_BEAR': return 'a bearish fair value gap';
+    case 'MACD': return 'the MACD histogram (12, 26, 9)';
+    case 'STOCH': return `Stochastic %K(${period ?? 14}, 3)`;
+    case 'CCI': return `CCI(${period ?? 20})`;
+    case 'ADX': return `ADX(${period ?? 14})`;
+    case 'MOMENTUM': return `Momentum(${period ?? 10})`;
+    case 'ROC': return `ROC(${period ?? 12})`;
+    case 'STOCH_RSI': return `Stochastic RSI(${period ?? 14})`;
+    case 'WILLR': return `Williams %R(${period ?? 14})`;
+    case 'BULL_POWER': return `bull power(${period ?? 13})`;
+    case 'BEAR_POWER': return `bear power(${period ?? 13})`;
+    case 'ULTIMATE': return 'the Ultimate Oscillator (7, 14, 28)';
+    case 'VWMA': return `the ${period ?? 20}-bar VWMA`;
+    case 'HMA': return `the ${period ?? 9}-bar HMA`;
+    case 'ICHIMOKU_CONVERSION': return `the ${period ?? 9}-bar Ichimoku conversion line`;
+    case 'ICHIMOKU_BASE': return `the ${period ?? 26}-bar Ichimoku base line`;
+    case 'BB_UPPER': return `the upper ${period ?? 20}-bar Bollinger band`;
+    case 'BB_MIDDLE': return `the middle ${period ?? 20}-bar Bollinger band`;
+    case 'BB_LOWER': return `the lower ${period ?? 20}-bar Bollinger band`;
+    case 'OBV': return 'on-balance volume';
+    case 'MFI': return `MFI(${period ?? 14})`;
   }
 }
 
@@ -60,22 +89,32 @@ export function describeCondition(c: Condition): string {
 
 const MIRROR: Partial<Record<IndType, IndType>> = {
   PDH: 'PDL', PDL: 'PDH', SESSION_HIGH: 'SESSION_LOW', SESSION_LOW: 'SESSION_HIGH', HIGHEST: 'LOWEST', LOWEST: 'HIGHEST', FVG_BULL: 'FVG_BEAR', FVG_BEAR: 'FVG_BULL',
+  BULL_POWER: 'BEAR_POWER', BEAR_POWER: 'BULL_POWER', BB_UPPER: 'BB_LOWER', BB_LOWER: 'BB_UPPER',
 };
 const isAtr = (o: Operand) => o.kind === 'ind' && o.ind.type === 'ATR';
-const isRsi = (o: Operand) => o.kind === 'ind' && o.ind.type === 'RSI';
+const isAdx = (o: Operand) => o.kind === 'ind' && o.ind.type === 'ADX';
+const isRsi = (o: Operand) => o.kind === 'ind' && ['RSI', 'STOCH_RSI', 'STOCH', 'ULTIMATE'].includes(o.ind.type);
 const FLIP: Record<Op, Op> = { gt: 'lt', lt: 'gt', crossAbove: 'crossBelow', crossBelow: 'crossAbove' };
 
-function mirrorOperand(o: Operand, rsiSide: boolean): Operand {
+function mirrorOperand(o: Operand, oscillator: IndType | null): Operand {
   if (o.kind === 'ind' && MIRROR[o.ind.type]) return { kind: 'ind', ind: { ...o.ind, type: MIRROR[o.ind.type]! } };
-  if (o.kind === 'value' && rsiSide) return { kind: 'value', value: 100 - o.value };
+  if (o.kind === 'value' && oscillator) {
+    if (['RSI', 'STOCH', 'STOCH_RSI', 'ULTIMATE', 'MFI'].includes(oscillator)) return { kind: 'value', value: 100 - o.value };
+    if (oscillator === 'WILLR') return { kind: 'value', value: -100 - o.value };
+    if (['CCI', 'MACD', 'MOMENTUM', 'ROC', 'OBV', 'BULL_POWER', 'BEAR_POWER'].includes(oscillator)) return { kind: 'value', value: -o.value };
+  }
   return o;
 }
 
 export function mirrorCondition(c: Condition): Condition {
-  if (isAtr(c.left) || isAtr(c.right)) return c; // volatility is not directional
-  if (isFvg(c.left)) return { ...c, left: mirrorOperand(c.left, false) };
-  const rsi = isRsi(c.left) || isRsi(c.right);
-  return { ...c, left: mirrorOperand(c.left, rsi), op: FLIP[c.op], right: mirrorOperand(c.right, rsi) };
+  if (isAtr(c.left) || isAtr(c.right) || isAdx(c.left) || isAdx(c.right)) return c;
+  if (isFvg(c.left)) return { ...c, left: mirrorOperand(c.left, null) };
+  const oscillator = c.left.kind === 'ind' && (isRsi(c.left) || ['WILLR', 'MFI', 'CCI', 'MACD', 'MOMENTUM', 'ROC', 'OBV', 'BULL_POWER', 'BEAR_POWER'].includes(c.left.ind.type))
+    ? c.left.ind.type
+    : c.right.kind === 'ind' && (isRsi(c.right) || ['WILLR', 'MFI', 'CCI', 'MACD', 'MOMENTUM', 'ROC', 'OBV', 'BULL_POWER', 'BEAR_POWER'].includes(c.right.ind.type))
+      ? c.right.ind.type
+      : null;
+  return { ...c, left: mirrorOperand(c.left, oscillator), op: FLIP[c.op], right: mirrorOperand(c.right, oscillator) };
 }
 
 // ── Rule sentences for the setup summary and results ──
@@ -154,7 +193,9 @@ const exits = (p: Partial<StrategyRules['exits']>): StrategyRules['exits'] => ({
   stop: { type: 'atr', mult: 1.5 }, targetR: 2, breakevenAtR: null, breakevenLockR: 0, trailing: null, partial: null, timeExitBars: null, sessionEndExit: false, ...p,
 });
 
-export function templateFor(pb: Pick<JournalPlaybook, 'name' | 'style'> | null): Template {
+export function templateFor(pb: Pick<JournalPlaybook, 'name' | 'style' | 'technicalRecipeId'> | null): Template {
+  const recipe = getTechnicalStrategyRecipe(pb?.technicalRecipeId);
+  if (recipe) return { tf: recipe.timeframe, rules: JSON.parse(JSON.stringify(recipe.rules)) as StrategyRules };
   const n = `${pb?.name ?? ''} ${pb?.style ?? ''}`.toLowerCase();
   const T = (tf: Timeframe, entry: Condition[], ex: Partial<StrategyRules['exits']>, more: Partial<StrategyRules> = {}, news?: Template['news']): Template => ({
     tf, news, rules: { direction: 'both', entry, entryOrder: { type: 'market' }, exits: exits(ex), maxTradesPerDay: 2, ...more },

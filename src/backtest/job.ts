@@ -67,7 +67,7 @@ export function evaluateSuggestions(s: BacktestSettings, series: Series, res: Ru
     const r = runSync(applyPatch(s, c.patch), series);
     const m = computeMetrics(r.trades, r.startBalance, r.rangeStart, r.rangeEnd);
     const delta = m.avgR - base.avgR;
-    if (delta >= 0.03 && m.trades >= Math.max(10, Math.min(MIN_TRADES, base.trades * 0.5)) && m.netPnl > base.netPnl) out.push({ ...c, deltaR: delta, trades: m.trades });
+    if (delta >= 0.03 && m.trades >= Math.max(10, Math.min(MIN_TRADES, base.trades * 0.5)) && m.netPnl > base.netPnl) out.push({ ...c, deltaR: delta, trades: m.trades, metrics: { netPnl: m.netPnl, maxDD: m.maxDD, winRate: m.winRate, trades: m.trades } });
     onEach?.(k + 1, cands.length);
   });
   return out.sort((a, b) => b.deltaR - a.deltaR).slice(0, 3);

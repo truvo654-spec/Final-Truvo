@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 2026-10-09
+### Added
+- Merged the Trading Journal work from the Trading_journal_7.10.2026 branch: the What-if lab and MarketSyde recommender, practice and demo replay with editable setup transfer, saved what-if scenarios and reports, personalised AI Coach candle comparisons, unified replay comparisons, and the backtest import in the summary area. 59 new files, 39 updated.
+- JournalEntry gained marginAtEntry, which the new overview analytics and replay need.
+### Changed
+- Kept this branch's own AI journal work through the merge and wired it back in: the spotlight summary on the Overview and the per-entry summary in the review drawer.
+- Left the Strategy Builder alone; the journal branch does not carry it, so only journal, backtest and journal data files were taken.
+### Fixed
+- shiftDay no longer throws on an entry with a missing or malformed date, which was blanking the whole journal page.
+
 ## [1.12.0] - 2026-10-09
 ### Added
 - Scatter tab rebuilt to the design: "Market Scatter" with its subtitle and the Gain / Loss key, three custom pickers for X axis, Y axis and Point size, a dashed grid with axis ticks, dots coloured lime for a gain and violet for a loss and sized by the third field, and the "X: … Y: … Size: …" line beneath.

@@ -2,6 +2,7 @@ import { useJournalState } from './journalStorage';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics, currencyOf } from './journalMath';
 import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, PlayCircle } from 'lucide-react';
 import { Broker, JournalEntry } from '../../types';
 import { UNASSIGNED, brokerColor, entryCashback, entryPoints } from './journalOverview';
 import { TradingStatusBadge, ReviewStateBadge, reviewStateOf, TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
@@ -76,15 +77,16 @@ interface Props {
   brokers: Broker[];
   onChange: (updater: (prev: JournalEntry[]) => JournalEntry[]) => void;
   onOpen: (id: string, cohort?: string[]) => void;
-  onNew: () => void;
   onToast: (msg: string) => void;
   preset?: { ids: string[]; label: string } | null;
   onClearPreset?: () => void;
   /** Replay one trade blind in Backtest → Practice. */
   onReplay?: (id: string) => void;
+  onReplayLog?: (id:string) => void;
+  onBacktestTrades?: (ids: string[]) => void;
 }
 
-export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onNew, onToast, preset, onClearPreset, onReplay }) => {
+export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay, onReplayLog, onBacktestTrades }) => {
   const money = useMoney();
   const tradingPlain = (n:number,dp=2)=>money(Math.abs(n),dp).replace(/^\+/, '');
 
@@ -235,6 +237,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries, brokerMap]);
   const toggleIn = (set: React.Dispatch<React.SetStateAction<string[]>>, id: string) => set((o) => (o.includes(id) ? o.filter((x) => x !== id) : [...o, id]));
+  const resetLogFilters=()=>{setQuery('');setNeedsReview(false);setFOutcome('all');setFTradingStatus('all');setMarketOff([]);setBrokerOff([]);setPage(1);setSel([]);setPanel(null);onClearPreset?.();};
 
   const btn = 'h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-[#0b1c30] disabled:opacity-40 disabled:hover:bg-white';
   const [openMenu, setOpenMenu] = useState<null | 'market' | 'broker' | 'cols'>(null);
@@ -421,7 +424,6 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
           <p className="text-[10px] text-slate-500 mt-1">Base rate, before boosters</p>
         </div>
       </div>
-
       {/* Bulk actions */}
       <div className="flex flex-wrap items-center gap-2 min-h-[36px]">
         {hasSel ? (
@@ -441,7 +443,6 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
           <>
             <span className="text-[11px] text-slate-500">Tick trades to tag, move to another broker, export or delete them.</span>
             <button type="button" className={`${btn} ml-auto`} onClick={exportCsv}>Export all</button>
-            <button type="button" className="px-3 py-1.5 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white" onClick={onNew}>New trade</button>
           </>
         )}
       </div>
@@ -532,7 +533,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
         <table className="w-full text-xs">
           <thead className="bg-slate-50 text-slate-500">
             <tr>
-              <th className="w-10 px-3 py-2.5">
+              <th className="w-20 px-3 py-2.5">
                 <input type="checkbox" aria-label="Select all on this page" checked={allVisibleSelected} ref={(el) => { if (el) el.indeterminate = !allVisibleSelected && someVisibleSelected; }} onChange={toggleAll} />
               </th>
               {shownCols.map((c) => (
@@ -565,9 +566,9 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
                 {g.list.map((e) => {
                   const on = sel.includes(e.id);
                   return (
-                    <tr key={e.id} tabIndex={0} aria-label={`Review ${e.symbol} ${e.date}`} onKeyDown={ev => { if (ev.key === 'Enter') onOpen(e.id, sorted.map(x=>x.id)); }} onClick={() => onOpen(e.id, sorted.map(x=>x.id))} className={`border-t border-[#e2e8f0] cursor-pointer focus:outline-2 focus:outline-[#5338ec] ${on ? 'bg-[#EEF0FE]' : 'hover:bg-slate-50'}`}>
+                    <tr key={e.id} tabIndex={0} aria-label={`Review ${e.symbol} ${e.date}`} onKeyDown={ev => { if (ev.target===ev.currentTarget&&ev.key === 'Enter') onOpen(e.id, sorted.map(x=>x.id)); }} onClick={() => onOpen(e.id, sorted.map(x=>x.id))} className={`border-t border-[#e2e8f0] cursor-pointer focus:outline-2 focus:outline-[#5338ec] ${on ? 'bg-[#EEF0FE]' : 'hover:bg-slate-50'}`}>
                       <td className="px-3 py-2.5" onClick={(ev) => ev.stopPropagation()}>
-                        <input type="checkbox" aria-label={`Select ${e.symbol} ${e.date}`} checked={on} onChange={() => toggleRow(e.id)} />
+                        <div className="flex items-center gap-2"><input type="checkbox" aria-label={`Select ${e.symbol} ${e.date}`} checked={on} onChange={() => toggleRow(e.id)} />{onReplayLog&&<button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} title="Replay log" onClick={()=>onReplayLog(e.id)} className="rounded-lg p-1.5 text-[#5338ec] hover:bg-purple-50"><PlayCircle size={17}/></button>}</div>
                       </td>
                       {shownCols.map((c) => cell(e, c.key))}
                     </tr>
@@ -576,7 +577,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
               </React.Fragment>
             ))}
             {visible.length === 0 && (
-              <tr><td colSpan={shownCols.length + 1} className="px-3 py-12 text-center text-slate-500">No trades match these filters.</td></tr>
+              <tr><td colSpan={shownCols.length + 1} className="px-3 py-10 text-center text-slate-500"><p>{entries.length?'No trades match these Trade Log filters.':'No trades are available in the current journal scope.'}</p>{entries.length>0&&<button type="button" onClick={resetLogFilters} className="mt-2 font-semibold text-[#5338ec] hover:underline">Clear Trade Log filters</button>}</td></tr>
             )}
           </tbody>
           {sorted.length > 0 && (
@@ -606,12 +607,23 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
           </select>
         </label>
         <span className="hidden lg:inline text-slate-500">Net of commissions · cashback and points are estimates</span>
-        <div className="ml-auto flex items-center gap-1" role="navigation" aria-label="Pagination">
-          <button type="button" aria-label="Previous page" disabled={curPage <= 1} onClick={() => setPage(curPage - 1)} className="w-7 h-7 rounded-md border border-slate-200 bg-white disabled:opacity-40">‹</button>
-          {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
-            <button key={p} type="button" aria-current={p === curPage ? 'page' : undefined} onClick={() => setPage(p)} className={`w-7 h-7 rounded-md border text-xs font-semibold ${p === curPage ? 'bg-[#5338ec] border-[#5338ec] text-[#0b1c30]' : 'border-slate-200 bg-white text-slate-700'}`}>{p}</button>
-          ))}
-          <button type="button" aria-label="Next page" disabled={curPage >= pages} onClick={() => setPage(curPage + 1)} className="w-7 h-7 rounded-md border border-slate-200 bg-white disabled:opacity-40">›</button>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+          <div className="flex items-center gap-1" role="navigation" aria-label="Pagination">
+            <button type="button" aria-label="Previous page" disabled={curPage <= 1} onClick={() => setPage(curPage - 1)} className="w-7 h-7 rounded-md border border-slate-200 bg-white disabled:opacity-40">‹</button>
+            {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
+              <button key={p} type="button" aria-current={p === curPage ? 'page' : undefined} onClick={() => setPage(p)} className={`w-7 h-7 rounded-md border text-xs font-semibold ${p === curPage ? 'bg-[#5338ec] border-[#5338ec] text-[#0b1c30]' : 'border-slate-200 bg-white text-slate-700'}`}>{p}</button>
+            ))}
+            <button type="button" aria-label="Next page" disabled={curPage >= pages} onClick={() => setPage(curPage + 1)} className="w-7 h-7 rounded-md border border-slate-200 bg-white disabled:opacity-40">›</button>
+          </div>
+          {hasSel && onBacktestTrades && (
+            <button
+              type="button"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#5338ec] px-4 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#4326d8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5338ec]"
+              onClick={() => onBacktestTrades(sel)}
+            >
+              Import to Backtest <ArrowRight className="h-4 w-4" aria-hidden />
+            </button>
+          )}
         </div>
       </div>
     </div>

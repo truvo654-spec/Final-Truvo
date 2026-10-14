@@ -2,12 +2,15 @@
 import React, { useMemo, useState } from 'react';
 import { Copy, Eye, GitCompare, Share2, Trash2, ArrowLeft } from 'lucide-react';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
-import type { BacktestRun } from '../../backtest/store';
+import type { BacktestRun,WhatIfRun } from '../../backtest/store';
+import {SavedWhatIfRuns} from './SavedWhatIfRuns';
 import { computeMetrics, Metrics } from '../../backtest/metrics';
 import { describeRules } from '../../backtest/rules';
 import { dateOnly, money, num, pct, rr } from '../../backtest/format';
 import { LineChart } from './charts';
 import { Card, Pill, btnPrimary, btnSecondary } from './ui';
+import { comparableSetups, recommendSetup, type RecommendationGoal } from '../../backtest/recommender';
+import { MarketSydeRecommender, RecommendationBadge } from './MarketSydeRecommender';
 
 interface Props {
   runs: BacktestRun[];
@@ -18,6 +21,8 @@ interface Props {
   onDelete: (id: string) => void;
   onToast: (m: string) => void;
   onNew: () => void;
+  whatIfRuns?:WhatIfRun[];
+  onDeleteWhatIf?:(id:string)=>void;
 }
 
 const COLORS = ['#5338ec', '#0ea5e9', '#f59e0b'];
@@ -40,10 +45,11 @@ function settingRows(r: BacktestRun): Record<string, string> {
   };
 }
 
-export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDuplicate, onDelete, onToast, onNew }) => {
+export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDuplicate, onDelete, onToast, onNew,whatIfRuns=[],onDeleteWhatIf=()=>{} }) => {
   const [sel, setSel] = useState<string[]>([]);
   const [comparing, setComparing] = useState(false);
   const [confirm, setConfirm] = useState<string | null>(null);
+  const [recommendationGoal, setRecommendationGoal] = useState<RecommendationGoal>('net');
   const pbName = (id: string | null) => playbooks.find((p) => p.id === id)?.name ?? '—';
 
   const picked = runs.filter((r) => sel.includes(r.id));
@@ -55,6 +61,7 @@ export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDupl
   };
 
   if (comparing && picked.length >= 2) {
+    const recommendation = recommendSetup(picked.slice(1).map((r,i)=>({id:r.id,name:r.name,metrics:metrics[i+1]})), metrics[0], recommendationGoal, comparableSetups(picked.map(r=>r.settings)));
     const rows = picked.map(settingRows);
     const keys = Object.keys(rows[0]);
     const changed = keys.filter((k) => rows.some((x) => x[k] !== rows[0][k]));
@@ -72,12 +79,13 @@ export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDupl
     return (
       <div className="space-y-5">
         <button type="button" className="flex items-center gap-1.5 text-sm font-medium text-[#474556] hover:text-[#5338ec]" onClick={() => setComparing(false)}><ArrowLeft className="w-4 h-4" /> Back to saved runs</button>
+        <MarketSydeRecommender recommendation={recommendation} baseline={metrics[0]} baselineName={picked[0].name} goal={recommendationGoal} onGoal={setRecommendationGoal} money={value=>money(value,picked[0].settings.risk.currency,2)} evidence="Ranked only among these selected saved runs. In-sample simulation results; different test conditions disable recommendation." action="Open AI candidate report" onUse={onOpen} />
         <p className="text-[15px] text-[#0b1c30] max-w-[75ch]">{comment}</p>
         <Card title="Compare runs" sub="Changed settings are highlighted. The best value in each row is green, with its lead over the next best.">
           <div className="overflow-x-auto -mx-5 px-5">
             <table className="w-full text-xs tabular-nums">
               <thead><tr className="border-b border-slate-200"><th className="text-left py-2 pr-3 text-[10px] uppercase tracking-wider text-slate-500 w-32">Setting</th>
-                {picked.map((r, i) => <th key={r.id} className="text-left py-2 px-3"><span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5" style={{ background: COLORS[i] }} />{r.name}</th>)}</tr></thead>
+                {picked.map((r, i) => <th key={r.id} className="text-left py-2 px-3"><span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5" style={{ background: COLORS[i] }} />{r.name}{r.id === recommendation.candidate?.id && <span className="block mt-1"><RecommendationBadge exploratory={recommendation.status === 'exploratory'} /></span>}</th>)}</tr></thead>
               <tbody>
                 {keys.map((k) => (
                   <tr key={k} className={`border-b border-slate-100 ${changed.includes(k) ? 'bg-amber-50' : ''}`}>
@@ -112,6 +120,8 @@ export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDupl
   }
 
   return (
+    <div className="space-y-5">
+    <SavedWhatIfRuns runs={whatIfRuns} tz={tz} onDelete={onDeleteWhatIf}/>
     <Card title="Saved runs" sub="Tick 2 or 3 runs to compare them side by side." right={
       <div className="flex gap-2">
         <button type="button" className={btnSecondary} disabled={sel.length < 2} title={sel.length < 2 ? 'Tick 2 or 3 runs first' : undefined} onClick={() => setComparing(true)}><GitCompare className="w-3.5 h-3.5" /> Compare {sel.length >= 2 ? `(${sel.length})` : ''}</button>
@@ -171,5 +181,6 @@ export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDupl
         </div>
       )}
     </Card>
+    </div>
   );
 };

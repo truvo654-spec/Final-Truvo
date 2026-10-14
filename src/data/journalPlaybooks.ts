@@ -6,6 +6,9 @@ export type PlaybookGrade = 'A+' | 'A' | 'B+' | 'B' | 'C';
 export type PlaybookStatus = 'active' | 'testing' | 'archived';
 
 export interface JournalPlaybook {
+  coachOrigin?: { scenarioId: string; sourcePlaybookId?: string; evidenceTradeIds: string[] };
+  /** Backtestable technical scenario recipe used to prefill an automated test. */
+  technicalRecipeId?: string;
   ruleHistory?: { version:number; effectiveAt:string | null; rules:{id:string;title:string;detail:string}[] }[];
   rulesEffectiveAt?: string;
   id: string;

@@ -266,6 +266,8 @@ const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 
 function shiftDay(iso: string, delta: number) {
   const d = new Date(`${iso}T00:00:00Z`);
+  // An entry can arrive with a missing or malformed date; return it untouched rather than throwing.
+  if (Number.isNaN(d.getTime())) return iso;
   d.setUTCDate(d.getUTCDate() + delta);
   return d.toISOString().slice(0, 10);
 }

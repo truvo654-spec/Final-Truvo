@@ -1,10 +1,10 @@
 // Results of an automated backtest: one sentence, four numbers, the curve, a verdict with
 // clickable improvements, robustness checks, breakdowns and the trade log.
-import React, { useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, ChevronDown, Copy, Download, Mail, Pencil, Save, ShieldCheck, Sparkles, XCircle, CalendarPlus, NotebookPen, Target, GitCompare, Info } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronDown, Copy, Download, Mail, Pencil, Save, ShieldCheck, Sparkles, XCircle, CalendarPlus, NotebookPen, Target, GitCompare, Info } from 'lucide-react';
 import type { JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
-import { BacktestSettings, JobOutput, Suggestion } from '../../backtest/types';
+import { BacktestSettings, Bar, BacktestTrade, JobOutput, SUPPORTED_TIMEFRAMES, Suggestion } from '../../backtest/types';
 import { breakdown, computeMetrics } from '../../backtest/metrics';
 import { robustness, verdictFor } from '../../backtest/robustness';
 import { ruleCount, describeRules } from '../../backtest/rules';
@@ -12,10 +12,14 @@ import { MIN_TRADES, MAX_RULES } from '../../backtest/config';
 import { dateOnly, money, num, pct, rr, tone, holdText } from '../../backtest/format';
 import { healthOf, HEALTH_LABEL, liveStats } from '../../backtest/gap';
 import type { PlaybookExpectedStats } from '../../backtest/store';
-import { symbolSpec } from '../../backtest/marketData';
-import { BarBreakdown, DrawdownChart, LineChart, ACCENT, UP, DOWN } from './charts';
+import { dayMs, marketData, parseDay, symbolSpec } from '../../backtest/marketData';
+import { BarBreakdown, CandleChart } from './charts';
+import type { Marker } from './charts';
 import { Banner, Card, Hint, Kpi, Pill, Segmented, btnPrimary, btnSecondary } from './ui';
 import { BacktestTradeLog } from './BacktestTradeLog';
+import { JournalTradeBenchmark } from './JournalTradeBenchmark';
+import { recommendSetup, type RecommendationGoal } from '../../backtest/recommender';
+import { MarketSydeRecommender } from './MarketSydeRecommender';
 
 interface Props {
   settings: BacktestSettings;
@@ -24,8 +28,11 @@ interface Props {
   saved: boolean;
   playbook: JournalPlaybook | null;
   entries: JournalEntry[];
+  benchmarkEntries: JournalEntry[];
   expected?: PlaybookExpectedStats;
   tz: string;
+  onOpenTrades: (ids: string[], label: string) => void;
+  onBackToComparison?: () => void;
   onSave: () => void;
   onEdit: () => void;
   onApplySuggestion: (s: Suggestion) => void;
@@ -40,35 +47,79 @@ const months = (a: number, b: number) => {
   return m >= 24 && m % 12 === 0 ? `${m / 12} years` : m >= 12 ? `${(m / 12).toFixed(1).replace(/\.0$/, '')} years` : `${Math.max(1, m)} month${m === 1 ? '' : 's'}`;
 };
 
-export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, saved, playbook, entries, expected, tz, onSave, onEdit, onApplySuggestion, onSetExpected, onSendNotes, onAddToPlan, onToast }) => {
+const PRICE_CHART_WINDOW = 85;
+const nearestBarIndex = (bars: Bar[], time: number) => {
+  if (!bars.length) return -1;
+  let low = 0, high = bars.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (bars[mid].t < time) low = mid + 1;
+    else high = mid;
+  }
+  if (low === 0) return 0;
+  if (low === bars.length) return bars.length - 1;
+  return time - bars[low - 1].t <= bars[low].t - time ? low - 1 : low;
+};
+
+export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, saved, playbook, entries, benchmarkEntries, expected, tz, onOpenTrades, onBackToComparison, onSave, onEdit, onApplySuggestion, onSetExpected, onSendNotes, onAddToPlan, onToast }) => {
   const r = output.result;
   const cur = r.currency;
-  const [unit, setUnit] = useState<'money' | 'r'>('money');
   const [by, setBy] = useState<'session' | 'weekday' | 'hour'>('session');
   const [allStats, setAllStats] = useState(false);
   const [more, setMore] = useState(false);
   const [showLive, setShowLive] = useState(false);
+  const [chartEnd, setChartEnd] = useState<number | null>(null);
+  const [recommendationGoal, setRecommendationGoal] = useState<RecommendationGoal>('net');
 
   const m = useMemo(() => computeMetrics(r.trades, r.startBalance, r.rangeStart, r.rangeEnd), [r]);
+  const recommendation = recommendSetup(output.suggestions.filter(sg=>sg.metrics).map(sg=>({id:sg.id,name:sg.label,metrics:sg.metrics!})),m,recommendationGoal);
   const ddLimit = s.risk.maxDrawdownPct ?? s.prop?.maxDrawdownPct ?? 20;
   const rob = useMemo(() => robustness(r.trades, r.rangeStart, r.rangeEnd, r.startBalance, ddLimit), [r, ddLimit]);
   const rc = ruleCount(s);
   const v = useMemo(() => verdictFor(m, rob, rc), [m, rob, rc]);
   const buckets = useMemo(() => breakdown(r.trades, by, tz), [r, by, tz]);
   const live = useMemo(() => (playbook ? liveStats(entries, playbook.name) : null), [playbook, entries]);
-
-  const equity = useMemo(() => {
-    let cumR = 0;
-    const pts = [{ x: r.rangeStart, y: unit === 'money' ? r.startBalance : 0 }];
-    r.trades.forEach((t) => { cumR += t.r; pts.push({ x: t.exitTime, y: unit === 'money' ? t.balance : cumR }); });
-    return pts;
-  }, [r, unit]);
-  const dd = useMemo(() => {
-    let peak = r.startBalance;
-    const pts = [{ x: r.rangeStart, dd: 0 }];
-    r.trades.forEach((t) => { peak = Math.max(peak, t.balance); pts.push({ x: t.exitTime, dd: (peak - t.balance) / peak }); });
-    return pts;
-  }, [r]);
+  const matchingEntries = useMemo(() => (playbook ? entries.filter((e) => e.strategy === playbook.name) : []), [playbook, entries]);
+  const spec = symbolSpec(s.symbol);
+  const chartProblem = !spec
+    ? `Price candles are unavailable for ${s.symbol}.`
+    : !SUPPORTED_TIMEFRAMES.includes(s.timeframe)
+      ? `${s.timeframe} candles are not available in the current demo feed.`
+      : null;
+  const chartBars = useMemo((): Bar[] => {
+    if (chartProblem) return [];
+    const series = marketData.seriesSync(s.symbol, s.timeframe);
+    const start = parseDay(s.from), end = parseDay(s.to) + dayMs;
+    const bars: Bar[] = [];
+    for (let i = 0; i < series.length; i++) {
+      const t = series.t[i];
+      if (t < start) continue;
+      if (t >= end) break;
+      bars.push({ t, o: series.o[i], h: series.h[i], l: series.l[i], c: series.c[i], v: series.v[i] });
+    }
+    return bars;
+  }, [chartProblem, s.symbol, s.timeframe, s.from, s.to]);
+  const chartAnnotations = useMemo(() => {
+    const markers: Marker[] = [];
+    const events = new Map<number, { trade: BacktestTrade; kind: 'entry' | 'exit' }[]>();
+    const addEvent = (trade: BacktestTrade, time: number, price: number, kind: 'entry' | 'exit', markerKind: Marker['kind']) => {
+      const index = nearestBarIndex(chartBars, time);
+      if (index < 0) return;
+      markers.push({ index, price, kind: markerKind });
+      const barTime = chartBars[index].t;
+      events.set(barTime, [...(events.get(barTime) ?? []), { trade, kind }]);
+    };
+    r.trades.forEach((trade) => {
+      addEvent(trade, trade.entryTime, trade.entryPrice, 'entry', trade.direction === 'long' ? 'buy' : 'sell');
+      addEvent(trade, trade.exitTime, trade.exitPrice, 'exit', 'exit');
+    });
+    return { markers, events };
+  }, [chartBars, r.trades]);
+  useEffect(() => { setChartEnd(null); }, [output]);
+  const chartTo = chartBars.length
+    ? Math.max(Math.min(chartEnd ?? chartBars.length, chartBars.length), Math.min(PRICE_CHART_WINDOW, chartBars.length))
+    : 0;
+  const chartFrom = Math.max(0, chartTo - PRICE_CHART_WINDOW);
 
   const subject = playbook ? `your ${playbook.name} playbook` : 'these rules';
   const period = months(r.rangeStart, r.rangeEnd);
@@ -111,8 +162,6 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
   const toneCls = { good: 'border-emerald-200 bg-emerald-50', warn: 'border-amber-200 bg-amber-50', bad: 'border-rose-200 bg-rose-50', neutral: 'border-slate-200 bg-slate-50' }[v.tone];
   const toneTxt = { good: 'text-emerald-700', warn: 'text-amber-700', bad: 'text-rose-700', neutral: 'text-slate-700' }[v.tone];
   const ambiguous = r.trades.filter((t) => t.ambiguous).length;
-  const spec = symbolSpec(s.symbol);
-
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -130,6 +179,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {onBackToComparison && <button type="button" className={btnSecondary} onClick={onBackToComparison}><ArrowLeft className="w-3.5 h-3.5" /> Back to comparison</button>}
           <button type="button" className={btnSecondary} onClick={onEdit}><Pencil className="w-3.5 h-3.5" /> Edit and re-run</button>
           {playbook && <button type="button" className={btnSecondary} aria-pressed={showLive} onClick={() => setShowLive((x) => !x)}><GitCompare className="w-3.5 h-3.5" /> Compare with my live trades</button>}
           <div className="relative">
@@ -153,6 +203,11 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
           <button type="button" className={btnPrimary} onClick={onSave} disabled={saved}><Save className="w-4 h-4" /> {saved ? 'Saved' : 'Save'}</button>
         </div>
       </div>
+
+      {benchmarkEntries.length > 0 && <JournalTradeBenchmark entries={benchmarkEntries} />}
+
+      <MarketSydeRecommender recommendation={recommendation} baseline={m} baselineName="this playbook's current rules" goal={recommendationGoal} onGoal={setRecommendationGoal} money={value=>money(value,cur,2)}
+        evidence={output.suggestions.some(sg=>!sg.metrics) ? 'Re-run older saved reports to include candidate net and drawdown evidence. Existing suggestion buttons remain available below.' : 'Ranked among up to three qualifying changes to target, stop, session, news, direction or breakeven on generated demo prices. In-sample selection; the current report’s robustness checks do not validate a changed setup.'} action="Set up AI candidate test" onUse={id=>{const sg=output.suggestions.find(sg=>sg.id===id);if(sg)onApplySuggestion(sg);}} />
 
       {/* Warnings */}
       {r.zeroTradeReason && <Banner tone="bad" icon={<XCircle className="w-4 h-4" />} action={<button type="button" className={btnSecondary} onClick={onEdit}>Change the setup</button>}><b>No trades.</b> {r.zeroTradeReason}</Banner>}
@@ -188,13 +243,50 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
             )}
           </div>
 
-          {/* Equity + drawdown */}
-          <Card title="Equity curve" sub={`Balance after each trade${s.prop ? ' with the prop-firm target and limit' : ''}. The red strip below shows drawdown.`}
-            right={<Segmented size="sm" label="Units" value={unit} onChange={setUnit} options={[{ id: 'money', label: cur }, { id: 'r', label: 'R' }]} />}>
-            <LineChart label="Equity curve" series={[{ name: unit === 'money' ? 'Balance' : 'Cumulative R', color: ACCENT, points: equity }]}
-              yFmt={(y) => (unit === 'money' ? money(y, cur, 0, false) : rr(y, 1))} xFmt={(x) => dateOnly(x, tz)}
-              hLines={unit === 'money' && s.prop ? [{ y: r.startBalance * (1 + s.prop.profitTargetPct / 100), label: `Target +${s.prop.profitTargetPct}%`, color: UP }, { y: r.startBalance * (1 - s.prop.maxDrawdownPct / 100), label: `Limit −${s.prop.maxDrawdownPct}%`, color: DOWN }] : []} />
-            <DrawdownChart points={dd} xFmt={(x) => dateOnly(x, tz)} label="Drawdown from the balance high" />
+          {/* Price candles replace the equity and drawdown plots; trade outcomes remain in the KPIs and breakdowns. */}
+          <Card title={`Price action · ${s.symbol}`} sub={`${s.timeframe} candles from the generated demo feed, not historical or live prices. Entries and exits are marked; hover or focus a candle for OHLC and trade details.`}>
+            {chartProblem ? (
+              <p className="py-8 text-center text-xs text-slate-500">{chartProblem}</p>
+            ) : chartBars.length ? (
+              <>
+                <CandleChart
+                  label={`${s.symbol} ${s.timeframe} backtest price candles`}
+                  bars={chartBars}
+                  from={chartFrom}
+                  to={chartTo}
+                  dp={spec?.priceDp ?? 2}
+                  height={340}
+                  markers={chartAnnotations.markers}
+                  interactive
+                  tooltipDetail={(time) => {
+                    const events = chartAnnotations.events.get(time);
+                    return events?.length ? (
+                      <div className="mt-1 space-y-0.5 border-t border-white/20 pt-1">
+                        {events.map(({ trade, kind }) => {
+                          const price = kind === 'entry' ? trade.entryPrice : trade.exitPrice;
+                          return <p key={`${trade.id}-${kind}`}>{kind === 'entry' ? 'Entry' : 'Exit'} · #{trade.id} · {trade.direction} · {price.toFixed(spec?.priceDp ?? 2)}{kind === 'exit' ? ` · ${money(trade.net, cur, 2, false)} net · ${rr(trade.r)}` : ''}</p>;
+                        })}
+                      </div>
+                    ) : null;
+                  }}
+                />
+                <label className="mt-3 block text-[11px] font-semibold text-slate-600">
+                  Chart timeline · {dateOnly(chartBars[chartFrom].t, tz)} – {dateOnly(chartBars[chartTo - 1].t, tz)}
+                  <input
+                    type="range"
+                    aria-label="Price chart timeline"
+                    aria-valuetext={`${dateOnly(chartBars[chartFrom].t, tz)} to ${dateOnly(chartBars[chartTo - 1].t, tz)}`}
+                    min={Math.min(PRICE_CHART_WINDOW, chartBars.length)}
+                    max={chartBars.length}
+                    value={chartTo}
+                    onChange={(event) => setChartEnd(Number(event.target.value))}
+                    className="mt-2 w-full accent-[#5338ec]"
+                  />
+                </label>
+              </>
+            ) : (
+              <p className="py-8 text-center text-xs text-slate-500">No price candles are available for this instrument and test period.</p>
+            )}
           </Card>
 
           {/* Compare with live */}
@@ -212,6 +304,11 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
                 </table>
               </div>
               <p className="text-xs text-[#474556] mt-3">{live.trades < 5 ? 'Too few live trades to compare yet.' : live.avgR >= m.avgR ? 'Your live trading is doing at least as well as the backtest.' : `Live trades average ${rr(live.avgR - m.avgR)} less than the backtest. Check the trades that broke the plan.`}{hl && hl.health !== 'untested' && <> Against the saved expected stats: <b>{HEALTH_LABEL[hl.health]}</b>.</>}</p>
+              {matchingEntries.length > 0 && (
+                <button type="button" className={`${btnSecondary} mt-3`} onClick={() => onOpenTrades(matchingEntries.map((e) => e.id), `${playbook.name} playbook journal`)}>
+                  Open {matchingEntries.length} matching Trade Log entr{matchingEntries.length === 1 ? 'y' : 'ies'}
+                </button>
+              )}
             </Card>
           )}
 

@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { AiEntrySummary } from './AiEntrySummary';
 import type { JournalEntry, JournalChecklistItem, TradingStatus } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { JOURNAL_EMOTIONS, JOURNAL_MISTAKES } from '../../data/journalData';
 import { costsKnown, currencyOf, eligible, incompleteFields, rawNet, realizedR, resultOf, timestampMs } from './journalMath';
 import { ReviewStateBadge, TradingStatusBadge, reviewStateOf, tradingStatusOf } from './tradingStatus';
-import { AiEntrySummary } from './AiEntrySummary';
 
-interface Props { entry: JournalEntry; entries?: JournalEntry[]; cohort: string[]; playbook?: JournalPlaybook; checklist?:JournalChecklistItem[]; onSelect:(id:string)=>void; onClose:()=>void; onSave:(e:JournalEntry)=>void; onDelete:(id:string)=>void; onReplay:()=>void }
-export const JournalReviewDrawer: React.FC<Props> = ({entry,entries=[],cohort,playbook,checklist=[],onSelect,onClose,onSave,onDelete,onReplay}) => {
+interface Props { entry: JournalEntry; cohort: string[]; playbook?: JournalPlaybook; checklist?:JournalChecklistItem[]; onSelect:(id:string)=>void; onClose:()=>void; onSave:(e:JournalEntry)=>void; onDelete:(id:string)=>void; onReplay:()=>void }
+export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,checklist=[],onSelect,onClose,onSave,onDelete,onReplay}) => {
   const dialog = useRef<HTMLDivElement>(null);
   const [draft,setDraft] = useState(entry);
   const [error,setError] = useState('');
@@ -34,6 +34,7 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,entries=[],cohort,pl
   const save = (complete:boolean) => {
     if (draft.commission != null && (!Number.isFinite(draft.commission) || draft.commission<0)) return setError('Costs must be zero or a positive amount; leave blank if unknown.');
     if (draft.initialRisk != null && (!Number.isFinite(draft.initialRisk) || draft.initialRisk<=0)) return setError('Initial monetary risk must be positive, or left unknown.');
+    if (draft.marginAtEntry != null && (!Number.isFinite(draft.marginAtEntry) || draft.marginAtEntry<0)) return setError('Margin at entry must be zero or positive, or left unknown.');
     if (draft.equityAtEntry != null && (!Number.isFinite(draft.equityAtEntry) || draft.equityAtEntry<=0)) return setError('Equity at entry must be positive, or left unknown.');
     if (tradingStatusOf(draft)==='closed' && (draft.pnlKnown===false || !Number.isFinite(draft.pnl))) return setError('A closed trade needs an explicitly reported gross result.');
     const missing = incompleteFields(draft);
@@ -54,7 +55,7 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,entries=[],cohort,pl
     patch({fills:[...(draft.fills || []),{id:crypto.randomUUID(),time:`${fill.time}Z`,side:fill.side,quantity:Number(fill.quantity),price:Number(fill.price),fee:fill.fee===''?null:Number(fill.fee)}]});
     setFill({time:'',side:'entry',quantity:'',price:'',fee:''});setError('');
   };
-  return <div className="fixed inset-0 z-50 bg-slate-900/35 flex justify-end" onClick={ev=>{if(ev.target===ev.currentTarget) requestLeave(onClose);}}>
+  return <div className="fixed inset-0 z-[70] bg-slate-900/35 flex justify-end" onClick={ev=>{if(ev.target===ev.currentTarget) requestLeave(onClose);}}>
     <div ref={dialog} role="dialog" aria-modal="true" aria-label={`Review ${entry.symbol}`} tabIndex={-1} className="w-full max-w-3xl h-full bg-[#FBFBFF] overflow-y-auto shadow-2xl outline-none" onKeyDown={ev=>{
       if(ev.key==='Escape'){ev.stopPropagation();requestLeave(onClose);}
       if(ev.key==='Tab'){const nodes=(Array.from(dialog.current!.querySelectorAll('button:not(:disabled),input,select,textarea,a[href]')) as HTMLElement[]).filter(e=>e.offsetParent!==null);const first=nodes[0],last=nodes[nodes.length-1]; if(ev.shiftKey && (document.activeElement===first || document.activeElement===dialog.current)){ev.preventDefault();last?.focus();}else if(!ev.shiftKey && document.activeElement===last){ev.preventDefault();first?.focus();}}
@@ -66,10 +67,9 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,entries=[],cohort,pl
         <button className={button} onClick={()=>requestLeave(onClose)}>Close review</button>
       </header>
       <div className="p-4 sm:p-6 space-y-5">
+        <AiEntrySummary entry={draft} allEntries={[draft]} checklist={checklist} />
         {discard && <div role="alert" className="p-3 bg-amber-50 rounded-xl text-sm">You have unsaved edits. <button className={button} onClick={()=>{const action=discard;setDiscard(null);action();}}>Discard and leave</button> <button className={button} onClick={()=>setDiscard(null)}>Keep editing</button></div>}
         {error && <p ref={errorNode} tabIndex={-1} role="alert" className="text-sm text-rose-700">{error}</p>}
-        {/* MarketSyde's read of this trade, kept from the design-team build. */}
-        <AiEntrySummary entry={entry} allEntries={entries.length ? entries : [entry]} checklist={checklist} />
         <section className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
           <div className="flex flex-wrap gap-2"><TradingStatusBadge status={tradingStatusOf(draft)}/><ReviewStateBadge state={reviewStateOf(draft)}/><span className="text-xs">{draft.date} · {draft.direction} · {draft.strategy} · {currency}</span></div>
           <p className="font-mono font-bold">{eligible(draft)?`${money(rawNet(draft))} net · ${resultOf(draft)}`:'Realized net result unavailable'} · {realizedR(draft)==null?'R unknown':`${realizedR(draft)!.toFixed(2)}R`}</p>
@@ -79,9 +79,10 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,entries=[],cohort,pl
             <label className="text-xs font-semibold">Reported gross P&amp;L<input className={field} type="number" step="any" value={draft.pnlKnown===false?'':draft.pnl} onChange={ev=>patch({pnlKnown:ev.target.value!=='',pnl:ev.target.value===''?0:Number(ev.target.value)})}/></label>
             <label className="text-xs font-semibold">Total costs (fees, commissions, swaps)<input className={field} type="number" min="0" step="any" placeholder="Unknown; enter 0 only if confirmed" value={draft.commission ?? ''} onChange={ev=>patch({commission:ev.target.value===''?undefined:Number(ev.target.value)})}/></label>
             <label className="text-xs font-semibold">Initial monetary risk ({currency})<input className={field} type="number" min="0" step="any" placeholder="Unknown" value={draft.initialRisk ?? ''} onChange={ev=>patch({initialRisk:ev.target.value===''?null:Number(ev.target.value)})}/></label>
-            <label className="text-xs font-semibold">Equity at entry ({currency})<input className={field} type="number" min="0" step="any" placeholder="Unknown; needed for risk %" value={draft.equityAtEntry ?? ''} onChange={ev=>patch({equityAtEntry:ev.target.value===''?null:Number(ev.target.value)})}/></label>
+            <label className="text-xs font-semibold">Margin at entry ({currency})<input className={field} type="number" min="0" step="any" placeholder="Unknown; do not estimate" value={draft.marginAtEntry ?? ''} onChange={ev=>patch({marginAtEntry:ev.target.value===''?null:Number(ev.target.value)})}/></label>
+            <label className="text-xs font-semibold">Equity at entry ({currency})<input className={field} type="number" min="0" step="any" placeholder="Unknown; needed for ROI and risk %" value={draft.equityAtEntry ?? ''} onChange={ev=>patch({equityAtEntry:ev.target.value===''?null:Number(ev.target.value)})}/></label>
           </div>
-          <p className="text-xs text-slate-500">Gross results are source/user reported. No contract multipliers or currency conversions are assumed. R is net ÷ initial monetary risk when known; otherwise a preserved reported R is used.</p>
+          <p className="text-xs text-slate-500">Gross results are source/user reported. Net ROI is net P&amp;L ÷ equity at entry; margin, notional, contract multiplier and currency conversion are never inferred. R is net ÷ initial monetary risk when known; otherwise a preserved reported R is used.</p>
         </section>
         <section className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3">
           <h3 className="font-bold text-sm">Psychology and review</h3>

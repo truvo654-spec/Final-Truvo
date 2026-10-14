@@ -2,25 +2,26 @@
 // totals for what you see, and a side drawer with the trade on a chart.
 import React, { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, Filter, X, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
-import { BacktestTrade, Currency, EXIT_REASONS, ExitReason, Timeframe, TF_MS } from '../../backtest/types';
+import { AssetClass, ASSET_CLASSES, BacktestTrade, Currency, EXIT_REASONS, ExitReason, Timeframe, TF_MS } from '../../backtest/types';
 import { outcomeOf, Outcome, SESSION_BUCKETS, sessionOfUtc } from '../../backtest/metrics';
 import { dateTime, dayIn, holdText, money, pct, priceFmt, rr, tone } from '../../backtest/format';
-import { marketData, symbolSpec } from '../../backtest/marketData';
+import { marketData, marketGroupOf, symbolSpec } from '../../backtest/marketData';
 import { CandleChart } from './charts';
 import { Drawer, Field, Segmented, btnPrimary, btnSecondary, inputBase, inputCls } from './ui';
 
 interface Props { trades: BacktestTrade[]; currency: Currency; symbol: string; timeframe: Timeframe; tz: string }
 
 interface Filters {
-  result: Outcome[]; reasons: ExitReason[]; sessions: string[]; weekdays: string[];
+  marketTypes: AssetClass[]; result: Outcome[]; reasons: ExitReason[]; sessions: string[]; weekdays: string[];
   pnlMin: string; pnlMax: string; rMin: string; rMax: string; hourFrom: string; hourTo: string; holdMin: string; holdMax: string;
 }
-const EMPTY: Filters = { result: [], reasons: [], sessions: [], weekdays: [], pnlMin: '', pnlMax: '', rMin: '', rMax: '', hourFrom: '', hourTo: '', holdMin: '', holdMax: '' };
+const EMPTY: Filters = { marketTypes: [], result: [], reasons: [], sessions: [], weekdays: [], pnlMin: '', pnlMax: '', rMin: '', rMax: '', hourFrom: '', hourTo: '', holdMin: '', holdMax: '' };
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 type SortKey = 'id' | 'entryTime' | 'exitTime' | 'status' | 'direction' | 'entryPrice' | 'exitPrice' | 'size' | 'gross' | 'net' | 'r' | 'mae' | 'mfe' | 'exitReason' | 'balance';
-const COLS: { key: SortKey; label: string; hint: string; align?: 'right' }[] = [
+const COLS: { key?: SortKey; label: string; hint: string; align?: 'right' }[] = [
   { key: 'id', label: '#', hint: 'Trade number in time order' },
+  { label: 'Instrument', hint: 'Market symbol and type used for this backtest run' },
   { key: 'entryTime', label: 'Entry time', hint: 'When the trade opened (your time zone)' },
   { key: 'exitTime', label: 'Exit time', hint: 'When the trade closed' },
   { key: 'status', label: 'Trading status', hint: 'Backtest executions are closed at the simulated exit' },
@@ -41,6 +42,7 @@ const PAGE = 20;
 
 export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, timeframe, tz }) => {
   const spec = symbolSpec(symbol);
+  const marketType = spec ? marketGroupOf(spec) : null;
   const dp = spec?.priceDp ?? 2;
   const [dir, setDir] = useState<'all' | 'long' | 'short'>('all');
   const [from, setFrom] = useState('');
@@ -57,6 +59,7 @@ export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, ti
   const n = (s: string) => (s === '' ? null : Number(s));
 
   const filtered = useMemo(() => trades.filter((t) => {
+    if (f.marketTypes.length && (!marketType || !f.marketTypes.includes(marketType))) return false;
     if (dir !== 'all' && t.direction !== dir) return false;
     const d = dayIn(t.entryTime, tz);
     if (from && d < from) return false;
@@ -73,7 +76,7 @@ export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, ti
     if (!lim((t.exitTime - t.entryTime) / 60000, f.holdMin, f.holdMax)) return false;
     return true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [trades, dir, from, to, f, tz]);
+  }), [trades, dir, from, to, f, tz, marketType]);
 
   const rows = useMemo(() => {
     const k = sort.key;
@@ -91,12 +94,13 @@ export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, ti
   const wins = filtered.filter((t) => outcomeOf(t) === 'win').length;
   const avgR = filtered.length ? filtered.reduce((a, t) => a + t.r, 0) / filtered.length : 0;
 
-  const activeCount = f.result.length + f.reasons.length + f.sessions.length + f.weekdays.length
+  const activeCount = f.marketTypes.length + f.result.length + f.reasons.length + f.sessions.length + f.weekdays.length
     + [f.pnlMin || f.pnlMax, f.rMin || f.rMax, f.hourFrom || f.hourTo, f.holdMin || f.holdMax].filter(Boolean).length;
 
   const chips: { label: string; clear: () => void }[] = [];
   if (dir !== 'all') chips.push({ label: dir === 'long' ? 'Long only' : 'Short only', clear: () => setDir('all') });
   if (from || to) chips.push({ label: `${from || 'start'} → ${to || 'end'}`, clear: () => { setFrom(''); setTo(''); } });
+  f.marketTypes.forEach((type) => chips.push({ label: `Market type: ${type}`, clear: () => setF({ ...f, marketTypes: f.marketTypes.filter((x) => x !== type) }) }));
   f.result.forEach((r) => chips.push({ label: r === 'win' ? 'Winners' : r === 'loss' ? 'Losers' : 'Breakeven', clear: () => setF({ ...f, result: f.result.filter((x) => x !== r) }) }));
   f.reasons.forEach((r) => chips.push({ label: `Exit: ${r}`, clear: () => setF({ ...f, reasons: f.reasons.filter((x) => x !== r) }) }));
   f.sessions.forEach((r) => chips.push({ label: SESSION_BUCKETS.find((s) => s.key === r)!.label, clear: () => setF({ ...f, sessions: f.sessions.filter((x) => x !== r) }) }));
@@ -106,7 +110,7 @@ export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, ti
   if (f.hourFrom || f.hourTo) chips.push({ label: `Entry hour ${f.hourFrom || '0'}–${f.hourTo || '23'}`, clear: () => setF({ ...f, hourFrom: '', hourTo: '' }) });
   if (f.holdMin || f.holdMax) chips.push({ label: `Hold ${f.holdMin || '0'}–${f.holdMax || '∞'} min`, clear: () => setF({ ...f, holdMin: '', holdMax: '' }) });
 
-  const toggleIn = <K extends 'result' | 'reasons' | 'sessions' | 'weekdays'>(k: K, v: Filters[K][number]) =>
+  const toggleIn = <K extends 'marketTypes' | 'result' | 'reasons' | 'sessions' | 'weekdays'>(k: K, v: Filters[K][number]) =>
     setDraft((d) => ({ ...d, [k]: (d[k] as string[]).includes(v as string) ? (d[k] as string[]).filter((x) => x !== v) : [...(d[k] as string[]), v] }));
 
   const chartFor = (t: BacktestTrade) => {
@@ -162,12 +166,15 @@ export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, ti
           <thead>
             <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
               {COLS.map((c) => {
-                const on = sort.key === c.key;
+                const key = c.key;
+                const on = key !== undefined && sort.key === key;
                 return (
-                  <th key={c.key} scope="col" aria-sort={on ? (sort.asc ? 'ascending' : 'descending') : 'none'} className={`py-2 px-2 font-bold whitespace-nowrap ${c.align === 'right' ? 'text-right' : 'text-left'}`}>
-                    <button type="button" title={c.hint} onClick={() => setSort(on ? { key: c.key, asc: !sort.asc } : { key: c.key, asc: c.key === 'id' || c.key === 'entryTime' })} className="inline-flex items-center gap-1 uppercase hover:text-[#0b1c30]">
-                      {c.label}{on && (sort.asc ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
-                    </button>
+                  <th key={key ?? c.label} scope="col" aria-sort={on ? (sort.asc ? 'ascending' : 'descending') : 'none'} className={`py-2 px-2 font-bold whitespace-nowrap ${c.align === 'right' ? 'text-right' : 'text-left'}`}>
+                    {key ? (
+                      <button type="button" title={c.hint} onClick={() => setSort(on ? { key, asc: !sort.asc } : { key, asc: key === 'id' || key === 'entryTime' })} className="inline-flex items-center gap-1 uppercase hover:text-[#0b1c30]">
+                        {c.label}{on && (sort.asc ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+                      </button>
+                    ) : <span title={c.hint}>{c.label}</span>}
                   </th>
                 );
               })}
@@ -178,6 +185,10 @@ export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, ti
               <tr key={t.id} tabIndex={0} onClick={() => setOpen(t)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(t); } }}
                 className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer focus:outline-none focus-visible:bg-[#EEF0FE]">
                 <td className="py-2 px-2 text-slate-400">{t.id}</td>
+                <td className="py-2 px-2 whitespace-nowrap">
+                  <span className="font-semibold text-[#0b1c30]">{symbol}</span>
+                  <span className="ml-1 text-[10px] text-slate-500">{marketType ?? 'Unknown market'}</span>
+                </td>
                 <td className="py-2 px-2 whitespace-nowrap">{dateTime(t.entryTime, tz)}</td>
                 <td className="py-2 px-2 whitespace-nowrap text-slate-500">{dateTime(t.exitTime, tz)}</td>
                 <td className="py-2 px-2"><span className="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Closed</span></td>
@@ -213,6 +224,9 @@ export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, ti
       <Drawer open={drawer} onClose={() => setDrawer(false)} title="More filters"
         footer={<div className="flex gap-2"><button type="button" className={btnSecondary} onClick={() => setDraft(EMPTY)}>Clear all</button><button type="button" className={`${btnPrimary} flex-1`} onClick={() => { setF(draft); setPage(0); setDrawer(false); }}>Apply</button></div>}>
         <div className="space-y-5">
+          <Field label="Market type" hint={`This run uses ${symbol}${marketType ? ` · ${marketType}` : ''}.`}>
+            <div className="flex flex-wrap gap-1.5">{ASSET_CLASSES.map((type) => <button key={type} type="button" aria-pressed={draft.marketTypes.includes(type)} onClick={() => toggleIn('marketTypes', type)} className={pill(draft.marketTypes.includes(type))}>{type}</button>)}</div>
+          </Field>
           <Field label="Result">
             <div className="flex flex-wrap gap-1.5">{(['win', 'loss', 'breakeven'] as Outcome[]).map((r) => <button key={r} type="button" aria-pressed={draft.result.includes(r)} onClick={() => toggleIn('result', r)} className={pill(draft.result.includes(r))}>{r === 'win' ? 'Winners' : r === 'loss' ? 'Losers' : 'Breakeven'}</button>)}</div>
           </Field>

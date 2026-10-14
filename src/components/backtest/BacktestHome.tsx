@@ -27,7 +27,7 @@ interface Props {
 }
 
 const MODES = [
-  { key: 'test', title: 'Test a playbook on past prices', text: 'Pick a playbook, press Run. Your rules are checked bar by bar over up to two years of prices, with costs.', cta: 'Start a backtest', time: 'About 10 seconds' },
+  { key: 'test', title: 'Compare playbooks on past prices', text: 'Choose one or more playbooks to test on the same market and dates. Each keeps its own rules, timeframe and session.', cta: 'Start a backtest', time: 'One run per comparison' },
   { key: 'whatif', title: 'What if I followed one rule?', text: 'Change one rule on your real journal trades, like "stop after 2 losses a day", and see what it would have changed.', cta: 'Try a what-if', time: 'Instant · free' },
   { key: 'replay', title: 'Practice on past charts', text: 'Trade bar by bar with the future hidden. Replay your own losing trades blind and earn Points.', cta: 'Start practising', time: 'Free · earns Points' },
 ] as const;

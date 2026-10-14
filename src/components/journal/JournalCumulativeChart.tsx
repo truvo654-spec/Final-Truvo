@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useId, useMemo, useRef, useState } from 'react';
+import { Info } from 'lucide-react';
 import { JournalEntry } from '../../types';
 import { UNASSIGNED, shortDate } from './journalOverview';
 import { useMoney } from './JournalCurrency';
@@ -13,6 +14,7 @@ interface Props {
   brokers: ChartBroker[]; // every broker with journal entries (the options)
   unit?: 'usd' | 'pts';
   off: string[]; // brokers currently unticked
+  onDay?: (date: string) => void;
 }
 
 interface Series { key: string; name: string; color: string; pts: { date: string; day: number; n: number; cum: number }[] }
@@ -37,14 +39,16 @@ function niceTicks(min: number, max: number, count = 4): number[] {
   return ticks;
 }
 
-export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, title, rangeLabel, brokers, unit = 'usd', off }) => {
+export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, title, rangeLabel, brokers, unit = 'usd', off, onDay }) => {
   const money=useMoney();
   const pts = unit === 'pts';
   const usdFull = (n: number) => (pts ? `${n < 0 ? '-' : n > 0 ? '+' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })} pts` : money(n));
   const usdAxis = (n: number) => (pts ? `${n < 0 ? '-' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : money(n,0));
   const [active, setActive] = useState<number | null>(null);
   const [table, setTable] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
+  const helpId = useId();
 
   const on = useMemo(() => brokers.filter((b) => !off.includes(b.id)), [brokers, off]);
   const bySeries = on.length > 1; // total line plus one line per ticked broker
@@ -94,6 +98,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
     let best = 0;
     geo.xs.forEach((x, i) => { if (Math.abs(x - px) < Math.abs(geo.xs[best] - px)) best = i; });
     setActive(best);
+    return best;
   };
 
   const onKey = (e: React.KeyboardEvent) => {
@@ -101,6 +106,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
     if (e.key === 'ArrowRight') { e.preventDefault(); setActive((a) => Math.min(dates.length - 1, (a ?? -1) + 1)); }
     if (e.key === 'ArrowLeft') { e.preventDefault(); setActive((a) => Math.max(0, (a ?? dates.length) - 1)); }
     if (e.key === 'Escape') setActive(null);
+    if ((e.key === 'Enter' || e.key === ' ') && active !== null && onDay) { e.preventDefault(); onDay(dates[active]); }
   };
 
   const path = (s: Series) => (geo ? s.pts.map((p, i) => `${i ? 'L' : 'M'}${geo.xs[i].toFixed(1)},${geo.y(p.cum).toFixed(1)}`).join(' ') : '');
@@ -109,12 +115,30 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
     : '';
   const ax = active !== null && geo ? geo.xs[active] : 0;
   const ay = active !== null && geo ? geo.y(series[0]?.pts[active]?.cum ?? 0) : 0;
+  const chartDefinition = `Scope: ${rangeLabel}, using the current currency, account, date range and filters. The x-axis uses recorded UTC entry dates and the y-axis is cumulative ${title}. Each point shows the day's result, cumulative result and eligible entry count. ${bySeries ? 'With multiple brokers selected, the purple line is the total of ticked brokers and the other lines are broker subtotals.' : 'The line represents the selected broker scope.'} Hover or focus the chart for exact values, use the table for every row, and select a day to open its review.`;
 
   return (
-    <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cumulative P&L">
+    <section className="relative bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cumulative P&L">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div>
-          <h4 className="text-sm font-bold">Cumulative {title}</h4>
+          <h4 className="text-sm font-bold flex items-center gap-1">
+            Cumulative {title}
+            <button
+              type="button"
+              aria-label={`About cumulative ${title}`}
+              aria-describedby={helpOpen ? helpId : undefined}
+              onMouseEnter={() => setHelpOpen(true)}
+              onMouseLeave={() => setHelpOpen(false)}
+              onFocus={() => setHelpOpen(true)}
+              onBlur={() => setHelpOpen(false)}
+              onClick={() => setHelpOpen((open) => !open)}
+              onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setHelpOpen(false); } }}
+              className="rounded-full p-1 text-slate-500 focus-visible:outline-2 focus-visible:outline-[#5338ec]"
+            >
+              <Info size={13} aria-hidden="true" />
+            </button>
+            {helpOpen && <span id={helpId} role="tooltip" className="absolute left-5 right-5 top-14 z-20 rounded-xl bg-slate-900 text-white text-xs leading-relaxed p-3 shadow-lg font-normal">{chartDefinition}</span>}
+          </h4>
           <p className="text-[11px] text-[#94a3b8]">{rangeLabel} · running total of daily results</p>
           {bySeries && <p className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-[#474556]"><span className="w-4 h-0.5 rounded" style={{ backgroundColor: LINE }} aria-hidden="true" />Total of ticked brokers</p>}
         </div>
@@ -128,6 +152,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
           <div className="flex rounded-lg border border-slate-200 overflow-hidden" role="group" aria-label="Chart view">
             {([false, true] as const).map((t) => (
               <button key={String(t)} type="button" aria-pressed={table === t} onClick={() => setTable(t)}
+                title={t ? 'Show every chart row with date, broker, entry count, daily result and cumulative result' : 'Show the cumulative chart; hover or focus a point for exact details'}
                 className={`px-2.5 py-1 text-[11px] font-semibold ${table === t ? 'bg-[#0b1c30] text-white' : 'bg-white text-[#474556]'}`}>{t ? 'Table' : 'Chart'}</button>
             ))}
           </div>
@@ -157,7 +182,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
                   .map((s) => ({ d, s, p: s.pts[i], total: bySeries && s.key === 'total' }))
               ).map(({ d, s, p, total: isTotal }) => (
                 <tr key={`${d}-${s.key}`} className={`border-t border-slate-100 font-mono ${isTotal ? 'bg-slate-50 font-bold' : ''}`}>
-                  <td className="px-3 py-1.5">{d}</td>
+                  <td className="px-3 py-1.5">{onDay ? <button onClick={() => onDay(d)} className="text-[#5338ec] underline" aria-label={`Open daily review for ${d}`}>{d}</button> : d}</td>
                   <td className="px-3 py-1.5 font-sans">
                     <span className="inline-flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: s.color }} aria-hidden="true" />
@@ -180,7 +205,9 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
             className="w-full h-auto touch-none select-none"
             role="img"
             aria-label={`Cumulative ${title} from ${shortDate(dates[0])} to ${shortDate(dates[dates.length - 1], true)}${bySeries ? ' by broker' : `, ending at ${usdFull(total)}`}`}
+            title={chartDefinition}
             onMouseMove={(e) => pick(e.clientX)}
+            onClick={e => { const i = pick(e.clientX); if (i !== undefined) onDay?.(dates[i]); }}
             onMouseLeave={() => setActive(null)}
             onTouchMove={(e) => pick(e.touches[0].clientX)}
           >
@@ -206,7 +233,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
               ))}
             {active !== null && <line x1={ax} x2={ax} y1={M.top} y2={M.top + IH} stroke="#94a3b8" strokeWidth={1} />}
           </svg>
-          <div tabIndex={0} role="application" aria-label="Chart data points, use left and right arrow keys" onKeyDown={onKey} onBlur={() => setActive(null)} className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5338ec]/40" style={{ pointerEvents: 'none' }} />
+          <div tabIndex={0} role="application" aria-label={`Chart data points, use left and right arrow keys${onDay ? ', Enter opens daily review' : ''}`} onKeyDown={onKey} onBlur={() => setActive(null)} className="absolute inset-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5338ec]/40" style={{ pointerEvents: 'none' }} />
           {active !== null && (
             <div
               className="pointer-events-none absolute z-10 bg-[#0b1c30] text-white rounded-lg px-3 py-2 text-[11px] shadow-lg max-w-[85%] break-words"
@@ -222,7 +249,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
                 <p key={s.key} className="font-mono flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: s.color }} />
                   {s.name} {usdFull(s.pts[active].cum)}
-                  <span className="text-slate-300">({usdFull(s.pts[active].day)} day)</span>
+                  <span className="text-slate-300">({usdFull(s.pts[active].day)} day · {s.pts[active].n} entr{s.pts[active].n === 1 ? 'y' : 'ies'})</span>
                 </p>
               )) : (
                 <>

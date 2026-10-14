@@ -1,9 +1,11 @@
 import { useMoney, formatMoney, JournalCurrency } from './JournalCurrency';
-import React, { useMemo, useState } from 'react';
-import { Flame, Target, TrendingUp, ShieldCheck, Lock, Trash2, BookOpen, ChevronRight, AlertTriangle } from 'lucide-react';
+import { AiJournalSummary } from './AiJournalSummary';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Flame, Target, TrendingUp, ShieldCheck, Lock, Trash2, BookOpen, ChevronRight, AlertTriangle, PlayCircle, X } from 'lucide-react';
 import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview } from '../../types';
 import {
   JOURNAL_ENTRIES,
+  hydrateDemoCfdEvidence,
   JOURNAL_REVIEWS,
   DEFAULT_CHECKLIST,
   JOURNAL_TODAY,
@@ -13,17 +15,18 @@ import {
 import { FolderTabs, FolderTabItem } from '../common/FolderTabs';
 import { JournalEntryWizard } from './JournalEntryWizard';
 
-type WizardPrefill = React.ComponentProps<typeof JournalEntryWizard>['prefill'];
 import { JournalEntryDetail } from './JournalEntryDetail';
 import { JournalCalendar } from './JournalCalendar';
 import { JournalTradeLog } from './JournalTradeLog';
 import { JournalInsights } from './JournalInsights';
+import { JournalAICoach, CoachOverviewCard } from './JournalAICoach';
+import { createCoachDraft, type CoachScenario } from './aiCoach';
 import { JournalPlaybooks } from './JournalPlaybooks';
 import { DEFAULT_PLAYBOOKS, JournalPlaybook } from '../../data/journalPlaybooks';
 import { JournalCumulativeChart } from './JournalCumulativeChart';
 import { JournalOverviewAnalytics } from './overview/JournalOverviewAnalytics';
 import { DisciplineCard, RulesMonitor, TiltMonitor } from './JournalMonitors';
-import { CashbackMode, PnlMode, RangeMode, UNASSIGNED, addMonth, brokerColor, computeKpis, entryCashback, entryPoints, entryValue, rangeBounds, shortDate } from './journalOverview';
+import { CashbackMode, PnlMode, RangeMode, JOURNAL_MARKET_TYPES, UNASSIGNED, addMonth, brokerColor, computeKpis, entryCashback, entryPoints, entryValue, rangeBounds, shortDate } from './journalOverview';
 import { BacktestPage, BacktestIntent } from '../backtest/BacktestPage';
 import { StrategyHealthCard } from '../backtest/PlaybookBacktestPanel';
 import { loadExpected, saveExpected, PlaybookExpectedStats } from '../../backtest/store';
@@ -31,8 +34,9 @@ import { TradingStatusBadge, ReviewStateBadge, reviewStateOf, tradingStatusOf } 
 import { currencyOf, eligible, incompleteFields, metrics, netOf, resultOf, realizedR } from './journalMath';
 import { journalSandbox, useJournalState } from './journalStorage';
 import { JournalReviewDrawer } from './JournalReviewDrawer';
-import { JournalRuleSummary } from './JournalRuleSummary';
-import { AiJournalSummary } from './AiJournalSummary';
+import { JournalDateRange } from './JournalDateRange';
+import { JournalDayReview } from './JournalDayReview';
+import { JournalReplayAvailability } from './JournalReplayAvailability';
 
 type JournalTab = 'overview' | 'entries' | 'insights' | 'playbook' | 'backtest' | 'review';
 
@@ -65,6 +69,13 @@ function isoDaysAgo(n: number): string {
 }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const FILTER_HELP: Record<string, string> = {
+  Playbook: 'Include or exclude journal entries by their recorded playbook or strategy.',
+  'Market type': 'Include or exclude entries by asset class, such as Forex, Crypto or Indices.',
+  'Net outcome': 'Include or exclude entries by realized outcome. Open and unknown results remain separate from closed results.',
+  'Trading status': 'Include or exclude entries by lifecycle: planned, open or closed.',
+  Broker: 'Include or exclude brokers. The cumulative chart uses the selected brokers for its totals and broker lines.',
+};
 
 export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   userTierLevel,
@@ -78,7 +89,9 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   onRewardPoints,
 }) => {
   const [tab, setTab] = useJournalState<JournalTab>('tab', 'overview');
+  const coachToday = new Date().toISOString().slice(0, 10);
   const [entries, setEntries, storageFailed] = useJournalState<JournalEntry[]>('entries', JOURNAL_ENTRIES);
+  useEffect(() => { setEntries(current => hydrateDemoCfdEvidence(current)); }, [setEntries]);
   const [reviewCohort, setReviewCohort] = useState<string[]>([]);
   const [dailyNotes, setDailyNotes] = useJournalState<Record<string,string>>('daily-notes', {});
   const [currency, setCurrency] = useJournalState('currency', 'USD');
@@ -86,6 +99,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const money = (n:number,dp=2)=>formatMoney(n,currency,dp);
   const openEntry = (id: string, cohort?: string[]) => { setReviewCohort(cohort || scoped.map(e=>e.id)); setSelectedId(id); };
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [reviewQueueOpen, setReviewQueueOpen] = useState(false);
   const [logPreset, setLogPreset] = useState<{ ids: string[]; label: string } | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
 
@@ -102,6 +116,14 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [expected, setExpected] = useState<Record<string, PlaybookExpectedStats>>(() => loadExpected());
   const [btIntent, setBtIntent] = useState<BacktestIntent | null>(null);
   const goBacktest = (intent: BacktestIntent) => { setBtIntent(intent); setSelectedId(null); setTab('backtest'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const useCoachScenario = (scenario: CoachScenario, action: 'save' | 'practice' | 'test') => {
+    const existing = playbooks.find(p => p.status === 'testing' && p.coachOrigin?.scenarioId === scenario.id && p.coachOrigin?.sourcePlaybookId === scenario.sourcePlaybookId && p.thesis === scenario.draft.thesis && JSON.stringify(p.rules) === JSON.stringify(scenario.draft.rules));
+    const draft = existing || createCoachDraft(scenario, crypto.randomUUID(), playbooks.map(p => p.name));
+    if (!existing) setVersionedPlaybooks(previous => [...previous, draft]);
+    onShowToast(existing ? `Using saved experiment: ${draft.name}` : `Testing draft saved: ${draft.name}`);
+    if (action === 'practice') goBacktest({ view: 'replay', playbookId: draft.id });
+    if (action === 'test') goBacktest({ view: 'setup', playbookId: draft.id, comparePlaybookId: scenario.sourcePlaybookId, benchmarkTradeIds: scenario.evidenceIds });
+  };
   const setExpectedFor = (st: PlaybookExpectedStats) => setExpected((m) => { const next = { ...m, [st.playbookId]: st }; saveExpected(next); return next; });
 
 
@@ -114,18 +136,14 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const hasAdvanced = isLoggedIn && userTierLevel >= 3;
 
   // Overview toolbar + calendar state
-  const [wizardMode, setWizardMode] = useState<'auto' | 'upload' | 'import' | 'manual'>('import');
-  const [wizardPreset, setWizardPreset] = useState<WizardPrefill>(null);
-  const openWizard = (m: 'auto' | 'upload' | 'import' | 'manual' = 'import', preset: WizardPrefill = null) => {
-    setWizardPreset(preset);
-    setWizardMode(m);
-    setWizardOpen(true);
-  };
   const [pnlMode, setPnlMode] = useJournalState<PnlMode>('TradingJournalPage-pnlMode', 'net');
   const [calMonth, setCalMonth] = useJournalState('TradingJournalPage-calMonth', JOURNAL_TODAY.slice(0, 7));
   const [rangeMode, setRangeMode] = useJournalState<RangeMode>('range', 'month');
   const [customRange, setCustomRange] = useJournalState('TradingJournalPage-customRange', { from: `${JOURNAL_TODAY.slice(0, 7)}-01`, to: JOURNAL_TODAY });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [dayReviewOpen, setDayReviewOpen] = useState(false);
+  const [apiReplayId, setApiReplayId] = useState<string | null>(null);
+  const openDay = (date: string) => { setSelectedDay(date); setDayReviewOpen(true); };
   const [openMenu, setOpenMenu] = useState<null | 'strategy' | 'asset' | 'outcome' | 'broker' | 'tradingStatus' | 'show' | 'basis'>(null);
   const [strategyOff, setStrategyOff] = useJournalState<string[]>('TradingJournalPage-strategyOff', []);
   const [assetOff, setAssetOff] = useJournalState<string[]>('TradingJournalPage-assetOff', []);
@@ -160,6 +178,12 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   );
   // ...and additionally inside the chosen date range (used by the KPI cards and recent list)
   const scoped = useMemo(() => calEntries.filter((e) => e.date >= rangeFrom && e.date <= rangeTo), [calEntries, rangeFrom, rangeTo]);
+  const pendingEntries = useMemo(() => scoped.filter(e => reviewStateOf(e) !== 'complete'), [scoped]);
+  const [pendingMarket,setPendingMarket]=useState('all');
+  const [pendingSymbol,setPendingSymbol]=useState('all');
+  const pendingSymbols=useMemo(()=>[...new Set(pendingEntries.filter(e=>pendingMarket==='all'||e.assetClass===pendingMarket).map(e=>e.symbol))].sort(),[pendingEntries,pendingMarket]);
+  useEffect(()=>{if(pendingSymbol!=='all'&&!pendingSymbols.includes(pendingSymbol))setPendingSymbol('all');},[pendingSymbols,pendingSymbol]);
+  const filteredPending=useMemo(()=>pendingEntries.filter(e=>(pendingMarket==='all'||e.assetClass===pendingMarket)&&(pendingSymbol==='all'||e.symbol===pendingSymbol)),[pendingEntries,pendingMarket,pendingSymbol]);
   const kpi = useMemo(() => computeKpis(scoped, pnlMode), [scoped, pnlMode]);
   const cashbackTotal = useMemo(() => Math.round(scoped.reduce((a, e) => a + entryCashback(e, brokerMap), 0) * 100) / 100, [scoped, brokerMap]);
   const shownTotal = useMemo(() => Math.round(scoped.reduce((a, e) => a + valueOf(e), 0) * 100) / 100, [scoped, valueOf]);
@@ -181,6 +205,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   );
   const rangeLabel =
     rangeMode === 'all' ? 'All time' : `${shortDate(rangeFrom)} – ${shortDate(rangeTo, true)}`;
+  const currentCurrencyCount=entries.filter(e=>currencyOf(e)===currency).length;
+  const resetJournalScope=()=>{setRangeMode('all');setAccount('all');setStrategyOff([]);setAssetOff([]);setOutcomeOff([]);setTradingStatusOff([]);setBrokerOff([]);setSelectedDay(null);setOpenMenu(null);setLogPreset(null);};
   const dayEntries = useMemo(
     () => (selectedDay ? scoped.filter((e) => e.date === selectedDay) : []),
     [scoped, selectedDay]
@@ -197,6 +223,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       <button
         type="button"
         aria-expanded={openMenu === id}
+        title={FILTER_HELP[title]}
         onClick={() => setOpenMenu(openMenu === id ? null : id)}
         className={`h-9 text-xs font-semibold border rounded-lg px-3 bg-white hover:bg-slate-50 ${off.length ? 'border-[#5338ec] text-[#5338ec]' : 'border-slate-200 text-[#0b1c30]'}`}
       >
@@ -236,6 +263,9 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       <button
         type="button"
         aria-expanded={openMenu === id}
+        title={id === 'show'
+          ? 'Choose what the Overview displays: trading P&L, trading plus cashback, or MarketSyde Points.'
+          : 'Choose whether Overview trading results are shown gross before costs or net after recorded costs.'}
         onClick={() => setOpenMenu(openMenu === id ? null : id)}
         className="h-9 text-xs font-semibold border rounded-lg px-3 bg-white hover:bg-slate-50 border-slate-200 text-[#0b1c30]"
       >
@@ -260,7 +290,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     { id: 'insights', label: 'Insights' },
     { id: 'playbook', label: 'Playbook' },
     { id: 'backtest', label: 'Backtest' },
-    { id: 'review', label: 'Weekly Review' },
+    { id: 'review', label: 'AI Coach' },
   ];
 
   const sorted = useMemo(() => [...entries].sort((a, b) => b.date.localeCompare(a.date)), [entries]);
@@ -292,7 +322,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     const entries = scoped.filter(e=>eligible(e));
     const followed = entries.filter((e) => e.followedPlan === true).map(netOf);
     const broke = entries.filter((e) => e.followedPlan === false).map(netOf);
-    const byStrategy = JOURNAL_STRATEGIES.map((s) => {
+    const byStrategy = [...new Set(entries.map(e=>e.strategy).filter(Boolean))].map((s) => {
       const list = entries.filter((e) => e.strategy === s);
       return {
         name: s,
@@ -324,9 +354,9 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
 
   const EntryRow: React.FC<{ e: JournalEntry }> = ({ e }) => (
-    <button
+    <div className="relative"><button
       onClick={() => openEntry(e.id)}
-      className="w-full text-left bg-white border border-[#e2e8f0] rounded-2xl p-4 hover:border-[#5338ec] transition-colors"
+      className="w-full text-left bg-white border border-[#e2e8f0] rounded-2xl p-4 pr-14 hover:border-[#5338ec] transition-colors"
     >
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="w-28 shrink-0">
@@ -353,7 +383,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         <ChevronRight className="w-4 h-4 text-slate-300 ml-auto shrink-0" />
       </div>
       {e.setupNotes && <p className="text-xs text-[#474556] mt-2 line-clamp-1">{e.setupNotes}</p>}
-    </button>
+    </button><button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} title="Replay log" onClick={()=>setApiReplayId(e.id)} className="absolute right-3 top-3 rounded-lg border border-purple-200 bg-purple-50 p-2 text-[#5338ec] hover:bg-purple-100"><PlayCircle size={18}/></button></div>
   );
 
   const maxAbsDay = Math.max(1, ...insights.byDay.map((d) => Math.abs(d.pnl)));
@@ -370,7 +400,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         </div>
         <button
           type="button"
-          onClick={() => openWizard('auto')}
+          onClick={() => setWizardOpen(true)}
           className="shrink-0 text-sm font-semibold bg-[#5338ec] hover:bg-[#4326d8] text-white rounded-xl px-4 py-2.5 transition-colors"
         >
           Import / link
@@ -383,40 +413,28 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {journalSandbox && <p role="status" className="text-xs text-purple-700 mb-3">Isolated journal test workspace — separate from your journal records.</p>}
       {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
       <div className="flex flex-wrap gap-3 mb-3 text-xs">
-        <label>Account currency <select aria-label="Account currency" value={currency} onChange={e=>{setCurrency(e.target.value);setAccount('all');setSelectedDay(null);}}>{[...new Set(['USD',...entries.map(currencyOf)])].map(c=><option key={c}>{c}</option>)}</select></label>
-        <label>Account <select aria-label="Account" value={account} onChange={e=>{setAccount(e.target.value);setSelectedDay(null);}}><option value="all">All accounts in this currency</option>{[...new Set(entries.filter(e=>currencyOf(e)===currency).map(e=>e.accountId || 'legacy-demo'))].map(a=><option key={a}>{a}</option>)}</select></label>
+        <label title="Keep calculations in one currency. No currency conversion is applied.">Account currency <select aria-label="Account currency" title="Choose the account currency; entries in other currencies are excluded." value={currency} onChange={e=>{setCurrency(e.target.value);setAccount('all');setSelectedDay(null);}}>{[...new Set(['USD',...entries.map(currencyOf)])].map(c=><option key={c}>{c}</option>)}</select></label>
+        <label title="Limit the journal scope to one account or include all accounts in the selected currency.">Account <select aria-label="Account" title="Choose one account or all accounts in the selected currency." value={account} onChange={e=>{setAccount(e.target.value);setSelectedDay(null);}}><option value="all">All accounts in this currency</option>{[...new Set(entries.filter(e=>currencyOf(e)===currency).map(e=>e.accountId || 'legacy-demo'))].map(a=><option key={a}>{a}</option>)}</select></label>
         <span>{currency} only · entry-date basis (UTC) · no currency conversion · net win rate includes breakeven</span>
       </div>
+
+      {(tab==='entries'||tab==='insights')&&<section className={`mb-4 flex flex-wrap items-center gap-3 rounded-xl border p-3 text-xs ${entries.length===0?'border-amber-200 bg-amber-50 text-amber-900':'border-[#5338ec]/20 bg-[#FBFAFF] text-slate-700'}`} aria-label="Journal data coverage">
+        {entries.length===0?<><div className="min-w-0 flex-1"><p className="font-semibold">No journal trades are saved in this browser.</p><p className="mt-1">Broker sync is not active in this build. Import a CSV statement or add journal trades to populate these reports.</p></div><button type="button" onClick={()=>setWizardOpen(true)} className="h-8 rounded-lg bg-[#5338ec] px-3 font-semibold text-white hover:bg-[#4326d8]">Import trades</button></>:<>
+          <div className="min-w-0 flex-1"><p><strong>{scoped.length} shown of {entries.length} saved trades.</strong> Current view: {rangeLabel} · {currency} · {account==='all'?'all accounts':account}.</p><p className="mt-1 text-[11px] text-slate-500">{currentCurrencyCount===0?`No saved trades use ${currency}; choose a currency with records above.`:`${currentCurrencyCount} saved trades use ${currency}.`} Date, account, and journal filters affect both Trade Log and Insights.</p></div>
+          {scoped.length<entries.length&&<button type="button" onClick={resetJournalScope} className="h-8 rounded-lg border border-[#5338ec]/30 bg-white px-3 font-semibold text-[#5338ec] hover:bg-[#F7F5FF]">Show all saved trades</button>}
+        </>}
+      </section>}
 
       {/* ───── OVERVIEW ───── */}
         <div className="space-y-6">
           {/* Toolbar */}
           <div className="flex flex-wrap items-start gap-2" role="toolbar" aria-label="Journal scope">
             <div className="flex flex-col gap-1.5">
-                <select
-                  aria-label="Date range"
-                  value={rangeMode}
-                  onChange={(e) => setRangeMode(e.target.value as RangeMode)}
-                  className="h-9 text-xs font-semibold border border-slate-200 rounded-lg px-3 bg-white text-[#0b1c30]"
-                >
-                  <option value="month">Calendar month</option>
-                  <option value="last7">Last 7 days</option>
-                  <option value="last30">Last 30 days</option>
-                  <option value="all">All time</option>
-                  <option value="custom">Custom range</option>
-                </select>
-                {rangeMode === 'custom' && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <input type="date" aria-label="From date" value={customRange.from} max={customRange.to} onChange={(e) => e.target.value && setCustomRange((r) => ({ ...r, from: e.target.value }))} className="text-xs h-9 border border-slate-200 rounded-lg px-2" />
-                    <span className="text-xs text-[#94a3b8]">to</span>
-                    <input type="date" aria-label="To date" value={customRange.to} min={customRange.from} onChange={(e) => e.target.value && setCustomRange((r) => ({ ...r, to: e.target.value }))} className="text-xs h-9 border border-slate-200 rounded-lg px-2" />
-                  </div>
-                )}
-              <span className="text-xs font-mono text-[#474556] px-1" aria-live="polite">{rangeLabel}</span>
+              <JournalDateRange from={rangeFrom} to={rangeTo} label={rangeLabel} today={JOURNAL_TODAY} entries={calEntries} onApply={(range, all) => { setCustomRange(range); setRangeMode(all ? 'all' : 'custom'); setCalMonth(range.to.slice(0,7)); setSelectedDay(null); setDayReviewOpen(false); }}/>
             </div>
 
             {filterMenu('strategy', 'Playbook', JOURNAL_STRATEGIES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.strategy === v).length })), strategyOff, setStrategyOff)}
-            {filterMenu('asset', 'Market type', ['Forex', 'Crypto', 'Stocks', 'Commodity', 'Indices'].map((v) => ({ id: v, label: v, n: entries.filter((e) => e.assetClass === v).length })), assetOff, setAssetOff)}
+            {filterMenu('asset', 'Market type', JOURNAL_MARKET_TYPES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.assetClass === v).length })), assetOff, setAssetOff)}
             {filterMenu('outcome', 'Net outcome', (['win', 'loss', 'breakeven', 'open'] as const).map((v) => ({ id: v, label: v === 'win' ? 'Wins' : v === 'loss' ? 'Losses' : v === 'breakeven' ? 'Breakeven' : 'Not realized / unknown', n: entries.filter((e) => resultOf(e) === v).length })), outcomeOff, setOutcomeOff)}
             {filterMenu('tradingStatus', 'Trading status', (['planned', 'open', 'closed'] as const).map((v) => ({ id: v, label: v[0].toUpperCase() + v.slice(1), n: entries.filter((e) => tradingStatusOf(e) === v).length })), tradingStatusOff, setTradingStatusOff)}
             {filterMenu('broker', 'Broker', chartBrokers.map((b) => ({ id: b.id, label: b.name, n: b.n, color: b.color })), brokerOff, setBrokerOff)}
@@ -428,15 +446,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         </div>
       {tab === 'overview' && (
         <div className="space-y-6 mt-6">
-          {/* MarketSyde's read of the journal, kept from the design-team build. */}
-          <AiJournalSummary
-            entries={entries}
-            checklistSize={checklist.length}
-            today={JOURNAL_TODAY}
-            onWriteEntry={() => openWizard('manual')}
-            onOpenInsights={() => setTab('insights')}
-          />
-
+          <AiJournalSummary entries={scoped} />
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1 capitalize">{cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`}</p>
@@ -465,21 +475,27 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             </div>
           </div>
 
-          <JournalCumulativeChart entries={scoped} valueOf={valueOf} title={cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`} unit={cbMode === 'points' ? 'pts' : 'usd'} rangeLabel={rangeLabel} brokers={chartBrokers} off={brokerOff} />
+          <JournalCumulativeChart entries={scoped} valueOf={valueOf} title={cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`} unit={cbMode === 'points' ? 'pts' : 'usd'} rangeLabel={rangeLabel} brokers={chartBrokers} off={brokerOff} onDay={openDay}/>
 
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
             <div className="space-y-3">
               <section className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2" aria-label="Review queue">
-                <h3 className="text-sm font-bold">Review queue · {scoped.filter(e=>reviewStateOf(e)!=='complete').length} pending</h3>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-bold">Review queue · {pendingEntries.length} pending</h3>
+                  {!!pendingEntries.length && <button type="button" className="text-xs font-semibold text-[#5338ec] hover:underline" onClick={() => setReviewQueueOpen(true)}>See full pending list</button>}
+                </div>
                 <p className="text-xs text-slate-500">In this scope. Incomplete information is not a negative result.</p>
-                {scoped.filter(e=>reviewStateOf(e)!=='complete').slice(0,3).map(e=><button key={e.id} className="block text-left text-xs text-[#5338ec] underline" onClick={()=>openEntry(e.id,scoped.filter(x=>reviewStateOf(x)!=='complete').map(x=>x.id))}>{e.symbol} · {e.date} · {incompleteFields(e).join(', ') || 'Review reopened'}</button>)}
+                {pendingEntries.slice(0,3).map(e=><button key={e.id} className="block text-left text-xs text-[#5338ec] underline" onClick={()=>openEntry(e.id,pendingEntries.map(x=>x.id))}>{e.symbol} · {e.date} · {incompleteFields(e).join(', ') || 'Review reopened'}</button>)}
+                <details className="pt-1 text-xs">
+                  <summary className="cursor-pointer font-semibold text-[#5338ec] hover:underline">Show more information</summary>
+                  <div className="mt-2 rounded-xl border border-[#e2dcff] bg-[#f7f5ff] p-3 text-[#474556] space-y-1.5">
+                    <p><strong>What is pending:</strong> entries whose review state is not Complete, including entries reopened after completion.</p>
+                    <p><strong>What is included:</strong> only trades matching the current date range, currency, account, playbook, market, outcome, trading-status and broker filters.</p>
+                    <p><strong>What it means:</strong> pending indicates missing journal evidence such as costs, lessons, emotions, plan adherence or review answers. It does not change the trade result or mark the trade as a loss.</p>
+                    <p><strong>Next step:</strong> select an entry above to open its Review form and save a draft or complete the missing information.</p>
+                  </div>
+                </details>
               </section>
-              {selectedDay && <section id="journal-daily-workspace" tabIndex={-1} aria-label={`Daily workspace for ${selectedDay}`} className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 scroll-mt-24 focus-visible:outline-2 focus-visible:outline-prime-500">
-                <h3 className="font-bold text-sm">Daily workspace · {selectedDay}</h3>
-                <p className="text-xs">{dayEntries.length} recorded · {metrics(dayEntries).n} realized with known costs · net {metrics(dayEntries).n?money(metrics(dayEntries).total):'unavailable'} · known closed costs {money(metrics(dayEntries).fees)}</p>
-                <label className="block text-xs font-semibold">Daily reflection<textarea value={dailyNotes[selectedDay] || ''} onChange={ev=>setDailyNotes(d=>({...d,[selectedDay]:ev.target.value}))} rows={3} className="mt-1 w-full border border-slate-200 rounded-xl p-3" /></label>
-                <p className="text-xs text-slate-500">Saved locally as you type. Links below use the recorded entry date.</p>
-              </section>}
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold">
                   {selectedDay ? `Trades on ${shortDate(selectedDay, true)}` : 'Recent entries'}
@@ -494,7 +510,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                 dayEntries.length === 0 ? (
                   <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-6 text-center">
                     <p className="text-sm text-[#474556]">No entries on this day.</p>
-                    <button onClick={() => openWizard('manual')} className="mt-2 text-xs font-semibold text-[#5338ec] hover:underline">Add one</button>
                   </div>
                 ) : (
                   <>
@@ -511,17 +526,11 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               ) : (
                 [...scoped].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4).map((e) => <EntryRow key={e.id} e={e} />)
               )}
-              <JournalOverviewAnalytics entries={scoped} currency={currency} basis={pnlMode} onTrade={id=>openEntry(id,scoped.map(e=>e.id))} onDay={date=>{
-                setSelectedDay(date);
-                requestAnimationFrame(()=>{
-                  const workspace=document.getElementById('journal-daily-workspace');
-                  workspace?.focus({preventScroll:true});
-                  workspace?.scrollIntoView({behavior:'smooth',block:'start'});
-                });
-              }}/>
+              <JournalOverviewAnalytics entries={scoped} currency={currency} basis={pnlMode} onTrade={id=>openEntry(id,scoped.map(e=>e.id))} onDay={openDay}/>
             </div>
 
             <aside className="space-y-5">
+              <CoachOverviewCard entries={scoped} playbooks={playbooks} currency={currency} today={coachToday} onOpen={() => { setTab('review'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}/>
               <JournalCalendar
                 month={calMonth}
                 onMonthChange={(ym) => { setCalMonth(ym); setSelectedDay(null); }}
@@ -534,7 +543,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                 brokerColor={colorOf}
                 today={JOURNAL_TODAY}
                 selected={selectedDay}
-                onSelect={setSelectedDay}
+                onSelect={date => date ? openDay(date) : setSelectedDay(null)}
               />
 
               <TiltMonitor entries={scoped} rules={rules} />
@@ -565,11 +574,12 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           brokers={brokers || []}
           onChange={setEntries}
           onOpen={openEntry}
-          onNew={() => openWizard('manual')}
           onToast={onShowToast}
           preset={logPreset}
           onClearPreset={() => setLogPreset(null)}
           onReplay={(id) => goBacktest({ view: 'replay', entryId: id })}
+          onReplayLog={setApiReplayId}
+          onBacktestTrades={(ids) => goBacktest({ view: 'setup', benchmarkTradeIds: ids })}
         />
       )}
 
@@ -683,6 +693,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {tab === 'backtest' && (
         <BacktestPage
           entries={scoped}
+          allEntries={entries}
           playbooks={playbooks}
           setPlaybooks={setVersionedPlaybooks}
           journalRules={rules}
@@ -707,6 +718,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {tab === 'playbook' && (
         <JournalPlaybooks
           entries={scoped}
+          allJournalEntries={entries}
           playbooks={playbooks}
           setPlaybooks={setVersionedPlaybooks}
           onOpenEntry={id=>openEntry(id,scoped.filter(e=>e.strategy===entries.find(x=>x.id===id)?.strategy).map(e=>e.id))}
@@ -720,9 +732,9 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             if (blob) next[id] = URL.createObjectURL(blob); else delete next[id];
             return next;
           })}
-          onLogTrade={(pre) => openWizard('manual', pre)}
           expected={expected}
           onBacktest={(id) => goBacktest({ view: 'setup', playbookId: id })}
+          onWhatIf={id => goBacktest({ view: 'whatif', playbookId: id })}
           houseRules={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
@@ -787,16 +799,18 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         />
       )}
 
-      {tab==='playbook' && <JournalRuleSummary entries={scoped} playbooks={playbooks} onDrill={(ids,label)=>{setLogPreset({ids,label});setTab('entries');}}/>}
-      {/* ───── WEEKLY REVIEW ───── */}
+      {/* ───── AI COACH ───── */}
       {tab === 'review' && (
+        <div className="space-y-5">
+          <JournalAICoach entries={scoped} history={calEntries} playbooks={playbooks} currency={currency} today={coachToday} rangeLabel={rangeLabel} onImport={() => setWizardOpen(true)} onToast={onShowToast} onScenario={useCoachScenario} onEvidence={(ids, label) => { resetJournalScope(); setLogPreset({ ids, label }); setTab('entries'); }}/>
+          <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold">Saved reviews & reflection</summary>
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6">
           <div className="space-y-5">
             <p className="text-sm font-semibold mt-5">Week {weekStart} – {weekEnd} · {currency} · net realized results</p>
             <button className="text-xs text-[#5338ec] underline" onClick={()=>{setLogPreset({ids:weekEntries.map(e=>e.id),label:`Week ${weekStart} – ${weekEnd}`});setTab('entries');}}>Open linked week trades ({weekEntries.length})</button>
             <p className="text-xs">Previous focus: {reviews.find(r=>!r.from || r.from<weekStart)?.focusNextWeek || 'No previous focus recorded'}</p>
             <label className="block text-xs">Previous focus follow-up<textarea className="w-full border border-slate-200 rounded-xl p-3 mt-1" value={rvFollowUp} onChange={ev=>setRvFollowUp(ev.target.value)}/></label>
-            <details><summary className="text-xs cursor-pointer">Daily reflections from this week</summary>{Object.entries(dailyNotes).filter(([d])=>d>=weekStart && d<=weekEnd).map(([d,n])=><p key={d} className="text-xs mt-2"><button className="text-[#5338ec] underline" onClick={()=>{setSelectedDay(d);setTab('overview');}}>{d}</button>: {n}</p>)}</details>
+            <details><summary className="text-xs cursor-pointer">Daily reflections from this week</summary>{Object.entries(dailyNotes).filter(([d])=>d>=weekStart && d<=weekEnd).map(([d,n])=><p key={d} className="text-xs mt-2"><button className="text-[#5338ec] underline" onClick={()=>{openDay(d);setTab('overview');}}>{d}</button>: {n}</p>)}</details>
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
                 <p className="text-[11px] font-semibold text-[#474556] mb-1">Entries this week</p>
@@ -859,16 +873,64 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             ))}
           </aside>
         </div>
+          </details>
+        </div>
       )}
 
-      {selected && <JournalReviewDrawer entry={selected} entries={entries} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
+      {selected && <JournalReviewDrawer entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
+      {reviewQueueOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0b1c30]/40 p-3 sm:p-6" role="presentation" onMouseDown={() => setReviewQueueOpen(false)}>
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pending-review-title"
+            tabIndex={-1}
+            className="w-full max-w-2xl max-h-[90dvh] overflow-hidden rounded-2xl border border-slate-200 bg-[#f8fafc] text-[#0b1c30] shadow-2xl focus:outline-none"
+            onMouseDown={event => event.stopPropagation()}
+            onKeyDown={event => { if (event.key === 'Escape') setReviewQueueOpen(false); }}
+          >
+            <header className="flex items-start justify-between gap-4 border-b border-slate-200 bg-white p-5">
+              <div>
+                <h2 id="pending-review-title" className="text-lg font-bold">Pending reviews · {filteredPending.length}</h2>
+                <p className="mt-1 text-xs text-slate-500">{rangeLabel} · {currency} · current journal filters</p>
+              </div>
+              <button type="button" aria-label="Close pending review list" title="Close pending review list" className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50" onClick={() => setReviewQueueOpen(false)}><X size={18}/></button>
+            </header>
+            <div className="max-h-[calc(90dvh-106px)] overflow-y-auto p-4">
+              <p className="mb-3 rounded-xl border border-[#e2dcff] bg-[#f7f5ff] p-3 text-xs text-[#474556]">Pending means the review state is not Complete or required journal evidence is missing. It does not mark the trade as a loss. Select a row to open its Review form.</p>
+              <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="text-xs font-semibold text-slate-600">Market type<select aria-label="Pending review market type" value={pendingMarket} onChange={e=>{setPendingMarket(e.target.value);setPendingSymbol('all');}} className="mt-1 block h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-[#0b1c30]"><option value="all">All markets</option>{[['Forex','Forex'],['Crypto','Crypto'],['Commodity','Commodities'],['Indices','Indices'],['Stocks','Stock']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+                  <label className="text-xs font-semibold text-slate-600">Symbol<select aria-label="Pending review symbol" value={pendingSymbol} onChange={e=>setPendingSymbol(e.target.value)} className="mt-1 block h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-[#0b1c30]"><option value="all">All symbols</option>{pendingSymbols.map(symbol=><option key={symbol} value={symbol}>{symbol}</option>)}</select></label>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-xs"><p className="text-slate-500" role="status">{filteredPending.length} of {pendingEntries.length} pending reviews</p>{(pendingMarket!=='all'||pendingSymbol!=='all')&&<button type="button" className="font-semibold text-[#5338ec]" onClick={()=>{setPendingMarket('all');setPendingSymbol('all');}}>Reset filters</button>}</div>
+              </div>
+              <div className="space-y-2">
+                {!filteredPending.length&&<p className="rounded-xl border border-slate-200 bg-white p-5 text-center text-sm text-slate-500">No pending reviews match these filters.</p>}
+                {filteredPending.map(entry => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className="w-full rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:border-[#5338ec] focus-visible:outline-2 focus-visible:outline-[#5338ec]"
+                    onClick={() => { setReviewQueueOpen(false); openEntry(entry.id, filteredPending.map(item => item.id)); }}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-sm">{entry.symbol} <span className="font-normal text-slate-500">· {entry.date}</span></span>
+                      <span className="flex flex-wrap gap-1"><TradingStatusBadge status={tradingStatusOf(entry)}/><ReviewStateBadge state={reviewStateOf(entry)}/></span>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-600">{incompleteFields(entry).join(' · ') || 'Review reopened'}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+      {tab === 'overview' && selectedDay && dayReviewOpen && <JournalDayReview suspended={!!selected || !!apiReplayId} date={selectedDay} entries={dayEntries} currency={currency} from={rangeFrom} to={rangeTo} note={dailyNotes[selectedDay] || ''} onNote={value => setDailyNotes(d => ({ ...d, [selectedDay]: value }))} onDay={openDay} onClose={() => { setDayReviewOpen(false); setSelectedDay(null); }} onTrade={id => openEntry(id, dayEntries.map(e => e.id))} onReplay={setApiReplayId} onEditRules={() => { setDayReviewOpen(false); setTab('playbook'); }} brokerName={brokerName} checklistLength={checklist.length} playbookNames={playbooks.map(p => p.name)} rules={rules}/>}
+      {apiReplayId && (() => { const trade = entries.find(e => e.id === apiReplayId); return trade ? <JournalReplayAvailability entry={trade} entries={scoped} playbooks={playbooks} onClose={() => setApiReplayId(null)}/> : null; })()}
       {wizardOpen && (
         <JournalEntryWizard
-          initialMode={wizardMode}
-          prefill={wizardPreset}
           strategies={playbooks.filter((p) => p.status !== 'archived').map((p) => p.name)}
-          checklist={checklist}
-          journaledTradeIds={entries.map((e) => e.linkedTradeId).filter((x): x is string => !!x)}
           onClose={() => setWizardOpen(false)}
           existingEntries={entries}
           brokers={brokers}
@@ -878,12 +940,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             setWizardOpen(false);
             setTab('entries');
             onShowToast(`${list.length} trade${list.length === 1 ? '' : 's'} imported`);
-          }}
-          onSave={(entry) => {
-            setEntries((prev) => [entry, ...prev]);
-            setWizardOpen(false);
-            setTab('entries');
-            onShowToast('Journal entry saved');
           }}
         />
       )}

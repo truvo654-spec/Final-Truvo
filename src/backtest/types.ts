@@ -62,7 +62,18 @@ export const SESSIONS: Record<Exclude<SessionId, 'custom' | 'any'>, { label: str
 export type IndType =
   | 'SMA' | 'EMA' | 'RSI' | 'ATR' | 'VWAP'
   | 'PDH' | 'PDL' | 'SESSION_HIGH' | 'SESSION_LOW'
-  | 'HIGHEST' | 'LOWEST' | 'FVG_BULL' | 'FVG_BEAR';
+  | 'HIGHEST' | 'LOWEST' | 'FVG_BULL' | 'FVG_BEAR'
+  | 'MACD' | 'STOCH' | 'CCI' | 'ADX' | 'MOMENTUM' | 'ROC' | 'STOCH_RSI' | 'WILLR'
+  | 'BULL_POWER' | 'BEAR_POWER' | 'ULTIMATE' | 'VWMA' | 'HMA'
+  | 'ICHIMOKU_CONVERSION' | 'ICHIMOKU_BASE'
+  | 'BB_UPPER' | 'BB_MIDDLE' | 'BB_LOWER' | 'OBV' | 'MFI';
+
+export const IND_DEFAULT_PERIOD: Partial<Record<IndType, number>> = {
+  SMA: 20, EMA: 20, RSI: 14, ATR: 14, HIGHEST: 20, LOWEST: 20,
+  STOCH: 14, CCI: 20, ADX: 14, MOMENTUM: 10, ROC: 12, STOCH_RSI: 14, WILLR: 14,
+  BULL_POWER: 13, BEAR_POWER: 13, VWMA: 20, HMA: 9, ICHIMOKU_CONVERSION: 9,
+  ICHIMOKU_BASE: 26, BB_UPPER: 20, BB_MIDDLE: 20, BB_LOWER: 20, MFI: 14,
+};
 
 export interface IndSpec { type: IndType; period?: number; session?: 'asia' | 'london' | 'ny' }
 
@@ -209,6 +220,6 @@ export interface RunResult {
   tradingDays: number;
 }
 
-export interface Suggestion { id: string; label: string; detail: string; deltaR: number; trades: number; patch: Partial<BacktestSettings> & { rulesPatch?: Partial<StrategyRules>; exitsPatch?: Partial<ExitRules> } }
+export interface Suggestion { id: string; label: string; detail: string; deltaR: number; trades: number; metrics?: { netPnl: number; maxDD: number; winRate: number; trades: number }; patch: Partial<BacktestSettings> & { rulesPatch?: Partial<StrategyRules>; exitsPatch?: Partial<ExitRules> } }
 
 export interface JobOutput { result: RunResult; suggestions: Suggestion[] }

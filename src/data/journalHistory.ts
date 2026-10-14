@@ -45,6 +45,7 @@ export function generateJournalHistory(): JournalEntry[] {
   const r = rng(20260807);
   const pick = <T,>(a: T[]) => a[Math.floor(r() * a.length)];
   const out: JournalEntry[] = [];
+  let equity = 100000;
   const start = Date.UTC(2026, 7, 3); // Mon 3 Aug 2026
   const end = Date.UTC(2026, 8, 17); // Thu 17 Sep 2026
   let n = 0;
@@ -81,6 +82,9 @@ export function generateJournalHistory(): JournalEntry[] {
       const exit = round(entry + move, dpFor(inst.price));
       const risk = 80 + Math.floor(r() * 140);
       const pnl = round(R * risk, 2);
+      const equityAtEntry = round(equity, 2);
+      const marginRate = inst.assetClass === 'Stocks' ? 0.18 : inst.assetClass === 'Crypto' ? 0.04 : inst.assetClass === 'Commodity' ? 0.06 : 0.025;
+      const marginAtEntry = round(equityAtEntry * (marginRate * (0.85 + r() * 0.3)), 2);
       const durMin = hour < 7 ? 30 + Math.floor(r() * 300) : pick([4, 9, 14, 22, 35, 48, 75, 110, 160, 240, 320]) + Math.floor(r() * 10);
       const date = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
       const entryTime = `${date}T${pad(hour)}:${pad(minute)}:${pad(second)}`;
@@ -90,6 +94,7 @@ export function generateJournalHistory(): JournalEntry[] {
       const followedPlan = win ? r() < 0.9 : r() < 0.45;
       const mistakes = followedPlan ? [] : [pick(MISTAKES)];
       const lotClass = inst.assetClass === 'Forex' || inst.assetClass === 'Commodity' || inst.assetClass === 'Indices';
+      const commission = round(lotClass ? size * 3.5 : inst.assetClass === 'Stocks' ? 1 : size * 2, 2);
       out.push({
         id: `jr_h${n}`,
         date,
@@ -117,8 +122,12 @@ export function generateJournalHistory(): JournalEntry[] {
         rating: win ? 4 : followedPlan ? 3 : 2,
         source: 'manual',
         brokerId: pick(BROKERS),
-        commission: round(lotClass ? size * 3.5 : inst.assetClass === 'Stocks' ? 1 : size * 2, 2),
+        commission,
+        initialRisk: risk,
+        equityAtEntry,
+        marginAtEntry,
       });
+      equity = round(equity + pnl - commission, 2);
     }
   }
   return out;

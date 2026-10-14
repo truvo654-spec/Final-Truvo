@@ -73,6 +73,17 @@ interface Pos {
   worstPx: number;
   bars: number;
   ambiguous: boolean;
+  equityAtEntry: number;
+}
+
+export interface PositionSnapshot {
+  direction: 'BUY' | 'SELL'; entryTime: number; entry: number; initialStop: number; stop: number; target: number | null;
+  size: number; remaining: number; initialRisk: number; remainingRisk: number; equityAtEntry: number;
+  realizedPartialNet: number; unrealizedNet: number;
+}
+export interface RunSnapshot {
+  processed: number; finished: boolean; balance: number; closedNet: number; atr: number | null;
+  position: PositionSnapshot | null; pending: boolean; trades: BacktestTrade[];
 }
 
 export interface RunHandle {
@@ -82,10 +93,14 @@ export interface RunHandle {
   /** Process up to n bars. Returns true when the run is finished. */
   step(n: number): boolean;
   result(): RunResult;
+  /** Read only already-processed bars and the current position; never force an end-of-test exit. */
+  snapshot(): RunSnapshot;
 }
 
 export interface RunOptions {
   isNewsDay?: (t: number) => boolean;
+  /** Explicit sandbox scenario levels. Normal backtests keep their original stop/target logic. */
+  positionLevels?: { stop: number; target: number };
 }
 
 const minuteOfDay = (t: number) => Math.floor((t % dayMs) / 60000);
@@ -98,6 +113,7 @@ const marketCloseMin = (spec: SymbolSpec, t: number) => {
 };
 
 export function createRun(settings: BacktestSettings, series: Series, opts: RunOptions = {}): RunHandle {
+  if(opts.positionLevels && ![opts.positionLevels.stop,opts.positionLevels.target].every(v=>Number.isFinite(v)&&v>0))throw new Error('Scenario stop and target must be positive finite prices.');
   const spec = symbolSpec(settings.symbol);
   if (!spec) throw new Error(`No price data for ${settings.symbol}.`);
   const newsDay = opts.isNewsDay ?? defaultIsNewsDay;
@@ -260,17 +276,18 @@ export function createRun(settings: BacktestSettings, series: Series, opts: RunO
 
   const open = (pd: Pending, raw: number, t: number) => {
     const fill = raw + pd.dir * (halfSpread + (pd.type === 'limit' ? 0 : slip));
-    const stop = pd.stopLevel !== null ? pd.stopLevel : raw - pd.dir * pd.stopDist;
+    const stop = opts.positionLevels?.stop ?? (pd.stopLevel !== null ? pd.stopLevel : raw - pd.dir * pd.stopDist);
     const riskDist = Math.abs(fill - stop);
     if (pd.dir * (fill - stop) <= 0 || riskDist <= 0) return; // gapped through the stop
+    if (opts.positionLevels && (!Number.isFinite(opts.positionLevels.target) || pd.dir * (opts.positionLevels.target - fill) <= 0)) return;
     const size = sizeFor(riskDist);
     if (!(size >= spec.minSize)) { diag.filtered.minSize++; return; }
     pos = {
       dir: pd.dir, orderType: pd.type, entryT: t, entryRaw: raw, entryFill: fill,
       initStop: stop, stop, stopKind: 'stop',
-      target: ex.targetR ? fill + pd.dir * ex.targetR * riskDist : null,
+      target: opts.positionLevels?.target ?? (ex.targetR ? fill + pd.dir * ex.targetR * riskDist : null),
       riskDist, size, remaining: size, grossUsd: 0, costsUsd: 0, exitNotional: 0, exitQty: 0,
-      partialDone: false, beDone: false, trailing: false, bestPx: fill, worstPx: fill, bars: 0, ambiguous: false,
+      partialDone: false, beDone: false, trailing: false, bestPx: fill, worstPx: fill, bars: 0, ambiguous: false, equityAtEntry:balance,
     };
     tradesToday++;
     tradeDays.add(Math.floor(t / dayMs));
@@ -475,6 +492,23 @@ export function createRun(settings: BacktestSettings, series: Series, opts: RunO
     guard: gs,
     step,
     result,
+    snapshot: () => {
+      const p = pos as Pos | null;
+      const close = gs.current >= 0 ? gs.c(gs.current) : null;
+      const remainingCosts = p ? ((Math.abs(p.entryFill-p.entryRaw) + halfSpread + slip)*spec.multiplier + commission*2)*p.remaining : 0;
+      return {
+        processed:gs.current+1, finished, balance, closedNet:balance-risk.startBalance, pending:!!pend,
+        atr:Number.isFinite(atr.value) ? atr.value : null, trades:trades.map(t=>({...t})),
+        position:p && close!==null ? {
+          direction:p.dir===1?'BUY':'SELL', entryTime:p.entryT, entry:p.entryFill, initialStop:p.initStop, stop:p.stop, target:p.target,
+          size:p.size, remaining:p.remaining, equityAtEntry:p.equityAtEntry,
+          initialRisk:toAcct(p.riskDist*p.size*spec.multiplier),
+          remainingRisk:toAcct(Math.max(0,p.dir*(p.entryFill-p.stop))*p.remaining*spec.multiplier),
+          realizedPartialNet:toAcct(p.grossUsd-p.costsUsd),
+          unrealizedNet:toAcct((close-p.entryRaw)*p.dir*p.remaining*spec.multiplier-remainingCosts),
+        } : null,
+      };
+    },
   };
 }
 
