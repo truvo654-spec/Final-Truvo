@@ -6,8 +6,8 @@ import { AiDashboardPanel } from './AiDashboardPanel';
 import { AiIntro } from './AiIntro';
 import {
   advisorsRead, alertsRead, calendarRead, communityRead, dashboardRead, educationRead,
-  leaderboardRead, newsRead, pointsRead, portfolioRead, promotionsRead, signalsRead,
-  strategyRead, toSpotlight,
+  journalRead, leaderboardRead, newsRead, pointsRead, portfolioRead, promotionsRead, signalsRead,
+  strategyRead, toSpotlight, DEMO_ALERTS, instrumentListStrip,
 } from './aiFeature';
 import { INITIAL_FEED_POSTS, MORE_FEED_POSTS, COMMUNITY_ARTICLES } from '../../data/communityData';
 import { brokerListStrip, brokerCompareNote } from './aiFeature';
@@ -53,12 +53,24 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
         'Avg confidence': 'The average confidence the desk put on these calls. Not a win rate.',
       });
     }
-    case 'instrument-analysis':
-      return toSpotlight(signalsRead(signals as never, user.tierLevel), 'Read the instrument list', [
-        { label: 'Open signals', sub: 'The current calls and how confident they are.', onClick: () => go('signals') },
-        { label: 'Check the calendar', sub: 'See what can move your positions today.', onClick: () => go('economic-calendar') },
-        ask,
-      ]);
+    case 'instrument-analysis': {
+      const d = signalsRead(signals as never, user.tierLevel);
+      return toSpotlight(
+        { ...d, headline: 'What is moving, and what is due', overview: instrumentListStrip(signals as never) },
+        'Read the instrument list, signals and calendar',
+        [
+          { label: 'Open signals', sub: 'The current calls and how confident they are.', onClick: () => go('signals') },
+          { label: 'Check the calendar', sub: 'See what can move these instruments today.', onClick: () => go('economic-calendar') },
+          ask,
+        ],
+        {
+          'Open signals': 'Calls published across these instruments.',
+          Long: 'How many point up.',
+          Short: 'How many point down.',
+          'Avg confidence': 'Average confidence on those calls. Not a win rate.',
+        },
+      );
+    }
     case 'economic-calendar':
       return toSpotlight(calendarRead(), 'Read the calendar', [
         { label: 'See open signals', sub: 'The current calls and how confident they are.', onClick: () => go('signals') },
@@ -113,13 +125,18 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
         ask,
       ]);
     case 'portfolio-tracker':
-      return toSpotlight(portfolioRead([], 30), 'Read your accounts', [
+      return toSpotlight(portfolioRead([], 30), 'Read your accounts, trades and goals', [
         { label: 'Open my journal', sub: 'Log trades, review results and track your progress.', onClick: () => go('trading-journal') },
         { label: 'Review alerts', sub: 'What is close to firing and what is noise.', onClick: () => go('alerts') },
         ask,
-      ]);
+      ], {
+        Equity: 'Balance across the accounts you picked.',
+        '30d net': 'Realised result from trades closed in 30 days.',
+        'Max drawdown': 'Deepest fall from a peak in that window.',
+        Floating: 'Unrealised profit and loss on what is still open.',
+      });
     case 'alerts':
-      return toSpotlight(alertsRead([], user.tierLevel >= 3 ? 999 : user.tierLevel === 2 ? 25 : 5), 'Read your alerts', [
+      return toSpotlight(alertsRead(DEMO_ALERTS, user.tierLevel >= 3 ? 999 : user.tierLevel === 2 ? 25 : 5), 'Read your alerts and the live quotes', [
         { label: 'See open signals', sub: 'The current calls and how confident they are.', onClick: () => go('signals') },
         { label: 'Check the calendar', sub: 'See what can move your positions today.', onClick: () => go('economic-calendar') },
         ask,
@@ -130,21 +147,36 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
         { label: 'Find a broker', sub: 'Compare spreads, cashback and regulation.', onClick: () => go('brokers') },
         ask,
       ]);
-    case 'strategy-builder':
     case 'trading-journal':
-      return toSpotlight(strategyRead(), 'Read your playbooks', [
+      return toSpotlight(journalRead(), 'Read your journal entries', [
+        { label: 'Review my accounts', sub: 'Equity, drawdown, margin and goals.', onClick: () => go('portfolio-tracker') },
+        { label: 'Build a strategy', sub: 'Turn the pattern into rules and test it.', onClick: () => go('strategy-builder') },
+        ask,
+      ], {
+        Closed: 'Trades you logged with a result.',
+        Net: 'Everything those closed trades made or lost.',
+        'Win rate': 'Share of them that finished green.',
+        'Average R': 'Average result measured in multiples of what you risked.',
+      });
+    case 'strategy-builder':
+      return toSpotlight(strategyRead(), 'Read your playbooks and their live trades', [
         { label: 'Open the journal', sub: 'Your entries, playbooks and reviews.', onClick: () => go('trading-journal') },
         { label: 'Review my accounts', sub: 'Equity, drawdown, margin and goals.', onClick: () => go('portfolio-tracker') },
         ask,
-      ]);
+      ], {
+        Playbooks: 'Rule sets you have written up.',
+        'With live trades': 'How many have real trades tagged to them.',
+        'Best net': 'The strongest playbook by money.',
+        'Weakest net': 'The one giving money back.',
+      });
     case 'points-credits':
-      return toSpotlight(pointsRead(user), 'Read your level', [
+      return toSpotlight(pointsRead(user), 'Read your level, credits and missions', [
         { label: 'See offers', sub: 'What is live for your level and when it closes.', onClick: () => go('promotions') },
         { label: 'Open the leaderboard', sub: 'Where you stand and the gap above.', onClick: () => go('leaderboard') },
         ask,
       ]);
     case 'leaderboard':
-      return toSpotlight(leaderboardRead(), 'Read the standings', [
+      return toSpotlight(leaderboardRead(), 'Read the standings for this period', [
         { label: 'See my points', sub: 'Level, missions and what the next tier pays.', onClick: () => go('points-credits') },
         { label: 'Open cashback', sub: 'Credited, pending and the rate per lot.', onClick: () => go('cashback-overview') },
         ask,

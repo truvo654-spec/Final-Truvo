@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.1] - 2026-10-09
+### Changed
+- Each page's AI read now matches the AI map: the journal reads your journal (closed trades, net, win rate, average R, what is working and what costs you) instead of borrowing the playbook read, instrument analysis reads the movers and the next release, alerts read real alerts instead of an empty list, and strategy keeps the backtest checklist.
+- Every page's CTAs point where that feature leads, and every figure carries the line explaining what it is.
+### Added
+- The leverage calculator's inline AI note is back, as the map describes.
+
 ## [1.9.0] - 2026-10-09
 ### Changed
 - The AI panel header is brand purple, carrying the MarketSyde glyph with its lime dot and the wordmark, with the AI and Beta marks beside it and white tabs on the bar.

@@ -3,6 +3,7 @@ import { PORTFOLIO_ACCOUNTS, PORTFOLIO_TRADES, DEFAULT_GOALS } from '../../data/
 import { JOURNAL_ENTRIES } from '../../data/journalData';
 import { DEFAULT_PLAYBOOKS } from '../../data/journalPlaybooks';
 import { isClosed, maxDrawdown, sliceSeries, totalSeries, tradeStats, tradesInRange, groupPnl } from '../portfolio/portfolioMath';
+const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
 import { COURSES, CERTIFICATES } from '../../data/educationData';
 import { ECONOMIC_EVENTS, CALENDAR_NOW } from '../../data/economicCalendarData';
 import { NEWS_ARTICLES } from '../../data/newsData';
@@ -1147,3 +1148,70 @@ export function signalsSpotlight(
     ...(locked ? [{ label: `Unlock ${plural(locked, 'signal')}`, onClick: onUpgrade }] : []),
   ]);
 }
+
+/* ───────────── Journal: the whole record ───────────── */
+
+export function journalRead(): AiSectionData {
+  const closed = JOURNAL_ENTRIES.filter((e) => e.outcome === 'win' || e.outcome === 'loss');
+  if (!closed.length) {
+    return { eyebrow: 'Your journal', headline: 'Nothing logged yet', overview: '', empty: { text: 'Write up a few trades and I can read how you trade.' } };
+  }
+  const wins = closed.filter((e) => e.outcome === 'win');
+  const net = closed.reduce((a, e) => a + (e.pnl || 0), 0);
+  const rs = closed.map((e) => e.rMultiple).filter((x): x is number => typeof x === 'number');
+  const avgR = rs.length ? avg(rs) : 0;
+  const planned = closed.filter((e) => e.followedPlan === true).length;
+  const byStrategy = Array.from(closed.reduce((m, e) => {
+    const k = e.strategy || 'Untagged';
+    const v = m.get(k) ?? { n: 0, pnl: 0 };
+    return m.set(k, { n: v.n + 1, pnl: v.pnl + (e.pnl || 0) });
+  }, new Map<string, { n: number; pnl: number }>()).entries()).sort((a, b) => b[1].pnl - a[1].pnl);
+  const best = byStrategy[0];
+  const worst = byStrategy[byStrategy.length - 1];
+  const mistakes = new Map<string, number>();
+  closed.forEach((e) => (e.mistakes ?? []).forEach((m) => mistakes.set(m, (mistakes.get(m) ?? 0) + 1)));
+  const topMistake = Array.from(mistakes.entries()).sort((a, b) => b[1] - a[1])[0];
+
+  return {
+    eyebrow: 'Your journal',
+    reading: `Reading ${plural(closed.length, 'closed trade')}…`,
+    headline: net >= 0
+      ? `${plural(closed.length, 'closed trade')}, ${money(net)} and ${pct((wins.length / closed.length) * 100)} wins`
+      : `${plural(closed.length, 'closed trade')} down ${money(Math.abs(net))} at ${pct((wins.length / closed.length) * 100)} wins`,
+    overview: `Your average result is ${avgR.toFixed(2)}R and you followed your plan on ${pct((planned / closed.length) * 100)} of them.${best ? ` ${best[0]} is your strongest at ${money(best[1].pnl)} over ${plural(best[1].n, 'trade')}.` : ''}${worst && worst[1].pnl < 0 ? ` ${worst[0]} has cost ${money(worst[1].pnl)}.` : ''}`,
+    chips: [
+      { label: 'Closed', value: String(closed.length) },
+      { label: 'Net', value: money(net), tone: net >= 0 ? 'lime' : 'pink' },
+      { label: 'Win rate', value: pct((wins.length / closed.length) * 100) },
+      { label: 'Average R', value: `${avgR.toFixed(2)}R`, tone: avgR >= 0 ? 'lime' : 'pink' },
+    ],
+    columns: [
+      {
+        accent: ACCENT.lime,
+        title: 'What is working',
+        items: best ? [{ title: best[0], text: `${money(best[1].pnl)} over ${plural(best[1].n, 'trade')}. Keep sizing it the same and write up why each one worked.` }] : [],
+      },
+      {
+        accent: ACCENT.pink,
+        title: 'What is costing you',
+        items: [
+          ...(worst && worst[1].pnl < 0 ? [{ title: worst[0], text: `${money(worst[1].pnl)} over ${plural(worst[1].n, 'trade')}. Halve the size there or leave it alone for a month.` }] : []),
+          ...(topMistake ? [{ title: `“${topMistake[0]}” ${topMistake[1]} times`, text: 'It is the habit showing up most often in your own notes. Put it on the checklist before you enter.' }] : []),
+        ],
+      },
+      {
+        accent: ACCENT.violet,
+        title: 'Next',
+        items: [{ title: planned / closed.length < 0.7 ? 'Follow the plan more often' : 'Keep the discipline', text: planned / closed.length < 0.7 ? `You stuck to the plan on only ${pct((planned / closed.length) * 100)} of trades. The edge is in the ones you follow.` : 'Plan adherence is high. Review the exits next: that is usually where the rest of the edge is.' }],
+      },
+    ],
+    footnote: 'Built from your journal entries. Not financial advice.',
+  };
+}
+
+/** Alerts the dock can read without the page's own state. */
+export const DEMO_ALERTS: AlertLike[] = [
+  { id: 'd1', type: 'price', symbol: 'XAU/USD', condition: 'above', value: 2700, status: 'active', app: true, email: true },
+  { id: 'd2', type: 'price', symbol: 'EUR/USD', condition: 'below', value: 1.05, status: 'active', app: true },
+  { id: 'd3', type: 'news', symbol: 'USD', status: 'paused', app: false, email: false, sms: false },
+];
