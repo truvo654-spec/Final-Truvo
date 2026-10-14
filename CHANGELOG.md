@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.1] - 2026-10-09
+### Changed
+- The heatmap is a real treemap now: a squarified layout over 25 assets, so a tile's area reflects the field chosen under "Size by" and the board rearranges when that changes.
+- Tile colour comes from the field under "Color by", mapped onto the seven-step scale at the foot, with the label colour following the tint so it stays readable at both ends.
+- "Size by" and "Color by" are custom dropdowns with the design's five fields and the "Choose" placeholder, instead of the browser's select.
+- Hovering a tile opens a read-out with its change, 1M return, market cap and relative volume.
+
 ## [1.11.0] - 2026-10-09
 ### Added
 - Heatmap tab rebuilt towards the design: "Size by" and "Color by" sit above their own wider selects, the subtitle reads "Tile size and color update based on your selections below.", a dashed "256 More" tile opens the Remaining assets popup with its own search, and a seven-step colour scale from -3% to 3% runs along the foot.
