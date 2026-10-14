@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.4] - 2026-10-09
+### Changed
+- The collapsed AI control is now a 56px orb holding only the mascot: a gradient ring in the brand colours rotating around it, a blurred halo of the same gradient behind, and a pulse that goes out every few seconds. The ghost bobs and blinks, hover brightens the halo and speeds everything up, and the press scales it down. All of it stops under prefers-reduced-motion.
+
 ## [1.9.3] - 2026-10-09
 ### Changed
 - The first-run invite follows the attached design in both themes: the tinted title block reading "You're invited to try advanced MarketSyde AI", rules above and below two feature rows with 52px tiles, the "may make mistakes" line, the Learn more line and the pill button, at 400px wide.

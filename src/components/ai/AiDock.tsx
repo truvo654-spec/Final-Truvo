@@ -204,21 +204,36 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
 const STORE = 'marketsyde.aiDock.closed';
 const SEEN = 'marketsyde.aiDock.introSeen';
 
-/** The mascot bobs, blinks and sends out a ring so the pill reads as live. */
+/** The orb: a rotating gradient ring in the brand colours, a blurred halo and the mascot. */
 const AI_PILL_CSS = `
 @keyframes ai-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 @keyframes ai-blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(0.1)}}
-@keyframes ai-ring{0%{transform:scale(.85);opacity:.45}70%{transform:scale(1.25);opacity:0}100%{opacity:0}}
-.ai-pill{position:fixed}
-.ai-pill-ghost{animation:ai-bob 2.8s ease-in-out infinite}
-.ai-pill:hover .ai-pill-ghost{animation-duration:1.1s}
+@keyframes ai-spin{to{transform:rotate(1turn)}}
+@keyframes ai-ring{0%{transform:scale(.9);opacity:.5}70%{transform:scale(1.35);opacity:0}100%{opacity:0}}
+.ai-orb{position:fixed;isolation:isolate}
+.ai-orb-glow,.ai-orb-edge{
+  position:absolute;border-radius:9999px;
+  background:conic-gradient(from 0deg,#5945F1,#c026d3,#fd02b0,#c9ea0e,#5945F1);
+  animation:ai-spin 6s linear infinite;
+}
+.ai-orb-glow{inset:-9px;filter:blur(12px);opacity:.75}
+.ai-orb-edge{inset:-2px}
+.ai-orb-face{position:relative;border-radius:9999px}
+.ai-orb-pulse{position:absolute;inset:-2px;border-radius:9999px;border:2px solid #5945F1;animation:ai-ring 2.8s ease-out infinite;pointer-events:none}
+.ai-orb-ghost{animation:ai-bob 2.8s ease-in-out infinite}
+.ai-orb:hover .ai-orb-ghost{animation-duration:1.1s}
+.ai-orb:hover .ai-orb-glow{opacity:1;filter:blur(16px)}
+.ai-orb:hover .ai-orb-glow,.ai-orb:hover .ai-orb-edge{animation-duration:2.4s}
 .ai-ghost-eyes{animation:ai-blink 5s ease-in-out infinite}
-.ai-pill-ring{position:absolute;inset:0;border-radius:9999px;border:2px solid #5945F1;animation:ai-ring 2.8s ease-out infinite;pointer-events:none}
 @media (prefers-reduced-motion: reduce){
-  .ai-pill-ghost,.ai-ghost-eyes,.ai-pill-ring{animation:none}
-  .ai-pill-ring{opacity:0}
+  .ai-orb-ghost,.ai-ghost-eyes,.ai-orb-pulse,.ai-orb-glow,.ai-orb-edge{animation:none}
+  .ai-orb-pulse{opacity:0}
 }
 `;
+
+/** The read for the page the person is on, or null where the dock stays shut. */
+
+/** The mascot bobs, blinks and sends out a ring so the pill reads as live. */
 
 /** Docks the spotlight panel in the bottom right of every feature page. */
 export const AiDock: React.FC<AiDockContext> = (ctx) => {
@@ -266,13 +281,17 @@ export const AiDock: React.FC<AiDockContext> = (ctx) => {
         <button
           type="button"
           onClick={() => shut(false)}
-          aria-label="Show the MarketSyde AI summary"
+          aria-label="Open the MarketSyde AI summary"
+          title="MarketSyde AI"
           data-keep-button-icons
-          className="ai-pill group fixed bottom-5 right-5 z-40 flex items-center gap-2.5 rounded-full border border-[#d0cbfb] bg-white py-3 pl-4 pr-5 text-[15px] font-bold text-[#5945F1] shadow-[0_10px_30px_rgba(89,69,241,0.18)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_36px_rgba(89,69,241,0.26)] active:translate-y-0 active:scale-[0.98] dark:border-[#2a1a66] dark:bg-[#0f0726] dark:text-[#a99bff] print:hidden"
+          className="ai-orb group bottom-5 right-5 z-40 h-14 w-14 rounded-full transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 print:hidden"
         >
-          <span className="ai-pill-ring" aria-hidden />
-          <AiGhost className="ai-pill-ghost h-5 w-5 shrink-0" />
-          <span>MarketSyde AI</span>
+          <span className="ai-orb-glow" aria-hidden />
+          <span className="ai-orb-edge" aria-hidden />
+          <span className="ai-orb-face flex h-14 w-14 items-center justify-center bg-white text-[#5945F1] shadow-[0_8px_24px_rgba(89,69,241,0.28)] dark:bg-[#0b0320] dark:text-[#bfb3ff]">
+            <span className="ai-orb-pulse" aria-hidden />
+            <AiGhost className="ai-orb-ghost h-7 w-7" />
+          </span>
         </button>
       </>
     );
