@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.18.0] - 2026-10-09
+### Added
+- A command palette: one box that searches and jumps, opened with Cmd or Ctrl + K anywhere, or with / when the person is not already typing.
+- It is reachable by keyboard alone: arrows move, Enter opens, Home and End jump to the ends, Escape closes, and the highlighted row is always scrolled into view. Mouse and keyboard share the one highlight so they never disagree.
+- Results are grouped and labelled, the matched part of a label is marked so the reader can see why a row came back, and ranking favours a prefix over a word start over a loose match.
+- Recent searches are remembered and can be cleared in one click, "Advanced search" hands the typed text to the full search screen, and the foot of the panel shows what the keyboard can do and how many results there are.
+- Pages, signals and brokers are all reachable; the empty state says what matched nothing and offers the filtered search.
+### Changed
+- Cmd+K and the header search box now open the palette; the full search modal is one keystroke further in, behind "Advanced search".
+
 ## [1.17.0] - 2026-10-09
 ### Changed
 - The instrument detail header follows the design: a round coin mark, the name with "Cryptocurrency · BTC/USD" and a line of description, the price with the move as a tinted pill and the cash figure beside it, a sparkline, and the four figures labelled Market Cap, Volume (24h), Relative Volume and 1M Return in trillions and billions rather than raw numbers.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useMemo} from 'react';
 import { pointsForTrade } from './data/pointsPerLot';
 import {
   INITIAL_USER,
@@ -86,6 +86,8 @@ import { SignalDetailModal } from './components/SignalDetailModal';
 import { CashbackLedgerModal } from './components/CashbackLedgerModal';
 import { BrokerComparisonModal } from './components/BrokerComparisonModal';
 import { SearchModal } from './components/SearchModal';
+import { CommandPalette, navigationItems, PaletteItem } from './components/CommandPalette';
+import { Briefcase as BriefcaseIcon, LineChart as LineChartIcon } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { WelcomeOnboardingModal } from './components/onboarding/WelcomeOnboardingModal';
 import { DashboardTourOverlay, TourStepId } from './components/onboarding/DashboardTourOverlay';
@@ -328,6 +330,7 @@ export default function App() {
   const [selectedCalculatorType, setSelectedCalculatorType] = useState<CalculatorType>('forex');
   const [earningRewardModal, setEarningRewardModal] = useState<EarningRewardData | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   // Auth State: default to false (or stored preference) so user can test "ยังไม่ได้ sign up" flow
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -558,12 +561,43 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [brokers, signals]);
 
+  /** Everything the command palette can reach: pages first, then live data. */
+  const paletteItems = useMemo<PaletteItem[]>(() => {
+    const go = (tab: string) => setActiveTab(tab);
+    const out: PaletteItem[] = navigationItems(go);
+    signals.slice(0, 40).forEach((sig) => out.push({
+      id: `sig-${sig.id}`,
+      label: sig.ticker,
+      sub: `${sig.action} · ${sig.confidence}% confidence · ${sig.timeframe}`,
+      group: 'Signals',
+      icon: LineChartIcon,
+      meta: `${sig.change24h > 0 ? '+' : ''}${sig.change24h}%`,
+      run: () => { setSelectedSignal(sig); setActiveTab('signal-detail'); },
+    }));
+    brokers.slice(0, 40).forEach((b) => out.push({
+      id: `brk-${b.id}`,
+      label: b.name,
+      sub: `From ${b.spreadFrom} · ${b.maxCashback} cashback`,
+      group: 'Brokers',
+      icon: BriefcaseIcon,
+      run: () => { setSelectedBrokerForDetail(b); setActiveTab('broker-detail'); },
+    }));
+    return out;
+  }, [signals, brokers]);
+
   // Global Keyboard Shortcut: Cmd+K / Ctrl+K opens Search Modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const typing = (() => {
+        const el = document.activeElement as HTMLElement | null;
+        return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+      })();
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setIsSearchModalOpen((prev) => !prev);
+        setIsPaletteOpen((prev) => !prev);
+      } else if (e.key === '/' && !typing) {
+        e.preventDefault();
+        setIsPaletteOpen(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -867,7 +901,7 @@ export default function App() {
         onNavigateToCashbackOverview={() => setActiveTab('cashback-overview')}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onOpenSearchModal={() => setIsSearchModalOpen(true)}
+        onOpenSearchModal={() => setIsPaletteOpen(true)}
         onShowToast={showToast}
         onUpdateAvatar={handleUpdateAvatar}
         onSelectLevelScenario={handleSelectLevelScenario}
@@ -1041,7 +1075,7 @@ export default function App() {
                 setActiveTab('broker-detail');
               }}
               onTriggerEarningModal={handleTriggerEarningReward}
-              onOpenSearchModal={() => setIsSearchModalOpen(true)}
+              onOpenSearchModal={() => setIsPaletteOpen(true)}
               onShowToast={showToast}
               onSelectLevelScenario={handleSelectLevelScenario}
               onStartTour={handleStartOnboarding}
@@ -2142,6 +2176,13 @@ export default function App() {
       />
 
       {/* ─── SEARCH COMMAND PALETTE MODAL (EXACT MATCH TO DESIGN) ─── */}
+      <CommandPalette
+        open={isPaletteOpen}
+        onClose={() => setIsPaletteOpen(false)}
+        items={paletteItems}
+        onAdvancedSearch={(q) => { setSearchQuery(q); setIsSearchModalOpen(true); }}
+      />
+
       <SearchModal
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
