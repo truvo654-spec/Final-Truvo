@@ -1,4 +1,5 @@
 import "./market.css";
+import { DetailEmptyState } from './DetailEmptyState';
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo, type ReactNode, type CSSProperties } from "react";
@@ -660,8 +661,25 @@ export function InstrumentDetail({
       />
     </div>
   );
+  /** Lets each panel's empty state be reviewed without breaking the data. */
+  const [panelState, setPanelState] = useState<'default' | 'empty'>('default');
+
   return (
     <div className="market-feature">
+      <div className="fixed bottom-4 left-4 z-30 flex items-center gap-1 rounded-xl border border-[#d7d3fb] bg-white/95 p-1 shadow-lg backdrop-blur print:hidden" role="group" aria-label="Preview panel state">
+        <span className="px-2 text-[10px] font-bold uppercase tracking-wide text-[#94a3b8]">Preview state</span>
+        {(['default', 'empty'] as const).map((id) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={panelState === id}
+            onClick={() => setPanelState(id)}
+            className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors ${panelState === id ? 'bg-[#5945F1] text-white' : 'text-[#475569] hover:bg-[#f1f0fe]'}`}
+          >
+            {id === 'default' ? 'Default' : 'Nothing loaded'}
+          </button>
+        ))}
+      </div>
       <div className="concept-instrument">
         <section className="concept-quote">
         <div className="concept-identity">
@@ -1016,6 +1034,9 @@ export function InstrumentDetail({
                 More <ArrowRight className="size-3" />
               </a>
             </div>
+            {panelState === 'empty' ? (
+              <DetailEmptyState art="alert" title="The Signals Aren’t Here" lines={['Come back and try again. They will return.']} />
+            ) : (
             <div className="mt-2 divide-y divide-slate-100">
               {[
                 {
@@ -1096,6 +1117,7 @@ export function InstrumentDetail({
                 </div>
               ))}
             </div>
+            )}
           </div>
 
           {/* Bottom: Latest News (adapted from TodaysCryptoWidget) */}

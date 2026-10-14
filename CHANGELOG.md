@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.0] - 2026-10-09
+### Added
+- Empty states for the instrument detail page, from the supplied design: a shared DetailEmptyState panel with the three MarketSyde mascot illustrations, the headline in the brand gradient and a line saying the data is late rather than lost.
+- The signals panel uses it ("The Signals Aren't Here"), and a preview switch in the corner shows every panel's empty state without breaking the data.
+
 ## [1.15.1] - 2026-10-09
 ### Removed
 - Three journal files the merge left behind with nothing importing them: JournalRuleSummary, TradeLogSection and tradeLogData.
