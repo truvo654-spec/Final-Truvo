@@ -1,3 +1,6 @@
+import HM_NOT_FOUND from '../../assets/community/ia-notfound.png';
+import HM_ERROR from '../../assets/community/ia-error.png';
+import { Search } from 'lucide-react';
 import React, { useState } from 'react';
 import { InstrumentIcon } from './InstrumentIcon';
 import { motion } from 'motion/react';
@@ -16,14 +19,33 @@ interface HeatmapTile {
 }
 
 interface InstrumentHeatmapViewProps {
+  /** Lets the page preview the empty and failed states. */
+  state?: HeatmapState;
   onSelectInstrument?: (symbol: string) => void;
 }
 
+export type HeatmapState = 'default' | 'notfound' | 'error';
+
 export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({
   onSelectInstrument,
+  state = 'default',
 }) => {
   const [sizeBy, setSizeBy] = useState<string>('Relative Volume ($B)');
+  const [showRemaining, setShowRemaining] = useState(false);
+  const [remainingQuery, setRemainingQuery] = useState('');
+  const remainingCount = 256;
+  const remainingValue = '$270.30B';
   const [colorBy, setColorBy] = useState<string>('Change 1 Day (%)');
+
+/** What the "N More" tile opens, as in the design. */
+const REMAINING_ASSETS = [
+  { name: 'ZCash', change: '+2.31%', value: '$1.12B', tint: '#f5a524' },
+  { name: 'Internet Explorer', change: '-1.74%', value: '$0.64B', tint: '#5945F1' },
+  { name: 'Steller', change: '+4.08%', value: '$3.41B', tint: '#111827' },
+  { name: 'Avalance', change: '-2.26%', value: '$18.73B', tint: '#e84142' },
+  { name: 'Cronos', change: '+1.19%', value: '$3.28B', tint: '#0b1c30' },
+  { name: 'Litecoin', change: '-0.92%', value: '$6.54B', tint: '#345d9d' },
+];
 
   // Exact tiles from Frame 427322387 (1).png
   const topTilesSection = [
@@ -313,7 +335,7 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({
   };
 
   return (
-    <div className="w-full bg-white rounded-2xl border border-[#8B5CF6]/30 p-5 sm:p-7 shadow-2xs space-y-6">
+    <div className="w-full bg-white rounded-2xl border border-[#e0e7ff] p-5 sm:p-7 shadow-xs space-y-6">
       {/* ─── Top Header Bar: Title + Subtitle + Legend + Size/Color Selects ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -321,29 +343,19 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({
             Market Heatmap
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Tile size and color use the selected market fields
+            Tile size and color update based on your selections below.
           </p>
-          <div className="flex items-center gap-3.5 mt-2 text-xs font-bold text-slate-700 select-none">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#CAEB0E] border border-[#a2bf06]" />
-              <span>Gain</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#FD02B0]" />
-              <span>Loss</span>
-            </span>
-          </div>
         </div>
 
         {/* Dropdowns */}
         <div className="flex flex-wrap items-center gap-4 sm:gap-6">
           {/* Size By */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-medium">Size by</span>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[13px] text-slate-500 font-medium">Size by</span>
             <select
               value={sizeBy}
               onChange={(e) => setSizeBy(e.target.value)}
-              className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]/40 cursor-pointer shadow-2xs"
+              className="w-[190px] bg-white border border-[#d7d3fb] rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 hover:border-[#5945F1] focus:outline-none focus:ring-2 focus:ring-[#5945F1]/25 cursor-pointer"
             >
               <option value="Relative Volume ($B)">Relative Volume ($B)</option>
               <option value="Market Cap ($B)">Market Cap ($B)</option>
@@ -352,12 +364,12 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({
           </div>
 
           {/* Color By */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 font-medium">Color by</span>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[13px] text-slate-500 font-medium">Color by</span>
             <select
               value={colorBy}
               onChange={(e) => setColorBy(e.target.value)}
-              className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#8B5CF6]/40 cursor-pointer shadow-2xs"
+              className="w-[190px] bg-white border border-[#d7d3fb] rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 hover:border-[#5945F1] focus:outline-none focus:ring-2 focus:ring-[#5945F1]/25 cursor-pointer"
             >
               <option value="Change 1 Day (%)">Change 1 Day (%)</option>
               <option value="Change 7 Days (%)">Change 7 Days (%)</option>
@@ -367,7 +379,19 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({
         </div>
       </div>
 
-      {/* ─── Heatmap Multi-Section Responsive Layout (Exact match to Frame 427322387 (1).png) ─── */}
+      {state !== 'default' ? (
+        <div className="flex min-h-[560px] flex-col items-center justify-center px-6 text-center">
+          <img src={state === 'error' ? HM_ERROR : HM_NOT_FOUND} alt="" className={state === 'error' ? 'w-[270px] h-auto' : 'w-[200px] h-auto'} />
+          <p className="mt-6 font-display text-[34px] font-bold text-[#c026d3]">
+            {state === 'error' ? 'Well, that didn’t load' : 'Data not found'}
+          </p>
+          <p className="mt-2 text-sm text-slate-500">
+            {state === 'error'
+              ? 'It’s not you, it’s us. Try refreshing again in a bit.'
+              : 'No instruments match these filters. Try loosening them up a bit.'}
+          </p>
+        </div>
+      ) : (
       <div className="space-y-3 select-none">
         {/* SECTION 1: Top Block */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-12 gap-3">
@@ -707,8 +731,61 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({
               </div>
             </motion.div>
           ))}
+
+          {/* Everything that did not fit, as in the design */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowRemaining((v) => !v)}
+              aria-expanded={showRemaining}
+              className="w-full h-full min-h-[76px] rounded-2xl border border-dashed border-[#c9c4fb] bg-[repeating-linear-gradient(45deg,#f6f5ff_0_6px,#ffffff_6px_12px)] flex flex-col items-center justify-center transition hover:border-[#5945F1]"
+            >
+              <span className="text-[15px] font-bold text-slate-900">{remainingCount} More</span>
+              <span className="text-xs text-slate-500">{remainingValue}</span>
+            </button>
+
+            {showRemaining && (
+              <div className="absolute bottom-[calc(100%+10px)] left-1/2 z-20 w-[300px] -translate-x-1/2 rounded-2xl border border-[#e4e0fa] bg-white p-4 shadow-2xl">
+                <p className="text-[15px] font-bold text-slate-900">Remaining assets</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">Tile size and color use the selected market fields</p>
+                <div className="mt-3 flex items-center gap-2 rounded-lg border border-[#e4e0fa] px-3 py-2">
+                  <Search className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                  <input
+                    value={remainingQuery}
+                    onChange={(e) => setRemainingQuery(e.target.value)}
+                    placeholder="Search..."
+                    aria-label="Search the remaining assets"
+                    className="w-full min-w-0 bg-transparent text-[14px] outline-none placeholder:text-slate-400"
+                  />
+                </div>
+                <ul className="mt-3 max-h-[180px] space-y-2.5 overflow-y-auto pr-1">
+                  {REMAINING_ASSETS.filter((a) => a.name.toLowerCase().includes(remainingQuery.trim().toLowerCase())).map((a) => (
+                    <li key={a.name} className="flex items-center gap-2 text-[14px]">
+                      <span className="h-4 w-4 shrink-0 rounded-full" style={{ background: a.tint }} aria-hidden />
+                      <span className="flex-1 truncate text-slate-900">{a.name}</span>
+                      <span className={`tabular-nums ${a.change.startsWith('-') ? 'text-[#5945F1]' : 'text-[#5f7a00]'}`}>{a.change}</span>
+                      <span className="w-[62px] text-right tabular-nums text-slate-900">{a.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* SECTION 4: colour scale */}
+        <div className="pt-2">
+          <div className="grid grid-cols-7 gap-2 text-center text-xs text-slate-500">
+            {['-3%', '-2%', '-1%', '0%', '1%', '2%', '3%'].map((t) => <span key={t}>{t}</span>)}
+          </div>
+          <div className="mt-1.5 grid grid-cols-7 gap-2">
+            {['#8b7bf7', '#a99bff', '#cdc6ff', '#eef1f5', '#e4f09a', '#d3ea4e', '#caeb0e'].map((c) => (
+              <span key={c} className="h-2.5 rounded-full" style={{ background: c }} />
+            ))}
+          </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

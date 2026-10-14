@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0] - 2026-10-09
+### Added
+- Heatmap tab rebuilt towards the design: "Size by" and "Color by" sit above their own wider selects, the subtitle reads "Tile size and color update based on your selections below.", a dashed "256 More" tile opens the Remaining assets popup with its own search, and a seven-step colour scale from -3% to 3% runs along the foot.
+- The heatmap carries the same Not found and Error states as the table, driven by the page's preview switch.
+
 ## [1.10.2] - 2026-10-09
 ### Changed
 - Instrument Analysis banner figures follow the design: lime circles for what is rising, violet for what is falling, bigger values, and the Fear & Greed gauge is now a gradient ring with the score inside and the label beneath.
