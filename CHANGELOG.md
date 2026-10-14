@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.1] - 2026-10-09
+### Added
+- The remaining three empty states on the instrument detail page: "The Votes Aren't Showing" on sentiment, "Oops! The Chart Didn't Load" on the overview chart, and "The News Didn't Load, Yet." on the news panel. All four now switch together from the preview control.
+
 ## [1.16.0] - 2026-10-09
 ### Added
 - Empty states for the instrument detail page, from the supplied design: a shared DetailEmptyState panel with the three MarketSyde mascot illustrations, the headline in the brand gradient and a line saying the data is late rather than lost.

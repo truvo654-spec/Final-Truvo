@@ -779,6 +779,9 @@ export function InstrumentDetail({
                 <p>Community perspectives and discussion</p>
               </div>
             </div>
+            {panelState === 'empty' ? (
+              <DetailEmptyState art="votes" title="The Votes Aren’t Showing" lines={['Bullish or bearish? Refresh to find out.']} />
+            ) : (
             <div className="concept-voting">
               <div>
                 <b className="concept-up">↗ {instrument.sentiment}% Bullish</b>
@@ -809,6 +812,7 @@ export function InstrumentDetail({
                   : "Vote once every 7 days to update the community view"}
               </p>
             </div>
+            )}
             <h3 className="concept-eyebrow">PREDICTOR SPOTLIGHT</h3>
             <div className="concept-predictor">
               <span className="concept-avatar">MC</span>
@@ -953,6 +957,7 @@ export function InstrumentDetail({
           {tab === "Overview" && (
             <>
               <Overview
+                panelState={panelState}
                 instrument={instrument}
                 kind={kind}
                 onChart={onChart}
@@ -1160,8 +1165,11 @@ export function InstrumentDetail({
               />
             </div>
 
-            {/* Gated state or News list */}
-            {newsFilter === "Research" && snapshot.level.level < 4 ? (
+            {/* Gated state, news list, or nothing loaded */}
+            {panelState === 'empty' ? (
+              <DetailEmptyState art="alert" title="The News Didn’t Load, Yet." lines={['One quick refresh should bring it back.']} />
+            ) : (
+            <>{newsFilter === "Research" && snapshot.level.level < 4 ? (
               <div className="relative rounded-xl overflow-hidden min-h-[300px]">
                 <div className="space-y-3 filter blur-[4px] opacity-40 pointer-events-none select-none max-h-[320px] overflow-hidden">
                   {taggedNews.slice(0, 3).map((item) => (
@@ -1240,6 +1248,7 @@ export function InstrumentDetail({
                     </article>
                   ))}
               </div>
+            )}</>
             )}
           </div>
         </aside>
@@ -1999,6 +2008,7 @@ function AssetOverviewLayout({
   tierLevel = 1,
   onToast = () => undefined,
   onNews,
+  panelState = 'default',
 }: {
   instrument: Instrument;
   kind: string;
@@ -2006,6 +2016,8 @@ function AssetOverviewLayout({
   tierLevel?: number;
   onToast?: (message: string) => void;
   onNews: () => void;
+  /** 'empty' renders the nothing-loaded states. */
+  panelState?: 'default' | 'empty';
 }) {
   return (
     <div className="asset-overview-grid grid grid-cols-[minmax(0,1fr)_300px] items-start gap-4 max-lg:grid-cols-1">
@@ -2025,6 +2037,7 @@ function AssetOverviewLayout({
           </span>
         </div>
         <Overview
+          panelState={panelState}
           instrument={instrument}
           kind={kind}
           onChart={onChart}
@@ -2706,6 +2719,7 @@ function Overview({
   showLinkedTags = true,
   onShowLinkedTagsChange = () => undefined,
   tabs = null,
+  panelState = 'default',
 }: {
   instrument: Instrument;
   kind: string;
@@ -2717,6 +2731,8 @@ function Overview({
   showLinkedTags?: boolean;
   onShowLinkedTagsChange?: (show: boolean) => void;
   tabs?: ReactNode;
+  /** 'empty' renders the panel's nothing-loaded state instead of the chart. */
+  panelState?: 'default' | 'empty';
 }) {
   const { requestUnlock } = useMarketEngagement();
   const [period, setPeriod] = useState<PerformancePeriod>("1D");
@@ -2814,6 +2830,13 @@ function Overview({
               onUnlock={() => requestUnlock("advancedChart")}
             />
           </div>
+        ) : panelState === 'empty' ? (
+          <DetailEmptyState
+            art="alert"
+            title="Oops! The Chart Didn’t Load"
+            lines={['But the numbers are out there.', 'Refresh to see them.']}
+            tall
+          />
         ) : chartOpen ? (
           <div className="mt-5 min-w-0 overflow-hidden rounded-xl">
             {chartContent}
