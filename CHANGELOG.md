@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.1] - 2026-10-09
+### Removed
+- Three journal files the merge left behind with nothing importing them: JournalRuleSummary, TradeLogSection and tradeLogData.
+
 ## [1.15.0] - 2026-10-09
 ### Added
 - Correlation tab rebuilt to the design: "Adaptive Correlation" with its subtitle, X Axis and Y Axis searches with suggestions, a Sort by dropdown, and a 10 by 10 grid where every cell says how often the two move together.
