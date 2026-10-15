@@ -2902,12 +2902,12 @@ function Overview({
           </div>
         ) : (
           <>
-            <div className="relative mt-5 h-64 overflow-hidden rounded-2xl border border-[#E0E7FF] bg-gradient-to-b from-indigo-50/20 via-white to-slate-50/40">
-              {/* Subtle background dashed grid lines */}
-              <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 opacity-40">
-                <div className="border-b border-dashed border-slate-300 w-full" />
-                <div className="border-b border-dashed border-slate-300 w-full" />
-                <div className="border-b border-dashed border-slate-300 w-full" />
+            <div className="relative mt-4 h-[330px] overflow-hidden rounded-xl bg-white">
+              {/* The dashed guides the design draws across the plot */}
+              <div className="pointer-events-none absolute inset-0 flex flex-col justify-between py-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="w-full border-b border-dashed border-[#cfcbf7]" />
+                ))}
               </div>
               <svg
                 viewBox="0 0 100 100"
@@ -2936,7 +2936,7 @@ function Overview({
                   points={points}
                   fill="none"
                   stroke="#a9cc13"
-                  strokeWidth="2.2"
+                  strokeWidth="2.6"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   vectorEffect="non-scaling-stroke"
@@ -2974,7 +2974,7 @@ function Overview({
                       }}
                       aria-expanded={openLinkedTag === topic}
                       aria-label={`Choose destination for ${instrument.symbol} ${topic}`}
-                      className="grid size-5 place-items-center rounded-full border-2 border-white bg-violet-600 text-[7px] font-bold text-white shadow-md transition hover:scale-125"
+                      className="grid size-[13px] place-items-center rounded-full border-2 border-white bg-[#8aab00] text-[0px] shadow transition hover:scale-125"
                     >
                       {index + 1}
                     </button>
@@ -3030,17 +3030,6 @@ function Overview({
             </div>
           </>
         )}
-        <div className="mt-4 flex justify-end">
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-white px-2.5 py-2 text-[9px] font-medium text-slate-600">
-            <input
-              type="checkbox"
-              checked={showLinkedTags}
-              onChange={(event) => onShowLinkedTagsChange(event.target.checked)}
-              className="accent-violet-600"
-            />
-            Linked tags
-          </label>
-        </div>
       </section>
       <section className="panel p-5">
         <p className="label">Key information</p>

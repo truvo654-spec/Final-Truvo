@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.3] - 2026-10-09
+### Changed
+- The chart follows the brand: four dashed violet guides instead of three grey ones, a taller plot on plain white with no tinted frame, a heavier lime line, and dark-lime dots on the series in place of the numbered violet pins.
+- Removed the "Linked tags" switch under the chart, which the design does not carry.
+
 ## [1.21.2] - 2026-10-09
 ### Changed
 - The chart carries the time axis the design shows beneath it, reading the hours on 1D and the weeks or quarters on the longer periods.
