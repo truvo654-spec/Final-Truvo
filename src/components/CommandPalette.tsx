@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { expandQuery } from './searchKeywords';
 import { InstrumentIcon } from './analysis/InstrumentIcon';
 import { iconTypeFor } from './analysis/instrumentIconType';
 import { brokerMark } from './brokers/brokerMark';
@@ -29,6 +30,8 @@ export interface PaletteItem {
   sub?: string;
   group: string;
   icon: React.ElementType;
+  /** Extra words this row should answer to, beyond its own label. */
+  keywords?: string[];
   /** A broker's name, drawn with its own brand mark instead of the generic icon. */
   broker?: string;
   /** An instrument symbol, drawn with the same mark the analysis pages use. */
@@ -59,17 +62,39 @@ function markMatch(label: string, query: string) {
 }
 
 /** Ranks a candidate: a prefix beats a word start, which beats a loose match. */
-function score(label: string, sub: string | undefined, q: string): number {
-  const l = label.toLowerCase();
-  const s = (sub ?? '').toLowerCase();
-  const n = q.toLowerCase();
-  if (!n) return 0;
-  if (l === n) return 100;
-  if (l.startsWith(n)) return 80;
-  if (l.split(/[\s/]+/).some((w) => w.startsWith(n))) return 60;
-  if (l.includes(n)) return 40;
-  if (s.includes(n)) return 20;
-  return -1;
+/**
+ * How well a row answers the query. Every term has to be satisfied, by the
+ * label, the subtitle, the group, or any keyword the row carries, so a search
+ * for "gold signal" cannot be answered by a gold article alone.
+ */
+function score(item: PaletteItem, q: string): number {
+  const label = item.label.normalize('NFC').toLowerCase();
+  const sub = (item.sub ?? '').normalize('NFC').toLowerCase();
+  const terms = expandQuery(q);
+  if (!terms.length) return 0;
+
+  let total = 0;
+  for (const alternatives of terms) {
+    let best = -1;
+    for (const word of alternatives) {
+      const typed = word === alternatives[0];
+      const keywords = (item.keywords ?? []).map((k) => k.normalize('NFC').toLowerCase());
+      if (label === word) best = Math.max(best, typed ? 100 : 92);
+      // A row that lists the word as its own keyword means it, so it outranks
+      // a headline that merely happens to contain the word.
+      else if (keywords.includes(word)) best = Math.max(best, typed ? 88 : 76);
+      else if (label.startsWith(word)) best = Math.max(best, typed ? 80 : 64);
+      else if (label.split(/[\s/_-]+/).some((w) => w.startsWith(word))) best = Math.max(best, typed ? 60 : 50);
+      else if (keywords.some((k) => k.startsWith(word))) best = Math.max(best, typed ? 52 : 44);
+      else if (word.length > 4 && label.includes(word)) best = Math.max(best, typed ? 40 : 34);
+      // Only count a word found in the subtitle or group when it stands on its
+      // own there; a stray letter run inside an unrelated headline is not a match.
+      else if (sub.split(/[^\p{L}\p{N}]+/u).some((w) => w === word)) best = Math.max(best, typed ? 20 : 16);
+    }
+    if (best < 0) return -1;
+    total += best;
+  }
+  return total / terms.length;
 }
 
 /** The picture at the start of a row: a broker's logo, an instrument's mark, or the generic icon. */
@@ -139,11 +164,19 @@ export const CommandPalette: React.FC<{
   const rows = useMemo(() => {
     const q = query.trim();
     if (!q) return items.filter((i) => i.group === 'Browse' || i.group === 'Jump to').slice(0, 40);
-    return items
-      .map((i) => ({ i, s: score(i.label, i.sub, q) }))
+    const scored = items
+      .map((i) => ({ i, s: score(i, q) }))
       .filter((x) => x.s >= 0)
       .sort((a, b) => b.s - a.s)
-      .slice(0, 24)
+      .slice(0, 24);
+
+    // Rows are rendered under their group heading, so the groups themselves
+    // have to follow the best match inside them; otherwise the closest answer
+    // can sit three headings down.
+    const bestByGroup = new Map<string, number>();
+    scored.forEach(({ i, s }) => bestByGroup.set(i.group, Math.max(bestByGroup.get(i.group) ?? -1, s)));
+    return scored
+      .sort((a, b) => (bestByGroup.get(b.i.group)! - bestByGroup.get(a.i.group)!) || (b.s - a.s))
       .map((x) => x.i);
   }, [items, query]);
 
@@ -308,28 +341,28 @@ export const CommandPalette: React.FC<{
 
 /** The pages the palette can jump to, in the order a trader would look for them. */
 export function navigationItems(go: (tab: string) => void): PaletteItem[] {
-  const page = (id: string, label: string, sub: string, icon: React.ElementType): PaletteItem => ({
-    id: `nav-${id}`, label, sub, group: 'Browse', icon, navigates: true, run: () => go(id),
+  const page = (id: string, label: string, sub: string, icon: React.ElementType, keywords: string[] = []): PaletteItem => ({
+    id: `nav-${id}`, label, sub, group: 'Browse', icon, navigates: true, keywords, run: () => go(id),
   });
   return [
-    page('dashboard', 'Dashboard', 'Your morning, positions and cashback', LayoutGrid),
-    page('signals', 'Trading Signals', 'Open calls and their confidence', LineChart),
-    page('instrument-analysis', 'Instrument Analysis', 'Table, heatmap, scatter and correlation', BarChart3),
-    page('economic-calendar', 'Economic Calendar', 'What is due and what it can move', CalendarDays),
-    page('trading-journal', 'Trading Journal', 'Entries, playbooks, backtest and AI coach', NotebookPen),
-    page('portfolio-tracker', 'Portfolio Tracker', 'Equity, drawdown and goals', Wallet),
-    page('alerts', 'Price Alerts', 'Levels worth being told about', Bell),
-    page('brokers', 'Broker List', 'Spreads, cashback and regulation', Briefcase),
-    page('broker-comparison', 'Broker Comparison', 'Costs side by side', Briefcase),
-    page('promotions', 'Promotions', 'Offers live for your level', Gift),
-    page('cashback-overview', 'Cashback', 'Credited, pending and the rate per lot', Wallet),
-    page('news', 'Market News', 'Today’s stories and the desk’s read', Newspaper),
-    page('education-hub', 'Education Hub', 'Courses and lessons that pay points', BookOpen),
-    page('community', 'Community', 'The floor, articles and your page', Users),
-    page('leaderboard', 'Leaderboard', 'Where you stand this period', Trophy),
-    page('points-credits', 'Points & Credits', 'Level, missions and conversion', Sparkles),
-    page('leverage-calculator', 'Trading Calculator', 'Leverage, margin and position size', Calculator),
-    page('ai-companion', 'AI Companion', 'Ask about brokers, learning and your trades', Sparkles),
-    page('profile', 'Profile', 'Your account and saved work', ChevronRight),
+    page('dashboard', 'Dashboard', 'Your morning, positions and cashback', LayoutGrid, ['home', 'overview', 'morning', 'หน้าแรก']),
+    page('signals', 'Trading Signals', 'Open calls and their confidence', LineChart, ['signal', 'call', 'setup', 'สัญญาณ']),
+    page('instrument-analysis', 'Instrument Analysis', 'Table, heatmap, scatter and correlation', BarChart3, ['chart', 'heatmap', 'scatter', 'correlation', 'กราฟ', 'วิเคราะห์']),
+    page('economic-calendar', 'Economic Calendar', 'What is due and what it can move', CalendarDays, ['calendar', 'events', 'release', 'ปฏิทิน', 'ข่าวเศรษฐกิจ']),
+    page('trading-journal', 'Trading Journal', 'Entries, playbooks, backtest and AI coach', NotebookPen, ['journal', 'diary', 'log', 'backtest', 'บันทึก']),
+    page('portfolio-tracker', 'Portfolio Tracker', 'Equity, drawdown and goals', Wallet, ['portfolio', 'equity', 'positions', 'พอร์ต']),
+    page('alerts', 'Price Alerts', 'Levels worth being told about', Bell, ['alert', 'notification', 'แจ้งเตือน']),
+    page('brokers', 'Broker List', 'Spreads, cashback and regulation', Briefcase, ['broker', 'spread', 'cashback', 'โบรกเกอร์']),
+    page('broker-comparison', 'Broker Comparison', 'Costs side by side', Briefcase, ['compare', 'comparison', 'เปรียบเทียบ', 'broker']),
+    page('promotions', 'Promotions', 'Offers live for your level', Gift, ['promotion', 'offer', 'bonus', 'deal', 'โปรโมชั่น', 'โบนัส']),
+    page('cashback-overview', 'Cashback', 'Credited, pending and the rate per lot', Wallet, ['cashback', 'rebate', 'เงินคืน', 'แคชแบ็ก', 'payout']),
+    page('news', 'Market News', 'Today’s stories and the desk’s read', Newspaper, ['news', 'headline', 'ข่าว']),
+    page('education-hub', 'Education Hub', 'Courses and lessons that pay points', BookOpen, ['course', 'lesson', 'learn', 'academy', 'คอร์ส', 'เรียน']),
+    page('community', 'Community', 'The floor, articles and your page', Users, ['community', 'forum', 'post', 'ชุมชน']),
+    page('leaderboard', 'Leaderboard', 'Where you stand this period', Trophy, ['leaderboard', 'ranking', 'rank', 'อันดับ']),
+    page('points-credits', 'Points & Credits', 'Level, missions and conversion', Sparkles, ['points', 'credits', 'level', 'mission', 'แต้ม', 'เครดิต', 'เลเวล']),
+    page('leverage-calculator', 'Trading Calculator', 'Leverage, margin and position size', Calculator, ['calculator', 'leverage', 'margin', 'lot', 'คำนวณ']),
+    page('ai-companion', 'AI Companion', 'Ask about brokers, learning and your trades', Sparkles, ['ai', 'assistant', 'companion', 'ผู้ช่วย']),
+    page('profile', 'Profile', 'Your account and saved work', ChevronRight, ['profile', 'account', 'settings', 'บัญชี', 'ตั้งค่า']),
   ];
 }

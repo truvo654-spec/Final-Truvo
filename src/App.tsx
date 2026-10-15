@@ -585,6 +585,7 @@ export default function App() {
       group: 'Signals',
       icon: LineChartIcon,
       instrument: sig.ticker,
+      keywords: [sig.ticker, sig.action, sig.assetClass, sig.timeframe, 'signal', 'call', 'setup'],
       meta: `${sig.change24h > 0 ? '+' : ''}${sig.change24h}%`,
       run: () => { setSelectedSignal(sig); setActiveTab('signal-detail'); },
     }));
@@ -595,6 +596,7 @@ export default function App() {
       group: 'Brokers',
       icon: BriefcaseIcon,
       broker: b.name,
+      keywords: [b.name, b.category, 'broker', 'cashback', 'rebate', 'spread', ...(b.platforms ?? []), ...(b.regulations ?? [])],
       run: () => { setSelectedBrokerForDetail(b); setActiveTab('broker-detail'); },
     }));
 
@@ -605,6 +607,7 @@ export default function App() {
       sub: `${a.source} · ${a.assetClass}`,
       group: 'News',
       icon: NewspaperIcon,
+      keywords: [a.source, a.assetClass, 'news', 'article', ...(a.tags ?? [])],
       run: () => { setSelectedNewsArticle(a); setActiveTab('news-detail'); },
     }));
     COURSES.slice(0, 40).forEach((c) => out.push({
@@ -613,6 +616,7 @@ export default function App() {
       sub: `${c.category} · ${c.level}`,
       group: 'Education',
       icon: BookOpenIcon,
+      keywords: [c.category, c.level, 'course', 'lesson', 'education', 'learn'],
       run: () => setActiveTab('education-hub'),
     }));
     PROMOTIONS.slice(0, 40).forEach((pr) => out.push({
@@ -621,6 +625,7 @@ export default function App() {
       sub: `${pr.brokerName ?? 'MarketSyde'} · ${pr.kind}`,
       group: 'Promotions',
       icon: GiftIcon,
+      keywords: [pr.brokerName ?? '', pr.kind, pr.type, 'promotion', 'offer', 'bonus', 'deal'],
       broker: pr.brokerName,
       run: () => { setPromotionDetailId(pr.id); setActiveTab('promotions'); },
     }));
@@ -630,6 +635,7 @@ export default function App() {
       sub: `Community article · ${a.publisher?.name ?? 'MarketSyde'}`,
       group: 'Community',
       icon: UsersIcon,
+      keywords: ['community', 'article', 'post', a.tickerBadge ?? ''],
       run: () => setActiveTab('community'),
     }));
     EXPERT_ADVISORS.slice(0, 30).forEach((ea) => out.push({
@@ -638,6 +644,7 @@ export default function App() {
       sub: `${ea.strategy} · ${ea.platform} · ${ea.risk} risk`,
       group: 'Expert Advisors',
       icon: BotIcon,
+      keywords: [ea.strategy, ea.platform, ea.risk, 'ea', 'expert advisor', 'bot', 'robot', ...(ea.pairs ?? [])],
       run: () => setActiveTab('expert-advisors'),
     }));
     DEFAULT_PLAYBOOKS.slice(0, 20).forEach((pb) => out.push({
@@ -646,6 +653,7 @@ export default function App() {
       sub: 'Journal playbook',
       group: 'Journal',
       icon: NotebookIcon,
+      keywords: ['playbook', 'strategy', 'journal', 'rules'],
       run: () => setActiveTab('trading-journal'),
     }));
     missions.slice(0, 20).forEach((m) => out.push({
@@ -654,6 +662,7 @@ export default function App() {
       sub: `Mission · +${m.rewardPoints} pts · +${m.rewardCredits} credits`,
       group: 'Missions',
       icon: SparklesIcon,
+      keywords: ['mission', 'quest', 'task', 'reward', 'points', 'credits'],
       run: () => setActiveTab('points-credits'),
     }));
     return out;

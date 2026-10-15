@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.37.0] - 2026-10-09
+### Added
+- Search matches meaning rather than letters. searchKeywords.ts maps about eighty words people actually type, in Thai and English, onto the words the app uses: gold and ทอง reach XAU, เงินคืน and rebate reach cashback, แต้ม reaches points, บอท reaches the expert advisors. Every indexed row carries its own keywords too, and a query of several words has to satisfy all of them.
+### Fixed
+- Thai queries matched nothing because the cleaner stripped vowels and tone marks, which Unicode calls marks rather than letters: แต้ม became แตม. Marks are kept now.
+- Groups are ordered by their best match, so the closest answer is not three headings down.
+
 ## [1.36.0] - 2026-10-09
 ### Changed
 - Market Data reads in the design's order: the price and where it opened, then the volume and the move, then the day's range against the size of the market, with the supporting figures below.
