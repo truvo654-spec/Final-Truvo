@@ -9,9 +9,9 @@ export interface TabMainItem<T extends string = string> {
 }
 
 export interface TabMainProps<T extends string = string> {
-  tabs: TabMainItem<T>[];
+  tabs: TabMainItem<NoInfer<T>>[];
   activeTab: T;
-  onChange: (tabId: T) => void;
+  onChange: (tabId: NoInfer<T>) => void;
   className?: string;
   /**
    * If true (default), the count badge is displayed on the active tab (matching the reference design).

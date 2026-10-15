@@ -8,9 +8,9 @@ export interface FolderTabItem<T extends string = string> {
 }
 
 interface FolderTabsProps<T extends string = string> {
-  tabs: FolderTabItem<T>[];
+  tabs: FolderTabItem<NoInfer<T>>[];
   activeTab: T;
-  onChange: (tabId: T) => void;
+  onChange: (tabId: NoInfer<T>) => void;
   className?: string;
 }
 

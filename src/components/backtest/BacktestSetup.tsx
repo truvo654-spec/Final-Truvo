@@ -103,11 +103,11 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
     if (!book || !settings) return [];
     const bookEntries = entries.filter((e) => e.strategy === book.name);
     const journalEntries = bookEntries.filter((e) => resolveSymbol(e.symbol) === settings.symbol);
-    const list = journalEntries.filter(eligible);
+    const list = journalEntries.filter((e) => eligible(e));
     const shared = metrics(list);
     const m = { trades: shared.n, winRate: (shared.winRate ?? 0) / 100, avgR: shared.avgR, pf: shared.pf };
     const counts = new Map<string, number>();
-    bookEntries.filter(eligible).forEach((e) => counts.set(e.symbol, (counts.get(e.symbol) || 0) + 1));
+    bookEntries.filter((e) => eligible(e)).forEach((e) => counts.set(e.symbol, (counts.get(e.symbol) || 0) + 1));
     const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];
     return [{ book, settings, journalEntries, live: { m, top: top ? { symbol: top[0], n: top[1] } : null } }];
   }), [selectedPlaybookIds, choosable, settingsByPlaybook, s, entries]);

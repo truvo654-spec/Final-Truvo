@@ -12,7 +12,7 @@ interface Props {
 export const JournalTradeBenchmark: React.FC<Props> = ({ entries, onClear }) => {
   const summaries = useMemo(() => {
     const byCurrency = new Map<string, JournalEntry[]>();
-    entries.filter(eligible).forEach((entry) => {
+    entries.filter((e) => eligible(e)).forEach((entry) => {
       const currency = currencyOf(entry);
       byCurrency.set(currency, [...(byCurrency.get(currency) ?? []), entry]);
     });

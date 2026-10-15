@@ -14,10 +14,10 @@ export interface TabSubmainItem<T extends string = string> {
 }
 
 export interface TabSubmainProps<T extends string = string> {
-  tabs: TabSubmainItem<T>[];
+  tabs: TabSubmainItem<NoInfer<T>>[];
   activeTab: T;
-  onChange: (tabId: T) => void;
-  onLockedTabClick?: (tab: TabSubmainItem<T>) => void;
+  onChange: (tabId: NoInfer<T>) => void;
+  onLockedTabClick?: (tab: TabSubmainItem<NoInfer<T>>) => void;
   prefixLabel?: string;
   rightContent?: React.ReactNode;
   className?: string;

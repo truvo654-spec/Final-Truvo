@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.40.0] - 2026-10-09
+### Fixed
+- Thirteen of the thirty type errors, all from one mistake repeated across the tab components. A handler like setState offers SetStateAction<T>, which is not a string, so when onChange was allowed to decide the generic it fell back to string and every narrow setter stopped fitting. Only the value decides it now, in Segmented, TabMain, TabSubmain and FolderTabs.
+- .filter(eligible) passed the array index in as the accounting basis, which is not one. The predicate is called with the entry alone.
+
 ## [1.39.1] - 2026-10-09
 ### Changed
 - The backtest segmented control sits on the brand border rather than a grey one.

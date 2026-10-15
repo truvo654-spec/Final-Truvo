@@ -25,7 +25,7 @@ export const Hint: React.FC<{ text: string; children: React.ReactNode; className
 );
 
 export function Segmented<T extends string>({ options, value, onChange, label, size = 'md', disabled = {} }: {
-  options: { id: T; label: React.ReactNode; title?: string }[]; value: T; onChange: (v: T) => void; label: string; size?: 'sm' | 'md'; disabled?: Partial<Record<T, string>>;
+  options: { id: string; label: React.ReactNode; title?: string }[]; value: T; onChange: (v: NoInfer<T>) => void; label: string; size?: 'sm' | 'md'; disabled?: Record<string, string | undefined>;
 }) {
   return (
     <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap rounded-lg border border-[#CCC6FB] bg-white p-0.5 gap-0.5">
@@ -34,7 +34,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, s
         const on = value === o.id;
         return (
           <button key={o.id} type="button" role="radio" aria-checked={on} disabled={!!off} title={off || o.title}
-            onClick={() => onChange(o.id)}
+            onClick={() => onChange(o.id as T)}
             className={`${size === 'sm' ? 'h-7 px-2.5 text-[11px]' : 'h-8 px-3 text-xs'} rounded-md font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec] ${on ? 'bg-[#5338ec] text-white' : off ? 'text-slate-300 cursor-not-allowed' : 'text-[#474556] hover:bg-slate-50'}`}>
             {o.label}
           </button>
