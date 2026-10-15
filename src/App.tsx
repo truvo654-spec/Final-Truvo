@@ -1424,6 +1424,10 @@ export default function App() {
             }}
             onNavigateToBrokers={() => setActiveTab('brokers')}
             onNavigateToComparison={() => setActiveTab('broker-comparison')}
+            onGoToAsset={(ticker) => {
+              setSelectedInstrumentSymbol(ticker);
+              setActiveTab('instrument-analysis');
+            }}
             onShowToast={showToast}
           />
         )}

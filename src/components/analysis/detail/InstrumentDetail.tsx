@@ -1,4 +1,5 @@
 import "./market.css";
+import { priceAlertNotification, raiseNotification } from '../../notifications/notificationStore';
 import { brokerMark } from '../../brokers/brokerMark';
 import { LockableSelect } from '../../common/LockableSelect';
 import { SegmentedTabs } from '../../common/SegmentedTabs';
@@ -714,6 +715,13 @@ export function InstrumentDetail({
         onClose={() => setAlertOpen(false)}
         onCreate={(alert) => {
           setSavedAlert(alert);
+          raiseNotification(priceAlertNotification({
+            name: instrumentTitle,
+            condition: alert.condition,
+            indicator: ['Price Crosses Above', 'Price Crosses Below'].includes(alert.condition) ? alert.indicator : undefined,
+            period: alert.period,
+            deviation: alert.deviation,
+          }));
           try { window.localStorage.setItem(`marketsyde_alert_${instrument.symbol}`, JSON.stringify(alert)); } catch { /* storage can be blocked */ }
           setBanner(savedAlert ? 'Price Alert Updated' : 'Price Alert Created');
           window.setTimeout(() => setBanner(null), 4000);

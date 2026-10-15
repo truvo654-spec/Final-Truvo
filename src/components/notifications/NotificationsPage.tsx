@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { readRaised } from './notificationStore';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   CheckCheck,
@@ -251,7 +252,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const [sourceFilter, setSourceFilter] = useState<'all' | 'cashback' | 'connect'>('all');
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
 
-  const [activities, setActivities] = useState<NotificationItem[]>(INITIAL_ACTIVITIES);
+  const [activities, setActivities] = useState<NotificationItem[]>(() => [...readRaised(), ...INITIAL_ACTIVITIES]);
   const [announcements, setAnnouncements] = useState<NotificationItem[]>(INITIAL_ANNOUNCEMENTS);
 
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);

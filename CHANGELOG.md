@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.0] - 2026-10-09
+### Added
+- Setting a price alert raises a notification, so the alert is somewhere the person will see it rather than only on the instrument page. It reads "Bitcoin has entered the range of your price alert notification", carries the indicator and its parameters where there is one, and opens with Go to Instrument Analysis. Raised notifications survive a reload and sit above the seeded ones.
+- A "Go to Asset" button on the signal detail page, which opens the instrument analysis for that signal's ticker. Added to the markup and wired, but not yet seen running: the test could not reach that page, so it needs a look in the browser.
+
 ## [1.45.0] - 2026-10-09
 ### Changed
 - The price alert offers exactly what the design lists: eight conditions from Price Reaches through Price Enters a Range, four indicators, and the advanced filters as Once / Every Crossing / Every 30 Minutes / Daily Summary, 24 Hours / 7 Days / 30 Days / Never, and Push Notification / In-App Inbox / Email.

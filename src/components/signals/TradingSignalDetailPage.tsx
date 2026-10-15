@@ -31,6 +31,8 @@ interface TradingSignalDetailPageProps {
   onNavigateToBrokers?: () => void;
   onNavigateToComparison?: () => void;
   onShowToast: (msg: string) => void;
+  /** Opens the instrument analysis page for this signal's ticker. */
+  onGoToAsset?: (ticker: string) => void;
 }
 
 // Sample Candlestick Candle structure
@@ -54,6 +56,7 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
   onNavigateToBrokers,
   onNavigateToComparison,
   onShowToast,
+  onGoToAsset,
 }) => {
   // Fallback to EUR/JPY if no signal or incoming matches screenshot
   const activeSignal: MarketSignal = useMemo(() => {
@@ -535,6 +538,17 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
             <p className="text-[11px] sm:text-xs text-slate-400 font-normal">
               {activeSignal.timestamp || 'As of May 27, 2026 09:45 GMT+7'}
             </p>
+
+            {/* The instrument behind the signal, for anyone who wants the full picture */}
+            {onGoToAsset && (
+              <button
+                type="button"
+                onClick={() => onGoToAsset(activeSignal.ticker)}
+                className="mt-3 rounded-xl border border-[#CCC6FB] px-4 py-2 text-[13.5px] font-medium text-slate-900 transition hover:border-[#5945F1] hover:text-[#5945F1]"
+              >
+                Go to Asset
+              </button>
+            )}
           </div>
 
           {/* Center 2x2 Core Metrics Grid (Exact match to screenshot) */}
