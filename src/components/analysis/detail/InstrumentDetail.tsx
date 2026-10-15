@@ -808,57 +808,82 @@ export function InstrumentDetail({
           aria-label={`${instrument.name} Community`}
         >
           <div className="concept-community concept-card">
-            <div className="concept-section-title">
-              <Users size={20} />
-              <div>
-                <h2>{instrument.name} Community</h2>
-                <p>Community perspectives and discussion</p>
-              </div>
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-[19px] font-bold text-[#5945F1]">
+                Community<span className="text-[#c026d3]">.</span>
+              </h2>
+              <button
+                type="button"
+                onClick={() => onToast('Opening the community floor')}
+                data-keep-button-icons
+                className="flex items-center gap-1.5 text-[13px] font-medium text-slate-500 transition hover:text-[#5945F1]"
+              >
+                View All <ArrowRight size={14} />
+              </button>
             </div>
+            <h3 className="mt-3 font-display text-[16px] font-bold text-slate-900">Sentiment</h3>
             {panelState === 'empty' ? (
               <DetailEmptyState art="votes" title="The Votes Aren’t Showing" lines={['Bullish or bearish? Refresh to find out.']} />
             ) : (
-            <div className="concept-voting">
-              <div>
-                <b className="concept-up">↗ {instrument.sentiment}% Bullish</b>
-                <b className="concept-down">
-                  {100 - instrument.sentiment}% Bearish ↘
-                </b>
+            <div className="mt-2">
+              <p className="text-[12.5px] text-slate-500">Based on 12.4k community votes &middot; Resets in 6h</p>
+
+              <div className="mt-3 flex items-end justify-between">
+                <span className="flex items-center gap-2">
+                  <span className="text-[18px]" aria-hidden>🐂</span>
+                  <span>
+                    <b className="block font-display text-[17px] font-bold text-[#5f7a00]">{instrument.sentiment}%</b>
+                    <span className="block text-[12.5px] text-slate-500">Bullish</span>
+                  </span>
+                </span>
+                <span className="flex items-center gap-2 text-right">
+                  <span>
+                    <b className="block font-display text-[17px] font-bold text-[#5945F1]">{100 - instrument.sentiment}%</b>
+                    <span className="block text-[12.5px] text-slate-500">Bearish</span>
+                  </span>
+                  <span className="text-[18px]" aria-hidden>🐻</span>
+                </span>
               </div>
-              <div className="concept-sentiment-bar">
-                <i style={{ width: `${instrument.sentiment}%` }} />
+
+              <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-[#5945F1]">
+                <span className="bg-[#caeb0e]" style={{ width: `${instrument.sentiment}%` }} aria-hidden />
               </div>
-              <div>
-                {["Bullish", "Bearish"].map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    aria-pressed={weeklyVote?.side === item}
-                    disabled={Boolean(weeklyVote)}
-                    title={weeklyVote ? "You can vote again in 7 days" : undefined}
-                    onClick={() => recordVote(item as VoteSide)}
-                  >
-                    {weeklyVote?.side === item ? "✓ " : ""}Vote {item}
-                  </button>
-                ))}
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {(['Bullish', 'Bearish'] as const).map((side) => {
+                  const picked = weeklyVote?.side === side;
+                  const bullish = side === 'Bullish';
+                  return (
+                    <button
+                      key={side}
+                      type="button"
+                      aria-pressed={picked}
+                      disabled={Boolean(weeklyVote)}
+                      onClick={() => recordVote(side as VoteSide)}
+                      className={`rounded-xl px-3 py-2 text-[13.5px] font-bold transition ${
+                        picked
+                          ? bullish ? 'bg-[#caeb0e] text-[#2f3d00]' : 'bg-[#ece9ff] text-[#5945F1]'
+                          : bullish
+                            ? 'border border-[#caeb0e] bg-[#f6fae2] text-[#4a5f00] hover:bg-[#eef6c4]'
+                            : 'border border-[#d7d3fb] bg-white text-[#5945F1] hover:bg-[#f7f6ff]'
+                      } ${weeklyVote && !picked ? 'opacity-50' : ''}`}
+                    >
+                      {picked ? `↗ ${side} Voted` : bullish ? '↗ Vote Bullish' : '↘ Vote Bearish'}
+                    </button>
+                  );
+                })}
               </div>
-              <p className="concept-vote-status">
-                {weeklyVote
-                  ? `Your ${weeklyVote.side.toLowerCase()} vote is counted · next vote in 7 days`
-                  : "Vote once every 7 days to update the community view"}
+
+              <p className="mt-2.5 text-[12.5px] text-slate-500">
+                {weeklyVote ? 'Your vote is counted. You can vote again tomorrow.' : 'Vote once a day to get 50 credits'}
               </p>
             </div>
             )}
-            <h3 className="concept-eyebrow">PREDICTOR SPOTLIGHT</h3>
-            <div className="concept-predictor">
-              <span className="concept-avatar">MC</span>
-              <div>
-                <b>Maya Chen</b>
-                <p>Momentum analyst</p>
-              </div>
-              <strong>
-                82%<small>accuracy · demo</small>
-              </strong>
+            <p className="mt-4 text-[13px] text-slate-500">Most Accurate Predictor</p>
+            <div className="mt-2 flex items-center gap-3 rounded-xl border border-[#e4e0fa] p-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ec4899] text-[13px] font-bold text-white">M</span>
+              <b className="min-w-0 flex-1 truncate text-[14px] font-bold text-slate-900">Maya Chen</b>
+              <span className="shrink-0 text-[13px] text-slate-500">82% Accuracy</span>
             </div>
             <button
               className="concept-outline"

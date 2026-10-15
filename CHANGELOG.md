@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.0] - 2026-10-09
+### Changed
+- The community sidebar on the instrument detail page follows the design: the "Community." heading with View All, the sentiment split read as a bull and a bear with their percentages, a single lime-to-violet bar, Vote Bullish and Vote Bearish as a pair of buttons with the credit line beneath, and the most accurate predictor as a compact row.
+
 ## [1.19.0] - 2026-10-09
 ### Added
 - Search now reaches the whole app, not just pages, signals and brokers. News headlines, education courses, promotions, community articles, expert advisors, journal playbooks and missions are all indexed, each in its own group and each opening the thing it names.
