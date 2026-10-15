@@ -1108,30 +1108,30 @@ export function InstrumentDetail({
                 {
                   symbol: "EUR/USD",
                   mark: "EU",
-                  markClass: "bg-blue-600 text-white",
+                  markClass: "bg-[#003399] text-white",
                   change: "+0.33%",
                   action: "Buy",
-                  actionClass: "bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100",
+                  actionClass: "bg-[#caeb0e] text-[#2f3d00] hover:brightness-95",
                   chart: "M2 10 C14 8 16 16 25 12 S37 10 43 15 S53 8 61 12 S74 15 82 8 S92 11 98 6",
-                  chartClass: "text-emerald-500",
+                  chartClass: "text-[#a9cc13]",
                 },
                 {
                   symbol: "GOOGL",
                   mark: "G",
-                  markClass: "bg-blue-100 text-blue-700",
+                  markClass: "bg-white border border-slate-200 text-[#4285F4]",
                   change: "-0.11%",
                   action: "Sell",
-                  actionClass: "bg-rose-50 text-rose-700 border border-rose-200/80 hover:bg-rose-100",
+                  actionClass: "bg-[#5945F1] text-white hover:bg-[#4a38d6]",
                   chart: "M2 7 C12 12 17 5 26 10 S39 18 48 12 S58 14 67 8 S79 13 88 6 S94 7 98 4",
-                  chartClass: "text-rose-500",
+                  chartClass: "text-[#5945F1]",
                 },
                 {
                   symbol: "BTC/USD",
                   mark: "₿",
-                  markClass: "bg-amber-500 text-white",
+                  markClass: "bg-[#f7931a] text-white",
                   change: "Premium Signal",
                   action: "Upgrade",
-                  actionClass: "border border-indigo-200 bg-indigo-50 text-[#5945F1] hover:bg-indigo-100",
+                  actionClass: "border-2 border-[#ec4899] bg-white text-[#ec4899] hover:bg-[#fdf2f8]",
                   chart: "M2 11 C13 6 18 15 27 10 S40 13 48 8 S61 14 70 9 S82 14 91 7 S96 9 98 5",
                   chartClass: "text-[#5945F1]",
                   premium: true,
@@ -1139,43 +1139,43 @@ export function InstrumentDetail({
                 {
                   symbol: "S&P 500",
                   mark: "500",
-                  markClass: "bg-rose-600 text-white",
+                  markClass: "bg-[#e11d48] text-white",
                   change: "+0.44%",
                   action: "Buy",
-                  actionClass: "bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100",
+                  actionClass: "bg-[#caeb0e] text-[#2f3d00] hover:brightness-95",
                   chart: "M2 12 C13 10 16 6 24 11 S38 13 46 8 S59 15 67 10 S78 14 86 7 S94 10 98 4",
-                  chartClass: "text-emerald-500",
+                  chartClass: "text-[#a9cc13]",
                 },
                 {
                   symbol: "XAU/USD",
                   mark: "Au",
-                  markClass: "bg-amber-500 text-white",
+                  markClass: "bg-[#f7931a] text-white",
                   change: "+0.24%",
                   action: "Buy",
-                  actionClass: "bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-100",
+                  actionClass: "bg-[#caeb0e] text-[#2f3d00] hover:brightness-95",
                   chart: "M2 13 C12 8 20 16 29 11 S39 12 48 7 S62 14 70 10 S83 13 91 6 S96 8 98 4",
-                  chartClass: "text-emerald-500",
+                  chartClass: "text-[#a9cc13]",
                 },
               ].map((signal) => (
-                <div key={signal.symbol} className="flex items-center justify-between gap-2 py-2.5">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className={`grid size-7 shrink-0 place-items-center rounded-xl text-[10px] font-bold ${signal.markClass}`}>
+                <div key={signal.symbol} className="flex items-center justify-between gap-2 py-3">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <span className={`grid size-9 shrink-0 place-items-center rounded-full text-[11px] font-bold ${signal.markClass}`}>
                       {signal.mark}
                     </span>
                     <div className="min-w-0">
-                      <b className="block text-xs font-bold text-slate-800 truncate">{signal.symbol}</b>
-                      <span className={`block text-[10px] font-semibold ${signal.premium ? "text-[#5945F1]" : signal.change.startsWith("-") ? "text-rose-600" : "text-emerald-600"}`}>
-                        {signal.premium && "◇ "}{signal.change}
+                      <b className="block whitespace-nowrap text-[13.5px] font-bold text-slate-900">{signal.symbol}</b>
+                      <span className={`block whitespace-nowrap text-[12.5px] font-bold ${signal.premium ? "text-[#ec4899]" : signal.change.startsWith("-") ? "text-[#5945F1]" : "text-[#5f7a00]"}`}>
+                        {signal.premium ? "\u25C7 Premium Signal" : signal.change}
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <svg viewBox="0 0 100 24" className={`h-4 w-11 shrink-0 ${signal.chartClass}`} aria-hidden="true">
+                    <svg viewBox="0 0 100 24" className={`h-5 w-[58px] shrink-0 ${signal.chartClass}`} aria-hidden="true">
                       <path d={signal.chart} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
                     </svg>
                     <a
                       href={signal.premium ? "/?view=points-credits" : `/?view=instrument&symbol=${encodeURIComponent(signal.symbol)}`}
-                      className={`inline-flex min-w-[54px] items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors ${signal.actionClass}`}
+                      className={`inline-flex min-w-[62px] items-center justify-center rounded-lg px-3 py-1.5 text-[12.5px] font-bold transition ${signal.actionClass}`}
                     >
                       {signal.action}
                     </a>
@@ -1192,7 +1192,7 @@ export function InstrumentDetail({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold font-display text-slate-900 flex items-center gap-1.5">
-                  <span>{instrument.market === "Crypto" ? "Today's" : "Market"}</span>
+                  <span>Today&rsquo;s</span>
                   <span className="text-[#5945F1]">{instrument.market === "Crypto" ? "Crypto" : "News"}</span>
                 </h3>
                 <p className="text-[11px] text-slate-400">Market intelligence for {instrument.symbol}</p>

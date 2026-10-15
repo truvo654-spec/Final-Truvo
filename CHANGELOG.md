@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.2] - 2026-10-09
+### Changed
+- The Most Recent Signals panel matches the design: round brand marks, the symbol and its move in the brand's lime and violet, a wider trend line, and the action as a solid lime Buy, a violet Sell or a pink-outlined Upgrade.
+
 ## [1.20.1] - 2026-10-09
 ### Changed
 - The community posts on the instrument detail page match the design: a "Community Post" box with the credit line, Popular and Most Recent tabs, and each post showing the author, the price at the time, a bullish or bearish tag, and the agree and disagree counts as buttons.
