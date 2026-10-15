@@ -43,6 +43,8 @@ interface CashbackOverviewPageProps {
   onSelectSignal: (signal: MarketSignal) => void;
   onBackToDashboard?: () => void;
   onNavigateToConnectBroker?: (broker?: Broker) => void;
+  /** Runs the demo trade that credits cashback. */
+  onSimulateTradeCashback?: () => void;
 }
 
 export const CashbackOverviewPage: React.FC<CashbackOverviewPageProps> = ({

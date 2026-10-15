@@ -68,14 +68,14 @@ export const PillTabs = <T extends string>({
   onLockedClick,
   dark = false,
 }: {
-  options: { id: T; label: string }[];
+  options: { id: NoInfer<T>; label: string }[];
   value: T;
-  onChange: (v: T) => void;
-  locked?: T[];
+  onChange: (v: NoInfer<T>) => void;
+  locked?: NoInfer<T>[];
   onLockedClick?: () => void;
   dark?: boolean;
 }) => (
-  <div className={`inline-flex items-center gap-1 rounded-full p-1 ${dark ? 'bg-white/10' : 'bg-[#f1f5f9]'}`}>
+  <div className={`inline-flex items-center gap-1 rounded-full p-1 ${dark ? 'bg-white/10' : 'bg-[#f1f2f6]'}`}>
     {options.map((o) => {
       const isLocked = locked.includes(o.id);
       const active = value === o.id;

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { JournalEntry } from '../../types';
 import { currencyOf, eligible, metrics } from '../journal/journalMath';
+import type { Currency } from '../../backtest/types';
 import { money, pct, rr } from '../../backtest/format';
 import { btnSecondary } from './ui';
 
@@ -11,7 +12,7 @@ interface Props {
 
 export const JournalTradeBenchmark: React.FC<Props> = ({ entries, onClear }) => {
   const summaries = useMemo(() => {
-    const byCurrency = new Map<string, JournalEntry[]>();
+    const byCurrency = new Map<Currency, JournalEntry[]>();
     entries.filter((e) => eligible(e)).forEach((entry) => {
       const currency = currencyOf(entry);
       byCurrency.set(currency, [...(byCurrency.get(currency) ?? []), entry]);

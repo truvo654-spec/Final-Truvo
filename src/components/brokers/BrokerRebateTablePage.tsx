@@ -7,6 +7,8 @@ interface BrokerRebateTablePageProps {
   user: UserProfile;
   onBack: () => void;
   onShowToast?: (msg: string) => void;
+  /** Opens the connect flow for a broker chosen from the table. */
+  onConnectBroker?: (broker: Broker) => void;
 }
 
 type LevelCategory = 'Beginner' | 'Intermediate' | 'Pro' | 'Expert';

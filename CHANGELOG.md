@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.43.0] - 2026-10-09
+### Fixed
+- The last type errors, and the app now checks clean. Among the real bugs they were hiding: the demo centre read user.sydePoints, which does not exist, so it showed nothing where the points should be; a calculator category was written 'trade-planning' when the only planning category is 'planning'; the fallback broker on the active accounts page used field names the Broker type stopped carrying; the journal summary card was re-added after the merge without four of its props; and a dashboard call-to-action was handed a function that needed a broker name it was never given.
+- Two more components had the generic trap: PillTabs and SelectBox. Only the value decides the type in those too.
+- An SVG carried a title attribute rather than a title child, so the tooltip never appeared on the cumulative chart.
+
 ## [1.42.0] - 2026-10-09
 ### Changed
 - The brokers list is the design's cards rather than a table: each broker has its own card with its brand mark, its name and the way in at the top, then Product, Spread and Minimum underneath. A standing offer runs as a violet banner inside the card with its own Claim Offer, the product is a dropdown, and the real partners appear under their own names.

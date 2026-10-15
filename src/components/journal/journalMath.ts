@@ -1,7 +1,8 @@
 import type { JournalEntry, TradingStatus } from '../../types';
+import type { Currency } from '../../backtest/types';
 export const statusOf = (e: JournalEntry): TradingStatus => e.tradingStatus ?? (e.outcome === 'open' ? 'open' : 'closed');
 // Legacy demo records are dollar-denominated. No implicit currency conversion.
-export const currencyOf = (e: JournalEntry) => e.accountCurrency || 'USD';
+export const currencyOf = (e: JournalEntry): Currency => (e.accountCurrency as Currency) || 'USD';
 export const costsKnown = (e: JournalEntry) => Number.isFinite(e.commission);
 export const realized = (e: JournalEntry) => statusOf(e) === 'closed' && e.pnlKnown !== false && Number.isFinite(e.pnl);
 export const eligible = (e: JournalEntry, basis: 'gross' | 'net' = 'net') => realized(e) && (basis === 'gross' || costsKnown(e));

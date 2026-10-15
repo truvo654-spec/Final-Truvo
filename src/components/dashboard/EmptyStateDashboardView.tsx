@@ -1570,7 +1570,7 @@ export const EmptyStateDashboardView: React.FC<EmptyStateDashboardViewProps> = (
               }
               onEmptyStateCtaClick={
                 dashboardState === 'empty'
-                  ? handleConnectBrokerAction
+                  ? () => handleConnectBrokerAction('')
                   : dashboardState === 'pending'
                   ? () => onNavigateToTab('brokers')
                   : dashboardState === 'approved'

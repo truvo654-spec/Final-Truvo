@@ -434,7 +434,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         <input className={`${input} mt-1`} value={editing.tags.join(', ')} onChange={(e) => setEditing({ ...editing, tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean) })} />
       </label>
       <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
-        <button type="button" onClick={save} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">{isNew ? 'Create playbook' : 'Save changes'}</button>
+        <button type="button" onClick={() => save()} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">{isNew ? 'Create playbook' : 'Save changes'}</button>
         <button type="button" onClick={() => setEditing(null)} className={btn}>Cancel</button>
         {!isNew && (
           <div className="ml-auto flex flex-wrap items-center justify-end gap-2">

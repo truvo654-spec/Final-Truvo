@@ -45,15 +45,14 @@ export const ActiveTradingAccountsPage: React.FC<ActiveTradingAccountsPageProps>
         score: 9.8,
         maxCashback: 'Up to $8 / lot',
         cashbackPerLot: 8.0,
-        spread: '0.1 pips',
-        leverage: '1:1000',
+        spreadFrom: '0.1 pips',
+        maxLeverage: '1:1000',
         minDeposit: '$5',
-        regulation: 'FCA, CySEC, FSA',
-        tradingPlatforms: ['MT4', 'MT5'],
-        accountTypes: ['Standard', 'Pro', 'Cent'],
-        depositMethods: ['Visa', 'Mastercard', 'Crypto'],
-        features: ['Instant Withdrawals', 'Negative Balance Protection'],
-        reviewCount: 342,
+        regulations: ['FCA', 'CySEC', 'FSA'],
+        platforms: ['MT4', 'MT5'],
+        featured: true,
+        connected: false,
+        category: 'Forex' as const,
       }
     );
   };

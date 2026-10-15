@@ -70,7 +70,7 @@ export interface Opt<T> {
   group?: string;
 }
 
-export function SelectBox<T extends string | number>({ value, onChange, options, ariaLabel, disabled }: { value: T; onChange: (v: T) => void; options: Opt<T>[]; ariaLabel?: string; disabled?: boolean }) {
+export function SelectBox<T extends string | number>({ value, onChange, options, ariaLabel, disabled }: { value: T; onChange: (v: NoInfer<T>) => void; options: Opt<NoInfer<T>>[]; ariaLabel?: string; disabled?: boolean }) {
   const groups = Array.from(new Set(options.map((o) => o.group ?? '')));
   const parse = (raw: string): T => (typeof value === 'number' ? (Number(raw) as T) : (raw as T));
   return (

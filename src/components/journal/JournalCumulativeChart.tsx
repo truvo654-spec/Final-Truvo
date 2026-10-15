@@ -135,6 +135,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
               onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setHelpOpen(false); } }}
               className="rounded-full p-1 text-slate-500 focus-visible:outline-2 focus-visible:outline-[#5338ec]"
             >
+          <title>{chartDefinition}</title>
               <Info size={13} aria-hidden="true" />
             </button>
             {helpOpen && <span id={helpId} role="tooltip" className="absolute left-5 right-5 top-14 z-20 rounded-xl bg-slate-900 text-white text-xs leading-relaxed p-3 shadow-lg font-normal">{chartDefinition}</span>}
@@ -205,7 +206,6 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
             className="w-full h-auto touch-none select-none"
             role="img"
             aria-label={`Cumulative ${title} from ${shortDate(dates[0])} to ${shortDate(dates[dates.length - 1], true)}${bySeries ? ' by broker' : `, ending at ${usdFull(total)}`}`}
-            title={chartDefinition}
             onMouseMove={(e) => pick(e.clientX)}
             onClick={e => { const i = pick(e.clientX); if (i !== undefined) onDay?.(dates[i]); }}
             onMouseLeave={() => setActive(null)}

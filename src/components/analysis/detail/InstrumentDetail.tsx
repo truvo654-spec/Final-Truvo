@@ -561,7 +561,7 @@ export function InstrumentDetail({
   onToast,
 }: {
   instrument: Instrument;
-  initialTab?: string;
+  initialTab?: DetailTab;
   focusId?: string;
   chartOpen: boolean;
   chartContent: ReactNode;
@@ -577,7 +577,7 @@ export function InstrumentDetail({
   onChart: () => void;
   onToast: (message: string) => void;
 }) {
-  const [tab, setTab] = useState(initialTab ?? "Overview");
+  const [tab, setTab] = useState<DetailTab>(initialTab ?? "Overview");
   const { openBrokerAccess, requestUnlock } = useMarketEngagement();
   const { snapshot } = useRewards();
   const conceptColumnsRef = useRef<HTMLDivElement>(null);

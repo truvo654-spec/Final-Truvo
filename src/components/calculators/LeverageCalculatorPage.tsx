@@ -551,7 +551,7 @@ export const LeverageCalculatorPage: React.FC<LeverageCalculatorPageProps> = ({
     const conversionTools = ['timezone', 'currency'];
 
     if (forexTools.includes(calc.tool)) setExpandedSection('forex');
-    else if (tradePlanningTools.includes(calc.tool)) setExpandedSection('trade-planning');
+    else if (tradePlanningTools.includes(calc.tool)) setExpandedSection('planning');
     else if (technicalTools.includes(calc.tool)) setExpandedSection('technical');
     else if (performanceTools.includes(calc.tool)) setExpandedSection('performance');
     else if (conversionTools.includes(calc.tool)) setExpandedSection('conversion');

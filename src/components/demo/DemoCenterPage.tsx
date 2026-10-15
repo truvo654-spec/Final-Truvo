@@ -93,7 +93,7 @@ export const DemoCenterPage: React.FC<DemoCenterPageProps> = ({
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className="text-slate-500 font-medium">Syde Points:</span>
-            <span className="font-mono font-bold text-slate-800">{user.sydePoints} pts</span>
+            <span className="font-mono font-bold text-slate-800">{user.currentPoints} pts</span>
           </div>
         </div>
       </div>

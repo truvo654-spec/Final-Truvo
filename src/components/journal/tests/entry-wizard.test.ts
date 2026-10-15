@@ -20,7 +20,7 @@ test('Journal import dialog opens on statement upload and keeps account status s
 });
 
 test('broker link notice never reports a simulated connection or asks for credentials', () => {
-  const html=renderToStaticMarkup(createElement(ConnectBrokerModal,{isOpen:true,onClose:()=>{},selectedBroker:null}));
+  const html=renderToStaticMarkup(createElement(ConnectBrokerModal,{isOpen:true,onClose:()=>{},selectedBroker:null,brokers:[],onSuccess:()=>{}}));
   assert.match(html,/Live broker sync isn’t available/);
   assert.match(html,/cannot verify an account, fetch trades, or sync new activity/);
   assert.doesNotMatch(html,/password|Verify &amp; Link|Connected Successfully/);
