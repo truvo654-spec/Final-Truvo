@@ -28,7 +28,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, s
   options: { id: T; label: React.ReactNode; title?: string }[]; value: T; onChange: (v: T) => void; label: string; size?: 'sm' | 'md'; disabled?: Partial<Record<T, string>>;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap rounded-lg border border-slate-200 bg-white p-0.5 gap-0.5">
+    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap rounded-lg border border-[#CCC6FB] bg-white p-0.5 gap-0.5">
       {options.map((o) => {
         const off = disabled[o.id];
         const on = value === o.id;
