@@ -1168,7 +1168,7 @@ export default function App() {
               handleRewardPoints(Math.round(lotSize * 15), `Live Trade via ${brokerName}`);
               showToast(`🎉 +$${rebateAmount.toFixed(2)} Cashback earned via ${brokerName}!`);
             }}
-            onSpendCredits={(amount, reason) => handleSpendCredits(amount, reason, 'Extra automated backtest run')}
+            onSpendCredits={(amount, reason) => handleSpendCredits(amount, reason, reason)}
             onClaimBonusCredits={(amount) => handleRewardPointsAndCredits(0, amount, 'Credit Bonus Claim')}
             onSetUserCredits={(credits) => {
               setUser((prev) => {

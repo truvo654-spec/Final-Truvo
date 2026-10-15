@@ -1,3 +1,18 @@
+## 1.31.34
+- Place the symbol search below the Overview filters at the top-left of the Overview content.
+
+## 1.31.33
+- Move the shared symbol search to the left side of the Trade Log panel.
+
+## 1.31.32
+- Place the shared symbol search at the top of the Trade Log panel while keeping it visible in the scope toolbar on other Journal tabs.
+
+## 1.31.31
+- Add instrument-symbol search to the shared Trading Journal scope toolbar and filter journal analytics, trade lists, insights, playbooks, and backtest data to matching symbols.
+
+## 1.31.30
+- Add tier-based Trading Journal and Backtest locks with temporary Syde Credit unlocks, advanced-insight gating and complexity-tiered AI Coach scenarios.
+
 ## 1.31.29
 - Show Create playbook beside Save draft for new and existing drafts. Create playbook saves as Active and selects the Active inventory; Save draft preserves Draft status. Existing drafts are updated in place.
 

@@ -9,6 +9,7 @@ import { formatMoney } from './JournalCurrency';
 import { metrics } from './journalMath';
 import { JournalScenarioLab } from './JournalScenarioLab';
 import { buildCoachScenarioStudy, coachPeriod } from './coachScenarios';
+import { JournalFeatureGate } from './JournalFeatureGate';
 
 const panel = 'rounded-2xl border border-slate-200 bg-white p-5';
 const secondary = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold hover:border-[#5338ec] hover:text-[#5338ec] disabled:opacity-40';
@@ -32,13 +33,34 @@ interface Props {
   currency: string;
   today: string;
   rangeLabel: string;
+  advancedAccess: boolean;
+  currentLevel: number;
+  credits: number;
+  onUnlockAdvanced: () => void;
+  onUpgrade: () => void;
   onEvidence: (ids: string[], label: string) => void;
   onScenario: (scenario: CoachScenario, action: 'save' | 'practice' | 'test') => void;
   onImport: () => void;
   onToast: (msg: string) => void;
 }
 
-export function JournalAICoach({ entries, history, playbooks, currency, today, rangeLabel, onEvidence, onScenario, onImport, onToast }: Props) {
+export function JournalAICoach({
+  entries,
+  history,
+  playbooks,
+  currency,
+  today,
+  rangeLabel,
+  advancedAccess,
+  currentLevel,
+  credits,
+  onUnlockAdvanced,
+  onUpgrade,
+  onEvidence,
+  onScenario,
+  onImport,
+  onToast,
+}: Props) {
   const [goal, setGoal] = useJournalState<CoachGoal>('coach-goal', 'consistency');
   const [bookId, setBookId] = useJournalState('coach-playbook', '');
   const [scope, setScope] = useJournalState<'view' | 'history'>('coach-scope', 'history');
@@ -52,8 +74,15 @@ export function JournalAICoach({ entries, history, playbooks, currency, today, r
   return <div className="mt-6 space-y-5 text-[#0b1c30]">
     <section className="relative overflow-hidden rounded-2xl border border-[#D8D0FF] bg-gradient-to-br from-[#F1ECFF] via-white to-[#EEF8FF] p-5 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-3"><p className="flex items-center gap-2 text-sm font-bold text-[#5338ec]"><Sparkles className="h-5 w-5"/>MarketSyde AI <span className="rounded-full border border-[#D8D0FF] px-2 py-0.5 text-[10px]">Coach · Beta</span></p><span className="text-[11px] text-slate-500">Local journal pattern engine</span></div>
-      <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">One trade. Several alternatives to test.<JournalHelp label="One trade. Several alternatives to test." /></h2>
-      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">Find a trade in your history, select several matching scenarios, and compare their exits and results on the same candle chart.</p>
+      <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+        {advancedAccess ? 'One trade. Several alternatives to test.' : 'Review your trading history with AI Coach.'}
+        <JournalHelp label={advancedAccess ? 'One trade. Several alternatives to test.' : 'Review your trading history with AI Coach.'} />
+      </h2>
+      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+        {advancedAccess
+          ? 'Find a trade in your history, select several matching scenarios, and compare their exits and results on the same candle chart.'
+          : 'See a transparent summary of your trade history. Advanced scenarios and strategy experiments can be unlocked with Syde Credits.'}
+      </p>
       <ol className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Coaching workflow">{[['01', 'Your trade history'], ['02', 'Evidence & patterns'], ['03', 'Alternative scenarios'], ['04', 'Practice & compare']].map(([n, title]) => <li key={n} className="flex items-center gap-2 rounded-xl border border-white bg-white/75 px-3 py-2.5 text-xs"><span className="font-mono text-[#5338ec]">{n}</span><span className="font-semibold">{title}</span></li>)}</ol>
     </section>
 
@@ -62,6 +91,23 @@ export function JournalAICoach({ entries, history, playbooks, currency, today, r
       <label className="text-xs font-semibold">Build around<JournalHelp label="Build around" /><select aria-label="Build around" value={validBookId} onChange={e => setBookId(e.target.value)} className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-normal"><option value="">Find a pattern across my playbooks</option>{activeBooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
     </section>
 
+    <section className={panel}>
+      <h3 className="font-bold">Your journal summary<JournalHelp label="Your journal summary" /></h3>
+      <p className="mt-2 text-xs leading-relaxed text-slate-600">
+        {report.closed.length} eligible closed trades from {report.scope.length} recorded in this coach scope. The recorded baseline is {report.baseline.n ? formatMoney(report.baseline.total, currency) : 'not available'} with {number(report.baseline.avgR, 'R')} average R.
+      </p>
+      <p className="mt-2 text-[11px] text-slate-500">
+        This transparent local summary is available at every level. Advanced scenario generation and strategy experiments are Level 4 features or can be unlocked temporarily with credits.
+      </p>
+      {!!report.closed.length && (
+        <button type="button" onClick={() => onEvidence(report.closed.map(e => e.id), 'AI Coach · analyzed closes')} className="mt-3 text-xs font-semibold text-[#5338ec]">
+          Inspect {report.closed.length} source trades <ArrowRight className="inline h-3 w-3"/>
+        </button>
+      )}
+    </section>
+
+    {advancedAccess ? (
+      <>
     <JournalScenarioLab history={history} currency={currency} today={today} goal={safeGoal} playbookName={source?.name} onEvidence={onEvidence} onToast={onToast}/>
     <details className={panel}><summary className="cursor-pointer text-sm font-semibold">Playbook experiments & strategy alternatives<JournalHelp label="Playbook experiments & strategy alternatives" /></summary><div className="mt-5 space-y-5">
     <label className="block text-xs font-semibold">Playbook evidence scope<JournalHelp label="Playbook evidence scope" /><select aria-label="Playbook evidence scope" value={scope} onChange={e => setScope(e.target.value as 'view' | 'history')} className="ml-3 h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-normal"><option value="history">All dates · current account & filters</option><option value="view">Current journal date range · {rangeLabel}</option></select></label>
@@ -103,6 +149,16 @@ export function JournalAICoach({ entries, history, playbooks, currency, today, r
 
     <details className={`${panel} text-xs leading-relaxed text-slate-600`}><summary className="cursor-pointer font-semibold text-[#0b1c30]">How this coach builds scenarios<JournalHelp label="How this coach builds scenarios" /></summary><div className="mt-3 space-y-2"><p>This Beta uses transparent local rules, not a trained neural model or a connected language model. Your Trade Log is analyzed in this browser. Suggestions are editable experiment drafts.</p><p>The first 70% of unique entry dates select ideas; later dates provide a chronological check, not independent validation. A strategy needs five earlier closes to be ranked; expectancy also needs five recorded R values. Behavioral comparisons need at least three observed trades on each side. Unknown adherence and unreviewed mistake tags are not treated as positive evidence.</p><p>{report.missingCloseTimes} eligible trades have no close timestamp and use their recorded entry date. Trades with known exits after the earlier-period cutoff cannot select a scenario. Open trades, unknown net results, other currencies and future records are excluded.</p><p>Written behavior rules remain a manual practice checklist. Library recipes can prefill automated rules; backtests and Practice label their data source separately. Saved drafts preserve your original playbook.</p></div></details>
     </div></details>
+      </>
+    ) : (
+      <JournalFeatureGate
+        feature="advancedCoach"
+        currentLevel={currentLevel}
+        credits={credits}
+        onUnlock={onUnlockAdvanced}
+        onUpgrade={onUpgrade}
+      />
+    )}
   </div>;
 }
 

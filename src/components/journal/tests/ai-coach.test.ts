@@ -83,11 +83,19 @@ test('saved experiments are independent, uniquely named and transfer executable 
 });
 
 test('coach renders evidence, untested alternatives, comparison and saved-draft actions without model claims', () => {
-  const html = renderToStaticMarkup(createElement(JournalAICoach, { entries: history(), history: history(), playbooks: DEFAULT_PLAYBOOKS, currency: 'USD', today: '2026-10-14', rangeLabel: 'All time', onEvidence: () => {}, onScenario: () => {}, onImport: () => {}, onToast: () => {} }));
+  const html = renderToStaticMarkup(createElement(JournalAICoach, { entries: history(), history: history(), playbooks: DEFAULT_PLAYBOOKS, currency: 'USD', today: '2026-10-14', rangeLabel: 'All time', advancedAccess: true, currentLevel: 4, credits: 500, onUnlockAdvanced: () => {}, onUpgrade: () => {}, onEvidence: () => {}, onScenario: () => {}, onImport: () => {}, onToast: () => {} }));
   assert.match(html, /Compare the evidence/);
   assert.match(html, /Strategy library · untested/);
   assert.match(html, /Save &amp; practice/);
   assert.match(html, /Save &amp; compare/);
   assert.match(html, /not a trained neural model/);
   assert.doesNotMatch(html, /NaN|Guaranteed|Predicted profit/);
+});
+
+test('basic coach summary remains available while advanced scenarios are locked below Level 4', () => {
+  const html = renderToStaticMarkup(createElement(JournalAICoach, { entries: history(), history: history(), playbooks: DEFAULT_PLAYBOOKS, currency: 'USD', today: '2026-10-14', rangeLabel: 'All time', advancedAccess: false, currentLevel: 3, credits: 500, onUnlockAdvanced: () => {}, onUpgrade: () => {}, onEvidence: () => {}, onScenario: () => {}, onImport: () => {}, onToast: () => {} }));
+
+  assert.match(html, /Your journal summary/);
+  assert.match(html, /Advanced AI Coach scenarios is locked/);
+  assert.doesNotMatch(html, /Compare the evidence|Save &amp; practice/);
 });

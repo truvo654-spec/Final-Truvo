@@ -80,6 +80,7 @@ interface Props {
   onOpen: (id: string, cohort?: string[]) => void;
   onToast: (msg: string) => void;
   preset?: { ids: string[]; label: string } | null;
+  scopeSearch?: React.ReactNode;
   onClearPreset?: () => void;
   /** Replay one trade blind in Backtest → Practice. */
   onReplay?: (id: string) => void;
@@ -87,7 +88,7 @@ interface Props {
   onBacktestTrades?: (ids: string[]) => void;
 }
 
-export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay, onReplayLog, onBacktestTrades }) => {
+export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, scopeSearch, onClearPreset, onReplay, onReplayLog, onBacktestTrades }) => {
   const money = useMoney();
   const tradingPlain = (n:number,dp=2)=>money(Math.abs(n),dp).replace(/^\+/, '');
 
@@ -382,6 +383,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
 
   return (
     <div className="rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] p-4 sm:p-5 text-[#0b1c30] space-y-4">
+      {scopeSearch && <div className="flex justify-start">{scopeSearch}</div>}
       {/* KPI strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
         <div className={card}>

@@ -2,6 +2,17 @@
 
 Backtesting lives inside the Trading Journal as its own tab (Overview · Trade Log · Insights · Playbook · **Backtest** · Weekly Review). It uses the journal's playbooks, trades, trading rules, brokers, Syde Credits and Points, and sends its results back to them.
 
+## Access by member level
+
+| Level | Included access |
+|---|---|
+| 1 | Trading Journal core, advanced Insights, Playbook, Backtest and advanced Coach tools are locked by default. Each can be temporarily unlocked with Syde Credits. The basic local AI Coach summary remains available. |
+| 2 | Overview, Trade Log and standard Insights. Advanced Insights, Playbook and Backtest remain locked by default and can be temporarily unlocked with credits. |
+| 3 | Journal core, advanced Insights, Playbook and Backtest. Advanced AI Coach scenarios remain limited to Level 4 or a credit unlock. |
+| 4+ | All Journal and Backtest features, including advanced AI Coach scenarios. |
+
+Credit unlocks last 1, 7 or 30 days and follow the upper Instrument Analysis price band: 140 credits/day for Journal core and advanced Insights; 180 credits/day for Playbook, Backtest and advanced Coach tools. A Backtest tab unlock does not increase the existing level-based monthly run allowance; the 15-credit extra-run charge still applies. Unlocks are stored with the journal's browser-local data; production authorization must also be enforced by a backend.
+
 ## 1. Design read of the concept screens
 
 | Screen | Layout regions | Components | States shown | Functions implied |

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Sparkles, X, ChevronDown, Check, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UserProfile } from '../../types';
+import type { UserProfile } from '../../types';
 
 export type UnlockDurationOption = '1d' | '7d' | '30d';
 
@@ -55,9 +55,9 @@ export const UNLOCKABLE_TOOLS_DATA: Record<string, UnlockableTool> = {
 interface ToolCreditUnlockModalProps {
   isOpen: boolean;
   tool: UnlockableTool | null;
-  user: UserProfile;
+  user: Pick<UserProfile, 'tierLevel' | 'sydeCredits'>;
   onClose: () => void;
-  onConfirmUnlock: (tool: UnlockableTool, duration: UnlockDurationOption, cost: number) => void;
+  onConfirmUnlock: (tool: UnlockableTool, duration: UnlockDurationOption, cost: number) => boolean | void;
   onViewLevelBenefits?: () => void;
 }
 
@@ -148,7 +148,7 @@ export const ToolCreditUnlockModal: React.FC<ToolCreditUnlockModalProps> = ({
 
   const handleConfirm = () => {
     if (!isConfirmed) return;
-    onConfirmUnlock(tool, selectedDuration, creditCost);
+    if (onConfirmUnlock(tool, selectedDuration, creditCost) === false) return;
     onClose();
   };
 
