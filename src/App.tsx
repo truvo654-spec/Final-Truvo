@@ -1,5 +1,5 @@
 import React, { useState, useEffect , useMemo} from 'react';
-import { DemoDashboard1 } from './components/demo1/DemoDashboard1';
+import { DemoDashboardView as DemoDashboard1 } from './components/demo1/DemoDashboard1';
 import { COURSES } from './data/educationData';
 import { PROMOTIONS } from './data/promotionsData';
 import { COMMUNITY_ARTICLES } from './data/communityData';
@@ -1162,6 +1162,8 @@ export default function App() {
               user={user}
               brokers={brokers}
               signals={signals}
+              missions={missions}
+              initialState="empty"
               onOpenViewPlan={() => setActiveTab('member-plan')}
               onOpenConnectModal={(broker) => {
                 setSelectedBrokerForConnect(broker || brokers[0]);

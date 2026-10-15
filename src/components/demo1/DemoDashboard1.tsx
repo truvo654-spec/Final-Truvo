@@ -1,12 +1,11 @@
 /**
- * Demo 1: the dashboard as it stands on the demo branch.
+ * Demo 1: the dashboard behind the Demo menu on the language-switcher branch.
  *
- * Taken whole from that branch so it can be looked at beside the current one
- * rather than rebuilt from memory. It sits in its own folder and imports the
- * dashboard's own parts, so it stays a frozen copy.
+ * Copied whole so it reads exactly as it does there. It opens on the empty
+ * state, which is what a person sees before they have connected anything.
  */
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   UserProfile,
   Broker,
@@ -42,9 +41,9 @@ import {
   Archive,
   TrendingUp,
   BarChart3,
+  Check,
 } from 'lucide-react';
 import { CashbackCalendarModal } from '../dashboard/CashbackCalendarModal';
-import { ActivityCarousel } from '../dashboard/ActivityCarousel';
 import { PerformanceComboChart } from '../dashboard/PerformanceComboChart';
 import { MoreConnectedBrokersBanner } from '../dashboard/MoreConnectedBrokersBanner';
 import { ConnectedAccountsCarousel } from '../dashboard/ConnectedAccountsCarousel';
@@ -54,7 +53,8 @@ import { ConnectionDeniedPopup } from '../dashboard/ConnectionDeniedPopup';
 import { ConnectionUnavailablePopup } from '../dashboard/ConnectionUnavailablePopup';
 import { InstrumentAnalysisWidget } from '../dashboard/InstrumentAnalysisWidget';
 import { MissionCardWidget } from '../dashboard/MissionCardWidget';
-import { CommunityWidget } from '../dashboard/CommunityWidget';
+import { PromotionWidget } from '../dashboard/PromotionWidget';
+import { useTone } from '../../context/ToneContext';
 import { LiveInteractiveSparkline } from '../dashboard/LiveInteractiveSparkline';
 import { BorderBeam } from '../ui/BorderBeam';
 import { getNextTierInfo, LEVEL_SCENARIOS, LevelScenarioId } from '../../data/levelScenarios';
@@ -69,7 +69,7 @@ export type DashboardStateType =
   | 'first-trade'
   | 'active-performance';
 
-interface DemoDashboard1Props {
+interface DemoDashboardViewProps {
   user: UserProfile;
   brokers: Broker[];
   signals: MarketSignal[];
@@ -453,7 +453,7 @@ function MiniSparkline({
   );
 }
 
-export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
+export const DemoDashboardView: React.FC<DemoDashboardViewProps> = ({
   user,
   brokers,
   signals,
@@ -474,7 +474,7 @@ export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
   const [dashboardState, setDashboardState] = useState<DashboardStateType>(() => {
     if (initialState) return initialState;
     try {
-      const saved = localStorage.getItem('marketsyde_dashboard_active_state');
+      const saved = localStorage.getItem('marketsyde_demo_dashboard_active_state');
       if (
         saved &&
         ['empty', 'pending', 'approved', 'rejected', 'unavailable', 'first-trade', 'active-performance'].includes(saved)
@@ -486,6 +486,50 @@ export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
   });
 
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1D' | '1W' | '1M' | 'All'>('1M');
+  const [isQuickStartOpen, setIsQuickStartOpen] = useState(false);
+  const { tone, copy } = useTone();
+  const [completedQuickStartIds, setCompletedQuickStartIds] = useState<Set<string>>(new Set());
+
+  // Steps for the Quick Start checklist — mirrors the original Quick Start Guide content.
+  // Clicking a step's CTA marks it done (checkbox flips to a checkmark) and navigates onward.
+  const QUICK_START_STEPS_BASE = [
+    {
+      id: 'choose-broker' as const,
+      icon: UserPlus,
+      onClick: () => onNavigateToTab('brokers'),
+    },
+    {
+      id: 'link-account' as const,
+      icon: Link2,
+      onClick: () => onNavigateToTab('brokers'),
+    },
+    {
+      id: 'trade-usual' as const,
+      icon: CandlestickChart,
+      onClick: () => onNavigateToTab('signals'),
+    },
+    {
+      id: 'earn-cashback' as const,
+      icon: DollarSign,
+      onClick: () => onNavigateToTab('cashback-overview'),
+    },
+  ];
+  const QUICK_START_STEPS = QUICK_START_STEPS_BASE.map((step) => ({
+    ...step,
+    ...copy.quickStartSteps[step.id],
+    completed: completedQuickStartIds.has(step.id),
+  }));
+  const completedQuickStartCount = QUICK_START_STEPS.filter((s) => s.completed).length;
+
+  const handleQuickStartStepAction = (stepId: string, onClick: () => void) => {
+    setCompletedQuickStartIds((prev) => {
+      const next = new Set(prev);
+      next.add(stepId);
+      return next;
+    });
+    onClick();
+  };
+
   const [performerType, setPerformerType] = useState<'assets' | 'brokers'>('assets');
   const [isPerformerDropdownOpen, setIsPerformerDropdownOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
@@ -546,7 +590,7 @@ export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
       setIsConnectionUnavailableOpen(true);
     }
     try {
-      localStorage.setItem('marketsyde_dashboard_active_state', newState);
+      localStorage.setItem('marketsyde_demo_dashboard_active_state', newState);
     } catch {}
   };
 
@@ -604,50 +648,8 @@ export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
         </div>
       )}
 
-      {/* ─── STATE SWITCHER BAR (Quickly Preview All States) ─── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2.5 sm:p-3 rounded-2xl bg-indigo-50/70 border border-indigo-100 shadow-2xs">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-black uppercase tracking-wider text-[#5945F1] px-2 py-0.5 rounded-md bg-white shadow-2xs">
-            Dashboard State
-          </span>
-          <span className="text-xs text-slate-500 hidden md:inline">
-            {dashboardState === 'empty' && 'New Verified Member (No Activity)'}
-            {dashboardState === 'pending' && 'Linked Broker Pending Review'}
-            {dashboardState === 'approved' && 'Broker Approved & Trade Now Enabled'}
-            {dashboardState === 'rejected' && 'Account Rejected: Reconnect or Delete'}
-            {dashboardState === 'unavailable' && 'Account Unavailable: Check Broker Server'}
-            {dashboardState === 'first-trade' && 'First Trade Retrieved & Cashback Logged'}
-            {dashboardState === 'active-performance' && 'Active Multi-Day Trading & Performance Charts'}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {[
-            { id: 'empty', label: '1. Empty State' },
-            { id: 'pending', label: '2. Pending Approval' },
-            { id: 'approved', label: '3. Approved' },
-            { id: 'rejected', label: '3a. Rejected' },
-            { id: 'unavailable', label: '3b. Unavailable' },
-            { id: 'first-trade', label: '4. First Trade' },
-            { id: 'active-performance', label: '5. Active Performance' },
-          ].map((st) => (
-            <button
-              key={st.id}
-              onClick={() => handleStateChange(st.id as DashboardStateType)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                dashboardState === st.id
-                  ? 'bg-[#5945F1] text-white shadow-xs scale-102'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80'
-              }`}
-            >
-              {st.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* ─── TOP GREETING HEADER ─── */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-3 sm:gap-4">
         <div>
           {dashboardState === 'empty' ? (
             <div>
@@ -657,7 +659,7 @@ export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
                 <span className="text-[#FD02B0]">{user.username}!</span>
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-                Look alive. The market won't wait, and we'd hate for you to miss what's next.
+                {copy.greetingSubtitle(user.username)}
               </p>
             </div>
           ) : (
@@ -668,14 +670,14 @@ export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
                 <span className="text-[#FD02B0]">!</span>
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-                The market kept moving. Good thing you did too.
+                {copy.returningGreetingSubtitle}
               </p>
             </div>
           )}
         </div>
 
-        {onEnterCustomizeMode && (
-          <div className="flex items-center gap-2 shrink-0 pt-1">
+        <div className="flex items-center gap-2 shrink-0 pt-1">
+          {onEnterCustomizeMode && (
             <button
               onClick={onEnterCustomizeMode}
               className="px-3 py-1.5 rounded-xl border border-indigo-100/90 bg-white hover:bg-indigo-50 text-[#5945F1] flex items-center gap-2 shadow-2xs transition-all cursor-pointer hover:border-indigo-300 font-bold text-xs"
@@ -684,118 +686,243 @@ export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
               <Pencil className="w-3.5 h-3.5 stroke-[2]" />
               <span className="hidden sm:inline">Customize</span>
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* ─── MAIN TWO-COLUMN DASHBOARD LAYOUT (RIGHT SIDEBAR FIXED 300px) ─── */}
+      {/* ─── QUICK START ACCORDION (Full width, below greeting; collapsible, shows per-step completion) ─── */}
+      <div className="rounded-2xl bg-[#EEF2F9] overflow-hidden">
+        {/* Header row: toggles the accordion open/closed */}
+        <button
+          type="button"
+          onClick={() => setIsQuickStartOpen((v) => !v)}
+          className="w-full flex items-center justify-between gap-3 sm:gap-4 p-3.5 sm:p-4 cursor-pointer text-left"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Circular progress ring showing steps completed out of 4 */}
+            <div className="relative w-9 h-9 sm:w-10 sm:h-10 shrink-0">
+              <svg viewBox="0 0 36 36" className="w-9 h-9 sm:w-10 sm:h-10 -rotate-90">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#E2E8F0" strokeWidth="3" />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.5"
+                  fill="none"
+                  stroke="#16A34A"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(completedQuickStartCount / QUICK_START_STEPS.length) * 2 * Math.PI * 15.5} ${2 * Math.PI * 15.5}`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-slate-600">
+                {completedQuickStartCount}/{QUICK_START_STEPS.length}
+              </div>
+            </div>
+            <span className="text-sm sm:text-base font-medium text-slate-700 truncate">
+              {copy.quickStartBarLabel}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <ChevronDown
+              className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-500 transition-transform duration-300 ${
+                isQuickStartOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </div>
+        </button>
+
+        {/* Expandable step content */}
+        <AnimatePresence initial={false}>
+          {isQuickStartOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-1">
+                <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs">
+                  <div className="space-y-3.5">
+                    {QUICK_START_STEPS.map((step) => {
+                      const StepIcon = step.icon;
+                      return (
+                        <div
+                          key={step.id}
+                          className="flex items-center justify-between gap-4 select-none"
+                        >
+                          {/* Left: Checkmark or unchecked circle + icon + title & description */}
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            {step.completed ? (
+                              <div className="w-5 h-5 rounded-full bg-[#16a34a] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                                <Check className="w-3 h-3 stroke-[3.5]" />
+                              </div>
+                            ) : (
+                              <div className="w-5 h-5 rounded-full bg-[#edf2f7] border border-slate-200/80 shrink-0 transition-colors" />
+                            )}
+
+                            <div
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                                step.completed
+                                  ? 'bg-[#16a34a]/10 text-[#16a34a]'
+                                  : 'bg-[#EEF0F8] text-[#5240F2]'
+                              }`}
+                            >
+                              <StepIcon className="w-4 h-4 stroke-[2.2]" />
+                            </div>
+
+                            <div className="min-w-0">
+                              <div
+                                className={`text-xs sm:text-sm font-semibold truncate ${
+                                  step.completed ? 'text-slate-400 line-through' : 'text-slate-900'
+                                }`}
+                              >
+                                {step.title}
+                              </div>
+                              <div
+                                className={`text-[11px] sm:text-xs font-normal mt-0.5 truncate ${
+                                  step.completed ? 'text-slate-300 line-through' : 'text-slate-400'
+                                }`}
+                              >
+                                {step.description}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right: CTA, or just a checkmark once completed */}
+                          {step.completed ? (
+                            <div className="shrink-0 w-8 h-8 rounded-full bg-[#16a34a]/10 flex items-center justify-center">
+                              <Check className="w-4 h-4 text-[#16a34a] stroke-[3]" />
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickStartStepAction(step.id, step.onClick)}
+                              className="shrink-0 rounded-lg border border-indigo-200 bg-white text-[#5945F1] hover:bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                            >
+                              {step.cta}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ─── MAIN DASHBOARD LAYOUT (SIDEBAR REMOVED, FULL WIDTH) ─── */}
       <div className="flex flex-col lg:flex-row items-start gap-5">
         {/* ════════════ LEFT MAIN CONTENT (FLEX-1 MIN-W-0) ════════════ */}
         <div className="flex-1 min-w-0 w-full space-y-5">
-          {/* ─── TOP ROW: Quick Start Guide / Connected Account (Left) + Your Level (Right) ─── */}
+          {/* ─── TOP ROW: Your Cashback (Left) + Choose Broker (Right) ─── */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
-            {/* ── LEFT TOP CARD: Quick Start Guide vs Your Connected Account ── */}
+            {/* ── LEFT TOP CARD: Your Stats / Your Performance (md:col-span-8) ── */}
+            <div id="tour-your-stats-card" className="md:col-span-8 rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5 interactive-card flex flex-col min-h-[260px] sm:min-h-[300px]">
+            {/* Header: Cumulative Cashback (icon + label + big number + lots + description) */}
+            <div
+              onClick={() => onNavigateToTab('cashback-overview')}
+              className="pb-2 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer group max-w-sm p-1.5 -m-1.5"
+              title="Click to view Cashback Overview"
+            >
+              <div className="flex items-start gap-3">
+                <LimeWalletIcon className="w-11 h-11" />
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
+                    {copy.yourCashbackLabel}
+                  </div>
+                  <div className="text-3xl sm:text-4xl font-black font-display text-[#0b1c30] leading-tight mt-1">
+                    {dashboardState === 'active-performance'
+                      ? selectedTimeframe === '1D'
+                        ? '$76.00'
+                        : selectedTimeframe === '1W'
+                        ? '$290.50'
+                        : selectedTimeframe === 'All'
+                        ? '$12,480.00'
+                        : '$3,128.00'
+                      : dashboardState === 'first-trade'
+                      ? '$8.00'
+                      : '$0.00'}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5 font-normal">
+                    {dashboardState === 'active-performance'
+                      ? selectedTimeframe === '1D'
+                        ? '6.8 Lots'
+                        : selectedTimeframe === '1W'
+                        ? '22.8 Lots'
+                        : selectedTimeframe === 'All'
+                        ? '1,124.0 Lots'
+                        : '112.4 Lots'
+                      : dashboardState === 'first-trade'
+                      ? '1.6 Lots'
+                      : '0.0 Lots'}
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-400 leading-relaxed pt-2.5 max-w-[240px]">
+                {dashboardState === 'active-performance'
+                  ? 'Your cashback earned during the selected period will appear here.'
+                  : dashboardState === 'first-trade'
+                  ? 'Cashback earned from your first trade with HFM.'
+                  : copy.yourCashbackEmptyDescription}
+              </p>
+            </div>
+            </div>
+
+            {/* ── RIGHT TOP CARD: Choose Broker CTA (md:col-span-4) ── */}
             {dashboardState === 'empty' ? (
-              <div id="tour-quick-start-card" className="md:col-span-8 rounded-2xl bg-white dark:bg-[#170345] border border-[#f0abfc]/70 dark:border-pink-900/50 p-5 sm:p-6 shadow-2xs flex flex-col justify-between interactive-card relative overflow-hidden">
+              <div id="tour-quick-start-card" className="md:col-span-4 rounded-2xl bg-white dark:bg-[#170345] border border-[#f0abfc]/70 dark:border-pink-900/50 p-6 shadow-2xs flex flex-col items-center justify-center text-center interactive-card relative overflow-hidden min-h-[260px] sm:min-h-[300px]">
                 <BorderBeam
                   borderWidth={1.8}
                   duration={8}
                   colorFrom="#5945F1"
                   colorTo="#FD02B0"
                 />
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-display font-extrabold text-xl sm:text-[22px] text-[#5240F2] tracking-tight flex items-baseline">
-                        <span>Quick Start Guide</span>
-                        <span className="w-1.5 h-1.5 rounded-[1px] bg-[#E11D89] ml-0.5 inline-block self-end mb-1"></span>
-                      </h3>
-                      <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal">
-                        Turn your trading into cashback, insights and rewards.
-                      </p>
-                    </div>
-                    {onStartTour && (
-                      <button
-                        type="button"
-                        onClick={onStartTour}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#5945F1] bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/70 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 shrink-0"
-                        title="Start Interactive Guided Tour"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-[#FD02B0]" />
-                        <span>Take Tour</span>
-                      </button>
-                    )}
-                  </div>
+                <h3 className="font-display font-extrabold text-xl sm:text-[22px] text-[#0b1c30] tracking-tight">
+                  {copy.chooseBrokerTitle}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-[220px]">
+                  {copy.chooseBrokerSubtitle}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab('brokers')}
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#5945F1] hover:bg-[#4834e0] text-white text-sm font-bold px-5 py-2.5 shadow-xs transition-all cursor-pointer active:scale-95"
+                >
+                  <span>{copy.chooseBrokerCta}</span>
+                </button>
 
-                  {/* 4 Steps Stepper Row matching design screenshot */}
-                  <div className="relative mt-7 mb-2">
-                    {/* Background track line */}
-                    <div className="absolute top-[24px] left-[12.5%] right-[12.5%] h-[3px] bg-[#EEF0F8] rounded-full z-0 pointer-events-none" />
-
-                    {/* Active progress bar segment from Step 1 to middle */}
-                    <div className="absolute top-[24px] left-[12.5%] w-[12.5%] h-[3px] bg-[#5240F2] rounded-full z-0 pointer-events-none" />
-
-                    {/* Steps Container */}
-                    <div className="grid grid-cols-4 relative z-10">
-                      {/* Step 1: Choose Broker (Active) */}
+                {/* Broker logo stack */}
+                <div className="mt-5 flex items-center">
+                  {brokers.slice(0, 4).map((broker, index) => {
+                    const stackColors = ['#5945F1', '#F97316', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6'];
+                    return (
                       <div
-                        onClick={() => onNavigateToTab('brokers')}
-                        className="flex flex-col items-center text-center cursor-pointer group px-1"
+                        key={broker.id}
+                        title={broker.name}
+                        className="w-9 h-9 rounded-full border-2 border-white shadow-2xs flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                        style={{
+                          backgroundColor: stackColors[index % stackColors.length],
+                          marginLeft: index > 0 ? '-10px' : 0,
+                        }}
                       >
-                        <div className="w-12 h-12 rounded-[14px] bg-[#5240F2] text-white flex items-center justify-center shadow-sm shrink-0 transition-transform group-hover:scale-105">
-                          <UserPlus className="w-5 h-5 stroke-[2.2]" />
-                        </div>
-                        <div className="font-bold text-xs sm:text-[13px] text-[#5240F2] mt-3">
-                          Choose Broker
-                        </div>
-                        <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                          Choose yours, or find a better one here
-                        </div>
+                        {broker.name.slice(0, 2).toUpperCase()}
                       </div>
-
-                      {/* Step 2: Link Trading Account */}
-                      <div
-                        onClick={() => onNavigateToTab('brokers')}
-                        className="flex flex-col items-center text-center cursor-pointer group px-1"
-                      >
-                        <div className="w-12 h-12 rounded-[14px] bg-[#EEF0F8] text-[#5240F2] flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
-                          <Link2 className="w-5 h-5 stroke-[2.2]" />
-                        </div>
-                        <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
-                          Link Trading Account
-                        </div>
-                        <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                          Connect your account to start tracking
-                        </div>
-                      </div>
-
-                      {/* Step 3: Trade as Usual */}
-                      <div className="flex flex-col items-center text-center px-1">
-                        <div className="w-12 h-12 rounded-[14px] bg-[#EEF0F8] text-[#5240F2] flex items-center justify-center shrink-0">
-                          <CandlestickChart className="w-5 h-5 stroke-[2.2]" />
-                        </div>
-                        <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
-                          Trade as Usual
-                        </div>
-                        <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                          Keep trading normally on your platform
-                        </div>
-                      </div>
-
-                      {/* Step 4: Earn Cashback */}
-                      <div className="flex flex-col items-center text-center px-1">
-                        <div className="w-12 h-12 rounded-[14px] bg-[#EEF0F8] text-[#5240F2] flex items-center justify-center shrink-0">
-                          <DollarSign className="w-5 h-5 stroke-[2.2]" />
-                        </div>
-                        <div className="font-semibold text-xs sm:text-[13px] text-slate-700 mt-3">
-                          Earn Cashback
-                        </div>
-                        <div className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug max-w-[140px]">
-                          Get paid to trade. Automatically
-                        </div>
-                      </div>
+                    );
+                  })}
+                  {brokers.length > 4 && (
+                    <div
+                      className="flex w-9 h-9 items-center justify-center rounded-full border-2 border-white shadow-2xs bg-white text-[10px] font-bold text-slate-500 shrink-0"
+                      style={{ marginLeft: '-10px' }}
+                    >
+                      +{brokers.length - 4}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             ) : dashboardState === 'pending' ||
@@ -817,7 +944,7 @@ export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
               />
             ) : dashboardState === 'active-performance' ? (
               <ConnectedAccountsCarousel
-                className="md:col-span-8"
+                className="md:col-span-4"
                 onNavigateToTab={onNavigateToTab}
                 onNavigateToConnectBroker={handleConnectBrokerAction}
                 onOpenConnectModal={onOpenConnectModal}
@@ -825,7 +952,7 @@ export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
               />
             ) : (
               /* Your Connected Account Card (Matches Images 02, 03, 04, 05) */
-              <div className="md:col-span-8 rounded-2xl bg-white dark:bg-[#170345] border border-[#f0abfc]/70 dark:border-pink-900/50 p-5 shadow-2xs flex flex-col justify-between space-y-4 interactive-card relative overflow-hidden">
+              <div className="md:col-span-4 rounded-2xl bg-white dark:bg-[#170345] border border-[#f0abfc]/70 dark:border-pink-900/50 p-5 shadow-2xs flex flex-col justify-between space-y-4 interactive-card relative overflow-hidden">
                 <BorderBeam
                   borderWidth={1.8}
                   duration={8}
@@ -1032,967 +1159,34 @@ export const DemoDashboard1: React.FC<DemoDashboard1Props> = ({
                 </div>
               </div>
             )}
-
-            {/* ── RIGHT TOP CARD: Your Level Card (md:col-span-4) ── */}
-            <div id="tour-rookie-level-card" className="md:col-span-4 rounded-2xl bg-[#5945F1] p-5 text-white flex flex-col justify-between shadow-xs relative overflow-hidden interactive-card group">
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="text-xs font-semibold text-white/80">
-                    Your Level
-                  </div>
-                  {onSelectLevelScenario && (
-                    <div className="flex items-center gap-1 bg-black/25 backdrop-blur-xs p-0.5 rounded-lg border border-white/10">
-                      {LEVEL_SCENARIOS.map((sc) => (
-                        <button
-                          key={sc.id}
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectLevelScenario(sc.id);
-                          }}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                            user.tierLevel === sc.level
-                              ? 'bg-white text-[#5945F1] shadow-xs'
-                              : 'text-white/70 hover:text-white hover:bg-white/10'
-                          }`}
-                          title={`Switch to ${sc.label} (Lv.${sc.level})`}
-                        >
-                          Lv.{sc.level}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  onClick={() => onNavigateToTab('profile')}
-                  className="flex items-center gap-3.5 mt-2 cursor-pointer group"
-                  title="View Profile & Account"
-                >
-                  <TierMascotIcon tierLevel={user.tierLevel || 1} />
-                  <div>
-                    <h4 className="font-display font-black text-2xl text-white tracking-tight leading-tight group-hover:underline">
-                      {user.rankTitle || 'Rookie'}
-                    </h4>
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-white/95 mt-1">
-                      <Gem className="w-3.5 h-3.5 text-white shrink-0" />
-                      <span>{currentPoints.toLocaleString()}/{maxPoints.toLocaleString()} points.</span>
-                      {currentPoints > 0 && (
-                        <span className="text-[#CAEB0E] font-bold ml-1">Don't stop now</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full bg-white/25 rounded-full h-2 mt-4 mb-2.5 overflow-hidden">
-                  <div
-                    className="h-full bg-[#FE01B1] rounded-full transition-all duration-500"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-2 text-xs text-white/90">
-                  <span className="font-medium">{nextLevelText}</span>
-                  <button
-                    id="dashboard-level-view-plan-btn"
-                    onClick={onOpenViewPlan}
-                    className="px-4 py-1.5 rounded-full bg-white hover:bg-slate-100 text-[#5945F1] font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
-                  >
-                    View Plan
-                  </button>
-                </div>
-              </div>
-
-              <div className="border-t border-white/20 pt-3 mt-4 space-y-1.5 text-xs text-white/95 font-medium">
-                <div className="flex items-center gap-2">
-                  <span className="font-black text-sm">$</span>
-                  <span>+{user.boostPercentage || 10}% Cashback Boost</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-black text-sm">%</span>
-                  <span>Higher Confidence Signals</span>
-                </div>
-                <div className="pt-1.5 text-[11px] text-white/70 font-normal select-none">
-                  showing data of {recentDateStr}
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* ─── INSTRUMENT ANALYSIS WIDGET (Matching Widget, 3 coloumn.png) ─── */}
-          <InstrumentAnalysisWidget onNavigateToTab={onNavigateToTab} />
+          {/* ─── PROMOTIONS CAROUSEL (Matching reference layout: two promo banners with countdown timers) ─── */}
+          <PromotionWidget tone={tone} />
 
-          {/* ─── ROW 2: Your Stats / Your Performance Card ─── */}
-          <div id="tour-your-stats-card" className="rounded-2xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-2xs space-y-5 interactive-card">
-            {/* Header: Title & Timeframe Filters */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
-              <h2 className="font-display text-lg sm:text-xl font-normal text-slate-700 tracking-tight">
-                Your Stats: <span className="text-[#0b1c30] font-black">March 2026</span>
-              </h2>
-
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <div className="flex items-center gap-1 text-xs font-bold text-slate-600">
-                  {(['1D', '1W', '1M', 'All'] as const).map((tf) => (
-                    <button
-                      key={tf}
-                      onClick={() => setSelectedTimeframe(tf)}
-                      className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                        selectedTimeframe === tf
-                          ? 'bg-[#CAEB0E] text-black font-extrabold shadow-2xs'
-                          : 'hover:text-[#0b1c30] text-slate-600'
-                      }`}
-                    >
-                      {tf}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-1 pl-1 border-l border-slate-200">
-                  <button
-                    id="open-cashback-calendar-btn"
-                    onClick={() => setIsCalendarModalOpen(true)}
-                    title="View Cashback Calendar"
-                    className="p-1.5 rounded-lg hover:bg-indigo-50 text-slate-600 hover:text-[#5945F1] transition-colors cursor-pointer"
-                  >
-                    <Calendar className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setIsCalendarModalOpen(true)}
-                    title="Grid view"
-                    className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
-                  >
-                    <Grid className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 3 Metric Blocks */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2 pb-5 border-b border-slate-100 items-stretch">
-              {/* Block 1: ACTIVE STREAK */}
-              <div
-                onClick={() => setIsCalendarModalOpen(true)}
-                className="space-y-2 p-1.5 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer"
-                title="Click to view Calendar"
-              >
-                <div className="flex items-start gap-3">
-                  <LimeCalendarIcon className="w-11 h-11" />
-                  <div>
-                    <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
-                      ACTIVE STREAK
-                    </div>
-                    <div className="text-2xl font-black font-display text-[#0b1c30] leading-tight">
-                      {dashboardState === 'active-performance'
-                        ? '12 days'
-                        : dashboardState === 'first-trade'
-                        ? '1 day'
-                        : '0 days'}
-                    </div>
-                    <div className="text-xs text-slate-400 mt-0.5 font-normal">
-                      {dashboardState === 'active-performance'
-                        ? 'Track your consistency'
-                        : dashboardState === 'first-trade'
-                        ? 'First day of your streak!'
-                        : 'Start trading to build streak'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2 Rows of 16 Heatmap Squares */}
-                <div className="pt-2 space-y-1">
-                  <div className="flex items-center gap-[3px] flex-wrap max-w-[210px]">
-                    {(dashboardState === 'active-performance'
-                      ? [true, true, true, true, false, true, false, true, true, true, true, true, true, true, false, true]
-                      : dashboardState === 'first-trade'
-                      ? [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]
-                      : Array(16).fill(false)
-                    ).map((isActive, i) => (
-                      <span
-                        key={`streak-r1-${i}`}
-                        className={`w-2.5 h-2.5 rounded-[2px] transition-colors ${
-                          isActive ? 'bg-[#BEF226] border border-[#a3e635]/50' : 'bg-slate-200/90'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-[3px] flex-wrap max-w-[210px]">
-                    {(dashboardState === 'active-performance'
-                      ? [false, true, false, true, true, false, false, true, true, false, true, true, true, true, false, false]
-                      : Array(16).fill(false)
-                    ).map((isActive, i) => (
-                      <span
-                        key={`streak-r2-${i}`}
-                        className={`w-2.5 h-2.5 rounded-[2px] transition-colors ${
-                          isActive ? 'bg-[#BEF226] border border-[#a3e635]/50' : 'bg-slate-200/90'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Block 2: CUMULATIVE CASHBACK */}
-              <div
-                onClick={() => onNavigateToTab('cashback-overview')}
-                className="space-y-2 p-1.5 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer group"
-                title="Click to view Cashback Overview"
-              >
-                <div className="flex items-start gap-3">
-                  <LimeWalletIcon className="w-11 h-11" />
-                  <div>
-                    <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
-                      CUMULATIVE CASHBACK
-                    </div>
-                    <div className="text-2xl font-black font-display text-[#0b1c30] leading-tight">
-                      {dashboardState === 'active-performance'
-                        ? selectedTimeframe === '1D'
-                          ? '$76.00'
-                          : selectedTimeframe === '1W'
-                          ? '$290.50'
-                          : selectedTimeframe === 'All'
-                          ? '$12,480.00'
-                          : '$3,128.00'
-                        : dashboardState === 'first-trade'
-                        ? '$8.00'
-                        : '$0.00'}
-                    </div>
-                    <div className="text-xs text-slate-400 mt-0.5 font-normal">
-                      {dashboardState === 'active-performance'
-                        ? selectedTimeframe === '1D'
-                          ? '6.8 Lots'
-                          : selectedTimeframe === '1W'
-                          ? '22.8 Lots'
-                          : selectedTimeframe === 'All'
-                          ? '1,124.0 Lots'
-                          : '112.4 Lots'
-                        : dashboardState === 'first-trade'
-                        ? '1.6 Lots'
-                        : '0.0 Lots'}
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-400 leading-relaxed pt-1.5 max-w-[240px]">
-                  {dashboardState === 'active-performance'
-                    ? 'Your cashback earned during the selected period will appear here.'
-                    : dashboardState === 'first-trade'
-                    ? 'Cashback earned from your first trade with HFM.'
-                    : 'Connect a broker to start earning cashback automatically.'}
-                </p>
-              </div>
-
-              {/* Block 3: TOP 3 PERFORMERS */}
-              <div className="space-y-2 p-1.5 relative">
-                <div className="flex items-center justify-between gap-2 relative">
-                  <div className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
-                    TOP 3 PERFORMERS
-                  </div>
-
-                  {isPerformanceActive ? (
-                    /* Dropdown Selector */
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setIsPerformerDropdownOpen((prev) => !prev)}
-                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-all cursor-pointer shadow-2xs"
-                      >
-                        <span>{performerType === 'assets' ? 'Earning Assets' : 'Cashback Brokers'}</span>
-                        <ChevronDown
-                          className={`w-3.5 h-3.5 text-slate-500 transition-transform ${
-                            isPerformerDropdownOpen ? 'rotate-180' : ''
-                          }`}
-                        />
-                      </button>
-
-                      {/* Popover Menu matching design */}
-                      {isPerformerDropdownOpen && (
-                        <div className="absolute right-0 top-full mt-1.5 w-40 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-30 animate-in fade-in zoom-in-95 duration-100">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPerformerType('assets');
-                              setIsPerformerDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-3.5 py-2 text-xs transition-colors cursor-pointer ${
-                              performerType === 'assets'
-                                ? 'bg-[#F0EFFF] text-[#5945F1] font-bold'
-                                : 'text-slate-700 hover:bg-slate-50 font-medium'
-                            }`}
-                          >
-                            Earning Assets
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPerformerType('brokers');
-                              setIsPerformerDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-3.5 py-2 text-xs transition-colors cursor-pointer ${
-                              performerType === 'brokers'
-                                ? 'bg-[#F0EFFF] text-[#5945F1] font-bold'
-                                : 'text-slate-700 hover:bg-slate-50 font-medium'
-                            }`}
-                          >
-                            Cashback Brokers
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-[10px] font-bold text-slate-400 px-2 py-0.5 rounded-md bg-slate-100">
-                      No Data
-                    </span>
-                  )}
-                </div>
-
-                {dashboardState === 'active-performance' ? (
-                  /* Donut Chart & List (Full active trader) */
-                  <div className="flex items-center gap-3 pt-2">
-                    <TopPerformersDonutChart type={performerType} />
-
-                    {performerType === 'assets' ? (
-                      <div className="space-y-1.5 text-xs flex-1 min-w-0">
-                        {/* Item 1: EUR/USD */}
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#BEF226] shrink-0" />
-                            <EUFlagCircle />
-                            <span className="truncate">EUR/USD</span>
-                          </div>
-                          <span className="font-mono font-bold text-slate-900 shrink-0">
-                            $1,150.00
-                          </span>
-                        </div>
-
-                        {/* Item 2: Dow Jones */}
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#FD02B0] shrink-0" />
-                            <UKFlagCircle />
-                            <span className="truncate">Dow Jones</span>
-                          </div>
-                          <span className="font-mono font-bold text-slate-900 shrink-0">
-                            $1,035.00
-                          </span>
-                        </div>
-
-                        {/* Item 3: AUDUSD */}
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#5945F1] shrink-0" />
-                            <AUDFlagCircle />
-                            <span className="truncate">AUDUSD</span>
-                          </div>
-                          <span className="font-mono font-bold text-slate-900 shrink-0">
-                            $943.00
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5 text-xs flex-1 min-w-0">
-                        {/* Item 1: XM Global */}
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626] shrink-0" />
-                            <span className="w-4 h-4 rounded-full bg-red-600 text-[9px] font-black text-white flex items-center justify-center shrink-0">
-                              XM
-                            </span>
-                            <span className="truncate">XM Global</span>
-                          </div>
-                          <span className="font-mono font-bold text-slate-900 shrink-0">
-                            $1,420.00
-                          </span>
-                        </div>
-
-                        {/* Item 2: HFM Markets */}
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#B91C1C] shrink-0" />
-                            <span className="w-4 h-4 rounded-full bg-red-700 text-[8px] font-black text-white flex items-center justify-center shrink-0">
-                              HF
-                            </span>
-                            <span className="truncate">HFM Markets</span>
-                          </div>
-                          <span className="font-mono font-bold text-slate-900 shrink-0">
-                            $1,080.00
-                          </span>
-                        </div>
-
-                        {/* Item 3: Exness Pro */}
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shrink-0" />
-                            <span className="w-4 h-4 rounded-full bg-amber-500 text-[8px] font-black text-white flex items-center justify-center shrink-0">
-                              EX
-                            </span>
-                            <span className="truncate">Exness Pro</span>
-                          </div>
-                          <span className="font-mono font-bold text-slate-900 shrink-0">
-                            $628.00
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : dashboardState === 'first-trade' ? (
-                  /* Single First Trade Performer */
-                  <div className="flex items-center gap-3 pt-2">
-                    <TopPerformersDonutChart type={performerType} isFirstTrade={true} />
-                    <div className="space-y-1 text-xs flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 font-medium text-slate-700 min-w-0 truncate">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#BEF226] shrink-0" />
-                          {performerType === 'assets' ? (
-                            <>
-                              <EUFlagCircle />
-                              <span className="truncate font-bold">EUR/USD</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="w-4 h-4 rounded-full bg-red-700 text-[8px] font-black text-white flex items-center justify-center shrink-0">
-                                HF
-                              </span>
-                              <span className="truncate font-bold">HFM Markets</span>
-                            </>
-                          )}
-                        </div>
-                        <span className="font-mono font-black text-slate-900 shrink-0">
-                          $8.00
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-emerald-600 font-semibold">
-                        100% of trading volume (1 trade)
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Empty State for Block 3 */
-                  <div className="pt-2 pb-1 flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 text-slate-400">
-                      <TrendingUp className="w-5 h-5 stroke-[1.8]" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-700">No performance data yet</div>
-                      <div className="text-[11px] text-slate-400 leading-snug mt-0.5">
-                        Your top earning assets and brokers will appear here once you trade.
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ─── INTEGRATED PERFORMANCE COMBO CHART (Inside Same Card) ─── */}
-            <PerformanceComboChart
-              totalCashback={
-                dashboardState === 'active-performance'
-                  ? selectedTimeframe === '1D'
-                    ? '$76.00'
-                    : selectedTimeframe === '1W'
-                    ? '$290.50'
-                    : selectedTimeframe === 'All'
-                    ? '$12,480.00'
-                    : '$1,248.00'
-                  : dashboardState === 'first-trade'
-                  ? '$8.00'
-                  : '$0.00'
-              }
-              lotsTraded={
-                dashboardState === 'active-performance'
-                  ? selectedTimeframe === '1D'
-                    ? '6.8'
-                    : selectedTimeframe === '1W'
-                    ? '22.8'
-                    : selectedTimeframe === 'All'
-                    ? '1,124.0'
-                    : '112.4'
-                  : dashboardState === 'first-trade'
-                  ? '1.6'
-                  : '0'
-              }
-              avgCashbackPerLot={
-                dashboardState === 'active-performance'
-                  ? '$11.10'
-                  : dashboardState === 'first-trade'
-                  ? '$5.00'
-                  : '$0.00'
-              }
-              bestDay={
-                dashboardState === 'active-performance'
-                  ? '$82.00'
-                  : dashboardState === 'first-trade'
-                  ? '$8.00'
-                  : '$0.00'
-              }
-              timeframe={selectedTimeframe}
-              isEmpty={!isPerformanceActive}
-              isFirstTrade={dashboardState === 'first-trade'}
-              emptyStateTitle={
-                dashboardState === 'empty'
-                  ? 'No Performance Recorded Yet'
-                  : dashboardState === 'pending'
-                  ? 'Broker Review in Progress'
-                  : dashboardState === 'approved'
-                  ? 'Ready for Your First Trade'
-                  : dashboardState === 'rejected'
-                  ? 'Connection Denied'
-                  : 'Account Archived'
-              }
-              emptyStateDescription={
-                dashboardState === 'empty'
-                  ? 'Connect a broker and place your first trade to plot daily cashback earnings and volume in real time.'
-                  : dashboardState === 'pending'
-                  ? 'Your linked account (HFM • 1100012001) is awaiting review. Charts will activate once approved.'
-                  : dashboardState === 'approved'
-                  ? 'Your account is approved! Place your first trade with your broker to start earning cashback.'
-                  : dashboardState === 'rejected'
-                  ? 'Your broker connection could not be verified under Marketsyde. Please reconnect or link another broker.'
-                  : 'Your broker has archived this account due to inactivity. Re-link an active account to resume.'
-              }
-              emptyStateCtaText={
-                dashboardState === 'empty'
-                  ? 'Connect Broker'
-                  : dashboardState === 'pending'
-                  ? 'Check Broker Status'
-                  : dashboardState === 'approved'
-                  ? 'Trade Now'
-                  : dashboardState === 'rejected'
-                  ? 'Reconnect Account'
-                  : 'Connect New Brokers'
-              }
-              onEmptyStateCtaClick={
-                dashboardState === 'empty'
-                  ? () => handleConnectBrokerAction('')
-                  : dashboardState === 'pending'
-                  ? () => onNavigateToTab('brokers')
-                  : dashboardState === 'approved'
-                  ? () => onNavigateToTab('signals')
-                  : dashboardState === 'rejected'
-                  ? () => setIsConnectionDeniedOpen(true)
-                  : () => setIsConnectionUnavailableOpen(true)
-              }
-              className="w-full pt-1"
+          {/* ─── MISSION CARD WIDGET (Left, widened for readability) + INSTRUMENT ANALYSIS WIDGET (Right) ─── */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+            <MissionCardWidget
+              missions={missions}
+              onUpdateMissions={onUpdateMissions}
+              onNavigateToTab={onNavigateToTab}
+              className="md:col-span-5"
+              themeOverride="light"
+              noShadow
             />
+
+            <InstrumentAnalysisWidget onNavigateToTab={onNavigateToTab} className="md:col-span-7" showPagination={false} containerBgClassName="bg-[#EEF2F9]" noShadow />
           </div>
-
-          {/* ─── MISSION CARD WIDGET (Matching Mission Card.png & inserted between Performance Chart and Signals) ─── */}
-          <MissionCardWidget
-            missions={missions}
-            onUpdateMissions={onUpdateMissions}
-            onNavigateToTab={onNavigateToTab}
-          />
-
-          {/* ─── COMMUNITY WIDGET (Replaces Most Recent Signals widget - shows 2.5 cards + CTA to community) ─── */}
-          <CommunityWidget
-            onNavigateToTab={onNavigateToTab}
-            onToast={showToast}
-          />
 
           {/* ─── BOTTOM ROW: More Connected Brokers. More Opportunities. (1:1 with Small Banner 3.png) ─── */}
           <MoreConnectedBrokersBanner
             onConnectBroker={handleConnectBrokerAction}
             onNavigateToTab={onNavigateToTab}
             className="w-full"
+            titleOverride={copy.moreBrokersTitle}
+            subtitleOverride={copy.moreBrokersSubtitle}
           />
         </div>
-
-        {/* ════════════ RIGHT SIDEBAR: STRICTLY FIXED AT 300px WITH STICKY SCROLL FIX ════════════ */}
-        <aside
-          id="dashboard-right-sidebar"
-          aria-label="Dashboard Sidebar"
-          className="w-full lg:w-[300px] lg:shrink-0 space-y-5 lg:sticky lg:top-[84px] lg:self-start lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-        >
-          {/* ── CARD 0: Activity Carousel (Auto-slides every 4s, 1:1 with UPS Next Milestone & UPS Pick up where you left off) ── */}
-          <ActivityCarousel
-            onNavigateToTab={onNavigateToTab}
-            onConnectBroker={handleConnectBrokerAction}
-            onSelectBrokerDetail={handleCardClick}
-          />
-
-          {/* ── CARD 1: Your Winning Signals (Shown in State 4 & 5 matching Images 04 & 05) ── */}
-          {isPerformanceActive && (
-            <div className="rounded-2xl bg-[#F8FAFC] border border-slate-200/80 p-4 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <h3 className="font-display font-extrabold text-sm text-[#0b1c30]">
-                    Your <span className="text-[#5945F1]">Winning Signals</span><span className="text-[#FD02B0]">.</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Signals from your actual money-makers.
-                  </p>
-                </div>
-                <button
-                  onClick={() => onNavigateToTab('signals')}
-                  className="text-xs font-bold text-slate-600 hover:text-[#5945F1] transition-colors cursor-pointer flex items-center gap-0.5 shrink-0"
-                >
-                  <span>All Signals</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                {/* EUR/USD */}
-                <div
-                  onClick={() => onNavigateToTab('signals')}
-                  className="bg-white rounded-xl p-2.5 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer space-y-1.5"
-                >
-                  <div className="flex items-center gap-1 font-bold text-xs text-[#0b1c30]">
-                    <span>🇪🇺</span>
-                    <span>EUR/USD</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <MiniSparkline trend="up" color="#16a34a" />
-                    <span className="text-[11px] font-bold text-[#16a34a] font-mono">+0.33%</span>
-                  </div>
-                </div>
-
-                {/* Dow Jones */}
-                <div
-                  onClick={() => onNavigateToTab('signals')}
-                  className="bg-white rounded-xl p-2.5 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer space-y-1.5"
-                >
-                  <div className="flex items-center gap-1 font-bold text-xs text-[#0b1c30]">
-                    <span>🇬🇧</span>
-                    <span className="truncate">Dow Jones</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <MiniSparkline trend="down" color="#5945F1" />
-                    <span className="text-[11px] font-bold text-[#5945F1] font-mono">-0.11%</span>
-                  </div>
-                </div>
-
-                {/* AUDUSD */}
-                <div
-                  onClick={() => onNavigateToTab('signals')}
-                  className="bg-white rounded-xl p-2.5 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer space-y-1.5"
-                >
-                  <div className="flex items-center gap-1 font-bold text-xs text-[#0b1c30]">
-                    <span>🇦🇺</span>
-                    <span>AUDUSD</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <MiniSparkline trend="up" color="#16a34a" />
-                    <span className="text-[11px] font-bold text-[#16a34a] font-mono">+0.44%</span>
-                  </div>
-                </div>
-
-                {/* BTC/USD */}
-                <div
-                  onClick={() => onNavigateToTab('signals')}
-                  className="bg-white rounded-xl p-2.5 border border-slate-200/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between space-y-1"
-                >
-                  <div className="flex items-center gap-1 font-bold text-xs text-[#0b1c30]">
-                    <span>₿</span>
-                    <span>BTC/USD</span>
-                  </div>
-                  <div className="text-[11px] font-black text-[#FD02B0] tracking-tight">
-                    Your next win?
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── CARD 2: Tops Earning Points. (Always Present in All 5 States) ── */}
-          <div className="rounded-2xl bg-white border-2 border-[#FD02B0]/80 p-5 shadow-2xs space-y-4">
-            <div>
-              <h3 className="font-display font-extrabold text-base text-[#0b1c30]">
-                Tops Earning Points<span className="text-[#FD02B0]">.</span>
-              </h3>
-              <p className="text-xs text-slate-600 mt-1 leading-snug">
-                Get rewarded for trading your usual assets.{' '}
-                <strong className="text-slate-800 font-bold">No extra effort required.</strong>
-              </p>
-            </div>
-
-            {/* 4 Assets List */}
-            <div className="space-y-3 pt-1">
-              {/* 1: EUR/USD */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-lg">🇪🇺</span>
-                  <span className="font-bold text-sm text-[#0b1c30]">EUR/USD</span>
-                </div>
-                <div className="flex items-center gap-1 text-[#5945F1] font-bold text-sm">
-                  <Gem className="w-3.5 h-3.5 fill-[#5945F1]/20 stroke-[#5945F1]" />
-                  <span>50</span>
-                </div>
-              </div>
-
-              {/* 2: GOOGL */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xs font-black shadow-2xs">
-                    <span className="text-[#4285F4]">G</span>
-                  </div>
-                  <span className="font-bold text-sm text-[#0b1c30]">GOOGL</span>
-                </div>
-                <div className="flex items-center gap-1 text-[#5945F1] font-bold text-sm">
-                  <Gem className="w-3.5 h-3.5 fill-[#5945F1]/20 stroke-[#5945F1]" />
-                  <span>35</span>
-                </div>
-              </div>
-
-              {/* 3: XAU/USD */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-lg">🪙</span>
-                  <span className="font-bold text-sm text-[#0b1c30]">XAU/USD</span>
-                </div>
-                <div className="flex items-center gap-1 text-[#5945F1] font-bold text-sm">
-                  <Gem className="w-3.5 h-3.5 fill-[#5945F1]/20 stroke-[#5945F1]" />
-                  <span>20</span>
-                </div>
-              </div>
-
-              {/* 4: S&P 500 */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-[#E11928] text-white flex items-center justify-center text-[9px] font-black shadow-2xs">
-                    500
-                  </div>
-                  <span className="font-bold text-sm text-[#0b1c30]">S&P 500</span>
-                </div>
-                <div className="flex items-center gap-1 text-[#5945F1] font-bold text-sm">
-                  <Gem className="w-3.5 h-3.5 fill-[#5945F1]/20 stroke-[#5945F1]" />
-                  <span>20</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => onNavigateToTab('points-credits')}
-              className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#5945F1] hover:bg-[#492CED] text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>View More</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* ── CARD 3: Most Recent Signals (Replaces Community Spotlight in Sidebar) ── */}
-          {!isPerformanceActive && (
-            <div className="rounded-2xl bg-white border border-slate-200/90 p-5 shadow-2xs space-y-3.5">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <h3 className="font-display font-extrabold text-base text-[#0b1c30]">
-                    Most Recent <span className="text-[#5945F1]">Signals</span><span className="text-[#FD02B0]">.</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    View most recent signals for your trading
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => onNavigateToTab('signals')}
-                  className="text-xs font-bold text-[#5945F1] hover:text-[#492CED] transition-colors cursor-pointer flex items-center gap-0.5 shrink-0"
-                >
-                  <span>All Signals</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Signal Items List with Live Interactive Ticks */}
-              <div className="space-y-2.5 pt-1">
-                {/* 1. EUR/USD */}
-                {(() => {
-                  const isTicked = tickedSignalTicker === 'EUR/USD';
-                  const val = +(0.33 + (signalLiveDeltas['EUR/USD'] || 0)).toFixed(2);
-                  const isPos = val >= 0;
-                  return (
-                    <div
-                      onClick={() => {
-                        const s = signals.find((item) => item.ticker === 'EUR/USD') || signals[0];
-                        if (s) onSelectSignal(s);
-                      }}
-                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer group ${
-                        isTicked
-                          ? 'bg-emerald-50/60 border-emerald-300 ring-1 ring-emerald-200'
-                          : 'bg-slate-50/70 hover:bg-slate-100/90 border-slate-100/80'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">🇪🇺</span>
-                        <div>
-                          <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">
-                            EUR/USD
-                          </div>
-                          <motion.div
-                            animate={
-                              isTicked
-                                ? { scale: [1, 1.15, 1] }
-                                : { scale: [1, 1.02, 1] }
-                            }
-                            transition={{ duration: isTicked ? 0.45 : 2.5, repeat: isTicked ? 0 : Infinity }}
-                            className={`text-[11px] font-bold font-mono inline-flex items-center gap-0.5 ${
-                              isPos ? 'text-[#10B981]' : 'text-rose-500'
-                            }`}
-                          >
-                            <span>{isPos ? '+' : ''}{val.toFixed(2)}%</span>
-                          </motion.div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MiniSparkline trend={isPos ? 'up' : 'down'} color={isPos ? '#16a34a' : '#ef4444'} isTicked={isTicked} />
-                        <motion.span
-                          animate={isTicked ? { scale: [1, 1.12, 1] } : { scale: 1 }}
-                          className="px-2.5 py-0.5 bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 text-[10px] font-black rounded-lg shadow-2xs"
-                        >
-                          Buy
-                        </motion.span>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* 2. GOOGL */}
-                {(() => {
-                  const isTicked = tickedSignalTicker === 'GOOGL';
-                  const val = +(-0.11 + (signalLiveDeltas['GOOGL'] || 0)).toFixed(2);
-                  const isPos = val >= 0;
-                  return (
-                    <div
-                      onClick={() => {
-                        const s = signals.find((item) => item.ticker === 'GOOGL') || signals[1];
-                        if (s) onSelectSignal(s);
-                      }}
-                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer group ${
-                        isTicked
-                          ? 'bg-rose-50/60 border-rose-300 ring-1 ring-rose-200'
-                          : 'bg-slate-50/70 hover:bg-slate-100/90 border-slate-100/80'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black shadow-2xs text-[#4285F4]">
-                          G
-                        </div>
-                        <div>
-                          <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">
-                            GOOGL
-                          </div>
-                          <motion.div
-                            animate={
-                              isTicked
-                                ? { scale: [1, 1.15, 1] }
-                                : { scale: [1, 1.02, 1] }
-                            }
-                            transition={{ duration: isTicked ? 0.45 : 2.5, repeat: isTicked ? 0 : Infinity }}
-                            className={`text-[11px] font-bold font-mono inline-flex items-center gap-0.5 ${
-                              isPos ? 'text-[#10B981]' : 'text-red-500'
-                            }`}
-                          >
-                            <span>{isPos ? '+' : ''}{val.toFixed(2)}%</span>
-                          </motion.div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MiniSparkline trend={isPos ? 'up' : 'down'} color={isPos ? '#16a34a' : '#ef4444'} isTicked={isTicked} />
-                        <motion.span
-                          animate={isTicked ? { scale: [1, 1.12, 1] } : { scale: 1 }}
-                          className="px-2.5 py-0.5 bg-[#5945F1] text-white text-[10px] font-black rounded-lg shadow-2xs"
-                        >
-                          Sell
-                        </motion.span>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* 3. BTC/USD */}
-                <div
-                  onClick={() => {
-                    const s = signals.find((item) => item.ticker === 'BTC/USD') || signals[0];
-                    if (s) onSelectSignal(s);
-                  }}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/70 hover:bg-slate-100/90 border border-slate-100/80 transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-[#f7931a] text-white font-bold text-[10px] flex items-center justify-center shadow-2xs shrink-0">
-                      ₿
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">BTC/USD</div>
-                      <div className="text-[10px] text-[#FD02B0] font-bold flex items-center gap-1">
-                        <Gem className="w-2.5 h-2.5" />
-                        <span>Premium Signal</span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenViewPlan();
-                    }}
-                    className="px-2.5 py-0.5 border border-[#FD02B0] text-[#FD02B0] hover:bg-pink-50 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
-                  >
-                    Upgrade
-                  </button>
-                </div>
-
-                {/* 4. S&P 500 */}
-                {(() => {
-                  const isTicked = tickedSignalTicker === 'S&P 500';
-                  const val = +(0.44 + (signalLiveDeltas['S&P 500'] || 0)).toFixed(2);
-                  const isPos = val >= 0;
-                  return (
-                    <div
-                      onClick={() => {
-                        const s = signals.find((item) => item.ticker.includes('S&P') || item.ticker.includes('500')) || signals[2];
-                        if (s) onSelectSignal(s);
-                      }}
-                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer group ${
-                        isTicked
-                          ? 'bg-emerald-50/60 border-emerald-300 ring-1 ring-emerald-200'
-                          : 'bg-slate-50/70 hover:bg-slate-100/90 border-slate-100/80'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-[#E11928] text-white font-black text-[8px] flex items-center justify-center shadow-2xs shrink-0">
-                          500
-                        </div>
-                        <div>
-                          <div className="font-bold text-xs text-[#0b1c30] group-hover:text-[#5945F1] transition-colors">
-                            S&P 500
-                          </div>
-                          <motion.div
-                            animate={
-                              isTicked
-                                ? { scale: [1, 1.15, 1] }
-                                : { scale: [1, 1.02, 1] }
-                            }
-                            transition={{ duration: isTicked ? 0.45 : 2.5, repeat: isTicked ? 0 : Infinity }}
-                            className={`text-[11px] font-bold font-mono inline-flex items-center gap-0.5 ${
-                              isPos ? 'text-[#10B981]' : 'text-rose-500'
-                            }`}
-                          >
-                            <span>{isPos ? '+' : ''}{val.toFixed(2)}%</span>
-                          </motion.div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MiniSparkline trend={isPos ? 'up' : 'down'} color={isPos ? '#16a34a' : '#ef4444'} isTicked={isTicked} />
-                        <motion.span
-                          animate={isTicked ? { scale: [1, 1.12, 1] } : { scale: 1 }}
-                          className="px-2.5 py-0.5 bg-[#CAEB0E] hover:bg-[#b8d60d] text-slate-950 text-[10px] font-black rounded-lg shadow-2xs"
-                        >
-                          Buy
-                        </motion.span>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              <button
-                onClick={() => onNavigateToTab('signals')}
-                className="w-full mt-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#5945F1] to-[#8B5CF6] hover:opacity-95 text-white font-bold text-xs sm:text-sm shadow-xs transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>Explore All Signals</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </aside>
       </div>
 
       {/* ─── CASHBACK CALENDAR MODAL (MATCHES Modal - Cashback Calendar.png) ─── */}

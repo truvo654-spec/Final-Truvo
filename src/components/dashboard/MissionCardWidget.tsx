@@ -18,6 +18,8 @@ interface MissionCardWidgetProps {
   onUpdateMissions?: (missions: Mission[]) => void;
   onNavigateToTab?: (tab: string) => void;
   onRewardClaimed?: (points: number, credits: number, reason?: string) => void;
+  themeOverride?: 'purple' | 'pink' | 'lime' | 'light';
+  noShadow?: boolean;
 }
 
 interface MissionThemeStyles {
@@ -40,7 +42,7 @@ interface MissionThemeStyles {
   suffixColor: string;
 }
 
-const THEME_STYLES: Record<'purple' | 'pink' | 'lime', MissionThemeStyles> = {
+const THEME_STYLES: Record<'purple' | 'pink' | 'lime' | 'light', MissionThemeStyles> = {
   purple: {
     containerBg: 'bg-[#5136EE]',
     glowGradient:
@@ -101,6 +103,26 @@ const THEME_STYLES: Record<'purple' | 'pink' | 'lime', MissionThemeStyles> = {
     dotActive: 'bg-[#CAEB0E] ring-2 ring-slate-800/40',
     suffixColor: '#0F172A',
   },
+  light: {
+    containerBg: 'bg-[#EEF2F9]',
+    glowGradient:
+      'radial-gradient(circle, rgba(89,69,241,0.12) 0%, rgba(89,69,241,0.05) 45%, transparent 70%)',
+    badgeBg: 'bg-white text-slate-700 border-slate-200',
+    iconBoxBg: 'bg-white border-slate-200',
+    iconBarColor: '#5945F1',
+    titleColor: 'text-[#0b1c30]',
+    subtitleColor: 'text-slate-600',
+    toggleBtnClass: 'bg-[#0b1c30] hover:bg-black text-white',
+    numberColor: 'text-[#5945F1]',
+    actionBtnBorder: 'border-indigo-200',
+    actionBtnText: 'text-[#5945F1]',
+    actionBtnBg: 'bg-white',
+    actionBtnHoverBg: 'hover:bg-indigo-50',
+    hoverTaskText: 'group-hover:text-[#5945F1]',
+    hoverCheckboxBorder: 'group-hover:border-[#5945F1]',
+    dotActive: 'bg-[#5945F1]',
+    suffixColor: '#5945F1',
+  },
 };
 
 export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
@@ -110,6 +132,8 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
   onUpdateMissions,
   onNavigateToTab,
   onRewardClaimed,
+  themeOverride,
+  noShadow = false,
 }) => {
   // Use prop missions if provided, otherwise fallback to INITIAL_MISSIONS
   const [localMissions, setLocalMissions] = useState<Mission[]>(
@@ -210,10 +234,11 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
   const completedCount = currentMission.tasks.filter((t) => t.completed).length;
   const totalCount = currentMission.tasks.length;
 
-  const missionThemeKey: 'purple' | 'pink' | 'lime' =
-    currentMission.theme && THEME_STYLES[currentMission.theme]
+  const missionThemeKey: 'purple' | 'pink' | 'lime' | 'light' =
+    themeOverride ||
+    (currentMission.theme && THEME_STYLES[currentMission.theme]
       ? currentMission.theme
-      : 'purple';
+      : 'purple');
   const currentTheme = THEME_STYLES[missionThemeKey];
 
   // Limit shown tasks to first 3 so cards stay uniform in height
@@ -228,7 +253,7 @@ export const MissionCardWidget: React.FC<MissionCardWidgetProps> = ({
     >
       {/* ─── DYNAMIC MISSION CARD CONTAINER (Colors change per mission) ─── */}
       <div
-        className={`relative w-full rounded-2xl sm:rounded-3xl ${currentTheme.containerBg} overflow-hidden p-4 sm:p-5 md:p-6 shadow-md transition-all duration-500`}
+        className={`relative w-full rounded-2xl sm:rounded-3xl ${currentTheme.containerBg} overflow-hidden p-4 sm:p-5 md:p-6 ${noShadow ? '' : 'shadow-md'} transition-all duration-500`}
       >
         {/* Subtle curved ambient highlight dome on the right */}
         <div

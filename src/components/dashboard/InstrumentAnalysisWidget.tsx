@@ -188,6 +188,108 @@ const INSTRUMENT_DATA: Record<string, InstrumentItem[]> = {
       rsi: '58.0',
       marketCap: '$20.5B',
     },
+    {
+      id: 'c10',
+      ticker: 'ADA',
+      name: 'Cardano',
+      category: 'Crypto',
+      avatarType: 'sol',
+      avatarBg: '#0033AD',
+      avatarText: '₳',
+      price: '$0.658',
+      change: '+2.44%',
+      changePositive: true,
+      oneMonthReturn: '+14.20%',
+      returnPositive: true,
+      rolVolume: '+$96B',
+      rsi: '61.8',
+      marketCap: '$23.1B',
+    },
+    {
+      id: 'c11',
+      ticker: 'LINK',
+      name: 'Chainlink',
+      category: 'Crypto',
+      avatarType: 'sol',
+      avatarBg: '#2A5ADA',
+      avatarText: '⬡',
+      price: '$18.24',
+      change: '-1.02%',
+      changePositive: false,
+      oneMonthReturn: '+6.30%',
+      returnPositive: true,
+      rolVolume: '+$62B',
+      rsi: '47.5',
+      marketCap: '$11.9B',
+    },
+    {
+      id: 'c12',
+      ticker: 'MATIC',
+      name: 'Polygon',
+      category: 'Crypto',
+      avatarType: 'sol',
+      avatarBg: '#8247E5',
+      avatarText: 'M',
+      price: '$0.712',
+      change: '+3.68%',
+      changePositive: true,
+      oneMonthReturn: '+21.10%',
+      returnPositive: true,
+      rolVolume: '+$54B',
+      rsi: '66.3',
+      marketCap: '$7.4B',
+    },
+    {
+      id: 'c13',
+      ticker: 'DOT',
+      name: 'Polkadot',
+      category: 'Crypto',
+      avatarType: 'sol',
+      avatarBg: '#E6007A',
+      avatarText: '●',
+      price: '$6.92',
+      change: '+0.94%',
+      changePositive: true,
+      oneMonthReturn: '+4.70%',
+      returnPositive: true,
+      rolVolume: '+$41B',
+      rsi: '55.9',
+      marketCap: '$9.8B',
+    },
+    {
+      id: 'c14',
+      ticker: 'LTC',
+      name: 'Litecoin',
+      category: 'Crypto',
+      avatarType: 'sol',
+      avatarBg: '#345D9D',
+      avatarText: 'Ł',
+      price: '$92.15',
+      change: '-0.58%',
+      changePositive: false,
+      oneMonthReturn: '+2.15%',
+      returnPositive: true,
+      rolVolume: '+$38B',
+      rsi: '48.9',
+      marketCap: '$6.9B',
+    },
+    {
+      id: 'c15',
+      ticker: 'SHIB',
+      name: 'Shiba Inu',
+      category: 'Crypto',
+      avatarType: 'sol',
+      avatarBg: '#FFA409',
+      avatarText: '柴',
+      price: '$0.0000198',
+      change: '+5.12%',
+      changePositive: true,
+      oneMonthReturn: '+32.40%',
+      returnPositive: true,
+      rolVolume: '+$29B',
+      rsi: '71.2',
+      marketCap: '$11.6B',
+    },
   ],
   Forex: [
     {
@@ -240,6 +342,91 @@ const INSTRUMENT_DATA: Record<string, InstrumentItem[]> = {
       rolVolume: '+$3.1T',
       rsi: '46.8',
       marketCap: '$5.2T Daily',
+    },
+    {
+      id: 'f4',
+      ticker: 'USD/CAD',
+      name: 'US Dollar / Canadian Dollar',
+      category: 'Forex',
+      avatarType: 'forex',
+      avatarBg: '#7C1E3B',
+      avatarText: '$',
+      price: '1.3640',
+      change: '-0.28%',
+      changePositive: false,
+      oneMonthReturn: '-1.05%',
+      returnPositive: false,
+      rolVolume: '+$1.6T',
+      rsi: '44.2',
+      marketCap: '$1.9T Daily',
+    },
+    {
+      id: 'f5',
+      ticker: 'AUD/USD',
+      name: 'Australian Dollar / USD',
+      category: 'Forex',
+      avatarType: 'forex',
+      avatarBg: '#00247D',
+      avatarText: '$',
+      price: '0.6524',
+      change: '+0.44%',
+      changePositive: true,
+      oneMonthReturn: '+2.30%',
+      returnPositive: true,
+      rolVolume: '+$1.1T',
+      rsi: '58.7',
+      marketCap: '$1.5T Daily',
+    },
+    {
+      id: 'f6',
+      ticker: 'USD/CHF',
+      name: 'US Dollar / Swiss Franc',
+      category: 'Forex',
+      avatarType: 'forex',
+      avatarBg: '#D52B1E',
+      avatarText: '₣',
+      price: '0.8812',
+      change: '+0.09%',
+      changePositive: true,
+      oneMonthReturn: '+0.42%',
+      returnPositive: true,
+      rolVolume: '+$980B',
+      rsi: '51.4',
+      marketCap: '$1.2T Daily',
+    },
+    {
+      id: 'f7',
+      ticker: 'NZD/USD',
+      name: 'New Zealand Dollar / USD',
+      category: 'Forex',
+      avatarType: 'forex',
+      avatarBg: '#00247D',
+      avatarText: '$',
+      price: '0.5981',
+      change: '-0.62%',
+      changePositive: false,
+      oneMonthReturn: '-2.14%',
+      returnPositive: false,
+      rolVolume: '+$420B',
+      rsi: '40.6',
+      marketCap: '$680B Daily',
+    },
+    {
+      id: 'f8',
+      ticker: 'GBP/JPY',
+      name: 'British Pound / Yen',
+      category: 'Forex',
+      avatarType: 'forex',
+      avatarBg: '#4B0082',
+      avatarText: '¥',
+      price: '196.58',
+      change: '-0.11%',
+      changePositive: false,
+      oneMonthReturn: '+0.65%',
+      returnPositive: true,
+      rolVolume: '+$610B',
+      rsi: '49.8',
+      marketCap: '$740B Daily',
     },
   ],
   Stocks: [
@@ -415,15 +602,34 @@ interface InstrumentAnalysisWidgetProps {
   className?: string;
   size?: WidgetSize;
   onNavigateToTab?: (tab: string) => void;
+  showPagination?: boolean;
+  containerBgClassName?: string;
+  noShadow?: boolean;
+  /** Rows shown per page — default 3. Raise this (with maxBodyHeightVh) for a taller, data-dense table. */
+  itemsPerPage?: number;
+  /** When set, the table body scrolls within roughly this viewport-height percentage instead of growing the page. */
+  maxBodyHeightVh?: number;
+  /** Initial filter — defaults to 'By watchlist' (which can show very few rows). Pass e.g. 'By top change' to show the full category by default. */
+  defaultFilter?: string;
+  /** When true, table rows use tighter vertical padding (py-2 instead of py-3.5) to fit more rows in the same height. */
+  compact?: boolean;
 }
 
 export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> = ({
   className = '',
   size = 3,
   onNavigateToTab,
+  showPagination = true,
+  containerBgClassName = 'bg-white',
+  noShadow = false,
+  itemsPerPage: itemsPerPageProp,
+  maxBodyHeightVh,
+  defaultFilter = 'By watchlist',
+  compact = false,
 }) => {
+  const cellPad = compact ? 'py-2' : 'py-3.5';
   const [selectedCategory, setSelectedCategory] = useState<string>('Crypto');
-  const [selectedFilter, setSelectedFilter] = useState<string>('By watchlist');
+  const [selectedFilter, setSelectedFilter] = useState<string>(defaultFilter);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
@@ -517,7 +723,7 @@ export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> =
     return list;
   }, [baseItems, selectedFilter, watchlistSet]);
 
-  const itemsPerPage = 3;
+  const itemsPerPage = itemsPerPageProp ?? 3;
   const totalPages = Math.max(1, Math.ceil(processedItems.length / itemsPerPage));
   const currentItems = processedItems.slice(
     currentPage * itemsPerPage,
@@ -601,7 +807,7 @@ export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> =
   return (
     <div
       id="instrument-analysis-widget"
-      className={`relative w-full rounded-2xl sm:rounded-3xl border border-indigo-200/80 bg-white shadow-2xs transition-all hover:shadow-xs interactive-card ${className}`}
+      className={`relative w-full rounded-2xl sm:rounded-3xl border border-indigo-200/80 ${containerBgClassName} ${noShadow ? '' : 'shadow-2xs transition-all hover:shadow-xs'} interactive-card ${className}`}
     >
       {/* ─── GRADIENT HEADER (Unclipped so dropdown menus pop out freely) ─── */}
       <div className="relative rounded-t-2xl sm:rounded-t-3xl bg-gradient-to-r from-[#5338F5] via-[#482DEF] to-[#3B22D4] p-4 sm:p-5 text-white z-20">
@@ -817,29 +1023,32 @@ export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> =
       </div>
 
       {/* ─── DATA TABLE SECTION (Matching exact headers and values in Image 1 with Live Interactive Ticks) ─── */}
-      <div className="w-full overflow-x-auto rounded-b-2xl sm:rounded-b-3xl">
+      <div
+        className="w-full overflow-x-auto rounded-b-2xl sm:rounded-b-3xl"
+        style={maxBodyHeightVh ? { maxHeight: `${maxBodyHeightVh}vh`, overflowY: 'auto' } : undefined}
+      >
         <table className="w-full text-left border-collapse">
-          <thead>
+          <thead className={maxBodyHeightVh ? 'sticky top-0 z-10 bg-white' : undefined}>
             <tr className="border-b border-slate-100 text-slate-400 text-xs font-semibold">
-              <th className="py-3.5 pl-6 pr-4 font-semibold text-slate-400 min-w-[150px]">
+              <th className={`${cellPad} pl-6 pr-4 font-semibold text-slate-400 min-w-[150px]`}>
                 Instrument
               </th>
-              <th className="py-3.5 px-4 font-semibold text-slate-400 min-w-[120px]">
+              <th className={`${cellPad} px-4 font-semibold text-slate-400 min-w-[120px]`}>
                 Price ($)
               </th>
-              <th className="py-3.5 px-4 font-semibold text-slate-400 min-w-[120px]">
+              <th className={`${cellPad} px-4 font-semibold text-slate-400 min-w-[120px]`}>
                 Change
               </th>
-              <th className="py-3.5 px-4 font-semibold text-slate-400 min-w-[120px]">
+              <th className={`${cellPad} px-4 font-semibold text-slate-400 min-w-[120px]`}>
                 1M Return
               </th>
-              <th className="py-3.5 px-4 font-semibold text-slate-400 min-w-[110px]">
+              <th className={`${cellPad} px-4 font-semibold text-slate-400 min-w-[110px]`}>
                 RoL Volume
               </th>
-              <th className="py-3.5 px-4 font-semibold text-slate-400 min-w-[80px]">
+              <th className={`${cellPad} px-4 font-semibold text-slate-400 min-w-[80px]`}>
                 RSI
               </th>
-              <th className="py-3.5 pr-6 pl-4 font-semibold text-slate-400 min-w-[110px]">
+              <th className={`${cellPad} pr-6 pl-4 font-semibold text-slate-400 min-w-[110px]`}>
                 Market Cap
               </th>
             </tr>
@@ -882,7 +1091,7 @@ export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> =
                   onClick={() => onNavigateToTab && onNavigateToTab('signals')}
                 >
                   {/* 1. Instrument (Watchlist Star + Logo + Ticker) */}
-                  <td className="py-3.5 pl-6 pr-4">
+                  <td className={`${cellPad} pl-6 pr-4`}>
                     <div className="flex items-center gap-2.5">
                       {/* Watchlist toggle star */}
                       <button
@@ -913,7 +1122,7 @@ export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> =
                   </td>
 
                   {/* 2. Price ($) with Auto-Interactive Tick Highlight */}
-                  <td className="py-3.5 px-4">
+                  <td className={`${cellPad} px-4`}>
                     <div className="flex items-center gap-1.5">
                       <span
                         className={`font-mono font-bold text-sm sm:text-[15px] transition-colors duration-300 ${
@@ -942,7 +1151,7 @@ export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> =
                   </td>
 
                   {/* 3. Change Signal with Auto-Animated Floating Arrow & Live Pulse (Exact match to InstrumentAnalysisPage) */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
+                  <td className={`${cellPad} px-4 whitespace-nowrap`}>
                     <motion.div
                       animate={
                         isTicked
@@ -993,7 +1202,7 @@ export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> =
                   </td>
 
                   {/* 4. 1M Return Signal with Auto-Animated Floating Arrow & Live Pulse */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
+                  <td className={`${cellPad} px-4 whitespace-nowrap`}>
                     <motion.div
                       animate={
                         isTicked
@@ -1044,21 +1253,21 @@ export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> =
                   </td>
 
                   {/* 5. RoL Volume */}
-                  <td className="py-3.5 px-4">
+                  <td className={`${cellPad} px-4`}>
                     <span className="font-mono font-bold text-slate-900 text-xs sm:text-sm">
                       {item.rolVolume}
                     </span>
                   </td>
 
                   {/* 6. RSI */}
-                  <td className="py-3.5 px-4">
+                  <td className={`${cellPad} px-4`}>
                     <span className="font-mono font-bold text-slate-900 text-xs sm:text-sm">
                       {item.rsi}
                     </span>
                   </td>
 
                   {/* 7. Market Cap */}
-                  <td className="py-3.5 pr-6 pl-4">
+                  <td className={`${cellPad} pr-6 pl-4`}>
                     <span className="font-mono font-bold text-slate-900 text-xs sm:text-sm">
                       {item.marketCap}
                     </span>
@@ -1071,6 +1280,7 @@ export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> =
       </div>
 
       {/* ─── PAGINATION FOOTER (< ● ○ ○ >) ─── */}
+      {showPagination && (
       <div className="py-3 px-6 border-t border-slate-100 flex items-center justify-center gap-3">
         <button
           type="button"
@@ -1107,6 +1317,7 @@ export const InstrumentAnalysisWidget: React.FC<InstrumentAnalysisWidgetProps> =
           <ChevronRight className="w-4 h-4 stroke-[2]" />
         </button>
       </div>
+      )}
     </div>
   );
 };
