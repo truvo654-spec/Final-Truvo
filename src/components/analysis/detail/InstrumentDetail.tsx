@@ -3278,17 +3278,15 @@ function TechnicalSummary({
   const availableAverages = averages.filter(([name]) => !hiddenTechnicalParameters.includes(name));
   return (
     <section className="panel p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="label">Technical summary</p>
-          <h2 className="mt-1 text-sm font-semibold text-slate-900">
-            Evidence, not an instruction
-          </h2>
+          <h2 className="font-display text-[17px] font-bold text-slate-900">Technical Summary</h2>
+          <p className="mt-0.5 text-[12.5px] text-slate-500">
+            key technical indicators and signals for {instrument.name.toLowerCase()} ({instrument.symbol})
+          </p>
         </div>
-        <span className="badge positive">
-          {instrument.signal} - {instrument.confidence}%
-        </span>
       </div>
+      <div className="mt-4 border-t border-[#CCC6FB]" />
       <div className="mt-4">
         <TabSubmain
           prefixLabel="INTERVAL"
@@ -3317,7 +3315,7 @@ function TechnicalSummary({
           detail={`RSI 14  -  ${intervalRsi.toFixed(1)}`}
         />
         <CompassGauge
-          label="Moving averages"
+          label="Moving Average"
           score={movingAverageScore}
           detail={`${technicalInterval} trend  -  ${intervalReturn > 0 ? "+" : ""}${intervalReturn.toFixed(2)}%`}
         />

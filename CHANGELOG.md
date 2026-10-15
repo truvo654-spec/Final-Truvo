@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.1] - 2026-10-09
+### Changed
+- The Technicals panel is headed "Technical Summary" with the line the design uses, and the gauge beside the moving averages is named "Moving Average" as the design names it.
+
 ## [1.33.0] - 2026-10-09
 ### Changed
 - The instrument detail page had its own unlock sheet, which is why the old design kept appearing there: the duration cards, the confirmation tick and the "View Level & Tier Perks" link. It uses the shared UnlockStateModal now, so every way into an unlock looks the same. Its pricing, its level discount and what happens on confirm are unchanged, and the result still reports back in the page's own feedback line.
