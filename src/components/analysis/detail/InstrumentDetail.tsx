@@ -3634,10 +3634,14 @@ function MarketStats({
   const detail =
     instrumentDetailData[instrument.symbol] ?? fallbackDetailData(instrument);
   return (
-    <div className="space-y-4">
-      <section className="panel p-5">
-        <p className="label">Market statistics</p>
-        <div className="mt-4 grid grid-cols-4 gap-3 max-lg:grid-cols-2 max-md:grid-cols-1">
+    <div className="panel p-5 sm:p-7">
+      <h2 className="font-display text-[17px] font-bold text-slate-900">Market Data</h2>
+      <p className="mt-0.5 text-[12.5px] text-slate-500">A real-time snapshot of core trading and liquidity metrics.</p>
+      <div className="mt-4 border-t border-[#CCC6FB]" />
+
+      <section className="pt-4">
+        <p className="mb-3 text-[13px] text-slate-500">Market Data</p>
+        <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
           <Metric label="Last price" value={displayValue(instrument)} />
           <Metric
             label="Absolute change"
@@ -3674,7 +3678,9 @@ function MarketStats({
           <Metric label="Data source" value={detail.dataSource} />
         </div>
       </section>
+      <div className="mt-5 border-t border-[#CCC6FB]" />
       <FinancialFactors factors={detail.factors} />
+      <div className="mt-5 border-t border-[#CCC6FB]" />
       <SeasonalPerformance
         instrument={instrument}
         tierLevel={tierLevel}
@@ -3688,9 +3694,9 @@ function FinancialFactors({
   factors: InstrumentDetailData["factors"];
 }) {
   return (
-    <section className="panel p-5">
-      <p className="label">Financial factors</p>
-      <div className="mt-4 grid grid-cols-3 gap-3 max-lg:grid-cols-2 max-md:grid-cols-1">
+    <section className="pt-4">
+      <p className="mb-3 text-[13px] text-slate-500">Financial Factors</p>
+      <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
         {factors.map((factor) => (
           <Metric
             key={factor.label}
@@ -3717,10 +3723,36 @@ function SeasonalPerformance({
   const [mode, setMode] = useState<"Table" | "Chart">("Table");
   if (tierLevel < 4) {
     return (
-      <div className="relative rounded-2xl overflow-hidden min-h-[320px] border border-[#CCC6FB] bg-white">
-        <div className="filter blur-[5px] opacity-30 pointer-events-none select-none p-5">
-          <div className="h-6 w-48 bg-slate-200 rounded mb-4" />
-          <div className="h-48 w-full bg-slate-100 rounded-xl" />
+      <section className="relative pt-4">
+        <p className="mb-3 text-[13px] text-slate-500">Seasonal Performance</p>
+        <div className="pointer-events-none select-none blur-[5px]">
+          <table className="w-full border-separate border-spacing-1.5 text-center text-[12.5px]">
+            <thead>
+              <tr>
+                <th className="w-14" />
+                {[2026, 2025, 2024, 2023, 2022, 2021, 'Average'].map((y) => (
+                  <th key={y} className="pb-1 font-medium text-slate-500">{y}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].map((m, row) => (
+                <tr key={m}>
+                  <th className="pr-1 text-right font-medium text-slate-500">{m}</th>
+                  {Array.from({ length: 7 }).map((_, col) => {
+                    const v = Math.sin(row * 1.7 + col * 0.9) * 2;
+                    return (
+                      <td key={col} className="p-0">
+                        <span className={`block rounded-lg py-2 font-medium ${v >= 0 ? 'bg-[#e5f29a] text-[#2f3d00]' : 'bg-[#e4e0ff] text-[#5945F1]'}`}>
+                          {v >= 0 ? '+' : ''}{v.toFixed(2)}%
+                        </span>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         <LockedFeatureOverlay
           title="Seasonal Performance requires Level 4"
@@ -3728,7 +3760,7 @@ function SeasonalPerformance({
           buttonText="Unlock with Credits"
           onUnlock={() => requestUnlock("performanceAnalytics")}
         />
-      </div>
+      </section>
     );
   }
   const months = [
@@ -5125,11 +5157,9 @@ function AssetSpecific({
 }
 function Metric({ label, value }: { key?: string; label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-3">
-      <div className="text-[9px] uppercase tracking-wide text-slate-400">
-        {label}
-      </div>
-      <div className="mt-1 text-xs font-semibold text-slate-800">{value}</div>
+    <div className="rounded-xl bg-[#f7f8fa] px-4 py-3.5">
+      <div className="text-[13px] text-slate-500">{label}</div>
+      <div className="mt-1 font-display text-[17px] font-bold text-slate-900">{value}</div>
     </div>
   );
 }

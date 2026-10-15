@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.32.0] - 2026-10-09
+### Changed
+- Market Data follows the design: one panel headed "Market Data" with its line of description, the figures two to a row as roomy grey tiles with the label above a bold value, and hairlines separating Market Data, Financial Factors and Seasonal Performance.
+- The seasonal lock blurs the real month-by-year grid behind it rather than two grey bars, so the shape of what is behind the lock is visible.
+
 ## [1.31.0] - 2026-10-09
 ### Added
 - A price alert that already exists opens for viewing: the bell fills violet, the dialog reads "Price Alert", every setting comes back as it was saved, and the buttons become Delete, Cancel and Edit Alert. Deleting asks first, in its own small dialog, and says it cannot be undone.
