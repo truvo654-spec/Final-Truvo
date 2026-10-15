@@ -12,7 +12,11 @@ import MS_LOCK from '../../assets/community/ms-lock.png';
 export interface LockStateContainerProps {
   /** The headline, usually what is behind the lock. */
   title: string;
-  /** One line on why it is locked or what it gives. */
+  /**
+   * Kept so the panels can keep passing what they always did, but no longer
+   * shown: a lock reads better as the headline and the way in, with nothing
+   * between them.
+   */
   description?: string;
   buttonText?: string;
   /** Tightens the padding where the panel is small. */
@@ -22,7 +26,6 @@ export interface LockStateContainerProps {
 
 export const LockStateContainer: React.FC<LockStateContainerProps> = ({
   title,
-  description,
   buttonText = 'Unlock with Credits',
   compact = false,
   onUnlock,
@@ -42,11 +45,6 @@ export const LockStateContainer: React.FC<LockStateContainerProps> = ({
     <p className={`mt-2 font-display font-bold text-slate-900 dark:text-white ${compact ? 'text-[17px]' : 'text-[24px]'}`}>
       {title}
     </p>
-    {description && (
-      <p className={`mt-1.5 max-w-[320px] leading-relaxed text-slate-500 dark:text-white/60 ${compact ? 'text-[12.5px]' : 'text-[14px]'}`}>
-        {description}
-      </p>
-    )}
     <button
       type="button"
       onClick={onUnlock}

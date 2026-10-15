@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.32.1] - 2026-10-09
+### Changed
+- The lock state shows only what is locked and the way in. The paragraph under the headline is gone from every locked panel; the panels still pass it, so nothing had to be touched one by one.
+
 ## [1.32.0] - 2026-10-09
 ### Changed
 - Market Data follows the design: one panel headed "Market Data" with its line of description, the figures two to a row as roomy grey tiles with the label above a bold value, and hairlines separating Market Data, Financial Factors and Seasonal Performance.
