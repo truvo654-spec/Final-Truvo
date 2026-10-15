@@ -2814,64 +2814,54 @@ function Overview({
         <div className="-mx-5 -mt-5 mb-5 pt-1.5">
           {tabs}
         </div>
-        <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="label">Performance</p>
-            <h2 className="mt-1 text-sm font-semibold text-slate-900">
-              {instrument.symbol} price performance
-            </h2>
-            <p className="mt-1 text-[10px] text-slate-400">
-              Demo price series · {compareRange} range
-            </p>
+            <h2 className="font-display text-[17px] font-bold text-slate-900">Overview</h2>
+            <p className="mt-0.5 text-[12.5px] text-slate-500">Performance of the asset in a selected period</p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <TabSubmain
-              tabs={[
-                { id: "performance", label: "Performance" },
-                {
-                  id: "advanced",
-                  label: "Advanced chart",
-                  isLocked: tierLevel < 2,
-                  icon: tierLevel < 2 ? <Lock className="w-3 h-3 text-slate-400" /> : undefined,
-                },
-              ]}
-              activeTab={chartOpen ? "advanced" : "performance"}
-              onChange={(tabId) => {
-                if (tabId === "advanced" && !chartOpen) onChart();
-                if (tabId === "performance" && chartOpen) onChart();
-              }}
-              onLockedTabClick={() => requestUnlock("advancedChart")}
-              size="sm"
-            />
-            {!chartOpen && (
-              <TabSubmain
-                prefixLabel="PERIOD"
-                tabs={(["1D", "1W", "1M", "1Y"] as PerformancePeriod[]).map(
-                  (item) => {
-                    const requiredTier = historicalTierForTimeframe(item);
-                    const locked = requiredTier > tierLevel;
-                    return {
-                      id: item,
-                      label: item,
-                      isLocked: locked,
-                      icon: locked ? <Lock className="w-3 h-3 text-slate-400" /> : undefined,
-                    };
-                  },
-                )}
-                activeTab={period}
-                onChange={(item) => {
-                  setPeriod(item as PerformancePeriod);
-                  setCompareRange(periodToRange[item as PerformancePeriod]);
+          <div className="flex flex-wrap items-start gap-4">
+            {/* what the chart is showing */}
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[12.5px] font-medium text-slate-500">Viewing Mode</span>
+              <select
+                value={chartOpen ? 'advanced' : 'performance'}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  if (next === 'advanced' && tierLevel < 2) { requestUnlock('advancedChart'); return; }
+                  if (next === 'advanced' && !chartOpen) onChart();
+                  if (next === 'performance' && chartOpen) onChart();
                 }}
-                onLockedTabClick={(tab) => {
-                  const req = historicalTierForTimeframe(tab.id as PerformancePeriod);
-                  requestUnlock(req >= 3 ? "performanceAnalytics" : "historicalData");
+                className="w-[190px] cursor-pointer rounded-xl border border-[#d7d3fb] bg-white px-3.5 py-2.5 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
+              >
+                <option value="performance">Performance</option>
+                <option value="advanced">{tierLevel < 2 ? 'Advanced chart (Level 2)' : 'Advanced chart'}</option>
+              </select>
+            </label>
+
+            {/* over how long */}
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[12.5px] font-medium text-slate-500">Period</span>
+              <select
+                value={period}
+                onChange={(e) => {
+                  const item = e.target.value as PerformancePeriod;
+                  const req = historicalTierForTimeframe(item);
+                  if (req > tierLevel) { requestUnlock(req >= 3 ? 'performanceAnalytics' : 'historicalData'); return; }
+                  setPeriod(item);
+                  setCompareRange(periodToRange[item]);
                 }}
-                size="sm"
-              />
-            )}
+                className="w-[130px] cursor-pointer rounded-xl border border-[#d7d3fb] bg-white px-3.5 py-2.5 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
+              >
+                {(['1D', '1W', '1M', '1Y'] as PerformancePeriod[]).map((item) => {
+                  const locked = historicalTierForTimeframe(item) > tierLevel;
+                  const label = item === '1D' ? '1 Day' : item === '1W' ? '1 Week' : item === '1M' ? '1 Month' : '1 Year';
+                  return <option key={item} value={item}>{locked ? `${label} \u{1F512}` : label}</option>;
+                })}
+              </select>
+            </label>
           </div>
         </div>
+        <div className="mt-4 border-t border-[#eef1f5]" />
         {chartOpen && tierLevel < 2 ? (
           <div className="relative mt-5 min-h-[300px] rounded-xl overflow-hidden">
             <div className="filter blur-[4px] opacity-35 pointer-events-none select-none">
@@ -3002,25 +2992,21 @@ function Overview({
                 <span>Now - {displayValue(instrument)}</span>
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-6 gap-3 max-xl:grid-cols-3 max-md:grid-cols-2">
-              <Metric label={`${compareRange} return`} value={changeLabel} />
-              <Metric
-                label={`Min (${compareRange})`}
-                value={displayValue({ ...instrument, price: low })}
-              />
-              <Metric
-                label={`Max (${compareRange})`}
-                value={displayValue({ ...instrument, price: high })}
-              />
-              <Metric
-                label="Price range"
-                value={`${displayValue({ ...instrument, price: low })} - ${displayValue({ ...instrument, price: high })}`}
-              />
-              <Metric label="Last price" value={displayValue(instrument)} />
-              <Metric
-                label="Signal"
-                value={`${instrument.signal} ${instrument.confidence}%`}
-              />
+            {/* the six figures, in the order the design reads them */}
+            <div className="mt-5 grid grid-cols-3 gap-4 max-md:grid-cols-2">
+              {[
+                [`${compareRange} Return`, changeLabel],
+                ['Price Range', `${displayValue({ ...instrument, price: low })} - ${displayValue({ ...instrument, price: high })}`],
+                [`Min (${compareRange})`, displayValue({ ...instrument, price: low })],
+                ['Last Price', displayValue(instrument)],
+                [`Max (${compareRange})`, displayValue({ ...instrument, price: high })],
+                ['Signal', `${instrument.signal} ${instrument.confidence}%`],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl bg-[#f7f8fa] px-4 py-3.5">
+                  <p className="text-[13px] text-slate-500">{label}</p>
+                  <p className="mt-1 font-display text-[17px] font-bold text-slate-900">{value}</p>
+                </div>
+              ))}
             </div>
           </>
         )}

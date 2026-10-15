@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.0] - 2026-10-09
+### Changed
+- The Overview panel on the instrument detail page matches the design: the heading reads "Overview" with "Performance of the asset in a selected period", the chart mode and the period are two labelled dropdowns rather than tab strips, and the six figures sit in a three-by-two grid reading 1D Return, Price Range, Min, Last Price, Max and Signal.
+- The level gates survive the change: picking the advanced chart or a longer period below your level opens the unlock prompt instead of switching.
+
 ## [1.20.3] - 2026-10-09
 ### Changed
 - Today's News matches the design: the heading reads "Today's News.", the live badge and the subtitle are gone, and each story is a coloured category dot with its time, the headline, a thumbnail on the right and its hashtags beneath, separated by a hairline rather than boxed in a card.
