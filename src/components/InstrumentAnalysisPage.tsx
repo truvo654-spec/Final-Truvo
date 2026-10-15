@@ -1542,7 +1542,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                   <LockedFeatureOverlay
                     title="Heatmap Analysis requires Level 2"
                     description="Real-time multi-asset heatmaps, sector volatility mapping, and volume clustering are available from Climber tier. Unlock temporarily with Credits."
-                    buttonText="Unlock"
+                    buttonText="Unlock with Credits"
                     onUnlock={() => handleOpenUnlockModal('heatmap')}
                   />
                 </div>
@@ -1571,7 +1571,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                   <LockedFeatureOverlay
                     title="Scatter Plot Analysis requires Level 3"
                     description="Institutional 2D risk-reward distribution, RSI relative momentum, and beta correlation maps are reserved for Player tier and above."
-                    buttonText="Unlock"
+                    buttonText="Unlock with Credits"
                     onUnlock={() => handleOpenUnlockModal('scatter')}
                   />
                 </div>
@@ -1600,7 +1600,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                   <LockedFeatureOverlay
                     title="Correlation Matrix requires Level 4"
                     description="Advanced cross-asset Pearson correlation matrices and portfolio hedging telemetry are exclusive to Boss tier. Unlock temporarily with Credits."
-                    buttonText="Unlock"
+                    buttonText="Unlock with Credits"
                     onUnlock={() => handleOpenUnlockModal('correlation')}
                   />
                 </div>

@@ -1272,7 +1272,7 @@ export function InstrumentDetail({
                   compact={true}
                   title="Institutional Research requires Level 4"
                   description="Curated macroeconomic intelligence, research notes, and editorial recaps are reserved for Elite tier (Lv.4) or a credit unlock."
-                  buttonText="Unlock"
+                  buttonText="Unlock with Credits"
                   onUnlock={() => requestUnlock("researchNews")}
                 />
               </div>
@@ -2983,7 +2983,7 @@ function Overview({
             <LockedFeatureOverlay
               title="Advanced Charting requires Level 2"
               description="Multi-timeframe candlestick analysis, advanced drawing tools, and real-time order-book telemetry require Climber tier (Lv.2) or a credit unlock."
-              buttonText="Unlock"
+              buttonText="Unlock with Credits"
               onUnlock={() => requestUnlock("advancedChart")}
             />
           </div>
@@ -3719,7 +3719,7 @@ function SeasonalPerformance({
         <LockedFeatureOverlay
           title="Seasonal Performance requires Level 4"
           description="Multi-year cyclical performance patterns, seasonal distribution matrices, and recurring monthly alpha analysis require Elite tier (Lv.4) or a credit unlock."
-          buttonText="Unlock"
+          buttonText="Unlock with Credits"
           onUnlock={() => requestUnlock("performanceAnalytics")}
         />
       </div>
@@ -4674,7 +4674,7 @@ function FinancialReport({
           <LockedFeatureOverlay
             title="Financial Analysis requires Level 3"
             description="Institutional income statements, quarterly cash flow balance sheets, and AI financial summaries require Player tier (Lv.3) or a credit unlock."
-            buttonText="Unlock"
+            buttonText="Unlock with Credits"
             onUnlock={() => requestUnlock("performanceAnalytics")}
           />
         )}

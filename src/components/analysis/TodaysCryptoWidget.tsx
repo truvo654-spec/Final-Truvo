@@ -111,7 +111,7 @@ export const TodaysCryptoWidget: React.FC<TodaysCryptoWidgetProps> = ({
           <LockedFeatureOverlay
             title={requiredLevelTitle}
             description={requiredLevelDesc}
-            buttonText="Unlock"
+            buttonText="Unlock with Credits"
             compact={true}
             onUnlock={onUnlock || (() => {})}
           />

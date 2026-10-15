@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.26.0] - 2026-10-09
+### Added
+- LockStateContainer: one lock state for every panel a level does not open yet, with the mascot holding the lock over the blurred content and a single gradient "Unlock with Credits".
+### Changed
+- LockedFeatureOverlay now renders it, so all ten locked panels across Instrument Analysis, the instrument detail page and the widgets pick up the new look without any change to their flow or wording.
+
 ## [1.25.0] - 2026-10-09
 ### Added
 - The star on the instrument detail page favourites the asset: it fills violet while the asset is a favourite, and confirms with "Asset Favourited" or "Asset Unfavorited" in the same banner the price alert uses.

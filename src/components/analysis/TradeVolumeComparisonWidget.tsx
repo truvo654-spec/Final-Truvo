@@ -125,7 +125,7 @@ export const TradeVolumeComparisonWidget: React.FC<TradeVolumeComparisonWidgetPr
           <LockedFeatureOverlay
             title="Cross-market comparison requires Level 3"
             description="Temporarily unlock cross-market activity comparisons with Credits."
-            buttonText="Unlock"
+            buttonText="Unlock with Credits"
             compact={true}
             onUnlock={onUnlock || (() => {})}
           />
