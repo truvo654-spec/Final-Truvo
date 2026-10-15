@@ -1152,6 +1152,7 @@ export function InstrumentDetail({
               kind={kind}
               tierLevel={snapshot.level.level}
               userVote={weeklyVote?.side ?? null}
+              panelState={panelState}
             />
           )}
           {["Products", "Brokers", "Products & Brokers"].includes(tab) && (
@@ -4464,35 +4465,47 @@ function Forecast({
   kind,
   tierLevel,
   userVote,
+  panelState = 'default',
 }: {
   instrument: Instrument;
   kind: string;
   tierLevel: number;
   userVote: VoteSide | null;
+  /** 'empty' renders the panel's nothing-loaded state. */
+  panelState?: 'default' | 'empty';
 }) {
   const forecast = instrument.return1m * 1.35;
   return (
     <div className="space-y-4">
       <section className="panel p-5">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="label">Community vote vs price</p>
-            <h2 className="mt-1 text-sm font-semibold text-slate-900">
-              How sentiment tracked the last 30 days
+            <h2 className="font-display text-[17px] font-bold text-slate-900">
+              {userVote ? 'AI & Crowd Sentiment vs. Price' : 'Community Vote vs Price'}
             </h2>
-            <p className="mt-1 text-[10px] text-slate-400">
-              Compare the synthetic price path with the community bullish vote
-              share for {instrument.symbol}.
-            </p>
+            <p className="mt-0.5 text-[12.5px] text-slate-500">How sentiment tracked the last 30 days</p>
           </div>
-          <span className="badge">WEEKLY VOTES</span>
+          <span className="flex items-center gap-2 rounded-xl border border-[#CCC6FB] px-3.5 py-2 text-[14px] text-slate-900">
+            30 Days
+            <ChevronDown size={16} className="text-slate-500" aria-hidden />
+          </span>
         </div>
+        <div className="mt-4 border-t border-[#CCC6FB]" />
+        {panelState === 'empty' ? (
+          <DetailEmptyState
+            art="alert"
+            title="We\u2019ve Lost Track of the Votes"
+            lines={['It\u2019s quiet in the markets right now. Check', 'back later for the latest updates and insights.']}
+            tall
+          />
+        ) : (
         <WeeklyVoteChart
           instrument={instrument}
           userVote={userVote}
           tierLevel={tierLevel}
         />
-        <div className="mt-5 grid grid-cols-4 gap-3 max-lg:grid-cols-2 max-md:grid-cols-1">
+        )}
+        <div className="mt-5 grid grid-cols-4 gap-4 max-lg:grid-cols-2 max-md:grid-cols-1">
           <Metric
             label="30D scenario"
             value={`${forecast >= 0 ? "+" : ""}${forecast.toFixed(1)}%`}

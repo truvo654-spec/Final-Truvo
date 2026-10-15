@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.38.0] - 2026-10-09
+### Changed
+- The Forecast panel is headed as the design heads it: "Community Vote vs Price" until the person has voted and "AI & Crowd Sentiment vs. Price" after, with the period as a control on the right and a hairline under the heading.
+### Added
+- Forecast gets its failed state, "We've Lost Track of the Votes", alongside the seven panels that already had one.
+
 ## [1.37.0] - 2026-10-09
 ### Added
 - Search matches meaning rather than letters. searchKeywords.ts maps about eighty words people actually type, in Thai and English, onto the words the app uses: gold and ทอง reach XAU, เงินคืน and rebate reach cashback, แต้ม reaches points, บอท reaches the expert advisors. Every indexed row carries its own keywords too, and a query of several words has to satisfy all of them.
