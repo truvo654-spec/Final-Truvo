@@ -1,4 +1,5 @@
 import React, { useState, useEffect , useMemo} from 'react';
+import { DemoDashboardV1 } from './components/DemoDashboardV1';
 import { COURSES } from './data/educationData';
 import { PROMOTIONS } from './data/promotionsData';
 import { COMMUNITY_ARTICLES } from './data/communityData';
@@ -290,6 +291,8 @@ export default function App() {
   const [quickSteps, setQuickSteps] = useState(QUICK_START_STEPS);
   const [missions, setMissions] = useState<Mission[]>(INITIAL_MISSIONS);
   const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>(INITIAL_ACTIVITY_LOGS);
+  /** Which dashboard the person is looking at. */
+  const [dashboardVersion, setDashboardVersion] = useState<'current' | 'demo1'>('current');
   const [activeTab, setActiveTab] = useState<string>(() => initialRoute.tab);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -1126,6 +1129,73 @@ export default function App() {
           ) : (
             <div className="space-y-6">
 
+            {/* Which dashboard is being looked at */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[12px] font-bold uppercase tracking-wide text-slate-400">Dashboard</span>
+              {([
+                ['current', 'Current'],
+                ['demo1', 'Demo 1 \u00b7 old version'],
+              ] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={dashboardVersion === id}
+                  onClick={() => setDashboardVersion(id)}
+                  className={`rounded-lg px-3 py-1.5 text-[13px] font-medium transition ${
+                    dashboardVersion === id
+                      ? 'bg-[#5945F1] text-white'
+                      : 'border border-[#CCC6FB] text-[#475569] hover:bg-[#f1f0fe]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+              {dashboardVersion === 'demo1' && (
+                <span className="rounded-md bg-[#fef3c7] px-2.5 py-1 text-[12px] font-bold text-[#92400e]">
+                  Demo only. This is the older dashboard, kept for comparison.
+                </span>
+              )}
+            </div>
+
+            {dashboardVersion === 'demo1' ? (
+            <DemoDashboardV1
+              user={user}
+              brokers={brokers}
+              signals={signals}
+              missions={missions}
+              onUpdateMissions={setMissions}
+              quickSteps={quickSteps}
+              performanceData={PERFORMANCE_DATA}
+              leaderboardUsers={LEADERBOARD_USERS}
+              onOpenViewPlan={() => setActiveTab('member-plan')}
+              onAddDemoPoints={handleAddDemoPoints}
+              onStepClick={handleStepClick}
+              onToggleStep={handleToggleStep}
+              onOpenConnectModal={(broker) => {
+                setSelectedBrokerForConnect(broker || brokers[0]);
+                setIsConnectModalOpen(true);
+              }}
+              onOpenLedger={() => setIsLedgerOpen(true)}
+              onSelectSignal={(sig) => {
+                setSelectedSignal(sig);
+                setIsSignalModalOpen(true);
+              }}
+              onNavigateToTab={setActiveTab}
+              onNavigateToConnectBroker={(broker) => {
+                if (broker) setSelectedBrokerForConnect(broker);
+                setActiveTab('connect-to-truvo');
+              }}
+              onSelectBrokerDetail={(broker) => {
+                setSelectedBrokerForDetail(broker);
+                setActiveTab('broker-detail');
+              }}
+              onTriggerEarningModal={handleTriggerEarningReward}
+              onOpenSearchModal={() => setIsPaletteOpen(true)}
+              onShowToast={showToast}
+              onSelectLevelScenario={handleSelectLevelScenario}
+              onStartTour={handleStartOnboarding}
+            />
+            ) : (
             <ReferenceDashboard
               user={user}
               brokers={brokers}
@@ -1163,6 +1233,7 @@ export default function App() {
               onSelectLevelScenario={handleSelectLevelScenario}
               onStartTour={handleStartOnboarding}
             />
+            )}
             </div>
           )
         )}

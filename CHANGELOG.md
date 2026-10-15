@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.51.0] - 2026-10-09
+### Added
+- The dashboard from the demo branch is back as Demo 1, kept whole in its own file rather than rebuilt from memory, and a switch at the top of the dashboard moves between it and the current one. Choosing Demo 1 says plainly that it is the older dashboard, kept for comparison, so nobody mistakes it for what ships.
+
 ## [1.50.0] - 2026-10-09
 ### Changed
 - The action block on the instrument header follows the design: the star and the bell are rounded squares beside a taller gradient "Trade via Brokers", and the cashback card sits inside a violet-to-magenta gradient border with a large yellow broker tile, the offer on one line and Trade Now beside the line beneath it. The column is wide enough that none of it wraps.
