@@ -1,4 +1,5 @@
 import "./market.css";
+import { PriceAlertModal } from './PriceAlertModal';
 import { THUMB_GOLD, THUMB_SPX, THUMB_BANKS, THUMB_USD } from '../../../data/newsImagePlaceholders';
 import { DetailEmptyState } from './DetailEmptyState';
 "use client";
@@ -684,11 +685,36 @@ export function InstrumentDetail({
   );
   /** Lets each panel's empty state be reviewed without breaking the data. */
   const [panelState, setPanelState] = useState<'default' | 'empty'>('default');
+  const [alertOpen, setAlertOpen] = useState(false);
+  /** Shown top right for a few seconds after an alert is made. */
+  const [alertMade, setAlertMade] = useState<string | null>(null);
   const [draftPost, setDraftPost] = useState('');
   const [postSort, setPostSort] = useState<'Popular' | 'Most Recent'>('Popular');
 
   return (
     <div className="market-feature">
+      <PriceAlertModal
+        open={alertOpen}
+        name={instrumentTitle}
+        ticker={instrument.symbol.split('/')[0]}
+        price={instrument.price}
+        onClose={() => setAlertOpen(false)}
+        onCreate={(summary) => {
+          setAlertMade(summary);
+          window.setTimeout(() => setAlertMade(null), 4000);
+        }}
+      />
+
+      {alertMade && (
+        <div
+          role="status"
+          className="fixed right-6 top-[86px] z-[96] flex items-center gap-2.5 rounded-xl border border-[#d7d3fb] bg-[#f5f4ff] px-4 py-3 text-[15px] font-medium text-slate-900 shadow-lg"
+        >
+          <Check size={18} className="text-[#5945F1]" aria-hidden />
+          Price Alert Created
+        </div>
+      )}
+
       <div className="fixed bottom-4 left-4 z-30 flex items-center gap-1 rounded-xl border border-[#d7d3fb] bg-white/95 p-1 opacity-30 shadow-lg backdrop-blur transition hover:opacity-100 print:hidden" role="group" aria-label="Preview panel state">
         <span className="px-2 text-[10px] font-bold uppercase tracking-wide text-[#94a3b8]">Preview state</span>
         {(['default', 'empty'] as const).map((id) => (
@@ -784,7 +810,7 @@ export function InstrumentDetail({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onToast(`Demo price alert created for ${instrument.symbol}`)}
+                  onClick={() => setAlertOpen(true)}
                   aria-label="Create a price alert"
                   data-keep-button-icons
                   className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d7d3fb] text-[#5945F1] transition hover:bg-[#f7f6ff]"

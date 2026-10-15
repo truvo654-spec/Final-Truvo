@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.23.0] - 2026-10-09
+### Added
+- Create Price Alert, opened by the bell on the instrument detail page and built to the design: the instrument with its live price, a condition and a target, a line restating what will happen in plain words, advanced filters behind a disclosure, and Cancel beside Create Alert.
+- Making one shows the "Price Alert Created" confirmation at the top right, which clears itself.
+
 ## [1.22.0] - 2026-10-09
 ### Added
 - The chart's crosshair: moving across the plot draws the dashed violet line and the price read-out the design shows.
