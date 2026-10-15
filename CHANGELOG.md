@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.49.0] - 2026-10-09
+### Changed
+- The instrument header carries the instrument's own mark rather than the first letter of its name, says what the instrument actually is for the ones worth saying it about, and reads its 24-hour volume on the same scale as its market cap, so Bitcoin shows $48.7B rather than $48.7M.
+
 ## [1.48.0] - 2026-10-09
 ### Changed
 - Member Plan moved out of the top navigation and into the Company menu, where it sits above About Us with a line saying what it covers. The top row is Trade, Brokers, Knowledge Hub, Community and Company.

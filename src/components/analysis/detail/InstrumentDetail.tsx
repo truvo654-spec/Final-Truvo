@@ -1,4 +1,6 @@
 import "./market.css";
+import { InstrumentIcon } from '../InstrumentIcon';
+import { iconTypeFor } from '../instrumentIconType';
 import { priceAlertNotification, raiseNotification } from '../../notifications/notificationStore';
 import { brokerMark } from '../../brokers/brokerMark';
 import { LockableSelect } from '../../common/LockableSelect';
@@ -212,6 +214,17 @@ type InstrumentNews = {
   title: string;
   summary: string;
 };
+/** A line on what the instrument is, for the ones worth saying it about. */
+const INSTRUMENT_BLURBS: Record<string, string> = {
+  'BTC/USD': 'The first and the largest cryptocurrency by market cap, known for its decentralization and store of value narrative.',
+  'ETH/USD': 'The largest smart-contract network, where most on-chain applications and tokens are issued.',
+  'XAU/USD': 'Gold against the dollar, the market traders turn to when they want something that is nobody else\u2019s promise.',
+  'EUR/USD': 'The most traded currency pair in the world, and the usual first read on dollar strength.',
+  'USD/JPY': 'The dollar against the yen, closely tied to the gap between US and Japanese interest rates.',
+  'US500': 'The five hundred largest listed companies in the United States, taken as the market itself.',
+  'NAS100': 'The hundred largest non-financial companies on the Nasdaq, weighted towards technology.',
+};
+
 const instrumentNews = (instrument: Instrument): InstrumentNews[] => [
   {
     thumb: THUMB_GOLD,
@@ -763,16 +776,19 @@ export function InstrumentDetail({
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center">
             {/* who it is */}
             <div className="flex min-w-0 items-start gap-4 xl:w-[330px] xl:shrink-0">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#f7931a] font-display text-[22px] font-bold text-white">
-                {instrument.symbol.replace(/[^A-Za-z]/g, '').slice(0, 1) || 'M'}
-              </span>
+              <InstrumentIcon
+                iconType={iconTypeFor(instrument.symbol)}
+                name={instrument.name}
+                className="h-14 w-14 shrink-0"
+              />
               <div className="min-w-0">
                 <h1 className="font-display text-[26px] font-bold leading-tight text-slate-900">{instrumentTitle}</h1>
                 <p className="mt-0.5 text-[14px] text-slate-500">
                   {kind === 'Crypto' ? 'Cryptocurrency' : kind} &nbsp;&middot;&nbsp; {instrument.symbol}
                 </p>
-                <p className="mt-2 max-w-[310px] text-[12.5px] leading-relaxed text-slate-500">
-                  {`${instrumentTitle} trades on the ${kind.toLowerCase()} market. The figures here are a demo snapshot, not a live quote.`}
+                <p className="mt-2 line-clamp-3 max-w-[310px] text-[12.5px] leading-relaxed text-slate-500">
+                  {INSTRUMENT_BLURBS[instrument.symbol]
+                    ?? `${instrumentTitle} trades on the ${kind.toLowerCase()} market. The figures here are a demo snapshot.`}
                 </p>
               </div>
             </div>
@@ -821,7 +837,7 @@ export function InstrumentDetail({
               <dl className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
                 {[
                   ['Market Cap', instrument.marketCap ? (instrument.marketCap >= 1000 ? `$${(instrument.marketCap / 1000).toFixed(2)}T` : `$${instrument.marketCap.toFixed(1)}B`) : '\u2014'],
-                  ['Volume (24h)', instrument.volume >= 1000 ? `$${(instrument.volume / 1000).toFixed(1)}B` : `$${instrument.volume.toFixed(1)}M`],
+                  ['Volume (24h)', instrument.volume >= 1000 ? `$${(instrument.volume / 1000).toFixed(2)}T` : `$${instrument.volume.toFixed(1)}B`],
                   ['Relative Volume', `${instrument.rvol.toFixed(2)}x`],
                   ['1M Return', `${instrument.return1m > 0 ? '+' : ''}${instrument.return1m}%`],
                 ].map(([label, value]) => (
@@ -870,7 +886,7 @@ export function InstrumentDetail({
               <div className="flex items-center gap-3 rounded-xl border border-[#5945F1] p-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#f5d800] font-display text-[15px] font-bold text-slate-900">ex</span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-bold leading-tight">
+                  <p className="whitespace-nowrap text-[14px] font-bold leading-tight">
                     <span className="text-[#5945F1]">Earn $6.20/Lot</span> <span className="text-slate-900">Cashback</span><span className="text-[#c026d3]">.</span>
                   </p>
                   <p className="mt-0.5 text-[12px] leading-snug text-slate-500">Let your trades do the work!</p>
