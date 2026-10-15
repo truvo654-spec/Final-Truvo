@@ -645,8 +645,10 @@ export function InstrumentDetail({
       onToast(`Level ${snapshot.level.level} watchlists are limited to ${watchlistLimit} symbols.`);
       return;
     }
-    setWatching(current => !current);
-    onToast(watching ? "Removed from watchlist" : "Added to watchlist");
+    const nowWatching = !watching;
+    setWatching(nowWatching);
+    setBanner(nowWatching ? 'Asset Favourited' : 'Asset Unfavorited');
+    window.setTimeout(() => setBanner(null), 4000);
   };
   const recordVote = (side: VoteSide) => {
     if (weeklyVote) {
@@ -688,7 +690,7 @@ export function InstrumentDetail({
   const [panelState, setPanelState] = useState<'default' | 'empty'>('default');
   const [alertOpen, setAlertOpen] = useState(false);
   /** Shown top right for a few seconds after an alert is made. */
-  const [alertMade, setAlertMade] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
   const [draftPost, setDraftPost] = useState('');
   const [postSort, setPostSort] = useState<'Popular' | 'Most Recent'>('Popular');
 
@@ -700,19 +702,19 @@ export function InstrumentDetail({
         ticker={instrument.symbol.split('/')[0]}
         price={instrument.price}
         onClose={() => setAlertOpen(false)}
-        onCreate={(summary) => {
-          setAlertMade(summary);
-          window.setTimeout(() => setAlertMade(null), 4000);
+        onCreate={() => {
+          setBanner('Price Alert Created');
+          window.setTimeout(() => setBanner(null), 4000);
         }}
       />
 
-      {alertMade && (
+      {banner && (
         <div
           role="status"
           className="fixed right-6 top-[86px] z-[96] flex items-center gap-2.5 rounded-xl border border-[#d7d3fb] bg-[#f5f4ff] px-4 py-3 text-[15px] font-medium text-slate-900 shadow-lg"
         >
           <Check size={18} className="text-[#5945F1]" aria-hidden />
-          Price Alert Created
+          {banner}
         </div>
       )}
 
@@ -805,7 +807,7 @@ export function InstrumentDetail({
                   aria-label={watching ? 'Remove from watchlist' : 'Add to watchlist'}
                   aria-pressed={watching}
                   data-keep-button-icons
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${watching ? 'border-[#5945F1] bg-[#f1f0fe] text-[#5945F1]' : 'border-[#d7d3fb] text-[#5945F1] hover:bg-[#f7f6ff]'}`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${watching ? 'border-[#5945F1] bg-[#5945F1] text-white' : 'border-[#d7d3fb] text-[#5945F1] hover:bg-[#f7f6ff]'}`}
                 >
                   <Star size={16} fill={watching ? 'currentColor' : 'none'} />
                 </button>

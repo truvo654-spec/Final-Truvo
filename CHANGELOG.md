@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.25.0] - 2026-10-09
+### Added
+- The star on the instrument detail page favourites the asset: it fills violet while the asset is a favourite, and confirms with "Asset Favourited" or "Asset Unfavorited" in the same banner the price alert uses.
+
 ## [1.24.0] - 2026-10-09
 ### Added
 - SegmentedTabs: a grey track with the chosen option lifting out as a white pill, for panels that switch between a few views without the weight of the folder tabs.
