@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.45.0] - 2026-10-09
+### Changed
+- The price alert offers exactly what the design lists: eight conditions from Price Reaches through Price Enters a Range, four indicators, and the advanced filters as Once / Every Crossing / Every 30 Minutes / Daily Summary, 24 Hours / 7 Days / 30 Days / Never, and Push Notification / In-App Inbox / Email.
+- An indicator belongs to a crossing, so it appears only for the two crossing conditions and the rest ask for a target price. Standard deviation belongs to the Bollinger Bands alone; the other indicators ask only for a period, and the line restating the alert follows whichever is showing.
+
 ## [1.44.0] - 2026-10-09
 ### Added
 - Market News and the Education Hub have their own addresses, /news and /knowledge/education, found by sweeping every page in the app: the two were reachable only through the menu, so a link to either landed on the 404 page.

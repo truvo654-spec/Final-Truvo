@@ -9,11 +9,18 @@ import { ChevronDown, Info, Plus, X } from 'lucide-react';
  * the dialog, so cancelling costs nothing.
  */
 
-const CONDITIONS = ['Price Reaches', 'Price Rises Above', 'Price Falls Below', 'Price Crosses Above', 'Price Crosses Below'] as const;
-const INDICATORS = ['None', 'Bollinger Bands', 'Moving Average', 'RSI'] as const;
-const FREQUENCIES = ['Once', 'Every time', 'Once a day'] as const;
-const EXPIRIES = ['7 Days', '30 Days', '90 Days', 'Never'] as const;
-const CHANNELS = ['Push Notification', 'Push Notification, + 1', 'Email only'] as const;
+const CONDITIONS = [
+  'Price Reaches', 'Price Rises Above', 'Price Drops Below',
+  'Price Crosses Above', 'Price Crosses Below',
+  'Change is Above', 'Change is Below', 'Price Enters a Range',
+] as const;
+
+/** Only a crossing is measured against an indicator; the rest take a price. */
+const CROSSING = ['Price Crosses Above', 'Price Crosses Below'];
+const INDICATORS = ['Moving Average (MA)', 'Bollinger Bands', 'MACD', 'Ichimoku Cloud'] as const;
+const FREQUENCIES = ['Once', 'Every Crossing', 'Every 30 Minutes', 'Daily Summary'] as const;
+const EXPIRIES = ['24 Hours', '7 Days', '30 Days', 'Never'] as const;
+const CHANNELS = ['Push Notification', 'In-App Inbox', 'Email'] as const;
 
 /** An alert that already exists for this instrument. */
 export interface SavedAlert {
@@ -43,6 +50,7 @@ export const PriceAlertModal: React.FC<{
   const [condition, setCondition] = useState<string>(CONDITIONS[0]);
   const [target, setTarget] = useState(() => price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   const [indicator, setIndicator] = useState<string>(INDICATORS[0]);
+  const byIndicator = CROSSING.includes(condition);
   const [lookback, setLookback] = useState('20');
   const [deviation, setDeviation] = useState('2');
   const [advanced, setAdvanced] = useState(false);
@@ -139,6 +147,7 @@ export const PriceAlertModal: React.FC<{
             </span>
           </label>
 
+          {byIndicator && (
           <label className="flex flex-col gap-1.5">
             <span className="text-[14px] font-medium text-slate-700">Indicator</span>
             <span className="relative block">
@@ -152,8 +161,9 @@ export const PriceAlertModal: React.FC<{
             </select>
             </span>
           </label>
+          )}
 
-          {indicator === 'None' ? (
+          {!byIndicator ? (
           <label className="flex flex-col gap-1.5">
             <span className="text-[14px] font-medium text-slate-700">Target Price</span>
             <span className="flex items-center gap-2 rounded-xl border border-[#CCC6FB] bg-white px-3.5 py-2.5 focus-within:border-[#5945F1]">
@@ -178,6 +188,7 @@ export const PriceAlertModal: React.FC<{
                   className="w-full rounded-xl border border-[#CCC6FB] px-3.5 py-2.5 text-[15px] text-slate-900 outline-none focus:border-[#5945F1]"
                 />
               </label>
+              {indicator === 'Bollinger Bands' && (
               <label className="flex flex-col gap-1.5">
                 <span className="text-[14px] font-medium text-slate-700">Standard Deviation (SD)</span>
                 <input
@@ -187,13 +198,16 @@ export const PriceAlertModal: React.FC<{
                   className="w-full rounded-xl border border-[#CCC6FB] px-3.5 py-2.5 text-[15px] text-slate-900 outline-none focus:border-[#5945F1]"
                 />
               </label>
+              )}
             </>
           )}
         </div>
 
-        {indicator !== 'None' && (
+        {byIndicator && (
           <p className="mt-3 text-[13.5px] leading-relaxed text-slate-500">
-            Set the lookback period and the number of standard deviations used for the {indicator}.
+            {indicator === 'Bollinger Bands'
+              ? `Set the lookback period and the number of standard deviations used for the ${indicator}.`
+              : 'Set the indicator parameters used to evaluate the crossing.'}
           </p>
         )}
 
@@ -201,7 +215,11 @@ export const PriceAlertModal: React.FC<{
           <Info size={16} className="shrink-0 text-[#5945F1]" aria-hidden />
           <span className="text-[#5945F1]">
             Notify me when <b className="font-bold">{name}</b> {condition.toLowerCase()}{' '}
-            {indicator === 'None' ? 'my target.' : `the ${indicator} (${lookback} Period) (${deviation} Standard Deviation).`}
+            {!byIndicator
+              ? 'my target.'
+              : indicator === 'Bollinger Bands'
+                ? `the ${indicator} (${lookback} Period) (${deviation} Standard Deviation).`
+                : `the ${indicator} (${lookback} Period).`}
           </span>
         </p>
 
