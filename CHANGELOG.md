@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.24.0] - 2026-10-09
+### Added
+- SegmentedTabs: a grey track with the chosen option lifting out as a white pill, for panels that switch between a few views without the weight of the folder tabs.
+### Changed
+- Today's News uses it for All News, Market and Research, with Research carrying its lock until level 4.
+
 ## [1.23.1] - 2026-10-09
 ### Fixed
 - The Viewing Mode and Period selects drew two arrows, the browser's and ours. The browser's is hidden now and one chevron sits inside the field.

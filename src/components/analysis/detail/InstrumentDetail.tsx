@@ -1,4 +1,5 @@
 import "./market.css";
+import { SegmentedTabs } from '../../common/SegmentedTabs';
 import { PriceAlertModal } from './PriceAlertModal';
 import { THUMB_GOLD, THUMB_SPX, THUMB_BANKS, THUMB_USD } from '../../../data/newsImagePlaceholders';
 import { DetailEmptyState } from './DetailEmptyState';
@@ -1233,25 +1234,17 @@ export function InstrumentDetail({
               </h3>
                           </div>
 
-            {/* Filter Tabs using TabSubmain */}
-            <div className="border-b border-[#D4D0FC]/50 pb-1">
-              <TabSubmain
-                tabs={[
-                  { id: "All news", label: "All news" },
-                  { id: "Market", label: "Market" },
-                  {
-                    id: "Research",
-                    label: "Research",
-                    isLocked: snapshot.level.level < 4,
-                    icon: snapshot.level.level < 4 ? <Lock className="w-3 h-3 text-slate-400" /> : undefined,
-                  },
-                ]}
-                activeTab={newsFilter}
-                onChange={(tabId) => setNewsFilter(tabId)}
-                onLockedTabClick={() => requestUnlock("researchNews")}
-                size="sm"
-              />
-            </div>
+            {/* Filter tabs, as a segmented control */}
+            <SegmentedTabs
+              tabs={[
+                { id: 'All news', label: 'All News' },
+                { id: 'Market', label: 'Market' },
+                { id: 'Research', label: 'Research', isLocked: snapshot.level.level < 4 },
+              ]}
+              activeTab={newsFilter}
+              onChange={(tabId) => setNewsFilter(tabId)}
+              onLockedClick={() => requestUnlock('researchNews')}
+            />
 
             {/* Gated state, news list, or nothing loaded */}
             {panelState === 'empty' ? (
