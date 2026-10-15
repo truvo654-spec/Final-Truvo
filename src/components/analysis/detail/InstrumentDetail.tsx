@@ -773,8 +773,14 @@ export function InstrumentDetail({
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                 <div>
                   <h2 className="font-display text-[34px] font-bold leading-none text-slate-900">
-                    {kind === 'Forex' ? '' : '$'}{displayValue(instrument)}
+                    {panelState === 'empty' ? 'Fashionably Late\u2026' : `${kind === 'Forex' ? '' : '$'}${displayValue(instrument)}`}
                   </h2>
+                  {panelState === 'empty' ? (
+                    <p className="mt-2.5 flex items-center gap-2 text-[15px] text-slate-400">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f1f2f6]" aria-hidden>&ndash;</span>
+                      &ndash; (Unavailable) <span className="text-slate-500">Today</span>
+                    </p>
+                  ) : (
                   <p className="mt-2.5 flex items-center gap-2 text-[15px]">
                     <span className={`flex h-7 w-7 items-center justify-center rounded-full ${positive ? 'bg-[#eaf7a8] text-[#5f7a00]' : 'bg-[#ffe4f1] text-[#c026d3]'}`} aria-hidden>
                       {positive ? '\u2197' : '\u2198'}
@@ -787,7 +793,9 @@ export function InstrumentDetail({
                     </span>
                     <span className="text-slate-700">Today</span>
                   </p>
+                  )}
                 </div>
+                {panelState !== 'empty' && (
                 <svg viewBox="0 0 160 46" preserveAspectRatio="none" className="h-12 w-[190px] shrink-0" aria-hidden>
                   <defs>
                     <linearGradient id="quoteSpark" x1="0" y1="0" x2="0" y2="1">
@@ -798,6 +806,7 @@ export function InstrumentDetail({
                   <path d="M0,34 L18,30 L34,18 L52,22 L70,20 L88,26 L104,34 L120,22 L140,8 L160,4 L160,46 L0,46 Z" fill="url(#quoteSpark)" />
                   <path d="M0,34 L18,30 L34,18 L52,22 L70,20 L88,26 L104,34 L120,22 L140,8 L160,4" fill="none" stroke="#a9cc13" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
+                )}
               </div>
 
               <dl className="mt-4 grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
@@ -809,7 +818,9 @@ export function InstrumentDetail({
                 ].map(([label, value]) => (
                   <div key={label}>
                     <dt className="text-[12.5px] text-slate-500">{label}</dt>
-                    <dd className="mt-0.5 font-display text-[16px] font-bold text-slate-900">{value}</dd>
+                    <dd className="mt-0.5 font-display text-[16px] font-bold text-slate-900">
+                      {panelState === 'empty' ? '\u2013' : value}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -1092,20 +1103,46 @@ export function InstrumentDetail({
               />
             </>
           )}
-          {tab === "Technicals" && (
+          {tab === "Technicals" && panelState === 'empty' ? (
+            <section className="panel p-5 sm:p-7">
+              <h2 className="font-display text-[17px] font-bold text-slate-900">Technical Summary</h2>
+              <p className="mt-0.5 text-[12.5px] text-slate-500">
+                key technical indicators and signals for {instrument.name.toLowerCase()} ({instrument.symbol})
+              </p>
+              <div className="mt-4 border-t border-[#CCC6FB]" />
+              <DetailEmptyState
+                art="alert"
+                title="The numbers Need a Moment"
+                lines={['RSI, MACD and the rest', 'will be back after a refresh.']}
+                tall
+              />
+            </section>
+          ) : tab === "Technicals" ? (
             <TechnicalSummary
               instrument={instrument}
               tierLevel={snapshot.level.level}
               onToast={onToast}
             />
-          )}
-          {tab === "Market Data" && (
+          ) : null}
+          {tab === "Market Data" && panelState === 'empty' ? (
+            <section className="panel p-5 sm:p-7">
+              <h2 className="font-display text-[17px] font-bold text-slate-900">Market Data</h2>
+              <p className="mt-0.5 text-[12.5px] text-slate-500">A real-time snapshot of core trading and liquidity metrics.</p>
+              <div className="mt-4 border-t border-[#CCC6FB]" />
+              <DetailEmptyState
+                art="alert"
+                title="The Figures Are Hiding"
+                lines={['Price, volume and supply will be back', 'after a refresh.']}
+                tall
+              />
+            </section>
+          ) : tab === "Market Data" ? (
             <MarketStats
               instrument={instrument}
               kind={kind}
               tierLevel={snapshot.level.level}
             />
-          )}
+          ) : null}
           {tab === "Analysis" && (
             <Analysis instrument={instrument} kind={kind} />
           )}
@@ -5153,11 +5190,21 @@ function AssetSpecific({
     </section>
   );
 }
+/** Puts separators into a bare number so a price reads as a price. */
+function grouped(value: string) {
+  return value.replace(/\d+\.?\d*/g, (n) => {
+    const num = Number(n);
+    if (!Number.isFinite(num) || num < 1000) return n;
+    const [whole, frac] = n.split('.');
+    return Number(whole).toLocaleString('en-US') + (frac ? `.${frac}` : '');
+  });
+}
+
 function Metric({ label, value }: { key?: string; label: string; value: string }) {
   return (
     <div className="rounded-xl bg-[#f7f8fa] px-4 py-3.5">
-      <div className="text-[13px] text-slate-500">{label}</div>
-      <div className="mt-1 font-display text-[17px] font-bold text-slate-900">{value}</div>
+      <div className="text-[13px] text-slate-500">{label.replace(/\b[a-z]/g, (c) => c.toUpperCase())}</div>
+      <div className="mt-1 font-display text-[17px] font-bold text-slate-900">{grouped(value)}</div>
     </div>
   );
 }

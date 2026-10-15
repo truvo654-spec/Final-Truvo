@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.34.0] - 2026-10-09
+### Added
+- The failed states the design draws for the rest of the page: the header reads "Fashionably Late…" with its figures as dashes and no sparkline, Technicals says "The numbers Need a Moment", and Market Data says "The Figures Are Hiding". All of them switch together from the preview control, with the four panels that already had one.
+### Changed
+- Figures on the Market Data tab carry thousands separators and the design's capitals, so a price reads as 108,419.52 rather than 108419.71 and the label says Last Price.
+
 ## [1.33.1] - 2026-10-09
 ### Changed
 - The Technicals panel is headed "Technical Summary" with the line the design uses, and the gauge beside the moving averages is named "Moving Average" as the design names it.
