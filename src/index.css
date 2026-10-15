@@ -132,6 +132,9 @@
   --bg-hover: #F7F5FF;
   --border-default: #CCC6FB;
   --border-card: #ECEEFA;
+  /* Older stylesheets read --border; keep it on the same token so no surface
+     can fall back to a grey or a near-black line. */
+  --border: #CCC6FB;
   --text-primary: #171717;
   --text-secondary: #737373;
 }
@@ -145,6 +148,7 @@
   --border-default: #3410D5;
   --border-card: #230674;
   --border-subtle: #1E293B;
+  --border: #3410D5;
   --text-primary: #FFFFFF;
   --text-secondary: #CCC6FB;
   --text-muted: #8A7AF6;
@@ -935,4 +939,15 @@ select:not(.appearance-none) {
 [data-keep-button-icons] > svg,
 [data-keep-button-icons] > span > svg {
   display: inline-block !important;
+}
+
+/* ── Borders ──────────────────────────────────────────────────────────────
+   Tailwind v4 leaves an element's border colour as currentColor, so anything
+   with `border` and dark text drew a near-black line. The brand has one
+   border colour, so that is the default everywhere; a utility that names a
+   colour still wins over this. */
+*,
+::before,
+::after {
+  border-color: var(--border-default);
 }

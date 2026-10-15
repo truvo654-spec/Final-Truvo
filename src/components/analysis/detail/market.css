@@ -1,9 +1,9 @@
-@theme inline { --color-background:var(--background); --color-foreground:var(--foreground); --color-card:var(--card); --color-card-foreground:var(--foreground); --color-popover:var(--card); --color-popover-foreground:var(--foreground); --color-primary:var(--primary); --color-primary-foreground:#ffffff; --color-secondary:#f2eefc; --color-secondary-foreground:#4c1d95; --color-muted:#f4f4f7; --color-muted-foreground:#6b7280; --color-accent:#ede9fe; --color-accent-foreground:#5b21b6; --color-destructive:#ef4444; --color-border:#e7e5ef; --color-input:#e7e5ef; --color-ring:#7c3aed; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-xl:18px;   }
+@theme inline { --color-background:var(--background); --color-foreground:var(--foreground); --color-card:var(--card); --color-card-foreground:var(--foreground); --color-popover:var(--card); --color-popover-foreground:var(--foreground); --color-primary:var(--primary); --color-primary-foreground:#ffffff; --color-secondary:#f2eefc; --color-secondary-foreground:#4c1d95; --color-muted:#f4f4f7; --color-muted-foreground:#6b7280; --color-accent:#ede9fe; --color-accent-foreground:#5b21b6; --color-destructive:#ef4444; --color-border:#CCC6FB; --color-input:#CCC6FB; --color-ring:#7c3aed; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-xl:18px;   }
 .market-feature { --background:#f6f5fb; --foreground:#1e1b29; --card:#fff; --primary:#5945f1; color:#1e1b29; color-scheme:light; }
 @scope (.market-feature) {
 
 
-* { border-color:var(--color-border); } body { margin:0; background:var(--background); color:var(--foreground); font-family:var(--font-geist-sans),Arial,sans-serif; } button { cursor:pointer; } ::selection { background:rgba(124,58,237,.18); }
+* { border-color:var(--border-default, #CCC6FB); } body { margin:0; background:var(--background); color:var(--foreground); font-family:var(--font-geist-sans),Arial,sans-serif; } button { cursor:pointer; } ::selection { background:rgba(124,58,237,.18); }
 #community-panel { position:static !important; width:auto !important; min-width:0 !important; max-width:none !important; height:auto !important; max-height:none !important; overflow-y:auto; border:0 !important; background:var(--card); box-shadow:none; }
 #promotion-panel { display:none !important; }
 @media (min-width:1280px) {

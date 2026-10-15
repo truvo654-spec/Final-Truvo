@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.0] - 2026-10-09
+### Fixed
+- Every border in the app is the brand lavender. Tailwind v4 leaves a border as currentColor, so any element with dark text drew a near-black line; the brand colour is the default for all borders now, and the two wildcard rules that overrode it point at the same token. Light and dark each take their own value.
+
 ## [1.27.0] - 2026-10-09
 ### Changed
 - A locked segmented tab is selectable now: picking Research moves to it and the panel shows the lock state, rather than firing the unlock dialog from the tab itself. The lock is drawn as an icon beside the label.
