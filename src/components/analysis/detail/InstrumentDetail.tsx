@@ -1,4 +1,5 @@
 import "./market.css";
+import { brokerMark } from '../../brokers/brokerMark';
 import { LockableSelect } from '../../common/LockableSelect';
 import { SegmentedTabs } from '../../common/SegmentedTabs';
 import { PriceAlertModal, type SavedAlert } from './PriceAlertModal';
@@ -4674,6 +4675,12 @@ function FinancialReport({
     </div>
   );
 }
+/**
+ * Who will let you trade this instrument, and on what terms.
+ *
+ * One card per broker: the name and the way in at the top, the three figures
+ * that decide it underneath, and any standing offer as its own banner.
+ */
 function ProductsAndBrokersTable({
   instrument,
   products,
@@ -4687,173 +4694,125 @@ function ProductsAndBrokersTable({
   setProduct: (product: ProductType) => void;
   brokers: Broker[];
 }) {
-  const generatedCfdPartners: Broker[] = [
-    ["XM", "Global CFD partner", "From 0.08%", "$5", "MT4 / MT5"],
-    ["HFM", "Multi-asset CFD partner", "From 0.09%", "$5", "MT4 / MT5 / Web"],
-    ["Exness", "Global CFD partner", "From 0.07%", "$10", "MT4 / MT5 / Web"],
-    ["Pepperstone", "Regulated CFD partner", "From 0.06%", "$10", "MT4 / MT5 / cTrader"],
-    ["IC Markets", "Raw spread CFD partner", "From 0.05%", "$200", "MT4 / MT5 / cTrader"],
-    ["Fx Pro", "Multi-asset CFD partner", "From 0.10%", "$100", "FxPro Edge / MT5"],
-  ].map(([name, venue, spread, minimum, platform]) => ({
-    name,
-    venue,
-    products: ["CFD"],
-    symbols: [instrument.symbol],
-    status: "Available",
-    spread,
-    minimum,
-    platform,
-    commission: "Partner terms apply",
-    execution: "Demo market execution",
-    details: `${name} CFD access for ${instrument.symbol}; verify regional eligibility, costs, and account terms before connecting.`,
-  }));
-  const matchedBrokers =
-    product === "CFD"
-      ? generatedCfdPartners
-      : brokers.filter(
-          (broker) =>
-            broker.products.includes(product) &&
-            brokerSupportsInstrument(broker, instrument),
-        );
-  const productDetails: Record<ProductType, string> = {
-    Spot: "Buy or sell the underlying asset for direct settlement.",
-    Share: "Whole-share ownership with standard equity market access.",
-    "Fractional share":
-      "Trade part of one share with a smaller minimum amount.",
-    "FX spot": "Exchange currency pairs at the current market rate.",
-    CFD: "Track price movement without owning the underlying asset; leverage may apply.",
-    Future: "Standardized contract with a defined expiry and contract size.",
-    Perpetual: "Derivative contract without expiry; funding charges may apply.",
-  };
+  const [page, setPage] = useState(1);
+
+  const partners = [
+    { name: 'XM', spread: 'From 0.04%', minimum: '$10', connected: false,
+      offer: { title: 'Get 200 Marketsyde Credits', body: 'Open an account with XM and receive 200 Marketsyde credits to unlock exclusive rewards on the platform.' } },
+    { name: 'HFM', spread: 'From 0.04%', minimum: '$10', connected: true },
+    { name: 'Exness', spread: 'From 0.04%', minimum: '$10', connected: false },
+    { name: 'IC Markets', spread: 'From 0.04%', minimum: '$10', connected: false },
+    { name: 'Pepperstone', spread: 'From 0.04%', minimum: '$10', connected: false },
+  ];
+
   return (
-    <section className="bg-white rounded-2xl border border-[#CCC6FB] shadow-xs overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#CCC6FB] p-5">
+    <section className="rounded-2xl border border-[#CCC6FB] bg-white p-5 shadow-xs sm:p-7">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="font-display text-[17px] font-bold text-slate-900">Brokers &amp; Promotion</h2>
           <p className="mt-0.5 text-[12.5px] text-slate-500">
             Choose a product to compare matching providers, costs, minimums, and access.
           </p>
         </div>
-        {products.length > 1 && (
-          <div className="overflow-x-auto">
-            <TabSubmain
-              prefixLabel="PRODUCT"
-              tabs={products.map((p) => ({ id: p, label: p }))}
-              activeTab={product}
-              onChange={(p) => setProduct(p as ProductType)}
-              size="sm"
-            />
-          </div>
-        )}
+        <span className="relative">
+          <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden />
+          <select
+            value={product}
+            onChange={(e) => setProduct(e.target.value as ProductType)}
+            aria-label="Product"
+            className="w-[140px] cursor-pointer appearance-none rounded-xl border border-[#CCC6FB] bg-white py-2.5 pl-3.5 pr-9 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
+          >
+            {products.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </span>
       </div>
-      <div className="w-full overflow-x-auto">
-        <table className="w-full border-collapse text-left text-xs">
-          <thead>
-            <tr className="border-b border-[#CCC6FB] bg-[#F8FAFC]">
-              <th className="px-5 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Product</th>
-              <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Broker</th>
-              <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Spread</th>
-              <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Minimum</th>
-              <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Special offer</th>
-              <th className="px-5 py-3.5 text-right font-bold uppercase tracking-wider text-[10px] text-slate-500">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#E0E7FF]/60">
-            {instrument.market === "Crypto" ? (
-              <CryptoBrokerRows instrument={instrument} product={product} />
-            ) : (
-            matchedBrokers.map((broker) => (
-              <tr
-                key={`${product}-${broker.name}`}
-                className="group cursor-pointer bg-white hover:bg-slate-50/80 transition-colors"
-                onClick={() => {
-                  window.location.href = "?view=brokers";
-                }}
-              >
-                <td className="px-5 py-3.5">
-                  <div className="flex flex-wrap gap-1">
-                    {brokerProductPair(broker, instrument).map((identifier) => (
-                      <span
-                        key={identifier}
-                        className="group/identifier relative inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-[#5945F1] border border-[#CCC6FB]"
-                        title={productIdentifierDetail(identifier, instrument)}
-                      >
-                        {identifier}
-                        <span className="pointer-events-none absolute bottom-full left-0 z-50 mb-1 hidden w-max max-w-64 rounded-md bg-slate-900 p-2 text-left text-[9px] font-normal leading-relaxed text-white shadow-lg group-hover/identifier:block">
-                          {productIdentifierDetail(identifier, instrument)}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td
-                  className="relative px-4 py-3.5 font-bold text-slate-900"
-                  tabIndex={0}
+      <div className="mt-4 border-t border-[#CCC6FB]" />
+
+      <div className="mt-4 space-y-4">
+        {partners.map((b) => {
+          const mark = brokerMark(b.name);
+          return (
+            <article key={b.name} className="overflow-hidden rounded-xl border border-[#CCC6FB]">
+              <header className="flex items-center gap-3 bg-[#f7f6ff] px-4 py-3">
+                <span
+                  className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-md font-bold leading-none"
+                  style={{ background: mark.bg, color: mark.color, fontSize: mark.tight ? 6 : 9 }}
+                  aria-hidden
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="grid size-6 place-items-center rounded-lg bg-indigo-50 text-[#5945F1] font-bold text-[10px] border border-[#CCC6FB]/60">
-                      {broker.name.slice(0, 2).toUpperCase()}
+                  {mark.text}
+                </span>
+                <b className="flex-1 text-[15px] font-bold text-slate-900">{b.name}</b>
+                <button
+                  type="button"
+                  className={`rounded-lg px-4 py-1.5 text-[13.5px] font-bold transition ${
+                    b.connected
+                      ? 'bg-[#5945F1] text-white hover:bg-[#4a38d6]'
+                      : 'border border-[#CCC6FB] bg-white text-[#5945F1] hover:bg-[#f1f0fe]'
+                  }`}
+                >
+                  {b.connected ? 'Trade Now' : 'Connect'}
+                </button>
+              </header>
+
+              <dl className="grid grid-cols-3 gap-4 px-4 py-4 max-sm:grid-cols-1">
+                {[
+                  ['Product', instrument.symbol],
+                  ['Spread', b.spread],
+                  ['Minimum', b.minimum],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-[13px] text-[#5945F1]">{label}</dt>
+                    <dd className="mt-1 text-[15px] font-medium text-slate-900">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              {b.offer && (
+                <div className="mx-4 mb-4 flex flex-wrap items-center gap-4 rounded-xl bg-gradient-to-r from-[#3b1d9e] to-[#5945F1] px-5 py-4">
+                  <div className="min-w-0 flex-1">
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-bold text-white">
+                      ★ SPECIAL OFFER
                     </span>
-                    <span>{broker.name}</span>
+                    <p className="mt-1.5 font-display text-[17px] font-bold text-white">{b.offer.title}</p>
+                    <p className="mt-1 max-w-[520px] text-[12.5px] leading-relaxed text-white/75">{b.offer.body}</p>
                   </div>
-                  <div
-                    role="tooltip"
-                    className="pointer-events-none absolute left-2 top-[calc(100%-4px)] z-40 hidden w-72 rounded-xl border border-[#CCC6FB] bg-white p-4 text-left font-normal shadow-xl group-hover:block group-focus:block"
-                  >
-                    <b className="text-xs font-bold text-slate-900">{broker.name}</b>
-                    <p className="mt-1 leading-relaxed text-xs text-slate-500">
-                      {broker.details}
-                    </p>
-                    <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <dt className="text-[9px] uppercase font-semibold text-slate-400">
-                          Commission
-                        </dt>
-                        <dd className="mt-0.5 font-medium text-slate-700">
-                          {broker.commission}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-[9px] uppercase font-semibold text-slate-400">
-                          Execution
-                        </dt>
-                        <dd className="mt-0.5 font-medium text-slate-700">
-                          {broker.execution}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                </td>
-                <td className="px-4 py-3.5 font-medium text-slate-600">{broker.spread}</td>
-                <td className="px-4 py-3.5 font-medium text-slate-600">{broker.minimum}</td>
-                <td className="px-4 py-3.5">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-                    {brokerSpecialOffer(broker.name)}
-                  </span>
-                </td>
-                <td className="px-5 py-3.5 text-right">
                   <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      window.location.href = "?view=brokers";
-                    }}
-                    className="inline-flex items-center justify-center rounded-xl bg-[#5945F1] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#4a36e2] transition-colors"
+                    type="button"
+                    className="shrink-0 rounded-lg bg-white px-4 py-2 text-[13.5px] font-bold text-[#5945F1] transition hover:bg-white/90"
                   >
-                    Connect
+                    Claim Offer &rsaquo;
                   </button>
-                </td>
-              </tr>
-            ))
-            )}
-          </tbody>
-        </table>
+                </div>
+              )}
+            </article>
+          );
+        })}
       </div>
-      {instrument.market !== "Crypto" && matchedBrokers.length === 0 && (
-        <div className="m-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs font-medium text-amber-800 flex items-center gap-2">
-          <Lock className="size-4 shrink-0 text-amber-600" />
-          No partner provider supports this exact product combination currently.
-        </div>
-      )}
+
+      {/* more partners than fit on one page */}
+      <div className="mt-5 flex items-center justify-center gap-2">
+        {['«', '‹'].map((g) => (
+          <button key={g} type="button" onClick={() => setPage(1)} className="grid h-9 w-9 place-items-center rounded-lg border border-[#CCC6FB] text-slate-500 transition hover:border-[#5945F1]">{g}</button>
+        ))}
+        {[1, 2].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setPage(n)}
+            aria-current={page === n}
+            className={`grid h-9 w-9 place-items-center rounded-lg border text-[14px] transition ${
+              page === n ? 'border-[#5945F1] font-bold text-[#5945F1]' : 'border-[#CCC6FB] text-slate-600 hover:border-[#5945F1]'
+            }`}
+          >
+            {n}
+          </button>
+        ))}
+        <span className="grid h-9 w-9 place-items-center rounded-lg border border-[#CCC6FB] text-slate-400">&hellip;</span>
+        <button type="button" onClick={() => setPage(20)} className="grid h-9 w-9 place-items-center rounded-lg border border-[#CCC6FB] text-[14px] text-slate-600 transition hover:border-[#5945F1]">20</button>
+        {['›', '»'].map((g) => (
+          <button key={g} type="button" onClick={() => setPage(20)} className="grid h-9 w-9 place-items-center rounded-lg border border-[#CCC6FB] text-slate-500 transition hover:border-[#5945F1]">{g}</button>
+        ))}
+      </div>
     </section>
   );
 }

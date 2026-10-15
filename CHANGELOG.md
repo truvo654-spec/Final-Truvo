@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.0] - 2026-10-09
+### Changed
+- The brokers list is the design's cards rather than a table: each broker has its own card with its brand mark, its name and the way in at the top, then Product, Spread and Minimum underneath. A standing offer runs as a violet banner inside the card with its own Claim Offer, the product is a dropdown, and the real partners appear under their own names.
+
 ## [1.41.0] - 2026-10-09
 ### Changed
 - The brokers tab is headed "Brokers & Promotion" with the design's line beneath it, instead of the uppercase eyebrow and "Trade BTC/USD by product".
