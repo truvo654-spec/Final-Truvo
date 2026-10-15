@@ -1,3 +1,4 @@
+import { JournalHelp } from '../journal/JournalHelp';
 // Backtest trade log: sortable table, two quick filters, a "More filters" drawer, removable chips,
 // totals for what you see, and a side drawer with the trade on a chart.
 import React, { useMemo, useState } from 'react';
@@ -135,7 +136,7 @@ export const BacktestTradeLog: React.FC<Props> = ({ trades, currency, symbol, ti
     <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5 min-w-0" aria-label="Backtest trades">
       <div className="flex flex-wrap items-end gap-3 mb-3">
         <div className="mr-auto">
-          <h3 className="text-sm font-bold text-[#0b1c30]">Trades</h3>
+          <h3 className="text-sm font-bold text-[#0b1c30]">Trades<JournalHelp label="Trades" text="Individual simulated trades from this backtest run. Sort and filter them to inspect entry/exit times, prices, modeled costs and outcomes. Select a row for its candle chart; this table is separate from actual journal executions." /></h3>
           <p className="text-[11px] text-slate-500">Click a column to sort (again to reverse). Click a row to see the trade on a chart.</p>
         </div>
         <Segmented size="sm" label="Direction" value={dir} onChange={(v) => { setDir(v); setPage(0); }} options={[{ id: 'all', label: 'All' }, { id: 'long', label: 'Long' }, { id: 'short', label: 'Short' }]} />

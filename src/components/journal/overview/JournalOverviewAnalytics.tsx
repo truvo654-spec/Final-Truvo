@@ -1,3 +1,4 @@
+import { JournalHelp } from '../JournalHelp';
 import React, { useMemo, useState } from 'react';
 import type { JournalEntry } from '../../../types';
 import { aggregateOverview, formatOverviewValue, type PnlBasis } from './overviewAnalytics';
@@ -45,16 +46,16 @@ export function JournalOverviewAnalytics({ entries, currency, basis, onDay, onTr
           <p className="mb-3 text-[11px] leading-relaxed text-slate-500">Current recorded journal snapshot. It refreshes when journal entries change; live broker prices, margin level and liquidation data are not connected here.</p>
           {openEntries.length === 0 ? <p className="rounded-xl border border-slate-200 bg-slate-50 p-6 text-center text-xs text-slate-500">No open positions in this view.</p> : <>
             <dl className="mb-3 grid grid-cols-2 gap-3 text-xs">
-              <div><dt className="text-slate-500">Open risk / equity</dt><dd className="mt-1 font-mono font-semibold">{formatPercent(data.openPosition.riskRatio)}</dd></div>
-              <div><dt className="text-slate-500">Margin used / equity</dt><dd className="mt-1 font-mono font-semibold">{formatPercent(data.openPosition.marginRatio)}</dd></div>
-              <div><dt className="text-slate-500">Current portfolio equity (USD)</dt><dd className="mt-1 font-mono font-semibold">{format(data.openPosition.equity)}</dd></div>
-              <div><dt className="text-slate-500">Source size</dt><dd className="mt-1 font-mono font-semibold">{sourceSize == null ? 'Mixed / unknown' : `${sourceSize} ${quantityUnits[0]}`}</dd></div>
-              <div><dt className="text-slate-500">Portfolio notional</dt><dd className="mt-1 font-mono font-semibold">Not recorded</dd></div>
+              <div><dt className="text-slate-500">Open risk / equity<JournalHelp label="Open risk / equity" /></dt><dd className="mt-1 font-mono font-semibold">{formatPercent(data.openPosition.riskRatio)}</dd></div>
+              <div><dt className="text-slate-500">Margin used / equity<JournalHelp label="Margin used / equity" /></dt><dd className="mt-1 font-mono font-semibold">{formatPercent(data.openPosition.marginRatio)}</dd></div>
+              <div><dt className="text-slate-500">Current portfolio equity (USD)<JournalHelp label="Current portfolio equity (USD)" /></dt><dd className="mt-1 font-mono font-semibold">{format(data.openPosition.equity)}</dd></div>
+              <div><dt className="text-slate-500">Source size<JournalHelp label="Source size" /></dt><dd className="mt-1 font-mono font-semibold">{sourceSize == null ? 'Mixed / unknown' : `${sourceSize} ${quantityUnits[0]}`}</dd></div>
+              <div><dt className="text-slate-500">Portfolio notional<JournalHelp label="Portfolio notional" /></dt><dd className="mt-1 font-mono font-semibold">Not recorded</dd></div>
             </dl>
             <div className="overflow-auto rounded-xl border border-slate-200 bg-white">
               <table className="w-full text-xs">
                 <caption className="sr-only">Open position risk and margin details</caption>
-                <thead><tr className="border-b border-slate-100 text-left text-slate-500"><th className="p-2">Position</th><th className="p-2 text-right">Risk %</th><th className="p-2 text-right">Margin %</th><th className="p-2 text-right">Open P&amp;L</th></tr></thead>
+                <thead><tr className="border-b border-slate-100 text-left text-slate-500"><th className="p-2">Position<JournalHelp label="Position" /></th><th className="p-2 text-right">Risk %</th><th className="p-2 text-right">Margin %</th><th className="p-2 text-right">Open P&amp;L</th></tr></thead>
                 <tbody>{openEntries.map(entry => <tr key={entry.id} className="border-b border-slate-100 last:border-0"><td className="p-2"><button className="text-left font-semibold text-prime-600 underline" onClick={() => onTrade(entry.id)}>{entry.symbol} · {entry.direction}<span className="block font-normal text-slate-500">{entry.size} {entry.quantityUnit || 'source units'}</span></button></td><td className="p-2 text-right font-mono">{formatPercent(ratio(entry.initialRisk, entry.equityAtEntry))}</td><td className="p-2 text-right font-mono">{formatPercent(ratio(entry.marginAtEntry, entry.equityAtEntry))}</td><td className="p-2 text-right font-mono">{entry.pnlKnown === false ? '—' : format(entry.pnl)}</td></tr>)}</tbody>
               </table>
             </div>
@@ -66,14 +67,14 @@ export function JournalOverviewAnalytics({ entries, currency, basis, onDay, onTr
       </ChartCard>
       <ChartCard title="Trading costs & daily context" definition="Gross, costs and net reconcile on the same closed-trade cohort with known costs, regardless of the display basis. Day win rate uses positive-result days divided by all days with eligible results, including flat days. Average win/loss uses the selected basis and the shared breakeven tolerance.">
         <dl className="space-y-3 text-sm">
-          {([['Gross trading result', data.gross], ['Recorded costs', data.costs], ['Net trading result', data.net.n ? data.net.total : null]] as const).map(([name, value]) => <div key={name} className="flex justify-between gap-3 border-b border-slate-100 pb-3"><dt className="text-slate-600">{name}</dt><dd className="font-mono font-semibold tabular-nums">{format(value)}</dd></div>)}
+          {([['Gross trading result', data.gross], ['Recorded costs', data.costs], ['Net trading result', data.net.n ? data.net.total : null]] as const).map(([name, value]) => <div key={name} className="flex justify-between gap-3 border-b border-slate-100 pb-3"><dt className="text-slate-600">{name}<JournalHelp label={name} /></dt><dd className="font-mono font-semibold tabular-nums">{format(value)}</dd></div>)}
         </dl>
         <p className="mt-3 text-xs text-slate-500">{data.net.n} closed trades with known costs / {entries.length} recorded. Missing costs are not treated as zero.</p>
         <dl className="mt-5 grid grid-cols-2 gap-4 text-xs">
-          <div><dt className="text-slate-500">{label} profitable days</dt><dd className="mt-1 font-semibold">{data.dayWinRate == null ? '—' : `${data.dayWinRate.toFixed(1)}%`} <span className="font-normal text-slate-500">({data.winningDays}/{data.days})</span></dd></div>
-          <div><dt className="text-slate-500">Average win / loss</dt><dd className="mt-1 font-semibold">{data.winLossRatio == null ? '—' : `${data.winLossRatio.toFixed(2)}×`}</dd></div>
-          <div><dt className="text-slate-500">Average {basis} win</dt><dd className="mt-1 font-mono">{format(data.avgWin)}</dd></div>
-          <div><dt className="text-slate-500">Average {basis} loss</dt><dd className="mt-1 font-mono">{format(data.avgLoss)}</dd></div>
+          <div><dt className="text-slate-500">{label} profitable days<JournalHelp label="Profitable days" /></dt><dd className="mt-1 font-semibold">{data.dayWinRate == null ? '—' : `${data.dayWinRate.toFixed(1)}%`} <span className="font-normal text-slate-500">({data.winningDays}/{data.days})</span></dd></div>
+          <div><dt className="text-slate-500">Average win / loss<JournalHelp label="Average win / loss" /></dt><dd className="mt-1 font-semibold">{data.winLossRatio == null ? '—' : `${data.winLossRatio.toFixed(2)}×`}</dd></div>
+          <div><dt className="text-slate-500">Average {basis} win<JournalHelp label="Average win / loss" /></dt><dd className="mt-1 font-mono">{format(data.avgWin)}</dd></div>
+          <div><dt className="text-slate-500">Average {basis} loss<JournalHelp label="Average win / loss" /></dt><dd className="mt-1 font-mono">{format(data.avgLoss)}</dd></div>
         </dl>
       </ChartCard>
     </div>

@@ -1,3 +1,4 @@
+import { JournalHelp } from '../journal/JournalHelp';
 import React from 'react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import type { RecommendationGoal, RecommendationMetrics, SetupRecommendation } from '../../backtest/recommender';
@@ -16,8 +17,8 @@ export const MarketSydeRecommender: React.FC<{
   const holdoutDelta = holdout ? holdout.candidate.netPnl - holdout.baseline.netPnl : null;
   return <section aria-label="MarketSyde AI recommender" className="rounded-2xl border border-[#5338ec]/30 bg-gradient-to-br from-[#F1EDFF] via-white to-[#F4FAFF] p-5 shadow-sm">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="flex items-center gap-2 text-sm font-bold text-[#5338ec]"><Sparkles size={17} aria-hidden />MarketSyde AI <Pill tone="accent">Beta</Pill></p><h3 className="text-lg font-bold text-[#0b1c30] mt-2">Find a setup worth testing</h3><p className="text-xs text-slate-600 mt-1">Your benchmark. Your goal. A measured next step.</p></div>
-      <label className="text-[11px] font-semibold text-slate-600">Recommendation goal<select aria-label="Recommendation goal" className={`${inputBase} block mt-1`} value={goal} onChange={e => onGoal(e.target.value as RecommendationGoal)}><option value="net">Improve net result</option><option value="drawdown">Reduce drawdown</option><option value="win">Improve win rate</option></select></label>
+      <div><p className="flex items-center gap-2 text-sm font-bold text-[#5338ec]"><Sparkles size={17} aria-hidden />MarketSyde AI <Pill tone="accent">Beta</Pill></p><h3 className="text-lg font-bold text-[#0b1c30] mt-2">Find a setup worth testing<JournalHelp label="Find a setup worth testing" /></h3><p className="text-xs text-slate-600 mt-1">Your benchmark. Your goal. A measured next step.</p></div>
+      <label className="text-[11px] font-semibold text-slate-600">Recommendation goal<JournalHelp label="Recommendation goal" /><select aria-label="Recommendation goal" className={`${inputBase} block mt-1`} value={goal} onChange={e => onGoal(e.target.value as RecommendationGoal)}><option value="net">Improve net result</option><option value="drawdown">Reduce drawdown</option><option value="win">Improve win rate</option></select></label>
     </div>
     <div className="mt-4 rounded-xl border border-white bg-white/80 p-4">
       {candidate ? <><div className="flex flex-wrap items-center gap-2"><RecommendationBadge exploratory={r.status === 'exploratory'} /><p className="font-bold text-[#0b1c30]">{candidate.name}</p>{candidate.estimated && <Pill tone="warn">Estimated price path</Pill>}</div>

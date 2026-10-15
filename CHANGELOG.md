@@ -1,3 +1,39 @@
+## 1.31.29
+- Show Create playbook beside Save draft for new and existing drafts. Create playbook saves as Active and selects the Active inventory; Save draft preserves Draft status. Existing drafts are updated in place.
+
+## 1.31.28
+- Make Save draft consistently available in the playbook editor: use it as the primary action for new or existing drafts, and as a separate action for other statuses. Saving keeps or changes the playbook to Draft and selects the Draft inventory filter.
+
+## 1.31.27
+- Replace the fixed setup form with a custom pattern category and configurable technical rule builder. Support indicator-to-indicator and threshold comparisons, crosses, All/Any matching, editable periods, MACD settings, Bollinger deviation, volume averages, range/ATR parameters, session tools and scaling.
+- Evaluate saved rules against completed sample candles, display per-rule evidence and preserve legacy saved setups until edited.
+
+## 1.31.26
+- Separate AI suggestions and Edit instruments into dedicated destinations. AI stages additions with a clear Add count and protects existing instruments; Edit opens the searchable catalog and saved selection controls. Remove the shared Browse/AI tab switcher and tailor titles, instructions and confirmation actions to each flow.
+
+## 1.31.25
+- Show Forex, Indices, Commodity, Crypto and Stocks in the instrument editor, in that order. Selecting instruments from a new category adds that category to the playbook when saved.
+- Remove the custom-symbol entry form while preserving existing saved and journal instruments.
+- Add named setup patterns with editable candle windows, EMA direction, minimum fit, volume and breakout thresholds. Apply these rules to the sample scanner and save patterns, selected pattern and timeframe with the playbook. Support editing, removal and cancellation without changing saved data.
+
+## 1.31.24
+- Add a distinct Draft status, status filters with counts beside the playbook inventory, and draft creation/saving. Keep Testing separate and show saved status consistently in Backtest.
+- Add a focused instrument editor with market-specific catalogs, custom symbols, alias deduplication, removable selections and local persistence. Reject instruments outside the playbook's markets.
+- Add transparent AI instrument suggestions based on completed generated sample candles, with editable pattern/timeframe, fit reasons, source/date labels and explicit futures proxies. Suggestions are reviewed and saved manually; no live market feed is implied.
+
+## 1.31.23
+- Remove the runs-left and Credits indicators from the Backtest navigation and size its container to the remaining tabs.
+
+## 1.31.22
+- Refine Backtest section navigation with integrated help icons, a complete highlighted active tab, consistent control sizing and a separate usage/credits summary. Add spacing after journal filters and allow horizontal navigation scrolling on narrow screens.
+
+## 1.31.21
+- Place date-range, journal-filter and Overview display help icons inside their control borders, keeping help and control actions independently accessible.
+
+## 1.31.20
+- Add contextual information icons across Trading Journal, all six primary tabs, filters, metrics, charts, trade reviews, import settings, playbook steps, backtests, What-if, practice and saved results.
+- Explain calculations, eligible cohorts, units, local storage and simulation assumptions using consistent help popovers that support hover, keyboard focus, tap and Escape. Keep help visible outside clipped tab bars, tables and dialogs, with one popover open at a time.
+
 ## 1.31.19
 - Remove Import template from the Playbook toolbar and remove its unused dropdown state and import handler.
 

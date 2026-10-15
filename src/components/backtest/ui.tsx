@@ -1,3 +1,5 @@
+import { InfoTooltip } from '../common/InfoTooltip';
+import { JournalHelp, getJournalHelp } from '../journal/JournalHelp';
 // Small shared building blocks for the Backtesting screens (match the journal's card style).
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
@@ -9,7 +11,7 @@ export const Card: React.FC<{ title?: React.ReactNode; sub?: React.ReactNode; ri
     {(title || right) && (
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          {title && <h3 className="text-sm font-bold text-[#0b1c30]">{title}</h3>}
+          {title && <h3 className="text-sm font-bold text-[#0b1c30]">{title}{typeof title === 'string' && <JournalHelp label={title} />}</h3>}
           {sub && <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>}
         </div>
         {right}
@@ -21,7 +23,7 @@ export const Card: React.FC<{ title?: React.ReactNode; sub?: React.ReactNode; ri
 
 /** A label whose meaning shows on hover (dotted underline marks that it has a description). */
 export const Hint: React.FC<{ text: string; children: React.ReactNode; className?: string }> = ({ text, children, className = '' }) => (
-  <span title={text} className={`underline decoration-dotted decoration-slate-300 underline-offset-2 cursor-help ${className}`}>{children}</span>
+  <span className={`inline-flex items-center normal-case tracking-normal ${className}`}>{children}<InfoTooltip label={typeof children === 'string' ? children : 'Metric details'} description={text} /></span>
 );
 
 export function Segmented<T extends string>({ options, value, onChange, label, size = 'md', disabled = {} }: {
@@ -61,7 +63,8 @@ export const Kpi: React.FC<{ label: string; hint: string; value: React.ReactNode
 export const Field: React.FC<{ label: string; hint?: string; htmlFor?: string; children: React.ReactNode; className?: string; aside?: React.ReactNode }> = ({ label, hint, htmlFor, children, className = '', aside }) => (
   <div className={`min-w-0 ${className}`}>
     <div className="flex items-center justify-between gap-2 mb-1.5">
-      <label htmlFor={htmlFor} className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{hint ? <Hint text={hint}>{label}</Hint> : label}</label>
+      <label htmlFor={htmlFor} className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</label>
+      {(hint || getJournalHelp(label)) && <InfoTooltip label={label} description={hint || getJournalHelp(label)} />}
       {aside}
     </div>
     {children}

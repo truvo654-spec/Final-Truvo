@@ -1,3 +1,4 @@
+import { JournalHelp } from './JournalHelp';
 import React, { useState } from 'react';
 import type { JournalEntry } from '../../types';
 import { currencyOf, statusOf } from './journalMath';
@@ -72,7 +73,7 @@ export const JournalOpenInsightsChart: React.FC<Props> = ({ entries, bucketOf, o
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <caption className="text-left text-slate-500 pb-2">Open-position list · click a position to review · account ROI uses recorded equity at entry, not CFD notional or margin.</caption>
-        <thead><tr className="text-left text-slate-500"><th className="p-2">Position</th><th className="p-2">Entry window</th><th className="p-2">Unrealized P&amp;L</th><th className="p-2">Account ROI %</th></tr></thead>
+        <thead><tr className="text-left text-slate-500"><th className="p-2">Position<JournalHelp label="Position" /></th><th className="p-2">Entry window</th><th className="p-2">Unrealized P&amp;L</th><th className="p-2">Account ROI %</th></tr></thead>
         <tbody>{list.flatMap(group => group.entries.map(entry => {
           const pnl = reportedPnl(entry);
           const roi = pnl != null && Number.isFinite(entry.equityAtEntry) && entry.equityAtEntry! > 0 ? pnl / entry.equityAtEntry! * 100 : null;

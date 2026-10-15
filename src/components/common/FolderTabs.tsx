@@ -1,9 +1,11 @@
 import React from 'react';
+import { InfoTooltip } from './InfoTooltip';
 
 export interface FolderTabItem<T extends string = string> {
   id: T;
   label: string;
   count?: number;
+  help?: string;
   icon?: React.ReactNode;
 }
 
@@ -66,6 +68,7 @@ export const FolderTabs = <T extends string = string>({
                     </span>
                   )}
                   <span className="whitespace-nowrap">{tab.label}</span>
+                  {tab.help && <InfoTooltip label={tab.label} description={tab.help} />}
                   {typeof tab.count === 'number' && (
                     <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-[#230674] text-[#5945F1] dark:text-[#ABA1F8] font-semibold">
                       {tab.count}
@@ -96,11 +99,12 @@ export const FolderTabs = <T extends string = string>({
             }
 
             return (
+              <div key={tab.id} className="relative flex items-center">
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => onChange(tab.id)}
-                className="group relative z-0 flex items-center gap-2 sm:gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 text-slate-800 dark:text-slate-200 hover:text-[#5945F1] dark:hover:text-[#ABA1F8] font-medium text-sm sm:text-base transition-colors cursor-pointer select-none whitespace-nowrap"
+                className={`${tab.help ? 'pr-10 sm:pr-10' : ''} group relative z-0 flex items-center gap-2 sm:gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 text-slate-800 dark:text-slate-200 hover:text-[#5945F1] dark:hover:text-[#ABA1F8] font-medium text-sm sm:text-base transition-colors cursor-pointer select-none whitespace-nowrap`}
               >
                 {tab.icon && (
                   <span className="shrink-0 flex items-center text-slate-700 dark:text-slate-300 group-hover:text-[#5945F1] dark:group-hover:text-[#ABA1F8] transition-colors">
@@ -114,6 +118,8 @@ export const FolderTabs = <T extends string = string>({
                   </span>
                 )}
               </button>
+              {tab.help && <span className="absolute right-2"><InfoTooltip label={tab.label} description={tab.help} /></span>}
+              </div>
             );
           })}
         </div>

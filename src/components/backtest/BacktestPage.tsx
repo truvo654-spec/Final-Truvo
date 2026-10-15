@@ -1,3 +1,4 @@
+import { JournalHelp, getJournalHelp } from '../journal/JournalHelp';
 // Backtest tab of the Trading Journal: routes between Home, Setup, Results, What-if, Replay and Saved runs,
 // and owns the run queue, usage limits, credits and points.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -301,7 +302,14 @@ export const BacktestPage: React.FC<Props> = (p) => {
   };
 
   const savedRunCount=runs.length+whatIfRuns.length;
-  const NAV: [View, string][] = [['home', 'Home'], ['setup', 'Test a playbook'], ['whatif', 'What-if'], ['replay', 'Practice'], ['demo', 'Demo replay'], ['runs', `Saved runs${savedRunCount ? ` (${savedRunCount})` : ''}`]];
+  const NAV: [View, string, string][] = [
+    ['home', 'Home', 'Backtest'],
+    ['setup', 'Test a playbook', 'Market, dates, risk and costs'],
+    ['whatif', 'What-if', 'What-if scenario lab'],
+    ['replay', 'Practice', 'Practice'],
+    ['demo', 'Demo replay', 'Playback'],
+    ['runs', `Saved runs${savedRunCount ? ` (${savedRunCount})` : ''}`, 'Saved runs'],
+  ];
   const navOn = (v: View) => view === v || (v === 'setup' && (view === 'running' || view === 'results' || view === 'comparison'));
 
   const curPb = cur ? pb(cur.settings.playbookId) : null;
@@ -310,18 +318,20 @@ export const BacktestPage: React.FC<Props> = (p) => {
     : `You've used this month's test runs. Run this ${selectedPlaybookIds.length > 1 ? 'comparison' : 'test'} for ${EXTRA_RUN_CREDITS} Syde Credits.`;
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <nav aria-label="Backtest sections" className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
-          {NAV.map(([v, label]) => (
-            <button key={v} type="button" aria-current={navOn(v) ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view === 'running') return; if(v==='runs')setWhatIfRuns(loadWhatIfs()); if (v === 'setup') { if (view !== 'setup') startSetup(); } else setView(v); }}
-              className={`h-8 px-3 rounded-lg text-xs font-semibold transition-colors ${navOn(v) ? 'bg-white text-[#5338ec] shadow-sm' : 'text-[#474556] hover:text-[#0b1c30]'}`}>{label}</button>
-          ))}
+    <div className="mt-5 space-y-5">
+      <div className="w-fit max-w-full min-w-0 rounded-2xl border border-slate-200 bg-white p-2 sm:p-2.5">
+        <nav aria-label="Backtest sections" className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-xl bg-slate-50 p-1 scrollbar-none">
+          {NAV.map(([v, label, helpTopic]) => {
+            const active = navOn(v);
+            return (
+              <div key={v} className={`relative shrink-0 rounded-lg border transition-colors ${active ? 'border-[#D8D0FF] bg-[#F1EDFF] text-[#5338ec] shadow-xs' : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white'}`}>
+                <button type="button" aria-current={active ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view === 'running') return; if(v==='runs')setWhatIfRuns(loadWhatIfs()); if (v === 'setup') { if (view !== 'setup') startSetup(); } else setView(v); }}
+                  className="min-h-10 whitespace-nowrap rounded-lg pl-3 pr-10 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec] disabled:cursor-not-allowed disabled:opacity-40 sm:text-[13px]">{label}</button>
+                <span className="absolute right-1 top-1/2 -translate-y-1/2"><JournalHelp label={label} text={getJournalHelp(helpTopic)} /></span>
+              </div>
+            );
+          })}
         </nav>
-        <span className="ml-auto text-[11px] text-slate-500 tabular-nums flex items-center gap-3">
-          <span title="Automated backtests included in your plan this month. What-if and practice are free.">{Math.max(0, limit - usage.used)} of {limit} test runs left{usage.prepaid ? ` + ${usage.prepaid} paid` : ''}</span>
-          <span className="flex items-center gap-1" title="Your Syde Credits"><Coins className="w-3.5 h-3.5 text-amber-500" />{sydeCredits.toLocaleString('en-US')}</span>
-        </span>
       </div>
 
       {view === 'home' && (

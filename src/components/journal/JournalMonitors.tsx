@@ -1,3 +1,4 @@
+import { JournalHelp } from './JournalHelp';
 import React, { useMemo } from 'react';
 import { JournalEntry } from '../../types';
 import { eligible, resultOf, statusOf } from './journalMath';
@@ -43,7 +44,7 @@ export const DisciplineCard: React.FC<{ entries: JournalEntry[]; checklistLength
     <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h4 className="text-sm font-bold">Discipline</h4>
+          <h4 className="text-sm font-bold">Discipline<JournalHelp label="Discipline" /></h4>
           <p className="text-[11px] text-[#94a3b8]">In the selected range</p>
         </div>
         <div className="text-right">
@@ -107,7 +108,7 @@ export const RulesMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRul
     <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h4 className="text-sm font-bold">Personal rules</h4>
+          <h4 className="text-sm font-bold">Personal rules<JournalHelp label="Personal rules" /></h4>
           <p className="text-[11px] text-[#94a3b8]">Checked against your entries</p>
         </div>
         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${total ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'}`}>
@@ -118,7 +119,7 @@ export const RulesMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRul
         {rows.map((row) => (
           <li key={row.name} className="flex items-start justify-between gap-3 text-xs">
             <div>
-              <p className="font-semibold text-[#0b1c30]">{row.name}</p>
+              <p className="font-semibold text-[#0b1c30]">{row.name}<JournalHelp label={row.name} /></p>
               <p className="text-[11px] text-[#94a3b8]">Limit {row.limit}{row.breaches && row.breaches.length ? ` · ${row.breaches.slice(0, 3).join(', ')}${row.breaches.length > 3 ? '…' : ''}` : ''}</p>
             </div>
             {row.breaches === null ? (
@@ -169,7 +170,7 @@ export const TiltMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRule
     <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5" role="status" aria-label={`Tilt monitor: ${style.label}`}>
       <div className="flex items-start justify-between mb-2">
         <div>
-          <h4 className="text-sm font-bold">Tilt monitor</h4>
+          <h4 className="text-sm font-bold">Tilt monitor<JournalHelp label="Tilt monitor" /></h4>
           <p className="text-[11px] text-[#94a3b8]">{t ? `Your last ${t.sample} entr${t.sample === 1 ? 'y' : 'ies'}` : 'Needs at least one entry'}</p>
         </div>
         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${style.cls}`}>

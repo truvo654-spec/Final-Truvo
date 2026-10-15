@@ -1,3 +1,4 @@
+import { JournalHelp } from './JournalHelp';
 import React, { useMemo, useRef, useState } from 'react';
 import { Broker, JournalEntry } from '../../types';
 import { INGEST_FIELDS, IngestField, ColumnMapping, SAMPLE_CSV, autoMap, convertRows, parseCsv } from './journalIngest';
@@ -84,10 +85,10 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
   return (
     <div className="space-y-4">
       <div className="grid sm:grid-cols-2 gap-3 text-xs">
-        <label>Account identity (required)<input aria-label="Import account identity" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" placeholder="Broker + account name or ID" value={accountId} onChange={e=>setAccountId(e.target.value)}/></label>
-        <label>Account currency<select aria-label="Import currency" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={currency} onChange={e=>setCurrency(e.target.value)}>{['USD','EUR','GBP','THB','JPY','AUD','CAD','CHF','SGD'].map(c=><option key={c}>{c}</option>)}</select></label>
-        <label>Source UTC offset<select aria-label="Source UTC offset" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={timezone} onChange={e=>setTimezone(e.target.value)}>{['UTC','-05:00','-04:00','+01:00','+02:00','+07:00','+08:00','+09:00'].map(t=><option key={t}>{t}</option>)}</select></label>
-        <label>Statement P&amp;L basis<select aria-label="Statement P&L basis" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={pnlBasis} onChange={e=>setPnlBasis(e.target.value as 'gross'|'net')}><option value="gross">Gross (fees separate)</option><option value="net">Net (fees already deducted)</option></select></label>
+        <label>Account identity (required)<JournalHelp label="Account identity (required)" /><input aria-label="Import account identity" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" placeholder="Broker + account name or ID" value={accountId} onChange={e=>setAccountId(e.target.value)}/></label>
+        <label>Account currency<JournalHelp label="Account currency" /><select aria-label="Import currency" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={currency} onChange={e=>setCurrency(e.target.value)}>{['USD','EUR','GBP','THB','JPY','AUD','CAD','CHF','SGD'].map(c=><option key={c}>{c}</option>)}</select></label>
+        <label>Source UTC offset<JournalHelp label="Source UTC offset" /><select aria-label="Source UTC offset" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={timezone} onChange={e=>setTimezone(e.target.value)}>{['UTC','-05:00','-04:00','+01:00','+02:00','+07:00','+08:00','+09:00'].map(t=><option key={t}>{t}</option>)}</select></label>
+        <label>Statement P&amp;L basis<JournalHelp label="Statement P&L basis" /><select aria-label="Statement P&L basis" className="block w-full border border-slate-200 rounded-lg p-2 mt-1" value={pnlBasis} onChange={e=>setPnlBasis(e.target.value as 'gross'|'net')}><option value="gross">Gross (fees separate)</option><option value="net">Net (fees already deducted)</option></select></label>
       </div>
       <p className="text-xs text-slate-500">ISO dates required. Timestamp offsets take precedence; otherwise the source offset above is used. Use offset-bearing timestamps across daylight-saving changes. Costs must be non-negative expense magnitudes; rebates need separate reconciliation. Net-named columns are treated as net and known costs reconstruct gross. No currency conversion or price-based profit estimates.</p>
       <div

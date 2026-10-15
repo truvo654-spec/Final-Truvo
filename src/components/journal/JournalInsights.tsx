@@ -1,3 +1,4 @@
+import { JournalHelp } from './JournalHelp';
 import { useJournalState } from './journalStorage';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
@@ -116,7 +117,7 @@ export const InsightsDrillDialog: React.FC<InsightsDrillDialogProps> = ({
           <table className="w-full text-xs">
             <caption className="sr-only">Closed trades in this chart group with realized net profit or loss</caption>
             <thead className="sticky top-0 bg-slate-50 text-left text-slate-500">
-              <tr><th className="p-2">Entry time</th><th className="p-2">Trade</th><th className="p-2">Strategy</th><th className="p-2">Outcome</th><th className="p-2 text-right">Net P&amp;L</th><th className="p-2 text-right">R</th></tr>
+              <tr><th className="p-2">Entry time</th><th className="p-2">Trade</th><th className="p-2">Strategy</th><th className="p-2">Outcome<JournalHelp label="Outcome" /></th><th className="p-2 text-right">Net P&amp;L<JournalHelp label="Net P&L" /></th><th className="p-2 text-right">R</th></tr>
             </thead>
             <tbody>
               {entries.map(entry => {
@@ -386,14 +387,14 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const Card: React.FC<{ kicker: string; badge: string; badgeTone: string; title: string; sub: string; left: [string, React.ReactNode]; right: [string, React.ReactNode]; foot?: React.ReactNode }> = ({ kicker, badge, badgeTone, title, sub, left, right, foot }) => (
     <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 flex flex-col">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[10px] font-bold tracking-wider uppercase text-slate-500">{kicker}</p>
+        <p className="text-[10px] font-bold tracking-wider uppercase text-slate-500">{kicker}<JournalHelp label={kicker} text={kicker.startsWith('Peak') ? 'Highest observed win rate among windows with at least three eligible trades. Small windows can be extreme; inspect count, net result and average R together.' : kicker.startsWith('Most') ? 'The window with the largest eligible closed-trade count. Activity alone does not establish profit or quality. Inspect its source trades for context.' : kicker.startsWith('Leak') ? 'The window with the lowest observed net result among losing windows. Check sample size and risk per trade before changing a schedule.' : 'The highest observed net-result window in this filtered report. Counts, risk and position size affect this ranking; open its source trades to inspect the evidence.'} /></p>
         <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeTone}`}>{badge}</span>
       </div>
       <p className="text-lg font-bold text-[#0b1c30] mt-2 leading-tight">{title}</p>
       <p className="text-[11px] text-slate-500 mt-1 min-h-[30px]">{sub}</p>
       <div className="mt-auto pt-3 flex items-end justify-between gap-2 border-t border-slate-100">
-        <div><p className="text-[10px] text-slate-500">{left[0]}</p><div className="text-base font-bold font-mono">{left[1]}</div></div>
-        <div className="text-right"><p className="text-[10px] text-slate-500">{right[0]}</p><div className="text-xs font-bold font-mono text-[#0b1c30]">{right[1]}</div></div>
+        <div><p className="text-[10px] text-slate-500">{left[0]}<JournalHelp label={left[0]} /></p><div className="text-base font-bold font-mono">{left[1]}</div></div>
+        <div className="text-right"><p className="text-[10px] text-slate-500">{right[0]}<JournalHelp label={right[0]} /></p><div className="text-xs font-bold font-mono text-[#0b1c30]">{right[1]}</div></div>
       </div>
       {foot && <div className="mt-1">{foot}</div>}
     </div>
@@ -407,8 +408,8 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
       <aside className="space-y-4 lg:sticky lg:top-24">
         <nav className="bg-white border border-[#e2e8f0] rounded-2xl p-2" aria-label="Reports">
           {([['overview', 'Overview'], ['daytime', 'Day & Time']] as const).map(([id, label]) => (
-            <button key={id} type="button" aria-current={report === id ? 'page' : undefined} onClick={() => setReport(id)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold ${report === id ? 'bg-[#EEF0FE] text-[#5338ec]' : 'text-[#474556] hover:bg-slate-50'}`}>{label}</button>
+            <div key={id} className="flex items-center"><button type="button" aria-current={report === id ? 'page' : undefined} onClick={() => setReport(id)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold ${report === id ? 'bg-[#EEF0FE] text-[#5338ec]' : 'text-[#474556] hover:bg-slate-50'}`}>{label}</button><JournalHelp label={id === 'overview' ? 'Insights' : 'Day & Time'} /></div>
           ))}
         </nav>
         {onWhatIf && (
@@ -420,7 +421,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
         )}
         {report === 'daytime' && (
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
-            <p className="text-[10px] font-bold tracking-wider uppercase text-slate-500 mb-2">Session filter</p>
+            <p className="text-[10px] font-bold tracking-wider uppercase text-slate-500 mb-2">Session filter<JournalHelp label="Session filter" /></p>
             {SESSIONS.map((s) => (
               <label key={s.id} className="flex items-center justify-between gap-2 py-1 text-xs text-[#0b1c30] cursor-pointer">
                 <span>{s.label}{s.start >= 0 && <span className="block text-[10px] text-slate-400 font-mono">{sessHours(s)}</span>}</span>
@@ -428,10 +429,10 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               </label>
             ))}
             <div className="flex justify-between text-[11px] mt-3 pt-3 border-t border-slate-100">
-              <label htmlFor="ins-tz" className="font-semibold text-slate-500">Timezone</label>
+              <label htmlFor="ins-tz" className="font-semibold text-slate-500">Timezone<JournalHelp label="Timezone" /></label>
               <span className="font-mono text-[#0b1c30]">{offsetLabel(offNow)}</span>
             </div>
-            <select id="ins-tz" value={tz} onChange={(e) => { setTz(e.target.value); setHover(null); setDrill(null); }} className="mt-2 w-full h-9 border border-slate-200 rounded-lg px-2 text-xs font-semibold bg-white text-[#0b1c30]">
+            <select aria-label="Timezone" id="ins-tz" value={tz} onChange={(e) => { setTz(e.target.value); setHover(null); setDrill(null); }} className="mt-2 w-full h-9 border border-slate-200 rounded-lg px-2 text-xs font-semibold bg-white text-[#0b1c30]">
               {TIMEZONES.map((z) => <option key={z.id} value={z.id}>{z.label} ({offsetLabel(tzOffset(z.id, `${JOURNAL_TODAY}T12:00:00`))})</option>)}
             </select>
             <p className="text-[10px] text-slate-400 mt-1.5">Days, months and trade times are shown in this zone. Daylight saving is applied automatically.</p>
@@ -463,7 +464,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               {menu('strategy', 'Playbook', stratOpts, stratOff, setStratOff)}
               <label className={`${btn} flex items-center gap-2 cursor-pointer ${days ? '' : 'opacity-50 cursor-not-allowed'}`} title={days ? '' : 'Pick Last 30 or 90 days to compare with the period before'}>
                 <input type="checkbox" checked={benchOn} disabled={!days} onChange={(e) => setBench(e.target.checked)} />
-                Benchmark vs prev period
+                Benchmark vs prev period<JournalHelp label="Benchmark vs prev period" />
               </label>
               <button type="button" onClick={exportCsv} className={`${btn} ml-auto`}>Export CSV</button>
             </div>
@@ -523,7 +524,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               </div>
               {chartScope !== 'closed' ? (
                 <>
-                  <h4 className="text-sm font-bold mb-2">Open positions & unrealized P&amp;L</h4>
+                  <h4 className="text-sm font-bold mb-2">Open positions & unrealized P&amp;L<JournalHelp label="Open positions & unrealized P&L" /></h4>
                   {view === 'duration' && <p className="text-[11px] text-slate-500 mb-2">Open hold time is unavailable without a valuation timestamp; exit-based duration buckets apply only to closed trades.</p>}
                   <JournalOpenInsightsChart key={`${chartScope}-${view}-${tz}-${resolution}`} entries={openCur}
                     bucketOf={e => view === 'duration' ? { key: 'open', label: 'Still open', order: 0 } : bucketOf(e)} onDrill={onDrill} />
@@ -532,7 +533,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                 <>
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
-                  <h4 className="text-sm font-bold">{view === 'days' ? 'Day of week' : view === 'month' ? 'Monthly' : view === 'time' ? 'Time of day' : 'Hold time'} distribution</h4>
+                  <h4 className="text-sm font-bold">{view === 'days' ? 'Day of week' : view === 'month' ? 'Monthly' : view === 'time' ? 'Time of day' : 'Hold time'} distribution<JournalHelp label="Distribution" /></h4>
                   <p className="text-[11px] text-slate-500">{metric === 'net' ? 'Bars show realized net profit or loss: green for profit, red for loss.' : metric === 'avgR' ? 'Bars show average realized R: green for positive, red for negative.' : 'Bars show the selected distribution metric.'} Click a bar or press Enter to see every closed trade in that group.</p>
                 </div>
                 <div className="flex h-8 rounded-lg border border-slate-200 overflow-hidden" role="group" aria-label="Metric">
@@ -601,7 +602,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
 
             {/* Cross analysis matrix */}
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cross analysis matrix">
-              <h4 className="text-sm font-bold">Cross analysis matrix</h4>
+              <h4 className="text-sm font-bold">Cross analysis matrix<JournalHelp label="Cross analysis matrix" /></h4>
               <p className="text-[11px] text-slate-500 mb-3">Closed performance only. Each cell is net P&amp;L, trades and win rate for that pair. Click a cell to see its trades. Open-position chart toggles do not change realized statistics or CSV exports.</p>
               <div className="flex flex-wrap gap-1.5 mb-3" role="tablist" aria-label="Compare by">
                 {DIMS.map(([id, label]) => (
@@ -675,7 +676,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Detailed breakdown">
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
-                  <h4 className="text-sm font-bold">Detailed session &amp; time breakdown</h4>
+                  <h4 className="text-sm font-bold">Detailed session &amp; time breakdown<JournalHelp label="Detailed session & time breakdown" /></h4>
                   <p className="text-[11px] text-slate-500">Expand a row to split it by {view === 'time' ? 'weekday' : 'session'}. Click a row label to drill down.</p>
                 </div>
                 <div className="flex items-center gap-2">

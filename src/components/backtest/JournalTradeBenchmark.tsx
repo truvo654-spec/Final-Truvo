@@ -1,3 +1,4 @@
+import { JournalHelp } from '../journal/JournalHelp';
 import React, { useMemo } from 'react';
 import type { JournalEntry } from '../../types';
 import { currencyOf, eligible, metrics } from '../journal/journalMath';
@@ -29,7 +30,7 @@ export const JournalTradeBenchmark: React.FC<Props> = ({ entries, onClear }) => 
     <section className="rounded-2xl border border-[#5338ec]/25 bg-[#F8F7FF] p-4 sm:p-5" aria-label="Imported journal trade benchmark">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-bold text-[#0b1c30]">Imported actual-trade benchmark · {entries.length} selected</h3>
+          <h3 className="text-sm font-bold text-[#0b1c30]">Imported actual-trade benchmark · {entries.length} selected<JournalHelp label="Trade history setup" /></h3>
           <p className="mt-1 text-xs text-[#474556]">
             Imported trades are the actual-results benchmark, not inferred rules. Backtest uses the selected playbook hypothesis and executable recipe (or a labeled starter set); choose other playbooks below to compare setups.
           </p>
@@ -48,7 +49,7 @@ export const JournalTradeBenchmark: React.FC<Props> = ({ entries, onClear }) => 
           </p>
         </div>
         <div className="rounded-lg bg-white px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Win rate</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Win rate<JournalHelp label="Win rate" /></p>
           <p className="mt-1 font-bold tabular-nums text-[#0b1c30]">{count ? pct(wins / count, 0) : '—'}</p>
         </div>
         <div className="rounded-lg bg-white px-3 py-2">

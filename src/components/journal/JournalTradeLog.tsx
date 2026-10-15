@@ -1,3 +1,4 @@
+import { JournalHelp } from './JournalHelp';
 import { useJournalState } from './journalStorage';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics, currencyOf } from './journalMath';
@@ -384,47 +385,48 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
       {/* KPI strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
         <div className={card}>
-          <p className={lbl}>Cumul. Net P&amp;L</p>
+          <p className={lbl}>Cumul. Net P&amp;L<JournalHelp label="Cumul. Net P&L" /></p>
           <p className={`text-xl font-bold font-mono mt-1 ${tone(kpi.net)}`}>{kpi.n ? money(kpi.net) : '—'}</p>
           <p className="text-[10px] text-slate-500 mt-1">{kpi.n} trade{kpi.n === 1 ? '' : 's'}</p>
         </div>
         <div className={card}>
-          <p className={lbl}>Profit Factor</p>
+          <p className={lbl}>Profit Factor<JournalHelp label="Profit Factor" /></p>
           <p className="text-xl font-bold font-mono mt-1 text-[#0b1c30]">{kpi.pf === null ? '—' : kpi.pf === Infinity ? '∞' : kpi.pf.toFixed(2)}</p>
           <p className="text-[10px] text-slate-500 mt-1">{kpi.pf===Infinity?'No losing results':kpi.pf===null?'No positive or negative results':'Positive net / absolute negative net'}</p>
         </div>
         <div className={card}>
-          <p className={lbl}>Win Rate</p>
+          <p className={lbl}>Win Rate<JournalHelp label="Win Rate" /></p>
           <p className="text-xl font-bold mt-1 text-[#0b1c30]">{kpi.n?`${kpi.winRate}%`:'—'}</p>
           <p className="text-[10px] mt-1"><span className="text-emerald-600">{kpi.wins}W</span> / <span className="text-rose-600">{kpi.losses}L</span> <span className="text-slate-500 ml-1">{kpi.be} BE</span></p>
         </div>
         <div className={card}>
-          <p className={lbl}>Avg Win / Loss</p>
+          <p className={lbl}>Avg Win / Loss<JournalHelp label="Avg Win / Loss" /></p>
           <p className="text-lg font-bold font-mono mt-1"><span className="text-emerald-600">{kpi.wins?tradingPlain(kpi.avgW, 0):'—'}</span> <span className="text-slate-500">/</span> <span className="text-rose-600">{kpi.losses?`-${tradingPlain(kpi.avgL, 0)}`:'—'}</span></p>
           <p className="text-[10px] text-slate-500 mt-1">Payoff ratio {kpi.payoff === null ? '—' : `${kpi.payoff.toFixed(2)}x`}</p>
         </div>
         <div className={card}>
-          <p className={lbl}>Realized R-Avg</p>
+          <p className={lbl}>Realized R-Avg<JournalHelp label="Realized R-Avg" /></p>
           <p className={`text-xl font-bold font-mono mt-1 ${kpi.rn ? tone(kpi.r) : 'text-slate-500'}`}>{kpi.rn ? `${kpi.r > 0 ? '+' : ''}${kpi.r.toFixed(2)}R` : '—'}</p>
           <p className="text-[10px] text-slate-500 mt-1">Max single {kpi.rn ? `+${kpi.maxR.toFixed(2)}R` : '—'}</p>
         </div>
         <div className={card}>
-          <p className={lbl}>Comms &amp; Fees</p>
+          <p className={lbl}>Comms &amp; Fees<JournalHelp label="Comms & Fees" /></p>
           <p className="text-xl font-bold font-mono mt-1 text-[#0b1c30]">{tradingPlain(kpi.fees)}</p>
           <p className="text-[10px] text-slate-500 mt-1">{kpi.feePct==null?'Impact unknown (zero gross)':`${kpi.feePct.toFixed(2)}% of absolute gross total`}</p>
         </div>
         <div className={card}>
-          <p className={lbl}>Cashback (est. USD)</p>
+          <p className={lbl}>Cashback (est. USD)<JournalHelp label="Cashback (est. USD)" /></p>
           <p className="text-xl font-bold font-mono mt-1 text-emerald-600">{kpi.cb > 0 ? `+${plain(kpi.cb)}` : plain(0)}</p>
           <p className="text-[10px] text-slate-500 mt-1">Separate reward estimate; not trading P&amp;L</p>
         </div>
         <div className={card}>
-          <p className={lbl}>Points (est.)</p>
+          <p className={lbl}>Points (est.)<JournalHelp label="Points (est.)" /></p>
           <p className="text-xl font-bold font-mono mt-1 text-violet-600">{kpi.pts.toLocaleString('en-US')}</p>
           <p className="text-[10px] text-slate-500 mt-1">Base rate, before boosters</p>
         </div>
       </div>
       {/* Bulk actions */}
+      <div className="flex items-center text-[11px] font-semibold text-slate-500">Selection & actions<JournalHelp label="Bulk actions" /></div>
       <div className="flex flex-wrap items-center gap-2 min-h-[36px]">
         {hasSel ? (
           <>
@@ -485,10 +487,11 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <input disabled={!!preset} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter symbols, tags, playbooks, brokers..." aria-label="Filter trades" className="flex-1 min-w-[220px] max-w-md h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs text-[#0b1c30] placeholder:text-slate-400" />
+        <JournalHelp label="Trade filters" />
         <button type="button" disabled={!!preset} aria-pressed={needsReview} onClick={() => { setNeedsReview(v => !v); setPage(1); }} className={btn}>Needs Review ({entries.filter(e => reviewStateOf(e) !== 'complete').length})</button>
         <label className="flex items-center gap-2 h-9 rounded-lg bg-white border border-slate-200 px-3 text-[10px] font-bold tracking-wide text-slate-500">
-          GROUP:
-          <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)} className="bg-transparent text-xs font-semibold text-[#0b1c30] focus:outline-none">
+          GROUP:<JournalHelp label="GROUP:" />
+          <select aria-label="GROUP:" value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)} className="bg-transparent text-xs font-semibold text-[#0b1c30] focus:outline-none">
             <option value="none" className="text-black">All</option>
             <option value="day">Day</option><option value="week">Week</option><option value="tradingStatus">Trading status</option>
             <option value="instrument" className="text-black">Instrument</option>
@@ -514,7 +517,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
         {filterMenu('broker', 'Broker', brokerOpts, brokerOff, setBrokerOff)}
         <div className="relative">
           <button type="button" aria-expanded={colsOpen} onClick={() => { setOpenMenu(null); setColsOpen((o) => !o); }} className={btn}>Columns ({cols.length}/{COLS.length})</button>
-          {colsOpen && (
+          <JournalHelp label="Columns" />{colsOpen && (
             <div className="absolute z-20 mt-2 w-56 rounded-xl bg-white border border-slate-200 shadow-2xl p-2 max-h-72 overflow-y-auto">
               {COLS.map((c) => (
                 <label key={c.key} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 text-xs text-[#0b1c30] cursor-pointer">
@@ -542,7 +545,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
                     <button type="button" onClick={() => toggleSort(c.key)} className="hover:text-[#0b1c30] font-semibold">
                       {c.label} <span aria-hidden="true" className={sort.key === c.key ? 'text-[#5338ec]' : 'text-slate-300'}>{sort.key === c.key ? (sort.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
                     </button>
-                  ) : c.label}
+                  ) : c.label}<JournalHelp label={c.label} />
                 </th>
               ))}
             </tr>
@@ -601,8 +604,8 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
       <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
         <span>Showing <b className="text-[#0b1c30]">{sorted.length ? (curPage - 1) * perPage + 1 : 0}–{Math.min(curPage * perPage, sorted.length)}</b> of <b className="text-[#0b1c30]">{sorted.length}</b> executions</span>
         <label className="flex items-center gap-1.5 font-bold tracking-wide">
-          PER PAGE:
-          <select value={perPage} onChange={(e) => setPerPage(Number(e.target.value))} className="bg-white border border-slate-200 rounded-md px-2 py-1 text-[#0b1c30]">
+          PER PAGE:<JournalHelp label="PER PAGE:" />
+          <select aria-label="PER PAGE:" value={perPage} onChange={(e) => setPerPage(Number(e.target.value))} className="bg-white border border-slate-200 rounded-md px-2 py-1 text-[#0b1c30]">
             {[10, 25, 50].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
         </label>

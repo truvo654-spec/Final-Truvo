@@ -1,3 +1,4 @@
+import { JournalHelp } from './JournalHelp';
 import React, { useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { JournalEntry } from '../../types';
@@ -29,7 +30,7 @@ function RangeDialog({ initial, initialAll, today, entries, onApply, onClose }: 
   return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0b1c30]/35 p-3 sm:p-6" onClick={e => e.target === e.currentTarget && onClose()}>
     <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="journal-range-title" tabIndex={-1} className="w-full max-w-4xl max-h-[90dvh] overflow-y-auto rounded-2xl border border-slate-200 bg-white text-[#0b1c30] shadow-2xl focus:outline-none">
       <div className="sticky top-0 z-10 bg-white flex items-center justify-between gap-3 border-b border-slate-200 p-5">
-        <div><h2 id="journal-range-title" className="text-lg font-bold">Choose your date range</h2><p className="text-xs text-slate-500 mt-1">Recorded entry dates · UTC · applies to the shared journal scope</p></div>
+        <div><h2 id="journal-range-title" className="text-lg font-bold">Choose your date range<JournalHelp label="Choose your date range" /></h2><p className="text-xs text-slate-500 mt-1">Recorded entry dates · UTC · applies to the shared journal scope</p></div>
         <button className={button} aria-label="Close date range" onClick={onClose}><X size={16}/></button>
       </div>
       <div className="flex flex-wrap gap-3 items-end p-5 bg-slate-50">
@@ -69,5 +70,5 @@ function RangeDialog({ initial, initialAll, today, entries, onApply, onClose }: 
 export function JournalDateRange({ from, to, label, today, entries, onApply }: { from: string; to: string; label: string; today: string; entries: JournalEntry[]; onApply: (range: DateRange, all: boolean) => void }) {
   const [open, setOpen] = useState(false);
   const initial = { from: label !== 'All time' && validDate(from) ? from : [...entries.map(e => e.date), today].sort()[0], to: label !== 'All time' && validDate(to) ? to : [...entries.map(e => e.date), today].sort().at(-1)! };
-  return <><button className={`${button} inline-flex items-center gap-2 h-9`} aria-label={`Date range: ${label}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><CalendarDays size={15} className="text-[#5338ec]"/>{label}</button>{open && <RangeDialog initial={initial} initialAll={label === 'All time'} today={today} entries={entries} onClose={() => setOpen(false)} onApply={(range, all) => { onApply(range, all); setOpen(false); }}/>}</>;
+  return <><span className="relative inline-flex"><button className={`${button} inline-flex items-center gap-2 h-9 !pr-10`} aria-label={`Date range: ${label}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><CalendarDays size={15} className="text-[#5338ec]"/>{label}</button><span className="absolute right-1 top-1/2 -translate-y-1/2"><JournalHelp label="Date range" /></span></span>{open && <RangeDialog initial={initial} initialAll={label === 'All time'} today={today} entries={entries} onClose={() => setOpen(false)} onApply={(range, all) => { onApply(range, all); setOpen(false); }}/>}</>;
 }

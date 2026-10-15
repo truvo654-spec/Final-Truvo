@@ -1,3 +1,4 @@
+import { InfoTooltip } from '../common/InfoTooltip';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
 import React, { useMemo, useState } from 'react';
 import { JournalEntry } from '../../types';
@@ -18,19 +19,7 @@ const WINDOW = 10;
 
 /** Small ⓘ marker with a hover / focus explanation. */
 const Info: React.FC<{ title: string; children: React.ReactNode; align?: 'left' | 'right' }> = ({ title, children, align = 'left' }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <span className="relative inline-flex align-middle" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <span tabIndex={0} role="button" aria-label={`About ${title}`} onKeyDown={e=>{if(e.key==='Escape')setOpen(false);if(e.key==='Enter'||e.key===' '){e.preventDefault();setOpen(o=>!o);}}} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
-        className="ml-1 w-3.5 h-3.5 rounded-full border border-slate-300 text-[9px] leading-[12px] text-center font-bold text-slate-500 cursor-help normal-case tracking-normal">i</span>
-      {open && (
-        <span role="tooltip" className={`absolute z-40 top-5 ${align === 'right' ? 'right-0' : 'left-0'} w-64 max-w-[calc(100vw-3rem)] rounded-xl bg-[#0b1c30] text-white text-[11px] leading-relaxed font-normal normal-case tracking-normal p-3 shadow-2xl text-left`}>
-          <span className="block font-bold text-xs mb-1">{title}</span>
-          {children}
-        </span>
-      )}
-    </span>
-  );
+  return <InfoTooltip label={title} description={children} />;
 };
 
 const metricOf = (list: JournalEntry[], m: Metric, target: number): number | null => {
@@ -152,11 +141,11 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
           const v = metricOf(trades, m.id, target);
           const on = metric === m.id;
           return (
-            <button key={m.id} type="button" role="tab" aria-selected={on} onClick={() => { setMetric(m.id); setHover(null); }}
-              className={`text-left rounded-xl border px-3 py-2.5 ${on ? 'border-[#5338ec] bg-[#F8F7FF]' : 'border-slate-200 hover:bg-slate-50'}`}>
-              <span className={lbl}>{m.label}{m.id === 'target' ? ` (≥${target}R)` : ''}<Info title={m.label} align={m.id === 'target' || m.id === 'payoff' ? 'right' : 'left'}>{explain[m.id]}</Info></span>
+            <div key={m.id} className="relative min-w-0"><button type="button" role="tab" aria-selected={on} onClick={() => { setMetric(m.id); setHover(null); }}
+              className={`w-full text-left rounded-xl border pl-3 pr-8 py-2.5 ${on ? 'border-[#5338ec] bg-[#F8F7FF]' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <span className={lbl}>{m.label}{m.id === 'target' ? ` (≥${target}R)` : ''}</span>
               <span className="block text-lg font-bold font-mono text-[#0b1c30]">{fmt(m.id, v)}</span>
-            </button>
+            </button><span className="absolute right-1 top-1.5"><Info title={m.label}>{explain[m.id]}</Info></span></div>
           );
         })}
       </div>

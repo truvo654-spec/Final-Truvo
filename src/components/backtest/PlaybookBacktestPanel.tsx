@@ -1,3 +1,4 @@
+import { JournalHelp } from '../journal/JournalHelp';
 // "Backtest vs live" on a playbook page, and the "Strategy health" widget for the journal overview.
 import React, { useMemo } from 'react';
 import { FlaskConical, HeartPulse } from 'lucide-react';
@@ -19,7 +20,7 @@ export const PlaybookBacktestPanel: React.FC<{ playbook: JournalPlaybook; entrie
       <div className="rounded-xl border border-dashed border-[#5338ec]/30 bg-[#FBFAFF] p-4 flex flex-wrap items-center gap-3">
         <FlaskConical className="w-5 h-5 text-[#5338ec]" aria-hidden />
         <div className="flex-1 min-w-[12rem]">
-          <p className="text-sm font-bold text-[#0b1c30]">Backtest vs live</p>
+          <p className="text-sm font-bold text-[#0b1c30]">Backtest vs live<JournalHelp label="Backtest vs live" /></p>
           <p className="text-xs text-[#474556]">Test this playbook on past prices to see what to expect, then track your live trades against it.</p>
         </div>
         <button type="button" onClick={onBacktest} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Backtest this playbook</button>
@@ -38,14 +39,14 @@ export const PlaybookBacktestPanel: React.FC<{ playbook: JournalPlaybook; entrie
   return (
     <div className="rounded-xl border border-slate-200 p-4 space-y-3" aria-label="Backtest vs live">
       <div className="flex flex-wrap items-center gap-2">
-        <h4 className="text-sm font-bold text-[#0b1c30] mr-auto">Backtest vs live</h4>
+        <h4 className="text-sm font-bold text-[#0b1c30] mr-auto">Backtest vs live<JournalHelp label="Backtest vs live" /></h4>
         <Pill tone={toneOf(h.health)} title="On track while your live cumulative R stays inside the range the backtest predicts (average ± 2 standard deviations).">{HEALTH_LABEL[h.health]}</Pill>
         <button type="button" onClick={onBacktest} className={`${btnSecondary} h-8`}>Re-test</button>
       </div>
       <p className="text-[11px] text-slate-500">Expected from "{expected.runName}" ({expected.symbol}, saved {dateOnly(Date.parse(expected.savedAt))}).</p>
       <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4">
         <table className="w-full text-xs tabular-nums self-start">
-          <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-1.5">Measure</th><th className="text-right py-1.5">Expected</th><th className="text-right py-1.5">Live</th></tr></thead>
+          <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-1.5">Measure</th><th className="text-right py-1.5">Expected</th><th className="text-right py-1.5">Live<JournalHelp label="Live" /></th></tr></thead>
           <tbody>{rows.map(([k, hint, e, l]) => <tr key={k} className="border-b border-slate-100"><td className="py-1.5 font-semibold" title={hint}>{k}</td><td className="py-1.5 text-right">{e}</td><td className="py-1.5 text-right font-bold">{l}</td></tr>)}</tbody>
         </table>
         <div className="min-w-0">
@@ -67,7 +68,7 @@ export const StrategyHealthCard: React.FC<{ playbooks: JournalPlaybook[]; entrie
   }).sort((a, b) => a.h.gapR - b.h.gapR), [playbooks, entries, expected]);
   return (
     <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-      <h4 className="text-sm font-bold mb-1 flex items-center gap-1.5"><HeartPulse className="w-4 h-4 text-[#5338ec]" /> Strategy health</h4>
+      <h4 className="text-sm font-bold mb-1 flex items-center gap-1.5"><HeartPulse className="w-4 h-4 text-[#5338ec]" /> Strategy health<JournalHelp label="Strategy health" /></h4>
       <p className="text-[11px] text-slate-500 mb-3">Live results vs each playbook's backtest, biggest gap first.</p>
       {rows.length === 0 ? (
         <>

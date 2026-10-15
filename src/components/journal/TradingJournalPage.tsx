@@ -1,3 +1,4 @@
+import { JournalHelp, getJournalHelp } from './JournalHelp';
 import { useMoney, formatMoney, JournalCurrency } from './JournalCurrency';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Flame, Target, TrendingUp, ShieldCheck, Lock, Trash2, BookOpen, ChevronRight, AlertTriangle, PlayCircle, X } from 'lucide-react';
@@ -224,10 +225,10 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         aria-expanded={openMenu === id}
         title={FILTER_HELP[title]}
         onClick={() => setOpenMenu(openMenu === id ? null : id)}
-        className={`h-9 text-xs font-semibold border rounded-lg px-3 bg-white hover:bg-slate-50 ${off.length ? 'border-[#5338ec] text-[#5338ec]' : 'border-slate-200 text-[#0b1c30]'}`}
+        className={`h-9 text-xs font-semibold border rounded-lg pl-3 pr-10 bg-white hover:bg-slate-50 ${off.length ? 'border-[#5338ec] text-[#5338ec]' : 'border-slate-200 text-[#0b1c30]'}`}
       >
         {title} ({opts.length - off.length}/{opts.length})
-      </button>
+      </button><span className="absolute right-1 top-1.5"><JournalHelp label={title} text={`${FILTER_HELP[title]} ${title === 'Playbook' ? 'The selected count shows included categories, not the number of trades.' : getJournalHelp(title) || ''}`} /></span>
       {openMenu === id && (
         <div className="absolute z-20 mt-2 w-56 rounded-xl bg-white border border-slate-200 shadow-xl p-2 max-h-72 overflow-y-auto">
           {opts.map((o) => (
@@ -266,10 +267,10 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           ? 'Choose what the Overview displays: trading P&L, trading plus cashback, or MarketSyde Points.'
           : 'Choose whether Overview trading results are shown gross before costs or net after recorded costs.'}
         onClick={() => setOpenMenu(openMenu === id ? null : id)}
-        className="h-9 text-xs font-semibold border rounded-lg px-3 bg-white hover:bg-slate-50 border-slate-200 text-[#0b1c30]"
+        className="h-9 text-xs font-semibold border rounded-lg pl-3 pr-10 bg-white hover:bg-slate-50 border-slate-200 text-[#0b1c30]"
       >
         {title}: {opts.find((o) => o.id === value)?.label}
-      </button>
+      </button><span className="absolute right-1 top-1.5"><JournalHelp label={title} /></span>
       {openMenu === id && (
         <div role="radiogroup" aria-label={title} className="absolute z-20 mt-2 w-48 rounded-xl bg-white border border-slate-200 shadow-xl p-2">
           {opts.map((o) => (
@@ -284,12 +285,12 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   );
 
   const tabs: FolderTabItem<JournalTab>[] = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'entries', label: 'Trade Log' },
-    { id: 'insights', label: 'Insights' },
-    { id: 'playbook', label: 'Playbook' },
-    { id: 'backtest', label: 'Backtest' },
-    { id: 'review', label: 'AI Coach' },
+    { id: 'overview', label: 'Overview', help: getJournalHelp('Overview') },
+    { id: 'entries', label: 'Trade Log', help: getJournalHelp('Trade Log') },
+    { id: 'insights', label: 'Insights', help: getJournalHelp('Insights') },
+    { id: 'playbook', label: 'Playbook', help: getJournalHelp('Playbook') },
+    { id: 'backtest', label: 'Backtest', help: getJournalHelp('Backtest') },
+    { id: 'review', label: 'AI Coach', help: getJournalHelp('AI Coach') },
   ];
 
   const sorted = useMemo(() => [...entries].sort((a, b) => b.date.localeCompare(a.date)), [entries]);
@@ -392,7 +393,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     <JournalCurrency.Provider value={currency}><div className="w-full max-w-[1360px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
       <div className="flex items-start justify-between gap-6 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Trading Journal</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Trading Journal<JournalHelp label="Trading Journal" /></h1>
           <p className="text-sm text-[#474556] mt-1">
             Write down why you traded, how you felt, and what you'd change. Patterns show up fast.
           </p>
@@ -412,8 +413,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {journalSandbox && <p role="status" className="text-xs text-purple-700 mb-3">Isolated journal test workspace — separate from your journal records.</p>}
       {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
       <div className="flex flex-wrap gap-3 mb-3 text-xs">
-        <label title="Keep calculations in one currency. No currency conversion is applied.">Account currency <select aria-label="Account currency" title="Choose the account currency; entries in other currencies are excluded." value={currency} onChange={e=>{setCurrency(e.target.value);setAccount('all');setSelectedDay(null);}}>{[...new Set(['USD',...entries.map(currencyOf)])].map(c=><option key={c}>{c}</option>)}</select></label>
-        <label title="Limit the journal scope to one account or include all accounts in the selected currency.">Account <select aria-label="Account" title="Choose one account or all accounts in the selected currency." value={account} onChange={e=>{setAccount(e.target.value);setSelectedDay(null);}}><option value="all">All accounts in this currency</option>{[...new Set(entries.filter(e=>currencyOf(e)===currency).map(e=>e.accountId || 'legacy-demo'))].map(a=><option key={a}>{a}</option>)}</select></label>
+        <label title="Keep calculations in one currency. No currency conversion is applied.">Account currency<JournalHelp label="Account currency" /> <select aria-label="Account currency" title="Choose the account currency; entries in other currencies are excluded." value={currency} onChange={e=>{setCurrency(e.target.value);setAccount('all');setSelectedDay(null);}}>{[...new Set(['USD',...entries.map(currencyOf)])].map(c=><option key={c}>{c}</option>)}</select></label>
+        <label title="Limit the journal scope to one account or include all accounts in the selected currency.">Account<JournalHelp label="Account" /> <select aria-label="Account" title="Choose one account or all accounts in the selected currency." value={account} onChange={e=>{setAccount(e.target.value);setSelectedDay(null);}}><option value="all">All accounts in this currency</option>{[...new Set(entries.filter(e=>currencyOf(e)===currency).map(e=>e.accountId || 'legacy-demo'))].map(a=><option key={a}>{a}</option>)}</select></label>
         <span>{currency} only · entry-date basis (UTC) · no currency conversion · net win rate includes breakeven</span>
       </div>
 
@@ -428,8 +429,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         <div className="space-y-6">
           {/* Toolbar */}
           <div className="flex flex-wrap items-start gap-2" role="toolbar" aria-label="Journal scope">
-            <div className="flex flex-col gap-1.5">
-              <JournalDateRange from={rangeFrom} to={rangeTo} label={rangeLabel} today={JOURNAL_TODAY} entries={calEntries} onApply={(range, all) => { setCustomRange(range); setRangeMode(all ? 'all' : 'custom'); setCalMonth(range.to.slice(0,7)); setSelectedDay(null); setDayReviewOpen(false); }}/>
+            <div className="flex items-center gap-0.5">
+                <JournalDateRange from={rangeFrom} to={rangeTo} label={rangeLabel} today={JOURNAL_TODAY} entries={calEntries} onApply={(range, all) => { setCustomRange(range); setRangeMode(all ? 'all' : 'custom'); setCalMonth(range.to.slice(0,7)); setSelectedDay(null); setDayReviewOpen(false); }}/>
             </div>
 
             {filterMenu('strategy', 'Playbook', JOURNAL_STRATEGIES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.strategy === v).length })), strategyOff, setStrategyOff)}
@@ -447,28 +448,28 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         <div className="space-y-6 mt-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
-              <p className="text-[11px] font-semibold text-[#474556] mb-1 capitalize">{cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`}</p>
+              <p className="text-[11px] font-semibold text-[#474556] mb-1 capitalize">{cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`}<JournalHelp label={cbMode === 'points' ? 'Points' : pnlMode === 'net' ? 'Net P&L' : 'Gross P&L'} /></p>
               <p className={`text-xl font-bold font-mono ${shownTotal > 0 ? 'text-emerald-600' : shownTotal < 0 ? 'text-rose-600' : ''}`}>{kpi.count ? (cbMode === 'points' ? `${shownTotal.toLocaleString('en-US')} pts` : money(shownTotal)) : '—'}</p>
               <p className="text-[10px] text-[#94a3b8] mt-0.5">{kpi.realizedCount} eligible / {kpi.count} recorded · cashback {formatMoney(cashbackTotal,'USD')}</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
-              <p className="text-[11px] font-semibold text-[#474556] mb-1">Win rate</p>
+              <p className="text-[11px] font-semibold text-[#474556] mb-1">Win rate<JournalHelp label="Win rate" /></p>
               <p className="text-xl font-bold flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-emerald-500" /> {kpi.winRate == null ? '—' : `${kpi.winRate}%`}</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
-              <p className="text-[11px] font-semibold text-[#474556] mb-1">Profit factor</p>
+              <p className="text-[11px] font-semibold text-[#474556] mb-1">Profit factor<JournalHelp label="Profit factor" /></p>
               <p className="text-xl font-bold font-mono">{kpi.profitFactor === null ? '—' : kpi.profitFactor === Infinity ? '∞' : kpi.profitFactor.toFixed(2)}</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
-              <p className="text-[11px] font-semibold text-[#474556] mb-1">Average R</p>
+              <p className="text-[11px] font-semibold text-[#474556] mb-1">Average R<JournalHelp label="Average R" /></p>
               <p className="text-xl font-bold flex items-center gap-1.5"><Target className="w-4 h-4 text-[#5338ec]" /> {kpi.avgR==null?'—':`${kpi.avgR.toFixed(2)}R`}</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
-              <p className="text-[11px] font-semibold text-[#474556] mb-1">Plan followed</p>
+              <p className="text-[11px] font-semibold text-[#474556] mb-1">Plan followed<JournalHelp label="Plan followed" /></p>
               <p className="text-xl font-bold flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-500" /> {kpi.plan==null?'—':`${kpi.plan.toFixed(0)}%`}</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 col-span-2 md:col-span-1">
-              <p className="text-[11px] font-semibold text-[#474556] mb-1">Journal streak</p>
+              <p className="text-[11px] font-semibold text-[#474556] mb-1">Journal streak<JournalHelp label="Journal streak" /></p>
               <p className="text-xl font-bold flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-500" /> {stats.streak} days</p>
             </div>
           </div>
@@ -479,7 +480,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             <div className="space-y-3">
               <section className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2" aria-label="Review queue">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-bold">Review queue · {pendingEntries.length} pending</h3>
+                  <h3 className="text-sm font-bold">Review queue · {pendingEntries.length} pending<JournalHelp label="Review queue" /></h3>
                   {!!pendingEntries.length && <button type="button" className="text-xs font-semibold text-[#5338ec] hover:underline" onClick={() => setReviewQueueOpen(true)}>See full pending list</button>}
                 </div>
                 <p className="text-xs text-slate-500">In this scope. Incomplete information is not a negative result.</p>
@@ -496,7 +497,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               </section>
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold">
-                  {selectedDay ? `Trades on ${shortDate(selectedDay, true)}` : 'Recent entries'}
+                  {selectedDay ? `Trades on ${shortDate(selectedDay, true)}` : 'Recent entries'}<JournalHelp label="Recent entries" />
                 </h3>
                 {selectedDay ? (
                   <button onClick={() => setSelectedDay(null)} className="text-xs font-semibold text-[#5338ec] hover:underline">Clear day</button>
@@ -550,7 +551,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               <StrategyHealthCard playbooks={playbooks} entries={scoped} expected={expected} onOpen={() => goBacktest({ view: 'home' })} />
 
               <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-                <h4 className="text-sm font-bold mb-2">What your journal says</h4>
+                <h4 className="text-sm font-bold mb-2">What your journal says<JournalHelp label="What your journal says" /></h4>
                 <p className="text-xs text-[#474556] leading-relaxed">
                   On trades where you followed your plan you averaged{' '}
                   <span className="font-bold text-emerald-600">{insights.followedN?money(insights.followedAvg):'unknown (no answered trades)'}</span>. Off-plan trades averaged{' '}
@@ -593,10 +594,10 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <section className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5">
             <h3 className="font-bold text-sm">Realized results · {rangeLabel} · {currency}</h3>
-            {(()=>{const m=metrics(scoped);return <><p className="text-xs mt-2">{m.n} eligible / {m.count} recorded · expectancy {m.expectancy==null?'—':money(m.expectancy)} per closed trade · daily closed-result drawdown {money(m.drawdown)} · costs {money(m.fees)}</p><p className="text-xs mt-2">Initial monetary-risk coverage {m.riskCount}/{m.n}; reported/derived R coverage {m.rCount}/{m.n}. Drawdown is a currency amount, not account-equity drawdown. Cohorts are descriptive, not causal.</p><details className="mt-3"><summary className="text-xs cursor-pointer">Daily net results table</summary><table className="text-xs w-full"><thead><tr><th className="text-left">Entry date UTC</th><th className="text-right">Net result</th></tr></thead><tbody>{m.daily.map(([d,v])=><tr key={d}><td><button className="text-[#5338ec] underline" onClick={()=>{setLogPreset({ids:m.list.filter(e=>e.date===d).map(e=>e.id),label:`Daily net ${d}`});setTab('entries');}}>{d}</button></td><td className="text-right">{money(v)}</td></tr>)}</tbody></table></details></>;})()}
+            {(()=>{const m=metrics(scoped);return <><p className="text-xs mt-2">{m.n} eligible / {m.count} recorded · expectancy {m.expectancy==null?'—':money(m.expectancy)} per closed trade · daily closed-result drawdown {money(m.drawdown)} · costs {money(m.fees)}</p><p className="text-xs mt-2">Initial monetary-risk coverage {m.riskCount}/{m.n}; reported/derived R coverage {m.rCount}/{m.n}. Drawdown is a currency amount, not account-equity drawdown. Cohorts are descriptive, not causal.</p><details className="mt-3"><summary className="text-xs cursor-pointer">Daily net results table</summary><table className="text-xs w-full"><thead><tr><th className="text-left">Entry date UTC</th><th className="text-right">Net result<JournalHelp label="Net result" /></th></tr></thead><tbody>{m.daily.map(([d,v])=><tr key={d}><td><button className="text-[#5338ec] underline" onClick={()=>{setLogPreset({ids:m.list.filter(e=>e.date===d).map(e=>e.id),label:`Daily net ${d}`});setTab('entries');}}>{d}</button></td><td className="text-right">{money(v)}</td></tr>)}</tbody></table></details></>;})()}
           </section>
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-            <h4 className="text-sm font-bold mb-4">Plan adherence</h4>
+            <h4 className="text-sm font-bold mb-4">Plan adherence<JournalHelp label="Plan adherence" /></h4>
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-emerald-50 rounded-xl p-4">
                 <p className="text-[11px] font-semibold text-emerald-700 mb-1">Followed plan ({insights.followedN})</p>
@@ -612,7 +613,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           </div>
 
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-            <h4 className="text-sm font-bold mb-4">By strategy</h4>
+            <h4 className="text-sm font-bold mb-4">By strategy<JournalHelp label="By strategy" /></h4>
             <div className="space-y-3">
               {insights.byStrategy.map((s) => (
                 <div key={s.name} className="flex items-center justify-between text-xs">
@@ -626,7 +627,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           </div>
 
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-            <h4 className="text-sm font-bold mb-4">P&amp;L by weekday</h4>
+            <h4 className="text-sm font-bold mb-4">P&amp;L by weekday<JournalHelp label="P&L by weekday" /></h4>
             <div className="flex items-end gap-2 h-32">
               {insights.byDay.map((d) => (
                 <div key={d.name} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
@@ -642,7 +643,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           </div>
 
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5 relative overflow-hidden">
-            <h4 className="text-sm font-bold mb-4">Emotion vs. result</h4>
+            <h4 className="text-sm font-bold mb-4">Emotion vs. result<JournalHelp label="Emotion vs. result" /></h4>
             <div className={`space-y-3 ${hasAdvanced ? '' : 'blur-[3px] select-none'}`}>
               {insights.byEmotion.map((em) => (
                 <div key={em.name} className="flex items-center gap-3 text-xs">
@@ -664,7 +665,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           </div>
 
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5 relative overflow-hidden">
-            <h4 className="text-sm font-bold mb-4">Most common mistakes</h4>
+            <h4 className="text-sm font-bold mb-4">Most common mistakes<JournalHelp label="Most common mistakes" /></h4>
             <div className={`space-y-3 ${hasAdvanced ? '' : 'blur-[3px] select-none'}`}>
               {insights.mistakes.length === 0 && <p className="text-xs text-[#474556]">No mistakes logged yet.</p>}
               {insights.mistakes.map(([name, count]) => (
@@ -736,7 +737,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           houseRules={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-            <h4 className="flex items-center gap-1.5 text-sm font-bold mb-1"><BookOpen className="w-4 h-4 text-[#5338ec]" /> Pre-trade checklist</h4>
+            <h4 className="flex items-center gap-1.5 text-sm font-bold mb-1"><BookOpen className="w-4 h-4 text-[#5338ec]" /> Pre-trade checklist<JournalHelp label="Pre-trade checklist" /></h4>
             <p className="text-xs text-[#474556] mb-4">These show up in every new entry so you can check them off honestly.</p>
             <div className="space-y-2 mb-4">
               {checklist.map((c) => (
@@ -764,7 +765,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           </div>
 
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-            <h4 className="flex items-center gap-1.5 text-sm font-bold mb-1"><ShieldCheck className="w-4 h-4 text-[#5338ec]" /> Trading rules</h4>
+            <h4 className="flex items-center gap-1.5 text-sm font-bold mb-1"><ShieldCheck className="w-4 h-4 text-[#5338ec]" /> Trading rules<JournalHelp label="Trading rules" /></h4>
             <p className="text-xs text-[#474556] mb-4">Your hard limits. Write them when you're calm, not mid-trade.</p>
             <div className="space-y-3.5">
               {([
@@ -774,7 +775,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                 ['stopAfterLosses', 'Stop after consecutive losses', 'losses'],
               ] as const).map(([key, label, unit]) => (
                 <div key={key} className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-semibold">{label}</span>
+                  <span className="text-sm font-semibold">{label}<JournalHelp label={label} /></span>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -801,21 +802,21 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {tab === 'review' && (
         <div className="space-y-5">
           <JournalAICoach entries={scoped} history={calEntries} playbooks={playbooks} currency={currency} today={coachToday} rangeLabel={rangeLabel} onImport={() => setWizardOpen(true)} onToast={onShowToast} onScenario={useCoachScenario} onEvidence={(ids, label) => { resetJournalScope(); setLogPreset({ ids, label }); setTab('entries'); }}/>
-          <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold">Saved reviews & reflection</summary>
+          <details className="rounded-2xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer text-sm font-semibold">Saved reviews & reflection<JournalHelp label="Saved reviews & reflection" /></summary>
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6">
           <div className="space-y-5">
             <p className="text-sm font-semibold mt-5">Week {weekStart} – {weekEnd} · {currency} · net realized results</p>
             <button className="text-xs text-[#5338ec] underline" onClick={()=>{setLogPreset({ids:weekEntries.map(e=>e.id),label:`Week ${weekStart} – ${weekEnd}`});setTab('entries');}}>Open linked week trades ({weekEntries.length})</button>
             <p className="text-xs">Previous focus: {reviews.find(r=>!r.from || r.from<weekStart)?.focusNextWeek || 'No previous focus recorded'}</p>
             <label className="block text-xs">Previous focus follow-up<textarea className="w-full border border-slate-200 rounded-xl p-3 mt-1" value={rvFollowUp} onChange={ev=>setRvFollowUp(ev.target.value)}/></label>
-            <details><summary className="text-xs cursor-pointer">Daily reflections from this week</summary>{Object.entries(dailyNotes).filter(([d])=>d>=weekStart && d<=weekEnd).map(([d,n])=><p key={d} className="text-xs mt-2"><button className="text-[#5338ec] underline" onClick={()=>{openDay(d);setTab('overview');}}>{d}</button>: {n}</p>)}</details>
+            <details><summary className="text-xs cursor-pointer">Daily reflections from this week<JournalHelp label="Daily reflections from this week" /></summary>{Object.entries(dailyNotes).filter(([d])=>d>=weekStart && d<=weekEnd).map(([d,n])=><p key={d} className="text-xs mt-2"><button className="text-[#5338ec] underline" onClick={()=>{openDay(d);setTab('overview');}}>{d}</button>: {n}</p>)}</details>
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
                 <p className="text-[11px] font-semibold text-[#474556] mb-1">Entries this week</p>
                 <p className="text-xl font-bold">{weekEntries.length}</p>
               </div>
               <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
-                <p className="text-[11px] font-semibold text-[#474556] mb-1">Net P&amp;L</p>
+                <p className="text-[11px] font-semibold text-[#474556] mb-1">Net P&amp;L<JournalHelp label="Net P&L" /></p>
                 <p className={`text-xl font-bold font-mono ${weekPnl>0 ? 'text-emerald-600' : weekPnl<0?'text-rose-600':'text-slate-600'}`}>{weekEntries.some(e=>eligible(e))?money(weekPnl):'—'}</p><p className="text-[10px] text-slate-500">{weekEntries.filter(e=>eligible(e)).length} eligible closed trades</p>
               </div>
               <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
@@ -825,7 +826,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             </div>
 
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-4">
-              <h4 className="text-sm font-bold">This week's review</h4>
+              <h4 className="text-sm font-bold">This week's review<JournalHelp label="This week's review" /></h4>
               <div>
                 <label className="text-xs font-semibold text-[#474556] mb-1 block">Best trade and why</label>
                 <textarea value={rvBest} onChange={(e) => setRvBest(e.target.value)} rows={2} className="w-full resize-none border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
@@ -856,7 +857,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           </div>
 
           <aside className="space-y-4">
-            <h4 className="text-sm font-bold">Past reviews</h4>
+            <h4 className="text-sm font-bold">Past reviews<JournalHelp label="Past reviews" /></h4>
             {reviews.map((r) => (
               <div key={r.id} className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -898,8 +899,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               <p className="mb-3 rounded-xl border border-[#e2dcff] bg-[#f7f5ff] p-3 text-xs text-[#474556]">Pending means the review state is not Complete or required journal evidence is missing. It does not mark the trade as a loss. Select a row to open its Review form.</p>
               <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className="text-xs font-semibold text-slate-600">Market type<select aria-label="Pending review market type" value={pendingMarket} onChange={e=>{setPendingMarket(e.target.value);setPendingSymbol('all');}} className="mt-1 block h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-[#0b1c30]"><option value="all">All markets</option>{[['Forex','Forex'],['Crypto','Crypto'],['Commodity','Commodities'],['Indices','Indices'],['Stocks','Stock']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
-                  <label className="text-xs font-semibold text-slate-600">Symbol<select aria-label="Pending review symbol" value={pendingSymbol} onChange={e=>setPendingSymbol(e.target.value)} className="mt-1 block h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-[#0b1c30]"><option value="all">All symbols</option>{pendingSymbols.map(symbol=><option key={symbol} value={symbol}>{symbol}</option>)}</select></label>
+                  <label className="text-xs font-semibold text-slate-600">Market type<JournalHelp label="Market type" /><select aria-label="Pending review market type" value={pendingMarket} onChange={e=>{setPendingMarket(e.target.value);setPendingSymbol('all');}} className="mt-1 block h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-[#0b1c30]"><option value="all">All markets</option>{[['Forex','Forex'],['Crypto','Crypto'],['Commodity','Commodities'],['Indices','Indices'],['Stocks','Stock']].map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+                  <label className="text-xs font-semibold text-slate-600">Symbol<JournalHelp label="Symbol" /><select aria-label="Pending review symbol" value={pendingSymbol} onChange={e=>setPendingSymbol(e.target.value)} className="mt-1 block h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-[#0b1c30]"><option value="all">All symbols</option>{pendingSymbols.map(symbol=><option key={symbol} value={symbol}>{symbol}</option>)}</select></label>
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs"><p className="text-slate-500" role="status">{filteredPending.length} of {pendingEntries.length} pending reviews</p>{(pendingMarket!=='all'||pendingSymbol!=='all')&&<button type="button" className="font-semibold text-[#5338ec]" onClick={()=>{setPendingMarket('all');setPendingSymbol('all');}}>Reset filters</button>}</div>
               </div>
