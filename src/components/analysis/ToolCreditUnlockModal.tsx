@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { UnlockStateModal } from '../common/UnlockStateModal';
 import { Sparkles, X, ChevronDown, Check, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserProfile } from '../../types';
@@ -62,6 +63,51 @@ interface ToolCreditUnlockModalProps {
 }
 
 export const ToolCreditUnlockModal: React.FC<ToolCreditUnlockModalProps> = ({
+  isOpen,
+  tool,
+  user,
+  onClose,
+  onConfirmUnlock,
+}) => {
+  if (!isOpen || !tool) return null;
+
+  const DURATIONS: Record<UnlockDurationOption, { label: string; ms: number; multiplier: number }> = {
+    '1d': { label: '1 day', ms: 24 * 60 * 60 * 1000, multiplier: 1 },
+    '7d': { label: '7 days', ms: 7 * 24 * 60 * 60 * 1000, multiplier: 5 },
+    '30d': { label: '30 days', ms: 30 * 24 * 60 * 60 * 1000, multiplier: 15.5 },
+  };
+
+  /** The level discount the tiers already give, unchanged. */
+  const discount = user.tierLevel >= 4 ? 0 : user.tierLevel === 3 ? 0.5 : user.tierLevel === 2 ? 0.8 : 1;
+
+  const choices = (Object.keys(DURATIONS) as UnlockDurationOption[]).map((id) => {
+    const d = DURATIONS[id];
+    return {
+      id,
+      label: d.label,
+      cost: Math.round(tool.dailyPrice * d.multiplier * discount),
+      endsAt: new Date(Date.now() + d.ms).toLocaleString('en-US', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      }),
+    };
+  });
+
+  return (
+    <UnlockStateModal
+      open={isOpen}
+      title={tool.title}
+      description={`Use credits to unlock this tool from level ${tool.minLevel ?? 2} for a certain period of time.`}
+      minLevel={tool.minLevel}
+      levelLabel={`Level ${user.tierLevel} (${user.rankTitle})`}
+      credits={user.sydeCredits}
+      durations={choices}
+      onClose={onClose}
+      onConfirm={(choice) => onConfirmUnlock(tool, choice.id as UnlockDurationOption, choice.cost)}
+    />
+  );
+};
+
+const LegacyToolCreditUnlockModal: React.FC<ToolCreditUnlockModalProps> = ({
   isOpen,
   tool,
   user,

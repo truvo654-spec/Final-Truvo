@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.0] - 2026-10-09
+### Added
+- UnlockStateModal: one dialog for paying credits for something a level does not open yet, built to the design. It names what is being unlocked with the level that would give it free, shows the tier and credits the person already has, asks for a duration with its price, says when access ends, and confirms once. When the balance is short the button says how many credits are missing instead of failing after the press.
+### Changed
+- ToolCreditUnlockModal renders it, so every panel that asks for an unlock picks it up. The pricing, the level discount and what happens on confirm are untouched.
+
 ## [1.28.0] - 2026-10-09
 ### Fixed
 - Every border in the app is the brand lavender. Tailwind v4 leaves a border as currentColor, so any element with dark text drew a near-black line; the brand colour is the default for all borders now, and the two wildcard rules that overrode it point at the same token. Light and dark each take their own value.
