@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.0] - 2026-10-09
+### Changed
+- The instrument detail page had its own unlock sheet, which is why the old design kept appearing there: the duration cards, the confirmation tick and the "View Level & Tier Perks" link. It uses the shared UnlockStateModal now, so every way into an unlock looks the same. Its pricing, its level discount and what happens on confirm are unchanged, and the result still reports back in the page's own feedback line.
+
 ## [1.32.1] - 2026-10-09
 ### Changed
 - The lock state shows only what is locked and the way in. The paragraph under the headline is gone from every locked panel; the panels still pass it, so nothing had to be touched one by one.
