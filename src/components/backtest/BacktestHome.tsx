@@ -1,3 +1,5 @@
+import { PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
+import { JournalHelp } from '../journal/JournalHelp';
 // Backtesting home: three plain questions, your playbooks tested vs live, usage, practice and recent runs.
 import React, { useMemo } from 'react';
 import { Coins, Award, History } from 'lucide-react';
@@ -66,17 +68,17 @@ export const BacktestHome: React.FC<Props> = ({ playbooks, entries, expected, ru
             <table className="w-full text-xs tabular-nums">
               <thead>
                 <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
-                  <th className="text-left py-2 pr-2">Playbook</th>
-                  <th className="text-right py-2 px-2" title="Win rate and average R of your real trades with this playbook">Live</th>
-                  <th className="text-right py-2 px-2" title="Win rate and average R from the saved backtest">Tested</th>
-                  <th className="text-left py-2 px-2" title="On track: live results are inside the range the backtest predicts. Underperforming: below it.">Status</th>
+                  <th className="text-left py-2 pr-2">Playbook<JournalHelp label="Playbook" /></th>
+                  <th className="text-right py-2 px-2" title="Win rate and average R of your real trades with this playbook">Live<JournalHelp label="Live" /></th>
+                  <th className="text-right py-2 px-2" title="Win rate and average R from the saved backtest">Tested<JournalHelp label="Tested" /></th>
+                  <th className="text-left py-2 px-2" title="On track: live results are inside the range the backtest predicts. Underperforming: below it.">Status<JournalHelp label="Strategy health" /></th>
                   <th className="py-2 pl-2" />
                 </tr>
               </thead>
               <tbody>
                 {rows.map(({ p, live, exp, h }) => (
                   <tr key={p.id} className="border-b border-slate-100">
-                    <td className="py-2.5 pr-2"><p className="font-bold text-[#0b1c30]">{p.name}</p><p className="text-[10px] text-slate-400">{p.grade} · {p.status === 'testing' ? 'testing' : 'active'}</p></td>
+                    <td className="py-2.5 pr-2"><p className="font-bold text-[#0b1c30]">{p.name}</p><p className="text-[10px] text-slate-400">{p.grade} · {PLAYBOOK_STATUS_LABELS[p.status]}</p></td>
                     <td className="py-2.5 px-2 text-right">{live.trades ? <><b>{pct(live.winRate, 0)}</b> · {rr(live.avgR)}<p className="text-[10px] text-slate-400">{live.trades} trades</p></> : <span className="text-slate-400">No trades</span>}</td>
                     <td className="py-2.5 px-2 text-right">{exp ? <><b>{pct(exp.winRate, 0)}</b> · {rr(exp.avgR)}<p className="text-[10px] text-slate-400">{exp.trades} trades · {exp.symbol}</p></> : <span className="text-slate-400">—</span>}</td>
                     <td className="py-2.5 px-2"><Pill tone={h.health === 'on-track' ? 'good' : h.health === 'behind' ? 'bad' : 'neutral'} title={h.health === 'behind' ? `Live average is ${rr(h.gapR)} vs the backtest` : undefined}>{HEALTH_LABEL[h.health]}</Pill></td>

@@ -1,9 +1,11 @@
 // Strategy playbooks for the trading journal: the written rules for each setup.
 // A playbook's name matches JournalEntry.strategy, which is how its stats are computed.
 import { PortfolioAssetClass } from '../types';
+import type { InstrumentPatternSetup } from './instrumentPatterns';
 
 export type PlaybookGrade = 'A+' | 'A' | 'B+' | 'B' | 'C';
-export type PlaybookStatus = 'active' | 'testing' | 'archived';
+export type PlaybookStatus = 'draft' | 'active' | 'testing' | 'archived';
+export const PLAYBOOK_STATUS_LABELS: Record<PlaybookStatus, string> = { draft: 'Draft', active: 'Active', testing: 'Testing', archived: 'Archived' };
 
 export interface JournalPlaybook {
   coachOrigin?: { scenarioId: string; sourcePlaybookId?: string; evidenceTradeIds: string[] };
@@ -35,6 +37,12 @@ export interface JournalPlaybook {
   reviews?: PlaybookReview[];
   /** Instruments this setup is traded on. */
   symbols?: string[];
+  /** Explicit market assignment for custom instruments; existing symbols use the catalog. */
+  instrumentMarkets?: Record<string, PortfolioAssetClass>;
+  /** Named candle-pattern rules used by the instrument suggestion scanner. */
+  instrumentPatterns?: InstrumentPatternSetup[];
+  instrumentPatternId?: string;
+  instrumentTimeframe?: '1h' | '4h' | '1D';
   /** Trade ideas (hypotheses) waiting for this setup to trigger. */
   scenarios?: PlaybookScenario[];
 }

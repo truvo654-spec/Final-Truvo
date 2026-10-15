@@ -1,12 +1,11 @@
 import React, { useId, useMemo, useState } from 'react';
-import { Info } from 'lucide-react';
+import { InfoTooltip } from '../../common/InfoTooltip';
 import type { JournalEntry } from '../../../types';
 import { formatOverviewValue, scatterPoints, type OverviewDay, type PnlBasis, type RadarMetric } from './overviewAnalytics';
 
 const overviewCard='relative bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 min-w-0 shadow-2xs';
 export function MetricHelp({label,definition}:{label:string;definition:string}) {
-  const [open,setOpen]=useState(false),id=useId();
-  return <span className="inline-flex"><button type="button" aria-label={`About ${label}`} aria-describedby={open?id:undefined} onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)} onFocus={()=>setOpen(true)} onBlur={()=>setOpen(false)} onClick={()=>setOpen(v=>!v)} onKeyDown={ev=>{if(ev.key==='Escape'){ev.stopPropagation();setOpen(false);}}} className="rounded-full p-1 text-slate-500 focus-visible:outline-2 focus-visible:outline-prime-500"><Info size={13}/></button>{open&&<span id={id} role="tooltip" className="absolute left-4 right-4 top-14 z-20 rounded-xl bg-slate-900 text-white text-xs leading-relaxed p-3 shadow-lg font-normal">{definition}</span>}</span>;
+  return <InfoTooltip label={label} description={definition} />;
 }
 export function ChartCard({title,definition,children,action}:{title:string;definition:string;children:React.ReactNode;action?:React.ReactNode}) {
   return <article className={overviewCard}><header className="flex items-center justify-between gap-2 mb-3"><h3 className="font-display font-bold text-sm text-slate-900 flex items-center gap-1">{title}<MetricHelp label={title} definition={definition}/></h3>{action}</header>{children}</article>;

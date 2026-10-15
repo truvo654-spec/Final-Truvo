@@ -1,3 +1,4 @@
+import { JournalHelp } from '../journal/JournalHelp';
 import React, { useMemo, useState } from 'react';
 import type { JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
@@ -221,14 +222,14 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
           <table className="w-full min-w-[1050px] text-xs tabular-nums">
             <thead>
               <tr className="border-b border-slate-200 text-left text-[10px] uppercase tracking-wider text-slate-500">
-                <th className="py-2 pr-3">Playbook</th>
+                <th className="py-2 pr-3">Playbook<JournalHelp label="Playbook" /></th>
                 <th className="px-3 py-2">Timeframe / session</th>
                 <th className="px-3 py-2 text-right">Net P&amp;L / ROI</th>
-                <th className="px-3 py-2 text-right">Win rate</th>
-                <th className="px-3 py-2 text-right">Average R</th>
-                <th className="px-3 py-2 text-right">Profit factor</th>
-                <th className="px-3 py-2 text-right">Max drawdown</th>
-                <th className="px-3 py-2 text-right">Trades</th>
+                <th className="px-3 py-2 text-right">Win rate<JournalHelp label="Win rate" /></th>
+                <th className="px-3 py-2 text-right">Average R<JournalHelp label="Average R" /></th>
+                <th className="px-3 py-2 text-right">Profit factor<JournalHelp label="Profit factor" /></th>
+                <th className="px-3 py-2 text-right">Max drawdown<JournalHelp label="Max drawdown" /></th>
+                <th className="px-3 py-2 text-right">Trades<JournalHelp label="Trades" /></th>
                 <th className="px-3 py-2">Live journal</th>
                 <th className="py-2 pl-3">Open</th>
               </tr>

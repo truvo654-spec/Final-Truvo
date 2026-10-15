@@ -1,3 +1,4 @@
+import { JournalHelp } from './JournalHelp';
 import React, { useMemo, useState } from 'react';
 import { JournalEntry } from '../../types';
 import { UNASSIGNED, addMonth, monthCells, monthLabel } from './journalOverview';
@@ -57,7 +58,7 @@ export const JournalCalendar: React.FC<Props> = ({ month, onMonthChange, entries
       <div className="flex items-center justify-between mb-3">
         <button type="button" aria-label="Previous month" onClick={() => onMonthChange(addMonth(month, -1))} className="w-8 h-8 rounded-lg border border-slate-200 text-slate-600 hover:border-[#5338ec] hover:text-[#5338ec]">‹</button>
         <div className="text-center">
-          <h4 className="text-sm font-bold">{monthLabel(month)}</h4>
+          <h4 className="text-sm font-bold">{monthLabel(month)}<JournalHelp label="Calendar" /></h4>
           <p className={`text-[11px] font-mono font-semibold ${monthPnl > 0 ? 'text-emerald-600' : monthPnl < 0 ? 'text-rose-600' : 'text-[#94a3b8]'}`}>
             {monthEntries} entr{monthEntries === 1 ? 'y' : 'ies'} · {usdFull(monthPnl)} {label}
           </p>

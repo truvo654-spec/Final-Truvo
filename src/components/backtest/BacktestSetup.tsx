@@ -1,3 +1,5 @@
+import { PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
+import { JournalHelp } from '../journal/JournalHelp';
 // Setup for an automated backtest: two short steps on one page, everything pre-filled.
 import React, { useMemo, useState } from 'react';
 import { ChevronDown, Sparkles, AlertCircle, Play } from 'lucide-react';
@@ -68,7 +70,7 @@ const Step: React.FC<{ n: number; title: string; sub: string; children: React.Re
       <div className="flex items-start gap-3">
         <span className="grid place-items-center w-7 h-7 rounded-full bg-[#EEF0FE] text-[#5338ec] text-xs font-bold shrink-0" aria-hidden>{n}</span>
         <div>
-          <h3 className="text-base font-bold text-[#0b1c30]">{title}</h3>
+          <h3 className="text-base font-bold text-[#0b1c30]">{title}<JournalHelp label={title} /></h3>
           <p className="text-xs text-slate-500">{sub}</p>
         </div>
       </div>
@@ -80,11 +82,11 @@ const Step: React.FC<{ n: number; title: string; sub: string; children: React.Re
 
 const Fold: React.FC<{ title: string; summary: string; open: boolean; onToggle: () => void; children: React.ReactNode; id: string }> = ({ title, summary, open, onToggle, children, id }) => (
   <div className="rounded-xl border border-slate-200">
-    <button type="button" data-dropdown-trigger="true" aria-expanded={open} aria-controls={id} onClick={onToggle} className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left hover:bg-slate-50 rounded-xl">
+    <div className="flex items-center pr-2"><button type="button" data-dropdown-trigger="true" aria-expanded={open} aria-controls={id} onClick={onToggle} className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left hover:bg-slate-50 rounded-xl">
       <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? '' : '-rotate-90'}`} />
       <span className="text-xs font-bold text-[#0b1c30]">{title}</span>
       <span className="text-[11px] text-slate-500 truncate">{summary}</span>
-    </button>
+    </button><JournalHelp label={title} /></div>
     {open && <div id={id} className="px-3.5 pb-3.5 pt-1 space-y-4">{children}</div>}
   </div>
 );
@@ -222,7 +224,7 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
         </Fold>
         <section aria-labelledby="bt-money-risk-heading" className="border-t border-slate-200 pt-3 space-y-3">
           <div>
-            <h4 id="bt-money-risk-heading" className="text-sm font-bold text-[#0b1c30]">Money, risk and costs</h4>
+            <h4 id="bt-money-risk-heading" className="text-sm font-bold text-[#0b1c30]">Money, risk and costs<JournalHelp label="Money, risk and costs" /></h4>
             <p className="text-xs text-slate-500">Defaults come from your journal rules and your broker.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -256,7 +258,7 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
           <Fold id="bt-costs" title="Costs" open={!!open.costs} onToggle={() => toggle('costs')} summary={s.costs.enabled ? `On · ${brokers.find((b) => b.id === s.costs.brokerId)?.name ?? 'typical costs'} · ${roundTrip}` : 'Off (results will look better than real trading)'}>
             <div className="flex items-center gap-2">
               <Toggle id="bt-costs-on" label="Include costs" checked={s.costs.enabled} onChange={(v) => set({ costs: { ...s.costs, enabled: v } })} />
-              <label htmlFor="bt-costs-on" className="text-sm font-semibold text-[#0b1c30]">Include commission, spread and slippage</label>
+              <label htmlFor="bt-costs-on" className="text-sm font-semibold text-[#0b1c30]">Include commission, spread and slippage<JournalHelp label="Include commission, spread and slippage" /></label>
             </div>
             {s.costs.enabled && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -285,7 +287,7 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
           <Fold id="bt-prop" title="Prop-firm challenge" open={!!open.prop} onToggle={() => toggle('prop')} summary={s.prop ? `On · ${s.prop.account}` : 'Off'}>
             <div className="flex flex-wrap items-center gap-3">
               <Toggle id="bt-prop-on" label="Prop-firm mode" checked={!!s.prop} onChange={(v) => set({ prop: v ? { ...PROP_TEMPLATES[0] } : null, risk: v ? { ...s.risk, startBalance: 50000 } : s.risk })} />
-              <label htmlFor="bt-prop-on" className="text-sm font-semibold text-[#0b1c30]">Test against prop-firm rules</label>
+              <label htmlFor="bt-prop-on" className="text-sm font-semibold text-[#0b1c30]">Test against prop-firm rules<JournalHelp label="Test against prop-firm rules" /></label>
               {s.prop && (
                 <select aria-label="Prop account template" value={s.prop.account} onChange={(e) => { const t = PROP_TEMPLATES.find((p) => p.account === e.target.value); if (t) set({ prop: { ...t }, risk: { ...s.risk, startBalance: /100K/.test(t.account) ? 100000 : 50000 } }); }} className={`${inputBase} w-auto`}>
                   {PROP_TEMPLATES.map((p) => <option key={p.account}>{p.account}</option>)}
@@ -336,7 +338,7 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
                     <input type="checkbox" checked={checked} onChange={(e) => onSelectionChange(e.target.checked ? [...selectedPlaybookIds, option.id] : selectedPlaybookIds.filter((id) => id !== option.id))} className="accent-[#5338ec]" />
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold text-[#0b1c30]">{option.name}</span>
-                      <span className="block text-[10px] text-slate-500">{option.grade} · {option.status === 'testing' ? 'Testing' : 'Active'}</span>
+                      <span className="block text-[10px] text-slate-500">{option.grade} · {PLAYBOOK_STATUS_LABELS[option.status]}</span>
                     </span>
                   </label>
                 );
@@ -418,10 +420,10 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Journal comparison · {settings.symbol}</p>
                       {journal.m.trades > 0 ? (
                         <dl className="mt-2 grid grid-cols-2 gap-3 text-xs tabular-nums">
-                          <div><dt className="text-slate-500">Closed trades</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{journal.m.trades}</dd></div>
-                          <div><dt className="text-slate-500">Win rate</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{pct(journal.m.winRate, 0)}</dd></div>
-                          <div><dt className="text-slate-500">Average R</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{rr(journal.m.avgR)}</dd></div>
-                          <div><dt className="text-slate-500">Profit factor</dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{journal.m.pf === null ? '—' : Number.isFinite(journal.m.pf) ? journal.m.pf.toFixed(2) : '∞'}</dd></div>
+                          <div><dt className="text-slate-500">Closed trades<JournalHelp label="Closed trades" /></dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{journal.m.trades}</dd></div>
+                          <div><dt className="text-slate-500">Win rate<JournalHelp label="Win rate" /></dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{pct(journal.m.winRate, 0)}</dd></div>
+                          <div><dt className="text-slate-500">Average R<JournalHelp label="Average R" /></dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{rr(journal.m.avgR)}</dd></div>
+                          <div><dt className="text-slate-500">Profit factor<JournalHelp label="Profit factor" /></dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{journal.m.pf === null ? '—' : Number.isFinite(journal.m.pf) ? journal.m.pf.toFixed(2) : '∞'}</dd></div>
                         </dl>
                       ) : <p className="mt-2 text-xs text-slate-500">No eligible closed journal trades for {settings.symbol} in this playbook yet.</p>}
                     </aside>

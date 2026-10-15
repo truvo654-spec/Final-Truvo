@@ -1,3 +1,4 @@
+import { JournalHelp } from './JournalHelp';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { JournalEntry } from '../../types';
 import { metrics, netOf, realizedR, timestampMs } from './journalMath';
@@ -39,7 +40,7 @@ export const CoachTradeList: React.FC<{ entries: JournalEntry[]; currency: strin
         <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-500"><tr>
           <th scope="col" className="w-10 px-3 py-3"><span className="sr-only">Select one trade</span></th>
           <th scope="col" className="px-4 py-3"><button type="button" onClick={() => setAscending(value => !value)} aria-label={`Sort date ${ascending ? 'newest' : 'oldest'} first`} className="flex items-center gap-1 hover:text-[#5338ec]">Date &amp; Time <span className="text-[#5338ec]">{ascending ? '▴' : '▾'}</span></button></th>
-          <th scope="col" className="px-4 py-3">Instrument</th><th scope="col" className="px-4 py-3">Side</th><th scope="col" className="px-4 py-3">Playbook</th><th scope="col" className="px-4 py-3 text-right">Net P&amp;L</th><th scope="col" className="px-4 py-3 text-right">Realized R</th>
+          <th scope="col" className="px-4 py-3">Instrument<JournalHelp label="Instrument" /></th><th scope="col" className="px-4 py-3">Side<JournalHelp label="Side" /></th><th scope="col" className="px-4 py-3">Playbook<JournalHelp label="Playbook" /></th><th scope="col" className="px-4 py-3 text-right">Net P&amp;L<JournalHelp label="Net P&L" /></th><th scope="col" className="px-4 py-3 text-right">Realized R<JournalHelp label="Realized R" /></th>
         </tr></thead>
         <tbody>{visible.map(entry => {
           const market = marketStyle[entry.assetClass];

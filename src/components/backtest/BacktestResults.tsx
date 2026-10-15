@@ -1,3 +1,4 @@
+import { JournalHelp } from '../journal/JournalHelp';
 // Results of an automated backtest: one sentence, four numbers, the curve, a verdict with
 // clickable improvements, robustness checks, breakdowns and the trade log.
 import React, { useEffect, useMemo, useState } from 'react';
@@ -363,7 +364,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
               <div className="mt-3 grid grid-cols-4 gap-1.5" aria-label="Walk-forward periods">
                 {rob.wf.periods.map((p, i) => (
                   <div key={i} className={`rounded-lg px-2 py-1.5 text-center ${p.m.netPnl > 0 ? 'bg-emerald-50' : 'bg-rose-50'}`} title={`${dateOnly(p.from, tz)} – ${dateOnly(p.to, tz)}: ${p.m.trades} trades`}>
-                    <p className="text-[10px] text-slate-500">Period {i + 1}</p>
+                    <p className="text-[10px] text-slate-500">Period<JournalHelp label="Period" /> {i + 1}</p>
                     <p className={`text-xs font-bold tabular-nums ${tone(p.m.netPnl)}`}>{money(p.m.netPnl, cur, 0)}</p>
                   </div>
                 ))}
@@ -377,7 +378,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
           </Card>
 
           <details className="bg-white border border-[#e2e8f0] rounded-2xl p-5 group">
-            <summary className="text-sm font-bold text-[#0b1c30] cursor-pointer">Rules used in this test</summary>
+            <summary className="text-sm font-bold text-[#0b1c30] cursor-pointer">Rules used in this test<JournalHelp label="Rules used in this test" /></summary>
             <ul className="mt-3 space-y-1.5">{describeRules(s.rules, spec?.costUnit.label).map((x) => <li key={x.label} className="text-sm"><b className="text-[11px] uppercase tracking-wider text-slate-500 mr-2">{x.label}</b>{x.text}</li>)}</ul>
           </details>
         </>

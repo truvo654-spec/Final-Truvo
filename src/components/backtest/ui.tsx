@@ -1,3 +1,5 @@
+import { InfoTooltip } from '../common/InfoTooltip';
+import { JournalHelp, getJournalHelp } from '../journal/JournalHelp';
 // Small shared building blocks for the Backtesting screens (match the journal's card style).
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
@@ -9,7 +11,7 @@ export const Card: React.FC<{ title?: React.ReactNode; sub?: React.ReactNode; ri
     {(title || right) && (
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          {title && <h3 className="text-sm font-bold text-[#0b1c30]">{title}</h3>}
+          {title && <h3 className="text-sm font-bold text-[#0b1c30]">{title}{typeof title === 'string' && <JournalHelp label={title} />}</h3>}
           {sub && <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>}
         </div>
         {right}
@@ -21,11 +23,11 @@ export const Card: React.FC<{ title?: React.ReactNode; sub?: React.ReactNode; ri
 
 /** A label whose meaning shows on hover (dotted underline marks that it has a description). */
 export const Hint: React.FC<{ text: string; children: React.ReactNode; className?: string }> = ({ text, children, className = '' }) => (
-  <span title={text} className={`underline decoration-dotted decoration-slate-300 underline-offset-2 cursor-help ${className}`}>{children}</span>
+  <span className={`inline-flex items-center normal-case tracking-normal ${className}`}>{children}<InfoTooltip label={typeof children === 'string' ? children : 'Metric details'} description={text} /></span>
 );
 
 export function Segmented<T extends string>({ options, value, onChange, label, size = 'md', disabled = {} }: {
-  options: { id: string; label: React.ReactNode; title?: string }[]; value: T; onChange: (v: NoInfer<T>) => void; label: string; size?: 'sm' | 'md'; disabled?: Record<string, string | undefined>;
+  options: { id: NoInfer<T>; label: React.ReactNode; title?: string }[]; value: T; onChange: (v: NoInfer<T>) => void; label: string; size?: 'sm' | 'md'; disabled?: Record<string, string | undefined>;
 }) {
   return (
     <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap rounded-lg border border-[#CCC6FB] bg-white p-0.5 gap-0.5">
@@ -45,7 +47,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, s
 }
 
 export const Pill: React.FC<{ tone?: 'good' | 'bad' | 'warn' | 'info' | 'neutral' | 'accent'; children: React.ReactNode; title?: string; className?: string }> = ({ tone = 'neutral', children, title, className = '' }) => {
-  const c = { good: 'bg-emerald-50 text-emerald-700 border-emerald-200', bad: 'bg-rose-50 text-rose-700 border-rose-200', warn: 'bg-amber-50 text-amber-700 border-amber-200', info: 'bg-sky-50 text-sky-700 border-sky-200', neutral: 'bg-slate-100 text-slate-600 border-slate-200', accent: 'bg-[#EEF0FE] text-[#5338ec] border-[#5338ec]/20' }[tone];
+  const c = { good: 'bg-emerald-50 text-emerald-700 border-emerald-200', bad: 'bg-rose-50 text-rose-700 border-rose-200', warn: 'bg-amber-50 text-amber-700 border-amber-200', info: 'bg-sky-50 text-sky-700 border-sky-200', neutral: 'bg-slate-100 text-slate-600 border-[#CCC6FB]', accent: 'bg-[#EEF0FE] text-[#5338ec] border-[#5338ec]/20' }[tone];
   return <span title={title} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold whitespace-nowrap ${c} ${className}`}>{children}</span>;
 };
 
@@ -61,17 +63,18 @@ export const Kpi: React.FC<{ label: string; hint: string; value: React.ReactNode
 export const Field: React.FC<{ label: string; hint?: string; htmlFor?: string; children: React.ReactNode; className?: string; aside?: React.ReactNode }> = ({ label, hint, htmlFor, children, className = '', aside }) => (
   <div className={`min-w-0 ${className}`}>
     <div className="flex items-center justify-between gap-2 mb-1.5">
-      <label htmlFor={htmlFor} className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{hint ? <Hint text={hint}>{label}</Hint> : label}</label>
+      <label htmlFor={htmlFor} className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</label>
+      {(hint || getJournalHelp(label)) && <InfoTooltip label={label} description={hint || getJournalHelp(label)} />}
       {aside}
     </div>
     {children}
   </div>
 );
 
-export const inputBase = 'h-9 border border-slate-200 rounded-lg px-3 text-sm bg-white text-[#0b1c30] tabular-nums focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30';
+export const inputBase = 'h-9 border border-[#CCC6FB] rounded-lg px-3 text-sm bg-white text-[#0b1c30] tabular-nums focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30';
 export const inputCls = `${inputBase} w-full`;
 export const btnPrimary = 'inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 disabled:cursor-not-allowed text-sm font-semibold text-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5338ec]';
-export const btnSecondary = 'inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold text-[#0b1c30] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec]';
+export const btnSecondary = 'inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg border border-[#CCC6FB] bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold text-[#0b1c30] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec]';
 export const btnLink = 'text-xs font-semibold text-[#5338ec] hover:underline disabled:text-slate-300 disabled:no-underline';
 
 export const Toggle: React.FC<{ checked: boolean; onChange: (v: boolean) => void; label: string; id?: string }> = ({ checked, onChange, label, id }) => (
@@ -110,12 +113,12 @@ export const Drawer: React.FC<{ open: boolean; onClose: () => void; title: strin
     <div className="fixed inset-0 z-[80]" role="presentation">
       <div className="absolute inset-0 bg-slate-900/30" onClick={onClose} />
       <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className={`absolute right-0 top-0 h-full w-full ${width} bg-white shadow-2xl flex flex-col`}>
-        <div className="flex items-center justify-between px-5 h-14 border-b border-slate-200 shrink-0">
+        <div className="flex items-center justify-between px-5 h-14 border-b border-[#CCC6FB] shrink-0">
           <h3 className="text-sm font-bold text-[#0b1c30]">{title}</h3>
           <button type="button" onClick={onClose} aria-label="Close" className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><X className="w-4 h-4" /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">{children}</div>
-        {footer && <div className="border-t border-slate-200 p-4 shrink-0">{footer}</div>}
+        {footer && <div className="border-t border-[#CCC6FB] p-4 shrink-0">{footer}</div>}
       </div>
     </div>
   );

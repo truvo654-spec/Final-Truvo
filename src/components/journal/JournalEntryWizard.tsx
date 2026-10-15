@@ -1,3 +1,4 @@
+import { JournalHelp } from './JournalHelp';
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import type { Broker, JournalEntry } from '../../types';
@@ -35,7 +36,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Import or link trades" tabIndex={-1} className="bg-white border border-[#e2e8f0] rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl text-[#0b1c30] outline-none">
         <header className="flex items-center justify-between px-6 py-5 border-b border-[#f1f5f9]">
-          <h2 className="text-lg font-bold">Import or link trades</h2>
+          <h2 className="text-lg font-bold">Import or link trades<JournalHelp label="Import or link trades" /></h2>
           <button type="button" onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100">
             <X className="w-4 h-4" />
           </button>

@@ -1,5 +1,6 @@
+import { JournalHelp } from './JournalHelp';
 import React, { useId, useMemo, useRef, useState } from 'react';
-import { Info } from 'lucide-react';
+import { InfoTooltip } from '../common/InfoTooltip';
 import { JournalEntry } from '../../types';
 import { UNASSIGNED, shortDate } from './journalOverview';
 import { useMoney } from './JournalCurrency';
@@ -46,9 +47,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
   const usdAxis = (n: number) => (pts ? `${n < 0 ? '-' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : money(n,0));
   const [active, setActive] = useState<number | null>(null);
   const [table, setTable] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
-  const helpId = useId();
 
   const on = useMemo(() => brokers.filter((b) => !off.includes(b.id)), [brokers, off]);
   const bySeries = on.length > 1; // total line plus one line per ticked broker
@@ -123,22 +122,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
         <div>
           <h4 className="text-sm font-bold flex items-center gap-1">
             Cumulative {title}
-            <button
-              type="button"
-              aria-label={`About cumulative ${title}`}
-              aria-describedby={helpOpen ? helpId : undefined}
-              onMouseEnter={() => setHelpOpen(true)}
-              onMouseLeave={() => setHelpOpen(false)}
-              onFocus={() => setHelpOpen(true)}
-              onBlur={() => setHelpOpen(false)}
-              onClick={() => setHelpOpen((open) => !open)}
-              onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); setHelpOpen(false); } }}
-              className="rounded-full p-1 text-slate-500 focus-visible:outline-2 focus-visible:outline-[#5338ec]"
-            >
-          <title>{chartDefinition}</title>
-              <Info size={13} aria-hidden="true" />
-            </button>
-            {helpOpen && <span id={helpId} role="tooltip" className="absolute left-5 right-5 top-14 z-20 rounded-xl bg-slate-900 text-white text-xs leading-relaxed p-3 shadow-lg font-normal">{chartDefinition}</span>}
+            <InfoTooltip label={`Cumulative ${title}`} description={chartDefinition} />
           </h4>
           <p className="text-[11px] text-[#94a3b8]">{rangeLabel} · running total of daily results</p>
           {bySeries && <p className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-[#474556]"><span className="w-4 h-0.5 rounded" style={{ backgroundColor: LINE }} aria-hidden="true" />Total of ticked brokers</p>}
@@ -170,7 +154,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
             <thead className="bg-slate-50 text-[#474556] sticky top-0">
               <tr>
                 <th className="text-left px-3 py-1.5 font-semibold">Date</th>
-                <th className="text-left px-3 py-1.5 font-semibold">Broker</th>
+                <th className="text-left px-3 py-1.5 font-semibold">Broker<JournalHelp label="Broker" /></th>
                 <th className="text-right px-3 py-1.5 font-semibold">Entries</th>
                 <th className="text-right px-3 py-1.5 font-semibold">Day</th>
                 <th className="text-right px-3 py-1.5 font-semibold">Cumulative</th>
@@ -211,6 +195,7 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
             onMouseLeave={() => setActive(null)}
             onTouchMove={(e) => pick(e.touches[0].clientX)}
           >
+          <title>{chartDefinition}</title>
             {geo.ticks.map((t) => (
               <g key={t}>
                 <line x1={M.left} x2={W - M.right} y1={geo.y(t)} y2={geo.y(t)} stroke="#e2e8f0" strokeWidth={t === 0 ? 1.25 : 1} strokeDasharray={t === 0 ? undefined : '3 4'} />

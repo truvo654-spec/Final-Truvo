@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.53.0] - 2026-10-09
+### Added
+- The newer Trading Journal work from orangeecat's branch: help text on the journal's own tabs, playbooks you can configure per instrument with pattern matching behind them, the unified replay comparisons, the personalised AI Coach candle comparisons, and the What-if lab's saved scenario snapshots.
+### Changed
+- Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
+- The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
+
 ## [1.52.0] - 2026-10-09
 ### Added
 - Demo 1: the dashboard as it stands on the demo branch, taken whole into its own folder rather than rebuilt from memory, and a switch at the top of the dashboard that moves between it and the current one. Choosing it says plainly that it is the older dashboard kept for comparison, so nobody mistakes it for what ships. It opens on its own first state, the one that greets you and counts the steps to your first trade.

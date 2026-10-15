@@ -1,3 +1,4 @@
+import { JournalHelp } from './JournalHelp';
 import React, { useState } from 'react';
 import { ArrowLeft, Star, Check, X as XIcon, Trash2, Pencil, Link2, AlertTriangle, PlayCircle } from 'lucide-react';
 import { JournalEntry, JournalChecklistItem } from '../../types';
@@ -83,7 +84,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         </div>
 
         <div className="flex items-center gap-2 mt-4">
-          <label htmlFor="trading-status" className="text-xs font-semibold text-[#474556]">Trading status</label>
+          <label htmlFor="trading-status" className="text-xs font-semibold text-[#474556]">Trading status<JournalHelp label="Trading status" /></label>
           <select
             id="trading-status"
             value={tradingStatusOf(entry)}
@@ -98,32 +99,32 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
         <div className="grid grid-cols-3 gap-3 mt-5">
           <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <p className="text-[11px] text-[#474556] mb-0.5">Entry</p>
+            <p className="text-[11px] text-[#474556] mb-0.5">Entry<JournalHelp label="Entry" /></p>
             <p className="text-sm font-bold font-mono">{entry.entryPrice}</p>
           </div>
           <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <p className="text-[11px] text-[#474556] mb-0.5">Exit</p>
+            <p className="text-[11px] text-[#474556] mb-0.5">Exit<JournalHelp label="Exit" /></p>
             <p className="text-sm font-bold font-mono">{entry.exitPrice ?? 'Open'}</p>
           </div>
           <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <p className="text-[11px] text-[#474556] mb-0.5">Size</p>
+            <p className="text-[11px] text-[#474556] mb-0.5">Size<JournalHelp label="Size" /></p>
             <p className="text-sm font-bold font-mono">{entry.size} lots</p>
           </div>
           {entry.stopPrice !== undefined && (
             <div className="bg-slate-50 rounded-xl p-3 text-center">
-              <p className="text-[11px] text-[#474556] mb-0.5">Stop loss</p>
+              <p className="text-[11px] text-[#474556] mb-0.5">Stop loss<JournalHelp label="Stop loss" /></p>
               <p className="text-sm font-bold font-mono">{entry.stopPrice}</p>
             </div>
           )}
           {entry.takeProfit !== undefined && (
             <div className="bg-slate-50 rounded-xl p-3 text-center">
-              <p className="text-[11px] text-[#474556] mb-0.5">Take profit{entry.plannedR ? ` · 1:${entry.plannedR}` : ''}</p>
+              <p className="text-[11px] text-[#474556] mb-0.5">Take profit<JournalHelp label="Take profit" />{entry.plannedR ? ` · 1:${entry.plannedR}` : ''}</p>
               <p className="text-sm font-bold font-mono">{entry.takeProfit}</p>
             </div>
           )}
           {entry.commission !== undefined && (
             <div className="bg-slate-50 rounded-xl p-3 text-center">
-              <p className="text-[11px] text-[#474556] mb-0.5">Commissions</p>
+              <p className="text-[11px] text-[#474556] mb-0.5">Commissions<JournalHelp label="Commissions" /></p>
               <p className="text-sm font-bold font-mono">${entry.commission.toFixed(2)}</p>
             </div>
           )}
@@ -155,13 +156,13 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           )}
 
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-            <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">Setup</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-[#474556] mb-2">Setup<JournalHelp label="Setup" /></p>
             <p className="text-sm leading-relaxed text-[#0b1c30]">{entry.setupNotes || 'No setup notes were written for this trade.'}</p>
           </div>
 
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-bold uppercase tracking-wide text-[#474556]">Review</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-[#474556]">Review<JournalHelp label="Review" /></p>
               {!editing ? (
                 <button onClick={() => setEditing(true)} className="flex items-center gap-1 text-xs font-semibold text-[#5338ec] hover:text-[#4326d8]">
                   <Pencil className="w-3.5 h-3.5" /> Edit
@@ -179,7 +180,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               <p className="text-sm leading-relaxed text-[#0b1c30] mb-3">{entry.lessons || 'No lesson written yet.'}</p>
             )}
             <div className="flex items-center gap-1">
-              <span className="text-xs text-[#474556] mr-2">Execution</span>
+              <span className="text-xs text-[#474556] mr-2">Execution<JournalHelp label="Execution" /></span>
               {[1, 2, 3, 4, 5].map((n) => (
                 <button key={n} disabled={!editing} onClick={() => setRating(n)} aria-label={`${n} stars`}>
                   <Star className={`w-5 h-5 ${n <= (editing ? rating : entry.rating) ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />

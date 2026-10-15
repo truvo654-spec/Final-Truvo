@@ -1,3 +1,4 @@
+import { JournalHelp } from '../journal/JournalHelp';
 // Manual replay: bars appear one at a time with the future hidden. Place orders, manage the trade,
 // tag it, take notes, and finish the session for Points.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -411,7 +412,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
         </div>
         {guidedScenario&&<div className="rounded-xl border border-[#5338ec]/15 bg-white p-3 text-xs"><p className="font-semibold text-[#0b1c30]">Scenario · {guidedScenario.symbol} · {guidedScenario.bias}</p><p className="mt-1 text-slate-600">{guidedScenario.hypothesis}</p><p className="mt-1 text-slate-500"><b>Trigger:</b> {guidedScenario.trigger}</p>{related?.prices&&<p className="mt-1 text-slate-500">Reference levels: entry {priceFmt(related.prices.entry,symbolSpec(guidedScenario.symbol)?.priceDp??dp)} · stop {priceFmt(related.prices.stop,symbolSpec(guidedScenario.symbol)?.priceDp??dp)} · target {priceFmt(related.prices.target,symbolSpec(guidedScenario.symbol)?.priceDp??dp)}</p>}</div>}
         <div className="grid gap-2 sm:grid-cols-3">
-          <div className="rounded-xl bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Entry trigger</p><p className="mt-1 text-xs text-[#0b1c30]">{guidedScenario?.trigger||guidedPlaybook.entryTrigger||'No entry trigger recorded.'}</p></div>
+          <div className="rounded-xl bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Entry trigger<JournalHelp label="Entry trigger" /></p><p className="mt-1 text-xs text-[#0b1c30]">{guidedScenario?.trigger||guidedPlaybook.entryTrigger||'No entry trigger recorded.'}</p></div>
           <div className="rounded-xl bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Stop rule</p><p className="mt-1 text-xs text-[#0b1c30]">{guidedPlaybook.stopRule||'No stop rule recorded.'}</p></div>
           <div className="rounded-xl bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Target rule</p><p className="mt-1 text-xs text-[#0b1c30]">{guidedPlaybook.targetRule||'No target rule recorded.'}</p></div>
         </div>
@@ -494,7 +495,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
                 <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3" aria-label="Trade history setup and comparison">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-xs font-bold text-[#0b1c30]">Trade history setup</h3>
+                      <h3 className="text-xs font-bold text-[#0b1c30]">Trade history setup<JournalHelp label="Trade history setup" /></h3>
                       <p className="text-[11px] text-slate-500">{hidden ? 'Trade identity and result are hidden.' : `${data.trade.id} · ${data.trade.date}`}</p>
                     </div>
                     <div className="space-y-2">
@@ -503,28 +504,28 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
                           setUseJournalSetup(e.target.checked);
                           if (!pos && !pending && !finished) configureTicketFromTrade(data, e.target.checked);
                         }} className="mt-0.5 accent-[#5338ec]" />
-                        Use these values in the order ticket
+                        Use these values in the order ticket<JournalHelp label="Use these values in the order ticket" />
                       </label>
                       <label className="flex items-start gap-2 text-xs font-semibold text-[#0b1c30]">
                         <input type="checkbox" checked={compareJournalResult} onChange={(e) => setCompareJournalResult(e.target.checked)} className="mt-0.5 accent-[#5338ec]" />
-                        Compare replay with the recorded result
+                        Compare replay with the recorded result<JournalHelp label="Compare replay with the recorded result" />
                       </label>
                     </div>
                   </div>
                   <dl className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-[11px]">
                     <dt className="text-slate-500">Strategy</dt><dd>{data.trade.strategy || 'Unknown'}</dd>
-                    <dt className="text-slate-500">Direction</dt><dd>{hidden ? 'Hidden' : data.trade.direction}</dd>
-                    <dt className="text-slate-500">Entry</dt><dd>{hidden ? 'Hidden' : priceFmt(data.trade.entry, dp)}</dd>
-                    <dt className="text-slate-500">Stop loss</dt><dd>{data.trade.stop == null ? 'Not recorded' : priceFmt(data.trade.stop, dp)}</dd>
-                    <dt className="text-slate-500">Take profit</dt><dd>{data.trade.takeProfit == null ? 'Not recorded' : priceFmt(data.trade.takeProfit, dp)}</dd>
-                    <dt className="text-slate-500">Recorded size</dt><dd>{data.trade.size} {data.trade.quantityUnit ?? '(unit not recorded)'}</dd>
-                    <dt className="text-slate-500">Initial risk</dt><dd>{data.trade.initialRisk == null ? 'Not recorded' : `${data.trade.initialRisk} ${data.trade.accountCurrency}`}</dd>
-                    <dt className="text-slate-500">Entry equity</dt><dd>{data.trade.equityAtEntry == null ? 'Not recorded' : `${data.trade.equityAtEntry} ${data.trade.accountCurrency}`}</dd>
-                    <dt className="text-slate-500">Entry margin</dt><dd>{data.trade.marginAtEntry == null ? 'Not recorded' : `${data.trade.marginAtEntry} ${data.trade.accountCurrency}`}</dd>
-                    <dt className="text-slate-500">Recorded commission</dt><dd>{data.trade.commission == null ? 'Not recorded' : `${data.trade.commission} ${data.trade.accountCurrency}`}</dd>
-                    <dt className="text-slate-500">Journal account currency</dt><dd>{data.trade.accountCurrency}</dd>
+                    <dt className="text-slate-500">Direction<JournalHelp label="Direction" /></dt><dd>{hidden ? 'Hidden' : data.trade.direction}</dd>
+                    <dt className="text-slate-500">Entry<JournalHelp label="Entry" /></dt><dd>{hidden ? 'Hidden' : priceFmt(data.trade.entry, dp)}</dd>
+                    <dt className="text-slate-500">Stop loss<JournalHelp label="Stop loss" /></dt><dd>{data.trade.stop == null ? 'Not recorded' : priceFmt(data.trade.stop, dp)}</dd>
+                    <dt className="text-slate-500">Take profit<JournalHelp label="Take profit" /></dt><dd>{data.trade.takeProfit == null ? 'Not recorded' : priceFmt(data.trade.takeProfit, dp)}</dd>
+                    <dt className="text-slate-500">Recorded size<JournalHelp label="Recorded size" /></dt><dd>{data.trade.size} {data.trade.quantityUnit ?? '(unit not recorded)'}</dd>
+                    <dt className="text-slate-500">Initial risk<JournalHelp label="Initial risk" /></dt><dd>{data.trade.initialRisk == null ? 'Not recorded' : `${data.trade.initialRisk} ${data.trade.accountCurrency}`}</dd>
+                    <dt className="text-slate-500">Entry equity<JournalHelp label="Entry equity" /></dt><dd>{data.trade.equityAtEntry == null ? 'Not recorded' : `${data.trade.equityAtEntry} ${data.trade.accountCurrency}`}</dd>
+                    <dt className="text-slate-500">Entry margin<JournalHelp label="Entry margin" /></dt><dd>{data.trade.marginAtEntry == null ? 'Not recorded' : `${data.trade.marginAtEntry} ${data.trade.accountCurrency}`}</dd>
+                    <dt className="text-slate-500">Recorded commission<JournalHelp label="Recorded commission" /></dt><dd>{data.trade.commission == null ? 'Not recorded' : `${data.trade.commission} ${data.trade.accountCurrency}`}</dd>
+                    <dt className="text-slate-500">Journal account currency<JournalHelp label="Journal account currency" /></dt><dd>{data.trade.accountCurrency}</dd>
                     <dt className="text-slate-500">Setup notes</dt><dd>{data.trade.setupNotes || 'Not recorded'}</dd>
-                    <dt className="text-slate-500">Tags</dt><dd>{data.trade.tags.length ? data.trade.tags.join(', ') : 'None recorded'}</dd>
+                    <dt className="text-slate-500">Tags<JournalHelp label="Tags" /></dt><dd>{data.trade.tags.length ? data.trade.tags.join(', ') : 'None recorded'}</dd>
                     {!hidden && <><dt className="text-slate-500">Recorded result</dt><dd>{`${data.trade.pnl.toFixed(2)} ${data.trade.accountCurrency}`} · {rr(data.trade.r)}</dd></>}
                   </dl>
                   <p className="mt-2 text-[10px] text-slate-500">Recorded values are references, not fills on this generated replay. Risk % is derived only from recorded risk and equity. Practice results use USD demo valuation; recorded results retain their account currency without conversion. Account equity is applied only for USD. Recorded size is used only when its unit and demo increment match; otherwise replay risk sizing is used. Commission is shown for reference, not applied as a guessed fee. Missing or incompatible values are not guessed.</p>
@@ -570,7 +571,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
                 <Field label="Risk" className="w-24"><div className="flex items-center gap-1"><input type="number" step="0.01" min={0.01} max={100} aria-label="Risk percent" disabled={autoReview} value={riskPct} onChange={(e) => setRiskPct(Number(e.target.value))} className={inputCls} /><span className="text-xs text-slate-500">%</span></div></Field>
                 <div className="flex-1 rounded-lg bg-slate-50 px-3 py-2 text-[11px] tabular-nums">
                   <p>Size <b>{sizeNow > 0 ? sizeNow : '—'}</b> {data?.sizeUnit ?? ''}</p>
-                  {data?.trade && <label className="flex items-center gap-1.5 mt-1 cursor-pointer"><input type="checkbox" aria-label="Use recorded position size" disabled={autoReview || data.trade.quantityUnit !== data.sizeUnit || !symbolSpec(data.symbol) || data.trade.size < data.minSize || Math.abs(data.trade.size / (symbolSpec(data.symbol)?.sizeStep ?? 1) - Math.round(data.trade.size / (symbolSpec(data.symbol)?.sizeStep ?? 1))) >= 1e-6} checked={useRecordedSize} onChange={event => setUseRecordedSize(event.target.checked)} />Use recorded size</label>}
+                  {data?.trade && <label className="flex items-center gap-1.5 mt-1 cursor-pointer"><input type="checkbox" aria-label="Use recorded position size" disabled={autoReview || data.trade.quantityUnit !== data.sizeUnit || !symbolSpec(data.symbol) || data.trade.size < data.minSize || Math.abs(data.trade.size / (symbolSpec(data.symbol)?.sizeStep ?? 1) - Math.round(data.trade.size / (symbolSpec(data.symbol)?.sizeStep ?? 1))) >= 1e-6} checked={useRecordedSize} onChange={event => setUseRecordedSize(event.target.checked)} />Use recorded size<JournalHelp label="Use recorded size" /></label>}
                   <p>Reward:risk <b className={rrNow >= 2 ? 'text-emerald-700' : rrNow >= 1 ? 'text-[#0b1c30]' : 'text-rose-600'}>{Number.isFinite(rrNow) ? `1 : ${rrNow.toFixed(2)}` : '—'}</b></p>
                 </div>
               </div>
@@ -690,10 +691,10 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
                 <thead>
                   <tr className="border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500">
                     <th className="py-2 pr-3 text-left">Replay date</th>
-                    <th className="px-3 py-2 text-left">Instrument</th>
+                    <th className="px-3 py-2 text-left">Instrument<JournalHelp label="Instrument" /></th>
                     <th className="px-3 py-2 text-left">Source</th>
-                    <th className="px-3 py-2 text-right">Trades</th>
-                    <th className="px-3 py-2 text-right">Win rate</th>
+                    <th className="px-3 py-2 text-right">Trades<JournalHelp label="Trades" /></th>
+                    <th className="px-3 py-2 text-right">Win rate<JournalHelp label="Win rate" /></th>
                     <th className="px-3 py-2 text-right">Net</th>
                     <th className="py-2 pl-3 text-right">Details</th>
                   </tr>
@@ -720,7 +721,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
                             {count > 0 && (
                               <div className="mt-2 min-w-[360px] rounded-lg border border-slate-200 p-2">
                                 <table className="w-full text-[10px] tabular-nums">
-                                  <thead><tr className="text-slate-500"><th className="py-1 text-left">Opened</th><th className="py-1 text-left">Side</th><th className="py-1 text-right">Entry</th><th className="py-1 text-right">Exit</th><th className="py-1 text-right">R</th><th className="py-1 text-right">Net</th></tr></thead>
+                                  <thead><tr className="text-slate-500"><th className="py-1 text-left">Opened</th><th className="py-1 text-left">Side<JournalHelp label="Side" /></th><th className="py-1 text-right">Entry<JournalHelp label="Entry" /></th><th className="py-1 text-right">Exit<JournalHelp label="Exit" /></th><th className="py-1 text-right">R</th><th className="py-1 text-right">Net</th></tr></thead>
                                   <tbody>{session.trades.map((trade, index) => (
                                     <tr key={`${session.id}-${index}`} className="border-t border-slate-100">
                                       <td className="py-1">{trade.entryTime ? dateTime(Date.parse(trade.entryTime), tz) : `Bar ${trade.entryBar + 1}`}</td>
