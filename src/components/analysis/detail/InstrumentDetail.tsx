@@ -1156,6 +1156,21 @@ export function InstrumentDetail({
             />
           )}
           {["Products", "Brokers", "Products & Brokers"].includes(tab) && (
+            panelState === 'empty' ? (
+            <section className="rounded-2xl border border-[#CCC6FB] bg-white p-5 sm:p-7">
+              <h2 className="font-display text-[17px] font-bold text-slate-900">Brokers &amp; Promotion</h2>
+              <p className="mt-0.5 text-[12.5px] text-slate-500">
+                Choose a product to compare matching providers, costs, minimums, and access.
+              </p>
+              <div className="mt-4 border-t border-[#CCC6FB]" />
+              <DetailEmptyState
+                art="alert"
+                title="This List is Taking a Breather"
+                lines={["We couldn\u2019t load your broker options. One", 'quick refresh should do it.']}
+                tall
+              />
+            </section>
+            ) : (
             <ProductsAndBrokersTable
               instrument={instrument}
               product={product}
@@ -1165,6 +1180,7 @@ export function InstrumentDetail({
                 b.symbols.includes(instrument.symbol),
               )}
             />
+            )
           )}
           {tab === "Financial Report" && (
             <FinancialReport
@@ -4713,11 +4729,8 @@ function ProductsAndBrokersTable({
     <section className="bg-white rounded-2xl border border-[#CCC6FB] shadow-xs overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#CCC6FB] p-5">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Products & broker access</p>
-          <h2 className="mt-1 text-base font-bold font-display text-slate-900">
-            Trade {instrument.symbol} by product
-          </h2>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <h2 className="font-display text-[17px] font-bold text-slate-900">Brokers &amp; Promotion</h2>
+          <p className="mt-0.5 text-[12.5px] text-slate-500">
             Choose a product to compare matching providers, costs, minimums, and access.
           </p>
         </div>

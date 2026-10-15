@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.0] - 2026-10-09
+### Changed
+- The brokers tab is headed "Brokers & Promotion" with the design's line beneath it, instead of the uppercase eyebrow and "Trade BTC/USD by product".
+### Added
+- Its failed state, "This List is Taking a Breather", which completes the set: every panel on the instrument detail page now has one and they switch together.
+
 ## [1.40.0] - 2026-10-09
 ### Fixed
 - Thirteen of the thirty type errors, all from one mistake repeated across the tab components. A handler like setState offers SetStateAction<T>, which is not a string, so when onChange was allowed to decide the generic it fell back to string and every narrow setter stopped fitting. Only the value decides it now, in Segmented, TabMain, TabSubmain and FolderTabs.
