@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.23.1] - 2026-10-09
+### Fixed
+- The Viewing Mode and Period selects drew two arrows, the browser's and ours. The browser's is hidden now and one chevron sits inside the field.
+- The negative margins around the detail page's tab row were clipping the tab outline TabMain draws, so the tabs read as plain text rather than the folder shape used everywhere else.
+
 ## [1.23.0] - 2026-10-09
 ### Added
 - Create Price Alert, opened by the bell on the instrument detail page and built to the design: the instrument with its live price, a condition and a target, a line restating what will happen in plain words, advanced filters behind a disclosure, and Cancel beside Create Alert.

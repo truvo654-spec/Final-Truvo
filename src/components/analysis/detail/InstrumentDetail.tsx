@@ -956,18 +956,16 @@ export function InstrumentDetail({
             <p className="mt-1.5 text-[12.5px] text-slate-500">Share once a day and get 50 credits</p>
 
             {/* what the floor is saying */}
-            <div className="mt-4 flex gap-5 border-b border-[#eef1f5]">
-              {(['Popular', 'Most Recent'] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  aria-pressed={postSort === t}
-                  onClick={() => setPostSort(t)}
-                  className={`-mb-px border-b-2 pb-2 text-[14px] transition ${postSort === t ? 'border-[#5945F1] font-bold text-[#5945F1]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                >
-                  {t}
-                </button>
-              ))}
+            <div className="mt-4">
+              <TabSubmain<'Popular' | 'Most Recent'>
+                tabs={[
+                  { id: 'Popular', label: 'Popular' },
+                  { id: 'Most Recent', label: 'Most Recent' },
+                ]}
+                activeTab={postSort}
+                onChange={(tabId) => setPostSort(tabId)}
+                size="sm"
+              />
             </div>
 
             {(postSort === 'Popular' ? DETAIL_POSTS : [...DETAIL_POSTS].reverse()).map((post) => (
@@ -1987,7 +1985,7 @@ function LegacyInstrumentDetail({
             />
           )}
           {related.length > 0 && (
-            <section className="panel p-5">
+            <section className="panel overflow-visible p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="label">Related markets</p>
@@ -2925,7 +2923,7 @@ function Overview({
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-4 max-xl:grid-cols-1">
       <section className="panel p-5">
-        <div className="-mx-5 -mt-5 mb-5 pt-1.5">
+        <div className="-mx-5 -mt-5 mb-4">
           {tabs}
         </div>
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -2937,6 +2935,8 @@ function Overview({
             {/* what the chart is showing */}
             <label className="flex flex-col gap-1.5">
               <span className="text-[12.5px] font-medium text-slate-500">Viewing Mode</span>
+              <span className="relative block">
+                <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden />
               <select
                 value={chartOpen ? 'advanced' : 'performance'}
                 onChange={(e) => {
@@ -2945,16 +2945,19 @@ function Overview({
                   if (next === 'advanced' && !chartOpen) onChart();
                   if (next === 'performance' && chartOpen) onChart();
                 }}
-                className="w-[190px] cursor-pointer rounded-xl border border-[#d7d3fb] bg-white px-3.5 py-2.5 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
+                className="w-[190px] cursor-pointer appearance-none rounded-xl border border-[#d7d3fb] bg-white py-2.5 pl-3.5 pr-9 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
               >
                 <option value="performance">Performance</option>
                 <option value="advanced">{tierLevel < 2 ? 'Advanced chart (Level 2)' : 'Advanced chart'}</option>
               </select>
+              </span>
             </label>
 
             {/* over how long */}
             <label className="flex flex-col gap-1.5">
               <span className="text-[12.5px] font-medium text-slate-500">Period</span>
+              <span className="relative block">
+                <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden />
               <select
                 value={period}
                 onChange={(e) => {
@@ -2964,7 +2967,7 @@ function Overview({
                   setPeriod(item);
                   setCompareRange(periodToRange[item]);
                 }}
-                className="w-[130px] cursor-pointer rounded-xl border border-[#d7d3fb] bg-white px-3.5 py-2.5 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
+                className="w-[130px] cursor-pointer appearance-none rounded-xl border border-[#d7d3fb] bg-white py-2.5 pl-3.5 pr-9 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
               >
                 {(['1D', '1W', '1M', '1Y'] as PerformancePeriod[]).map((item) => {
                   const locked = historicalTierForTimeframe(item) > tierLevel;
@@ -2972,6 +2975,7 @@ function Overview({
                   return <option key={item} value={item}>{locked ? `${label} \u{1F512}` : label}</option>;
                 })}
               </select>
+              </span>
             </label>
           </div>
         </div>
