@@ -3372,6 +3372,7 @@ function TechnicalSummary({
           title="Oscillators"
           rows={availableOscillators}
           visibleCount={visibleTechnicalToolCount}
+          lockedLevel={tierLevel >= 2 ? 3 : 2}
           canCustomize={tierLevel >= 3}
           customPeriod={customOscillatorPeriod}
           onCustomPeriodChange={setCustomOscillatorPeriod}
@@ -3399,6 +3400,7 @@ function TechnicalSummary({
           title="Moving Averages"
           rows={availableAverages}
           visibleCount={visibleTechnicalToolCount}
+          lockedLevel={tierLevel >= 2 ? 3 : 2}
           canCustomize={tierLevel >= 3}
           customPeriod={customAveragePeriod}
           onCustomPeriodChange={setCustomAveragePeriod}
@@ -3458,6 +3460,7 @@ function TechnicalTable({
   title,
   rows,
   visibleCount,
+  lockedLevel,
   canCustomize = false,
   customPeriod,
   onCustomPeriodChange,
@@ -3470,6 +3473,8 @@ function TechnicalTable({
   title: string;
   rows: string[][];
   visibleCount?: number;
+  /** The level that would show the covered rows. */
+  lockedLevel?: number;
   canCustomize?: boolean;
   customPeriod?: string;
   onCustomPeriodChange?: (value: string) => void;
@@ -3486,7 +3491,25 @@ function TechnicalTable({
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-900">{title} ›</h3>
       </div>
-      <div className="overflow-hidden rounded-lg border border-[#CCC6FB]">
+      <div className="relative overflow-hidden rounded-lg border border-[#CCC6FB]">
+        {/* What a higher level would show, named once over the rows it covers */}
+        {visibleCount !== undefined && Number.isFinite(visibleCount) && rows.length > visibleCount && (
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center justify-center gap-2 text-center"
+            style={{ top: `${(visibleCount as number) * 49 + 24}px` }}
+          >
+            <p className="font-display text-[15px] font-bold text-slate-900">
+              <span aria-hidden>😎</span> Locked until Level {lockedLevel ?? 2}
+            </p>
+            <button
+              type="button"
+              onClick={() => requestUnlock('technicalTools')}
+              className="pointer-events-auto rounded-full bg-gradient-to-r from-[#5945F1] to-[#c026d3] px-5 py-2 text-[13.5px] font-bold text-white transition hover:brightness-110"
+            >
+              Unlock with Credits
+            </button>
+          </div>
+        )}
         {rows.map(([name, value, action, customPeriodValue], rowIndex) => {
           const locked = rowIndex >= (visibleCount ?? Number.POSITIVE_INFINITY);
           const periodMatch = name.match(/^(.*)\((\d[^)]*)\)(.*)$/);

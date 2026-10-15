@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.35.1] - 2026-10-09
+### Added
+- The technical tables say what is covering their lower rows: "Locked until Level 2" sits over the blurred ones with its own Unlock with Credits, rather than leaving the rows faded and unexplained.
+
 ## [1.35.0] - 2026-10-09
 ### Changed
 - The three technical gauges are the rings the design draws: a thick arc running pink to lime with a dot at the score, the number large in the middle, and the verdict as a tinted pill rather than a needle on a dial.
