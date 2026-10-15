@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.1] - 2026-10-09
+### Fixed
+- Six things on the instrument detail page that still did not match the design, found by putting the whole page beside it rather than checking one block at a time: the performance chart was violet and is now the brand lime, the price dropped its cents, the figure tiles had no currency and spilled onto two lines, the "Markets / Crypto" breadcrumb was not in the design, the tab read "Products & Brokers" instead of "Brokers & Promotions", and the vote buttons wrapped.
+- The floating Max and Min pills over the chart are gone; the design reads those from the figure tiles.
+
 ## [1.21.0] - 2026-10-09
 ### Changed
 - The Overview panel on the instrument detail page matches the design: the heading reads "Overview" with "Performance of the asset in a selected period", the chart mode and the period are two labelled dropdowns rather than tab strips, and the six figures sit in a three-by-two grid reading 1D Return, Price Range, Min, Last Price, Max and Signal.

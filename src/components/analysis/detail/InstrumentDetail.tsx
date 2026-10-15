@@ -376,10 +376,22 @@ function recommendedProductCopy(
   ];
 }
 
+/** A price with its currency and cents, the way the figure tiles read it. */
+function money(value: number) {
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** The short form the design uses at the top of a range: $108,569 becomes 108K. */
+function shortMoney(value: number) {
+  if (value >= 1000) return `${Math.round(value / 1000)}K`;
+  return value.toFixed(2);
+}
+
 function displayValue(instrument: Instrument) {
   if (assetClass(instrument) === "Forex") return instrument.price.toFixed(4);
   if (instrument.price < 1) return instrument.price.toFixed(4);
-  return instrument.price.toLocaleString(undefined, {
+  return instrument.price.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
@@ -644,7 +656,7 @@ export function InstrumentDetail({
       ...tabList
         .filter((item) => !["News", "Products", "Brokers"].includes(item))
         .map((item) => ({ id: item, label: item })),
-      { id: "Products & Brokers" as DetailTab, label: "Products & Brokers" },
+      { id: "Products & Brokers" as DetailTab, label: "Brokers & Promotions" },
       ...(kind === "Stock"
         ? [{ id: "Financial Report" as DetailTab, label: "Financial Report" }]
         : []),
@@ -669,7 +681,7 @@ export function InstrumentDetail({
 
   return (
     <div className="market-feature">
-      <div className="fixed bottom-4 left-4 z-30 flex items-center gap-1 rounded-xl border border-[#d7d3fb] bg-white/95 p-1 shadow-lg backdrop-blur print:hidden" role="group" aria-label="Preview panel state">
+      <div className="fixed bottom-4 left-4 z-30 flex items-center gap-1 rounded-xl border border-[#d7d3fb] bg-white/95 p-1 opacity-30 shadow-lg backdrop-blur transition hover:opacity-100 print:hidden" role="group" aria-label="Preview panel state">
         <span className="px-2 text-[10px] font-bold uppercase tracking-wide text-[#94a3b8]">Preview state</span>
         {(['default', 'empty'] as const).map((id) => (
           <button
@@ -685,10 +697,6 @@ export function InstrumentDetail({
       </div>
       <div className="concept-instrument">
         <section className="concept-quote !block rounded-2xl border border-[#e4e0fa] bg-white p-5 sm:p-6">
-          <button onClick={onBack} className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-slate-500 transition hover:text-[#5945F1]">
-            <ArrowLeft size={14} /> Markets / {kind}
-          </button>
-
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center">
             {/* who it is */}
             <div className="flex min-w-0 items-start gap-4 xl:w-[330px] xl:shrink-0">
@@ -863,7 +871,7 @@ export function InstrumentDetail({
                       aria-pressed={picked}
                       disabled={Boolean(weeklyVote)}
                       onClick={() => recordVote(side as VoteSide)}
-                      className={`rounded-xl px-3 py-2 text-[13.5px] font-bold transition ${
+                      className={`whitespace-nowrap rounded-xl px-2.5 py-2 text-[13px] font-bold transition ${
                         picked
                           ? bullish ? 'bg-[#caeb0e] text-[#2f3d00]' : 'bg-[#ece9ff] text-[#5945F1]'
                           : bullish
@@ -2907,9 +2915,9 @@ function Overview({
                     x2="0"
                     y2="1"
                   >
-                    <stop offset="0%" stopColor="#5945F1" stopOpacity="0.22" />
-                    <stop offset="60%" stopColor="#5945F1" stopOpacity="0.06" />
-                    <stop offset="100%" stopColor="#5945F1" stopOpacity="0" />
+                    <stop offset="0%" stopColor="#caeb0e" stopOpacity="0.85" />
+                    <stop offset="60%" stopColor="#d9ee5c" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="#f6fae2" stopOpacity="0.15" />
                   </linearGradient>
                 </defs>
                 <polyline
@@ -2920,22 +2928,16 @@ function Overview({
                 <polyline
                   points={points}
                   fill="none"
-                  stroke="#5945F1"
+                  stroke="#a9cc13"
                   strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   vectorEffect="non-scaling-stroke"
                 />
               </svg>
-              <div className="absolute left-4 top-4 rounded-lg bg-white/90 backdrop-blur border border-indigo-100 px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-2xs">
-                {compareRange} · <span className={selectedReturn >= 0 ? "text-emerald-600" : "text-rose-600"}>{changeLabel}</span>
-              </div>
-              <div className="absolute right-4 top-4 rounded-lg bg-white/90 backdrop-blur border border-slate-200/80 px-2.5 py-1 text-[10px] font-semibold text-slate-600 shadow-2xs">
-                Max ({compareRange}) <span className="text-slate-900 font-bold ml-1">{displayValue({ ...instrument, price: high })}</span>
-              </div>
-              <div className="absolute right-4 bottom-8 rounded-lg bg-white/90 backdrop-blur border border-slate-200/80 px-2.5 py-1 text-[10px] font-semibold text-slate-600 shadow-2xs">
-                Min ({compareRange}) <span className="text-slate-900 font-bold ml-1">{displayValue({ ...instrument, price: low })}</span>
-              </div>
+
+
+
               {showLinkedTags &&
                 marketTagTopics.map((topic, index) => (
                   <span
@@ -2996,10 +2998,10 @@ function Overview({
             <div className="mt-5 grid grid-cols-3 gap-4 max-md:grid-cols-2">
               {[
                 [`${compareRange} Return`, changeLabel],
-                ['Price Range', `${displayValue({ ...instrument, price: low })} - ${displayValue({ ...instrument, price: high })}`],
-                [`Min (${compareRange})`, displayValue({ ...instrument, price: low })],
-                ['Last Price', displayValue(instrument)],
-                [`Max (${compareRange})`, displayValue({ ...instrument, price: high })],
+                ['Price Range', `$${Math.round(low / 1000)} - ${shortMoney(high)}`],
+                [`Min (${compareRange})`, money(low)],
+                ['Last Price', money(instrument.price)],
+                [`Max (${compareRange})`, money(high)],
                 ['Signal', `${instrument.signal} ${instrument.confidence}%`],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-xl bg-[#f7f8fa] px-4 py-3.5">
