@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.2] - 2026-10-09
+### Changed
+- The chart carries the time axis the design shows beneath it, reading the hours on 1D and the weeks or quarters on the longer periods.
+- News stories show their real thumbnail instead of a violet block, and "Go to Community" is the brand violet button the design draws rather than a near-black one with a rainbow glow.
+
 ## [1.21.1] - 2026-10-09
 ### Fixed
 - Six things on the instrument detail page that still did not match the design, found by putting the whole page beside it rather than checking one block at a time: the performance chart was violet and is now the brand lime, the price dropped its cents, the figure tiles had no currency and spilled onto two lines, the "Markets / Crypto" breadcrumb was not in the design, the tab read "Products & Brokers" instead of "Brokers & Promotions", and the vote buttons wrapped.

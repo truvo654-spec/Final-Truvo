@@ -1,4 +1,5 @@
 import "./market.css";
+import { THUMB_GOLD, THUMB_SPX, THUMB_BANKS, THUMB_USD } from '../../../data/newsImagePlaceholders';
 import { DetailEmptyState } from './DetailEmptyState';
 "use client";
 
@@ -197,6 +198,8 @@ const tabList: DetailTab[] = [
   "Brokers",
 ];
 type InstrumentNews = {
+  /** The picture beside the headline. */
+  thumb?: string;
   source: string;
   time: string;
   title: string;
@@ -204,18 +207,21 @@ type InstrumentNews = {
 };
 const instrumentNews = (instrument: Instrument): InstrumentNews[] => [
   {
+    thumb: THUMB_GOLD,
     source: "Marketsyde AI",
     time: "10:42",
     title: `${instrument.name} holds its monitored technical level`,
     summary: `${instrument.symbol} is showing ${instrument.rvol.toFixed(2)}x relative volume with sentiment at ${instrument.sentiment}%.`,
   },
   {
+    thumb: THUMB_SPX,
     source: "Demo Wire",
     time: "09:18",
     title: `Participation broadens across ${instrument.sector}`,
     summary: `The latest move is being tracked alongside ${instrument.subSector ?? "the broader market"} activity.`,
   },
   {
+    thumb: THUMB_BANKS,
     source: "Market Brief",
     time: "Yesterday",
     title: `What matters next for ${instrument.symbol}`,
@@ -981,17 +987,17 @@ export function InstrumentDetail({
 
               <div className="relative flex items-center justify-center w-full group">
                 <div
-                  className="absolute inset-0 duration-1000 opacity-60 transition-all bg-gradient-to-r from-[#5945F1] via-[#FD02B0] to-amber-400 rounded-xl blur-lg filter group-hover:opacity-100 group-hover:duration-200"
+                  className="absolute inset-0 rounded-xl opacity-0 transition-opacity"
                 />
                 <button
                   type="button"
                   role="button"
-                  className="group relative inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 hover:shadow-[#5945F1]/25 w-full cursor-pointer select-none"
+                  className="group relative inline-flex items-center justify-center rounded-xl bg-[#5945F1] px-6 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:bg-[#4a38d6] hover:shadow-lg hover:-translate-y-0.5 hover:shadow-[#5945F1]/25 w-full cursor-pointer select-none"
                   title="Open Community"
                   aria-label={`Open ${instrument.symbol} Community`}
                   onClick={onOpenCommunity}
                 >
-                  <span>Community</span>
+                  <span>Go to Community</span>
                   <svg
                     viewBox="0 0 10 10"
                     height="10"
@@ -1115,8 +1121,8 @@ export function InstrumentDetail({
               {[
                 {
                   symbol: "EUR/USD",
-                  mark: "EU",
-                  markClass: "bg-[#003399] text-white",
+                  mark: "\u{1F1EA}\u{1F1FA}",
+                  markClass: "bg-white border border-slate-200 text-[13px]",
                   change: "+0.33%",
                   action: "Buy",
                   actionClass: "bg-[#caeb0e] text-[#2f3d00] hover:brightness-95",
@@ -1287,9 +1293,10 @@ export function InstrumentDetail({
                             {item.title}
                           </h4>
                         </div>
-                        <span
-                          className="h-[72px] w-[84px] shrink-0 rounded-lg bg-gradient-to-br from-[#5945F1] to-[#0b1c30]"
-                          aria-hidden
+                        <img
+                          src={(item as { thumb?: string }).thumb ?? THUMB_USD}
+                          alt=""
+                          className="h-[72px] w-[84px] shrink-0 rounded-lg object-cover"
                         />
                       </div>
                       <div className="flex flex-wrap gap-1.5 pt-1">
@@ -2995,6 +3002,17 @@ function Overview({
               </div>
             </div>
             {/* the six figures, in the order the design reads them */}
+            <div className="mt-2 flex justify-between px-1 text-[12.5px] text-slate-500">
+              {(period === '1D'
+                ? ['12:00 am', '6:00 am', '12:00 am', '6:00 pm']
+                : period === '1W'
+                  ? ['Mon', 'Wed', 'Fri', 'Sun']
+                  : period === '1M'
+                    ? ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+                    : ['Q1', 'Q2', 'Q3', 'Q4']
+              ).map((t) => <span key={t}>{t}</span>)}
+            </div>
+
             <div className="mt-5 grid grid-cols-3 gap-4 max-md:grid-cols-2">
               {[
                 [`${compareRange} Return`, changeLabel],
