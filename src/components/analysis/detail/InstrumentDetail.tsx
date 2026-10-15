@@ -1,7 +1,7 @@
 import "./market.css";
 import { LockableSelect } from '../../common/LockableSelect';
 import { SegmentedTabs } from '../../common/SegmentedTabs';
-import { PriceAlertModal } from './PriceAlertModal';
+import { PriceAlertModal, type SavedAlert } from './PriceAlertModal';
 import { THUMB_GOLD, THUMB_SPX, THUMB_BANKS, THUMB_USD } from '../../../data/newsImagePlaceholders';
 import { DetailEmptyState } from './DetailEmptyState';
 "use client";
@@ -690,6 +690,13 @@ export function InstrumentDetail({
   /** Lets each panel's empty state be reviewed without breaking the data. */
   const [panelState, setPanelState] = useState<'default' | 'empty'>('default');
   const [alertOpen, setAlertOpen] = useState(false);
+  /** The alert running on this instrument, if there is one. */
+  const [savedAlert, setSavedAlert] = useState<SavedAlert | null>(() => {
+    try {
+      const raw = window.localStorage.getItem(`marketsyde_alert_${instrument.symbol}`);
+      return raw ? (JSON.parse(raw) as SavedAlert) : null;
+    } catch { return null; }
+  });
   /** Shown top right for a few seconds after an alert is made. */
   const [banner, setBanner] = useState<string | null>(null);
   const [draftPost, setDraftPost] = useState('');
@@ -702,9 +709,18 @@ export function InstrumentDetail({
         name={instrumentTitle}
         ticker={instrument.symbol.split('/')[0]}
         price={instrument.price}
+        existing={savedAlert}
         onClose={() => setAlertOpen(false)}
-        onCreate={() => {
-          setBanner('Price Alert Created');
+        onCreate={(alert) => {
+          setSavedAlert(alert);
+          try { window.localStorage.setItem(`marketsyde_alert_${instrument.symbol}`, JSON.stringify(alert)); } catch { /* storage can be blocked */ }
+          setBanner(savedAlert ? 'Price Alert Updated' : 'Price Alert Created');
+          window.setTimeout(() => setBanner(null), 4000);
+        }}
+        onDelete={() => {
+          setSavedAlert(null);
+          try { window.localStorage.removeItem(`marketsyde_alert_${instrument.symbol}`); } catch { /* ignore */ }
+          setBanner('Price Alert Deleted');
           window.setTimeout(() => setBanner(null), 4000);
         }}
       />
@@ -815,9 +831,9 @@ export function InstrumentDetail({
                 <button
                   type="button"
                   onClick={() => setAlertOpen(true)}
-                  aria-label="Create a price alert"
+                  aria-label={savedAlert ? 'View your price alert' : 'Create a price alert'}
                   data-keep-button-icons
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#CCC6FB] text-[#5945F1] transition hover:bg-[#f7f6ff]"
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${savedAlert ? 'border-[#5945F1] bg-[#5945F1] text-white' : 'border-[#CCC6FB] text-[#5945F1] hover:bg-[#f7f6ff]'}`}
                 >
                   <Bell size={16} />
                 </button>

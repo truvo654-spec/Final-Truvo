@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.31.0] - 2026-10-09
+### Added
+- A price alert that already exists opens for viewing: the bell fills violet, the dialog reads "Price Alert", every setting comes back as it was saved, and the buttons become Delete, Cancel and Edit Alert. Deleting asks first, in its own small dialog, and says it cannot be undone.
+- The alert can watch an indicator rather than a price: choosing Bollinger Bands, a moving average or RSI swaps the target field for a lookback period and a standard deviation, and the sentence restating the alert follows.
+- Advanced filters are the three the design lists: frequency, expiration and where to be told.
+### Fixed
+- The dialog reset itself on every render of the page behind it, because the effect watched callbacks the parent rebuilds each time. It only runs when the dialog opens now, which is what made the delete confirmation vanish the moment it appeared.
+
 ## [1.30.0] - 2026-10-09
 ### Added
 - LockableSelect: a picker that shows the options a higher level would give, in brand violet with a lock, instead of hiding them. Choosing one opens the unlock flow rather than switching the view.
