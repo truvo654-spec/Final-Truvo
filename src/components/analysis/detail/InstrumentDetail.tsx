@@ -3507,14 +3507,14 @@ function TechnicalTable({
               }
             }}
             title={locked ? "Choose a credit unlock for advanced technical tools" : undefined}
-            className={`grid grid-cols-[minmax(0,1fr)_70px_52px] items-center gap-2 border-b border-[#CCC6FB] px-3 py-2 text-[10px] last:border-b-0 ${
+            className={`grid grid-cols-[minmax(0,1fr)_90px_72px] items-center gap-2 border-b border-[#CCC6FB] px-4 py-3 text-[13px] last:border-b-0 ${
               locked ? "select-none blur-[2px] opacity-45" : ""
             }`}
           >
             <span className="flex items-center gap-1 text-slate-700">
               {periodMatch && !customPeriodValue ? (
                 <>
-                  {periodMatch[1]}[
+                  {periodMatch[1]}
                   {periodValues.map((period, periodIndex) => (
                     <input
                       key={`${name}-${periodIndex}`}
@@ -3534,10 +3534,10 @@ function TechnicalTable({
                       onClick={() => (!canCustomize || locked) && requestUnlock("technicalParameters")}
                       title={!canCustomize ? "Choose a credit unlock to edit custom periods" : "Edit parameter period"}
                       aria-label={`Edit period ${periodIndex + 1} for ${periodMatch[1].trim()}`}
-                      className="mx-0.5 w-10 min-w-[2.5rem] rounded border border-[#CCC6FB] bg-white px-1 text-center text-[10px] outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                      className="mx-0.5 w-11 min-w-[2.75rem] rounded-full border border-[#CCC6FB] bg-white px-1 py-0.5 text-center text-[12px] outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                     />
                   ))}
-                  ]{periodMatch[3]}
+                  {periodMatch[3]}
                 </>
               ) : (
                 name
@@ -3605,26 +3605,46 @@ function CompassGauge({
           : score >= 24
             ? "Sell"
             : "Strong Sell";
-  const angle = -90 + score * 1.8;
+  /** The ring runs from pink through amber to lime, with a dot at the score. */
+  const R = 46;
+  const C = Math.PI * R; // half a circle
+  const dot = Math.PI + (score / 100) * Math.PI;
   return (
-    <div className="rounded-xl border border-border bg-white p-4 text-center">
-      <p className="text-[10px] font-semibold text-slate-500">{label}</p>
-      <div
-        className="compass-gauge mx-auto mt-3"
-        style={
-          {
-            "--gauge-angle": `${angle}deg`,
-            "--gauge-fill": `${score * 1.8}deg`,
-          } as React.CSSProperties
-        }
-      >
-        <div className="compass-gauge__arc" />
-        <div className="compass-gauge__needle" />
-        <div className="compass-gauge__hub" />
-        <span className="compass-gauge__score">{Math.round(score)}</span>
+    <div className="rounded-xl border border-[#CCC6FB] bg-white p-5 text-center">
+      <p className="text-[13px] text-slate-500">{label}</p>
+      <div className="relative mx-auto mt-3 h-[72px] w-[124px]">
+        <svg viewBox="0 0 124 72" className="absolute inset-0 h-full w-full" aria-hidden>
+          <defs>
+            <linearGradient id={`gauge-${label.replace(/\s/g, '')}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#ec4899" />
+              <stop offset="35%" stopColor="#f59e0b" />
+              <stop offset="70%" stopColor="#caeb0e" />
+              <stop offset="100%" stopColor="#8aab00" />
+            </linearGradient>
+          </defs>
+          <path d={`M 15 62 A ${R} ${R} 0 0 1 109 62`} fill="none" stroke="#f1f0fe" strokeWidth="13" strokeLinecap="round" />
+          <path
+            d={`M 15 62 A ${R} ${R} 0 0 1 109 62`}
+            fill="none"
+            stroke={`url(#gauge-${label.replace(/\s/g, '')})`}
+            strokeWidth="13"
+            strokeLinecap="round"
+            strokeDasharray={`${(score / 100) * C} ${C}`}
+          />
+          <circle cx={62 + R * Math.cos(dot)} cy={62 + R * Math.sin(dot)} r="6" fill="#caeb0e" stroke="#fff" strokeWidth="3" />
+        </svg>
+        <span className="absolute inset-x-0 bottom-1 font-display text-[26px] font-bold text-slate-900">
+          {Math.round(score)}
+        </span>
       </div>
-      <p className="mt-2 text-xs font-semibold text-slate-800">{rating}</p>
-      <p className="mt-1 text-[9px] text-slate-400">{detail}</p>
+      <p className="-mt-1">
+        <span className={`inline-block rounded-md px-2.5 py-1 text-[12.5px] font-bold ${
+          rating.includes('Buy') ? 'bg-[#caeb0e] text-[#2f3d00]' : rating.includes('Sell') ? 'bg-[#ece9ff] text-[#5945F1]' : 'bg-[#eef6c4] text-[#4a5f00]'
+        }`}>
+          {rating}
+        </span>
+      </p>
+      <p className="mt-2 text-[12.5px] text-slate-500">{detail}</p>
     </div>
   );
 }

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.35.0] - 2026-10-09
+### Changed
+- The three technical gauges are the rings the design draws: a thick arc running pink to lime with a dot at the score, the number large in the middle, and the verdict as a tinted pill rather than a needle on a dial.
+- Indicator parameters are rounded chips, and the rows are at the design's size, so a row reads "Relative Strength Index (14)" with the 14 in its own chip instead of inside square brackets.
+
 ## [1.34.0] - 2026-10-09
 ### Added
 - The failed states the design draws for the rest of the page: the header reads "Fashionably Late…" with its figures as dashes and no sparkline, Technicals says "The numbers Need a Moment", and Market Data says "The Figures Are Hiding". All of them switch together from the preview control, with the four panels that already had one.
