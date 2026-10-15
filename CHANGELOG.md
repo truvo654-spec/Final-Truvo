@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.44.0] - 2026-10-09
+### Added
+- Market News and the Education Hub have their own addresses, /news and /knowledge/education, found by sweeping every page in the app: the two were reachable only through the menu, so a link to either landed on the 404 page.
+
 ## [1.43.0] - 2026-10-09
 ### Fixed
 - The last type errors, and the app now checks clean. Among the real bugs they were hiding: the demo centre read user.sydePoints, which does not exist, so it showed nothing where the points should be; a calculator category was written 'trade-planning' when the only planning category is 'planning'; the fallback broker on the active accounts page used field names the Broker type stopped carrying; the journal summary card was re-added after the merge without four of its props; and a dashboard call-to-action was handed a function that needed a broker name it was never given.

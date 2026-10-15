@@ -244,6 +244,20 @@ export const ROUTE_REGISTRY: Record<string, RouteItem> = {
     category: 'Community',
     breadcrumbs: ['Community', 'Feeds & Discussions'],
   },
+  news: {
+    path: '/news',
+    tab: 'news',
+    title: 'Market News | MarketSyde',
+    category: 'Knowledge',
+    breadcrumbs: ['Knowledge Hub', 'Market News'],
+  },
+  'education-hub': {
+    path: '/knowledge/education',
+    tab: 'education-hub',
+    title: 'Education Hub | MarketSyde',
+    category: 'Knowledge',
+    breadcrumbs: ['Knowledge Hub', 'Education'],
+  },
   leaderboard: {
     path: '/community/leaderboard',
     tab: 'leaderboard',
@@ -428,6 +442,8 @@ export function pathToState(rawPath: string): RouteResolution {
   const pathname = (rawPath || '/').replace(/\/+$/, '') || '/';
   if (pathname === '/economic-calendar' || pathname === '/trade/economic-calendar') return { tab: 'economic-calendar' };
   if (pathname === '/trade/strategy-builder' || pathname === '/strategy-builder') return { tab: 'strategy-builder' };
+  if (pathname === '/news' || pathname === '/knowledge/news') return { tab: 'news' };
+  if (pathname === '/knowledge/education' || pathname === '/education') return { tab: 'education-hub' };
 
   // 1. Root & Dashboard
   if (pathname === '/' || pathname === '/dashboard') {
