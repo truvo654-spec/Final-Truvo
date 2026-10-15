@@ -944,19 +944,19 @@ export function InstrumentDetail({
                   <span className="text-[18px]" aria-hidden>🐂</span>
                   <span>
                     <b className="block font-display text-[17px] font-bold text-[#5f7a00]">{instrument.sentiment}%</b>
-                    <span className="block text-[12.5px] text-slate-500">Bullish</span>
+                    <span className="block w-fit border-b border-[#5f7a00] text-[12.5px] text-[#5f7a00]">Bullish</span>
                   </span>
                 </span>
                 <span className="flex items-center gap-2 text-right">
                   <span>
                     <b className="block font-display text-[17px] font-bold text-[#5945F1]">{100 - instrument.sentiment}%</b>
-                    <span className="block text-[12.5px] text-slate-500">Bearish</span>
+                    <span className="block text-[12.5px] text-[#5945F1]">Bearish</span>
                   </span>
                   <span className="text-[18px]" aria-hidden>🐻</span>
                 </span>
               </div>
 
-              <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-[#5945F1]">
+              <div className="mt-3 flex h-3.5 overflow-hidden rounded-full bg-[#5945F1]">
                 <span className="bg-[#caeb0e]" style={{ width: `${instrument.sentiment}%` }} aria-hidden />
               </div>
 
@@ -971,12 +971,12 @@ export function InstrumentDetail({
                       aria-pressed={picked}
                       disabled={Boolean(weeklyVote)}
                       onClick={() => recordVote(side as VoteSide)}
-                      className={`whitespace-nowrap rounded-xl px-2.5 py-2 text-[13px] font-bold transition ${
+                      className={`whitespace-nowrap rounded-xl px-3 py-2.5 text-[14px] font-bold transition ${
                         picked
-                          ? bullish ? 'bg-[#caeb0e] text-[#2f3d00]' : 'bg-[#ece9ff] text-[#5945F1]'
+                          ? bullish ? 'bg-[#caeb0e] text-[#1d2600]' : 'bg-[#ece9ff] text-[#5945F1]'
                           : bullish
-                            ? 'border border-[#caeb0e] bg-[#f6fae2] text-[#4a5f00] hover:bg-[#eef6c4]'
-                            : 'border border-[#CCC6FB] bg-white text-[#5945F1] hover:bg-[#f7f6ff]'
+                            ? 'bg-[#caeb0e] text-[#1d2600] hover:brightness-95'
+                            : 'bg-[#ece9ff] text-[#5945F1] hover:bg-[#e2ddff]'
                       } ${weeklyVote && !picked ? 'opacity-50' : ''}`}
                     >
                       {picked ? `↗ ${side} Voted` : bullish ? '↗ Vote Bullish' : '↘ Vote Bearish'}
@@ -991,13 +991,15 @@ export function InstrumentDetail({
             </div>
             )}
             <p className="mt-4 text-[13px] text-slate-500">Most Accurate Predictor</p>
-            <div className="mt-2 flex items-center gap-3 rounded-xl border border-[#CCC6FB] p-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ec4899] text-[13px] font-bold text-white">P</span>
+            <div className="mt-2 flex items-center gap-3 rounded-xl bg-[#f5f4ff] p-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ec4899] text-[14px] font-bold text-white">M</span>
               <b className="min-w-0 flex-1 truncate text-[14px] font-bold text-slate-900">Priya Shah</b>
-              <span className="shrink-0 text-[13px] text-slate-500">82% Accuracy</span>
+              <span className="shrink-0 text-[13px] text-[#5945F1]">82% Accuracy</span>
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#eef6c4] text-[15px]" aria-hidden>🐂</span>
             </div>
             {/* write something */}
-            <h3 className="mt-5 font-display text-[16px] font-bold text-slate-900">Community Post</h3>
+            <div className="mt-5 border-t border-[#CCC6FB]" />
+            <h3 className="mt-5 font-display text-[18px] font-bold text-slate-900">Community Post</h3>
             <div className="mt-2 flex items-center gap-2">
               <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#CCC6FB] px-3 py-2.5 focus-within:border-[#5945F1]">
                 <input
@@ -1014,7 +1016,7 @@ export function InstrumentDetail({
                 aria-label="Post"
                 data-keep-button-icons
                 onClick={() => { if (draftPost.trim()) { onToast('Posted to the community. +50 credits'); setDraftPost(''); } }}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#5945F1] text-white transition hover:bg-[#4a38d6]"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#5945F1] text-white transition hover:bg-[#4a38d6]"
               >
                 <Send size={16} />
               </button>

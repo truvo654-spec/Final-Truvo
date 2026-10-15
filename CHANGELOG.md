@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - The action block on the instrument header follows the design: the star and the bell are rounded squares beside a taller gradient "Trade via Brokers", and the cashback card sits inside a violet-to-magenta gradient border with a large yellow broker tile, the offer on one line and Trade Now beside the line beneath it. The column is wide enough that none of it wraps.
 
+## [1.50.0] - 2026-10-09
+### Changed
+- The cashback card on the instrument header is drawn as the design draws it: a violet-to-magenta edge, the broker mark at full size, the offer on one line, and Trade Now beside the line about it rather than below.
+- The community sidebar follows its design too: Bullish underlined in its own colour, Bearish in violet, a taller sentiment bar, both vote buttons filled rather than outlined, the predictor on a tinted row ending in a badge, and a rule before Community Post.
+
 ## [1.49.0] - 2026-10-09
 ### Changed
 - The instrument header carries the instrument's own mark rather than the first letter of its name, says what the instrument actually is for the ones worth saying it about, and reads its 24-hour volume on the same scale as its market cap, so Bitcoin shows $48.7B rather than $48.7M.
