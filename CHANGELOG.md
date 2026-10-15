@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.48.0] - 2026-10-09
+### Changed
+- Member Plan moved out of the top navigation and into the Company menu, where it sits above About Us with a line saying what it covers. The top row is Trade, Brokers, Knowledge Hub, Community and Company.
+
 ## [1.47.0] - 2026-10-09
 ### Added
 - A Trade button on the instrument list, shown on the row under the pointer, so the quickest way in is one click from the table without crowding every other row.

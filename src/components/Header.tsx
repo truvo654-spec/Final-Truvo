@@ -325,21 +325,6 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
-            {/* Member Plan Link (Direct text link, NO chevron, matching Total Nav Bar.png & Membership plan - Member Lv.1.png) */}
-            <button
-              onClick={() => {
-                setActiveTab('member-plan');
-                handleCloseImmediately();
-              }}
-              className={`transition-colors py-1 cursor-pointer font-medium text-sm ${
-                activeTab === 'member-plan'
-                  ? 'text-[#0b1c30] font-bold'
-                  : 'text-slate-800 hover:text-[#5945F1]'
-              }`}
-            >
-              Member Plan
-            </button>
-
             {/* Community Dropdown Trigger */}
             <div
               className="relative py-4"
@@ -1989,6 +1974,33 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Right Menu Options */}
               <div className="w-full md:w-[50%] flex flex-col justify-center space-y-6 sm:space-y-7 pl-4 sm:pl-8 pr-4 relative z-10">
+                {/* 1. Member Plan */}
+                <button
+                  onClick={() => {
+                    setActiveTab('member-plan');
+                    handleCloseImmediately();
+                  }}
+                  className="group flex items-start text-left transition-all cursor-pointer w-full"
+                >
+                  <div className="flex items-start gap-3">
+                    {activeTab === 'member-plan' ? (
+                      <div className="w-4 h-4 rounded-full bg-[#5945F1] shrink-0 mt-1 shadow-xs" />
+                    ) : null}
+                    <div>
+                      <div className={`font-bold text-base transition-colors leading-tight ${
+                        activeTab === 'member-plan'
+                          ? 'text-[#5945F1]'
+                          : 'text-[#0b1c30] group-hover:text-[#5945F1]'
+                      }`}>
+                        Member Plan
+                      </div>
+                      <div className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                        What each level gives you, and what it takes to get there.
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
                 {/* 1. About Us */}
                 <button
                   onClick={() => {
