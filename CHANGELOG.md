@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.1] - 2026-10-09
+### Changed
+- The community posts on the instrument detail page match the design: a "Community Post" box with the credit line, Popular and Most Recent tabs, and each post showing the author, the price at the time, a bullish or bearish tag, and the agree and disagree counts as buttons.
+
 ## [1.20.0] - 2026-10-09
 ### Changed
 - The community sidebar on the instrument detail page follows the design: the "Community." heading with View All, the sentiment split read as a bull and a bear with their percentages, a single lime-to-violet bar, Vote Bullish and Vote Bearish as a pair of buttons with the credit line beneath, and the most accurate predictor as a compact row.

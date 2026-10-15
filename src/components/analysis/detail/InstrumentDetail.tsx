@@ -34,6 +34,7 @@ import {
   Users,
   WalletCards,
   X,
+  Smile,
 } from "lucide-react";
 import type {
   Instrument,
@@ -663,6 +664,8 @@ export function InstrumentDetail({
   );
   /** Lets each panel's empty state be reviewed without breaking the data. */
   const [panelState, setPanelState] = useState<'default' | 'empty'>('default');
+  const [draftPost, setDraftPost] = useState('');
+  const [postSort, setPostSort] = useState<'Popular' | 'Most Recent'>('Popular');
 
   return (
     <div className="market-feature">
@@ -885,87 +888,84 @@ export function InstrumentDetail({
               <b className="min-w-0 flex-1 truncate text-[14px] font-bold text-slate-900">Maya Chen</b>
               <span className="shrink-0 text-[13px] text-slate-500">82% Accuracy</span>
             </div>
-            <button
-              className="concept-outline"
-              onClick={() => setNewPostOpen(true)}
-            >
-              Discuss {instrument.symbol} <MessageCircle size={15} />
-            </button>
-            {newCommunityPost && (
-              <CommunityPredictionPost
-                instrument={instrument}
-                post={{
-                  name: "You",
-                  initials: "YO",
-                  time: "now",
-                  tag: "COMMUNITY",
-                  text: newCommunityPost,
-                  agree: 0,
-                  disagree: 0,
-                }}
-                followed={false}
-                onFollow={() => undefined}
-                onToast={onToast}
-                onCommunityChart={onCommunityChart}
-              />
-            )}
-            {[
-              {
-                name: "Daniel Markson",
-                initials: "DM",
-                time: "19h",
-                tag: "TECHNICAL",
-                text: `Watching ${instrument.symbol}: participation is stronger than the prior session. Looking for confirmation around the next pullback.`,
-                agree: 14,
-                disagree: 6,
-              },
-              {
-                name: "CLORA",
-                initials: "CL",
-                time: "21h",
-                tag: "BREADTH",
-                text: `The ${instrument.symbol} setup looks constructive. Volume and broader ${instrument.sector.toLowerCase()} activity are the next things on my checklist.`,
-                agree: 13,
-                disagree: 5,
-              },
-              {
-                name: "Aisha Rahman",
-                initials: "AR",
-                time: "1d",
-                tag: "MACRO",
-                text: `Base case for ${instrument.symbol}: steady demand and improving breadth support a measured continuation, with volatility around earnings.`,
-                agree: 17,
-                disagree: 7,
-              },
-              {
-                name: "Leo Park",
-                initials: "LP",
-                time: "1d",
-                tag: "SECTOR",
-                text: `I see a range scenario for ${instrument.symbol}. A breakout needs stronger volume; otherwise consolidation remains likely.`,
-                agree: 9,
-                disagree: 8,
-              },
-              {
-                name: "Sofia Mendes",
-                initials: "SM",
-                time: "2d",
-                tag: "RISK",
-                text: `Risk case for ${instrument.symbol}: valuation sensitivity could create a deeper retest before the longer-term trend resumes.`,
-                agree: 8,
-                disagree: 12,
-              },
-            ].map((post) => (
-              <CommunityPredictionPost
-                key={post.name}
-                instrument={instrument}
-                post={post}
-                followed={followedPublisher?.tag === post.tag}
-                onFollow={() => onFollowPublisher(post.name, post.tag)}
-                onToast={onToast}
-                onCommunityChart={onCommunityChart}
-              />
+            {/* write something */}
+            <h3 className="mt-5 font-display text-[16px] font-bold text-slate-900">Community Post</h3>
+            <div className="mt-2 flex items-center gap-2">
+              <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#d7d3fb] px-3 py-2.5 focus-within:border-[#5945F1]">
+                <input
+                  value={draftPost}
+                  onChange={(e) => setDraftPost(e.target.value)}
+                  placeholder="What are your thoughts?"
+                  aria-label="Write a community post"
+                  className="w-full min-w-0 bg-transparent text-[13.5px] outline-none placeholder:text-slate-400"
+                />
+                <Smile size={16} className="shrink-0 text-slate-400" aria-hidden />
+              </label>
+              <button
+                type="button"
+                aria-label="Post"
+                data-keep-button-icons
+                onClick={() => { if (draftPost.trim()) { onToast('Posted to the community. +50 credits'); setDraftPost(''); } }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#5945F1] text-white transition hover:bg-[#4a38d6]"
+              >
+                <Send size={16} />
+              </button>
+            </div>
+            <p className="mt-1.5 text-[12.5px] text-slate-500">Share once a day and get 50 credits</p>
+
+            {/* what the floor is saying */}
+            <div className="mt-4 flex gap-5 border-b border-[#eef1f5]">
+              {(['Popular', 'Most Recent'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  aria-pressed={postSort === t}
+                  onClick={() => setPostSort(t)}
+                  className={`-mb-px border-b-2 pb-2 text-[14px] transition ${postSort === t ? 'border-[#5945F1] font-bold text-[#5945F1]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            {(postSort === 'Popular' ? DETAIL_POSTS : [...DETAIL_POSTS].reverse()).map((post) => (
+              <article key={post.name} className="border-b border-[#eef1f5] py-4 last:border-0">
+                <div className="flex items-start gap-2.5">
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${post.tint}`}>
+                    {post.initials}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <b className="truncate text-[14px] font-bold text-slate-900">{post.name}</b>
+                      <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11.5px] font-medium ${post.bullish ? 'bg-[#f6fae2] text-[#4a5f00]' : 'bg-[#ece9ff] text-[#5945F1]'}`}>
+                        {post.bullish ? '\u2197 Bullish' : '\u2198 Bearish'}
+                      </span>
+                    </div>
+                    <p className="text-[12.5px] text-slate-500">{post.time} &middot; {post.price}</p>
+                  </div>
+                </div>
+                <p className="mt-2 text-[13px] leading-relaxed text-slate-700">{post.text}</p>
+                <div className="mt-2.5 flex items-center gap-2">
+                  <button
+                    type="button"
+                    data-keep-button-icons
+                    onClick={() => onToast(`Agreed with ${post.name}`)}
+                    className="flex items-center gap-1.5 rounded-lg bg-[#5945F1] px-2.5 py-1 text-[12.5px] font-medium text-white transition hover:bg-[#4a38d6]"
+                  >
+                    <ThumbsUp size={13} /> {post.up}
+                  </button>
+                  <button
+                    type="button"
+                    data-keep-button-icons
+                    onClick={() => onToast(`Disagreed with ${post.name}`)}
+                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12.5px] font-medium text-slate-500 transition hover:bg-[#f1f0fe]"
+                  >
+                    <ThumbsDown size={13} /> {post.down}
+                  </button>
+                </div>
+              </article>
             ))}
+
             {/* Sticky Bottom Community Action with Frosted Glass Backdrop Blur */}
             <div className="sticky bottom-0 z-20 -mx-5 -mb-5 mt-4 p-4 rounded-b-[17px] bg-white/80 backdrop-blur-md border-t border-[#E0E7FF]/80 shadow-[0_-8px_20px_-6px_rgba(96,70,255,0.08)]">
               {/* Soft blur gradient fade above the sticky bar for smooth pass-through */}
@@ -2768,6 +2768,16 @@ function InstrumentInsightRail({
     </aside>
   );
 }
+
+/** The posts the community card shows, in the shape the design asks for. */
+const DETAIL_POSTS = [
+  { name: 'Ava Kim', initials: 'AK', tint: 'bg-[#ec4899]', time: '2h ago', price: '$66,420.00', bullish: true, up: 24, down: 12,
+    text: 'I like the sentiment shift. The bullish case feels stronger after the last update, especially with the on-chain volume holding up.' },
+  { name: 'Ayasha Sharma', initials: 'AS', tint: 'bg-[#f59e0b]', time: '2h ago', price: '$62,434.10', bullish: false, up: 19, down: 8,
+    text: 'The momentum looks fragile. Weak follow-through and fading volume suggest more downside could be ahead.' },
+  { name: 'Jordan Lee', initials: 'JL', tint: 'bg-[#10b981]', time: '2h ago', price: '$64,820.00', bullish: true, up: 35, down: 8,
+    text: 'Momentum is improving, but I\u2019d wait for a clearer breakout before adding to the position.' },
+];
 
 function Overview({
   instrument,
