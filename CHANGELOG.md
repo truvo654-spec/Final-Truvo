@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.50.0] - 2026-10-09
+### Changed
+- The action block on the instrument header follows the design: the star and the bell are rounded squares beside a taller gradient "Trade via Brokers", and the cashback card sits inside a violet-to-magenta gradient border with a large yellow broker tile, the offer on one line and Trade Now beside the line beneath it. The column is wide enough that none of it wraps.
+
 ## [1.49.0] - 2026-10-09
 ### Changed
 - The instrument header carries the instrument's own mark rather than the first letter of its name, says what the instrument actually is for the ones worth saying it about, and reads its 24-hour volume on the same scale as its market cap, so Bitcoin shows $48.7B rather than $48.7M.

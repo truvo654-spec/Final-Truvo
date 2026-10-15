@@ -775,7 +775,7 @@ export function InstrumentDetail({
         <section className="concept-quote !block rounded-2xl border border-[#CCC6FB] bg-white p-5 sm:p-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center">
             {/* who it is */}
-            <div className="flex min-w-0 items-start gap-4 xl:w-[330px] xl:shrink-0">
+            <div className="flex min-w-0 items-start gap-4 xl:w-[300px] xl:shrink-0">
               <InstrumentIcon
                 iconType={iconTypeFor(instrument.symbol)}
                 name={instrument.name}
@@ -852,7 +852,7 @@ export function InstrumentDetail({
             </div>
 
             {/* what to do about it */}
-            <div className="flex shrink-0 flex-col gap-3 xl:w-[310px]">
+            <div className="flex shrink-0 flex-col gap-3 xl:w-[380px]">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -860,7 +860,7 @@ export function InstrumentDetail({
                   aria-label={watching ? 'Remove from watchlist' : 'Add to watchlist'}
                   aria-pressed={watching}
                   data-keep-button-icons
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${watching ? 'border-[#5945F1] bg-[#5945F1] text-white' : 'border-[#CCC6FB] text-[#5945F1] hover:bg-[#f7f6ff]'}`}
+                  className={`flex h-11 w-11 items-center justify-center rounded-2xl border transition ${watching ? 'border-[#5945F1] bg-[#5945F1] text-white' : 'border-[#CCC6FB] text-[#5945F1] hover:bg-[#f7f6ff]'}`}
                 >
                   <Star size={16} fill={watching ? 'currentColor' : 'none'} />
                 </button>
@@ -869,35 +869,45 @@ export function InstrumentDetail({
                   onClick={() => setAlertOpen(true)}
                   aria-label={savedAlert ? 'View your price alert' : 'Create a price alert'}
                   data-keep-button-icons
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${savedAlert ? 'border-[#5945F1] bg-[#5945F1] text-white' : 'border-[#CCC6FB] text-[#5945F1] hover:bg-[#f7f6ff]'}`}
+                  className={`flex h-11 w-11 items-center justify-center rounded-2xl border transition ${savedAlert ? 'border-[#5945F1] bg-[#5945F1] text-white' : 'border-[#CCC6FB] text-[#5945F1] hover:bg-[#f7f6ff]'}`}
                 >
                   <Bell size={16} />
                 </button>
                 <button
                   type="button"
                   onClick={openBrokerAccess}
-                  className="h-10 flex-1 rounded-xl bg-gradient-to-r from-[#5945F1] to-[#c026d3] px-5 text-[14px] font-bold text-white transition hover:brightness-110 active:scale-[0.99]"
+                  className="h-11 flex-1 rounded-2xl bg-gradient-to-r from-[#5945F1] to-[#c026d3] px-5 text-[15px] font-bold text-white transition hover:brightness-110 active:scale-[0.99]"
                 >
                   Trade via Brokers
                 </button>
               </div>
 
               {/* the broker paying the most on this asset */}
-              <div className="flex items-center gap-3 rounded-xl border border-[#5945F1] p-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#f5d800] font-display text-[15px] font-bold text-slate-900">ex</span>
-                <div className="min-w-0 flex-1">
-                  <p className="whitespace-nowrap text-[14px] font-bold leading-tight">
-                    <span className="text-[#5945F1]">Earn $6.20/Lot</span> <span className="text-slate-900">Cashback</span><span className="text-[#c026d3]">.</span>
-                  </p>
-                  <p className="mt-0.5 text-[12px] leading-snug text-slate-500">Let your trades do the work!</p>
+              <div className="rounded-2xl bg-gradient-to-r from-[#5945F1] to-[#c026d3] p-px">
+                <div className="flex items-center gap-4 rounded-[15px] bg-white px-4 py-3.5">
+                  <span className="grid h-[74px] w-[74px] shrink-0 place-items-center rounded-2xl bg-[#f5d800] font-display text-[30px] font-bold leading-none text-slate-900">
+                    ex
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="whitespace-nowrap font-display text-[17px] font-bold leading-tight">
+                      <span className="text-[#5945F1]">Earn $6.20/Lot</span>{' '}
+                      <span className="text-slate-900">Cashback</span>
+                      <span className="text-[#ec4899]">.</span>
+                    </p>
+                    <div className="mt-1.5 flex items-end gap-3">
+                      <p className="min-w-0 flex-1 text-[13px] leading-snug text-slate-500">
+                        Let your trades do the work!
+                      </p>
+                      <button
+                        type="button"
+                        onClick={openBrokerAccess}
+                        className="shrink-0 rounded-xl bg-[#5945F1] px-4 py-2 text-[13.5px] font-bold text-white transition hover:bg-[#4a38d6]"
+                      >
+                        Trade Now
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={openBrokerAccess}
-                  className="shrink-0 rounded-lg bg-[#5945F1] px-3 py-1.5 text-[12.5px] font-bold text-white transition hover:bg-[#4a38d6]"
-                >
-                  Trade Now
-                </button>
               </div>
             </div>
           </div>
