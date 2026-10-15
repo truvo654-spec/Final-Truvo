@@ -1188,23 +1188,12 @@ export function InstrumentDetail({
 
           {/* Bottom: Latest News (adapted from TodaysCryptoWidget) */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4" id="financial-news">
-            {/* Header matching TodaysCryptoWidget */}
+            {/* Header */}
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold font-display text-slate-900 flex items-center gap-1.5">
-                  <span>Today&rsquo;s</span>
-                  <span className="text-[#5945F1]">{instrument.market === "Crypto" ? "Crypto" : "News"}</span>
-                </h3>
-                <p className="text-[11px] text-slate-400">Market intelligence for {instrument.symbol}</p>
-              </div>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-bold text-emerald-700">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-                </span>
-                <span>LIVE DESK</span>
-              </div>
-            </div>
+              <h3 className="font-display text-[19px] font-bold text-slate-900">
+                Today&rsquo;s <span className="text-[#5945F1]">News</span><span className="text-[#c026d3]">.</span>
+              </h3>
+                          </div>
 
             {/* Filter Tabs using TabSubmain */}
             <div className="border-b border-[#D4D0FC]/50 pb-1">
@@ -1265,7 +1254,7 @@ export function InstrumentDetail({
                   .map((item) => (
                     <article
                       id={`news-${instrument.symbol.replaceAll("/", "-")}-${item.tag}`}
-                      className="p-3.5 rounded-xl border border-slate-200/80 bg-white hover:border-indigo-200 hover:shadow-xs transition-all space-y-2 cursor-pointer group"
+                      className="space-y-2 border-b border-[#eef1f5] pb-4 last:border-0 cursor-pointer group"
                       key={item.title}
                       onClick={() => {
                         setArticle(item);
@@ -1279,32 +1268,26 @@ export function InstrumentDetail({
                         );
                       }}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-700">{item.source}</span>
-                          <span className="text-[10px] text-slate-400 font-medium">{item.time}</span>
+                      <div className="flex gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="flex items-center gap-2 text-[12px]">
+                            <span className={`h-2 w-2 shrink-0 rounded-full ${item.tag === 'TECHNICAL' ? 'bg-[#5945F1]' : item.tag === 'MACRO' ? 'bg-[#caeb0e]' : 'bg-[#ec4899]'}`} aria-hidden />
+                            <span className={`font-medium ${item.tag === 'TECHNICAL' ? 'text-[#5945F1]' : item.tag === 'MACRO' ? 'text-[#5f7a00]' : 'text-[#ec4899]'}`}>{item.source}</span>
+                            <span className="text-slate-400">&middot; {item.time}</span>
+                          </p>
+                          <h4 className="mt-1.5 text-[13.5px] font-medium leading-snug text-slate-900 group-hover:text-[#5945F1]">
+                            {item.title}
+                          </h4>
                         </div>
-                        <a
-                          className="text-[10px] font-bold text-[#5945F1] bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-colors"
-                          href={`#community-${instrument.symbol.replaceAll("/", "-")}-${item.tag}`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          #{instrument.symbol}_{item.tag}
-                        </a>
+                        <span
+                          className="h-[72px] w-[84px] shrink-0 rounded-lg bg-gradient-to-br from-[#5945F1] to-[#0b1c30]"
+                          aria-hidden
+                        />
                       </div>
-                      <div className="border-l-2 border-[#5046E5] pl-2.5 py-1 bg-slate-50/60 rounded-r-lg">
-                        <h4 className="font-bold text-xs text-slate-800 leading-snug group-hover:text-[#5945F1] transition-colors">
-                          "{item.title}"
-                        </h4>
-                      </div>
-                      <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">
-                        {item.summary}
-                      </p>
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
-                        <span className="text-slate-400 text-[10px]">Read full context</span>
-                        <span className="font-semibold text-[#5945F1] group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1">
-                          Read full <ArrowRight size={12} />
-                        </span>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {[`#${instrument.symbol.split('/')[0]}`, `#${item.tag.toLowerCase()}`].map((tag) => (
+                          <span key={tag} className="rounded-md bg-[#f1f0fe] px-2 py-0.5 text-[11.5px] text-slate-600">{tag}</span>
+                        ))}
                       </div>
                     </article>
                   ))}

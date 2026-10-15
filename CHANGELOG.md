@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.3] - 2026-10-09
+### Changed
+- Today's News matches the design: the heading reads "Today's News.", the live badge and the subtitle are gone, and each story is a coloured category dot with its time, the headline, a thumbnail on the right and its hashtags beneath, separated by a hairline rather than boxed in a card.
+
 ## [1.20.2] - 2026-10-09
 ### Changed
 - The Most Recent Signals panel matches the design: round brand marks, the symbol and its move in the brand's lime and violet, a wider trend line, and the action as a solid lime Buy, a violet Sell or a pink-outlined Upgrade.
