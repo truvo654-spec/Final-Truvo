@@ -36,6 +36,8 @@ import {
   WalletCards,
   X,
   Smile,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type {
   Instrument,
@@ -898,8 +900,8 @@ export function InstrumentDetail({
             )}
             <p className="mt-4 text-[13px] text-slate-500">Most Accurate Predictor</p>
             <div className="mt-2 flex items-center gap-3 rounded-xl border border-[#e4e0fa] p-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ec4899] text-[13px] font-bold text-white">M</span>
-              <b className="min-w-0 flex-1 truncate text-[14px] font-bold text-slate-900">Maya Chen</b>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ec4899] text-[13px] font-bold text-white">P</span>
+              <b className="min-w-0 flex-1 truncate text-[14px] font-bold text-slate-900">Priya Shah</b>
               <span className="shrink-0 text-[13px] text-slate-500">82% Accuracy</span>
             </div>
             {/* write something */}
@@ -1121,7 +1123,7 @@ export function InstrumentDetail({
               {[
                 {
                   symbol: "EUR/USD",
-                  mark: "\u{1F1EA}\u{1F1FA}",
+                  mark: "EU",
                   markClass: "bg-white border border-slate-200 text-[13px]",
                   change: "+0.33%",
                   action: "Buy",
@@ -1173,9 +1175,7 @@ export function InstrumentDetail({
               ].map((signal) => (
                 <div key={signal.symbol} className="flex items-center justify-between gap-2 py-3">
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <span className={`grid size-9 shrink-0 place-items-center rounded-full text-[11px] font-bold ${signal.markClass}`}>
-                      {signal.mark}
-                    </span>
+                    <SignalMark symbol={signal.symbol} mark={signal.mark} markClass={signal.markClass} />
                     <div className="min-w-0">
                       <b className="block whitespace-nowrap text-[13.5px] font-bold text-slate-900">{signal.symbol}</b>
                       <span className={`block whitespace-nowrap text-[12.5px] font-bold ${signal.premium ? "text-[#ec4899]" : signal.change.startsWith("-") ? "text-[#5945F1]" : "text-[#5f7a00]"}`}>
@@ -1307,7 +1307,24 @@ export function InstrumentDetail({
                     </article>
                   ))}
               </div>
-            )}</>
+            )}
+
+            {/* page through the stories */}
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <button type="button" aria-label="Previous stories" data-keep-button-icons className="text-slate-300 transition hover:text-[#5945F1]">
+                <ChevronLeft size={16} />
+              </button>
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all ${i === 0 ? 'w-4 bg-[#5945F1]' : 'w-1.5 bg-[#d7d3fb]'}`}
+                  aria-hidden
+                />
+              ))}
+              <button type="button" aria-label="More stories" data-keep-button-icons className="text-slate-400 transition hover:text-[#5945F1]">
+                <ChevronRight size={16} />
+              </button>
+            </div></>
             )}
           </div>
         </aside>
@@ -2777,6 +2794,60 @@ const DETAIL_POSTS = [
     text: 'Momentum is improving, but I\u2019d wait for a clearer breakout before adding to the position.' },
 ];
 
+/** The brand mark at the start of a signal row, drawn rather than fetched. */
+const SignalMark: React.FC<{ symbol: string; mark: string; markClass: string }> = ({ symbol, mark, markClass }) => {
+  if (symbol === "EUR/USD") {
+    return (
+      <span className="relative grid size-9 shrink-0 place-items-center" aria-hidden>
+        <svg viewBox="0 0 36 36" className="size-9">
+          <circle cx="18" cy="18" r="17" fill="#003399" />
+          {Array.from({ length: 12 }).map((_, i) => {
+            const a = (i / 12) * Math.PI * 2;
+            return <circle key={i} cx={18 + 11 * Math.sin(a)} cy={18 - 11 * Math.cos(a)} r="1.5" fill="#ffcc00" />;
+          })}
+        </svg>
+        <svg viewBox="0 0 24 24" className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full ring-2 ring-white">
+          <rect width="24" height="24" fill="#b22234" />
+          {[2, 6, 10, 14, 18, 22].map((y) => <rect key={y} y={y} width="24" height="2" fill="#fff" />)}
+          <rect width="11" height="13" fill="#3c3b6e" />
+        </svg>
+      </span>
+    );
+  }
+  if (symbol === "GOOGL") {
+    return (
+      <span className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 bg-white" aria-hidden>
+        <svg viewBox="0 0 24 24" className="size-5">
+          <path fill="#4285F4" d="M23 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.2a5.3 5.3 0 0 1-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.6z" />
+          <path fill="#34A853" d="M12 24c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.6-2-6.5-4.8H1.7v3A12 12 0 0 0 12 24z" />
+          <path fill="#FBBC05" d="M5.5 14.6a7.2 7.2 0 0 1 0-4.6v-3H1.7a12 12 0 0 0 0 10.6l3.8-3z" />
+          <path fill="#EA4335" d="M12 4.8c1.7 0 3.2.6 4.4 1.7l3.2-3.2A12 12 0 0 0 1.7 7l3.8 3C6.4 6.8 9 4.8 12 4.8z" />
+        </svg>
+      </span>
+    );
+  }
+  if (symbol === "BTC/USD") {
+    return (
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#f7931a] text-[15px] font-bold text-white" aria-hidden>₿</span>
+    );
+  }
+  if (symbol === "XAU/USD") {
+    return (
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#f5a623]" aria-hidden>
+        <svg viewBox="0 0 24 24" className="size-5">
+          <path fill="#fff" d="M4 14h7l1.5-3h6L20 14h-2l-1-2h-4l-1.5 3H4z" />
+          <path fill="#fff" d="M3 16h8v2H3zM12 16h9v2h-9z" />
+        </svg>
+      </span>
+    );
+  }
+  return (
+    <span className={`grid size-9 shrink-0 place-items-center rounded-full text-[11px] font-bold ${markClass}`} aria-hidden>
+      {mark}
+    </span>
+  );
+};
+
 function Overview({
   instrument,
   kind,
@@ -2805,6 +2876,8 @@ function Overview({
 }) {
   const { requestUnlock } = useMarketEngagement();
   const [period, setPeriod] = useState<PerformancePeriod>("1D");
+  /** Where the pointer sits across the plot, 0 to 1, for the crosshair read-out. */
+  const [hoverX, setHoverX] = useState<number | null>(null);
   const [compareRange, setCompareRange] = useState<CompareRange>("1d");
   const [openLinkedTag, setOpenLinkedTag] = useState<string | null>(null);
   const selectedReturn = compareReturn(instrument, compareRange);
@@ -2902,7 +2975,34 @@ function Overview({
           </div>
         ) : (
           <>
-            <div className="relative mt-4 h-[330px] overflow-hidden rounded-xl bg-white">
+            <div
+              className="relative mt-4 h-[330px] overflow-hidden rounded-xl bg-white"
+              onMouseMove={(e) => {
+                const box = e.currentTarget.getBoundingClientRect();
+                const x = Math.min(Math.max(0, e.clientX - box.left), box.width);
+                setHoverX(x / box.width);
+              }}
+              onMouseLeave={() => setHoverX(null)}
+            >
+              {hoverX !== null && (
+                <>
+                  <span
+                    className="pointer-events-none absolute inset-y-0 border-l border-dashed border-[#5945F1]"
+                    style={{ left: `${hoverX * 100}%` }}
+                    aria-hidden
+                  />
+                  <span
+                    className="pointer-events-none absolute top-5 z-10 flex items-center gap-4 whitespace-nowrap rounded-lg border border-[#e4e0fa] bg-white px-3 py-2 text-[13px] shadow-lg"
+                    style={{ left: `min(${hoverX * 100}%, calc(100% - 170px))` }}
+                    role="status"
+                  >
+                    <span className="text-slate-500">Price</span>
+                    <b className="font-bold text-[#5f7a00]">
+                      {money(low + (high - low) * hoverX)}
+                    </b>
+                  </span>
+                </>
+              )}
               {/* The dashed guides the design draws across the plot */}
               <div className="pointer-events-none absolute inset-0 flex flex-col justify-between py-2">
                 {[0, 1, 2, 3].map((i) => (

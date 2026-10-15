@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.0] - 2026-10-09
+### Added
+- The chart's crosshair: moving across the plot draws the dashed violet line and the price read-out the design shows.
+- Signal rows carry drawn brand marks rather than letters: the EU flag with the US flag tucked under it, the Google mark in its four colours, the Bitcoin coin and a gold bar for XAU.
+- A pager under the news list, with the arrows and dots from the design.
+### Changed
+- The most accurate predictor is Priya Shah, as the design names her.
+
 ## [1.21.3] - 2026-10-09
 ### Changed
 - The chart follows the brand: four dashed violet guides instead of three grey ones, a taller plot on plain white with no tinted frame, a heavier lime line, and dark-lime dots on the series in place of the numbered violet pins.
