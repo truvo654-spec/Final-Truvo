@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.39.0] - 2026-10-09
+### Changed
+- The Forecast chart is the one the design draws: lime bars for the price with a violet line for what the community voted and a pink line for what the model read, between a Bullish and a Bearish edge. Hovering highlights the day and reads all three at once, and a legend says which colour is which. Below level 2 the whole thing sits behind the shared lock.
+
 ## [1.38.0] - 2026-10-09
 ### Changed
 - The Forecast panel is headed as the design heads it: "Community Vote vs Price" until the person has voted and "AI & Crowd Sentiment vs. Price" after, with the period as a control on the right and a hairline under the heading.

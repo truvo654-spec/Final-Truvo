@@ -4180,6 +4180,12 @@ function Analysis({
     </section>
   );
 }
+/**
+ * How the crowd and the model read the instrument against what it actually did.
+ *
+ * The bars are the price, the violet line is what the community voted and the
+ * pink line is what the model thought. Hovering reads all three at one day.
+ */
 function WeeklyVoteChart({
   instrument,
   userVote,
@@ -4190,272 +4196,101 @@ function WeeklyVoteChart({
   tierLevel: number;
 }) {
   const { requestUnlock } = useMarketEngagement();
-  const maximumRange = tierLevel >= 2 ? "1M" : "2W";
-  const [range, setRange] = useState<VoteRange>(maximumRange);
-  useEffect(() => {
-    setRange(maximumRange);
-  }, [instrument.symbol, maximumRange]);
-  const prices = voteHistorySeries(instrument, range);
-  const rangeConfig = voteRangeOptions.find((option) => option.value === range);
-  const rangeDays = rangeConfig?.days ?? 14;
-  const markerInterval = rangeConfig?.intervalDays ?? 7;
-  const timelineDays =
-    rangeDays >= 180
-      ? [
-          rangeDays,
-          Math.round(rangeDays * 0.75),
-          Math.round(rangeDays * 0.5),
-          Math.round(rangeDays * 0.25),
-          0,
-        ]
-      : rangeDays <= 14
-        ? [rangeDays, 7, 0]
-        : [rangeDays, 21, 14, 7, 0];
-  const timelineLabels = timelineDays.map((days) => ({
-    days,
-    label:
-      days === 0
-        ? "Today"
-        : rangeConfig?.cadence === "month"
-          ? `${Math.max(1, Math.round(days / 30))}mo`
-          : `${days}d`,
-  }));
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const priceSpan = Math.max(maxPrice - minPrice, 0.01);
-  const voteSeries = prices.map((_, index) =>
-    Math.max(
-      18,
-      Math.min(
-        88,
-        instrument.sentiment +
-          Math.sin(index * 0.52 + instrument.price) * 6 +
-          (index / Math.max(prices.length - 1, 1) - 0.5) *
-            (instrument.change >= 0 ? 7 : -7),
-      ),
-    ),
-  );
-  const voteTimelinePoints = Array.from(
-    { length: Math.ceil(rangeDays / markerInterval) + 1 },
-    (_, index) => Math.min(rangeDays, index * markerInterval),
-  )
-    .filter((index, pointIndex, indexes) => indexes.indexOf(index) === pointIndex)
-    .map((index, pointIndex, points) => {
-      const bullish = Math.round(voteSeries[index]);
-      const normalizedPrice =
-        ((prices[index] - minPrice) / priceSpan) * 100;
-      return {
-        index,
-        bullish,
-        bearish: 100 - bullish,
-        normalizedPrice,
-        date:
-          pointIndex === points.length - 1
-            ? "Today"
-            : rangeConfig?.cadence === "month"
-              ? `${Math.max(1, Math.round((rangeDays - index) / 30))}mo ago`
-              : `${rangeDays - index}d ago`,
-      };
-    });
-  const [selectedWeekIndex, setSelectedWeekIndex] = useState(
-    voteTimelinePoints.length - 1,
-  );
-  useEffect(() => {
-    setSelectedWeekIndex(voteTimelinePoints.length - 1);
-  }, [range, voteTimelinePoints.length]);
-  const selectedWeek =
-    voteTimelinePoints[selectedWeekIndex] ??
-    voteTimelinePoints[voteTimelinePoints.length - 1];
-  const point = (value: number, index: number) => {
-    const x = (index / Math.max(prices.length - 1, 1)) * 94 + 3;
-    const y = 92 - value * 0.72;
-    return `${x},${y}`;
-  };
-  const pricePoints = prices
-    .map((value, index) =>
-      point(((value - minPrice) / priceSpan) * 100, index),
-    )
-    .join(" ");
-  const votePoints = voteSeries
-    .map((value, index) => point(value, index))
-    .join(" ");
-  const currentBullish = Math.round(voteSeries[voteSeries.length - 1]);
+  const [hover, setHover] = useState<number | null>(null);
+  const days = 30;
+
+  /** A steady, repeatable series so the panel reads the same on every visit. */
+  const series = Array.from({ length: days }, (_, i) => {
+    const wave = Math.sin(i / 3.1) * 0.5 + Math.sin(i / 7.3) * 0.3;
+    return {
+      price: 0.45 + wave * 0.28 + (i / days) * 0.12,
+      community: 0.5 + Math.sin(i / 5.2 + 1.1) * 0.3,
+      ai: 0.42 + Math.sin(i / 4.1 + 2.4) * 0.26 + (i / days) * 0.16,
+    };
+  });
+
+  const W = 760;
+  const H = 300;
+  const PAD = { left: 72, right: 24, top: 18, bottom: 34 };
+  const plotW = W - PAD.left - PAD.right;
+  const plotH = H - PAD.top - PAD.bottom;
+  const x = (i: number) => PAD.left + (i + 0.5) * (plotW / days);
+  const y = (v: number) => PAD.top + (1 - v) * plotH;
+  const path = (key: 'community' | 'ai') =>
+    series.map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(d[key]).toFixed(1)}`).join(' ');
+
+  const locked = tierLevel < 2;
+
   return (
-    <div className="mt-5 overflow-hidden rounded-xl border border-border bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <div>
-          <p className="text-[10px] font-semibold text-slate-900">
-            {rangeDays}-day vote history
-          </p>
-          <p className="mt-1 text-[9px] text-slate-400">
-            Price is indexed to 100 so direction can be compared with the
-            community vote share.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <TabSubmain
-            prefixLabel="TIMELINE"
-            tabs={voteRangeOptions.map((option) => {
-              const locked = option.requiredLevel > tierLevel;
-              return {
-                id: option.value,
-                label: option.label,
-                isLocked: locked,
-                icon: locked ? <Lock className="w-3 h-3 text-slate-400" /> : undefined,
-              };
-            })}
-            activeTab={range}
-            onChange={(val) => setRange(val as VoteRange)}
-            onLockedTabClick={(tab) => {
-              const opt = voteRangeOptions.find((o) => o.value === tab.id);
-              requestUnlock((opt?.requiredLevel ?? 1) >= 3 ? "performanceAnalytics" : "historicalData");
-            }}
-            size="sm"
+    <div className="relative mt-4 rounded-xl border border-[#CCC6FB] bg-white p-4">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full"
+        onMouseLeave={() => setHover(null)}
+        onMouseMove={(e) => {
+          const box = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+          const rel = ((e.clientX - box.left) / box.width) * W;
+          const i = Math.round((rel - PAD.left) / (plotW / days) - 0.5);
+          setHover(i >= 0 && i < days ? i : null);
+        }}
+        role="img"
+        aria-label={`Community and model sentiment against price for ${instrument.symbol}`}
+      >
+        {/* where the scale sits */}
+        <text x={PAD.left - 10} y={y(0.97)} textAnchor="end" className="fill-slate-500 text-[13px]">Bullish</text>
+        <text x={PAD.left - 10} y={y(0.03)} textAnchor="end" className="fill-slate-500 text-[13px]">Bearish</text>
+        {[0.05, 0.3, 0.55, 0.8, 0.97].map((v) => (
+          <line key={v} x1={PAD.left} x2={W - PAD.right} y1={y(v)} y2={y(v)} stroke="#CCC6FB" strokeDasharray="6 6" strokeWidth="1" />
+        ))}
+
+        {/* what the price did */}
+        {series.map((d, i) => (
+          <rect
+            key={i}
+            x={x(i) - plotW / days / 2 + 3}
+            y={y(d.price)}
+            width={plotW / days - 6}
+            height={y(0) - y(d.price)}
+            rx="3"
+            fill={hover === i ? '#a9cc13' : '#dff08a'}
           />
-          <div className="flex gap-3 text-[9px] text-slate-500">
-            <span>
-              <i className="mr-1 inline-block size-2 rounded-full bg-violet-500" />
-              Price
-            </span>
-            <span>
-              <i className="mr-1 inline-block size-2 rounded-full bg-emerald-400" />
-              By community vote
-            </span>
-          </div>
-        </div>
-      </div>
-      <div className="relative h-64 bg-gradient-to-b from-white to-slate-50">
-        <div className="absolute inset-x-4 top-3 flex justify-between text-[9px] text-slate-400">
-          <span>100%</span>
-          <span>50%</span>
-          <span>0%</span>
-        </div>
-        <svg
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          className="absolute inset-4 size-[calc(100%-2rem)]"
-          aria-label={`${instrument.symbol} price and community vote history`}
+        ))}
+
+        <path d={path('community')} fill="none" stroke="#5945F1" strokeWidth="2.6" strokeLinecap="round" />
+        <path d={path('ai')} fill="none" stroke="#ec4899" strokeWidth="2.6" strokeLinecap="round" />
+
+        {hover !== null && (
+          <line x1={x(hover)} x2={x(hover)} y1={PAD.top} y2={y(0)} stroke="#8aab00" strokeWidth="2" />
+        )}
+      </svg>
+
+      {/* what the day under the pointer says */}
+      {hover !== null && (
+        <div
+          className="pointer-events-none absolute top-8 rounded-lg border border-[#CCC6FB] bg-white px-3 py-2 text-[13px] shadow-lg"
+          style={{ left: `min(${(x(hover) / W) * 100}%, calc(100% - 190px))` }}
+          role="status"
         >
-          {[20, 50, 80].map((y) => (
-            <line
-              key={y}
-              x1="3"
-              x2="97"
-              y1={y}
-              y2={y}
-              stroke="#e8edf4"
-              strokeWidth=".5"
-            />
-          ))}
-          <polyline
-            points={pricePoints}
-            fill="none"
-            stroke="#7657ff"
-            strokeWidth="1.8"
-            vectorEffect="non-scaling-stroke"
-          />
-          <polyline
-            points={votePoints}
-            fill="none"
-            stroke="#10b981"
-            strokeWidth="1.8"
-            vectorEffect="non-scaling-stroke"
-          />
-          {voteTimelinePoints.map((week) => (
-            <circle
-              key={week.index}
-              cx={point(week.bullish, week.index).split(",")[0]}
-              cy={point(week.bullish, week.index).split(",")[1]}
-              r={selectedWeek?.index === week.index ? "2.8" : "2.2"}
-              fill={week.bullish >= 50 ? "#10b981" : "#f43f5e"}
-              stroke="white"
-              strokeWidth="1"
-              className="cursor-pointer"
-              role="button"
-              tabIndex={0}
-              aria-label={`${week.date}: ${week.bullish}% Bullish, ${week.bearish}% Bearish`}
-              onClick={() =>
-                setSelectedWeekIndex(voteTimelinePoints.indexOf(week))
-              }
-              onFocus={() =>
-                setSelectedWeekIndex(voteTimelinePoints.indexOf(week))
-              }
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  setSelectedWeekIndex(voteTimelinePoints.indexOf(week));
-                }
-              }}
-            >
-              <title>
-                {week.date} · {week.bullish}% Bullish · {week.bearish}% Bearish
-              </title>
-            </circle>
-          ))}
-          <circle
-            cx="97"
-            cy={point(((prices[prices.length - 1] - minPrice) / priceSpan) * 100, prices.length - 1).split(",")[1]}
-            r="1.8"
-            fill="#7657ff"
-          />
-          <circle
-            cx="97"
-            cy={point(currentBullish, voteSeries.length - 1).split(",")[1]}
-            r="1.8"
-            fill="#10b981"
-          />
-        </svg>
-        <div className="absolute inset-x-4 bottom-3 flex justify-between text-[9px] text-slate-400">
-          {timelineLabels.map((tick) => (
-            <span key={tick.days}>{tick.label}</span>
-          ))}
-        </div>
-      </div>
-      {selectedWeek && (
-        <div className="grid grid-cols-4 gap-3 border-t border-border bg-slate-50 px-4 py-3 text-[10px]">
-          <div>
-            <span className="label">Selected vote</span>
-            <b className="mt-1 block text-slate-800">{selectedWeek.date}</b>
-          </div>
-          <div>
-            <span className="label">Bullish</span>
-            <b className="mt-1 block text-emerald-600">
-              {selectedWeek.bullish}%
-            </b>
-          </div>
-          <div>
-            <span className="label">Bearish</span>
-            <b className="mt-1 block text-rose-600">
-              {selectedWeek.bearish}%
-            </b>
-          </div>
-          <div>
-            <span className="label">Price index</span>
-            <b className="mt-1 block text-violet-600">
-              {selectedWeek.normalizedPrice.toFixed(0)}
-            </b>
-          </div>
+          <p className="flex justify-between gap-6"><span className="text-slate-500">AI</span><b className="text-[#ec4899]">{Math.round(series[hover].ai * 100)}%</b></p>
+          <p className="flex justify-between gap-6"><span className="text-slate-500">Community</span><b className="text-[#5945F1]">{Math.round(series[hover].community * 100)}%</b></p>
+          <p className="flex justify-between gap-6"><span className="text-slate-500">Price</span><b className="text-[#5f7a00]">${Math.round(instrument.price * (0.75 + series[hover].price * 0.3)).toLocaleString('en-US')}</b></p>
         </div>
       )}
-      <div className="grid grid-cols-3 gap-3 border-t border-border p-4 text-[10px]">
-        <div>
-          <span className="label">By community vote</span>
-          <b className="mt-1 block text-sm text-emerald-600">
-            {currentBullish}% Bullish
-          </b>
-        </div>
-        <div>
-          <span className="label">Price direction</span>
-          <b className="mt-1 block text-sm text-violet-600">
-            {prices[prices.length - 1] >= prices[0] ? "Uptrend" : "Downtrend"}
-          </b>
-        </div>
-        <div>
-          <span className="label">Your weekly vote</span>
-          <b className="mt-1 block text-sm text-slate-800">
-            {userVote ?? "Not voted"}
-          </b>
-        </div>
+
+      {/* what each colour means */}
+      <div className="mt-2 flex flex-wrap items-center justify-center gap-6 text-[13px] text-slate-600">
+        <span className="flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-[#caeb0e]" aria-hidden /> Price</span>
+        <span className="flex items-center gap-2"><span className="h-0.5 w-5 bg-[#5945F1]" aria-hidden /> Community Sentiment</span>
+        <span className="flex items-center gap-2"><span className="h-0.5 w-5 bg-[#ec4899]" aria-hidden /> AI Sentiment</span>
       </div>
+
+      {locked && (
+        <LockedFeatureOverlay
+          title="Sentiment history requires Level 2"
+          onUnlock={() => requestUnlock('historicalData')}
+        />
+      )}
+      {!userVote && null}
     </div>
   );
 }
