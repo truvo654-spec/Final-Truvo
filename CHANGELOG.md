@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.47.0] - 2026-10-09
+### Added
+- A Trade button on the instrument list, shown on the row under the pointer, so the quickest way in is one click from the table without crowding every other row.
+
 ## [1.46.0] - 2026-10-09
 ### Added
 - Setting a price alert raises a notification, so the alert is somewhere the person will see it rather than only on the instrument page. It reads "Bitcoin has entered the range of your price alert notification", carries the indicator and its parameters where there is one, and opens with Go to Instrument Analysis. Raised notifications survive a reload and sit above the seeded ones.

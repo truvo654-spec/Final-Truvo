@@ -1265,6 +1265,17 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                                 <span className="font-bold text-slate-900 text-sm leading-tight group-hover:text-[#5945F1] transition-colors">
                                   {inst.name}
                                 </span>
+                                {/* The quickest way in, offered only on the row under the pointer */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenConnectModal();
+                                  }}
+                                  className="hidden shrink-0 rounded-lg bg-[#5945F1] px-3 py-1 text-[12.5px] font-bold text-white transition hover:bg-[#4a38d6] group-hover:inline-block"
+                                >
+                                  Trade
+                                </button>
                               </div>
                             </td>
 
