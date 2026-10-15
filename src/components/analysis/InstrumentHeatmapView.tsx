@@ -151,7 +151,7 @@ export const FieldDropdown: React.FC<{ label: string; value: string; options?: r
           aria-haspopup="listbox"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className={`flex w-[190px] items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-left text-[14px] font-medium text-slate-900 transition ${open ? 'border-[#5945F1] ring-2 ring-[#5945F1]/20' : 'border-[#d7d3fb] hover:border-[#5945F1]'}`}
+          className={`flex w-[190px] items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-left text-[14px] font-medium text-slate-900 transition ${open ? 'border-[#5945F1] ring-2 ring-[#5945F1]/20' : 'border-[#CCC6FB] hover:border-[#5945F1]'}`}
         >
           <span className="truncate">{value}</span>
           <ChevronDown className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
@@ -159,7 +159,7 @@ export const FieldDropdown: React.FC<{ label: string; value: string; options?: r
         {open && (
           <>
             <span className="fixed inset-0 z-10" aria-hidden onClick={() => setOpen(false)} />
-            <ul role="listbox" className="absolute left-0 top-[calc(100%+6px)] z-20 w-[190px] overflow-hidden rounded-xl border border-[#d7d3fb] bg-white py-1 shadow-xl">
+            <ul role="listbox" className="absolute left-0 top-[calc(100%+6px)] z-20 w-[190px] overflow-hidden rounded-xl border border-[#CCC6FB] bg-white py-1 shadow-xl">
               <li className="px-3.5 py-2 text-[14px] text-slate-400">Choose</li>
               {options.map((o) => (
                 <li key={o}>
@@ -219,7 +219,7 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({ on
 
   if (state !== 'default') {
     return (
-      <div className="w-full space-y-6 rounded-2xl border border-[#e0e7ff] bg-white p-5 shadow-xs sm:p-7">
+      <div className="w-full space-y-6 rounded-2xl border border-[#CCC6FB] bg-white p-5 shadow-xs sm:p-7">
         <Header sizeBy={sizeBy} setSizeBy={setSizeBy} colorBy={colorBy} setColorBy={setColorBy} muted />
         <div className="flex min-h-[560px] flex-col items-center justify-center px-6 text-center">
           <img src={state === 'error' ? HM_ERROR : HM_NOT_FOUND} alt="" className={state === 'error' ? 'h-auto w-[270px]' : 'h-auto w-[200px]'} />
@@ -237,7 +237,7 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({ on
   }
 
   return (
-    <div className="w-full space-y-6 rounded-2xl border border-[#e0e7ff] bg-white p-5 shadow-xs sm:p-7">
+    <div className="w-full space-y-6 rounded-2xl border border-[#CCC6FB] bg-white p-5 shadow-xs sm:p-7">
       <Header sizeBy={sizeBy} setSizeBy={setSizeBy} colorBy={colorBy} setColorBy={setColorBy} />
 
       <div className="select-none space-y-4">
@@ -286,7 +286,7 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({ on
 
           {hover && (
             <div
-              className="pointer-events-none absolute z-40 w-[210px] rounded-xl border border-[#e4e0fa] bg-white p-3 text-left shadow-xl"
+              className="pointer-events-none absolute z-40 w-[210px] rounded-xl border border-[#CCC6FB] bg-white p-3 text-left shadow-xl"
               style={{ left: `min(${hover.x + 14}px, calc(100% - 220px))`, top: Math.max(0, hover.y - 110) }}
               role="status"
             >
@@ -317,17 +317,17 @@ export const InstrumentHeatmapView: React.FC<InstrumentHeatmapViewProps> = ({ on
             type="button"
             onClick={() => setShowRemaining((v) => !v)}
             aria-expanded={showRemaining}
-            className="ml-auto flex h-[72px] w-[200px] flex-col items-center justify-center rounded-[10px] border-2 border-dashed border-[#c9c4fb] bg-[repeating-linear-gradient(45deg,#f6f5ff_0_6px,#ffffff_6px_12px)] transition hover:border-[#5945F1]"
+            className="ml-auto flex h-[72px] w-[200px] flex-col items-center justify-center rounded-[10px] border-2 border-dashed border-[#CCC6FB] bg-[repeating-linear-gradient(45deg,#f6f5ff_0_6px,#ffffff_6px_12px)] transition hover:border-[#5945F1]"
           >
             <span className="text-[15px] font-bold text-slate-900">256 More</span>
             <span className="text-xs text-slate-500">$270.30B</span>
           </button>
 
           {showRemaining && (
-            <div className="absolute bottom-[calc(100%+10px)] right-0 z-30 w-[300px] rounded-2xl border border-[#e4e0fa] bg-white p-4 text-left shadow-2xl">
+            <div className="absolute bottom-[calc(100%+10px)] right-0 z-30 w-[300px] rounded-2xl border border-[#CCC6FB] bg-white p-4 text-left shadow-2xl">
               <p className="text-[15px] font-bold text-slate-900">Remaining assets</p>
               <p className="mt-1 text-xs leading-relaxed text-slate-500">Tile size and color use the selected market fields</p>
-              <div className="mt-3 flex items-center gap-2 rounded-lg border border-[#e4e0fa] px-3 py-2">
+              <div className="mt-3 flex items-center gap-2 rounded-lg border border-[#CCC6FB] px-3 py-2">
                 <Search className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
                 <input
                   value={remainingQuery}

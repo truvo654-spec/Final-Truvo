@@ -87,7 +87,7 @@ export const PriceAlertModal: React.FC<{
             <select
               value={condition}
               onChange={(e) => setCondition(e.target.value)}
-              className="w-full cursor-pointer rounded-xl border border-[#d7d3fb] bg-white px-3.5 py-2.5 text-[15px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
+              className="w-full cursor-pointer rounded-xl border border-[#CCC6FB] bg-white px-3.5 py-2.5 text-[15px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
             >
               {CONDITIONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -95,7 +95,7 @@ export const PriceAlertModal: React.FC<{
 
           <label className="flex flex-col gap-1.5">
             <span className="text-[14px] font-medium text-slate-700">Target Price</span>
-            <span className="flex items-center gap-2 rounded-xl border border-[#d7d3fb] bg-white px-3.5 py-2.5 focus-within:border-[#5945F1]">
+            <span className="flex items-center gap-2 rounded-xl border border-[#CCC6FB] bg-white px-3.5 py-2.5 focus-within:border-[#5945F1]">
               <input
                 value={target}
                 onChange={(e) => setTarget(e.target.value.replace(/[^\d.,]/g, ''))}
@@ -114,7 +114,7 @@ export const PriceAlertModal: React.FC<{
         </p>
 
         {/* the rest, for people who want it */}
-        <div className="mt-4 rounded-xl border border-[#d7d3fb]">
+        <div className="mt-4 rounded-xl border border-[#CCC6FB]">
           <button
             type="button"
             onClick={() => setAdvanced((v) => !v)}
@@ -125,7 +125,7 @@ export const PriceAlertModal: React.FC<{
             <Plus size={18} className={`text-[#5945F1] transition-transform ${advanced ? 'rotate-45' : ''}`} aria-hidden />
           </button>
           {advanced && (
-            <div className="space-y-3 border-t border-[#ece9fb] px-4 py-3.5">
+            <div className="space-y-3 border-t border-[#CCC6FB] px-4 py-3.5">
               <label className="flex items-center justify-between gap-3 text-[14px] text-slate-700">
                 Tell me once, then stop
                 <input type="checkbox" checked={onlyOnce} onChange={(e) => setOnlyOnce(e.target.checked)} className="size-4 accent-[#5945F1]" />
@@ -135,7 +135,7 @@ export const PriceAlertModal: React.FC<{
                 <select
                   value={channel}
                   onChange={(e) => setChannel(e.target.value as 'App' | 'Email' | 'Both')}
-                  className="cursor-pointer rounded-lg border border-[#d7d3fb] px-2.5 py-1.5 text-[14px] outline-none"
+                  className="cursor-pointer rounded-lg border border-[#CCC6FB] px-2.5 py-1.5 text-[14px] outline-none"
                 >
                   <option>App</option>
                   <option>Email</option>
@@ -154,7 +154,7 @@ export const PriceAlertModal: React.FC<{
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[#d7d3fb] px-5 py-2.5 text-[15px] font-bold text-[#5945F1] transition hover:bg-[#f7f6ff]"
+            className="rounded-xl border border-[#CCC6FB] px-5 py-2.5 text-[15px] font-bold text-[#5945F1] transition hover:bg-[#f7f6ff]"
           >
             Cancel
           </button>

@@ -97,7 +97,7 @@ export const InstrumentScatterView: React.FC<InstrumentScatterViewProps> = ({ on
 
   if (state !== 'default') {
     return (
-      <div className="w-full space-y-6 rounded-2xl border border-[#e0e7ff] bg-white p-5 shadow-xs sm:p-7">
+      <div className="w-full space-y-6 rounded-2xl border border-[#CCC6FB] bg-white p-5 shadow-xs sm:p-7">
         {header}
         <div className="flex min-h-[470px] flex-col items-center justify-center px-6 text-center">
           <img src={state === 'error' ? SC_ERROR : SC_NOT_FOUND} alt="" className={state === 'error' ? 'h-auto w-[270px]' : 'h-auto w-[200px]'} />
@@ -115,10 +115,10 @@ export const InstrumentScatterView: React.FC<InstrumentScatterViewProps> = ({ on
   }
 
   return (
-    <div className="w-full space-y-6 rounded-2xl border border-[#e0e7ff] bg-white p-5 shadow-xs sm:p-7">
+    <div className="w-full space-y-6 rounded-2xl border border-[#CCC6FB] bg-white p-5 shadow-xs sm:p-7">
       {header}
 
-      <div className="border-t border-[#eef1f5] pt-5">
+      <div className="border-t border-[#CCC6FB] pt-5">
         <div ref={boardRef} className="relative w-full select-none" style={{ aspectRatio: `${W} / ${H}` }}>
           <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full" role="img" aria-label="Market scatter">
             {/* horizontal grid */}
@@ -126,7 +126,7 @@ export const InstrumentScatterView: React.FC<InstrumentScatterViewProps> = ({ on
               const y = PAD.top + (H - PAD.top - PAD.bottom) * (1 - i / 4);
               return (
                 <g key={`y${i}`}>
-                  <line x1={PAD.left} x2={W - PAD.right} y1={y} y2={y} stroke="#cbd5e1" strokeDasharray="6 6" strokeWidth="1" />
+                  <line x1={PAD.left} x2={W - PAD.right} y1={y} y2={y} stroke="#CCC6FB" strokeDasharray="6 6" strokeWidth="1" />
                   <text x={PAD.left - 12} y={y + 4} textAnchor="end" className="fill-slate-500" style={{ fontSize: 13 }}>{fmt(t, yField)}</text>
                 </g>
               );
@@ -140,7 +140,7 @@ export const InstrumentScatterView: React.FC<InstrumentScatterViewProps> = ({ on
                 </text>
               );
             })}
-            <line x1={PAD.left} x2={W - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} stroke="#e2e8f0" strokeWidth="1" />
+            <line x1={PAD.left} x2={W - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} stroke="#CCC6FB" strokeWidth="1" />
 
             {/* crosshair for whatever is hovered */}
             {hover && (
@@ -171,7 +171,7 @@ export const InstrumentScatterView: React.FC<InstrumentScatterViewProps> = ({ on
 
           {hover && (
             <div
-              className="pointer-events-none absolute z-30 w-[290px] rounded-xl border border-[#e4e0fa] bg-white p-4 text-left shadow-2xl"
+              className="pointer-events-none absolute z-30 w-[290px] rounded-xl border border-[#CCC6FB] bg-white p-4 text-left shadow-2xl"
               style={{
                 left: `min(${(hover.px / W) * 100}%, calc(100% - 300px))`,
                 top: `min(${(hover.py / H) * 100}%, calc(100% - 330px))`,

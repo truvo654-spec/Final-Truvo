@@ -711,14 +711,14 @@ export function InstrumentDetail({
       {banner && (
         <div
           role="status"
-          className="fixed right-6 top-[86px] z-[96] flex items-center gap-2.5 rounded-xl border border-[#d7d3fb] bg-[#f5f4ff] px-4 py-3 text-[15px] font-medium text-slate-900 shadow-lg"
+          className="fixed right-6 top-[86px] z-[96] flex items-center gap-2.5 rounded-xl border border-[#CCC6FB] bg-[#f5f4ff] px-4 py-3 text-[15px] font-medium text-slate-900 shadow-lg"
         >
           <Check size={18} className="text-[#5945F1]" aria-hidden />
           {banner}
         </div>
       )}
 
-      <div className="fixed bottom-4 left-4 z-30 flex items-center gap-1 rounded-xl border border-[#d7d3fb] bg-white/95 p-1 opacity-30 shadow-lg backdrop-blur transition hover:opacity-100 print:hidden" role="group" aria-label="Preview panel state">
+      <div className="fixed bottom-4 left-4 z-30 flex items-center gap-1 rounded-xl border border-[#CCC6FB] bg-white/95 p-1 opacity-30 shadow-lg backdrop-blur transition hover:opacity-100 print:hidden" role="group" aria-label="Preview panel state">
         <span className="px-2 text-[10px] font-bold uppercase tracking-wide text-[#94a3b8]">Preview state</span>
         {(['default', 'empty'] as const).map((id) => (
           <button
@@ -733,7 +733,7 @@ export function InstrumentDetail({
         ))}
       </div>
       <div className="concept-instrument">
-        <section className="concept-quote !block rounded-2xl border border-[#e4e0fa] bg-white p-5 sm:p-6">
+        <section className="concept-quote !block rounded-2xl border border-[#CCC6FB] bg-white p-5 sm:p-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-center">
             {/* who it is */}
             <div className="flex min-w-0 items-start gap-4 xl:w-[330px] xl:shrink-0">
@@ -752,7 +752,7 @@ export function InstrumentDetail({
             </div>
 
             {/* what it costs */}
-            <div className="min-w-0 flex-1 border-slate-200 xl:border-l xl:pl-6">
+            <div className="min-w-0 flex-1 border-[#CCC6FB] xl:border-l xl:pl-6">
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                 <div>
                   <h2 className="font-display text-[34px] font-bold leading-none text-slate-900">
@@ -807,7 +807,7 @@ export function InstrumentDetail({
                   aria-label={watching ? 'Remove from watchlist' : 'Add to watchlist'}
                   aria-pressed={watching}
                   data-keep-button-icons
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${watching ? 'border-[#5945F1] bg-[#5945F1] text-white' : 'border-[#d7d3fb] text-[#5945F1] hover:bg-[#f7f6ff]'}`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${watching ? 'border-[#5945F1] bg-[#5945F1] text-white' : 'border-[#CCC6FB] text-[#5945F1] hover:bg-[#f7f6ff]'}`}
                 >
                   <Star size={16} fill={watching ? 'currentColor' : 'none'} />
                 </button>
@@ -816,7 +816,7 @@ export function InstrumentDetail({
                   onClick={() => setAlertOpen(true)}
                   aria-label="Create a price alert"
                   data-keep-button-icons
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d7d3fb] text-[#5945F1] transition hover:bg-[#f7f6ff]"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#CCC6FB] text-[#5945F1] transition hover:bg-[#f7f6ff]"
                 >
                   <Bell size={16} />
                 </button>
@@ -913,7 +913,7 @@ export function InstrumentDetail({
                           ? bullish ? 'bg-[#caeb0e] text-[#2f3d00]' : 'bg-[#ece9ff] text-[#5945F1]'
                           : bullish
                             ? 'border border-[#caeb0e] bg-[#f6fae2] text-[#4a5f00] hover:bg-[#eef6c4]'
-                            : 'border border-[#d7d3fb] bg-white text-[#5945F1] hover:bg-[#f7f6ff]'
+                            : 'border border-[#CCC6FB] bg-white text-[#5945F1] hover:bg-[#f7f6ff]'
                       } ${weeklyVote && !picked ? 'opacity-50' : ''}`}
                     >
                       {picked ? `↗ ${side} Voted` : bullish ? '↗ Vote Bullish' : '↘ Vote Bearish'}
@@ -928,7 +928,7 @@ export function InstrumentDetail({
             </div>
             )}
             <p className="mt-4 text-[13px] text-slate-500">Most Accurate Predictor</p>
-            <div className="mt-2 flex items-center gap-3 rounded-xl border border-[#e4e0fa] p-3">
+            <div className="mt-2 flex items-center gap-3 rounded-xl border border-[#CCC6FB] p-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ec4899] text-[13px] font-bold text-white">P</span>
               <b className="min-w-0 flex-1 truncate text-[14px] font-bold text-slate-900">Priya Shah</b>
               <span className="shrink-0 text-[13px] text-slate-500">82% Accuracy</span>
@@ -936,7 +936,7 @@ export function InstrumentDetail({
             {/* write something */}
             <h3 className="mt-5 font-display text-[16px] font-bold text-slate-900">Community Post</h3>
             <div className="mt-2 flex items-center gap-2">
-              <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#d7d3fb] px-3 py-2.5 focus-within:border-[#5945F1]">
+              <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#CCC6FB] px-3 py-2.5 focus-within:border-[#5945F1]">
                 <input
                   value={draftPost}
                   onChange={(e) => setDraftPost(e.target.value)}
@@ -972,7 +972,7 @@ export function InstrumentDetail({
             </div>
 
             {(postSort === 'Popular' ? DETAIL_POSTS : [...DETAIL_POSTS].reverse()).map((post) => (
-              <article key={post.name} className="border-b border-[#eef1f5] py-4 last:border-0">
+              <article key={post.name} className="border-b border-[#CCC6FB] py-4 last:border-0">
                 <div className="flex items-start gap-2.5">
                   <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${post.tint}`}>
                     {post.initials}
@@ -1010,7 +1010,7 @@ export function InstrumentDetail({
             ))}
 
             {/* Sticky Bottom Community Action with Frosted Glass Backdrop Blur */}
-            <div className="sticky bottom-0 z-20 -mx-5 -mb-5 mt-4 p-4 rounded-b-[17px] bg-white/80 backdrop-blur-md border-t border-[#E0E7FF]/80 shadow-[0_-8px_20px_-6px_rgba(96,70,255,0.08)]">
+            <div className="sticky bottom-0 z-20 -mx-5 -mb-5 mt-4 p-4 rounded-b-[17px] bg-white/80 backdrop-blur-md border-t border-[#CCC6FB]/80 shadow-[0_-8px_20px_-6px_rgba(96,70,255,0.08)]">
               {/* Soft blur gradient fade above the sticky bar for smooth pass-through */}
               <div className="pointer-events-none absolute -top-5 left-0 right-0 h-5 bg-gradient-to-t from-white/80 to-transparent backdrop-blur-[2px]" />
 
@@ -1126,7 +1126,7 @@ export function InstrumentDetail({
           aria-label="Signals and News"
         >
           {/* Top: Most Recent Signals */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-3" aria-label="Most recent signals">
+          <div className="bg-white rounded-2xl border border-[#CCC6FB] p-5 shadow-xs space-y-3" aria-label="Most recent signals">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-base font-bold font-display tracking-tight text-slate-900">
@@ -1151,7 +1151,7 @@ export function InstrumentDetail({
                 {
                   symbol: "EUR/USD",
                   mark: "EU",
-                  markClass: "bg-white border border-slate-200 text-[13px]",
+                  markClass: "bg-white border border-[#CCC6FB] text-[13px]",
                   change: "+0.33%",
                   action: "Buy",
                   actionClass: "bg-[#caeb0e] text-[#2f3d00] hover:brightness-95",
@@ -1161,7 +1161,7 @@ export function InstrumentDetail({
                 {
                   symbol: "GOOGL",
                   mark: "G",
-                  markClass: "bg-white border border-slate-200 text-[#4285F4]",
+                  markClass: "bg-white border border-[#CCC6FB] text-[#4285F4]",
                   change: "-0.11%",
                   action: "Sell",
                   actionClass: "bg-[#5945F1] text-white hover:bg-[#4a38d6]",
@@ -1174,7 +1174,7 @@ export function InstrumentDetail({
                   markClass: "bg-[#f7931a] text-white",
                   change: "Premium Signal",
                   action: "Upgrade",
-                  actionClass: "border-2 border-[#ec4899] bg-white text-[#ec4899] hover:bg-[#fdf2f8]",
+                  actionClass: "border border-[#ec4899] bg-white text-[#ec4899] hover:bg-[#fdf2f8]",
                   chart: "M2 11 C13 6 18 15 27 10 S40 13 48 8 S61 14 70 9 S82 14 91 7 S96 9 98 5",
                   chartClass: "text-[#5945F1]",
                   premium: true,
@@ -1228,7 +1228,7 @@ export function InstrumentDetail({
           </div>
 
           {/* Bottom: Latest News (adapted from TodaysCryptoWidget) */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4" id="financial-news">
+          <div className="bg-white rounded-2xl border border-[#CCC6FB] p-5 shadow-xs space-y-4" id="financial-news">
             {/* Header */}
             <div className="flex items-center justify-between">
               <h3 className="font-display text-[19px] font-bold text-slate-900">
@@ -1245,7 +1245,6 @@ export function InstrumentDetail({
               ]}
               activeTab={newsFilter}
               onChange={(tabId) => setNewsFilter(tabId)}
-              onLockedClick={() => requestUnlock('researchNews')}
             />
 
             {/* Gated state, news list, or nothing loaded */}
@@ -1256,7 +1255,7 @@ export function InstrumentDetail({
               <div className="relative rounded-xl overflow-hidden min-h-[300px]">
                 <div className="space-y-3 filter blur-[4px] opacity-40 pointer-events-none select-none max-h-[320px] overflow-hidden">
                   {taggedNews.slice(0, 3).map((item) => (
-                    <div key={item.title} className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-2">
+                    <div key={item.title} className="p-3.5 rounded-xl border border-[#CCC6FB] bg-white space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-700">{item.source}</span>
                         <span className="text-[10px] text-slate-400 font-medium">{item.time}</span>
@@ -1287,7 +1286,7 @@ export function InstrumentDetail({
                   .map((item) => (
                     <article
                       id={`news-${instrument.symbol.replaceAll("/", "-")}-${item.tag}`}
-                      className="space-y-2 border-b border-[#eef1f5] pb-4 last:border-0 cursor-pointer group"
+                      className="space-y-2 border-b border-[#CCC6FB] pb-4 last:border-0 cursor-pointer group"
                       key={item.title}
                       onClick={() => {
                         setArticle(item);
@@ -1623,7 +1622,7 @@ function CommunityPredictionPost({
             </div>
           ))}
           <form
-            className="mt-1 flex w-full gap-1 border-t border-slate-200 pt-2"
+            className="mt-1 flex w-full gap-1 border-t border-[#CCC6FB] pt-2"
             onSubmit={(event) => {
               event.preventDefault();
               if (!comment.trim()) return;
@@ -1645,7 +1644,7 @@ function CommunityPredictionPost({
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               placeholder="Add a comment…"
-              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-[10px]"
+              className="min-w-0 flex-1 rounded-lg border border-[#CCC6FB] px-2 py-1.5 text-[10px]"
             />
             <button type="submit" aria-label="Post comment">
               <Send size={13} />
@@ -2535,7 +2534,7 @@ function InstrumentInsightRail({
             </div>
           </div>
         </ResizablePanel>
-        <ResizableHandle className="relative z-50 !my-1 !h-2 !w-full !shrink-0 cursor-row-resize border-y border-slate-200 bg-slate-50 hover:border-violet-300 hover:bg-violet-50" />
+        <ResizableHandle className="relative z-50 !my-1 !h-2 !w-full !shrink-0 cursor-row-resize border-y border-[#CCC6FB] bg-slate-50 hover:border-violet-300 hover:bg-violet-50" />
         <ResizablePanel
           id="community-panel"
           defaultSize="25%"
@@ -2719,7 +2718,7 @@ function InstrumentInsightRail({
             </div>
           </div>
         </ResizablePanel>
-        <ResizableHandle className="relative z-50 !my-1 !h-2 !w-full !shrink-0 cursor-row-resize border-y border-slate-200 bg-slate-50 hover:border-violet-300 hover:bg-violet-50" />
+        <ResizableHandle className="relative z-50 !my-1 !h-2 !w-full !shrink-0 cursor-row-resize border-y border-[#CCC6FB] bg-slate-50 hover:border-violet-300 hover:bg-violet-50" />
         <ResizablePanel
           id="promotion-panel"
           defaultSize="10%"
@@ -2835,7 +2834,7 @@ const SignalMark: React.FC<{ symbol: string; mark: string; markClass: string }> 
   }
   if (symbol === "GOOGL") {
     return (
-      <span className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 bg-white" aria-hidden>
+      <span className="grid size-9 shrink-0 place-items-center rounded-full border border-[#CCC6FB] bg-white" aria-hidden>
         <svg viewBox="0 0 24 24" className="size-5">
           <path fill="#4285F4" d="M23 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.2a5.3 5.3 0 0 1-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.6z" />
           <path fill="#34A853" d="M12 24c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.6-2-6.5-4.8H1.7v3A12 12 0 0 0 12 24z" />
@@ -2940,7 +2939,7 @@ function Overview({
                   if (next === 'advanced' && !chartOpen) onChart();
                   if (next === 'performance' && chartOpen) onChart();
                 }}
-                className="w-[190px] cursor-pointer appearance-none rounded-xl border border-[#d7d3fb] bg-white py-2.5 pl-3.5 pr-9 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
+                className="w-[190px] cursor-pointer appearance-none rounded-xl border border-[#CCC6FB] bg-white py-2.5 pl-3.5 pr-9 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
               >
                 <option value="performance">Performance</option>
                 <option value="advanced">{tierLevel < 2 ? 'Advanced chart (Level 2)' : 'Advanced chart'}</option>
@@ -2962,7 +2961,7 @@ function Overview({
                   setPeriod(item);
                   setCompareRange(periodToRange[item]);
                 }}
-                className="w-[130px] cursor-pointer appearance-none rounded-xl border border-[#d7d3fb] bg-white py-2.5 pl-3.5 pr-9 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
+                className="w-[130px] cursor-pointer appearance-none rounded-xl border border-[#CCC6FB] bg-white py-2.5 pl-3.5 pr-9 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
               >
                 {(['1D', '1W', '1M', '1Y'] as PerformancePeriod[]).map((item) => {
                   const locked = historicalTierForTimeframe(item) > tierLevel;
@@ -2974,7 +2973,7 @@ function Overview({
             </label>
           </div>
         </div>
-        <div className="mt-4 border-t border-[#eef1f5]" />
+        <div className="mt-4 border-t border-[#CCC6FB]" />
         {chartOpen && tierLevel < 2 ? (
           <div className="relative mt-5 min-h-[300px] rounded-xl overflow-hidden">
             <div className="filter blur-[4px] opacity-35 pointer-events-none select-none">
@@ -3017,7 +3016,7 @@ function Overview({
                     aria-hidden
                   />
                   <span
-                    className="pointer-events-none absolute top-5 z-10 flex items-center gap-4 whitespace-nowrap rounded-lg border border-[#e4e0fa] bg-white px-3 py-2 text-[13px] shadow-lg"
+                    className="pointer-events-none absolute top-5 z-10 flex items-center gap-4 whitespace-nowrap rounded-lg border border-[#CCC6FB] bg-white px-3 py-2 text-[13px] shadow-lg"
                     style={{ left: `min(${hoverX * 100}%, calc(100% - 170px))` }}
                     role="status"
                   >
@@ -3031,7 +3030,7 @@ function Overview({
               {/* The dashed guides the design draws across the plot */}
               <div className="pointer-events-none absolute inset-0 flex flex-col justify-between py-2">
                 {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="w-full border-b border-dashed border-[#cfcbf7]" />
+                  <div key={i} className="w-full border-b border-dashed border-[#CCC6FB]" />
                 ))}
               </div>
               <svg
@@ -3382,7 +3381,7 @@ function TechnicalSummary({
           }
         />
       </div>
-      <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-white p-3">
+      <div className="mt-4 rounded-lg border border-dashed border-[#CCC6FB] bg-white p-3">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-[10px] font-semibold text-slate-600">Removed tools</p>
           <span className="text-[9px] text-slate-400">Restore any parameter</span>
@@ -3398,7 +3397,7 @@ function TechnicalSummary({
                     current.filter((item) => item !== name),
                   )
                 }
-                className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                className="rounded border border-[#CCC6FB] bg-slate-50 px-2 py-1 text-[10px] text-slate-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
                 title={`Restore ${name}`}
               >
                 + {name}
@@ -3445,7 +3444,7 @@ function TechnicalTable({
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-900">{title} ›</h3>
       </div>
-      <div className="overflow-hidden rounded-lg border border-slate-200">
+      <div className="overflow-hidden rounded-lg border border-[#CCC6FB]">
         {rows.map(([name, value, action, customPeriodValue], rowIndex) => {
           const locked = rowIndex >= (visibleCount ?? Number.POSITIVE_INFINITY);
           const periodMatch = name.match(/^(.*)\((\d[^)]*)\)(.*)$/);
@@ -3466,7 +3465,7 @@ function TechnicalTable({
               }
             }}
             title={locked ? "Choose a credit unlock for advanced technical tools" : undefined}
-            className={`grid grid-cols-[minmax(0,1fr)_70px_52px] items-center gap-2 border-b border-slate-100 px-3 py-2 text-[10px] last:border-b-0 ${
+            className={`grid grid-cols-[minmax(0,1fr)_70px_52px] items-center gap-2 border-b border-[#CCC6FB] px-3 py-2 text-[10px] last:border-b-0 ${
               locked ? "select-none blur-[2px] opacity-45" : ""
             }`}
           >
@@ -3493,7 +3492,7 @@ function TechnicalTable({
                       onClick={() => (!canCustomize || locked) && requestUnlock("technicalParameters")}
                       title={!canCustomize ? "Choose a credit unlock to edit custom periods" : "Edit parameter period"}
                       aria-label={`Edit period ${periodIndex + 1} for ${periodMatch[1].trim()}`}
-                      className="mx-0.5 w-10 min-w-[2.5rem] rounded border border-slate-300 bg-white px-1 text-center text-[10px] outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                      className="mx-0.5 w-10 min-w-[2.5rem] rounded border border-[#CCC6FB] bg-white px-1 text-center text-[10px] outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                     />
                   ))}
                   ]{periodMatch[3]}
@@ -3532,7 +3531,7 @@ function TechnicalTable({
                     ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
                     : action === "Sell"
                       ? "bg-rose-50 text-rose-700 border-rose-200/80"
-                      : "bg-slate-50 text-slate-600 border-slate-200/80"
+                      : "bg-slate-50 text-slate-600 border-[#CCC6FB]"
                 }`}
               >
                 {action ?? "Neutral"}
@@ -3711,7 +3710,7 @@ function SeasonalPerformance({
   const [mode, setMode] = useState<"Table" | "Chart">("Table");
   if (tierLevel < 4) {
     return (
-      <div className="relative rounded-2xl overflow-hidden min-h-[320px] border border-slate-200/80 bg-white">
+      <div className="relative rounded-2xl overflow-hidden min-h-[320px] border border-[#CCC6FB] bg-white">
         <div className="filter blur-[5px] opacity-30 pointer-events-none select-none p-5">
           <div className="h-6 w-48 bg-slate-200 rounded mb-4" />
           <div className="h-48 w-full bg-slate-100 rounded-xl" />
@@ -3836,10 +3835,10 @@ function SeasonalPerformance({
         </div>
       </div>
       {mode === "Table" ? (
-        <div className="overflow-x-auto rounded-xl border border-[#E0E7FF] bg-white shadow-2xs">
+        <div className="overflow-x-auto rounded-xl border border-[#CCC6FB] bg-white shadow-2xs">
           <table className="w-full min-w-180 border-collapse text-left text-xs">
             <thead>
-              <tr className="border-b border-[#E0E7FF] bg-[#F8FAFC]">
+              <tr className="border-b border-[#CCC6FB] bg-[#F8FAFC]">
                 <th className="px-3 py-2.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Year</th>
                 {periods.map((period) => (
                   <th className="px-2.5 py-2.5 text-right font-bold uppercase tracking-wider text-[10px] text-slate-500" key={period}>
@@ -3872,7 +3871,7 @@ function SeasonalPerformance({
                   </td>
                 </tr>
               ))}
-              <tr className="border-t-2 border-[#E0E7FF] bg-[#F8FAFC]/80 font-semibold">
+              <tr className="border-t-2 border-[#CCC6FB] bg-[#F8FAFC]/80 font-semibold">
                 <td className="px-3 py-2.5 text-slate-900 font-bold">
                   Average
                 </td>
@@ -3920,7 +3919,7 @@ function SeasonalChart({
   return (
     <div className="mt-5">
       <div className="relative h-56 overflow-hidden rounded-xl border border-border grid-surface">
-        <div className="absolute left-3 right-3 top-1/2 border-t border-dashed border-slate-300" />
+        <div className="absolute left-3 right-3 top-1/2 border-t border-dashed border-[#CCC6FB]" />
         <svg
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
@@ -4517,13 +4516,13 @@ function FinancialReport({
         {aiSummary && <div className="mt-4 rounded-lg border border-violet-200 bg-violet-50 p-3 text-[10px] text-violet-800">AI summary: {instrument.symbol} shows strong reported growth and expanding profitability in this demo filing set. Verify every figure against the official source.</div>}
         <div className="mt-4 grid grid-cols-3 gap-3 max-md:grid-cols-1">
           {["FY25 annual report", "Q1 FY26 earnings release", "10-Q filing"].map((report) => (
-            <button key={report} className={`rounded-lg border p-3 text-left text-[10px] ${selectedReport === report ? "border-violet-300 bg-violet-50" : "border-slate-200 bg-white"}`} onClick={() => setSelectedReport(report)}>
+            <button key={report} className={`rounded-lg border p-3 text-left text-[10px] ${selectedReport === report ? "border-violet-300 bg-violet-50" : "border-[#CCC6FB] bg-white"}`} onClick={() => setSelectedReport(report)}>
               <b className="block text-slate-900">{report}</b>
               <span className="mt-1 block text-slate-400">Official release document · demo link</span>
             </button>
           ))}
         </div>
-        {selectedReport && <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-[10px] text-slate-600">
+        {selectedReport && <div className="mt-4 rounded-lg border border-[#CCC6FB] bg-slate-50 p-4 text-[10px] text-slate-600">
           <b className="text-slate-900">{selectedReport}</b>
           <p className="mt-2">Document viewer: reported revenue, net income, margins, and management commentary for {instrument.symbol}.</p>
           <div className="mt-3 flex flex-wrap gap-3">
@@ -4555,7 +4554,7 @@ function FinancialReport({
               </span>
             </div>
           </div>
-          <div className="mt-5 flex h-64 items-end gap-4 border-b border-slate-200 px-2">
+          <div className="mt-5 flex h-64 items-end gap-4 border-b border-[#CCC6FB] px-2">
             {series.map((item) => (
               <div
                 key={item.label}
@@ -4738,8 +4737,8 @@ function ProductsAndBrokersTable({
     Perpetual: "Derivative contract without expiry; funding charges may apply.",
   };
   return (
-    <section className="bg-white rounded-2xl border border-[#E0E7FF] shadow-xs overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E0E7FF] p-5">
+    <section className="bg-white rounded-2xl border border-[#CCC6FB] shadow-xs overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#CCC6FB] p-5">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Products & broker access</p>
           <h2 className="mt-1 text-base font-bold font-display text-slate-900">
@@ -4764,7 +4763,7 @@ function ProductsAndBrokersTable({
       <div className="w-full overflow-x-auto">
         <table className="w-full border-collapse text-left text-xs">
           <thead>
-            <tr className="border-b border-[#E0E7FF] bg-[#F8FAFC]">
+            <tr className="border-b border-[#CCC6FB] bg-[#F8FAFC]">
               <th className="px-5 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Product</th>
               <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Broker</th>
               <th className="px-4 py-3.5 font-bold uppercase tracking-wider text-[10px] text-slate-500">Spread</th>
@@ -4790,7 +4789,7 @@ function ProductsAndBrokersTable({
                     {brokerProductPair(broker, instrument).map((identifier) => (
                       <span
                         key={identifier}
-                        className="group/identifier relative inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-[#5945F1] border border-indigo-100"
+                        className="group/identifier relative inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-[#5945F1] border border-[#CCC6FB]"
                         title={productIdentifierDetail(identifier, instrument)}
                       >
                         {identifier}
@@ -4806,14 +4805,14 @@ function ProductsAndBrokersTable({
                   tabIndex={0}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="grid size-6 place-items-center rounded-lg bg-indigo-50 text-[#5945F1] font-bold text-[10px] border border-indigo-100/60">
+                    <span className="grid size-6 place-items-center rounded-lg bg-indigo-50 text-[#5945F1] font-bold text-[10px] border border-[#CCC6FB]/60">
                       {broker.name.slice(0, 2).toUpperCase()}
                     </span>
                     <span>{broker.name}</span>
                   </div>
                   <div
                     role="tooltip"
-                    className="pointer-events-none absolute left-2 top-[calc(100%-4px)] z-40 hidden w-72 rounded-xl border border-indigo-100 bg-white p-4 text-left font-normal shadow-xl group-hover:block group-focus:block"
+                    className="pointer-events-none absolute left-2 top-[calc(100%-4px)] z-40 hidden w-72 rounded-xl border border-[#CCC6FB] bg-white p-4 text-left font-normal shadow-xl group-hover:block group-focus:block"
                   >
                     <b className="text-xs font-bold text-slate-900">{broker.name}</b>
                     <p className="mt-1 leading-relaxed text-xs text-slate-500">
@@ -4906,13 +4905,13 @@ function CryptoBrokerRows({
           }}
         >
           <td className="px-5 py-3.5">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-[#5945F1] border border-indigo-100">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-[#5945F1] border border-[#CCC6FB]">
               {row.pair}
             </span>
           </td>
           <td className="px-4 py-3.5 font-bold text-slate-900">
             <div className="flex items-center gap-2">
-              <span className="grid size-6 place-items-center rounded-lg bg-indigo-50 text-[#5945F1] font-bold text-[10px] border border-indigo-100/60">
+              <span className="grid size-6 place-items-center rounded-lg bg-indigo-50 text-[#5945F1] font-bold text-[10px] border border-[#CCC6FB]/60">
                 {row.broker.slice(0, 2).toUpperCase()}
               </span>
               <span>{row.broker}</span>
@@ -5000,8 +4999,8 @@ function BrokerPanel({
   brokers: Broker[];
 }) {
   return (
-    <section className="bg-white rounded-2xl border border-[#E0E7FF] p-5 shadow-xs space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E0E7FF]/60 pb-4">
+    <section className="bg-white rounded-2xl border border-[#CCC6FB] p-5 shadow-xs space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#CCC6FB]/60 pb-4">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Broker matching</p>
           <h2 className="mt-1 text-base font-bold font-display text-slate-900">
@@ -5023,11 +5022,11 @@ function BrokerPanel({
         {brokers.map((broker) => (
           <div
             key={broker.name}
-            className="rounded-xl border border-[#E0E7FF] bg-white p-4 shadow-2xs hover:border-indigo-300 hover:shadow-sm transition-all"
+            className="rounded-xl border border-[#CCC6FB] bg-white p-4 shadow-2xs hover:border-indigo-300 hover:shadow-sm transition-all"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5">
-                <span className="grid size-8 place-items-center rounded-xl bg-indigo-50 text-[#5945F1] font-bold text-xs border border-indigo-100">
+                <span className="grid size-8 place-items-center rounded-xl bg-indigo-50 text-[#5945F1] font-bold text-xs border border-[#CCC6FB]">
                   {broker.name.slice(0, 2).toUpperCase()}
                 </span>
                 <div>
@@ -5041,7 +5040,7 @@ function BrokerPanel({
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
                   broker.status === "Available"
                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
-                    : "bg-slate-100 text-slate-600 border border-slate-200"
+                    : "bg-slate-100 text-slate-600 border border-[#CCC6FB]"
                 }`}
               >
                 {broker.status}
@@ -5068,7 +5067,7 @@ function BrokerPanel({
                 onClick={() => {
                   window.location.href = "?view=brokers";
                 }}
-                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center justify-center rounded-xl border border-[#CCC6FB] bg-white p-2 text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 <ExternalLink className="size-4" />
               </button>

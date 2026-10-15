@@ -731,7 +731,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
       <div className="text-center max-w-3xl mx-auto px-4 sm:px-8 md:px-[56px] space-y-3">
 
         {/* ─── Category Pills Selector (Exact match to Reference Images) ─── */}
-        <div className="inline-flex items-center justify-center gap-1 flex-wrap rounded-xl border border-[#e4e0fa] bg-white p-1 mt-2">
+        <div className="inline-flex items-center justify-center gap-1 flex-wrap rounded-xl border border-[#CCC6FB] bg-white p-1 mt-2">
           {categoryPills.map((cat) => {
             const isSelected = activeCategory.id === cat.id;
             return (
@@ -747,7 +747,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                 className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer shadow-2xs select-none ${
                   isSelected
                     ? 'bg-white border-2 border-[#5046E5] text-[#5046E5] shadow-xs'
-                    : 'bg-white/90 border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300'
+                    : 'bg-white/90 border border-[#CCC6FB] text-slate-600 hover:text-slate-900 hover:border-[#CCC6FB]'
                 }`}
               >
                 {cat.label}
@@ -895,13 +895,13 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
               whileHover={{ scale: 1.18, x: -3 }}
               whileTap={{ scale: 0.85 }}
               transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-              className="w-9 h-9 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-[#5945F1] hover:border-[#5945F1] transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-full bg-white shadow-md border border-[#CCC6FB]/90 flex items-center justify-center text-slate-700 hover:text-[#5945F1] hover:border-[#5945F1] transition-colors cursor-pointer"
               aria-label="Previous card"
             >
               <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
             </motion.button>
 
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/80 border border-slate-200/60 shadow-inner">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/80 border border-[#CCC6FB]/60 shadow-inner">
               {carouselCategories.map((_, i) => {
                 const isCurrent = i === activeCardIndex;
                 return (
@@ -932,7 +932,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
               whileHover={{ scale: 1.18, x: 3 }}
               whileTap={{ scale: 0.85 }}
               transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-              className="w-9 h-9 rounded-full bg-white shadow-md border border-slate-200/90 flex items-center justify-center text-slate-700 hover:text-[#5945F1] hover:border-[#5945F1] transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-full bg-white shadow-md border border-[#CCC6FB]/90 flex items-center justify-center text-slate-700 hover:text-[#5945F1] hover:border-[#5945F1] transition-colors cursor-pointer"
               aria-label="Next card"
             >
               <ChevronRight className="w-4 h-4 stroke-[2.5]" />
@@ -941,7 +941,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
         </div>
       )}
 
-      <div className="fixed bottom-4 left-4 z-30 flex items-center gap-1 rounded-xl border border-[#d7d3fb] bg-white/95 p-1 shadow-lg backdrop-blur print:hidden" role="group" aria-label="Preview table state">
+      <div className="fixed bottom-4 left-4 z-30 flex items-center gap-1 rounded-xl border border-[#CCC6FB] bg-white/95 p-1 shadow-lg backdrop-blur print:hidden" role="group" aria-label="Preview table state">
         <span className="px-2 text-[10px] font-bold uppercase tracking-wide text-[#94a3b8]">Preview state</span>
         {([['default', 'Default'], ['notfound', 'Not found'], ['error', 'Error']] as const).map(([id, label]) => (
           <button
@@ -973,7 +973,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                 <button
                   type="button"
                   onClick={handleExportCSV}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#d7d3fb] text-[#5945F1] hover:bg-[#f1f0fe] font-semibold text-sm rounded-xl transition-all cursor-pointer select-none"
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#CCC6FB] text-[#5945F1] hover:bg-[#f1f0fe] font-semibold text-sm rounded-xl transition-all cursor-pointer select-none"
                 >
                   <Download className="w-4 h-4" />
                   <span>Export CSV</span>
@@ -1063,7 +1063,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                     <button
                       type="button"
                       onClick={() => onOpenConnectModal?.(brokers[0])}
-                      className="px-4 py-1.5 bg-white border border-indigo-200 text-[#5945F1] hover:bg-indigo-50/50 font-semibold text-sm rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+                      className="px-4 py-1.5 bg-white border border-[#CCC6FB] text-[#5945F1] hover:bg-indigo-50/50 font-semibold text-sm rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
                     >
                       Broker Access
                     </button>
@@ -1071,7 +1071,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                     <button
                       type="button"
                       onClick={handleExportCSV}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-indigo-200 text-[#5945F1] hover:bg-indigo-50/50 font-semibold text-sm rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-[#CCC6FB] text-[#5945F1] hover:bg-indigo-50/50 font-semibold text-sm rounded-lg transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
                     >
                       <Download className="w-4 h-4 text-[#5945F1]" />
                       <span>Export CSV</span>
@@ -1079,11 +1079,11 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-white border border-[#E0E7FF] rounded-2xl shadow-xs overflow-hidden">
+                <div className="bg-white border border-[#CCC6FB] rounded-2xl shadow-xs overflow-hidden">
                   <div className="overflow-x-auto scrollbar-none">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-indigo-100 text-xs font-medium text-[#5945F1] bg-white select-none">
+                        <tr className="border-b border-[#CCC6FB] text-xs font-medium text-[#5945F1] bg-white select-none">
                       {/* Favorite Star Column (Empty Header) */}
                       <th className="py-3.5 pl-4 pr-1 w-9 text-center">
                         <span className="sr-only">Star</span>
@@ -1444,7 +1444,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setCurrentPage(1)}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-indigo-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-[#CCC6FB] flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
                   title="First Page"
                 >
                   <ChevronsLeft className="w-3.5 h-3.5" />
@@ -1454,7 +1454,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-indigo-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-[#CCC6FB] flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
                   title="Previous Page"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
@@ -1467,7 +1467,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                   className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-xs font-bold flex items-center justify-center transition-all cursor-pointer ${
                     currentPage === 1
                       ? 'border border-[#5945F1] text-[#5945F1] bg-white shadow-2xs'
-                      : 'border border-indigo-200 text-[#5945F1] hover:bg-indigo-50/50'
+                      : 'border border-[#CCC6FB] text-[#5945F1] hover:bg-indigo-50/50'
                   }`}
                 >
                   1
@@ -1480,14 +1480,14 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                   className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${
                     currentPage === 2
                       ? 'border border-[#5945F1] text-[#5945F1] bg-white shadow-2xs'
-                      : 'border border-indigo-200 text-[#5945F1] hover:bg-indigo-50/50'
+                      : 'border border-[#CCC6FB] text-[#5945F1] hover:bg-indigo-50/50'
                   }`}
                 >
                   2
                 </button>
 
                 {/* ... */}
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-indigo-200 text-slate-400 text-xs font-semibold flex items-center justify-center select-none">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-[#CCC6FB] text-slate-400 text-xs font-semibold flex items-center justify-center select-none">
                   ...
                 </div>
 
@@ -1498,7 +1498,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                   className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${
                     currentPage === 20
                       ? 'border border-[#5945F1] text-[#5945F1] bg-white shadow-2xs'
-                      : 'border border-indigo-200 text-[#5945F1] hover:bg-indigo-50/50'
+                      : 'border border-[#CCC6FB] text-[#5945F1] hover:bg-indigo-50/50'
                   }`}
                 >
                   20
@@ -1508,7 +1508,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setCurrentPage((p) => Math.min(20, p + 1))}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-indigo-200 flex items-center justify-center text-[#5945F1] hover:bg-indigo-50/50 transition-all cursor-pointer"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-[#CCC6FB] flex items-center justify-center text-[#5945F1] hover:bg-indigo-50/50 transition-all cursor-pointer"
                   title="Next Page"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -1518,7 +1518,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
                 <button
                   type="button"
                   onClick={() => setCurrentPage(20)}
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-indigo-200 flex items-center justify-center text-[#5945F1] hover:bg-indigo-50/50 transition-all cursor-pointer"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-[#CCC6FB] flex items-center justify-center text-[#5945F1] hover:bg-indigo-50/50 transition-all cursor-pointer"
                   title="Last Page"
                 >
                   <ChevronsRight className="w-3.5 h-3.5" />
@@ -1530,7 +1530,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
             {/* VIEW 2: HEATMAP VIEW */}
             {activeViewTab === 'heatmap' && (
               isHeatmapLocked ? (
-                <div className="relative rounded-2xl border border-slate-200/80 bg-white overflow-hidden min-h-[500px]">
+                <div className="relative rounded-2xl border border-[#CCC6FB] bg-white overflow-hidden min-h-[500px]">
                   {/* Glassmorphism Preview: properly blurred */}
                   <div className="filter blur-[5px] opacity-45 pointer-events-none select-none max-h-[650px] overflow-hidden">
                     <InstrumentHeatmapView
@@ -1559,7 +1559,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
             {/* VIEW 3: SCATTER VIEW */}
             {activeViewTab === 'scatter' && (
               isScatterLocked ? (
-                <div className="relative rounded-2xl border border-slate-200/80 bg-white overflow-hidden min-h-[500px]">
+                <div className="relative rounded-2xl border border-[#CCC6FB] bg-white overflow-hidden min-h-[500px]">
                   {/* Glassmorphism Preview: properly blurred */}
                   <div className="filter blur-[5px] opacity-45 pointer-events-none select-none max-h-[650px] overflow-hidden">
                     <InstrumentScatterView
@@ -1588,7 +1588,7 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
             {/* VIEW 4: CORRELATION VIEW */}
             {activeViewTab === 'correlation' && (
               isCorrelationLocked ? (
-                <div className="relative rounded-2xl border border-slate-200/80 bg-white overflow-hidden min-h-[500px]">
+                <div className="relative rounded-2xl border border-[#CCC6FB] bg-white overflow-hidden min-h-[500px]">
                   {/* Glassmorphism Preview: properly blurred */}
                   <div className="filter blur-[5px] opacity-45 pointer-events-none select-none max-h-[650px] overflow-hidden">
                     <InstrumentCorrelationView

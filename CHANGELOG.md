@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.27.0] - 2026-10-09
+### Changed
+- A locked segmented tab is selectable now: picking Research moves to it and the panel shows the lock state, rather than firing the unlock dialog from the tab itself. The lock is drawn as an icon beside the label.
+- Borders follow the brand: the greys Tailwind and the detail stylesheet brought in (slate 100 to 300, #e2e8f0, #dfe6f1, #E0E7FF and the near-lavenders) are all #CCC6FB now, across about a hundred places, and every border thicker than a hair is one pixel.
+
 ## [1.26.0] - 2026-10-09
 ### Added
 - LockStateContainer: one lock state for every panel a level does not open yet, with the mascot holding the lock over the blurred content and a single gradient "Unlock with Credits".

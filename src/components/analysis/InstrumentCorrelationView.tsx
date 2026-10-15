@@ -81,7 +81,7 @@ const SortDropdown: React.FC<{ value: string; onChange: (v: string) => void }> =
           aria-haspopup="listbox"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className={`flex w-[190px] items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-left text-[14px] text-slate-900 transition ${open ? 'border-[#5945F1] ring-2 ring-[#5945F1]/20' : 'border-[#d7d3fb] hover:border-[#5945F1]'}`}
+          className={`flex w-[190px] items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-left text-[14px] text-slate-900 transition ${open ? 'border-[#5945F1] ring-2 ring-[#5945F1]/20' : 'border-[#CCC6FB] hover:border-[#5945F1]'}`}
         >
           <span className="truncate">{value}</span>
           <ChevronDown className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
@@ -89,7 +89,7 @@ const SortDropdown: React.FC<{ value: string; onChange: (v: string) => void }> =
         {open && (
           <>
             <span className="fixed inset-0 z-10" aria-hidden onClick={() => setOpen(false)} />
-            <ul role="listbox" className="absolute left-0 top-[calc(100%+6px)] z-20 w-[190px] overflow-hidden rounded-xl border border-[#d7d3fb] bg-white py-1 shadow-xl">
+            <ul role="listbox" className="absolute left-0 top-[calc(100%+6px)] z-20 w-[190px] overflow-hidden rounded-xl border border-[#CCC6FB] bg-white py-1 shadow-xl">
               {SORTS.map((o) => (
                 <li key={o}>
                   <button
@@ -114,7 +114,7 @@ const SortDropdown: React.FC<{ value: string; onChange: (v: string) => void }> =
 const AxisSearch: React.FC<{ label: string; value: string; onChange: (v: string) => void }> = ({ label, value, onChange }) => (
   <div className="flex flex-col gap-1.5">
     <span className="text-[13px] font-medium text-slate-500">{label}</span>
-    <div className="flex w-[160px] items-center gap-2 rounded-xl border border-[#d7d3fb] bg-white px-3 py-2.5 focus-within:border-[#5945F1] focus-within:ring-2 focus-within:ring-[#5945F1]/20">
+    <div className="flex w-[160px] items-center gap-2 rounded-xl border border-[#CCC6FB] bg-white px-3 py-2.5 focus-within:border-[#5945F1] focus-within:ring-2 focus-within:ring-[#5945F1]/20">
       <Search className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
       <input
         value={value}
@@ -168,7 +168,7 @@ export const InstrumentCorrelationView: React.FC<InstrumentCorrelationViewProps>
 
   if (state !== 'default') {
     return (
-      <div className="w-full space-y-6 rounded-2xl border border-[#e0e7ff] bg-white p-5 shadow-xs sm:p-7">
+      <div className="w-full space-y-6 rounded-2xl border border-[#CCC6FB] bg-white p-5 shadow-xs sm:p-7">
         {header}
         <div className="flex min-h-[560px] flex-col items-center justify-center px-6 text-center">
           <img src={state === 'error' ? CR_ERROR : CR_NOT_FOUND} alt="" className={state === 'error' ? 'h-auto w-[270px]' : 'h-auto w-[200px]'} />
@@ -186,7 +186,7 @@ export const InstrumentCorrelationView: React.FC<InstrumentCorrelationViewProps>
   }
 
   return (
-    <div className="w-full space-y-6 rounded-2xl border border-[#e0e7ff] bg-white p-5 shadow-xs sm:p-7">
+    <div className="w-full space-y-6 rounded-2xl border border-[#CCC6FB] bg-white p-5 shadow-xs sm:p-7">
       {header}
 
       <div className="overflow-x-auto">
