@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.36.0] - 2026-10-09
+### Changed
+- Market Data reads in the design's order: the price and where it opened, then the volume and the move, then the day's range against the size of the market, with the supporting figures below.
+- The seasonal grid draws each month as a chip, lime where it gained and violet where it lost, matching the grid shown behind the lock.
+
 ## [1.35.1] - 2026-10-09
 ### Added
 - The technical tables say what is covering their lower rows: "Locked until Level 2" sits over the blurred ones with its own Unlock with Credits, rather than leaving the rows faded and unexplained.

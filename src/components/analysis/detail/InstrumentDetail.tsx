@@ -3720,31 +3720,19 @@ function MarketStats({
       <section className="pt-4">
         <p className="mb-3 text-[13px] text-slate-500">Market Data</p>
         <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
+          {/* Reading order follows the design: price first, then what moved it,
+              then the size of the market behind it. */}
           <Metric label="Last price" value={displayValue(instrument)} />
-          <Metric
-            label="Absolute change"
-            value={`${instrument.change >= 0 ? "+" : ""}${(instrument.price - detail.previousClose).toFixed(2)}`}
-          />
-          <Metric label="Daily change" value={`${instrument.change}%`} />
-          <Metric label="Quote currency" value={detail.quoteCurrency} />
           <Metric
             label="Open"
             value={detail.open.toFixed(kind === "Forex" ? 4 : 2)}
           />
-          <Metric
-            label="Previous close"
-            value={detail.previousClose.toFixed(kind === "Forex" ? 4 : 2)}
-          />
+          <Metric label="Volume" value={`${instrument.volume}M`} />
+          <Metric label="Daily change" value={`${instrument.change}%`} />
           <Metric
             label="Day low / high"
             value={`${detail.dayLow.toFixed(kind === "Forex" ? 4 : 2)} / ${detail.dayHigh.toFixed(kind === "Forex" ? 4 : 2)}`}
           />
-          <Metric
-            label="Historical low / high"
-            value={`${detail.historicalLow.toFixed(2)} / ${detail.historicalHigh.toFixed(2)}`}
-          />
-          <Metric label="Volume" value={`${instrument.volume}M`} />
-          <Metric label="Volume type" value={detail.volumeType} />
           <Metric
             label={kind === "Stock" ? "P/E" : "Market size"}
             value={
@@ -3752,6 +3740,20 @@ function MarketStats({
                 ? `${instrument.pe ?? "n/a"}x`
                 : `$${instrument.marketCap}B`
             }
+          />
+          <Metric
+            label="Absolute change"
+            value={`${instrument.change >= 0 ? "+" : ""}${(instrument.price - detail.previousClose).toFixed(2)}`}
+          />
+          <Metric
+            label="Previous close"
+            value={detail.previousClose.toFixed(kind === "Forex" ? 4 : 2)}
+          />
+          <Metric label="Volume type" value={detail.volumeType} />
+          <Metric label="Quote currency" value={detail.quoteCurrency} />
+          <Metric
+            label="Historical low / high"
+            value={`${detail.historicalLow.toFixed(2)} / ${detail.historicalHigh.toFixed(2)}`}
           />
           <Metric label="Data source" value={detail.dataSource} />
         </div>
@@ -3973,11 +3975,17 @@ function SeasonalPerformance({
                   </td>
                   {row.map((value, index) => (
                     <td
-                      className={`px-2.5 py-2.5 text-right font-mono font-medium ${value >= 0 ? "text-emerald-600 bg-emerald-50/40" : "text-rose-600 bg-rose-50/40"}`}
+                      className="p-1 text-center"
                       key={`${years[rowIndex]}-${index}`}
                     >
-                      {value > 0 ? "+" : ""}
-                      {value.toFixed(2)}%
+                      <span
+                        className={`block rounded-lg px-2 py-2 text-[12.5px] font-medium ${
+                          value >= 0 ? 'bg-[#e5f29a] text-[#2f3d00]' : 'bg-[#e4e0ff] text-[#5945F1]'
+                        }`}
+                      >
+                        {value > 0 ? "+" : ""}
+                        {value.toFixed(2)}%
+                      </span>
                     </td>
                   ))}
                   <td
