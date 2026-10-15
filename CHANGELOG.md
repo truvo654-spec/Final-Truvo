@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.30.0] - 2026-10-09
+### Added
+- LockableSelect: a picker that shows the options a higher level would give, in brand violet with a lock, instead of hiding them. Choosing one opens the unlock flow rather than switching the view.
+### Changed
+- Viewing Mode and Period on the instrument detail page use it, so the menu reads Performance / Advance Chart and 1 Day / Week / Month / Year with the locked entries visible, as the design draws them.
+
 ## [1.29.0] - 2026-10-09
 ### Added
 - UnlockStateModal: one dialog for paying credits for something a level does not open yet, built to the design. It names what is being unlocked with the level that would give it free, shows the tier and credits the person already has, asks for a duration with its price, says when access ends, and confirms once. When the balance is short the button says how many credits are missing instead of failing after the press.

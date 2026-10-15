@@ -1,4 +1,5 @@
 import "./market.css";
+import { LockableSelect } from '../../common/LockableSelect';
 import { SegmentedTabs } from '../../common/SegmentedTabs';
 import { PriceAlertModal } from './PriceAlertModal';
 import { THUMB_GOLD, THUMB_SPX, THUMB_BANKS, THUMB_USD } from '../../../data/newsImagePlaceholders';
@@ -2927,50 +2928,40 @@ function Overview({
           </div>
           <div className="flex flex-wrap items-start gap-4">
             {/* what the chart is showing */}
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[12.5px] font-medium text-slate-500">Viewing Mode</span>
-              <span className="relative block">
-                <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden />
-              <select
-                value={chartOpen ? 'advanced' : 'performance'}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  if (next === 'advanced' && tierLevel < 2) { requestUnlock('advancedChart'); return; }
-                  if (next === 'advanced' && !chartOpen) onChart();
-                  if (next === 'performance' && chartOpen) onChart();
-                }}
-                className="w-[190px] cursor-pointer appearance-none rounded-xl border border-[#CCC6FB] bg-white py-2.5 pl-3.5 pr-9 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
-              >
-                <option value="performance">Performance</option>
-                <option value="advanced">{tierLevel < 2 ? 'Advanced chart (Level 2)' : 'Advanced chart'}</option>
-              </select>
-              </span>
-            </label>
+            <LockableSelect
+              label="Viewing Mode"
+              value={chartOpen ? 'advanced' : 'performance'}
+              width={190}
+              options={[
+                { id: 'performance', label: 'Performance' },
+                { id: 'advanced', label: 'Advance Chart', locked: tierLevel < 2 },
+              ]}
+              onChange={(next) => {
+                if (next === 'advanced' && !chartOpen) onChart();
+                if (next === 'performance' && chartOpen) onChart();
+              }}
+              onLocked={() => requestUnlock('advancedChart')}
+            />
 
             {/* over how long */}
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[12.5px] font-medium text-slate-500">Period</span>
-              <span className="relative block">
-                <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden />
-              <select
-                value={period}
-                onChange={(e) => {
-                  const item = e.target.value as PerformancePeriod;
-                  const req = historicalTierForTimeframe(item);
-                  if (req > tierLevel) { requestUnlock(req >= 3 ? 'performanceAnalytics' : 'historicalData'); return; }
-                  setPeriod(item);
-                  setCompareRange(periodToRange[item]);
-                }}
-                className="w-[130px] cursor-pointer appearance-none rounded-xl border border-[#CCC6FB] bg-white py-2.5 pl-3.5 pr-9 text-[14px] text-slate-900 outline-none transition hover:border-[#5945F1] focus:border-[#5945F1]"
-              >
-                {(['1D', '1W', '1M', '1Y'] as PerformancePeriod[]).map((item) => {
-                  const locked = historicalTierForTimeframe(item) > tierLevel;
-                  const label = item === '1D' ? '1 Day' : item === '1W' ? '1 Week' : item === '1M' ? '1 Month' : '1 Year';
-                  return <option key={item} value={item}>{locked ? `${label} \u{1F512}` : label}</option>;
-                })}
-              </select>
-              </span>
-            </label>
+            <LockableSelect
+              label="Period"
+              value={period}
+              width={140}
+              options={(['1D', '1W', '1M', '1Y'] as PerformancePeriod[]).map((item) => ({
+                id: item,
+                label: item === '1D' ? '1 Day' : item === '1W' ? 'Week' : item === '1M' ? 'Month' : 'Year',
+                locked: historicalTierForTimeframe(item) > tierLevel,
+              }))}
+              onChange={(item) => {
+                setPeriod(item);
+                setCompareRange(periodToRange[item]);
+              }}
+              onLocked={(o) => {
+                const req = historicalTierForTimeframe(o.id);
+                requestUnlock(req >= 3 ? 'performanceAnalytics' : 'historicalData');
+              }}
+            />
           </div>
         </div>
         <div className="mt-4 border-t border-[#CCC6FB]" />
