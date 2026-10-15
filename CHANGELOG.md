@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.51.0] - 2026-10-09
+## [1.52.0] - 2026-10-09
 ### Added
-- The dashboard from the demo branch is back as Demo 1, kept whole in its own file rather than rebuilt from memory, and a switch at the top of the dashboard moves between it and the current one. Choosing Demo 1 says plainly that it is the older dashboard, kept for comparison, so nobody mistakes it for what ships.
+- Demo 1: the dashboard as it stands on the demo branch, taken whole into its own folder rather than rebuilt from memory, and a switch at the top of the dashboard that moves between it and the current one. Choosing it says plainly that it is the older dashboard kept for comparison, so nobody mistakes it for what ships. It opens on its own first state, the one that greets you and counts the steps to your first trade.
 
 ## [1.50.0] - 2026-10-09
 ### Changed

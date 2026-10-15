@@ -1,5 +1,5 @@
 import React, { useState, useEffect , useMemo} from 'react';
-import { DemoDashboardV1 } from './components/DemoDashboardV1';
+import { DemoDashboard1 } from './components/demo1/DemoDashboard1';
 import { COURSES } from './data/educationData';
 import { PROMOTIONS } from './data/promotionsData';
 import { COMMUNITY_ARTICLES } from './data/communityData';
@@ -1158,42 +1158,21 @@ export default function App() {
             </div>
 
             {dashboardVersion === 'demo1' ? (
-            <DemoDashboardV1
+            <DemoDashboard1
               user={user}
               brokers={brokers}
               signals={signals}
-              missions={missions}
-              onUpdateMissions={setMissions}
-              quickSteps={quickSteps}
-              performanceData={PERFORMANCE_DATA}
-              leaderboardUsers={LEADERBOARD_USERS}
               onOpenViewPlan={() => setActiveTab('member-plan')}
-              onAddDemoPoints={handleAddDemoPoints}
-              onStepClick={handleStepClick}
-              onToggleStep={handleToggleStep}
               onOpenConnectModal={(broker) => {
                 setSelectedBrokerForConnect(broker || brokers[0]);
                 setIsConnectModalOpen(true);
               }}
-              onOpenLedger={() => setIsLedgerOpen(true)}
+              onNavigateToTab={setActiveTab}
               onSelectSignal={(sig) => {
                 setSelectedSignal(sig);
                 setIsSignalModalOpen(true);
               }}
-              onNavigateToTab={setActiveTab}
-              onNavigateToConnectBroker={(broker) => {
-                if (broker) setSelectedBrokerForConnect(broker);
-                setActiveTab('connect-to-truvo');
-              }}
-              onSelectBrokerDetail={(broker) => {
-                setSelectedBrokerForDetail(broker);
-                setActiveTab('broker-detail');
-              }}
-              onTriggerEarningModal={handleTriggerEarningReward}
-              onOpenSearchModal={() => setIsPaletteOpen(true)}
-              onShowToast={showToast}
-              onSelectLevelScenario={handleSelectLevelScenario}
-              onStartTour={handleStartOnboarding}
+              onUpdateMissions={setMissions}
             />
             ) : (
             <ReferenceDashboard
