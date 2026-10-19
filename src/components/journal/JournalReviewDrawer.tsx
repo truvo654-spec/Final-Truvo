@@ -5,9 +5,12 @@ import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { JOURNAL_EMOTIONS, JOURNAL_MISTAKES } from '../../data/journalData';
 import { costsKnown, currencyOf, eligible, incompleteFields, rawNet, realizedR, resultOf, timestampMs } from './journalMath';
 import { ReviewStateBadge, TradingStatusBadge, reviewStateOf, tradingStatusOf } from './tradingStatus';
+import { canonicalInstrument } from './instrumentMatching';
+import { attributionSnapshot, playbookVersion } from './playbookLinks';
+import { executionSnapshot } from './journalIngest';
 
-interface Props { entry: JournalEntry; cohort: string[]; playbook?: JournalPlaybook; checklist?:JournalChecklistItem[]; onSelect:(id:string)=>void; onClose:()=>void; onSave:(e:JournalEntry)=>void; onDelete:(id:string)=>void; onReplay:()=>void }
-export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,checklist=[],onSelect,onClose,onSave,onDelete,onReplay}) => {
+interface Props { entry: JournalEntry; cohort: string[]; playbook?: JournalPlaybook; playbooks?:JournalPlaybook[]; checklist?:JournalChecklistItem[]; onSelect:(id:string)=>void; onClose:()=>void; onSave:(e:JournalEntry)=>boolean; onDelete:(id:string)=>void; onReplay:()=>void }
+export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,playbooks=[],checklist=[],onSelect,onClose,onSave,onDelete,onReplay}) => {
   const dialog = useRef<HTMLDivElement>(null);
   const [draft,setDraft] = useState(entry);
   const [error,setError] = useState('');
@@ -26,12 +29,20 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,chec
   },[]);
   useEffect(()=>{setDraft(entry);setError('');setDiscard(null);},[entry]);
   const patch = (v: Partial<JournalEntry>)=>setDraft(d=>({...d,...v}));
-  const ruleVersion = playbook ? JSON.stringify(playbook.rules) : '';
-  const evidence = draft.ruleEvidence || (playbook?.rules.map(r=>({ruleId:r.id,label:r.title,version:ruleVersion,effectiveAt:new Date().toISOString(),state:'unknown' as const,source:'user' as const})) || []);
+  const draftBook = playbooks.find(p=>draft.playbookId ? p.id===draft.playbookId : p.name===draft.strategy) || (playbook?.name===draft.strategy?playbook:undefined);
+  const scenarios = (draftBook?.scenarios || []).filter(s=>canonicalInstrument(s.symbol)===canonicalInstrument(draft.symbol) && (s.bias==='long')===(draft.direction==='BUY'));
+  const ruleVersion = draftBook ? JSON.stringify(draftBook.rules) : '';
+  const evidence = draft.ruleEvidence || (draftBook?.rules.map(r=>({ruleId:r.id,label:r.title,version:ruleVersion,effectiveAt:new Date().toISOString(),state:'unknown' as const,source:'user' as const})) || []);
   const currency = currencyOf(draft);
   const money = (v:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency}).format(v);
   const pos = cohort.indexOf(entry.id);
   const save = (complete:boolean) => {
+    if (!Number.isFinite(draft.entryPrice) || draft.entryPrice<=0 || !Number.isFinite(draft.size) || draft.size<=0) return setError('Entry price and quantity must be positive and finite.');
+    if (draft.exitPrice!==null && (!Number.isFinite(draft.exitPrice) || draft.exitPrice<=0)) return setError('Exit price must be positive, or unknown.');
+    if (draft.entryTime && !Number.isFinite(timestampMs(draft.entryTime))) return setError('Entry timestamp must be valid UTC.');
+    if (draft.exitTime && (!Number.isFinite(timestampMs(draft.exitTime)) || (draft.entryTime && timestampMs(draft.exitTime)<timestampMs(draft.entryTime)))) return setError('Exit timestamp must be valid and on or after entry.');
+    if (draft.scenarioId && !scenarios.some(s=>s.id===draft.scenarioId)) return setError('Choose a scenario with the same instrument and direction, or unlink it.');
+    if (draft.dayStartEquity!=null && (!Number.isFinite(draft.dayStartEquity) || draft.dayStartEquity<=0)) return setError('Verified day-start equity must be positive, or unknown.');
     if (draft.commission != null && (!Number.isFinite(draft.commission) || draft.commission<0)) return setError('Costs must be zero or a positive amount; leave blank if unknown.');
     if (draft.initialRisk != null && (!Number.isFinite(draft.initialRisk) || draft.initialRisk<=0)) return setError('Initial monetary risk must be positive, or left unknown.');
     if (draft.marginAtEntry != null && (!Number.isFinite(draft.marginAtEntry) || draft.marginAtEntry<0)) return setError('Margin at entry must be zero or positive, or left unknown.');
@@ -40,9 +51,16 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,chec
     const missing = incompleteFields(draft);
     if (complete && missing.length) return setError(`Answer these before completing: ${missing.join(', ')}.`);
     const riskChanged=draft.initialRisk!==entry.initialRisk;
-    onSave({...draft,reviewState:complete?'complete':'needs_review',ruleEvidence:evidence,
+    if (complete && !draft.mistakesReviewed) return setError('Confirm that mistakes have been checked, including none.');
+    const changedExecution=['entryPrice','exitPrice','size','entryTime','exitTime','pnl','commission','tradingStatus'].some(key=>draft[key as keyof JournalEntry]!==entry[key as keyof JournalEntry]);
+    const changedAttribution=['strategy','playbookId','playbookVersion','scenarioId'].some(key=>draft[key as keyof JournalEntry]!==entry[key as keyof JournalEntry]);
+    const saved=onSave({...draft,date:draft.entryTime?.slice(0,10) || draft.date,reviewState:complete?'complete':'needs_review',ruleEvidence:evidence,
+      rMultiple:changedExecution?null:draft.rMultiple,
+      checklistSnapshot:draft.checklistSnapshot,
+      executionHistory:changedExecution?[...(entry.executionHistory || []),executionSnapshot(entry,'User corrected execution during review')]:draft.executionHistory,
+      attributionHistory:changedAttribution?[...(entry.attributionHistory || []),attributionSnapshot(entry)]:draft.attributionHistory,
       riskHistory:riskChanged?[...(entry.riskHistory || []),{at:new Date().toISOString(),stop:draft.stopPrice ?? null,monetaryRisk:draft.initialRisk ?? null,reason:'User supplied initial-risk evidence during review'}]:draft.riskHistory});
-    setError('');
+    setError(saved?'':'Review not saved: browser storage is unavailable. Your edits remain here for retry.');
   };
   const field='w-full mt-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/40';
   const button='rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold hover:bg-slate-50 disabled:opacity-40';
@@ -74,6 +92,18 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,chec
           <p className="font-mono font-bold">{eligible(draft)?`${money(rawNet(draft))} net · ${resultOf(draft)}`:'Realized net result unavailable'} · {realizedR(draft)==null?'R unknown':`${realizedR(draft)!.toFixed(2)}R`}</p>
           <p className="text-xs text-slate-500">{draft.accountId || 'Legacy demo account'} · {draft.size} {draft.quantityUnit || 'quantity units not recorded'} · entry {draft.entryPrice} · exit {draft.exitPrice ?? 'unknown'} · stop {draft.stopPrice ?? 'unknown'} · planned R {draft.plannedR ?? 'unknown'}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="text-xs font-semibold">Playbook attribution<select aria-label="Playbook attribution" className={field} value={draftBook?.id || ''} onChange={ev=>{
+              const book=playbooks.find(p=>p.id===ev.target.value);
+              patch({strategy:book?.name || 'Unassigned',playbookId:book?.id,playbookVersion:undefined,scenarioId:undefined,setupCheck:undefined});
+            }}><option value="">Unassigned</option>{playbooks.map(p=><option key={p.id} value={p.id}>{p.name}{p.status==='archived'?' (archived)':''}</option>)}</select></label>
+            <label className="text-xs font-semibold">Scenario attribution<select aria-label="Scenario attribution" className={field} value={draft.scenarioId || ''} onChange={ev=>patch({scenarioId:ev.target.value || undefined,setupCheck:undefined})}><option value="">Not linked</option>{scenarios.map(s=><option key={s.id} value={s.id}>{s.symbol} · {s.bias} · {s.hypothesis}</option>)}</select></label>
+            {draftBook && <label className="text-xs sm:col-span-2"><input type="checkbox" checked={draft.playbookVersion===playbookVersion(draftBook)} onChange={ev=>patch({playbookVersion:ev.target.checked?playbookVersion(draftBook):undefined})}/> I confirm this execution used the currently displayed playbook rules. This user attribution records a version; it is not independent proof of compliance.</label>}
+            <label className="text-xs font-semibold">Entry UTC timestamp<input aria-label="Entry UTC timestamp" className={field} type="datetime-local" step="1" value={draft.entryTime?.slice(0,19) || ''} onChange={ev=>patch({entryTime:ev.target.value?`${ev.target.value}Z`:undefined})}/></label>
+            <label className="text-xs font-semibold">Exit UTC timestamp<input aria-label="Exit UTC timestamp" className={field} type="datetime-local" step="1" value={draft.exitTime?.slice(0,19) || ''} onChange={ev=>patch({exitTime:ev.target.value?`${ev.target.value}Z`:undefined})}/></label>
+            <label className="text-xs font-semibold">Entry price<input aria-label="Entry price" className={field} type="number" min="0" step="any" value={draft.entryPrice} onChange={ev=>patch({entryPrice:Number(ev.target.value)})}/></label>
+            <label className="text-xs font-semibold">Exit price<input aria-label="Exit price" className={field} type="number" min="0" step="any" value={draft.exitPrice ?? ''} onChange={ev=>patch({exitPrice:ev.target.value===''?null:Number(ev.target.value)})}/></label>
+            <label className="text-xs font-semibold">Source quantity<input aria-label="Source quantity" className={field} type="number" min="0" step="any" value={draft.size} onChange={ev=>patch({size:Number(ev.target.value)})}/></label>
+            <label className="text-xs font-semibold">Verified day-start equity ({currency})<input aria-label="Verified day-start equity" className={field} type="number" min="0" step="any" placeholder="Unknown; not inferred from later balance" value={draft.dayStartEquity ?? ''} onChange={ev=>patch({dayStartEquity:ev.target.value===''?undefined:Number(ev.target.value)})}/></label>
             <label className="text-xs font-semibold">Trading status<JournalHelp label="Trading status" /><select aria-label="Trading status" className={field} value={tradingStatusOf(draft)} onChange={ev=>patch({tradingStatus:ev.target.value as TradingStatus,...(ev.target.value==='closed' && tradingStatusOf(draft)!=='closed' && draft.pnlKnown!==true?{pnlKnown:false}:{})})}><option value="planned">Planned</option><option value="open">Open</option><option value="closed">Closed</option></select></label>
             <label className="text-xs font-semibold">Reported gross P&amp;L<JournalHelp label="Reported gross P&L" /><input aria-label="Reported gross P&L" className={field} type="number" step="any" value={draft.pnlKnown===false?'':draft.pnl} onChange={ev=>patch({pnlKnown:ev.target.value!=='',pnl:ev.target.value===''?0:Number(ev.target.value)})}/></label>
             <label className="text-xs font-semibold">Total costs (fees, commissions, swaps)<JournalHelp label="Total costs (fees, commissions, swaps)" /><input aria-label="Total costs (fees, commissions, swaps)" className={field} type="number" min="0" step="any" placeholder="Unknown; enter 0 only if confirmed" value={draft.commission ?? ''} onChange={ev=>patch({commission:ev.target.value===''?undefined:Number(ev.target.value)})}/></label>
@@ -98,7 +128,11 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,chec
           <div className="grid sm:grid-cols-2 gap-2 mt-3"><label className="text-xs">Fill UTC time<JournalHelp label="Fill UTC time" /><input aria-label="Fill UTC time" className={field} type="datetime-local" value={fill.time} onChange={ev=>setFill(f=>({...f,time:ev.target.value}))}/></label><label className="text-xs">Fill side<JournalHelp label="Fill side" /><select aria-label="Fill side" className={field} value={fill.side} onChange={ev=>setFill(f=>({...f,side:ev.target.value as 'entry'|'exit'}))}><option value="entry">Entry</option><option value="exit">Exit / partial close</option></select></label>{(['quantity','price','fee'] as const).map(k=><label key={k} className="text-xs">Fill {k}<input className={field} type="number" step="any" value={fill[k]} onChange={ev=>setFill(f=>({...f,[k]:ev.target.value}))}/></label>)}</div><button className={button+' mt-3'} onClick={addFill}>Add execution evidence</button>
           <ul className="text-xs mt-3 space-y-1">{draft.riskHistory?.map((r,i)=><li key={i}>{r.at} · stop {r.stop ?? 'unknown'} · risk {r.monetaryRisk ?? 'unknown'} · {r.reason}</li>)}</ul>
         </details>
-        <section className="bg-white border border-slate-200 rounded-2xl p-5"><h3 className="font-bold text-sm">Pre-trade checklist<JournalHelp label="Pre-trade checklist" /></h3><p className="text-xs text-slate-500 mt-1">Checked items are recorded positives. Unchecked legacy items are unanswered, not proven failures.</p><div className="space-y-2 mt-3">{checklist.map(c=><label key={c.id} className="block text-xs"><input type="checkbox" checked={draft.checklistDone.includes(c.id)} onChange={()=>patch({checklistDone:draft.checklistDone.includes(c.id)?draft.checklistDone.filter(x=>x!==c.id):[...draft.checklistDone,c.id]})}/> {c.label}</label>)}</div></section>
+        <section className="bg-white border border-slate-200 rounded-2xl p-5"><h3 className="font-bold text-sm">Checklist review snapshot</h3><p className="text-xs text-slate-500 mt-1">Review-time answers are not proof of pre-trade preparation. The saved rule set is retained when house rules change; unknown legacy history is not retrospectively graded.</p><div className="space-y-2 mt-3">{(draft.checklistSnapshot || checklist).map(c=><label key={c.id} className="block text-xs"><input type="checkbox" checked={draft.checklistDone.includes(c.id)} onChange={()=>patch({checklistDone:draft.checklistDone.includes(c.id)?draft.checklistDone.filter(x=>x!==c.id):[...draft.checklistDone,c.id]})}/> {c.label}</label>)}</div>
+          <label className="block text-xs mt-3"><input type="checkbox" disabled={!!entry.checklistSnapshot} checked={!!draft.checklistSnapshot} onChange={ev=>patch({checklistSnapshot:ev.target.checked?checklist.map(c=>({id:c.id,label:c.label})):undefined})}/> I reviewed this checklist set, including unchecked items. Save these review-time answers as a fixed snapshot. Otherwise its completion remains unknown.</label>
+        </section>
+        {!!draft.executionHistory?.length && <details className="text-xs"><summary>Execution correction history ({draft.executionHistory.length})</summary>{draft.executionHistory.map((h,i)=><p key={i}>{h.at} · {h.reason} · prior {h.symbol} {h.direction} {h.size} · {h.status} · entry {h.entryPrice} · exit {h.exitPrice ?? 'unknown'} · gross {h.gross} · costs {h.costs ?? 'unknown'} · {h.accountCurrency}</p>)}</details>}
+        {!!draft.attributionHistory?.length && <details className="text-xs"><summary>Playbook attribution history ({draft.attributionHistory.length})</summary>{draft.attributionHistory.map((h,i)=><p key={i}>{h.at} · prior {h.strategy} · {h.playbookId || 'legacy name only'} · scenario {h.scenarioId || 'none'} · {h.playbookVersion?'version retained':'version unknown'}</p>)}</details>}
         <label className="block text-xs font-semibold">Attach chart image (local, up to 3 MB)<JournalHelp label="Attach chart image (local, up to 3 MB)" /><input aria-label="Attach chart image (local, up to 3 MB)" className={field} type="file" accept="image/png,image/jpeg,image/webp" onChange={ev=>{const file=ev.target.files?.[0];if(!file)return;if(file.size>3*1024*1024 || !['image/png','image/jpeg','image/webp'].includes(file.type))return setError('Use a PNG, JPEG or WebP image up to 3 MB.');const reader=new FileReader();reader.onload=()=>patch({screenshot:String(reader.result)});reader.readAsDataURL(file);}}/></label>
         {draft.screenshot && <img src={draft.screenshot} alt={`Recorded chart for ${draft.symbol}`} className="rounded-xl w-full border border-slate-200"/>}
         <div className="flex flex-wrap gap-2"><button className={button} onClick={()=>save(false)}>Save review draft</button><button className="rounded-lg bg-[#5338ec] text-white px-3 py-2 text-xs font-semibold" onClick={()=>save(true)}>Complete review</button><button className={button} disabled={dirty || reviewStateOf(entry)!=='complete'} onClick={()=>onSave({...entry,reviewState:'needs_review'})}>Reopen review</button><button className={button} onClick={()=>{setDraft(entry);setError('');}}>Cancel edits</button><button className={button} onClick={()=>requestLeave(onReplay)}>Replay blind</button><button className={button} onClick={()=>setConfirmDelete(true)}>Delete entry</button></div>

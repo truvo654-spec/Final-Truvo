@@ -4,6 +4,25 @@ export const journalSandbox = sandbox;
 const prefix = sandbox ? 'ms-journal-test-v2-' : 'ms-journal-v2-';
 // Use before an import dialog unmounts; its effects cannot save newly queued history.
 export function saveJournalValue(name:string,value:unknown) { try { localStorage.setItem(prefix+name,JSON.stringify(value)); return true; } catch { return false; } }
+export function saveJournalBatch(values: Record<string, unknown>) {
+  return saveStorageBatch(Object.fromEntries(Object.entries(values).map(([name,value])=>[prefix+name,JSON.stringify(value)])));
+}
+export function saveStorageBatch(values:Record<string,string|null>) {
+  const previous = new Map<string, string | null>();
+  try {
+    for (const key of Object.keys(values)) previous.set(key, localStorage.getItem(key));
+    for (const [key, value] of Object.entries(values)) {
+      if (value === null) localStorage.removeItem(key); else localStorage.setItem(key,value);
+    }
+    return true;
+  } catch {
+    for (const [key, value] of previous) {
+      try { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); }
+      catch (error) { console.error('Journal storage rollback failed; preserve a backup before continuing.', error); }
+    }
+    return false;
+  }
+}
 export function useJournalState<T>(name: string, initial: T) {
   const [loaded] = useState(()=>{try{
     const raw=localStorage.getItem(prefix+name);if(!raw)return {value:initial,failed:false};

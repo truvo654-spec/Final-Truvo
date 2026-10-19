@@ -5,7 +5,9 @@ import { computeMetrics } from './metrics';
 import { BacktestSettings, JobOutput } from './types';
 import type { WhatIfOutput, WhatIfRule } from './whatif';
 import type { RecommendationGoal } from './recommender';
+import { journalSandbox, saveStorageBatch } from '../components/journal/journalStorage';
 
+const scopeKey = (key:string) => journalSandbox ? key.replace('ms_backtest_', 'ms_backtest_test_') : key;
 const KEYS = {
   runs: 'ms_backtest_runs_v1',
   usage: 'ms_backtest_usage_v1',
@@ -14,6 +16,7 @@ const KEYS = {
   expected: 'ms_backtest_expected_v1',
   awarded: 'ms_backtest_awarded_v1',
 };
+for (const key of Object.keys(KEYS) as (keyof typeof KEYS)[]) KEYS[key]=scopeKey(KEYS[key]);
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -54,12 +57,9 @@ export const summarize = (o: JobOutput): RunSummary => {
 
 export const loadRuns = (): BacktestRun[] => read<BacktestRun[]>(KEYS.runs, []);
 
-/** Saves the list; if storage is full, drops the oldest runs' trade lists until it fits. */
+/** A quota error must leave the previously saved evidence unchanged. */
 export function saveRuns(runs: BacktestRun[]): boolean {
-  const list = runs.slice(0, 30);
-  if (write(KEYS.runs, list)) return true;
-  const slim = list.map((r, i) => (i < 5 ? r : { ...r, output: { ...r.output, result: { ...r.output.result, trades: r.output.result.trades.slice(0, 200) } } }));
-  return write(KEYS.runs, slim);
+  return write(KEYS.runs, runs);
 }
 
 // ── Monthly usage of automated runs ──
@@ -81,7 +81,17 @@ export interface ReplaySession {
   trades: PracticeTrade[]; net: number; notes: string; tags: string[]; pointsAwarded: boolean; journalTradeId?: string; marketDate?: string; timeframe?: string;
 }
 export const loadReplay = (): ReplaySession[] => read<ReplaySession[]>(KEYS.replay, []);
-export const saveReplay = (list: ReplaySession[]) => write(KEYS.replay, list.slice(0, 100));
+export const saveReplay = (list: ReplaySession[]) => write(KEYS.replay, list);
+export function saveReplayCompletion(session:ReplaySession,sessions:ReplaySession[]) {
+  const awarded=read<string[]>(KEYS.awarded,[]);
+  const id=`replay:${session.id}`;
+  const points=session.trades.length && !awarded.includes(id) ? POINTS.replaySession : 0;
+  const done={...session,pointsAwarded:session.pointsAwarded || points>0 || awarded.includes(id)};
+  const list=[done,...sessions.filter(s=>s.id!==session.id)];
+  const values:Record<string,string>={[KEYS.replay]:JSON.stringify(list)};
+  if(points)values[KEYS.awarded]=JSON.stringify([...awarded,id]);
+  return saveStorageBatch(values)?{saved:true,points,sessions:list}:{saved:false,points:0,sessions};
+}
 
 // ── What-if runs ──
 
@@ -112,6 +122,10 @@ export function saveWhatIfs(list:WhatIfRun[]):boolean {
 // ── Playbook expected stats ──
 
 export interface PlaybookExpectedStats {
+  dataSource?: 'generated-demo';
+  currency?: string;
+  playbookVersion?: string;
+  settingsSnapshot?: BacktestSettings;
   playbookId: string; runId: string; runName: string; savedAt: string;
   trades: number; winRate: number; avgR: number; pf: number | null; maxDDPct: number; stdR: number; symbol: string;
 }
@@ -124,7 +138,7 @@ export function claimPoints(kind: 'replay' | 'backtest', id: string): number {
   const done = read<string[]>(KEYS.awarded, []);
   const key = `${kind}:${id}`;
   if (done.includes(key)) return 0;
-  write(KEYS.awarded, [...done, key].slice(-500));
+  if (!write(KEYS.awarded, [...done, key])) return 0;
   return kind === 'replay' ? POINTS.replaySession : POINTS.savedBacktest;
 }
 
@@ -133,6 +147,6 @@ export function claimPoints(kind: 'replay' | 'backtest', id: string): number {
 export type PracticeMarket = 'Forex' | 'Indices' | 'Commodities' | 'Crypto' | 'Stocks';
 export interface PracticeFilter { markets: PracticeMarket[]; symbols: string[]; result: 'all' | 'losses' | 'wins'; playbook: string; mistake: string; from?: string; to?: string }
 export interface SavedPracticeFilter { id: string; name: string; filter: PracticeFilter }
-const PRACTICE_FILTERS = 'ms_backtest_practice_filters_v1';
+const PRACTICE_FILTERS = scopeKey('ms_backtest_practice_filters_v1');
 export const loadPracticeFilters = (): SavedPracticeFilter[] => read<SavedPracticeFilter[]>(PRACTICE_FILTERS, []);
 export const savePracticeFilters = (list: SavedPracticeFilter[]) => write(PRACTICE_FILTERS, list.slice(0, 20));

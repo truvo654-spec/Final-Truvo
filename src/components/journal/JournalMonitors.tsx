@@ -1,7 +1,7 @@
 import { JournalHelp } from './JournalHelp';
 import React, { useMemo } from 'react';
 import { JournalEntry } from '../../types';
-import { eligible, resultOf, statusOf } from './journalMath';
+import { currencyOf, eligible, netOf, resultOf, statusOf, timestampMs } from './journalMath';
 
 export interface JournalRules {
   maxRisk: number;
@@ -24,16 +24,18 @@ export function computeDiscipline(entries: JournalEntry[], checklistLength: numb
   entries = entries.filter(e => typeof e.followedPlan === 'boolean' && (e.mistakesReviewed === true || (e.mistakesReviewed === undefined && e.emotionBefore && e.emotionAfter && e.rating != null)));
   if (!entries.length) return null;
   const plan = entries.filter((e) => e.followedPlan).length / entries.length;
-  const checklist = checklistLength
-    ? entries.reduce((a, e) => a + Math.min(1, e.checklistDone.length / checklistLength), 0) / entries.length
-    : 1;
+  const covered = entries.filter(e => e.checklistSnapshot);
+  const checklist = covered.length ? covered.reduce((sum,e) => {
+    const snapshot = e.checklistSnapshot!;
+    return sum + (snapshot.length ? snapshot.filter(item=>e.checklistDone.includes(item.id)).length / snapshot.length : 1);
+  }, 0) / covered.length : null;
   const clean = entries.filter((e) => e.mistakes.length === 0).length / entries.length;
-  const score = Math.round((plan * 0.5 + checklist * 0.3 + clean * 0.2) * 100);
+  const score = Math.round((plan * 0.5 + (checklist ?? 0) * 0.3 + clean * 0.2) / (checklist === null ? 0.7 : 1) * 100);
   // current run of plan-following trades, newest first
-  const newestFirst = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+  const newestFirst = [...entries].sort((a, b) => (b.entryTime || b.date).localeCompare(a.entryTime || a.date));
   let run = 0;
   for (const e of newestFirst) { if (e.followedPlan) run++; else break; }
-  return { score, plan: Math.round(plan * 100), checklist: Math.round(checklist * 100), clean: Math.round(clean * 100), run };
+  return { score, plan: Math.round(plan * 100), checklist: checklist === null ? null : Math.round(checklist * 100), checklistCoverage:covered.length, clean: Math.round(clean * 100), run };
 }
 
 export const DisciplineCard: React.FC<{ entries: JournalEntry[]; checklistLength: number }> = ({ entries, checklistLength }) => {
@@ -60,12 +62,12 @@ export const DisciplineCard: React.FC<{ entries: JournalEntry[]; checklistLength
             ['Mistake-free trades', d.clean, '20%'],
           ] as const).map(([name, v, w]) => (
             <div key={name}>
-              <div className="flex justify-between text-[11px] mb-1"><span className="text-[#474556]">{name} <span className="text-[#94a3b8]">· weight {w}</span></span><span className="font-mono font-semibold">{v}%</span></div>
-              {bar(v, tone)}
+              <div className="flex justify-between text-[11px] mb-1"><span className="text-[#474556]">{name} <span className="text-[#94a3b8]">· weight {w}</span></span><span className="font-mono font-semibold">{v === null ? 'Unknown' : `${v}%`}</span></div>
+              {v !== null && bar(v, tone)}
             </div>
           ))}
           <p className="text-[11px] text-[#474556] pt-1">
-            {d.run > 0 ? `${d.run} answered trade${d.run === 1 ? '' : 's'} in a row on plan.` : 'Latest answered trade off plan.'} Unanswered reviews are excluded, not counted as mistake-free.
+            {d.run > 0 ? `${d.run} answered trade${d.run === 1 ? '' : 's'} in a row on plan.` : 'Latest answered trade off plan.'} Unanswered reviews are excluded. Checklist coverage: {d.checklistCoverage} saved snapshots; unknown checklist history is excluded from its weight, never regraded using current rules.
           </p>
         </div>
       ) : (
@@ -80,30 +82,50 @@ export const DisciplineCard: React.FC<{ entries: JournalEntry[]; checklistLength
 export function checkRules(entries: JournalEntry[], rules: JournalRules) {
   entries = entries.filter(e => statusOf(e) !== 'planned');
   const byDay = new Map<string, JournalEntry[]>();
-  entries.forEach((e) => byDay.set(e.date, [...(byDay.get(e.date) || []), e]));
+  const accountKey = (e:JournalEntry) => `${e.accountId?.trim() || 'legacy-demo'} · ${currencyOf(e)}`;
+  entries.forEach((e) => { const key = `${e.date} · ${accountKey(e)}`; byDay.set(key, [...(byDay.get(key) || []), e]); });
   const tooMany: string[] = [];
   const keptTrading: string[] = [];
+  const riskBreaches: string[] = [], dailyBreaches: string[] = [];
+  let riskCoverage=0, streakCoverage=0, dailyCoverage=0;
+  for (const e of entries) if (Number.isFinite(e.initialRisk) && e.initialRisk! > 0 && Number.isFinite(e.equityAtEntry) && e.equityAtEntry! > 0) {
+    riskCoverage++;
+    if (e.initialRisk! / e.equityAtEntry! * 100 > rules.maxRisk) riskBreaches.push(`${e.date} · ${accountKey(e)}`);
+  }
   byDay.forEach((list, date) => {
-    const ordered = [...list].sort((a, b) => (a.entryTime || '').localeCompare(b.entryTime || ''));
-    if (ordered.length > rules.maxTrades) tooMany.push(date);
-    let losses = 0;
-    for (let i = 0; i < ordered.length; i++) {
-      if (losses >= rules.stopAfterLosses) { keptTrading.push(date); break; }
-      if (eligible(ordered[i])) losses = resultOf(ordered[i]) === 'loss' ? losses + 1 : 0;
+    if (list.length > rules.maxTrades) tooMany.push(date);
+    for (const entry of list) {
+      if (!entry.entryTime || !Number.isFinite(timestampMs(entry.entryTime))) continue;
+      const at=timestampMs(entry.entryTime), day=entry.entryTime.slice(0,10);
+      const account=entries.filter(e=>accountKey(e)===accountKey(entry));
+      const unknownClose=account.some(e=>statusOf(e)==='closed' && (!e.exitTime || !Number.isFinite(timestampMs(e.exitTime))) && e.date<=day);
+      const closed=account.filter(e=>e.exitTime && Number.isFinite(timestampMs(e.exitTime)) &&
+        timestampMs(e.exitTime)<at && e.exitTime.slice(0,10)===day && statusOf(e)==='closed')
+        .sort((a,b)=>timestampMs(a.exitTime!)-timestampMs(b.exitTime!));
+      if (!unknownClose) {
+        streakCoverage++;
+        let losses=0;
+        for (const e of closed) losses=eligible(e) && resultOf(e)==='loss' ? losses+1 : 0;
+        if (rules.stopAfterLosses>0 && losses>=rules.stopAfterLosses) keptTrading.push(date);
+      }
+      if (!unknownClose && closed.every(e=>eligible(e)) && Number.isFinite(entry.dayStartEquity) && entry.dayStartEquity!>0) {
+        dailyCoverage++;
+        if (-closed.reduce((sum,e)=>sum+netOf(e),0) / entry.dayStartEquity! * 100 >= rules.maxDailyLoss) dailyBreaches.push(date);
+      }
     }
   });
-  return { tooMany, keptTrading };
+  return { tooMany, keptTrading:[...new Set(keptTrading)], riskBreaches:[...new Set(riskBreaches)], dailyBreaches:[...new Set(dailyBreaches)], riskCoverage, streakCoverage, dailyCoverage, total:entries.length };
 }
 
 export const RulesMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRules; onEdit: () => void }> = ({ entries, rules, onEdit }) => {
   const r = useMemo(() => checkRules(entries, rules), [entries, rules]);
   const rows: { name: string; limit: string; breaches: string[] | null }[] = [
     { name: 'Max trades per day', limit: `${rules.maxTrades}`, breaches: entries.some(e => statusOf(e) !== 'planned') ? r.tooMany : null },
-    { name: 'Stop after consecutive losses', limit: `${rules.stopAfterLosses}`, breaches: entries.length && entries.every(e=>e.entryTime && eligible(e)) ? r.keptTrading : null },
-    { name: 'Max risk per trade', limit: `${rules.maxRisk}% of account`, breaches: null },
-    { name: 'Max daily loss', limit: `${rules.maxDailyLoss}% of account`, breaches: null },
+    { name: 'Stop after consecutive losses', limit: `${rules.stopAfterLosses} · ${r.streakCoverage}/${r.total} timed checks`, breaches: r.streakCoverage ? r.keptTrading : null },
+    { name: 'Max risk per trade', limit: `${rules.maxRisk}% of account · ${r.riskCoverage}/${r.total} covered`, breaches: r.riskCoverage ? r.riskBreaches : null },
+    { name: 'Max daily loss', limit: `${rules.maxDailyLoss}% of verified day-start equity · ${r.dailyCoverage}/${r.total} covered`, breaches: r.dailyCoverage ? r.dailyBreaches : null },
   ];
-  const total = r.tooMany.length + r.keptTrading.length;
+  const total = r.tooMany.length + r.keptTrading.length + r.riskBreaches.length + r.dailyBreaches.length;
   return (
     <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
       <div className="flex items-start justify-between mb-3">
@@ -127,7 +149,7 @@ export const RulesMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRul
             ) : row.breaches.length ? (
               <span className="shrink-0 text-[10px] font-bold text-rose-600 bg-rose-50 rounded px-1.5 py-0.5">{row.breaches.length} day{row.breaches.length === 1 ? '' : 's'}</span>
             ) : (
-              <span className="shrink-0 text-[10px] font-bold text-emerald-600 bg-emerald-50 rounded px-1.5 py-0.5">Kept</span>
+              <span className="shrink-0 text-[10px] font-bold text-slate-600 bg-slate-50 rounded px-1.5 py-0.5">No known breach</span>
             )}
           </li>
         ))}
@@ -140,11 +162,11 @@ export const RulesMonitor: React.FC<{ entries: JournalEntry[]; rules: JournalRul
 /* ───────────────────────── Tilt monitor ───────────────────────── */
 
 export function computeTilt(entries: JournalEntry[], rules: JournalRules) {
-  const recent = [...entries].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const recent = entries.filter(e=>statusOf(e)!=='planned').sort((a, b) => (b.exitTime || b.entryTime || b.date).localeCompare(a.exitTime || a.entryTime || a.date)).slice(0, 5);
   if (!recent.length) return null;
   const signals: string[] = [];
   let streak = 0;
-  for (const e of recent) { if (e.outcome === 'loss') streak++; else break; }
+  for (const e of recent) { if (eligible(e) && resultOf(e) === 'loss') streak++; else break; }
   if (streak >= 2) signals.push(`${streak} losses in a row`);
   const negative = recent.filter((e) => NEGATIVE_EMOTIONS.includes(e.emotionBefore)).length;
   if (negative >= 2) signals.push(`${negative} of ${recent.length} trades started anxious, greedy, FOMO or frustrated`);

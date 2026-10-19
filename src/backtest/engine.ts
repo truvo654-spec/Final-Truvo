@@ -158,6 +158,7 @@ export function createRun(settings: BacktestSettings, series: Series, opts: RunO
   let dayPnl = 0;
   let dayHalted = false;
   let tradesToday = 0;
+  let consecutiveLosses = 0;
   const tradeDays = new Set<number>();
   let stopReason: string | null = null;
   let propStatus: RunResult['propStatus'] = prop ? 'in progress' : null;
@@ -243,6 +244,12 @@ export function createRun(settings: BacktestSettings, series: Series, opts: RunO
 
   /** Risk limits on closed-trade (realized) results. */
   const afterRealized = (t: number) => {
+    const net = trades[trades.length - 1]?.net ?? 0;
+    consecutiveLosses = net < -0.005 ? consecutiveLosses + 1 : 0;
+    if (rules.stopAfterLosses && consecutiveLosses >= rules.stopAfterLosses) {
+      dayHalted = true;
+      events.push({ t, kind: 'daily-limit', text: `Stopped after ${consecutiveLosses} consecutive realized losses.` });
+    }
     if (risk.dailyLossPct && dayPnl <= -(risk.dailyLossPct / 100) * dayStart && !dayHalted) {
       dayHalted = true;
       events.push({ t, kind: 'daily-limit', text: `Daily loss limit (${risk.dailyLossPct}%) reached; no more trades that day.` });
@@ -275,6 +282,7 @@ export function createRun(settings: BacktestSettings, series: Series, opts: RunO
   };
 
   const open = (pd: Pending, raw: number, t: number) => {
+    if (!entryAllowed(t)) return;
     const fill = raw + pd.dir * (halfSpread + (pd.type === 'limit' ? 0 : slip));
     const stop = opts.positionLevels?.stop ?? (pd.stopLevel !== null ? pd.stopLevel : raw - pd.dir * pd.stopDist);
     const riskDist = Math.abs(fill - stop);
@@ -359,6 +367,16 @@ export function createRun(settings: BacktestSettings, series: Series, opts: RunO
     return start < end ? h >= start && h < end : h >= start || h < end;
   };
 
+  const entryAllowed = (t: number) => {
+    const reason = !sessionOk(t) ? 'session'
+      : !settings.weekdays.includes(new Date(t).getUTCDay()) ? 'weekday'
+      : settings.news !== 'include' && (settings.news === 'skip') === newsDay(t) ? 'news'
+      : dayHalted ? 'dayLimit'
+      : rules.maxTradesPerDay && tradesToday >= rules.maxTradesPerDay ? 'maxTrades' : null;
+    if (reason) diag.filtered[reason]++;
+    return reason === null;
+  };
+
   const step = (count: number): boolean => {
     let k = 0;
     while (!finished && i < n && k < count) {
@@ -367,7 +385,7 @@ export function createRun(settings: BacktestSettings, series: Series, opts: RunO
       curO = gs.o(i); curH = gs.h(i); curL = gs.l(i); curC = gs.c(i);
       const v = gs.v(i);
       const day = Math.floor(t / dayMs);
-      if (day !== curDay) { curDay = day; dayStart = balance; dayPnl = 0; dayHalted = false; tradesToday = 0; }
+      if (day !== curDay) { curDay = day; dayStart = balance; dayPnl = 0; dayHalted = false; tradesToday = 0; consecutiveLosses = 0; }
 
       // 1. Pending entry order
       let filledHere = false;
@@ -413,13 +431,7 @@ export function createRun(settings: BacktestSettings, series: Series, opts: RunO
         else if (!pos && !pend && dir !== 0 && i < n - 1) {
           diag.signals++;
           const tEntry = t + tfMs;
-          const wd = new Date(tEntry).getUTCDay();
-          if (!sessionOk(tEntry)) diag.filtered.session++;
-          else if (!settings.weekdays.includes(wd)) diag.filtered.weekday++;
-          else if (settings.news !== 'include' && (settings.news === 'skip') === newsDay(tEntry)) diag.filtered.news++;
-          else if (dayHalted) diag.filtered.dayLimit++;
-          else if (rules.maxTradesPerDay && tradesToday >= rules.maxTradesPerDay) diag.filtered.maxTrades++;
-          else {
+          if (entryAllowed(tEntry)) {
             const a = atr.value;
             let stopDist = 0, stopLevel: number | null = null;
             if (ex.stop.type === 'atr') stopDist = ex.stop.mult * a;

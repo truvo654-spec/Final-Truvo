@@ -14,6 +14,7 @@ import {ReplaySetupTransfer} from './ReplaySetupTransfer';
 import {ReplayAICoach} from './ReplayAICoach';
 import {relatedReplaySetups,replayRuleFields,replayVisibleAtr,type RelatedReplaySetup} from '../../backtest/replaySetups';
 import {practiceEntryBlock,type PracticeGuardrails} from '../../backtest/practiceGuardrails';
+import { clearPracticeDraft, loadPracticeDraft, savePracticeDraft, type PendingPracticeOrder, type PracticePosition } from '../../backtest/practiceDraft';
 import type { PracticeFilter, PracticeTrade, ReplaySession } from '../../backtest/store';
 import { Bar, Timeframe } from '../../backtest/types';
 import { money, pct, priceFmt, rr, tone, dateTime } from '../../backtest/format';
@@ -26,14 +27,14 @@ interface Props {
   tz: string;
   initialEntryId: string | null;
   initialPlaybookId?: string | null;
-  onFinish: (s: ReplaySession) => void;
+  onFinish: (s: ReplaySession) => boolean;
   onToast: (m: string) => void;
   playbooks?:JournalPlaybook[];
 }
 
 type Side = 1 | -1;
-interface Pending { dir: Side; type: 'market' | 'limit' | 'stop'; price: number; stop: number; target: number | null; size: number }
-interface Position { dir: Side; entry: number; size: number; stop: number; target: number | null; entryBar: number; initRisk: number; tags: string[] }
+type Pending = PendingPracticeOrder;
+type Position = PracticePosition;
 interface AutoReviewResult { net: number; r: number; exit: number; stop: number; target: number; exitReason: 'stop' | 'target' | 'trade close'; size: number }
 
 const DEFAULT_BALANCE = 10000;
@@ -42,48 +43,65 @@ const WINDOW = 90;
 const roundStep = (x: number, step: number) => Number((Math.floor(x / step + 1e-9) * step).toFixed(8));
 
 export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEntryId, initialPlaybookId, onFinish, onToast,playbooks=[] }) => {
-  const [source, setSource] = useState<'random' | 'similar' | 'journal'>(initialEntryId ? 'journal' : 'random');
-  const [filter, setFilter] = useState<PracticeFilter>(DEFAULT_FILTER);
-  const [tf, setTf] = useState<Timeframe>('5m');
-  const [blind, setBlind] = useState(true);
-  const [useJournalSetup, setUseJournalSetup] = useState(true);
+  const [restored] = useState(loadPracticeDraft);
+  const d=restored.draft && !sessions.some(s=>s.id===restored.draft!.sessionId) ? restored.draft : null;
+  const [draftError,setDraftError]=useState(restored.error);
+  const [source, setSource] = useState<'random' | 'similar' | 'journal'>(d?.source ?? (initialEntryId ? 'journal' : 'random'));
+  const [filter, setFilter] = useState<PracticeFilter>(d?.filter ?? DEFAULT_FILTER);
+  const [tf, setTf] = useState<Timeframe>(d?.data.tf ?? '5m');
+  const [blind, setBlind] = useState(d?.blind ?? true);
+  const [useJournalSetup, setUseJournalSetup] = useState(d?.useJournalSetup ?? true);
   const [compareJournalResult, setCompareJournalResult] = useState(false);
-  const [pickId, setPickId] = useState<string | null>(initialEntryId);
-  const [data, setData] = useState<ReplayData | null>(null);
-  const [cursor, setCursor] = useState(0);
+  const [pickId, setPickId] = useState<string | null>(d?.pickId ?? initialEntryId);
+  const [data, setData] = useState<ReplayData | null>(d?.data ?? null);
+  const [cursor, setCursor] = useState(d?.cursor ?? 0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<'1' | '3' | '5' | '10'>('3');
   const [drawMode, setDrawMode] = useState(false);
   const [autoReview, setAutoReview] = useState(false);
   const [autoReviewResult, setAutoReviewResult] = useState<AutoReviewResult | null>(null);
-  const [drawings, setDrawings] = useState<number[]>([]);
-  const [side, setSide] = useState<Side>(1);
-  const [otype, setOtype] = useState<'market' | 'limit' | 'stop'>('market');
-  const [oprice, setOprice] = useState('');
-  const [riskPct, setRiskPct] = useState(1);
-  const [startingBalance, setStartingBalance] = useState(DEFAULT_BALANCE);
-  const [useRecordedSize, setUseRecordedSize] = useState(false);
-  const [stopPx, setStopPx] = useState('');
-  const [targetPx, setTargetPx] = useState('');
-  const [related,setRelated]=useState<RelatedReplaySetup|null>(null);
-  const [ticketEdited,setTicketEdited]=useState(false);
-  const [targetR,setTargetR]=useState(2),[stopAtr,setStopAtr]=useState(1.5),[stopFraction,setStopFraction]=useState(1);
-  const [breakevenR,setBreakevenR]=useState('');
-  const [sessionStart,setSessionStart]=useState(''),[sessionEnd,setSessionEnd]=useState('');
-  const [maxTrades,setMaxTrades]=useState(''),[lossLimit,setLossLimit]=useState(''),[dailyLoss,setDailyLoss]=useState('');
+  const [drawings, setDrawings] = useState<number[]>(d?.drawings ?? []);
+  const [side, setSide] = useState<Side>(d?.side ?? 1);
+  const [otype, setOtype] = useState<'market' | 'limit' | 'stop'>(d?.otype ?? 'market');
+  const [oprice, setOprice] = useState(d?.oprice ?? '');
+  const [riskPct, setRiskPct] = useState(d?.riskPct ?? 1);
+  const [startingBalance, setStartingBalance] = useState(d?.startingBalance ?? DEFAULT_BALANCE);
+  const [useRecordedSize, setUseRecordedSize] = useState(d?.useRecordedSize ?? false);
+  const [stopPx, setStopPx] = useState(d?.stopPx ?? '');
+  const [targetPx, setTargetPx] = useState(d?.targetPx ?? '');
+  const [related,setRelated]=useState<RelatedReplaySetup|null>(d?.related ?? null);
+  const [ticketEdited,setTicketEdited]=useState(d?.ticketEdited ?? false);
+  const [targetR,setTargetR]=useState(d?.targetR ?? 2),[stopAtr,setStopAtr]=useState(d?.stopAtr ?? 1.5),[stopFraction,setStopFraction]=useState(d?.stopFraction ?? 1);
+  const [breakevenR,setBreakevenR]=useState(d?.breakevenR ?? '');
+  const [sessionStart,setSessionStart]=useState(d?.sessionStart ?? ''),[sessionEnd,setSessionEnd]=useState(d?.sessionEnd ?? '');
+  const [maxTrades,setMaxTrades]=useState(d?.maxTrades ?? ''),[lossLimit,setLossLimit]=useState(d?.lossLimit ?? ''),[dailyLoss,setDailyLoss]=useState(d?.dailyLoss ?? '');
   const positiveLimit=(value:string)=>value.trim()&&Number.isFinite(Number(value))&&Number(value)>0?Number(value):null;
   const guardrails:PracticeGuardrails={session:sessionStart!==''&&sessionEnd!==''?{start:Number(sessionStart),end:Number(sessionEnd)}:null,maxTrades:positiveLimit(maxTrades),lossesPerDay:positiveLimit(lossLimit),dailyLoss:positiveLimit(dailyLoss)};
-  const [pending, setPending] = useState<Pending | null>(null);
-  const [pos, setPos] = useState<Position | null>(null);
-  const [trades, setTrades] = useState<PracticeTrade[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
-  const [notes, setNotes] = useState('');
+  const [pending, setPending] = useState<Pending | null>(d?.pending ?? null);
+  const [pos, setPos] = useState<Position | null>(d?.pos ?? null);
+  const [trades, setTrades] = useState<PracticeTrade[]>(d?.trades ?? []);
+  const [tags, setTags] = useState<string[]>(d?.tags ?? []);
+  const [notes, setNotes] = useState(d?.notes ?? '');
   const [finished, setFinished] = useState(false);
-  const [sessionId, setSessionId] = useState('');
-  const [minCursor, setMinCursor] = useState(0);
-  const sessionStartedAt = useRef<string | null>(null);
+  const [sessionId, setSessionId] = useState(d?.sessionId ?? '');
+  const [minCursor, setMinCursor] = useState(d?.minCursor ?? 0);
+  const sessionStartedAt = useRef<string | null>(d?.startedAt ?? null);
   const stateRef = useRef({ pending, pos, cursor, data, trades });
   stateRef.current = { pending, pos, cursor, data, trades };
+  useEffect(()=>{
+    if (!data || finished || restored.error || autoReview) return;
+    const saved=savePracticeDraft({version:1,data,cursor,minCursor,sessionId,startedAt:sessionStartedAt.current || new Date().toISOString(),
+      pending,pos,trades,notes,tags,drawings,source,filter,blind,useJournalSetup,pickId,side,otype,oprice,riskPct,startingBalance,useRecordedSize,
+      stopPx,targetPx,targetR,stopAtr,stopFraction,breakevenR,sessionStart,sessionEnd,maxTrades,lossLimit,dailyLoss,related,ticketEdited});
+    setDraftError(saved?'':'Draft not saved: browser storage is unavailable. Keep this page open or finish and retry.');
+  },[data,cursor,minCursor,sessionId,pending,pos,trades,notes,tags,drawings,source,filter,blind,useJournalSetup,pickId,side,otype,oprice,riskPct,startingBalance,useRecordedSize,
+    stopPx,targetPx,targetR,stopAtr,stopFraction,breakevenR,sessionStart,sessionEnd,maxTrades,lossLimit,dailyLoss,related,ticketEdited,finished,autoReview,restored.error]);
+  useEffect(()=>{
+    if (!data || finished || !draftError) return;
+    const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};
+    window.addEventListener('beforeunload',warn);
+    return ()=>window.removeEventListener('beforeunload',warn);
+  },[data,finished,draftError]);
 
   const journalMatches = useMemo(() => entries.filter((e) => eligible(e) && e.exitPrice !== null && matchesJournal(e, filter))
     .sort((a, b) => (b.entryTime || b.date).localeCompare(a.entryTime || a.date)), [entries, filter]);
@@ -186,7 +204,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
     applyTicketSetup(setup);
   };
   useEffect(() => {
-    if (!initialPlaybookId) return;
+    if (!initialPlaybookId || d) return;
     const setup = relatedReplaySetups(playbooks, entries, [], []).find(s => s.id === `playbook:${initialPlaybookId}`);
     if (setup) transferSetup(setup);
   }, [initialPlaybookId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -201,6 +219,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
   };
   const loadSource = () => {
     try {
+      if (data && !finished && !window.confirm('Replace the current practice draft? Its orders, positions and notes will be discarded.')) return;
       if (dateRangeError) { onToast(dateRangeError); return; }
       if (source !== 'journal') {
         if (!feedMatches.length) { onToast('No instruments match these filters. Pick another market or instrument.'); return; }
@@ -352,15 +371,18 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
   const finish = () => {
     if (!data) return;
     let all = trades;
-    if (pos && last) { const t = closeAt(pos, last.c, cursor - 1); all = [...trades, { ...t, tags }]; setTrades(all); setPos(null); }
-    setPending(null); setPlaying(false); setFinished(true);
+    if (pos && last) { const t = closeAt(pos, last.c, cursor - 1); all = [...trades, { ...t, tags }]; }
+    setPlaying(false);
     const finishedAt = new Date().toISOString();
-    onFinish({
+    const saved=onFinish({
       id: sessionId, source: data.source, symbol: data.symbol, label: data.label,
       startedAt: sessionStartedAt.current ?? finishedAt, finishedAt,
       trades: all, net: all.reduce((a, t) => a + t.net, 0), notes, tags, pointsAwarded: false,
       journalTradeId: data.trade?.id, marketDate: new Date(data.bars[data.start]?.t ?? Date.now()).toISOString().slice(0, 10), timeframe: data.tf,
     });
+    if (!saved) return;
+    setTrades(all); setPos(null); setPending(null); setFinished(true);
+    if (!clearPracticeDraft()) onToast('Session saved, but the draft could not be cleared. Do not finish it twice.');
   };
 
   // Keyboard: Space play/pause, → next bar, ← back, B buy, S sell
@@ -403,8 +425,17 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
 
   return (
     <div className="space-y-5">
+      <Banner tone={draftError?'bad':'info'}>{draftError || (d ? 'Unfinished practice restored, paused at the saved bar. Orders, open position, rules and notes are retained. No completion reward has been claimed.' : 'Unfinished practice is saved locally and resumes when you return. Generated and reconstructed price paths are simulations, not historical execution evidence.')}
+        {(data || draftError) && <button type="button" className={`${btnSecondary} ml-3`} onClick={()=>{
+          if (!window.confirm('Discard this practice draft, including its open position, pending order and notes?')) return;
+          if (!clearPracticeDraft()) { onToast('Could not discard the draft: browser storage is unavailable.'); return; }
+          setPlaying(false);setData(null);setPos(null);setPending(null);setTrades([]);setNotes('');
+          if (restored.error) window.location.reload();
+          else setDraftError('');
+        }}>Discard draft</button>}
+      </Banner>
       <div className="md:hidden"><Banner tone="info" icon={<Monitor className="w-4 h-4" />}>Replay works best on a larger screen. Everything still works here; the chart scrolls sideways.</Banner></div>
-      <ReplaySetupTransfer entries={entries} playbooks={playbooks} initialId={initialPlaybookId ? `playbook:${initialPlaybookId}` : ''} onSelect={transferSetup} disabled={!!pos||!!pending||(!finished&&trades.length>0)||autoReview}/>
+      <ReplaySetupTransfer entries={entries} playbooks={playbooks} initialId={d?.related?.id || (initialPlaybookId ? `playbook:${initialPlaybookId}` : '')} onSelect={transferSetup} disabled={!!pos||!!pending||(!finished&&trades.length>0)||autoReview}/>
       {guidedPlaybook&&<section className="rounded-2xl border border-[#5338ec]/25 bg-[#FBFAFF] p-4 space-y-3" aria-label={`${guidedPlaybook.name} playbook practice guide`}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-[#5338ec]">Playbook practice guide</p><h3 className="mt-0.5 text-sm font-bold text-[#0b1c30]">{guidedPlaybook.name}</h3><p className="mt-1 text-xs text-slate-600">{guidedPlaybook.thesis}</p></div>

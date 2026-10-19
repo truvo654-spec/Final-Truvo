@@ -1,4 +1,5 @@
 import { JournalHelp } from './JournalHelp';
+import { journalCsv } from './journalExport';
 import { useJournalState } from './journalStorage';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics, currencyOf } from './journalMath';
@@ -301,15 +302,12 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
 
   const exportCsv = () => {
     const list = sel.length ? selEntries : sorted;
-    const head = ['Date', 'Instrument', 'Side', 'Size', 'Entry', 'Exit', 'Gross P&L', 'Commissions', 'Net P&L', 'Realized R', 'Trading status', 'Broker', 'Cashback (est. USD)', 'Points (est.)', 'Playbook', 'Tags', 'Journal ID', 'Account ID', 'Account currency', 'Review state', 'Net eligible'];
-    const esc = (v: string | number) => `"${(typeof v==='string' && /^[=+@\-]/.test(v)?`'${v}`:String(v)).replace(/"/g, '""')}"`;
-    const lines = list.map((e) => [e.entryTime || e.date, e.symbol, e.direction === 'BUY' ? 'LONG' : 'SHORT', e.size, e.entryPrice, e.exitPrice ?? '', e.pnlKnown===false?'':e.pnl, e.commission ?? '', eligible(e)?netOf(e):'', realizedR(e) ?? '', TRADING_STATUS_LABEL[tradingStatusOf(e)], brokerName(e.brokerId), entryCashback(e, brokerMap), entryPoints(e), e.strategy, e.tags.join('|'),e.id,e.accountId || 'legacy-demo',currencyOf(e),reviewStateOf(e),eligible(e)?'yes':'no'].map(esc).join(','));
-    const blob = new Blob([[head.map(esc).join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob([journalCsv(list,brokerMap)], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'trade-log.csv'; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    onToast(`Exported ${list.length} trade${list.length === 1 ? '' : 's'} to CSV`);
+    onToast(`Exported ${list.length} executions to round-trip CSV. Use Journal Backup for lossless review, image and playbook history.`);
   };
 
   const hasSel = sel.length > 0;

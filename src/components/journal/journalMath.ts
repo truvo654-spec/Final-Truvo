@@ -8,6 +8,8 @@ export const eligible = (e: JournalEntry, basis: 'gross' | 'net' = 'net') => rea
 export const rawNet = (e: JournalEntry) => Math.round((e.pnl - (e.commission ?? 0)) * 100) / 100;
 // Additive value only: callers display ineligible observations as unknown, not a closed zero result.
 export const netOf = (e: JournalEntry) => eligible(e) ? rawNet(e) : 0;
+export const netOutcome = (net: number): 'win' | 'loss' | 'breakeven' =>
+  Math.abs(net) <= 0.005 ? 'breakeven' : net > 0 ? 'win' : 'loss';
 // Account return, not return on margin/notional: those valuation prerequisites are not recorded.
 export const netRoiOf = (e: JournalEntry): number | null => {
   if (!eligible(e) || !Number.isFinite(e.equityAtEntry) || e.equityAtEntry! <= 0) return null;
@@ -17,7 +19,7 @@ export const netRoiOf = (e: JournalEntry): number | null => {
 export const resultOf = (e: JournalEntry, basis: 'gross' | 'net' = 'net'): JournalEntry['outcome'] => {
   if (!eligible(e, basis)) return 'open';
   const p = basis === 'net' ? rawNet(e) : e.pnl;
-  return Math.abs(p) <= 0.005 ? 'breakeven' : p > 0 ? 'win' : 'loss';
+  return netOutcome(p);
 };
 export const realizedR = (e: JournalEntry) => !eligible(e) ? null : Number.isFinite(e.initialRisk) && e.initialRisk! > 0 ? rawNet(e) / e.initialRisk! : Number.isFinite(e.rMultiple) ? e.rMultiple : null;
 export const timestampMs = (s?: string) => s ? Date.parse(/[zZ]|[+-]\d\d:\d\d$/.test(s) ? s : `${s}Z`) : NaN;

@@ -3,6 +3,7 @@ import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './jo
 import React, { useMemo, useState } from 'react';
 import { JournalEntry } from '../../types';
 import { JournalPlaybook, ScenarioStatus } from '../../data/journalPlaybooks';
+import { matchesPlaybook, scenarioRR } from './playbookLinks';
 
 // Playbook analytics: win rate, profit factor, avg win/loss and target hit rate as a rolling
 // line (trade by trade), a comparison across playbooks, an R-outcome distribution against the
@@ -60,8 +61,8 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
   const target = playbook.benchmarkRR;
 
   const trades = useMemo(
-    () => entries.filter((e) => eligible(e) && e.strategy === playbook.name).sort((a, b) => (a.entryTime || a.date).localeCompare(b.entryTime || b.date)),
-    [entries, playbook.name]
+    () => entries.filter((e) => eligible(e) && matchesPlaybook(e, playbook)).sort((a, b) => (a.entryTime || a.date).localeCompare(b.entryTime || b.date)),
+    [entries, playbook]
   );
 
   // rolling series: value after each trade over the last WINDOW trades (expanding until WINDOW)
@@ -74,7 +75,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
   // comparison across playbooks
   const compare = useMemo(
     () => playbooks
-      .map((p) => ({ p, v: metricOf(entries.filter((e) => e.strategy === p.name), metric, p.benchmarkRR), n: entries.filter((e) => eligible(e) && e.strategy === p.name).length }))
+      .map((p) => ({ p, v: metricOf(entries.filter((e) => matchesPlaybook(e, p)), metric, p.benchmarkRR), n: entries.filter((e) => eligible(e) && matchesPlaybook(e, p)).length }))
       .filter((x) => x.n > 0)
       .sort((a, b) => (b.v ?? -1) - (a.v ?? -1)),
     [playbooks, entries, metric]
@@ -100,7 +101,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
   const count = (st: ScenarioStatus) => sc.filter((x) => x.status === st).length;
   const resolved = count('triggered') + count('closed') + count('invalidated');
   const triggerRate = resolved ? ((count('triggered') + count('closed')) / resolved) * 100 : null;
-  const rrs = sc.map((x) => (x.entry !== undefined && x.stop !== undefined && x.target !== undefined && x.entry !== x.stop ? Math.abs(x.target - x.entry) / Math.abs(x.entry - x.stop) : null)).filter((x): x is number => x !== null);
+  const rrs = sc.map(scenarioRR).filter((x): x is number => x !== null);
   const fromSc = trades.filter((e) => e.scenarioId);
   const notSc = trades.filter((e) => !e.scenarioId);
   const avgNet = (l: JournalEntry[]) => (l.length ? l.reduce((a, e) => a + netOf(e), 0) / l.length : null);
@@ -234,7 +235,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
 
       {/* Scenario management */}
       <div className="rounded-xl border border-slate-200 p-3">
-        <p className={lbl}>Scenario management<Info title="Scenario management">Watching: idea written, waiting. Triggered: the setup happened and you traded it. Invalidated: the idea failed before entry. Closed: finished. Trigger rate = (triggered + closed) ÷ all resolved scenarios. Avg planned R:R comes from each scenario's entry, stop and target. Trades from scenarios are journal entries logged with "Check and trade".</Info></p>
+        <p className={lbl}>Scenario management<Info title="Scenario management">Watching: waiting for the setup. Triggered: the setup occurred; this does not prove an execution. Closed: finished. Link recorded executions from the Checklist step or trade review. Invalid price relationships are excluded from planned R:R.</Info></p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
           {(['watching', 'triggered', 'invalidated', 'closed'] as const).map((st) => (
             <div key={st} className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-[10px] font-semibold text-slate-500 capitalize">{st}</p><p className="text-base font-bold font-mono text-[#0b1c30]">{count(st)}</p></div>
@@ -247,7 +248,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
             {fromSc.length > 0 && <> · avg <b className="font-mono">{avgNet(fromSc)!.toFixed(2)}</b> vs others <b className="font-mono">{avgNet(notSc)?.toFixed(2) ?? '—'}</b> <button type="button" onClick={() => onShowTrades(fromSc.map((e) => e.id), `${playbook.name} scenario trades`)} className="text-[#5338ec] hover:underline">view</button></>}
           </p>
         </div>
-        {fromSc.length === 0 && <p className="text-[10px] text-slate-400 mt-1">Trades logged with "Check and trade" from a scenario are linked here, so you can see whether planned ideas beat spontaneous ones.</p>}
+        {fromSc.length === 0 && <p className="text-[10px] text-slate-500 mt-1">Link an imported execution from the Checklist step or trade review to measure scenario-origin results here.</p>}
       </div>
     </div>
   );

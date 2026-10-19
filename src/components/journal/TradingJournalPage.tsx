@@ -6,7 +6,6 @@ import { ToolCreditUnlockModal, type UnlockDurationOption, type UnlockableTool }
 import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview } from '../../types';
 import {
   JOURNAL_ENTRIES,
-  hydrateDemoCfdEvidence,
   JOURNAL_REVIEWS,
   DEFAULT_CHECKLIST,
   JOURNAL_TODAY,
@@ -23,6 +22,8 @@ import { JournalInsights } from './JournalInsights';
 import { JournalAICoach, CoachOverviewCard } from './JournalAICoach';
 import { createCoachDraft, type CoachScenario } from './aiCoach';
 import { JournalPlaybooks } from './JournalPlaybooks';
+import { attributionSnapshot, playbookVersion } from './playbookLinks';
+import { JournalBackupControls } from './JournalBackupControls';
 import { DEFAULT_PLAYBOOKS, JournalPlaybook } from '../../data/journalPlaybooks';
 import { JournalCumulativeChart } from './JournalCumulativeChart';
 import { JournalOverviewAnalytics } from './overview/JournalOverviewAnalytics';
@@ -33,7 +34,7 @@ import { StrategyHealthCard } from '../backtest/PlaybookBacktestPanel';
 import { loadExpected, saveExpected, PlaybookExpectedStats } from '../../backtest/store';
 import { TradingStatusBadge, ReviewStateBadge, reviewStateOf, tradingStatusOf } from './tradingStatus';
 import { currencyOf, eligible, incompleteFields, metrics, netOf, resultOf, realizedR } from './journalMath';
-import { journalSandbox, saveJournalValue, useJournalState } from './journalStorage';
+import { journalSandbox, saveJournalBatch, saveJournalValue, useJournalState } from './journalStorage';
 import { JournalReviewDrawer } from './JournalReviewDrawer';
 import { JournalDateRange } from './JournalDateRange';
 import { JournalDayReview } from './JournalDayReview';
@@ -169,7 +170,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     : null;
   const coachToday = new Date().toISOString().slice(0, 10);
   const [entries, setEntries, storageFailed] = useJournalState<JournalEntry[]>('entries', JOURNAL_ENTRIES);
-  useEffect(() => { setEntries(current => hydrateDemoCfdEvidence(current)); }, [setEntries]);
+  const [includeDemo,setIncludeDemo] = useJournalState('include-demo',true);
+  const demoIds=useMemo(()=>new Set(JOURNAL_ENTRIES.map(e=>e.id)),[]);
   const [reviewCohort, setReviewCohort] = useState<string[]>([]);
   const [dailyNotes, setDailyNotes] = useJournalState<Record<string,string>>('daily-notes', {});
   const [currency, setCurrency] = useJournalState('currency', 'USD');
@@ -184,10 +186,23 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [checklist, setChecklist] = useJournalState<JournalChecklistItem[]>('checklist', DEFAULT_CHECKLIST);
   const [newItem, setNewItem] = useState('');
   const [playbooks, setPlaybooks] = useJournalState<JournalPlaybook[]>('playbooks', DEFAULT_PLAYBOOKS);
+  useEffect(() => {
+    setEntries(previous => {
+      let changed = false;
+      const next = previous.map(entry => {
+        if (entry.playbookId) return entry;
+        const matches = playbooks.filter(book => book.name === entry.strategy);
+        if (matches.length !== 1) return entry;
+        changed = true;
+        return { ...entry, playbookId: matches[0].id };
+      });
+      return changed ? next : previous;
+    });
+  }, [playbooks, setEntries]);
   const setVersionedPlaybooks:React.Dispatch<React.SetStateAction<JournalPlaybook[]>> = update=>setPlaybooks(previous=>{
     const next=typeof update==='function'?update(previous):update;
-    return next.map(pb=>{const old=previous.find(p=>p.id===pb.id);if(!old || JSON.stringify(old.rules)===JSON.stringify(pb.rules))return pb;
-      return {...pb,rulesEffectiveAt:new Date().toISOString(),ruleHistory:[...(old.ruleHistory || []),{version:(old.ruleHistory?.length || 0)+1,effectiveAt:old.rulesEffectiveAt || null,rules:old.rules}]};});
+    return next.map(pb=>{const old=previous.find(p=>p.id===pb.id);if(!old || playbookVersion(old)===playbookVersion(pb))return pb;
+      return {...pb,rulesEffectiveAt:new Date().toISOString(),ruleHistory:[...(old.ruleHistory || []),{version:(old.ruleHistory?.length || 0)+1,effectiveAt:old.rulesEffectiveAt || null,rules:old.rules,snapshot:playbookVersion(old)}]};});
   });
   const [recordings, setRecordings] = useState<Record<string, string>>({}); // entry id → replay video (object URL)
   const [rules, setRules] = useJournalState('TradingJournalPage-rules', { maxRisk: 1, maxDailyLoss: 3, maxTrades: 3, stopAfterLosses: 2 });
@@ -217,7 +232,12 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       requestFeatureAccess('backtest', () => performCoachScenario(scenario, action));
     });
   };
-  const setExpectedFor = (st: PlaybookExpectedStats) => setExpected((m) => { const next = { ...m, [st.playbookId]: st }; saveExpected(next); return next; });
+  const setExpectedFor = (st: PlaybookExpectedStats) => {
+    const next = { ...expected, [st.playbookId]: st };
+    if (!saveExpected(next)) { onShowToast('Reference not saved: browser storage is unavailable. Existing reference preserved.'); return false; }
+    setExpected(next);
+    return true;
+  };
 
 
   const [reviews, setReviews] = useJournalState<JournalWeeklyReview[]>('weekly', JOURNAL_REVIEWS);
@@ -258,10 +278,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
   const [rangeFrom, rangeTo] = rangeBounds(rangeMode, calMonth, JOURNAL_TODAY, customRange);
   const symbolFilteredEntries = useMemo(
-    () => normalizedSymbolQuery
-      ? entries.filter((entry) => entry.symbol.toLowerCase().includes(normalizedSymbolQuery))
-      : entries,
-    [entries, normalizedSymbolQuery]
+    () => entries.filter(entry=>(includeDemo || !demoIds.has(entry.id)) && (!normalizedSymbolQuery || entry.symbol.toLowerCase().includes(normalizedSymbolQuery))),
+    [entries, normalizedSymbolQuery, includeDemo, demoIds]
   );
   // entries after the Filters panel (used by the calendar, which shows every day of its month)
   const calEntries = useMemo(
@@ -533,6 +551,11 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         </button>
       </div>
 
+      <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs flex flex-wrap items-center gap-3" aria-label="Sample data boundary">
+        <p className="flex-1">This browser contains <strong>{entries.filter(e=>demoIds.has(e.id)).length} sample-origin trades</strong> and {entries.filter(e=>!demoIds.has(e.id)).length} other records. Sample trades are not your broker history. Dates and expiry use the current UTC calendar, not the sample date.</p>
+        <label className="font-semibold"><input type="checkbox" checked={includeDemo} onChange={e=>{setIncludeDemo(e.target.checked);setSelectedDay(null);}}/> Include sample trades in reports and Practice</label>
+      </section>
+      <JournalBackupControls onToast={onShowToast}/>
       <div className="mb-6">
         <FolderTabs
           tabs={tabs}
@@ -850,7 +873,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {!lockedTabFeature && tab === 'backtest' && (
         <BacktestPage
           entries={scoped}
-          allEntries={symbolFilteredEntries}
+          allEntries={calEntries}
           playbooks={playbooks}
           setPlaybooks={setVersionedPlaybooks}
           journalRules={rules}
@@ -875,7 +898,20 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {!lockedTabFeature && tab === 'playbook' && (
         <JournalPlaybooks
           entries={scoped}
-          allJournalEntries={symbolFilteredEntries}
+          allJournalEntries={calEntries}
+          referenceEntries={entries}
+          onLinkScenario={(entryId, book, scenario, ruleIds, houseRuleIds) => {
+            const next=entries.map(entry => entry.id === entryId ? {
+              ...entry, strategy: book.name, playbookId: book.id, playbookVersion: playbookVersion(book), scenarioId: scenario.id,
+              setupCheck: { at: new Date().toISOString(), scenarioId: scenario.id, ruleIds, houseRuleIds },
+              attributionHistory:entry.playbookId===book.id && entry.playbookVersion===playbookVersion(book) && entry.scenarioId===scenario.id
+                ? entry.attributionHistory : [...(entry.attributionHistory || []),attributionSnapshot(entry)],
+            } : entry);
+            if (!saveJournalValue('entries',next)) { onShowToast('Trade link not saved: browser storage is unavailable. Existing attribution preserved.'); return false; }
+            setEntries(next);
+            onShowToast('Recorded trade linked. Preparation snapshot saved separately from execution evidence.');
+            return true;
+          }}
           playbooks={playbooks}
           setPlaybooks={setVersionedPlaybooks}
           onOpenEntry={id=>openEntry(id,scoped.filter(e=>e.strategy===entries.find(x=>x.id===id)?.strategy).map(e=>e.id))}
@@ -1064,7 +1100,15 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         </div>
       )}
 
-      {selected && hasFeatureAccess('journalCore') && <JournalReviewDrawer entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
+      {selected && hasFeatureAccess('journalCore') && <JournalReviewDrawer entry={selected} cohort={reviewCohort} checklist={checklist} playbooks={playbooks} playbook={playbooks.find(p=>selected.playbookId?p.id===selected.playbookId:p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{
+        const next=entries.map(e=>e.id===upd.id?upd:e);
+        if (!saveJournalValue('entries',next)) return false;
+        setEntries(next);onShowToast('Review saved locally');return true;
+      }} onDelete={id=>{
+        const next=entries.filter(e=>e.id!==id);
+        if (!saveJournalValue('entries',next)) {onShowToast('Entry not deleted: browser storage is unavailable.');return;}
+        setEntries(next);setSelectedId(null);onShowToast('Entry deleted locally');
+      }} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
       {reviewQueueOpen && hasFeatureAccess('journalCore') && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0b1c30]/40 p-3 sm:p-6" role="presentation" onMouseDown={() => setReviewQueueOpen(false)}>
           <section
@@ -1122,11 +1166,15 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           existingEntries={entries}
           brokers={brokers}
           onConnectBroker={onConnectBroker}
-          onImportMany={(list) => {
-            setEntries((prev) => [...list, ...prev]);
+          onImportMany={(list, history) => {
+            const incoming = new Map(list.map(e=>[e.id,e]));
+            const next = [...list.filter(e=>!entries.some(old=>old.id===e.id)), ...entries.map(e=>incoming.get(e.id) || e)];
+            if (!saveJournalBatch({entries:next,imports:history})) return false;
+            setEntries(next);
             setWizardOpen(false);
             setTab('entries');
-            onShowToast(`${list.length} trade${list.length === 1 ? '' : 's'} imported`);
+            onShowToast(`${list.length} record${list.length === 1 ? '' : 's'} imported or updated; review required`);
+            return true;
           }}
         />
       )}

@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import type { JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { computeMetrics } from '../../backtest/metrics';
-import { liveStats } from '../../backtest/gap';
+import { liveStats, matchingLiveEntries } from '../../backtest/gap';
 import { dateOnly, money, num, pct, rr, tone, utcWindow } from '../../backtest/format';
 import { SESSIONS, type Bar } from '../../backtest/types';
 import { dayMs, marketData, SYMBOLS, marketGroupOf, symbolSpec } from '../../backtest/marketData';
@@ -45,8 +45,8 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
     const result = output.result;
     const metrics = computeMetrics(result.trades, result.startBalance, result.rangeStart, result.rangeEnd);
     const playbook = playbooks.find((p) => p.id === settings.playbookId);
-    const matchingEntries = playbook ? entries.filter((e) => e.strategy === playbook.name) : [];
-    const live = playbook ? liveStats(entries, playbook.name) : null;
+    const matchingEntries = playbook && settings.playbookVersion ? matchingLiveEntries(entries,playbook.name,{symbol:settings.symbol,currency:result.currency,playbookId:playbook.id,playbookVersion:settings.playbookVersion}) : [];
+    const live = playbook && settings.playbookVersion ? liveStats(entries, playbook.name, { symbol:settings.symbol,currency:result.currency,playbookId:playbook.id,playbookVersion:settings.playbookVersion }) : null;
     const session = settings.session.id === 'any'
       ? 'Any time'
       : `${settings.session.id === 'custom' ? 'Custom hours' : SESSIONS[settings.session.id].label} ${utcWindow(settings.session.start, settings.session.end, tz)}`;

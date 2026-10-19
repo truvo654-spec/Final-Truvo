@@ -9,11 +9,12 @@ import { healthOf, HEALTH_LABEL, liveStats } from '../../backtest/gap';
 import { dateOnly, num, pct, rr } from '../../backtest/format';
 import { LineChart } from './charts';
 import { Pill, btnSecondary } from './ui';
+import { playbookVersion } from '../journal/playbookLinks';
 
 const toneOf = (h: string) => (h === 'on-track' ? 'good' : h === 'behind' ? 'bad' : 'neutral') as 'good' | 'bad' | 'neutral';
 
 export const PlaybookBacktestPanel: React.FC<{ playbook: JournalPlaybook; entries: JournalEntry[]; expected?: PlaybookExpectedStats; onBacktest: () => void }> = ({ playbook, entries, expected, onBacktest }) => {
-  const live = useMemo(() => liveStats(entries, playbook.name), [entries, playbook.name]);
+  const live = useMemo(() => liveStats(entries, playbook.name, expected ? { ...expected, playbookVersion: playbookVersion(playbook) } : undefined), [entries, playbook, expected]);
   const h = healthOf(live, expected);
   if (!expected) {
     return (
@@ -21,12 +22,19 @@ export const PlaybookBacktestPanel: React.FC<{ playbook: JournalPlaybook; entrie
         <FlaskConical className="w-5 h-5 text-[#5338ec]" aria-hidden />
         <div className="flex-1 min-w-[12rem]">
           <p className="text-sm font-bold text-[#0b1c30]">Backtest vs live<JournalHelp label="Backtest vs live" /></p>
-          <p className="text-xs text-[#474556]">Test this playbook on past prices to see what to expect, then track your live trades against it.</p>
+          <p className="text-xs text-[#474556]">Explore an executable template on generated prices. Save experiments separately; choose a scoped demo reference explicitly. This is not a live-performance forecast.</p>
         </div>
-        <button type="button" onClick={onBacktest} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Backtest this playbook</button>
+        <button type="button" onClick={onBacktest} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Review demo test coverage</button>
       </div>
     );
   }
+  if (!expected.currency || expected.playbookVersion !== playbookVersion(playbook)) return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs space-y-2">
+      <p className="font-bold">Reference needs review</p>
+      <p>Rules changed or this legacy reference has no recorded currency/version. Comparisons are unavailable until you explicitly choose a newly saved demo reference.</p>
+      <button type="button" className={btnSecondary} onClick={onBacktest}>Review demo setup</button>
+    </div>
+  );
   const n = live.trades;
   const band = Array.from({ length: Math.max(2, n + 1) }, (_, k) => ({ x: k, lo: expected.avgR * k - 2 * expected.stdR * Math.sqrt(k), hi: expected.avgR * k + 2 * expected.stdR * Math.sqrt(k) }));
   const rows: [string, string, string, string][] = [
@@ -39,22 +47,22 @@ export const PlaybookBacktestPanel: React.FC<{ playbook: JournalPlaybook; entrie
   return (
     <div className="rounded-xl border border-slate-200 p-4 space-y-3" aria-label="Backtest vs live">
       <div className="flex flex-wrap items-center gap-2">
-        <h4 className="text-sm font-bold text-[#0b1c30] mr-auto">Backtest vs live<JournalHelp label="Backtest vs live" /></h4>
-        <Pill tone={toneOf(h.health)} title="On track while your live cumulative R stays inside the range the backtest predicts (average ± 2 standard deviations).">{HEALTH_LABEL[h.health]}</Pill>
+        <h4 className="text-sm font-bold text-[#0b1c30] mr-auto">Demo reference vs recorded trades</h4>
+        <Pill tone={toneOf(h.health)} title="Generated prices cannot establish expected live performance.">{HEALTH_LABEL[h.health]}</Pill>
         <button type="button" onClick={onBacktest} className={`${btnSecondary} h-8`}>Re-test</button>
       </div>
-      <p className="text-[11px] text-slate-500">Expected from "{expected.runName}" ({expected.symbol}, saved {dateOnly(Date.parse(expected.savedAt))}).</p>
+      <p className="text-[11px] text-slate-500">Explicit reference: "{expected.runName}" · {expected.symbol} · {expected.currency} · saved {dateOnly(Date.parse(expected.savedAt))}. Recorded trades must match instrument and playbook version. Legacy unversioned trades and CFD/futures substitutions are excluded. Current account/date filters also apply.</p>
       <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-4">
         <table className="w-full text-xs tabular-nums self-start">
-          <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-1.5">Measure</th><th className="text-right py-1.5">Expected</th><th className="text-right py-1.5">Live<JournalHelp label="Live" /></th></tr></thead>
+          <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-1.5">Measure</th><th className="text-right py-1.5">Demo reference</th><th className="text-right py-1.5">Recorded</th></tr></thead>
           <tbody>{rows.map(([k, hint, e, l]) => <tr key={k} className="border-b border-slate-100"><td className="py-1.5 font-semibold" title={hint}>{k}</td><td className="py-1.5 text-right">{e}</td><td className="py-1.5 text-right font-bold">{l}</td></tr>)}</tbody>
         </table>
         <div className="min-w-0">
           {n > 0 ? (
             <LineChart label="Live cumulative R against the backtest's expected range" area={false} height={170} xFmt={(x) => `Trade ${Math.round(x)}`} yFmt={(y) => rr(y, 0)}
-              band={{ color: '#5338ec', points: band, label: 'Expected range' }}
+              band={expected.dataSource === 'generated-demo' ? undefined : { color: '#5338ec', points: band, label: 'Reference range' }}
               series={[{ name: 'Your live trades (cumulative R)', color: '#0b1c30', points: [{ x: 0, y: 0 }, ...live.cumR.map((y, i) => ({ x: i + 1, y }))] }]} />
-          ) : <p className="text-xs text-slate-500">No live trades with this playbook yet.</p>}
+          ) : <p className="text-xs text-slate-500">No eligible recorded trades match this instrument, currency and playbook version in the current scope.</p>}
         </div>
       </div>
     </div>
@@ -63,16 +71,16 @@ export const PlaybookBacktestPanel: React.FC<{ playbook: JournalPlaybook; entrie
 
 export const StrategyHealthCard: React.FC<{ playbooks: JournalPlaybook[]; entries: JournalEntry[]; expected: Record<string, PlaybookExpectedStats>; onOpen: () => void }> = ({ playbooks, entries, expected, onOpen }) => {
   const rows = useMemo(() => playbooks.filter((p) => expected[p.id]).map((p) => {
-    const live = liveStats(entries, p.name);
+    const live = liveStats(entries, p.name, { ...expected[p.id], playbookVersion: playbookVersion(p) });
     return { p, live, h: healthOf(live, expected[p.id]) };
   }).sort((a, b) => a.h.gapR - b.h.gapR), [playbooks, entries, expected]);
   return (
     <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
       <h4 className="text-sm font-bold mb-1 flex items-center gap-1.5"><HeartPulse className="w-4 h-4 text-[#5338ec]" /> Strategy health<JournalHelp label="Strategy health" /></h4>
-      <p className="text-[11px] text-slate-500 mb-3">Live results vs each playbook's backtest, biggest gap first.</p>
+      <p className="text-[11px] text-slate-500 mb-3">Scoped demo references, not forecasts of live strategy health. Generated prices do not establish an edge.</p>
       {rows.length === 0 ? (
         <>
-          <p className="text-xs text-[#474556]">No playbook has a saved backtest yet. Test one to see if your live trading matches it.</p>
+          <p className="text-xs text-[#474556]">No demo reference has been selected. Save an experiment, then explicitly choose it as a scoped reference. It will not forecast live performance.</p>
           <button type="button" onClick={onOpen} className="mt-2 text-xs font-semibold text-[#5338ec] hover:underline">Test a playbook</button>
         </>
       ) : (
@@ -80,7 +88,7 @@ export const StrategyHealthCard: React.FC<{ playbooks: JournalPlaybook[]; entrie
           {rows.map(({ p, live, h }) => (
             <li key={p.id} className="flex items-center gap-2 text-xs">
               <span className="font-semibold text-[#0b1c30] flex-1 truncate">{p.name}</span>
-              <span className={`tabular-nums ${h.gapR < 0 ? 'text-rose-600' : 'text-emerald-600'}`} title={`Live ${rr(live.avgR)} vs expected ${rr(expected[p.id].avgR)} per trade`}>{h.health === 'too-few' ? `${live.trades} trades` : `${rr(h.gapR)}/trade`}</span>
+              <span className="tabular-nums text-slate-600">{live.trades} matching trades</span>
               <Pill tone={toneOf(h.health)}>{HEALTH_LABEL[h.health]}</Pill>
             </li>
           ))}

@@ -3,7 +3,7 @@ import { CHART_BTC_4H } from './communityDemoPostAssets';
 import { generateJournalHistory } from './journalHistory';
 
 /** "Today" for the demo dataset (matches the rest of the mock data). */
-export const JOURNAL_TODAY = '2026-10-05';
+export const JOURNAL_TODAY = new Date().toISOString().slice(0, 10);
 
 export const JOURNAL_EMOTIONS: JournalEmotion[] = ['Confident', 'Calm', 'Anxious', 'FOMO', 'Greedy', 'Frustrated', 'Bored'];
 

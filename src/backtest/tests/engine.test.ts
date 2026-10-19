@@ -6,6 +6,8 @@ import { computeMetrics } from '../metrics';
 import { marketData, parseDay, seriesFromBars, sliceSeries } from '../marketData';
 import { cond, defaultSettings, price, val } from '../rules';
 import { BacktestSettings, Series } from '../types';
+import { outOfSample, walkForward } from '../robustness';
+import { loadRuns,saveRuns,summarize,saveReplayCompletion,loadReplay, type BacktestRun, type ReplaySession } from '../store';
 
 const T0 = Date.UTC(2026, 0, 5, 8, 0); // Monday 08:00 UTC
 const STEP = 5 * 60000;
@@ -182,4 +184,98 @@ test('metric formulas match a hand-calculated fixture', () => {
   close(m.calmar!, ann / (100 / 1250), 1e-3);
   assert.equal(m.longestWinStreak, 1);
   assert.equal(m.longestLossStreak, 1);
+});
+
+test('deferred stop fills cannot enter outside the allowed session',()=>{
+  const st=settings({timeframe:'15m',session:{id:'custom',start:9,end:10}});
+  st.rules.entry=[cond(price('close'),'gt',val(0))];
+  st.rules.entryOrder={type:'stop',validBars:10};
+  const data=seriesFromBars('EUR/USD','15m',Array.from({length:5},(_,i)=>({
+    t:Date.UTC(2026,0,5,9,i*15),o:1.1,c:1.1,h:i===4?1.101:i===0?1.1002:1.1001,l:1.0999,v:1000,
+  })));
+  const result=runSync(st,data,noNews);
+  assert.equal(result.trades.length,0);
+  assert.ok(result.diagnostics.filtered.session>0);
+});
+
+for(const filter of ['weekday','news'] as const)test(`deferred fills revalidate the ${filter} on the actual fill day`,()=>{
+  const st=settings();
+  st.rules.entry=[cond(price('close'),'gt',val(0))];
+  st.rules.entryOrder={type:'stop',validBars:10};
+  st.weekdays=filter==='weekday'?[1]:[1,2];
+  st.news=filter==='news'?'skip':'include';
+  const data=seriesFromBars('EUR/USD','5m',[0,1,2].map((i)=>({
+    t:Date.UTC(2026,0,i===2?6:5,9,i===1?5:0),o:1.1,c:1.1,h:i===2?1.101:i===0?1.1002:1.1001,l:1.0999,v:1000,
+  })));
+  const result=runSync(st,data,{isNewsDay:(at:number)=>new Date(at).getUTCDay()===2});
+  assert.equal(result.trades.length,0);
+  assert.ok(result.diagnostics.filtered[filter]>0);
+});
+
+test('two realized losses halt further fills for the day and reset the next UTC day',()=>{
+  const st=settings();
+  st.rules.entry=[cond(price('close'),'gt',val(0))];st.rules.stopAfterLosses=2;
+  const bars=Array.from({length:12},(_,i)=>({t:Date.UTC(2026,0,i<6?5:6,9,(i%6)*5),o:1.1,c:1.1,h:1.101,l:1.097,v:1000}));
+  const result=runSync(st,seriesFromBars('EUR/USD','5m',bars),noNews);
+  assert.equal(result.trades.length,4);
+  assert.equal(result.events.filter(e=>e.text.includes('consecutive')).length,2);
+  assert.ok(result.diagnostics.filtered.dayLimit>0);
+});
+
+test('net money, not R size, determines outcome; expectancy reconciles every cash amount',()=>{
+  const trades=[{entryTime:0,exitTime:1,net:100,r:0.001},{entryTime:2,exitTime:3,net:-20,r:-0.001},{entryTime:4,exitTime:5,net:0.004,r:2}];
+  const m=computeMetrics(trades,1000,0,6);
+  assert.equal(m.wins,1);assert.equal(m.losses,1);assert.equal(m.breakevens,1);
+  close(m.expectancy,m.netPnl/m.trades,1e-12);
+});
+
+test('closed results crossing a chronological boundary do not leak into training or period checks',()=>{
+  const trades=[{entryTime:10,exitTime:20,net:1,r:1},{entryTime:60,exitTime:80,net:100,r:100},{entryTime:80,exitTime:90,net:2,r:2}];
+  const split=outOfSample(trades,0,100,1000,0.7);
+  assert.equal(split.inSample.trades,1);assert.equal(split.inSample.netPnl,1);assert.equal(split.outSample.trades,1);
+  const periods=walkForward(trades,0,100,1000,4);
+  assert.equal(periods.periods.reduce((sum,p)=>sum+p.m.trades,0),2);
+});
+
+test('saved runs retain complete trade lists and quota failure cannot slim or replace evidence',()=>{
+  const memory=new Map<string,string>();let quota=false;
+  const previous=Object.getOwnPropertyDescriptor(globalThis,'localStorage');
+  Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{
+    getItem:(key:string)=>memory.get(key) ?? null,
+    setItem:(key:string,value:string)=>{
+      if(quota && key==='ms_backtest_runs_v1' && JSON.parse(value).some((r:BacktestRun)=>r.output.result.trades.length>200))throw Error('quota');
+      memory.set(key,value);
+    },removeItem:(key:string)=>memory.delete(key),
+  }});
+  try {
+    const result=runSync(settings(),series(scenario([1.101,1.1015,1.098,1.099])),noNews);
+    const output={result:{...result,trades:Array.from({length:300},(_,i)=>({...result.trades[0],id:i+1}))},suggestions:[]};
+    const runs:BacktestRun[]=Array.from({length:6},(_,i)=>({id:`R${i}`,name:'Demo',mode:'automated',status:'done',playbookId:null,
+      symbol:'EUR/USD',timeframe:'5m',from:'2026-01-05',to:'2026-01-06',createdAt:'2026-01-05',lastRun:'2026-01-05',settings:settings(),output,summary:summarize(output)}));
+    assert.ok(saveRuns(runs));
+    assert.equal(loadRuns()[5].output.result.trades.length,300);
+    const before=memory.get('ms_backtest_runs_v1');quota=true;
+    assert.equal(saveRuns([{...runs[0],id:'new'},...runs]),false);
+    assert.equal(memory.get('ms_backtest_runs_v1'),before);
+    assert.equal(loadRuns()[5].summary.trades,loadRuns()[5].output.result.trades.length);
+  } finally {if(previous)Object.defineProperty(globalThis,'localStorage',previous);else Reflect.deleteProperty(globalThis,'localStorage');}
+});
+
+test('practice completion and one-time reward persist together, never rewarding a failed save',()=>{
+  const memory=new Map<string,string>();let quota=true;
+  const previous=Object.getOwnPropertyDescriptor(globalThis,'localStorage');
+  Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{
+    getItem:(key:string)=>memory.get(key) ?? null,
+    setItem:(key:string,value:string)=>{if(quota && key==='ms_backtest_awarded_v1')throw Error('quota');memory.set(key,value);},
+    removeItem:(key:string)=>memory.delete(key),
+  }});
+  const session:ReplaySession={id:'S',source:'random',symbol:'EUR/USD',label:'Demo',startedAt:'2026-01-05',finishedAt:'2026-01-05',notes:'Retain',tags:[],net:1,pointsAwarded:false,
+    trades:[{dir:'long',entry:1,exit:2,size:1,net:1,r:1,entryBar:1,exitBar:2,tags:[]}]};
+  try {
+    assert.equal(saveReplayCompletion(session,[]).points,0);assert.equal(loadReplay().length,0);
+    assert.equal(memory.has('ms_backtest_awarded_v1'),false);
+    quota=false;const saved=saveReplayCompletion(session,[]);
+    assert.ok(saved.saved);assert.ok(saved.points>0);assert.equal(loadReplay()[0].pointsAwarded,true);
+    assert.equal(saveReplayCompletion(session,saved.sessions).points,0);
+  } finally {if(previous)Object.defineProperty(globalThis,'localStorage',previous);else Reflect.deleteProperty(globalThis,'localStorage');}
 });

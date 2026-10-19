@@ -11,7 +11,7 @@ import { robustness, verdictFor } from '../../backtest/robustness';
 import { ruleCount, describeRules } from '../../backtest/rules';
 import { MIN_TRADES, MAX_RULES } from '../../backtest/config';
 import { dateOnly, money, num, pct, rr, tone, holdText } from '../../backtest/format';
-import { healthOf, HEALTH_LABEL, liveStats } from '../../backtest/gap';
+import { healthOf, HEALTH_LABEL, liveStats, matchingLiveEntries } from '../../backtest/gap';
 import type { PlaybookExpectedStats } from '../../backtest/store';
 import { dayMs, marketData, parseDay, symbolSpec } from '../../backtest/marketData';
 import { BarBreakdown, CandleChart } from './charts';
@@ -79,8 +79,8 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
   const rc = ruleCount(s);
   const v = useMemo(() => verdictFor(m, rob, rc), [m, rob, rc]);
   const buckets = useMemo(() => breakdown(r.trades, by, tz), [r, by, tz]);
-  const live = useMemo(() => (playbook ? liveStats(entries, playbook.name) : null), [playbook, entries]);
-  const matchingEntries = useMemo(() => (playbook ? entries.filter((e) => e.strategy === playbook.name) : []), [playbook, entries]);
+  const live = useMemo(() => (playbook && s.playbookVersion ? liveStats(entries, playbook.name, { symbol: s.symbol, currency: r.currency, playbookId: playbook.id, playbookVersion: s.playbookVersion }) : null), [playbook, entries, s, r.currency]);
+  const matchingEntries = useMemo(() => (playbook && s.playbookVersion ? matchingLiveEntries(entries,playbook.name,{symbol:s.symbol,currency:r.currency,playbookId:playbook.id,playbookVersion:s.playbookVersion}) : []), [playbook, entries, s, r.currency]);
   const spec = symbolSpec(s.symbol);
   const chartProblem = !spec
     ? `Price candles are unavailable for ${s.symbol}.`
@@ -122,16 +122,16 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
     : 0;
   const chartFrom = Math.max(0, chartTo - PRICE_CHART_WINDOW);
 
-  const subject = playbook ? `your ${playbook.name} playbook` : 'these rules';
+  const subject = playbook ? `the executable demo template associated with ${playbook.name}` : 'these demo rules';
   const period = months(r.rangeStart, r.rangeEnd);
   const summary = m.trades
     ? `Over ${period} of ${s.symbol} ${s.timeframe} bars, ${subject} ${m.netPnl >= 0 ? 'made' : 'lost'} ${money(Math.abs(m.netPnl), cur, 0, false)} (${pct(m.netPct, 1, true)}) from ${m.trades} trades. It won ${pct(m.winRate, 0)} of them, averaged ${rr(m.avgR)} per trade, and its deepest drop from a high was ${pct(m.maxDDPct)}.`
     : '';
-  const shareText = `${name}: ${summary} Verdict: ${v.label}.`;
+  const shareText = `GENERATED DEMO PRICES - NOT HISTORICAL PERFORMANCE. ${name}: ${summary} Verdict: ${v.label}.`;
 
   const exportCsv = () => {
-    const head = ['id', 'entry_time_utc', 'exit_time_utc', 'direction', 'entry_price', 'order_type', 'exit_price', 'stop', 'target', 'size', 'gross', 'costs', 'net', 'r', 'mae_r', 'mfe_r', 'exit_reason', 'balance'];
-    const lines = r.trades.map((t) => [t.id, new Date(t.entryTime).toISOString(), new Date(t.exitTime).toISOString(), t.direction, t.entryPrice, t.orderType, t.exitPrice, t.stopPrice, t.targetPrice ?? '', t.size, t.gross.toFixed(2), t.costs.toFixed(2), t.net.toFixed(2), t.r.toFixed(3), t.mae.toFixed(3), t.mfe.toFixed(3), t.exitReason, t.balance.toFixed(2)].join(','));
+    const head = ['id', 'entry_time_utc', 'exit_time_utc', 'direction', 'entry_price', 'order_type', 'exit_price', 'stop', 'target', 'size', 'gross', 'costs', 'net', 'r', 'mae_r', 'mfe_r', 'exit_reason', 'balance','data_source','symbol','currency'];
+    const lines = r.trades.map((t) => [t.id, new Date(t.entryTime).toISOString(), new Date(t.exitTime).toISOString(), t.direction, t.entryPrice, t.orderType, t.exitPrice, t.stopPrice, t.targetPrice ?? '', t.size, t.gross.toFixed(2), t.costs.toFixed(2), t.net.toFixed(2), t.r.toFixed(3), t.mae.toFixed(3), t.mfe.toFixed(3), t.exitReason, t.balance.toFixed(2),'generated-demo-not-historical',s.symbol,r.currency].join(','));
     try {
       const url = URL.createObjectURL(new Blob([[head.join(','), ...lines].join('\n')], { type: 'text/csv' }));
       const a = document.createElement('a'); a.href = url; a.download = `${name.replace(/[^\w-]+/g, '_')}.csv`; a.click();
@@ -147,7 +147,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
 
   const statRow: [string, string, React.ReactNode][] = [
     ['Profit factor', 'Gross profit ÷ gross loss. Above 1 means winners outweigh losers.', num(m.profitFactor)],
-    ['Expectancy', 'Win rate × average win − loss rate × average loss: what an average trade earns.', <span className={tone(m.expectancy)}>{money(m.expectancy, cur)}</span>],
+    ['Expectancy', 'Total net P&L divided by all completed trades, including breakeven cash amounts.', <span className={tone(m.expectancy)}>{money(m.expectancy, cur)}</span>],
     ['Average win', 'Average net result of winning trades.', <span className="text-emerald-600">{money(m.avgWin, cur)}</span>],
     ['Average loss', 'Average net result of losing trades.', <span className="text-rose-600">{money(m.avgLoss, cur)}</span>],
     ['Max drawdown ($)', 'Largest fall from a balance high, in money.', <span className="text-rose-600">{money(-m.maxDD, cur)}</span>],
@@ -165,6 +165,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
   const ambiguous = r.trades.filter((t) => t.ambiguous).length;
   return (
     <div className="space-y-5">
+      <Banner tone="warn"><strong>Generated demo prices · not historical performance.</strong> This report evaluates the executable rules below, not every written playbook condition. Save preserves this experiment; setting a demo reference is a separate, explicit action. Instrument: {s.symbol} · currency: {r.currency} · {s.playbookVersion ? 'written strategy version captured' : 'legacy run: strategy version not captured'}.</Banner>
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -191,7 +192,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
                   [<Copy className="w-3.5 h-3.5" />, 'Copy summary to share', copy, false],
                   [<Mail className="w-3.5 h-3.5" />, 'Email the summary', () => { window.location.href = `mailto:?subject=${encodeURIComponent(name)}&body=${encodeURIComponent(shareText)}`; }, false],
                   [<Download className="w-3.5 h-3.5" />, 'Export trades (CSV)', exportCsv, !r.trades.length],
-                  [<Target className="w-3.5 h-3.5" />, "Save as playbook's expected stats", onSetExpected, !playbook || !m.trades],
+                  [<Target className="w-3.5 h-3.5" />, "Set as demo reference (replaces previous reference)", onSetExpected, !playbook || !m.trades || !saved || !s.playbookVersion],
                   [<NotebookPen className="w-3.5 h-3.5" />, 'Send notes to the playbook', () => onSendNotes(`${summary} Verdict: ${v.label}. ${v.reasons.join(' ')}`, v.tone === 'warn' ? 'adjust' : v.tone === 'bad' ? 'pause' : 'keep'), !playbook],
                   [<CalendarPlus className="w-3.5 h-3.5" />, "Add to tomorrow's plan", () => onAddToPlan(`Backtest (${name}): ${v.label}, ${rr(m.avgR)} per trade over ${m.trades} trades.`), !playbook],
                 ] as [React.ReactNode, string, () => void, boolean][]).map(([icon, label, fn, dis]) => (
@@ -225,7 +226,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Kpi label="Net P&L" hint="Total profit or loss after costs." value={<span className={tone(m.netPnl)}>{money(m.netPnl, cur, 0)}</span>} sub={`${pct(m.netPct, 1, true)} on ${money(r.startBalance, cur, 0, false)}`} sample={m.trades} />
-            <Kpi label="Win rate" hint="Winning trades ÷ all trades. Breakeven trades (within ±0.05R) count as not winning." value={pct(m.winRate, 1)} sub={`${m.wins} won · ${m.losses} lost${m.breakevens ? ` · ${m.breakevens} breakeven` : ''}`} sample={m.trades} />
+            <Kpi label="Win rate" hint="Net-positive trades ÷ all completed trades. Net amounts within half a currency cent are breakeven, consistently with the journal." value={pct(m.winRate, 1)} sub={`${m.wins} won · ${m.losses} lost${m.breakevens ? ` · ${m.breakevens} breakeven` : ''}`} sample={m.trades} />
             <Kpi label="Average R" hint="Average result per trade in units of risk. +0.30R means each trade earned 30% of what it risked, on average." value={<span className={tone(m.avgR)}>{rr(m.avgR)}</span>} sub={`Expectancy ${money(m.expectancy, cur)} per trade`} sample={m.trades} />
             <Kpi label="Max drawdown" hint="Largest fall from a balance high to a later low." value={<span className="text-rose-600">{pct(-m.maxDDPct)}</span>} sub={money(-m.maxDD, cur, 0)} sample={m.trades} />
           </div>
@@ -292,19 +293,20 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
 
           {/* Compare with live */}
           {showLive && playbook && live && (
-            <Card title={`Backtest vs your live ${playbook.name} trades`} sub="Live numbers come from your journal entries tagged with this playbook.">
+            <Card title={`Demo experiment vs recorded ${playbook.name} trades`} sub="Recorded results match this instrument, currency and written rule version, and require known realized R. Legacy unversioned trades and CFD/futures substitutions are excluded.">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs tabular-nums">
                   <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-2">Measure</th><th className="text-right py-2">This backtest</th><th className="text-right py-2">Your journal</th><th className="text-right py-2">Gap</th></tr></thead>
                   <tbody>
-                    {([['Win rate', m.winRate, live.winRate, (x: number) => pct(x, 0), true], ['Average R', m.avgR, live.avgR, (x: number) => rr(x), true], ['Profit factor', m.profitFactor ?? 0, live.pf ?? 0, (x: number) => x.toFixed(2), true], ['Trades', m.trades, live.trades, (x: number) => `${x}`, null]] as [string, number, number, (x: number) => string, boolean | null][]).map(([k, a, b, f, higher]) => (
-                      <tr key={k} className="border-b border-slate-100"><td className="py-2 font-semibold">{k}</td><td className="py-2 text-right">{f(a)}</td><td className="py-2 text-right">{f(b)}</td>
-                        <td className={`py-2 text-right font-bold ${higher === null ? 'text-slate-400' : b >= a ? 'text-emerald-600' : 'text-rose-600'}`}>{higher === null ? '—' : `${b - a >= 0 ? '+' : '−'}${f(Math.abs(b - a)).replace(/^[+−]/, '')}`}</td></tr>
-                    ))}
+                    {([['Win rate', m.winRate, live.winRate, (x: number) => pct(x, 0), true], ['Average R', m.avgR, live.avgR, (x: number) => rr(x), true], ['Profit factor', m.profitFactor, live.pf, (x: number) => x===Infinity?'∞':x.toFixed(2), true], ['Trades', m.trades, live.trades, (x: number) => `${x}`, null]] as [string, number|null, number|null, (x: number) => string, boolean | null][]).map(([k, a, b, f, higher]) => {
+                      const delta=a!==null && b!==null && live.trades>0 && higher!==null && Number.isFinite(b-a)?b-a:null;
+                      return <tr key={k} className="border-b border-slate-100"><td className="py-2 font-semibold">{k}</td><td className="py-2 text-right">{a===null?'—':f(a)}</td><td className="py-2 text-right">{b===null || (!live.trades && k!=='Trades')?'—':f(b)}</td>
+                        <td className={`py-2 text-right font-bold ${delta===null?'text-slate-400':delta>=0?'text-emerald-600':'text-rose-600'}`}>{delta===null?'—':`${delta>=0?'+':'−'}${f(Math.abs(delta)).replace(/^[+−]/, '')}`}</td></tr>;
+                    })}
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-[#474556] mt-3">{live.trades < 5 ? 'Too few live trades to compare yet.' : live.avgR >= m.avgR ? 'Your live trading is doing at least as well as the backtest.' : `Live trades average ${rr(live.avgR - m.avgR)} less than the backtest. Check the trades that broke the plan.`}{hl && hl.health !== 'untested' && <> Against the saved expected stats: <b>{HEALTH_LABEL[hl.health]}</b>.</>}</p>
+              <p className="text-xs text-[#474556] mt-3">{live.trades ? `Descriptive average-R difference: ${rr(live.avgR - m.avgR)} across ${live.trades} matching recorded trades.` : 'No eligible recorded trades match this complete scope.'} Generated demo performance is not a forecast or evidence that your execution is good or bad.{hl && hl.health !== 'untested' && <> Saved reference: <b>{HEALTH_LABEL[hl.health]}</b>.</>}</p>
               {matchingEntries.length > 0 && (
                 <button type="button" className={`${btnSecondary} mt-3`} onClick={() => onOpenTrades(matchingEntries.map((e) => e.id), `${playbook.name} playbook journal`)}>
                   Open {matchingEntries.length} matching Trade Log entr{matchingEntries.length === 1 ? 'y' : 'ies'}
@@ -318,12 +320,12 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
             <section className={`rounded-2xl border p-5 ${toneCls}`} aria-label="Verdict">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500"><Hint text="Calculated from this run's own checks (out-of-sample, walk-forward, Monte Carlo) and payoff.">Verdict</Hint></p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500"><Hint text="Descriptive checks on generated prices: a chronological fixed-rule split, period stability and Monte Carlo reshuffling. No verified market edge.">Demo assessment</Hint></p>
                   <p className={`text-lg font-bold ${toneTxt}`}>{v.label}</p>
                 </div>
                 <div className="text-right" title="0–100. Built from profit factor, average R and the three robustness checks.">
                   <p className={`text-2xl font-bold tabular-nums ${toneTxt}`}>{v.score}</p>
-                  <p className="text-[10px] text-slate-500">edge score</p>
+                  <p className="text-[10px] text-slate-500">demo score</p>
                 </div>
               </div>
               <ol className="mt-3 space-y-2">
@@ -349,7 +351,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
               <ul className="space-y-3">
                 {([
                   ['Out-of-sample (70/30)', 'Splits the date range: the last 30% is treated as unseen data. A real edge should still work there.', rob.oos.pass, rob.oos.text],
-                  ['Walk-forward (4 periods)', 'The same rules, checked period by period. A real edge should be profitable in most periods.', rob.wf.pass, rob.wf.text],
+                  ['Fixed-rule period stability (4 periods)', 'Unchanged rules on four generated-price periods. No training/retuning occurs; this is not walk-forward optimization. Boundary-crossing trades are excluded from each period.', rob.wf.pass, rob.wf.text],
                   ['Monte Carlo (1,000 reshuffles)', 'Shuffles the order of the trades 1,000 times to see how deep drawdowns could get with the same trades.', rob.mc.pass, rob.mc.text],
                 ] as [string, string, boolean, string][]).map(([k, hint, ok, text]) => (
                   <li key={k} className="flex gap-3">
@@ -361,7 +363,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
                   </li>
                 ))}
               </ul>
-              <div className="mt-3 grid grid-cols-4 gap-1.5" aria-label="Walk-forward periods">
+              <div className="mt-3 grid grid-cols-4 gap-1.5" aria-label="Fixed-rule stability periods">
                 {rob.wf.periods.map((p, i) => (
                   <div key={i} className={`rounded-lg px-2 py-1.5 text-center ${p.m.netPnl > 0 ? 'bg-emerald-50' : 'bg-rose-50'}`} title={`${dateOnly(p.from, tz)} – ${dateOnly(p.to, tz)}: ${p.m.trades} trades`}>
                     <p className="text-[10px] text-slate-500">Period<JournalHelp label="Period" /> {i + 1}</p>

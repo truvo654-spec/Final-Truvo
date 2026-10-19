@@ -7,6 +7,7 @@ import type { JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { EXTRA_RUN_CREDITS, POINTS } from '../../backtest/config';
 import { healthOf, HEALTH_LABEL, liveStats } from '../../backtest/gap';
+import { playbookVersion } from '../journal/playbookLinks';
 import { pct, rr, money, dateOnly } from '../../backtest/format';
 import type { BacktestRun, PlaybookExpectedStats, ReplaySession, Usage } from '../../backtest/store';
 import { Card, Pill, btnLink, btnSecondary } from './ui';
@@ -29,14 +30,14 @@ interface Props {
 }
 
 const MODES = [
-  { key: 'test', title: 'Compare playbooks on past prices', text: 'Choose one or more playbooks to test on the same market and dates. Each keeps its own rules, timeframe and session.', cta: 'Start a backtest', time: 'One run per comparison' },
+  { key: 'test', title: 'Compare executable demo templates', text: 'Review rule coverage, then compare generated-price experiments. Written discretionary rules are not automatically tested.', cta: 'Review demo setup', time: 'One run per comparison' },
   { key: 'whatif', title: 'What if I followed one rule?', text: 'Change one rule on your real journal trades, like "stop after 2 losses a day", and see what it would have changed.', cta: 'Try a what-if', time: 'Instant · free' },
-  { key: 'replay', title: 'Practice on past charts', text: 'Trade bar by bar with the future hidden. Replay your own losing trades blind and earn Points.', cta: 'Start practising', time: 'Free · earns Points' },
+  { key: 'replay', title: 'Practice with resumable simulations', text: 'Trade generated or reconstructed paths with the future hidden. Unfinished positions, orders and notes resume when you return.', cta: 'Open / resume Practice', time: 'Free · earns Points on finish' },
 ] as const;
 
 export const BacktestHome: React.FC<Props> = ({ playbooks, entries, expected, runs, usage, limit, credits, sessions, tz, onTest, onWhatIf, onReplay, onOpenRun, onAllRuns }) => {
   const rows = useMemo(() => playbooks.filter((p) => p.status !== 'archived').map((p) => {
-    const live = liveStats(entries, p.name);
+    const live = liveStats(entries, p.name, { ...expected[p.id], playbookVersion:playbookVersion(p) });
     const exp = expected[p.id];
     return { p, live, exp, h: healthOf(live, exp) };
   }), [playbooks, entries, expected]);
@@ -63,15 +64,15 @@ export const BacktestHome: React.FC<Props> = ({ playbooks, entries, expected, ru
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-5">
-        <Card title="Your playbooks: tested vs live" sub="Live numbers come from your journal. Tested numbers come from the backtest you saved for that playbook.">
+        <Card title="Your playbooks: demo references" sub="Descriptive comparison only. Recorded trades must match instrument, currency and current rule version; legacy unversioned trades are excluded. A saved experiment becomes a reference only when explicitly selected.">
           <div className="overflow-x-auto -mx-5 px-5">
             <table className="w-full text-xs tabular-nums">
               <thead>
                 <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
                   <th className="text-left py-2 pr-2">Playbook<JournalHelp label="Playbook" /></th>
-                  <th className="text-right py-2 px-2" title="Win rate and average R of your real trades with this playbook">Live<JournalHelp label="Live" /></th>
-                  <th className="text-right py-2 px-2" title="Win rate and average R from the saved backtest">Tested<JournalHelp label="Tested" /></th>
-                  <th className="text-left py-2 px-2" title="On track: live results are inside the range the backtest predicts. Underperforming: below it.">Status<JournalHelp label="Strategy health" /></th>
+                  <th className="text-right py-2 px-2" title="Known-R recorded trades matching the current written version and reference scope">Recorded</th>
+                  <th className="text-right py-2 px-2" title="Explicitly selected generated-price reference, not a live forecast">Demo reference</th>
+                  <th className="text-left py-2 px-2" title="Generated data cannot establish strategy health or a verified edge.">Reference status</th>
                   <th className="py-2 pl-2" />
                 </tr>
               </thead>

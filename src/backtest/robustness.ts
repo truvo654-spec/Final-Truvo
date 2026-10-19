@@ -13,7 +13,7 @@ const r2 = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x).toFixed(2)}R`;
 
 export function outOfSample(trades: MetricTrade[], start: number, end: number, bal: number, split = OOS_SPLIT): OosCheck {
   const splitTime = start + (end - start) * split;
-  const a = trades.filter((t) => t.entryTime < splitTime);
+  const a = trades.filter((t) => t.entryTime < splitTime && t.exitTime < splitTime);
   const b = trades.filter((t) => t.entryTime >= splitTime);
   const inSample = computeMetrics(a, bal, start, splitTime);
   const outSample = computeMetrics(b, bal, splitTime, end);
@@ -22,7 +22,7 @@ export function outOfSample(trades: MetricTrade[], start: number, end: number, b
     ? `Only ${outSample.trades} trades in the last ${Math.round((1 - split) * 100)}% of the range, too few to judge.`
     : pass
       ? `Still profitable on the last ${Math.round((1 - split) * 100)}% of the range: ${r2(outSample.avgR)} per trade over ${outSample.trades} trades (first ${Math.round(split * 100)}%: ${r2(inSample.avgR)}).`
-      : `Lost its edge on the last ${Math.round((1 - split) * 100)}% of the range: ${r2(outSample.avgR)} per trade over ${outSample.trades} trades (first ${Math.round(split * 100)}%: ${r2(inSample.avgR)}).`;
+      : `Not profitable on the last ${Math.round((1 - split) * 100)}% of the demo range: ${r2(outSample.avgR)} per trade over ${outSample.trades} trades (first ${Math.round(split * 100)}%: ${r2(inSample.avgR)}).`;
   return { splitTime, inSample, outSample, pass, text };
 }
 
@@ -30,7 +30,7 @@ export function walkForward(trades: MetricTrade[], start: number, end: number, b
   const len = (end - start) / k;
   const periods = Array.from({ length: k }, (_, i) => {
     const from = start + i * len, to = from + len;
-    return { from, to, m: computeMetrics(trades.filter((t) => t.entryTime >= from && t.entryTime < to), bal, from, to) };
+    return { from, to, m: computeMetrics(trades.filter((t) => t.entryTime >= from && t.entryTime < to && t.exitTime < to), bal, from, to) };
   });
   const profitable = periods.filter((p) => p.m.netPnl > 0).length;
   const need = Math.ceil(k * 0.75);
@@ -81,12 +81,12 @@ export function verdictFor(m: Metrics, rob: Robustness, rules: number): Verdict 
   const payoff = m.trades
     ? `Average result ${r2(m.avgR)} per trade over ${m.trades} trades${ratio !== null ? `; the average winner is ${ratio.toFixed(2)}× the average loser` : ''}.`
     : 'No trades yet.';
-  const consistency = `${rob.oos.pass ? 'Held up' : 'Did not hold up'} on unseen data, and was profitable in ${rob.wf.profitable} of ${rob.wf.periods.length} periods.`;
+  const consistency = `${rob.oos.pass ? 'Passed' : 'Did not pass'} the fixed-rule chronological demo split; profitable in ${rob.wf.profitable} of ${rob.wf.periods.length} periods. Crossing trades are excluded from period checks, not from the full report. This does not validate changed parameters or a live edge.`;
   const risk = `In ${rob.mc.runs.toLocaleString('en-US')} reshuffles of the trade order, the worst 5% of drawdowns reached ${pct(rob.mc.p95)}.`;
   const reasons = [payoff, consistency, risk];
 
-  if (m.trades < MIN_TRADES) return { label: 'Not enough trades yet', tone: 'neutral', score, reasons: [`${m.trades} trades is below the ${MIN_TRADES} needed to trust the numbers. Test a longer range or a lower timeframe.`, consistency, risk] };
-  if (m.netPnl <= 0 || m.avgR <= 0) return { label: 'No edge in this test', tone: 'bad', score, reasons };
-  if (passes === 3 && (m.profitFactor === null || m.profitFactor >= 1.2)) return { label: 'Durable edge', tone: 'good', score, reasons };
-  return { label: 'Fragile edge', tone: 'warn', score, reasons };
+  if (m.trades < MIN_TRADES) return { label: 'Not enough trades yet', tone: 'neutral', score, reasons: [`${m.trades} trades is below the ${MIN_TRADES}-trade display threshold. More generated trades do not establish a real market edge.`, consistency, risk] };
+  if (m.netPnl <= 0 || m.avgR <= 0) return { label: 'Negative demo result', tone: 'bad', score, reasons };
+  if (passes === 3 && (m.profitFactor === null || m.profitFactor >= 1.2)) return { label: 'Consistent demo result · not a verified edge', tone: 'good', score, reasons };
+  return { label: 'Inconsistent demo result', tone: 'warn', score, reasons };
 }

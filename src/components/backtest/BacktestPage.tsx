@@ -6,6 +6,7 @@ import { ArrowLeft, Coins, Loader2, XCircle, PlayCircle, Sparkles } from 'lucide
 import type { Broker, JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { JOURNAL_TODAY } from '../../data/journalData';
+import { saveReplayCompletion } from '../../backtest/store';
 import { EXTRA_RUN_CREDITS, runLimitFor } from '../../backtest/config';
 import { applyPatch } from '../../backtest/job';
 import { runBacktest, CancelledError } from '../../backtest/service';
@@ -47,7 +48,7 @@ interface Props {
   onToast: (m: string) => void;
   onOpenTrades: (ids: string[], label: string) => void;
   expected: Record<string, PlaybookExpectedStats>;
-  onSetExpected: (s: PlaybookExpectedStats) => void;
+  onSetExpected: (s: PlaybookExpectedStats) => boolean;
   intent: BacktestIntent | null;
   onIntentDone: () => void;
 }
@@ -273,14 +274,12 @@ export const BacktestPage: React.FC<Props> = (p) => {
       from: cur.settings.from, to: cur.settings.to, createdAt: now, lastRun: now, settings: cur.settings, summary: summarize(cur.output), output: cur.output,
     };
     const next = [run, ...runs.filter((r) => r.id !== id)];
+    if (!saveRuns(next)) { onToast('Run not saved: browser storage is full or unavailable. Existing runs are unchanged. Export this result or remove a run before retrying.'); return; }
     setRuns(next);
-    if (!saveRuns(next)) onToast('Saved for this visit, but browser storage is full; older runs were trimmed.');
     setCur({ ...cur, runId: id });
-    const book = pb(cur.settings.playbookId);
-    if (book && run.summary.trades > 0) onSetExpected(expectedFromRun(book.id, id, run.name, run.symbol, cur.output));
     const pts = claimPoints('backtest', id);
     if (pts) onRewardPoints(pts, 'Saved a backtest');
-    onToast(book ? `Saved. ${book.name}'s expected results are updated from this run.` : 'Backtest saved');
+    onToast('Demo experiment saved. Your playbook reference has not changed.');
   };
 
   const applySuggestion = (sg: Suggestion) => {
@@ -293,12 +292,13 @@ export const BacktestPage: React.FC<Props> = (p) => {
   };
 
   const finishSession = (s: ReplaySession) => {
-    const pts = s.trades.length ? claimPoints('replay', s.id) : 0;
-    const done = { ...s, pointsAwarded: pts > 0 || s.pointsAwarded };
-    const next = [done, ...sessions.filter((x) => x.id !== s.id)];
-    setSessions(next); saveReplay(next);
+    const result=saveReplayCompletion(s,sessions);
+    if (!result.saved) { onToast('Practice session not saved: browser storage is unavailable. Keep this session open and retry.'); return false; }
+    const pts=result.points;
+    setSessions(result.sessions);
     if (pts) onRewardPoints(pts, 'Finished a replay session');
     else onToast(s.trades.length ? 'Session saved' : 'Session saved. Place at least one trade to earn Points.');
+    return true;
   };
 
   const savedRunCount=runs.length+whatIfRuns.length;
@@ -319,6 +319,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
 
   return (
     <div className="mt-5 space-y-5">
+      <p role="note" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">No historical market-data provider is connected. Automated tests use generated demo prices. Journal results remain source-reported; reconstructed What-if and replay paths are estimates, not recorded market executions. Prop/risk checks are simplified simulations, not firm-compliance certification.</p>
       <div className="w-fit max-w-full min-w-0 rounded-2xl border border-slate-200 bg-white p-2 sm:p-2.5">
         <nav aria-label="Backtest sections" className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-xl bg-slate-50 p-1 scrollbar-none">
           {NAV.map(([v, label, helpTopic]) => {
@@ -368,7 +369,10 @@ export const BacktestPage: React.FC<Props> = (p) => {
           onSave={save}
           onEdit={() => { prepareSetup(deepClone(cur.settings)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
           onApplySuggestion={applySuggestion}
-          onSetExpected={() => { if (curPb) { onSetExpected(expectedFromRun(curPb.id, cur.runId ?? 'unsaved', cur.name, cur.settings.symbol, cur.output)); onToast(`${curPb.name}'s expected results now come from this run`); } }}
+          onSetExpected={() => {
+            if (!curPb || !cur.runId || !cur.settings.playbookVersion) { onToast('Save a newly run experiment before setting its demo reference.'); return; }
+            if (onSetExpected(expectedFromRun(curPb.id, cur.runId, cur.name, cur.settings.symbol, cur.output, cur.settings.playbookVersion,cur.settings))) onToast(`${curPb.name}'s demo reference updated explicitly. This is not verified historical performance.`);
+          }}
           onSendNotes={(text, decision) => { if (!curPb) return; setPlaybooks((prev) => prev.map((x) => (x.id === curPb.id ? { ...x, reviews: [{ id: `rv_${Date.now()}`, date: JOURNAL_TODAY, note: text, decision }, ...(x.reviews || [])] } : x))); onToast(`Added to ${curPb.name}'s review notes`); }}
           onAddToPlan={(text) => {
             if (!curPb) return;
@@ -403,7 +407,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
         <SavedRuns runs={runs} whatIfRuns={whatIfRuns} onDeleteWhatIf={id=>{const next=whatIfRuns.filter(r=>r.id!==id);if(saveWhatIfs(next)){setWhatIfRuns(next);onToast('Saved What-if scenario deleted');}else onToast('Could not delete this saved scenario. Browser storage is unavailable.');}} playbooks={playbooks} tz={tz} onToast={onToast} onNew={() => startSetup()}
           onOpen={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); setComparisonResults(null); setCur({ settings: r.settings, output: r.output, runId: r.id, name: r.name }); setView('results'); } }}
           onDuplicate={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); prepareSetup({ ...deepClone(r.settings), name: `${r.name} (copy)` }); } }}
-          onDelete={(id) => { const next = runs.filter((r) => r.id !== id); setRuns(next); saveRuns(next); onToast('Run deleted'); }} />
+          onDelete={(id) => { const next = runs.filter((r) => r.id !== id); if (!saveRuns(next)) { onToast('Run not deleted: browser storage is unavailable.'); return; } setRuns(next); onToast('Run deleted'); }} />
       )}
 
       <Modal open={gate} onClose={() => setGate(false)} title="Monthly test runs used">

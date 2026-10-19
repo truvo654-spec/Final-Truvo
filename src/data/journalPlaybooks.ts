@@ -1,5 +1,5 @@
 // Strategy playbooks for the trading journal: the written rules for each setup.
-// A playbook's name matches JournalEntry.strategy, which is how its stats are computed.
+// Immutable IDs preserve attribution; names remain a compatibility fallback for legacy entries.
 import { PortfolioAssetClass } from '../types';
 import type { InstrumentPatternSetup } from './instrumentPatterns';
 
@@ -11,7 +11,7 @@ export interface JournalPlaybook {
   coachOrigin?: { scenarioId: string; sourcePlaybookId?: string; evidenceTradeIds: string[] };
   /** Backtestable technical scenario recipe used to prefill an automated test. */
   technicalRecipeId?: string;
-  ruleHistory?: { version:number; effectiveAt:string | null; rules:{id:string;title:string;detail:string}[] }[];
+  ruleHistory?: { version:number; effectiveAt:string | null; rules:{id:string;title:string;detail:string}[]; snapshot?:string }[];
   rulesEffectiveAt?: string;
   id: string;
   name: string;

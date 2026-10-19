@@ -115,6 +115,7 @@ export interface StrategyRules {
   entryOrder: EntryOrder;
   exits: ExitRules;
   maxTradesPerDay: number | null;
+  stopAfterLosses?: number | null;
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────
@@ -151,6 +152,7 @@ export interface PropSettings {
 }
 
 export interface BacktestSettings {
+  playbookVersion?: string;
   name: string;
   playbookId: string | null;
   symbol: string;

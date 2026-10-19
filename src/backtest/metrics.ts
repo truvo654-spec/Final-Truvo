@@ -1,5 +1,5 @@
 // Performance metrics, using the definitions in docs/BACKTESTING.md.
-import { BREAKEVEN_R } from './config';
+import { netOutcome } from '../components/journal/journalMath';
 
 export interface MetricTrade { entryTime: number; exitTime: number; net: number; r: number | null }
 
@@ -34,8 +34,7 @@ export interface Metrics {
 
 export type Outcome = 'win' | 'loss' | 'breakeven';
 export const outcomeOf = (t: { net: number; r: number | null }): Outcome => {
-  if (t.r !== null && Number.isFinite(t.r) && Math.abs(t.r) < BREAKEVEN_R) return 'breakeven';
-  return t.net > 0 ? 'win' : t.net < 0 ? 'loss' : 'breakeven';
+  return netOutcome(t.net);
 };
 
 const DAY = 86400000;
@@ -106,7 +105,7 @@ export function computeMetrics(list: MetricTrade[], startBalance: number, rangeS
     grossProfit, grossLoss,
     profitFactor: grossLoss < 0 ? grossProfit / Math.abs(grossLoss) : null,
     avgWin, avgLoss,
-    expectancy: winRate * avgWin - lossRate * Math.abs(avgLoss),
+    expectancy: n ? netPnl / n : 0,
     avgR: mean(rs),
     netPnl,
     netPct: startBalance > 0 ? netPnl / startBalance : 0,

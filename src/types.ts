@@ -576,6 +576,13 @@ export type TradingStatus = 'planned' | 'open' | 'closed';
 export type JournalReviewState = 'needs_review' | 'complete';
 
 export interface JournalEntry {
+  playbookId?: string;
+  executionHistory?: { at:string; reason:string; status:TradingStatus; gross:number; costs?:number; entryPrice:number; exitPrice:number|null; entryTime?:string; exitTime?:string;
+    symbol?:string; direction?:'BUY'|'SELL'; size?:number; accountCurrency?:string; initialRisk?:number|null; stopPrice?:number; takeProfit?:number; pnlKnown?:boolean; reportedR?:number|null }[];
+  attributionHistory?: {at:string; strategy:string; playbookId?:string; playbookVersion?:string; scenarioId?:string}[];
+  checklistSnapshot?: { id:string; label:string }[];
+  dayStartEquity?: number;
+  playbookVersion?: string;
   accountId?: string;
   accountCurrency?: string;
   quantityUnit?: string;
@@ -626,6 +633,7 @@ export interface JournalEntry {
   ticketId?: string;
   /** Playbook scenario this trade was taken from. */
   scenarioId?: string;
+  setupCheck?: { at: string; scenarioId: string; ruleIds: string[]; houseRuleIds: string[] };
   /** Broker the trade was executed with (Broker.id). */
   brokerId?: string;
   /** Cashback earned on this trade in USD; estimated from the broker's rate per lot when absent. */

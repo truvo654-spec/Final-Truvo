@@ -1,6 +1,7 @@
 // Strategy rules: plain-English descriptions, short-side mirroring, validation,
 // playbook templates and default settings.
 import type { JournalPlaybook } from '../data/journalPlaybooks';
+import { playbookVersion } from '../components/journal/playbookLinks';
 import { DATA_END, DATA_START, MAX_RULES } from './config';
 import { parseDay, resolveSymbol, symbolSpec } from './marketData';
 import { getTechnicalStrategyRecipe } from './technicalStrategies';
@@ -142,6 +143,7 @@ export function describeRules(r: StrategyRules, costUnit = 'pips'): { label: str
   if (r.direction === 'both') mgmt.push('close if the opposite signal appears');
   if (mgmt.length) out.push({ label: 'Manage', text: mgmt[0][0].toUpperCase() + mgmt.join(', ').slice(1) + '.' });
   if (r.maxTradesPerDay) out.push({ label: 'Limit', text: `At most ${r.maxTradesPerDay} trade${r.maxTradesPerDay === 1 ? '' : 's'} a day.` });
+  if (r.stopAfterLosses) out.push({label:'Loss streak',text:`Stop for the UTC day after ${r.stopAfterLosses} consecutive closed-trade net losses.`});
   return out;
 }
 
@@ -151,6 +153,7 @@ export function ruleCount(s: BacktestSettings): number {
   return s.rules.entry.length
     + (x.breakevenAtR ? 1 : 0) + (x.trailing ? 1 : 0) + (x.partial ? 1 : 0) + (x.timeExitBars ? 1 : 0) + (x.sessionEndExit ? 1 : 0)
     + (s.rules.maxTradesPerDay ? 1 : 0)
+    + (s.rules.stopAfterLosses ? 1 : 0)
     + (s.session.id !== 'any' ? 1 : 0) + (s.weekdays.length < 5 ? 1 : 0) + (s.news !== 'include' ? 1 : 0);
 }
 export const tooManyRules = (s: BacktestSettings) => ruleCount(s) > MAX_RULES;
@@ -169,6 +172,7 @@ export function validateSettings(s: BacktestSettings): Problem[] {
   else if (from >= to) out.push({ field: 'dates', message: 'The end date must be after the start date.' });
   else if (from < parseDay(DATA_START) || to > parseDay(DATA_END)) out.push({ field: 'dates', message: `Price data covers ${DATA_START} to ${DATA_END}.` });
   if (!s.rules.entry.length) out.push({ field: 'rules', message: 'Add at least one entry rule.' });
+  if (s.rules.stopAfterLosses!=null && (!Number.isInteger(s.rules.stopAfterLosses) || s.rules.stopAfterLosses<=0)) out.push({field:'rules',message:'Consecutive-loss limit must be a positive whole number, or disabled.'});
   s.rules.entry.forEach((c) => [c.left, c.right].forEach((o) => {
     if (o.kind === 'ind' && IND_HAS_PERIOD.includes(o.ind.type) && (!o.ind.period || o.ind.period < 2 || o.ind.period > 500)) out.push({ field: 'rules', message: `${IND_LABEL[o.ind.type]} needs a length between 2 and 500.` });
     if (o.kind === 'value' && !Number.isFinite(o.value)) out.push({ field: 'rules', message: 'Every rule needs a number to compare with.' });
@@ -243,11 +247,12 @@ export function defaultSettings(opts: { playbook?: JournalPlaybook | null; journ
   const pb = opts.playbook ?? null;
   const tpl = templateFor(pb);
   const jr = opts.journalRules;
-  const rules: StrategyRules = { ...tpl.rules, maxTradesPerDay: pb?.maxTradesPerDay ?? jr?.maxTrades ?? tpl.rules.maxTradesPerDay };
+  const rules: StrategyRules = { ...tpl.rules, maxTradesPerDay: pb?.maxTradesPerDay ?? jr?.maxTrades ?? tpl.rules.maxTradesPerDay, ...(jr ? {stopAfterLosses:jr.stopAfterLosses || null}: {}) };
   const symbol = symbolForPlaybook(pb, opts.mostTraded);
   return {
-    name: pb ? `${pb.name} backtest` : 'New backtest',
+    name: pb ? `${pb.name} · demo ${pb.technicalRecipeId ? 'recipe' : 'starter template'}` : 'New demo simulation',
     playbookId: pb?.id ?? null,
+    playbookVersion: pb ? playbookVersion(pb) : undefined,
     symbol,
     timeframe: tpl.tf,
     ...presetRange(24),

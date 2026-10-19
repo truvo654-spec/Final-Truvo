@@ -2,16 +2,17 @@ import { JournalHelp } from './JournalHelp';
 import React, { useMemo, useRef, useState } from 'react';
 import { Broker, JournalEntry } from '../../types';
 import { INGEST_FIELDS, IngestField, ColumnMapping, SAMPLE_CSV, autoMap, convertRows, parseCsv } from './journalIngest';
-import { useJournalState, saveJournalValue } from './journalStorage';
-import { metrics } from './journalMath';
+import { useJournalState } from './journalStorage';
+import { currencyOf, metrics } from './journalMath';
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_ROWS = 5000;
 
+export interface ImportHistory { id:string;at:string;file:string;account:string;currency:string;imported:number;duplicate:number;invalid:number;net:number }
 interface UploadProps {
   existing: JournalEntry[];
   strategy: string;
-  onImport: (entries: JournalEntry[]) => void;
+  onImport: (entries: JournalEntry[], history:ImportHistory[]) => boolean;
 }
 
 export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy, onImport }) => {
@@ -25,11 +26,15 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
   const [currency,setCurrency] = useState('USD');
   const [timezone,setTimezone] = useState('UTC');
   const [pnlBasis,setPnlBasis] = useState<'gross'|'net'>('gross');
-  const [history,setHistory,historyFailed] = useJournalState<{id:string;at:string;file:string;account:string;currency:string;imported:number;duplicate:number;invalid:number;net:number}[]>('imports',[]);
+  const [history,setHistory,historyFailed] = useJournalState<ImportHistory[]>('imports',[]);
+  const [approveUpdates,setApproveUpdates] = useState(false);
+  const [approveConflicts,setApproveConflicts] = useState(false);
+  const existingById=useMemo(()=>new Map(existing.map(e=>[e.id,e])),[existing]);
 
   const handleFile = async (file?: File) => {
     if (!file) return;
     setError('');
+    setApproveUpdates(false); setApproveConflicts(false);
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (ext !== 'csv' && ext !== 'txt') {
       setError(`${ext?.toUpperCase() || 'This file type'} parsing isn't available in this build yet. Export the statement as CSV and upload that.`);
@@ -69,6 +74,13 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
   const ok = parsed.filter((p) => p.status === 'ok');
   const dup = parsed.filter((p) => p.status === 'duplicate');
   const bad = parsed.filter((p) => p.status === 'invalid');
+  const updates = parsed.filter(p => p.status === 'update');
+  const conflicts = parsed.filter(p => p.status === 'conflict');
+  const accepted = [...ok, ...(approveUpdates ? updates : []), ...(approveConflicts ? conflicts : [])];
+  const previewNets = accepted.reduce<Record<string,number>>((totals,p) => {
+    const unit=currencyOf(p.entry!); totals[unit]=(totals[unit] || 0)+metrics([p.entry!]).total; return totals;
+  }, {});
+  const previewNet = previewNets[currency] || 0;
   const matched = mapping.filter((m) => m.field).length;
   const required: IngestField[] = ['time', 'symbol', 'side', 'entry', 'qty'];
   const missing = required.filter((f) => !mapping.some((m) => m.field === f));
@@ -103,7 +115,7 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
             <input ref={inputRef} type="file" accept=".csv,.txt,text/csv" className="hidden" aria-label="Upload statement file" onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = ''; }} />
           </label>
         </p>
-        <p className="text-[11px] text-[#94a3b8] mt-1">CSV up to 10 MB · {MAX_ROWS} rows · XLSX / PDF coming later · duplicates are skipped automatically</p>
+        <p className="text-[11px] text-[#94a3b8] mt-1">CSV up to 10 MB · {MAX_ROWS} rows · unchanged executions are skipped; updates need approval. No mapped playbook means Unassigned.</p>
         <button type="button" onClick={downloadSample} className="text-[11px] font-semibold text-[#5338ec] underline mt-2">Download a sample CSV</button>
       </div>
 
@@ -150,8 +162,15 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
             <span className="text-slate-500">{dup.length} duplicate{dup.length === 1 ? '' : 's'} skipped</span>
             <span className={bad.length ? 'text-rose-600' : 'text-slate-500'}>{bad.length} invalid</span>
           </div>
+          {updates.length > 0 && <label className="block text-xs"><input type="checkbox" checked={approveUpdates} onChange={e=>setApproveUpdates(e.target.checked)}/> Apply {updates.length} open-to-closed updates after reviewing the rows below. Existing reviews, IDs and playbook links are retained.</label>}
+          {conflicts.length > 0 && <label className="block text-xs text-amber-800"><input type="checkbox" checked={approveConflicts} onChange={e=>setApproveConflicts(e.target.checked)}/> Replace execution values for {conflicts.length} conflicting records. Previous values are retained in correction history; review answers are not overwritten.</label>}
+          {[...updates,...conflicts].length > 0 && <details><summary className="text-xs font-bold cursor-pointer">Review all proposed execution changes</summary><ul className="text-xs space-y-2 mt-2">{[...updates,...conflicts].map(p=>{
+            const next=p.entry!,prior=existingById.get(next.id);
+            const fields=['symbol','direction','entryPrice','size','exitPrice','pnl','commission','entryTime','exitTime','tradingStatus','initialRisk','stopPrice','takeProfit'] as const;
+            return <li key={p.line}>Line {p.line} · {next.ticketId || next.id} · {p.reason}{fields.filter(key=>prior?.[key]!==next[key]).map(key=><span key={key} className="block pl-2">{key}: {String(prior?.[key] ?? 'unknown')} → {String(next[key] ?? 'unknown')}</span>)}</li>;
+          })}</ul></details>}
           <div className="overflow-x-auto border border-slate-200 rounded-xl"><table className="w-full text-xs"><caption className="text-left p-2 font-bold">Import preview · first 10 rows · {currency}</caption><thead><tr>{['Line','Instrument','UTC entry date','Status','Gross','Costs','Validation'].map(h=><th key={h} className="p-2 text-left">{h}</th>)}</tr></thead><tbody>{parsed.slice(0,10).map(p=><tr key={p.line} className="border-t border-slate-100">{[p.line,p.entry?.symbol || '—',p.entry?.entryTime || p.entry?.date || '—',p.entry?.tradingStatus || '—',p.entry?.pnlKnown===false?'Unknown':p.entry?.pnl ?? '—',p.entry?.commission ?? 'Unknown',p.reason || p.status].map((v,i)=><td key={i} className="p-2">{v}</td>)}</tr>)}</tbody></table></div>
-          <p className="text-xs">Reconciliation: {ok.length+dup.length+bad.length}/{rows.length} rows accounted for · eligible net total {metrics(ok.map(p=>p.entry!)).total.toFixed(2)} {currency}. Rows with unknown costs are excluded from net.</p>
+          <p className="text-xs">Reconciliation: {parsed.length}/{rows.length} rows accounted for · {updates.length} updates / {conflicts.length} conflicts · {accepted.length} selected. Eligible net by currency: {Object.entries(previewNets).map(([unit,value])=>`${value.toFixed(2)} ${unit}`).join(' · ') || 'none'}. No FX conversion. Unknown costs are excluded. History totals report only the selected {currency}.</p>
           {(bad.length > 0 || dup.length > 0) && (
             <ul className="max-h-24 overflow-y-auto text-[11px] text-[#474556] space-y-0.5 border border-slate-100 rounded-lg p-2">
               {[...bad, ...dup].slice(0, 20).map((p) => (
@@ -162,11 +181,11 @@ export const StatementUploadPanel: React.FC<UploadProps> = ({ existing, strategy
 
           <button
             type="button"
-            disabled={ok.length === 0 || missing.length > 0 || !accountId.trim()}
-            onClick={() => { const list=ok.map(p=>p.entry!);const next=[{id:crypto.randomUUID(),at:new Date().toISOString(),file:fileName,account:accountId,currency,imported:ok.length,duplicate:dup.length,invalid:bad.length,net:metrics(list).total},...history];if(historyFailed || !saveJournalValue('imports',next)){setError('Import history could not be saved. Your existing records were not changed. Free browser storage or export a backup first.');return;}setHistory(next);onImport(list); }}
+            disabled={accepted.length === 0 || missing.length > 0 || !accountId.trim()}
+            onClick={() => { const list=accepted.map(p=>p.entry!);const next=[{id:crypto.randomUUID(),at:new Date().toISOString(),file:fileName,account:accountId.trim(),currency,imported:list.length,duplicate:dup.length,invalid:bad.length,net:previewNet},...history];if(historyFailed || !onImport(list,next)){setError('Import could not be persisted. Existing records and history were retained. Free browser storage or export a backup before retrying.');return;}setHistory(next); }}
             className="w-full bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
           >
-            Import {ok.length} trade{ok.length === 1 ? '' : 's'}
+            Import / update {accepted.length} selected record{accepted.length === 1 ? '' : 's'}
           </button>
         </>
       )}

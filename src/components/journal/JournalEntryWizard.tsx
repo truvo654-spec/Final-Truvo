@@ -3,12 +3,12 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import type { Broker, JournalEntry } from '../../types';
 import { JOURNAL_STRATEGIES } from '../../data/journalData';
-import { AutoSyncPanel, StatementUploadPanel } from './JournalIngestPanels';
+import { AutoSyncPanel, StatementUploadPanel, type ImportHistory } from './JournalIngestPanels';
 import { useDialogFocus } from './useDialogFocus';
 
 interface JournalEntryWizardProps {
   onClose: () => void;
-  onImportMany: (entries: JournalEntry[]) => void;
+  onImportMany: (entries: JournalEntry[], history:ImportHistory[]) => boolean;
   existingEntries?: JournalEntry[];
   brokers?: Broker[];
   onConnectBroker?: (broker: Broker) => void;
@@ -30,7 +30,7 @@ export const JournalEntryWizard: React.FC<JournalEntryWizardProps> = ({
 }) => {
   const dialogRef = useDialogFocus(onClose);
   const [mode, setMode] = useState<'auto' | 'upload'>('upload');
-  const strategy = strategies?.[0] ?? JOURNAL_STRATEGIES[0] ?? 'Unassigned';
+  const strategy = 'Unassigned';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">

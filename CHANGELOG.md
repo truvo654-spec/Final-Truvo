@@ -1,3 +1,14 @@
+## 1.32.0
+- Expert-trader audit update based on 601fdcb: distinguish generated demo templates from written Playbook rules, show rule coverage and sample sizes, collapse optional analytics, and separate subjective grades from recorded evidence.
+- Preserve immutable playbook/scenario attribution, guard referenced history across every account/filter, validate directional scenario levels, isolate preparation checks by scenario/rule version, and link imported executions without treating preparation as execution proof.
+- Revalidate delayed simulation fills against session, weekday, news and daily limits; transfer consecutive-loss halts. Align monetary win/loss and expectancy definitions with the journal, and exclude crossing trades from fixed-rule chronological/period checks.
+- Save complete experiments without silent trade-list trimming. Saving no longer replaces a baseline: explicitly select a scoped demo reference with source, instrument, currency, written version and executable settings. Generated results never certify live performance.
+- Resume unfinished Practice charts, positions, orders, rules and notes after navigation/reload. Persist session completion and one-time reward claims together; failed saves preserve prior evidence and award no Points.
+- Add explicit statement status mapping, previewed open-to-closed updates and approved conflict corrections, preserving IDs/reviews/history. Default unmapped strategies to Unassigned and reject ambiguous zero results and non-finite quantity.
+- Provide round-trip execution CSV and versioned full Journal Backup/restore, retaining reviews/images/playbooks/saved runs while excluding login, credits and access entitlements.
+- Use exit-time-aware, account/currency-isolated risk checks with evidence coverage, verified day-start equity and fixed checklist snapshots. Add a sample-history filter, stop automatic demo rehydration, and use the current UTC calendar.
+- Historical market-data integration remains out of scope: automated tests and reconstructed price paths remain visibly labeled simulations.
+
 ## 1.31.34
 - Place the symbol search below the Overview filters at the top-left of the Overview content.
 

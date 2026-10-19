@@ -5,7 +5,9 @@ import React, { useMemo, useState } from 'react';
 import { ChevronDown, Sparkles, AlertCircle, Play } from 'lucide-react';
 import type { Broker, JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
-import { eligible, metrics } from '../journal/journalMath';
+import { currencyOf, eligible, metrics } from '../journal/journalMath';
+import { matchesPlaybook } from '../journal/playbookLinks';
+import { canonicalInstrument } from '../journal/instrumentMatching';
 import { SYMBOLS, marketGroupOf, resolveSymbol, symbolSpec } from '../../backtest/marketData';
 import {
   JournalRules, defaultCostsFor, describeCondition, describeRules, presetRange, validateSettings,
@@ -103,8 +105,8 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
     const book = choosable.find((x) => x.id === id);
     const settings = settingsByPlaybook[id] ?? (s.playbookId === id ? s : null);
     if (!book || !settings) return [];
-    const bookEntries = entries.filter((e) => e.strategy === book.name);
-    const journalEntries = bookEntries.filter((e) => resolveSymbol(e.symbol) === settings.symbol);
+    const bookEntries = entries.filter((e) => matchesPlaybook(e,book));
+    const journalEntries = bookEntries.filter((e) => canonicalInstrument(e.symbol) === canonicalInstrument(settings.symbol) && currencyOf(e)===settings.risk.currency);
     const list = journalEntries.filter(eligible);
     const shared = metrics(list);
     const m = { trades: shared.n, winRate: (shared.winRate ?? 0) / 100, avgR: shared.avgR, pf: shared.pf };
@@ -146,6 +148,16 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
 
   return (
     <div className="max-w-5xl mx-auto space-y-4 pb-28">
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs space-y-2" aria-label="Simulation evidence and rule coverage">
+        <h3 className="font-bold">Generated demo prices · executable templates, not verified playbooks</h3>
+        <p>No historical market feed is connected. Written rules are not translated automatically. Review the executable rules before running; edited parameters and AI candidates require a new independent test. Saving an experiment does not replace a reference.</p>
+        {pb && <details><summary className="cursor-pointer font-semibold">Written-rule coverage for {pb.name}</summary><ul className="mt-2 space-y-1">
+          {pb.rules.map(rule => <li key={rule.id}>{rule.title}: <strong>not independently verified</strong> · {rule.detail}</li>)}
+          <li>Written entry: reference only · {pb.entryTrigger}</li>
+          <li>Written stop / target: reference only · {pb.stopRule} / {pb.targetRule}</li>
+          <li>Session, numerical risk limits and the executable conditions below: simulated.</li>
+        </ul></details>}
+      </section>
       <section aria-label="MarketSyde AI test guidance" className="rounded-2xl border border-[#5338ec]/25 bg-[#F5F2FF] p-4">
         <p className="flex items-center gap-2 text-sm font-bold text-[#5338ec]"><Sparkles size={16} aria-hidden />MarketSyde AI · compare before you commit</p>
         <p className="text-xs text-slate-600 mt-2">Test a playbook to evaluate small rule changes, or select several playbooks to compare their results on the same market and dates. The recommender will highlight a qualifying candidate, explain its trade-offs, and open an editable setup for your next test.</p>
@@ -417,7 +429,7 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
                     </div>
 
                     <aside className="rounded-xl border border-slate-200 p-3.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Journal comparison · {settings.symbol}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Recorded context · {settings.symbol} · {settings.risk.currency} · includes legacy versions, not a matched forecast</p>
                       {journal.m.trades > 0 ? (
                         <dl className="mt-2 grid grid-cols-2 gap-3 text-xs tabular-nums">
                           <div><dt className="text-slate-500">Closed trades<JournalHelp label="Closed trades" /></dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{journal.m.trades}</dd></div>

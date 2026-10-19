@@ -1,6 +1,19 @@
 # Backtesting module
 
-Backtesting lives inside the Trading Journal as its own tab (Overview · Trade Log · Insights · Playbook · **Backtest** · Weekly Review). It uses the journal's playbooks, trades, trading rules, brokers, Syde Credits and Points, and sends its results back to them.
+Backtesting lives inside the Trading Journal as its own tab (Overview · Trade Log · Insights · Playbook · **Backtest** · AI Coach). It uses the journal's playbooks, trades, trading rules, brokers, Syde Credits and Points, and sends its results back to them.
+
+## Expert-trader version (1.32.0)
+
+**No historical price provider is connected.** Automated results are generated-demo experiments, not a verification of every written strategy rule or a forecast of actual performance. Setup shows written-rule coverage, the executable template, and transferred numerical constraints. Prop checks use a simplified realized-balance/bar model, not an individual firm's compliance rules.
+
+- **Save vs reference:** Save retains the complete experiment and never silently trims older trades or replaces a reference. A storage failure preserves the prior data and awards no Points. On a saved, versioned run, **Set as demo reference** explicitly replaces the previous reference and retains source, currency, symbol, written version and executable settings. Recorded comparisons require matching instrument/currency/version and known realized R, excluding unknown legacy versions and CFD/futures substitutions. Demo references never classify real performance as on track or underperforming.
+- **Chronological checks:** An unchanged-rule chronological split and four fixed-rule periods describe generated results. Neither is walk-forward optimization, and changing parameters does not preserve an independent holdout. Trades crossing a split/period boundary are excluded from that check, but retained in the full report.
+- **Entry restrictions:** Session, weekday, news and daily halts are checked again at the actual fill, not only when a signal places an order. Consecutive closed-trade net losses can halt the remainder of the UTC day.
+- **Practice drafts:** Exact bars, cursor, orders, positions, settings and notes resume paused after navigation/reload. Drafts do not claim completion rewards. Finish persists the session and one-time claim together. A corrupt draft is not overwritten; errors and an explicit discard action are shown.
+- **Playbook evidence:** Immutable IDs protect attribution across filtered accounts. A scenario has directional price validation and its own versioned preparation checklist. Link an existing execution from Checklist or assign playbook/scenario in review. Preparation is a dated snapshot, not proof of execution compliance; review-time rule attribution must be explicit.
+- **Local backups:** **Download full Journal Backup** exports a versioned, lossless browser-local data set including reviews/images, playbooks, saved experiments and a Practice draft. Restore previews replacement and requires confirmation; export the current backup first. Login, credits, unlock entitlements and current report filters are not restored. CSV is for round-trip execution data, not a lossless review backup.
+- **Statement reconciliation:** Map explicit planned/open/closed status. A zero result without exit evidence needs status rather than guessing closure. Open-to-closed updates and conflicting corrections are previewed and require approval; reviews and record IDs are retained. Conflicting currencies require reconciliation. Missing strategy becomes Unassigned.
+- **Scope and monitors:** Account/currency/category filters also scope Practice and coaching; date-broadened cohorts retain other filters. Sample-origin trades can be excluded without deletion. The current UTC date drives planning and expiry. Monitors use known exits before an entry, verified monetary risk/equity, and fixed checklist snapshots, with unknown coverage explicitly reported.
 
 ## Access by member level
 
@@ -23,7 +36,7 @@ Credit unlocks last 1, 7 or 30 days and follow the upper Instrument Analysis pri
 | Strategy lab (home + results) | Header with actions; tabs (Simulations, Playbook verification, Stress test, Forward tests); formula strip; 7 KPI cards; equity vs live chart; "Journal bridge" side panel; executions table | KPI cards with sample size, equity overlay, drawdown strip, leak card, push-to-playbook button, filterable table | Results with live comparison | Backtest vs live gap, push rules to playbook, export to journal |
 | Replay | Practice source list (left), chart with controls (centre), order ticket + open position (right), session telemetry + tags + notes (bottom) | Source tabs, blind toggle, trade cards, play/step/speed/jump, drawing tools, HTF mini chart, buy/sell ticket with R:R, position card, tag chips, notes, toast | Blind mode active, open short position, auto-saved toast | Replay journal losses blind, tag practice trades, notes to Notebook, Points |
 | What-if | Filter bar (range, account, symbols, playbook, mistake tags); "Change one rule" list (left); AI insight + comparison matrix + equity overlay + changed trades (right) | Rule cards with inputs/toggles, KPI deltas, overlaid equity, table of changed trades | Rule 4 active, 2 mistake tags selected | One-rule counterfactual on real trades, add rule to tracker |
-| Saved run results | Title + actions; significance strip; 10 KPI cards; equity with benchmark; drawdown; AI verdict; robustness checks; trade table with filters | KPI cards, verdict score, 3 pass/fail checks, filter dropdowns, pagination | Validated run, all checks passed | Verdict with suggestions, OOS / walk-forward / Monte Carlo, journal actions |
+| Saved run results | Title + actions; significance strip; KPI cards; generated price chart; demo assessment; robustness checks; trade table with filters | KPI cards, descriptive score, 3 demo checks, filter dropdowns, pagination | Completed generated-price experiment | Fixed-rule chronological split / period stability / Monte Carlo, explicit reference selection |
 
 ## 2. Conflicts with the spec and how they were resolved
 
@@ -32,7 +45,7 @@ Credit unlocks last 1, 7 or 30 days and follow the upper Instrument Analysis pri
 | Dark navy theme | Light theme | Light theme. The module reuses the journal's own card style and purple accent so it looks like part of the same page; profit and loss use green and red with + / − signs and icons. |
 | Left sidebar with Daily Routine, Notebook, Prop Firms | The real app has a top header and a tabbed journal | Backtest is a tab in the Trading Journal. "Send notes to Notebook" writes to the playbook's review notes, and "Add to tomorrow's plan" adds a scenario to the playbook, because the app has no Notebook or Daily Routine page yet. |
 | Dense screens: 10+ KPI cards, 4 sub-tabs, 6 rule rows on one view | "User friendly, not complicated" | Simplified (see section 3). |
-| "AI verdict", "AI Oracle" | AI verdict card | The verdict is calculated from the run's own checks (out-of-sample, walk-forward, Monte Carlo) and from real re-runs of small rule changes, so every claim is backed by a number. It can be swapped for a Gemini call later. |
+| "AI verdict", "AI Oracle" | Demo assessment | A deterministic description of generated-price chronological/period checks, Monte Carlo and small parameter re-runs. These checks do not verify market profitability or validate re-tuned parameters on untouched data. |
 | Tick / 1s timeframes, Barclays/LMAX feed | Tick to 1D | 5m, 15m, 1h, 4h and 1D work on the mock feed. Tick, 1s and 1m are shown but disabled until a real data provider (Acuity) is connected. |
 
 ## 3. Simplifications (the user-friendly version)
@@ -57,10 +70,10 @@ See `src/backtest/config.ts` for every configurable value.
 | Extra run price | 15 Syde Credits | `EXTRA_RUN_CREDITS` |
 | Points for a finished replay session / saved backtest | 10 / 5, once per session or run | `POINTS` |
 | Out-of-sample split | 70 / 30 | `OOS_SPLIT` |
-| Walk-forward periods | 4 | `WALK_FORWARD_PERIODS` |
+| Fixed-rule stability periods (not walk-forward optimization) | 4 | `WALK_FORWARD_PERIODS` |
 | Monte Carlo reshuffles | 1,000 | `MONTE_CARLO_RUNS` |
 | Low-sample warning | under 30 trades or more than 6 rules | `MIN_TRADES`, `MAX_RULES` |
-| Breakeven band | a trade within ±0.05R counts as breakeven | `BREAKEVEN_R` |
+| Breakeven band | absolute net amount <= 0.005 account-currency units | shared `netOutcome` |
 
 Mocked until real services exist:
 
@@ -75,7 +88,7 @@ Mocked until real services exist:
 
 - Win rate = winning trades ÷ all trades.
 - Profit factor = gross profit ÷ |gross loss|.
-- Expectancy = win rate × average win − loss rate × |average loss| (also shown in R as average R).
+- Expectancy = total net P&L divided by all completed trades, including cash amounts inside the breakeven band. Average R is separately averaged from available R evidence.
 - R multiple = net P&L ÷ initial risk; initial risk = |entry − stop| × size × multiplier.
 - Max drawdown = largest peak-to-trough fall in equity, in $ and %.
 - Sharpe = mean daily return ÷ standard deviation of daily returns × √252 (risk-free 0).

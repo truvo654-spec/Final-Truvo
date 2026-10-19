@@ -1,7 +1,7 @@
 // Statement ingestion for the journal: CSV parsing, automatic header mapping,
 // row conversion and duplicate detection. Pure functions, no React.
 import { JournalEntry, PortfolioAssetClass } from '../../types';
-import { timestampMs } from './journalMath';
+import { statusOf, timestampMs } from './journalMath';
 
 export type IngestField =
   | 'time'
@@ -12,14 +12,14 @@ export type IngestField =
   | 'qty'
   | 'pnl'
   | 'fee'
-  | 'ticket' | 'exitTime' | 'initialRisk' | 'stop' | 'target' | 'strategy' | 'tags' | 'mistakes' | 'notes' | 'assetClass';
+  | 'ticket' | 'exitTime' | 'initialRisk' | 'stop' | 'target' | 'strategy' | 'tags' | 'mistakes' | 'notes' | 'assetClass' | 'status' | 'accountId' | 'currency' | 'quantityUnit';
 
 export const INGEST_FIELDS: { key: IngestField; label: string; type: string; aliases: string[] }[] = [
   { key: 'time', label: 'Execution time', type: 'Timestamp', aliases: ['datetime', 'datetimeutc', 'executiontime', 'exectime', 'entrytime', 'opentime', 'timestamp', 'time', 'date'] },
   { key: 'symbol', label: 'Symbol / ticker', type: 'Text', aliases: ['symbol', 'instrument', 'contract', 'ticker', 'pair', 'market', 'product'] },
   { key: 'side', label: 'Direction (LONG/SHORT)', type: 'Enum flag', aliases: ['orderside', 'side', 'direction', 'buysell', 'action', 'type'] },
-  { key: 'entry', label: 'Entry / fill price', type: 'Decimal', aliases: ['entryprice', 'openprice', 'fillprice', 'execavgprice', 'avgfillprice', 'avgprice', 'price'] },
-  { key: 'exit', label: 'Exit price', type: 'Decimal', aliases: ['exitprice', 'closeprice'] },
+  { key: 'entry', label: 'Entry / fill price', type: 'Decimal', aliases: ['entryprice', 'entry', 'openprice', 'fillprice', 'execavgprice', 'avgfillprice', 'avgprice', 'price'] },
+  { key: 'exit', label: 'Exit price', type: 'Decimal', aliases: ['exitprice', 'exit', 'closeprice'] },
   { key: 'qty', label: 'Quantity (source units)', type: 'Number', aliases: ['contractsizeqty', 'quantity', 'qty', 'size', 'volume', 'lots', 'filled', 'contracts'] },
   { key: 'pnl', label: 'Reported P&L (gross / net)', type: 'Currency', aliases: ['realizedpnlusd', 'realizedpnl', 'grosspnl', 'pnl', 'profitloss', 'profit', 'netpnl'] },
   { key: 'fee', label: 'Commissions / fees', type: 'Currency', aliases: ['exchangefeetotal', 'commissions', 'commission', 'fees', 'fee'] },
@@ -33,6 +33,10 @@ export const INGEST_FIELDS: { key: IngestField; label: string; type: string; ali
   { key: 'mistakes', label: 'Mistakes (separate with |)', type: 'Text', aliases: ['mistakes', 'mistaketags'] },
   { key: 'notes', label: 'Journal notes', type: 'Text', aliases: ['setupnotes', 'journalnotes', 'notes', 'log'] },
   { key: 'assetClass', label: 'Market type', type: 'Enum', aliases: ['assetclass', 'markettype'] },
+  { key: 'status', label: 'Trading status (planned/open/closed)', type: 'Enum', aliases: ['tradingstatus', 'status'] },
+  { key: 'accountId', label: 'Account identity', type: 'Text', aliases: ['accountid', 'accountidentity', 'account'] },
+  { key: 'currency', label: 'Account currency', type: 'Text', aliases: ['accountcurrency', 'currency'] },
+  { key: 'quantityUnit', label: 'Quantity unit', type: 'Enum', aliases: ['quantityunit', 'sizeunit'] },
 ];
 
 export interface ColumnMapping {
@@ -141,12 +145,12 @@ const toIso = (v: string | undefined, offset: string): { date: string; time?: st
 export interface ParsedRow {
   line: number; // 1-based line in the file (header is line 1)
   entry?: JournalEntry;
-  status: 'ok' | 'duplicate' | 'invalid';
+  status: 'ok' | 'update' | 'conflict' | 'duplicate' | 'invalid';
   reason?: string;
 }
 
 export const dedupeKey = (e: Pick<JournalEntry, 'accountId' | 'ticketId' | 'symbol' | 'entryTime' | 'date' | 'entryPrice' | 'size' | 'direction'>) =>
-  `${e.accountId || 'legacy-demo'}|${e.ticketId ? `t:${e.ticketId}` : `k:${e.symbol}|${e.entryTime ? timestampMs(e.entryTime) : e.date}|${e.entryPrice}|${e.size}|${e.direction}`}`;
+  `${e.accountId?.trim() || 'legacy-demo'}|${e.ticketId?.trim() ? `t:${e.ticketId.trim()}` : `k:${e.symbol}|${e.entryTime ? timestampMs(e.entryTime) : e.date}|${e.entryPrice}|${e.size}|${e.direction}`}`;
 
 export function convertRows(
   rows: string[][],
@@ -156,11 +160,16 @@ export function convertRows(
 ): ParsedRow[] {
   const col = (f: IngestField) => mapping.findIndex((m) => m.field === f);
   const idx = Object.fromEntries(INGEST_FIELDS.map((f) => [f.key, col(f.key)])) as Record<IngestField, number>;
-  const seen = new Set(existing.map((e) => dedupeKey(e)));
+  const recorded = new Map(existing.map(e => [dedupeKey(e), e]));
+  const seen = new Set<string>();
   const out: ParsedRow[] = [];
   rows.forEach((r, i) => {
     const line = i + 2;
-    const get = (f: IngestField) => (idx[f] >= 0 ? r[idx[f]] : undefined);
+    const ownExport = r[mapping.findIndex(m=>norm(m.header)==='journalexportversion')] === '1';
+    const get = (f: IngestField) => {
+      const value=idx[f] >= 0 ? r[idx[f]] : undefined;
+      return ownExport && value && /^'[=+@-]/.test(value) ? value.slice(1) : value;
+    };
     const symbol = (get('symbol') || '').trim().toUpperCase();
     const side = toSide(get('side'));
     const entryPrice = toNum(get('entry'));
@@ -168,11 +177,13 @@ export function convertRows(
     if (!symbol) return out.push({ line, status: 'invalid', reason: 'Missing symbol' });
     if (!side) return out.push({ line, status: 'invalid', reason: 'Direction not recognised (use BUY/SELL or LONG/SHORT)' });
     if (!Number.isFinite(entryPrice) || entryPrice <= 0) return out.push({ line, status: 'invalid', reason: 'Missing or invalid positive price' });
-    if (isNaN(size) || size <= 0) return out.push({ line, status: 'invalid', reason: 'Missing or invalid quantity' });
+    if (!Number.isFinite(size) || size <= 0) return out.push({ line, status: 'invalid', reason: 'Missing or invalid quantity' });
     const exit = toNum(get('exit'));
     if(get('exit')?.trim() && (!Number.isFinite(exit) || exit<=0)) return out.push({line,status:'invalid',reason:'Invalid exit price'});
     const exitPrice = isNaN(exit) ? null : exit;
     const pnlRaw = toNum(get('pnl'));
+    const statusRaw = get('status')?.trim().toLowerCase();
+    if (statusRaw && !['planned', 'open', 'closed'].includes(statusRaw)) return out.push({line, status:'invalid', reason:'Status must be planned, open or closed'});
     const fee = toNum(get('fee'));
     const t = toIso(get('time'),defaults.timezone || 'UTC');
     if(!t)return out.push({line,status:'invalid',reason:'Missing/invalid ISO execution date or time; no date was invented'});
@@ -191,19 +202,22 @@ export function convertRows(
     if(get('pnl')?.trim() && !Number.isFinite(pnlRaw))return out.push({line,status:'invalid',reason:'Invalid reported P&L'});
     let pnl = pnlRaw;
     if (isNaN(pnl)) {
-      if(exitPrice!==null)return out.push({line,status:'invalid',reason:'Closed results require reported P&L; instrument valuation is not assumed'});
+      if(statusRaw === 'closed' || (!statusRaw && (exitPrice!==null || exitTimestamp)))return out.push({line,status:'invalid',reason:'Closed results require reported P&L; instrument valuation is not assumed'});
       pnl = 0;
     }
     const netBasis=defaults.pnlBasis==='net' || /netpnl/.test(norm(mapping[idx.pnl]?.header || ''));
     if(netBasis && !Number.isFinite(fee))return out.push({line,status:'invalid',reason:'Net P&L requires known costs (enter explicit zero when applicable) to preserve gross result'});
     if(netBasis)pnl+=Math.abs(fee);
-    const hasResult = !isNaN(pnlRaw) || exitPrice !== null;
+    if (!statusRaw && pnlRaw === 0 && exitPrice === null && !exitTimestamp) return out.push({line,status:'invalid',reason:'Zero P&L without exit evidence is ambiguous. Map explicit open/closed status.'});
+    const hasResult = Number.isFinite(pnlRaw);
+    const tradingStatus = statusRaw === 'open' || statusRaw === 'planned' ? statusRaw : statusRaw === 'closed' || hasResult || exitPrice !== null || exitTimestamp ? 'closed' : 'open';
     const outcome = !hasResult ? 'open' : pnl > 0 ? 'win' : pnl < 0 ? 'loss' : 'breakeven';
     const ticket = (get('ticket') || '').trim();
     const entry: JournalEntry = {
       id: crypto.randomUUID(),
-      accountId:defaults.accountId, accountCurrency:defaults.currency || 'USD', sourceTimezone:defaults.timezone || 'UTC', quantityUnit:'unknown',
-      tradingStatus:hasResult?'closed':'open', pnlKnown:hasResult, reviewState:'needs_review', mistakesReviewed:false,
+      accountId:get('accountId')?.trim() || defaults.accountId?.trim(), accountCurrency:get('currency')?.trim().toUpperCase() || defaults.currency || 'USD', sourceTimezone:defaults.timezone || 'UTC',
+      quantityUnit: get('quantityUnit')?.trim() || 'unknown',
+      tradingStatus, pnlKnown:hasResult, reviewState:'needs_review', mistakesReviewed:false,
       date: t.date,
       symbol,
       assetClass: assetClass || guessAssetClass(symbol),
@@ -213,8 +227,8 @@ export function convertRows(
       size,
       pnl,
       rMultiple: null,
-      outcome,
-      strategy: get('strategy')?.trim() || defaults.strategy,
+      outcome: tradingStatus === 'closed' ? outcome : 'open',
+      strategy: get('strategy')?.trim() || defaults.strategy || 'Unassigned',
       tags: [...new Set(['Imported', ...list('tags')])],
       setupNotes: get('notes')?.trim() || '',
       emotionBefore: null,
@@ -234,11 +248,32 @@ export function convertRows(
       ticketId: ticket || undefined,
     };
     const key = dedupeKey(entry);
-    if (seen.has(key)) return out.push({ line, entry, status: 'duplicate', reason: ticket ? `Ticket ${ticket} already journaled` : 'Same trade already journaled' });
+    if (seen.has(key)) return out.push({ line, entry, status: 'invalid', reason: 'Repeated identity within this file. Reconcile repeated or partial fills before importing.' });
     seen.add(key);
+    const prior = recorded.get(key);
+    if (prior) {
+      if (prior.accountCurrency && prior.accountCurrency!==entry.accountCurrency) return out.push({line,status:'invalid',reason:'Existing account/ticket uses a different currency. Reconcile account identity; currency conversion is never assumed.'});
+      const fields = ['symbol','direction','entryPrice','size','exitPrice','pnl','commission','tradingStatus','pnlKnown','exitTime'] as const;
+      if (fields.every(field => prior[field] === entry[field])) return out.push({line,entry,status:'duplicate',reason:'Execution already recorded; review and attribution preserved'});
+      const safeClose = statusOf(prior) === 'open' && tradingStatus === 'closed' &&
+        ['symbol','direction','entryPrice','size'].every(field => prior[field as keyof JournalEntry] === entry[field as keyof JournalEntry]);
+      const merged: JournalEntry = { ...prior, tradingStatus, pnlKnown:hasResult, pnl, exitPrice, exitTime:entry.exitTime,
+        commission:entry.commission, outcome:entry.outcome, reviewState:'needs_review', rMultiple:null,
+        initialRisk:entry.initialRisk ?? prior.initialRisk, stopPrice:entry.stopPrice ?? prior.stopPrice, takeProfit:entry.takeProfit ?? prior.takeProfit,
+        executionHistory:[...(prior.executionHistory || []), executionSnapshot(prior, 'Statement update explicitly approved')] };
+      if (!safeClose) Object.assign(merged, {symbol, direction:side, entryPrice, size, date:entry.date, entryTime:entry.entryTime});
+      return out.push({line,entry:merged,status:safeClose?'update':'conflict',reason:safeClose?'Open → closed update; existing ID, review and playbook links retained':'Conflicting execution: explicit approval required; previous values retained in correction history'});
+    }
     out.push({ line, entry, status: 'ok' });
   });
   return out;
+}
+
+export function executionSnapshot(entry: JournalEntry, reason: string) {
+  return { at:new Date().toISOString(), reason, status:statusOf(entry), gross:entry.pnl, costs:entry.commission,
+    entryPrice:entry.entryPrice, exitPrice:entry.exitPrice, entryTime:entry.entryTime, exitTime:entry.exitTime,
+    symbol:entry.symbol,direction:entry.direction,size:entry.size,accountCurrency:entry.accountCurrency,
+    initialRisk:entry.initialRisk,stopPrice:entry.stopPrice,takeProfit:entry.takeProfit,pnlKnown:entry.pnlKnown,reportedR:entry.rMultiple };
 }
 
 export const SAMPLE_CSV = [

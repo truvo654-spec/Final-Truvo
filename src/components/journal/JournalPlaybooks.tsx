@@ -1,13 +1,14 @@
 import { JournalHelp } from './JournalHelp';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronRight, Search, Sparkles, X } from 'lucide-react';
 import { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
 import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, ReviewDecision, ScenarioStatus, PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
 import { PlaybookInstruments } from './PlaybookInstruments';
 import { filterPlaybookInventory } from './playbookInventory';
-import { instrumentMarket } from './instrumentMatching';
+import { canonicalInstrument, instrumentMarket } from './instrumentMatching';
+import { isActiveScenario, matchesPlaybook, scenarioProblem, scenarioRR, setupCheckKey } from './playbookLinks';
 import { PlaybookAnalytics } from './PlaybookAnalytics';
 import { PlaybookBacktestPanel } from '../backtest/PlaybookBacktestPanel';
 import type { PlaybookExpectedStats } from '../../backtest/store';
@@ -37,9 +38,8 @@ type Step = 'setup' | 'rules' | 'scenarios' | 'checklist' | 'execution' | 'revie
 const STEPS: [Step, string][] = [['setup', 'Setup'], ['rules', 'Rules'], ['scenarios', 'Scenarios'], ['checklist', 'Checklist'], ['execution', 'Execution'], ['review', 'Review']];
 const SC_LABEL: Record<ScenarioStatus, string> = { watching: 'Watching', triggered: 'Triggered', invalidated: 'Invalidated', closed: 'Closed' };
 const SC_STYLE: Record<ScenarioStatus, string> = { watching: 'bg-sky-50 text-sky-700', triggered: 'bg-emerald-50 text-emerald-700', invalidated: 'bg-rose-50 text-rose-700', closed: 'bg-slate-100 text-slate-600' };
-const plannedRR = (sc: Pick<PlaybookScenario, 'entry' | 'stop' | 'target'>) =>
-  sc.entry !== undefined && sc.stop !== undefined && sc.target !== undefined && sc.entry !== sc.stop ? Math.abs(sc.target - sc.entry) / Math.abs(sc.entry - sc.stop) : null;
-const openScenarios = (p: JournalPlaybook) => (p.scenarios || []).filter((x) => x.status === 'watching' || x.status === 'triggered');
+const plannedRR = scenarioRR;
+const openScenarios = (p: JournalPlaybook) => (p.scenarios || []).filter(x=>isActiveScenario(x));
 const DECISION_LABEL: Record<ReviewDecision, string> = { keep: 'Keep', adjust: 'Adjust', pause: 'Pause', retire: 'Retire' };
 const DECISION_STYLE: Record<ReviewDecision, string> = { keep: 'bg-emerald-50 text-emerald-700', adjust: 'bg-sky-50 text-sky-700', pause: 'bg-amber-50 text-amber-700', retire: 'bg-slate-100 text-slate-600' };
 
@@ -109,6 +109,8 @@ const windowText = (pb: JournalPlaybook) => (pb.window ? `${pb.window.label} (${
 interface Props {
   entries: JournalEntry[];
   allJournalEntries?: JournalEntry[];
+  referenceEntries: JournalEntry[];
+  onLinkScenario: (entryId: string, book: JournalPlaybook, scenario: PlaybookScenario, ruleIds: string[], houseRuleIds: string[]) => boolean;
   playbooks: JournalPlaybook[];
   setPlaybooks: (fn: (prev: JournalPlaybook[]) => JournalPlaybook[]) => void;
   onOpenEntry: (id: string) => void;
@@ -129,7 +131,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, referenceEntries, onLinkScenario, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -148,7 +150,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const [step, setStep] = useState<Step>('setup');
   const [replayId, setReplayId] = useState<string | null>(null);
 
-  const [showAnalytics, setShowAnalytics] = useState(true);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [linkEntryId, setLinkEntryId] = useState('');
   const [gradeTip, setGradeTip] = useState<{ id: string; x: number; y: number } | null>(null);
   const [houseChecks, setHouseChecks] = useState<Record<string, string[]>>({});
   const [reviewNote, setReviewNote] = useState('');
@@ -167,7 +170,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
 
   const stats = useMemo(() => {
     const m = new Map<string, PbStats>();
-    playbooks.forEach((p) => m.set(p.id, statsFor(entries.filter((e) => e.strategy === p.name))));
+    playbooks.forEach((p) => m.set(p.id, statsFor(entries.filter((e) => matchesPlaybook(e, p)))));
     return m;
   }, [entries, playbooks]);
 
@@ -186,7 +189,17 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     });
   const sel = playbooks.find((p) => p.id === selId) && list.some((p) => p.id === selId) ? playbooks.find((p) => p.id === selId)! : list[0];
   const s = sel ? stats.get(sel.id)! : null;
-  const selTrades = sel ? entries.filter((e) => e.strategy === sel.name) : [];
+  const selTrades = sel ? entries.filter((e) => matchesPlaybook(e, sel)) : [];
+  const referenceTrades = sel ? referenceEntries.filter(e => matchesPlaybook(e, sel)) : [];
+  const curSc = sel ? openScenarios(sel).find((x) => x.id === activeSc[sel.id]) : undefined;
+  const checkKey = sel ? `${setupCheckKey(sel, curSc?.id)}:${JSON.stringify(houseChecklist)}` : '';
+  const linkCandidates = curSc ? allJournalEntries.filter(e =>
+    canonicalInstrument(e.symbol) === canonicalInstrument(curSc.symbol) &&
+    e.direction === (curSc.bias === 'long' ? 'BUY' : 'SELL') &&
+    (sel && (matchesPlaybook(e,sel) || (!e.playbookId && e.strategy==='Unassigned'))) &&
+    (!e.scenarioId || (e.scenarioId === curSc.id && sel && matchesPlaybook(e, sel)))
+  ) : [];
+  useEffect(()=>setLinkEntryId(''),[sel?.id,curSc?.id]);
 
   const nextId = () => `PB-${pad(Math.max(0, ...playbooks.map((p) => Number(p.id.replace(/\D/g, '')) || 0)) + 1).padStart(3, '0')}`;
 
@@ -207,6 +220,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     if (!editing) return;
     const name = editing.name.trim();
     if (!name) { onToast('Give the playbook a name'); return; }
+    const original = playbooks.find(p => p.id === editing.id);
+    if (original && original.name !== name && referenceEntries.some(e => matchesPlaybook(e, original))) {
+      onToast('This playbook has recorded history. Its name is protected across all accounts and filters.'); return;
+    }
     if (playbooks.some((p) => p.id !== editing.id && p.name.toLowerCase() === name.toLowerCase())) { onToast('A playbook with that name already exists'); return; }
     const outsideMarket = (editing.symbols || []).find(symbol => {
       const market = instrumentMarket(symbol, editing);
@@ -224,6 +241,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   };
   const remove = () => {
     if (!sel) return;
+    if (referenceEntries.some(e => matchesPlaybook(e, sel))) { onToast('Recorded trades still reference this playbook. Archive it instead.'); return; }
     setPlaybooks((prev) => prev.filter((p) => p.id !== sel.id));
     setEditing(null); setConfirmDelete(false);
     onToast(`Deleted "${sel.name}"`);
@@ -233,9 +251,9 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const input = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30';
   const lbl = 'text-[10px] font-bold tracking-wider uppercase text-slate-500';
 
-  const checked = sel ? checks[sel.id] || [] : [];
+  const checked = checks[checkKey] || [];
   const met = sel ? sel.rules.filter((r) => checked.includes(r.id)).length : 0;
-  const houseChecked = sel ? (houseChecks[sel.id] || []).filter((id) => houseChecklist.some((c) => c.id === id)) : [];
+  const houseChecked = (houseChecks[checkKey] || []).filter((id) => houseChecklist.some((c) => c.id === id));
   const houseMet = houseChecked.length;
   const totalChecks = (sel ? sel.rules.length : 0) + houseChecklist.length;
   const metAll = met + houseMet;
@@ -279,10 +297,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const gradeBadge = (p: JournalPlaybook, size: 'sm' | 'md', label?: string) => (
     <span
       tabIndex={0}
-      aria-label={`Grade ${p.grade}. Hover or focus for the grading criteria.`}
+      aria-label={`My grade ${p.grade}. Subjective rating; hover or focus for evidence.`}
       onMouseEnter={showTip(p.id)} onMouseLeave={() => setGradeTip(null)} onFocus={showTip(p.id)} onBlur={() => setGradeTip(null)}
       className={`${size === 'sm' ? 'px-1 text-[9px]' : 'px-1.5 py-0.5 text-[10px]'} rounded border font-bold cursor-help ${GRADE_STYLE[p.grade]}`}
-    >{label ?? p.grade}</span>
+    >My grade: {label ?? p.grade}</span>
   );
   const tipPb = gradeTip ? playbooks.find((p) => p.id === gradeTip.id) : undefined;
   const tipStats = tipPb ? stats.get(tipPb.id) : undefined;
@@ -322,6 +340,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const saveScenario = () => {
     if (!sel || !scDraft) return;
     if (!scDraft.symbol.trim() || !scDraft.hypothesis.trim()) { onToast('Add a symbol and your hypothesis'); return; }
+    const problem = scenarioProblem(scDraft);
+    if (problem) { onToast(problem); return; }
+    const expiry = new Date(`${scDraft.validUntil}T00:00:00Z`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(scDraft.validUntil) || !Number.isFinite(expiry.getTime()) || expiry.toISOString().slice(0,10)!==scDraft.validUntil) { onToast('Choose a valid expiry date.'); return; }
     const sc = { ...scDraft, symbol: scDraft.symbol.trim().toUpperCase() };
     const isNewSc = !sc.id;
     if (isNewSc) sc.id = `sc${Date.now()}`;
@@ -339,10 +361,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   };
   const deleteScenario = (id: string) => {
     if (!sel) return;
+    if (referenceEntries.some(e => e.scenarioId === id && matchesPlaybook(e, sel))) { onToast('This scenario has linked trades. Keep it for historical review.'); return; }
     setPlaybooks((prev) => prev.map((p) => (p.id === sel.id ? { ...p, scenarios: (p.scenarios || []).filter((x) => x.id !== id) } : p)));
     if (activeSc[sel.id] === id) setActiveSc((a) => ({ ...a, [sel.id]: '' }));
   };
-  const curSc = sel ? (sel.scenarios || []).find((x) => x.id === activeSc[sel.id]) : undefined;
 
   // ── Edit / create form ──
   const form = editing && (
@@ -353,8 +375,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="block"><span className={lbl}>Name<JournalHelp label="Name" /></span>
-          <input aria-label="Name" className={`${input} mt-1`} value={editing.name} disabled={!isNew && selTrades.length > 0} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="e.g. London Breakout" />
-          {!isNew && selTrades.length > 0 && <span className="text-[10px] text-slate-400">Locked: {selTrades.length} journal entries use this name.</span>}
+          <input aria-label="Name" className={`${input} mt-1`} value={editing.name} disabled={!isNew && referenceTrades.length > 0} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="e.g. London Breakout" />
+          {!isNew && referenceTrades.length > 0 && <span className="text-[10px] text-slate-400">Protected: {referenceTrades.length} recorded entries across all accounts and filters. Archive rather than delete.</span>}
         </label>
         <label className="block"><span className={lbl}>Style<JournalHelp label="Style" /></span>
           <input aria-label="Style" className={`${input} mt-1`} value={editing.style} onChange={(e) => setEditing({ ...editing, style: e.target.value })} placeholder="Momentum, Mean reversion..." />
@@ -446,7 +468,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         <button type="button" onClick={() => setEditing(null)} className={btn}>Cancel</button>
         {!isNew && (
           <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-            {selTrades.length === 0 && (confirmDelete ? (
+            {referenceTrades.length === 0 && (confirmDelete ? (
               <span className="flex items-center gap-2 text-xs text-rose-700">Delete this playbook?
                 <button type="button" onClick={remove} className="h-8 px-3 rounded-lg bg-rose-600 text-white font-semibold">Delete</button>
                 <button type="button" onClick={() => setConfirmDelete(false)} className="font-semibold text-[#474556] hover:underline">Keep</button>
@@ -647,10 +669,11 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {onWhatIf && <button type="button" onClick={() => onWhatIf(sel.id)} className={btn}>Optimize in What-if</button>}
-                  {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className={btn} title="Test these rules on past prices">Backtest this playbook</button>}
+                  {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className={btn} title="Review executable coverage before testing generated prices">Test demo {sel.technicalRecipeId ? 'recipe' : 'template'}</button>}
 
                   <button type="button" onClick={startEdit} className={btn}>Edit playbook</button>
                 </div>
+                <p className="text-xs text-slate-600">{s.n} eligible closed trades in this view. {s.n < 20 ? 'Limited evidence: build a larger sample before judging this setup.' : 'Observed history, not a guarantee of future performance.'} Your grade is separate from measured evidence.</p>
               </div>
 
               {/* Analytics: always visible above the steps */}
@@ -748,7 +771,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                   {scDraft && (() => {
                     const rr = plannedRR(scDraft);
                     const setN = (k: 'entry' | 'stop' | 'target', v: string) => setScDraft({ ...scDraft, [k]: v === '' ? undefined : Number(v) });
-                    const levelErr = scDraft.entry !== undefined && scDraft.stop !== undefined && (scDraft.bias === 'long' ? scDraft.stop >= scDraft.entry : scDraft.stop <= scDraft.entry);
+                    const levelErr = scenarioProblem(scDraft);
                     return (
                       <div className="rounded-xl border border-[#5338ec]/30 bg-[#F8F7FF] p-4 space-y-3" aria-label="Scenario form">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -784,10 +807,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                           ))}
                         </div>
                         <p className={`text-[11px] ${levelErr ? 'text-rose-600' : rr !== null && rr < sel.benchmarkRR ? 'text-amber-600' : 'text-slate-500'}`}>
-                          {levelErr ? `Stop must be ${scDraft.bias === 'long' ? 'below' : 'above'} the entry for a ${scDraft.bias}.` : rr === null ? 'Add entry, stop and target to see the planned reward:risk.' : `Planned reward:risk 1:${rr.toFixed(2)}${rr < sel.benchmarkRR ? `, below this playbook's 1:${sel.benchmarkRR} minimum` : ' meets the playbook minimum'}.`}
+                          {levelErr || (rr === null ? 'Add entry, stop and target to see the planned reward:risk.' : `Planned reward:risk 1:${rr.toFixed(2)}${rr < sel.benchmarkRR ? `, below this playbook's 1:${sel.benchmarkRR} minimum` : ' meets the playbook minimum'}.`)}
                         </p>
                         <div className="flex gap-2">
-                          <button type="button" disabled={levelErr} onClick={saveScenario} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 text-xs font-semibold text-white">{scDraft.id ? 'Save scenario' : 'Add scenario'}</button>
+                          <button type="button" disabled={!!levelErr} onClick={saveScenario} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 text-xs font-semibold text-white">{scDraft.id ? 'Save scenario' : 'Add scenario'}</button>
                           <button type="button" onClick={() => setScDraft(null)} className={btn}>Cancel</button>
                         </div>
                       </div>
@@ -795,7 +818,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                   })()}
 
                   <div className="space-y-2">
-                    {(sel.scenarios || []).filter((x) => scFilter === 'all' || x.status === 'watching' || x.status === 'triggered').map((sc) => {
+                    {(sel.scenarios || []).filter((x) => scFilter === 'all' || openScenarios(sel).some(active=>active.id===x.id)).map((sc) => {
                       const rr = plannedRR(sc);
                       const expired = sc.validUntil < JOURNAL_TODAY && (sc.status === 'watching');
                       return (
@@ -818,18 +841,19 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                             {rr !== null && <span className={rr < sel.benchmarkRR ? 'text-amber-600' : 'text-[#0b1c30]'}>R:R 1:{rr.toFixed(2)}</span>}
                           </div>
                           <div className="flex flex-wrap gap-2 mt-3">
-                            {(sc.status === 'watching' || sc.status === 'triggered') && (
+                            {isActiveScenario(sc) && (
                               <button type="button" onClick={() => { setActiveSc((a) => ({ ...a, [sel.id]: sc.id })); setStep('checklist'); }} className="h-8 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Check setup</button>
                             )}
-                            {sc.status === 'watching' && <button type="button" onClick={() => setScStatus(sc.id, 'triggered')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Mark triggered</button>}
+                            {sc.status === 'watching' && !expired && <button type="button" onClick={() => setScStatus(sc.id, 'triggered')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Mark triggered</button>}
                             {sc.status === 'watching' && <button type="button" onClick={() => setScStatus(sc.id, 'invalidated')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Invalidated</button>}
                             {sc.status === 'triggered' && <button type="button" onClick={() => setScStatus(sc.id, 'closed')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Mark closed</button>}
                             {(sc.status === 'invalidated' || sc.status === 'closed') && <button type="button" onClick={() => setScStatus(sc.id, 'watching')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Reopen</button>}
                           </div>
+                          {expired && <p className="mt-2 text-xs text-amber-700">Edit the expiry before using this idea for current preparation.</p>}
                         </div>
                       );
                     })}
-                    {!(sel.scenarios || []).some((x) => scFilter === 'all' || x.status === 'watching' || x.status === 'triggered') && !scDraft && (
+                    {!(sel.scenarios || []).some((x) => scFilter === 'all' || openScenarios(sel).some(active=>active.id===x.id)) && !scDraft && (
                       <p className="text-sm text-slate-500 border border-dashed border-slate-200 rounded-xl p-4 text-center">No {scFilter === 'open' ? 'open ' : ''}scenarios. Add one when you see this setup forming on a chart.</p>
                     )}
                   </div>
@@ -850,7 +874,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                     <div className="flex flex-wrap items-center gap-3">
                     <span className={`text-sm font-bold ${quality.cls}`}>{metAll} of {totalChecks} ticked · {quality.label}</span>
                     <span className="text-[11px] text-[#474556]">Tick what applies to check this setup against your rules. This checklist is a preparation aid, not a journal trade.</span>
-                    {(checked.length > 0 || houseChecked.length > 0) && <button type="button" onClick={() => { setChecks((c) => ({ ...c, [sel.id]: [] })); setHouseChecks((c) => ({ ...c, [sel.id]: [] })); }} className="ml-auto text-xs font-semibold text-[#474556] hover:underline">Reset</button>}
+                    {(checked.length > 0 || houseChecked.length > 0) && <button type="button" onClick={() => { setChecks((c) => ({ ...c, [checkKey]: [] })); setHouseChecks((c) => ({ ...c, [checkKey]: [] })); }} className="ml-auto text-xs font-semibold text-[#474556] hover:underline">Start a fresh check</button>}
                     </div>
                     <div className="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={totalChecks} aria-valuenow={metAll} aria-label="Checklist completion">
                       <div className={`h-full rounded-full ${quality.bar}`} style={{ width: `${pct}%` }} />
@@ -863,7 +887,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                         const on = checked.includes(r.id);
                         return (
                           <label key={r.id} className={`flex gap-3 items-start rounded-xl border px-3 py-2.5 cursor-pointer ${on ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                            <input type="checkbox" className="mt-0.5" checked={on} onChange={() => setChecks((c) => ({ ...c, [sel.id]: on ? checked.filter((x) => x !== r.id) : [...checked, r.id] }))} />
+                            <input type="checkbox" className="mt-0.5" checked={on} onChange={() => setChecks((c) => ({ ...c, [checkKey]: on ? checked.filter((x) => x !== r.id) : [...checked, r.id] }))} />
                             <span><span className="block text-sm font-semibold text-[#0b1c30]">{i + 1}. {r.title}</span><span className="block text-xs text-[#474556]">{r.detail}</span></span>
                           </label>
                         );
@@ -877,7 +901,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                         const on = houseChecked.includes(c.id);
                         return (
                           <label key={c.id} className={`flex gap-2.5 items-center rounded-xl border px-3 py-2 cursor-pointer text-xs ${on ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                            <input type="checkbox" checked={on} onChange={() => setHouseChecks((x) => ({ ...x, [sel.id]: on ? houseChecked.filter((y) => y !== c.id) : [...houseChecked, c.id] }))} />
+                            <input type="checkbox" checked={on} onChange={() => setHouseChecks((x) => ({ ...x, [checkKey]: on ? houseChecked.filter((y) => y !== c.id) : [...houseChecked, c.id] }))} />
                             <span className="text-[#0b1c30]">{c.label}</span>
                           </label>
                         );
@@ -885,6 +909,19 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                     </div>
                   </div>
                   {(sel.avoid || []).length > 0 && <p className="text-[11px] text-rose-600">Also check you are not in a no-trade condition: {(sel.avoid || []).join(' · ')}.</p>}
+                  {curSc && <section className="rounded-xl border border-[#5338ec]/30 bg-[#FBFAFF] p-4 space-y-3">
+                    <h4 className="text-sm font-bold">Link a recorded execution</h4>
+                    <p className="text-xs text-slate-600">Import your execution first, then link a matching symbol and direction here. This saves a dated preparation snapshot, not proof that the execution followed these rules. Account and journal filters apply; all dates are available.</p>
+                    <select aria-label="Recorded trade for this scenario" value={linkCandidates.some(e => e.id === linkEntryId) ? linkEntryId : ''} onChange={e => setLinkEntryId(e.target.value)} className={input}>
+                      <option value="">Choose a recorded trade...</option>
+                      {linkCandidates.map(e => <option key={e.id} value={e.id}>{e.date} · {e.symbol} · {e.direction} · {e.accountId || 'legacy-demo'}{e.scenarioId ? ' · linked' : ''}</option>)}
+                    </select>
+                    <button type="button" disabled={!linkCandidates.some(e => e.id === linkEntryId)} className={btn+' disabled:opacity-40'} onClick={() => {
+                      if (!linkCandidates.some(e => e.id === linkEntryId)) return;
+                      if (onLinkScenario(linkEntryId, sel, curSc, checked, houseChecked)) setLinkEntryId('');
+                    }}>Link trade and save preparation snapshot</button>
+                    {!linkCandidates.length && <p className="text-xs text-slate-600">No matching executions. Import a statement, or broaden your account and instrument filters.</p>}
+                  </section>}
                 </div>
               )}
 

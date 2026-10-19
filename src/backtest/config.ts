@@ -25,7 +25,6 @@ export const MIN_TRADES = 30;
 export const MAX_RULES = 6;
 
 /** A trade whose result is within ±this many R counts as breakeven. */
-export const BREAKEVEN_R = 0.05;
 
 /** Range covered by the mock market data. */
 export const DATA_START = '2024-10-01';
