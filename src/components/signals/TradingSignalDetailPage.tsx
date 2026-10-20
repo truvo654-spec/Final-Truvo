@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { CASHBACK_SHARE } from '../../data/rewardRules';
 import { MarketSignal, Broker, UserProfile } from '../../types';
 import {
   Clock,
@@ -475,7 +476,10 @@ export const TradingSignalDetailPage: React.FC<TradingSignalDetailPageProps> = (
   // Quick execution modal handler
   const handleExecuteTrade = () => {
     const lot = parseFloat(tradeLotSize) || 1.0;
-    const estimatedCashback = (lot * 8.5 * (1 + (user.boostPercentage ?? 0) / 100)).toFixed(2);
+    // The level is the share of commission returned, not an uplift on a base
+    // rate, so the Rookie rate is ten per cent rather than "plus nothing".
+    const share = CASHBACK_SHARE[Math.min(Math.max(user.tierLevel, 1), 4) - 1];
+    const estimatedCashback = (lot * 8.5 * (share / CASHBACK_SHARE[0])).toFixed(2);
     onShowToast(`🚀 Order placed with ${selectedTradeBrokerName}: ${activeSignal.action} ${lot} lot(s) of ${activeSignal.ticker}! Cashback +$${estimatedCashback}`);
     setIsQuickTradeModalOpen(false);
   };

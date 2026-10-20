@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { CREDIT_LIFE_DAYS, CREDIT_REMINDER_DAYS, POINT_LIFE_DAYS, POINT_REMINDER_DAYS } from '../data/rewardRules';
 import { activePoints, availableCredits, awardCredits, awardPoints, expiringSoon, readLedger, spendCredits, writeLedger } from '../data/rewardsLedger';
-import { CREDITS_PER_POINT, CONVERSION_CAP_POINTS, CONVERSION_WINDOW_DAYS } from '../data/rewardRules';
+import { CASHBACK_SHARE, CREDITS_PER_POINT, CONVERSION_CAP_POINTS, CONVERSION_WINDOW_DAYS } from '../data/rewardRules';
 import { UserProfile, Mission, ActivityLogItem, MarketSignal } from '../types';
 import {
   Sparkles,
@@ -726,7 +726,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
     let levelUpMsg = '';
 
     if (tierInfo.level > user.tierLevel) {
-      levelUpMsg = ` 🌟 Congratulations! You reached Level ${tierInfo.level} (${tierInfo.rankTitle}) with +${tierInfo.boostPercentage}% Multiplier!`;
+      levelUpMsg = ` 🌟 Congratulations! You reached Level ${tierInfo.level} (${tierInfo.rankTitle}): ${Math.round(CASHBACK_SHARE[tierInfo.level - 1] * 100)}% of the broker's commission.`;
     }
 
     onUpdateUser({

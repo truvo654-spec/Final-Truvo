@@ -1207,7 +1207,7 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
                   <div className="pt-1 border-t border-slate-200 flex justify-between text-sm font-extrabold text-[#0b1c30]">
                     <span>Total Cash Back Earned:</span>
                     <span className="text-emerald-600 font-mono">
-                      +${(parseFloat(tradeModalLotSize || '1') * 3.8 * (1 + user.boostPercentage / 100)).toFixed(2)}
+                      +${(parseFloat(tradeModalLotSize || '1') * 3.8 * (CASHBACK_SHARE[Math.min(Math.max(user.tierLevel, 1), 4) - 1] / CASHBACK_SHARE[0])).toFixed(2)}
                     </span>
                   </div>
                 </div>

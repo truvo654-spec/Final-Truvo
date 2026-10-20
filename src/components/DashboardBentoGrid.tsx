@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CASHBACK_SHARE } from '../data/rewardRules';
 import {
   UserProfile,
   Broker,
@@ -63,7 +64,10 @@ export const DashboardBentoGrid: React.FC<DashboardBentoGridProps> = ({
   // Calculator state for top partner spotlight
   const [calcLots, setCalcLots] = useState<number>(10);
   const featuredBroker = brokers.find((b) => b.id === 'xm-ultra') || brokers[0];
-  const calculatedMonthlyRebate = (calcLots * featuredBroker.cashbackPerLot * (1 + user.boostPercentage / 100)).toFixed(2);
+  // The level sets the share returned, so it scales the rate rather than
+  // adding a boost on top of it.
+  const levelShare = CASHBACK_SHARE[Math.min(Math.max(user.tierLevel, 1), 4) - 1];
+  const calculatedMonthlyRebate = (calcLots * featuredBroker.cashbackPerLot * (levelShare / CASHBACK_SHARE[0])).toFixed(2);
 
   // Highest confidence signal for spotlight
   const topSignal = signals.find((s) => s.ticker === 'XAU/USD') || signals[0];
@@ -249,7 +253,7 @@ export const DashboardBentoGrid: React.FC<DashboardBentoGridProps> = ({
 
               <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
                 <span className="text-[11px] text-slate-500">
-                  Estimated Cashback (+{user.boostPercentage}% Boost):
+                  Estimated Cashback ({Math.round(levelShare * 100)}% of commission):
                 </span>
                 <span className="text-sm font-bold text-emerald-700 font-mono">
                   ${calculatedMonthlyRebate}
