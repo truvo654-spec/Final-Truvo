@@ -516,21 +516,43 @@ export const AiDashboardPanel: React.FC<{
             <div className="mt-3 grid gap-2.5">
               {data.suggestions.map((s, i) => {
                 const Icon = [BookOpenCheck, CalendarDays, MessageCircle][i % 3];
+                // The first is what MarketSyde would do next, so it is the one
+                // dressed as the action; the rest step back from it.
+                const rank = i === 0 ? 'first' : i === 1 ? 'second' : 'rest';
                 return (
                   <button
                     key={s.label}
                     type="button"
                     onClick={s.onClick}
-                    className="flex items-start gap-3 rounded-xl border border-[#e4e0fa] bg-[#f8f7ff] p-3.5 text-left transition hover:border-[#5945F1] dark:border-[#2a1a66] dark:bg-[#170345] dark:hover:border-[#6b5bff]"
+                    className={`flex items-start gap-3 rounded-xl p-3.5 text-left transition ${
+                      rank === 'first'
+                        ? 'bg-[#5945F1] text-white hover:bg-[#4a38d6]'
+                        : rank === 'second'
+                          ? 'border border-[#5945F1] bg-[#f1f0fe] text-[#0b1c30] hover:bg-[#e7e4fd] dark:text-white'
+                          : 'border border-[#CCC6FB] bg-white text-[#0b1c30] hover:border-[#5945F1] hover:bg-[#f8f7ff] dark:bg-transparent dark:text-white'
+                    }`}
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#5945F1] dark:bg-white/5 dark:text-white">
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                        rank === 'first' ? 'bg-white/15 text-white' : 'bg-white text-[#5945F1]'
+                      }`}
+                    >
                       <Icon className="h-[18px] w-[18px]" aria-hidden />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-[14px] font-bold">{s.label}</span>
-                      {s.sub && <span className="mt-1 block text-[13px] leading-relaxed text-[#64748b] dark:text-white/60">{s.sub}</span>}
+                      {s.sub && (
+                        <span className={`mt-1 block text-[13px] leading-relaxed ${
+                          rank === 'first' ? 'text-white/75' : 'text-[#64748b] dark:text-white/60'
+                        }`}>
+                          {s.sub}
+                        </span>
+                      )}
                     </span>
-                    <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-[#94a3b8] dark:text-white/50" aria-hidden />
+                    <ChevronRight
+                      className={`mt-0.5 h-4 w-4 shrink-0 ${rank === 'first' ? 'text-white/80' : 'text-[#94a3b8] dark:text-white/50'}`}
+                      aria-hidden
+                    />
                   </button>
                 );
               })}
