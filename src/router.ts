@@ -244,6 +244,13 @@ export const ROUTE_REGISTRY: Record<string, RouteItem> = {
     category: 'Community',
     breadcrumbs: ['Community', 'Feeds & Discussions'],
   },
+  'trading-journal': {
+    path: '/trade/journal',
+    tab: 'trading-journal',
+    title: 'Trading Journal | MarketSyde',
+    category: 'Trade',
+    breadcrumbs: ['Trade', 'Trading Journal'],
+  },
   'ai-companion': {
     path: '/ai-companion',
     tab: 'ai-companion',
@@ -449,6 +456,7 @@ export function pathToState(rawPath: string): RouteResolution {
   const pathname = (rawPath || '/').replace(/\/+$/, '') || '/';
   if (pathname === '/economic-calendar' || pathname === '/trade/economic-calendar') return { tab: 'economic-calendar' };
   if (pathname === '/trade/strategy-builder' || pathname === '/strategy-builder') return { tab: 'strategy-builder' };
+  if (pathname === '/trade/journal' || pathname === '/journal') return { tab: 'trading-journal' };
   if (pathname === '/ai-companion' || pathname === '/trade/ai-companion') return { tab: 'ai-companion' };
   if (pathname === '/news' || pathname === '/knowledge/news') return { tab: 'news' };
   if (pathname === '/knowledge/education' || pathname === '/education') return { tab: 'education-hub' };
