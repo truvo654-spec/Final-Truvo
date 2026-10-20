@@ -1584,6 +1584,10 @@ export default function App() {
             isBroker={false}
             onUpgradePrompt={() => setActiveTab('member-plan')}
             onShowToast={showToast}
+            onRewardCredits={(credits, reason) => {
+              setUser((u) => ({ ...u, sydeCredits: u.sydeCredits + credits }));
+              showToast(`+${credits} Credits · ${reason}`);
+            }}
             onRewardPoints={handleRewardPoints}
           />
         )}

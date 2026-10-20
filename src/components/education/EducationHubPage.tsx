@@ -1,4 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { awardCredits, readLedger, writeLedger } from '../../data/rewardsLedger';
+
+/** What one lesson pays, from the Final Beta workbook. */
+const CREDITS_PER_LESSON = 10;
 import {
   Star,
   Users,
@@ -38,6 +42,8 @@ interface EducationHubPageProps {
   onShowToast: (msg: string) => void;
   /** Pays the points a finished lesson is worth. */
   onRewardPoints?: (points: number, reason: string) => void;
+  /** Credits for finishing a lesson, as the spec pays learning. */
+  onRewardCredits?: (credits: number, reason: string) => void;
 }
 
 const HOST_STYLES: Record<LiveClass['hostType'], string> = {
@@ -54,6 +60,7 @@ export const EducationHubPage: React.FC<EducationHubPageProps> = ({
   onUpgradePrompt,
   onShowToast,
   onRewardPoints,
+  onRewardCredits,
 }) => {
   const [tab, setTab] = useState<HubTab>('explore');
   const [category, setCategory] = useState<(typeof EDUCATION_CATEGORIES)[number]>('All');
@@ -108,10 +115,17 @@ export const EducationHubPage: React.FC<EducationHubPageProps> = ({
       const nowDone = !courseMap[lessonId];
       courseMap[lessonId] = nowDone;
       if (nowDone && !paidLessons[`${courseId}:${lessonId}`]) {
-        const course = COURSES.find((c) => c.id === courseId);
-        const points = course ? Math.max(1, Math.round(course.pointsReward / Math.max(1, course.lessons.length))) : 0;
-        if (points && onRewardPoints) onRewardPoints(points, 'Finished a lesson');
-        setPaidLessons((paid) => ({ ...paid, [`${courseId}:${lessonId}`]: true }));
+        // Learning pays Credits, not Points: Points come from verified trading
+        // alone. Ten Credits a lesson, through the ledger, so replaying a
+        // lesson cannot pay for it twice.
+        const paid = awardCredits(readLedger(), {
+          task: `lesson:${courseId}`,
+          amount: CREDITS_PER_LESSON,
+          reason: 'Finished a lesson',
+        });
+        writeLedger(paid.ledger);
+        if (paid.awarded > 0) onRewardCredits?.(paid.awarded, 'Finished a lesson');
+        setPaidLessons((already) => ({ ...already, [`${courseId}:${lessonId}`]: true }));
       }
       return { ...prev, [courseId]: courseMap };
     });
