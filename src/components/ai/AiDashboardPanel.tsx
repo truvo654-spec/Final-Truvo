@@ -121,21 +121,21 @@ export const AiDashboardPanel: React.FC<{
         )}
         {first ? (
           <>
-            <div className="flex flex-col-reverse gap-5 lg:flex-row lg:items-start">
+            <div className="flex flex-col-reverse gap-4">
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-2 text-[14px] text-[#64748b] dark:text-white/70">
                   <Sun className="h-4 w-4" aria-hidden />{greeting}
                 </p>
-                <h2 className="mt-1.5 font-display text-[21px] font-bold leading-tight sm:text-[23px]">{data.headline}</h2>
+                <h2 className="mt-1.5 font-display text-[21px] font-bold leading-tight sm:text-[21px]">{data.headline}</h2>
                 {data.overview && <p className="mt-2.5 max-w-[520px] text-[14px] leading-relaxed text-[#474556] dark:text-white/70">{data.overview}</p>}
               </div>
-              <img src={robot} alt="" aria-hidden className="w-[160px] shrink-0 self-center rounded-xl lg:w-[185px]" />
+              <img src={robot} alt="" aria-hidden className="w-[150px] shrink-0 self-center rounded-xl lg:w-[185px]" />
             </div>
 
             {data.visual && <div className="mt-4">{data.visual}</div>}
 
             {!data.visual && data.stats && data.stats.length > 0 && (
-              <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-2.5">
                 {data.stats.slice(0, 4).map((s, i) => {
                   const Icon = ICONS[i % ICONS.length];
                   const colour = TREND[s.tone ?? 'neutral'];
@@ -148,13 +148,13 @@ export const AiDashboardPanel: React.FC<{
                       onClick={() => setOpenStat(open ? null : s.label)}
                       className={`rounded-xl border bg-[#f8f7ff] p-3.5 text-left transition dark:bg-[#170345] ${open ? 'border-[#5945F1] dark:border-[#6b5bff]' : 'border-[#e4e0fa] hover:border-[#bdb4fa] dark:border-[#2a1a66] dark:hover:border-[#4a35b5]'}`}
                     >
-                      <div className="flex items-start gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#5945F1] dark:bg-white/5 dark:text-white">
+                      <div className="flex items-start gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#5945F1] dark:bg-white/5 dark:text-white">
                           <Icon className="h-[18px] w-[18px]" aria-hidden />
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#64748b] dark:text-white/60">{s.label}</span>
-                          <span className="mt-1 block font-display text-[20px] font-bold leading-none" style={{ color: s.tone ? colour : undefined }}>{s.value}</span>
+                          <span className="block break-words text-[10.5px] font-semibold uppercase leading-tight tracking-wide text-[#64748b] dark:text-white/60">{s.label}</span>
+                          <span className="mt-1 block font-display text-[18px] font-bold leading-none" style={{ color: s.tone ? colour : undefined }}>{s.value}</span>
                         </span>
                       </div>
                       <svg viewBox="0 0 160 36" preserveAspectRatio="none" className="mt-2 h-6 w-full" aria-hidden>
@@ -275,7 +275,7 @@ export const AiDashboardPanel: React.FC<{
             <p className="mt-5 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#5945F1] dark:text-[#d6f73a]">
               <Compass className="h-4 w-4" aria-hidden />Where to go next
             </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-3 grid gap-2.5">
               {data.suggestions.map((s, i) => {
                 const Icon = [BookOpenCheck, CalendarDays, MessageCircle][i % 3];
                 return (

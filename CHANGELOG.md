@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.60.1] - 2026-10-09
+### Fixed
+- The Summary tab spilled out of the narrower panel. Its layout was switching on the window's width, not the panel's, so at 480 wide it still put the headline beside the illustration, four figures in a row and three cards across: everything was clipped. The picture now sits above the headline, the figures go two to a row at a size that fits, and each place to go gets a full-width row.
+
 ## [1.60.0] - 2026-10-09
 ### Changed
 - The AI panel is the shape the reference card is: 480 wide and 800 tall, a column rather than the wide short box it was. On the Chat tab the greeting sits in the middle of the empty space, the openers gather just above the composer, and the composer rests on the floor of the card, so the conversation grows downward into the room above it.
