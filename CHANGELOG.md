@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.75.0] - 2026-10-09
+### Added
+- The dated ledger the workbook asks for, which a running total cannot express. Every Point and every Credit keeps the day it was earned; a Point counts for ninety days and a Credit for a hundred and eighty, and the balance is what is left once the lapsed entries drop out. Spending takes the oldest live Credits first, which is the member's interest rather than the house's: it uses what would expire soonest.
+- The caps and the decay that go with it. Repeating a task pays half, then a quarter, then nothing; no task pays more than two hundred Credits; social tasks stop at sixty a day and everything stops at six hundred a week. Each limit says why it paid less rather than silently paying less.
+- expiringSoon, so the member can be warned fourteen and three days before Points go, thirty and seven before Credits do.
+### Note
+- Checked by running the rules: four hundred Points earned ninety-five days ago no longer count towards the level, five hundred Credits earned two hundred days ago are gone, spending a hundred and twenty takes a hundred from the oldest entry and twenty from the next, and the same task four times pays forty, twenty, ten and nothing.
+
 ## [1.74.0] - 2026-10-09
 ### Changed
 - The rewards system follows the Final Beta workbook of 20 Oct 2026. The levels start at 0, 100, 300 and 500 Active Points, so Player now runs 300 to 499 rather than 250 to 499, and all three tier tables that disagreed say the same thing. Converting Credits to Points is 100 to 1, not 5 to 1, and the copy says so. Cashback reads as a share of the broker's commission, 10, 12, 14 and 16 per cent, rather than a boost stacked on the first level.
