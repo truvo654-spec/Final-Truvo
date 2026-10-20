@@ -3,11 +3,7 @@ import { expandQuery } from './searchKeywords';
 import { InstrumentIcon } from './analysis/InstrumentIcon';
 import { iconTypeFor } from './analysis/instrumentIconType';
 import { brokerMark } from './brokers/brokerMark';
-import {
-  ArrowRight, BarChart3, Bell, BookOpen, Briefcase, Calculator, CalendarDays, ChevronRight,
-  Clock, Gift, LayoutGrid, LineChart, Newspaper, NotebookPen, Search, SlidersHorizontal,
-  Sparkles, Trophy, Users, Wallet, X,
-} from 'lucide-react';
+import { Activity, ArrowLeftRight, ArrowRight, BarChart3, Bell, BookOpen, Briefcase, Calculator, CalendarDays, ChevronRight, Clock, Gift, GraduationCap, Landmark, LayoutGrid, LineChart, MessageCircle, Newspaper, NotebookPen, Search, SlidersHorizontal, Sparkles, Trophy, Users, Wallet, X } from 'lucide-react';
 
 /**
  * The command palette: one box that searches and jumps.
@@ -42,6 +38,18 @@ export interface PaletteItem {
   navigates?: boolean;
   run: () => void;
 }
+
+/** The front door when nothing is typed: one tile per thing to look for. */
+const EXPLORE: { label: string; sub: string; query: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { label: 'Trading Signals', sub: 'Live signals and analysis', query: 'signals', icon: Activity },
+  { label: 'Community', sub: 'Discussions and ideas', query: 'community', icon: MessageCircle },
+  { label: 'Trading Calculators', sub: 'Risk, margin, pip and more', query: 'calculator', icon: Calculator },
+  { label: 'Trading Journal', sub: 'Track your trades', query: 'journal', icon: BookOpen },
+  { label: 'Converters', sub: 'Currency and crypto', query: 'converter', icon: ArrowLeftRight },
+  { label: 'Courses & Articles', sub: 'Learn and improve', query: 'course', icon: GraduationCap },
+  { label: 'Brokers & Cashback', sub: 'Compare and earn', query: 'broker', icon: Landmark },
+  { label: 'AI Companion', sub: 'Analyse and get insights', query: 'ai', icon: Sparkles },
+];
 
 const RECENT_KEY = 'marketsyde.palette.recent';
 const RECENT_MAX = 5;
@@ -269,7 +277,7 @@ export const CommandPalette: React.FC<{
           {!query && recent.length > 0 && (
             <>
               <div className="flex items-center justify-between px-3.5 pb-1 pt-4">
-                <span className="text-[12px] font-semibold uppercase tracking-wide text-slate-400">Recent</span>
+                <span className="text-[14px] font-bold text-slate-900 dark:text-white">Recent searches</span>
                 <button type="button" onClick={clearRecent} className="text-[13px] text-slate-500 transition hover:text-[#5945F1] dark:text-white/50">Clear</button>
               </div>
               {recent.map((r) => (
@@ -281,8 +289,35 @@ export const CommandPalette: React.FC<{
                 >
                   <Clock className="h-[18px] w-[18px] shrink-0 text-slate-400" aria-hidden />
                   <span className="flex-1 truncate text-[15px] text-slate-700 dark:text-white/80">{r}</span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-slate-300" aria-hidden />
                 </button>
               ))}
+            </>
+          )}
+
+          {!query && (
+            <>
+              <p className="px-3.5 pb-2 pt-5 text-[14px] font-bold text-slate-900 dark:text-white">
+                Explore MarketSyde
+              </p>
+              <div className="grid grid-cols-2 gap-2 px-2.5 pb-2 max-sm:grid-cols-1">
+                {EXPLORE.map((e) => (
+                  <button
+                    key={e.label}
+                    type="button"
+                    onClick={() => { setQuery(e.query); inputRef.current?.focus(); }}
+                    className="flex items-center gap-3 rounded-xl border border-[#CCC6FB] bg-white px-3 py-2.5 text-left transition hover:border-[#5945F1] hover:bg-[#f8f7ff] dark:bg-transparent"
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#f1f0fe] text-[#5945F1]">
+                      <e.icon className="h-[18px] w-[18px]" aria-hidden />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[14px] font-bold text-slate-900 dark:text-white">{e.label}</span>
+                      <span className="block truncate text-[12.5px] text-slate-500 dark:text-white/55">{e.sub}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
             </>
           )}
 
