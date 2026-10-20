@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, RefreshCw, Send, Shield, Sun, X } from 'lucide-react';
+import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, RefreshCw, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiGhost } from './AiGhost';
 import robot from '../../assets/community/ai-robot.png';
@@ -174,55 +174,89 @@ export const AiDashboardPanel: React.FC<{
         ) : active?.id === 'chat' ? (
           /* A conversation about this page: ask in your own words, or take an
              opener, which both says it and takes you where it leads. */
-          <div className="space-y-3">
-            {chat.length === 0 && (
-              <p className="text-[14px] leading-relaxed text-[#474556] dark:text-white/70">
-                Ask me about what is on this page, or pick one of these.
-              </p>
+          <div className="flex min-h-[320px] flex-col gap-5">
+            {chat.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-5 px-2 text-center">
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[#5945F1] to-[#2a1b7a]" aria-hidden>
+                  <Sparkles className="h-6 w-6 text-white/90" />
+                </span>
+                <span className="block">
+                  <span className="block text-[17px] font-medium text-[#64748b] dark:text-white/60">
+                    {greeting.split(',')[0]},
+                  </span>
+                  <span className="mt-0.5 block text-[16px] font-bold text-[#0b1c30] dark:text-white">
+                    What would you like to know about this page?
+                  </span>
+                  <span className="mx-auto mt-2 block max-w-[340px] text-[13.5px] leading-relaxed text-[#64748b] dark:text-white/60">
+                    I have already read it. Pick one of these, or ask in your own words.
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                {chat.map((m) => (
+                  <span
+                    key={m.id}
+                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed ${
+                      m.from === 'you'
+                        ? 'ml-auto rounded-br-md bg-[#5945F1] text-white'
+                        : 'mr-auto flex gap-2.5 rounded-bl-md bg-[#f5f4ff] text-[#0b1c30]'
+                    }`}
+                  >
+                    {m.from === 'ai' && (
+                      <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#5945F1]" aria-hidden />
+                    )}
+                    <span className="min-w-0">{m.text}</span>
+                  </span>
+                ))}
+              </div>
             )}
-            {chat.map((m) => (
-              <p
-                key={m.id}
-                className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-[14px] leading-relaxed ${
-                  m.from === 'you' ? 'ml-auto bg-[#5945F1] text-white' : 'bg-[#f5f4ff] text-[#0b1c30]'
-                }`}
-              >
-                {m.text}
-              </p>
-            ))}
 
-            <div className="flex flex-wrap gap-2 pt-1">
-              {(data.suggestions ?? []).map((sg) => (
-                <button
-                  key={sg.label}
-                  type="button"
-                  title={sg.sub}
-                  onClick={() => { say(sg.label); sg.onClick?.(); }}
-                  className="rounded-full bg-[#EEF0FE] px-3 py-1.5 text-[12.5px] font-semibold text-[#5338ec] transition-colors hover:bg-[#E0E3FC]"
-                >
-                  {sg.label}
-                </button>
-              ))}
+            {/* openers for this feature, each one a place to go */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {(data.suggestions ?? []).map((sg, i) => {
+                const Icon = [Compass, CalendarDays, MessageCircle, BarChart3, BookOpenCheck][i % 5];
+                const tint = ['text-[#5945F1]', 'text-[#0ea5e9]', 'text-[#16a34a]', 'text-[#ec4899]', 'text-[#f59e0b]'][i % 5];
+                return (
+                  <button
+                    key={sg.label}
+                    type="button"
+                    title={sg.sub}
+                    onClick={() => { say(sg.label); sg.onClick?.(); }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-[#0b1c30] transition hover:border-[#5945F1] hover:bg-[#f7f6ff] dark:bg-transparent dark:text-white"
+                  >
+                    <Icon className={`h-3.5 w-3.5 shrink-0 ${tint}`} aria-hidden />
+                    {sg.label}
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="flex items-center gap-2 pt-1">
-              <input
+            {/* the composer */}
+            <div className="mt-auto overflow-hidden rounded-xl border border-[#CCC6FB]">
+              <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') say(draft); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); say(draft); } }}
                 aria-label="Ask MarketSyde AI"
-                placeholder="Ask about this page"
-                className="min-w-0 flex-1 rounded-xl border border-[#CCC6FB] px-3.5 py-2.5 text-[14px] outline-none focus:border-[#5945F1]"
+                placeholder="Ask me anything about this page"
+                rows={2}
+                className="w-full resize-none bg-transparent px-3.5 py-3 text-[14px] leading-relaxed text-[#0b1c30] outline-none placeholder:text-[#94a3b8] dark:text-white"
               />
-              <button
-                type="button"
-                onClick={() => say(draft)}
-                disabled={!draft.trim()}
-                aria-label="Send"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#5945F1] text-white transition-colors hover:bg-[#4a38d6] disabled:opacity-40"
-              >
-                <Send className="h-4 w-4" aria-hidden />
-              </button>
+              <div className="flex items-center justify-between gap-2 border-t border-[#CCC6FB] bg-[#faf9ff] px-3 py-2 dark:bg-white/5">
+                <span className="text-[12px] text-[#94a3b8]">
+                  Enter to send, Shift and Enter for a new line
+                </span>
+                <button
+                  type="button"
+                  onClick={() => say(draft)}
+                  disabled={!draft.trim()}
+                  aria-label="Send"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#5945F1] text-white transition-colors hover:bg-[#4a38d6] disabled:opacity-40"
+                >
+                  <Send className="h-4 w-4" aria-hidden />
+                </button>
+              </div>
             </div>
           </div>
         ) : (

@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.58.0] - 2026-10-09
+### Changed
+- The Chat tab is laid out the way the reference draws it: an empty state that greets the person by name and says what it has already read, the openers as small bordered chips each with its own coloured icon, and a composer that is a bordered card with a footer saying Enter sends and Shift and Enter makes a new line. Replies arrive in a bubble marked with the AI's own mark, and what you said sits opposite in violet.
+
 ## [1.57.1] - 2026-10-09
 ### Added
 - The Trading Journal has its own address, /trade/journal, found by walking every page: it was reachable only through the menu, so a link to it landed on the 404 page.
