@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { missionById } from '../data/creditMissions';
+import { POINTS_SOURCES } from '../data/pointsEarning';
 import { UserProfile } from '../types';
 import {
   ArrowLeft,
@@ -16,22 +18,32 @@ interface CreditActivityItem {
   credits: number;
 }
 
+/**
+ * What the guide tells members they can earn.
+ *
+ * Read from the live mission catalogue rather than typed out, because a
+ * hand-written guide drifts from what the code pays: the old table promised
+ * seventy Points for connecting a broker, which pays none, and thirty for a
+ * lesson, which pays Credits. AD-05.4 asks for exactly this, no hand-typed
+ * reward copy.
+ */
 const CREDIT_ACTIVITIES: CreditActivityItem[] = [
-  { activity: 'Daily Login', credits: 5 },
-  { activity: 'Connect a Broker', credits: 10 },
-  { activity: 'Finish Reading an Article', credits: 5 },
-  { activity: 'Mission Task', credits: 15 },
-  { activity: 'Complete a Mission', credits: 25 },
-];
+  'C01', 'C19', 'MN-M01', 'C13', 'C18',
+]
+  .map((id) => missionById(id))
+  .filter((m): m is NonNullable<typeof m> => Boolean(m))
+  .map((m) => ({ activity: m.activity, credits: m.rewardMin ?? 0 }));
 
-/** Earned as points rather than credits, listed so the two currencies are not confused. */
-export const POINT_ACTIVITIES: CreditActivityItem[] = [
-  { activity: 'Connect a Broker (points)', credits: 70 },
-  { activity: 'Trade One Lot (points)', credits: 50 },
-  { activity: 'Save a Backtest (points)', credits: 5 },
-  { activity: 'Finish a Replay Session (points)', credits: 10 },
-  { activity: 'Finish a Lesson (points)', credits: 30 },
-];
+/**
+ * Points are a different currency and come from different things.
+ *
+ * Only what actually pays Points is listed: verified trading, the rare
+ * milestones, backtest work and capped conversion. Connecting a broker and
+ * finishing a lesson pay Credits, so they belong in the table above.
+ */
+export const POINT_ACTIVITIES: CreditActivityItem[] = POINTS_SOURCES
+  .filter((src) => src.flat !== 0 && src.flat !== undefined)
+  .map((src) => ({ activity: src.whatTheMemberDoes, credits: src.flat as number }));
 
 function FacetedGemIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
