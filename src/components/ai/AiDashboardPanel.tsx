@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { aiAllowance, asksLeft, asksUsedToday, recordAsk } from './aiAllowance';
 import { answerFromPage } from './aiAnswer';
 import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
@@ -31,10 +32,13 @@ const TREND: Record<string, string> = { good: '#aeea00', bad: '#ff4fa3', neutral
 export const AiDashboardPanel: React.FC<{
   data: SpotlightData;
   greeting: string;
+  /** The person's level, for the daily allowance on the Chat tab. */
+  tierLevel?: number;
+  tierName?: string;
   onClose: () => void;
   storageKey?: string;
   className?: string;
-}> = ({ data, greeting, onClose, storageKey, className = '' }) => {
+}> = ({ data, greeting, tierLevel = 1, tierName = 'your level', onClose, storageKey, className = '' }) => {
   const [tab, setTab] = useState(data.tabs[0]?.id ?? 'summary');
   const [run, setRun] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -64,6 +68,10 @@ export const AiDashboardPanel: React.FC<{
   const [openThought, setOpenThought] = useState<number | null>(null);
   /** The answer still being said, if any. */
   const [streaming, setStreaming] = useState<number | null>(null);
+  /** What the person's level allows today, and what they have used. */
+  const [asked, setAsked] = useState(() => asksUsedToday());
+  const allowance = aiAllowance(tierLevel);
+  const left = useMemo(() => asksLeft(tierLevel), [tierLevel, asked]);
   const stream = useRef<number | undefined>(undefined);
 
   useEffect(() => () => window.clearTimeout(stream.current), []);
@@ -110,6 +118,17 @@ export const AiDashboardPanel: React.FC<{
   const say = (text: string, go?: { label: string; run: () => void }) => {
     const t = text.trim();
     if (!t || thinking) return;
+    if (left !== null && left <= 0) {
+      setChat((c) => [...c, {
+        id: Date.now(),
+        from: 'ai',
+        text: `That is today\u2019s ${allowance.perDay} questions at ${tierName}. The count resets at midnight, or open the AI Companion to lift it for the day with credits.`,
+      }]);
+      setDraft('');
+      return;
+    }
+    recordAsk();
+    setAsked(asksUsedToday());
     window.clearTimeout(stream.current);
     setStreaming(null);
 
@@ -174,7 +193,7 @@ export const AiDashboardPanel: React.FC<{
       className={`flex flex-col overflow-hidden rounded-2xl border border-[#e4e0fa] bg-[#fbfbff] text-[#0b1c30] shadow-[0_18px_50px_rgba(11,28,48,0.18)] dark:border-[#2a1a66] dark:bg-[#090119] dark:text-white ${className}`}
     >
       {/* header — brand purple, with the MarketSyde glyph */}
-      <div className="flex shrink-0 items-center gap-2.5 bg-[#5945F1] px-3.5 py-2.5">
+      <div className="flex shrink-0 items-center gap-2.5 bg-gradient-to-r from-[#5945F1] via-[#6d3ae8] to-[#c026d3] px-3.5 py-2.5">
         <span className="flex shrink-0 items-center gap-2">
           <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25">
             <AiGhost className="h-4 w-4" />

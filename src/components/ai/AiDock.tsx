@@ -312,6 +312,8 @@ export const AiDock: React.FC<AiDockContext> = (ctx) => {
       <AiDashboardPanel
         data={data}
         greeting={greeting}
+        tierLevel={ctx.user.tierLevel}
+        tierName={ctx.user.rankTitle}
         storageKey={ctx.tab}
         onClose={() => shut(true)}
         className="h-[min(800px,calc(100vh-7.5rem))]"
