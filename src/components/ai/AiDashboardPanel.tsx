@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { answerFromPage } from './aiAnswer';
 import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
@@ -51,11 +51,49 @@ export const AiDashboardPanel: React.FC<{
   /** The conversation on the Chat tab, for as long as the panel is open. */
   const [chat, setChat] = useState<{ id: number; from: 'you' | 'ai'; text: string }[]>([]);
   const [draft, setDraft] = useState('');
+  /** A file the person attached, with its text if we could read it. */
+  const [file, setFile] = useState<{ name: string; size: number; text?: string } | null>(null);
+  const filePicker = useRef<HTMLInputElement>(null);
+
+  const takeFile = async (picked: File | undefined) => {
+    if (!picked) return;
+    const readable = /\.(csv|txt|json|md|tsv)$/i.test(picked.name) || picked.type.startsWith('text/');
+    if (!readable) {
+      setFile({ name: picked.name, size: picked.size });
+      return;
+    }
+    try {
+      const text = await picked.text();
+      setFile({ name: picked.name, size: picked.size, text: text.slice(0, 20000) });
+    } catch {
+      setFile({ name: picked.name, size: picked.size });
+    }
+  };
+
+  /** Finds the lines of an attached file that bear on the question. */
+  const readFile = (question: string): string | null => {
+    if (!file) return null;
+    if (!file.text) {
+      return `I can see ${file.name} attached, but I can only read text files: csv, tsv, json, md or txt. Attach one of those and I will read it.`;
+    }
+    const want = question.toLowerCase().split(/[^\p{L}\p{N}%.]+/u).filter((w) => w.length > 2);
+    const lines = file.text.split(/\r?\n/).filter((l) => l.trim());
+    const hits = lines
+      .map((line) => ({ line, score: want.reduce((n, w) => (line.toLowerCase().includes(w) ? n + 1 : n), 0) }))
+      .filter((h) => h.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map((h) => h.line.trim());
+    if (hits.length === 0) {
+      return `${file.name} has ${lines.length} lines. Nothing in it mentions that. Its first line reads: ${lines[0]?.slice(0, 160) ?? '(empty)'}`;
+    }
+    return `From ${file.name}:\n${hits.join('\n')}`;
+  };
 
   const say = (text: string) => {
     const t = text.trim();
     if (!t) return;
-    const reply = data.onAsk?.(t) ?? answerFromPage(data, t);
+    const reply = readFile(t) ?? data.onAsk?.(t) ?? answerFromPage(data, t);
     setChat((c) => [...c, { id: Date.now(), from: 'you', text: t }, { id: Date.now() + 1, from: 'ai', text: reply }]);
     setDraft('');
   };
@@ -233,6 +271,23 @@ export const AiDashboardPanel: React.FC<{
             </div>
 
             {/* the composer */}
+            {file && (
+              <span className="flex items-center gap-2 self-start rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[12.5px] text-[#0b1c30] dark:bg-transparent dark:text-white">
+                <Paperclip className="h-3.5 w-3.5 shrink-0 text-[#5945F1]" aria-hidden />
+                <span className="max-w-[220px] truncate">{file.name}</span>
+                <span className="shrink-0 text-[#94a3b8]">{Math.max(1, Math.round(file.size / 1024))} KB</span>
+                <button type="button" onClick={() => setFile(null)} aria-label={`Remove ${file.name}`} className="shrink-0 text-[#94a3b8] hover:text-[#0b1c30]">
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              </span>
+            )}
+            <input
+              ref={filePicker}
+              type="file"
+              accept=".csv,.tsv,.txt,.json,.md,image/*"
+              className="hidden"
+              onChange={(e) => { void takeFile(e.target.files?.[0]); e.target.value = ''; }}
+            />
             <div className="overflow-hidden rounded-xl border border-[#CCC6FB] bg-white dark:bg-transparent">
               <div className="relative">
                 <Search
@@ -277,27 +332,27 @@ export const AiDashboardPanel: React.FC<{
                 </span>
 
                 <span className="flex items-center gap-1">
-                  {/* bring one of the page's own figures into the question */}
-                  {(data.stats ?? []).length > 0 && (
-                    <span className="relative">
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          const stat = (data.stats ?? []).find((st) => st.label === e.target.value);
-                          if (!stat) return;
-                          setDraft((d) => `${d ? `${d.trim()} ` : ''}about ${stat.label} (${stat.value})`.trim());
-                        }}
-                        aria-label="Attach a figure from this page"
-                        className="h-7 w-[86px] cursor-pointer appearance-none rounded-lg px-2 text-[12px] text-[#64748b] outline-none hover:bg-white dark:text-white/60"
-                      >
-                        <option value="">Attach</option>
-                        {(data.stats ?? []).map((st) => (
-                          <option key={st.label} value={st.label}>{st.label}: {st.value}</option>
-                        ))}
-                      </select>
-                      <Paperclip className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" aria-hidden />
-                    </span>
-                  )}
+                  {/* attach a file, or one of the figures this page is showing */}
+                  <span className="relative">
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value === '__file') { filePicker.current?.click(); return; }
+                        const stat = (data.stats ?? []).find((st) => st.label === e.target.value);
+                        if (!stat) return;
+                        setDraft((d) => `${d ? `${d.trim()} ` : ''}about ${stat.label} (${stat.value})`.trim());
+                      }}
+                      aria-label="Attach"
+                      className="h-7 w-[92px] cursor-pointer appearance-none rounded-lg px-2 text-[12px] text-[#64748b] outline-none hover:bg-white dark:text-white/60"
+                    >
+                      <option value="">Attach</option>
+                      <option value="__file">A file…</option>
+                      {(data.stats ?? []).map((st) => (
+                        <option key={st.label} value={st.label}>{st.label}: {st.value}</option>
+                      ))}
+                    </select>
+                    <Paperclip className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" aria-hidden />
+                  </span>
                   <button
                     type="button"
                     onClick={() => setChat([])}
