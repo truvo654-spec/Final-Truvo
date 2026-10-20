@@ -62,6 +62,11 @@ export const AiDashboardPanel: React.FC<{
   const [thinking, setThinking] = useState<{ steps: string[]; done: number } | null>(null);
   /** Which answers have their working opened. */
   const [openThought, setOpenThought] = useState<number | null>(null);
+  /** The answer still being said, if any. */
+  const [streaming, setStreaming] = useState<number | null>(null);
+  const stream = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => window.clearTimeout(stream.current), []);
   const [draft, setDraft] = useState('');
   /** A file the person attached, with its text if we could read it. */
   const [file, setFile] = useState<{ name: string; size: number; text?: string } | null>(null);
@@ -105,6 +110,8 @@ export const AiDashboardPanel: React.FC<{
   const say = (text: string, go?: { label: string; run: () => void }) => {
     const t = text.trim();
     if (!t || thinking) return;
+    window.clearTimeout(stream.current);
+    setStreaming(null);
 
     // What it actually consults, named plainly, so the wait says something
     // true rather than filling time.
@@ -127,14 +134,32 @@ export const AiDashboardPanel: React.FC<{
           return;
         }
         const reply = readFile(t) ?? data.onAsk?.(t) ?? answerFromPage(data, t);
+        const id = Date.now() + 1;
         setThinking(null);
         setChat((c) => [...c, {
-          id: Date.now() + 1,
+          id,
           from: 'ai',
-          text: reply,
+          text: '',
           go,
           thought: { seconds: Math.max(1, Math.round((Date.now() - started) / 1000)), steps },
         }]);
+
+        // Say it a few words at a time. The person can start reading before
+        // the sentence is finished, and nothing jumps into place at once.
+        const words = reply.split(/(\s+)/);
+        setStreaming(id);
+        let at = 0;
+        const feed = () => {
+          at += 2;
+          const upTo = words.slice(0, at).join('');
+          setChat((c) => c.map((m) => (m.id === id ? { ...m, text: upTo } : m)));
+          if (at < words.length) {
+            stream.current = window.setTimeout(feed, 28);
+          } else {
+            setStreaming(null);
+          }
+        };
+        feed();
       }, 420);
     };
     tick(0);
@@ -304,7 +329,12 @@ export const AiDashboardPanel: React.FC<{
                           ))}
                         </span>
                       )}
-                      <span className="block whitespace-pre-line">{m.text}</span>
+                      <span className="block whitespace-pre-line">
+                        {m.text}
+                        {streaming === m.id && (
+                          <span className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] animate-pulse bg-[#5945F1]" aria-hidden />
+                        )}
+                      </span>
                       {m.go && (
                         <button
                           type="button"
