@@ -52,8 +52,8 @@ export const LEVEL_SCENARIOS: LevelScenario[] = [
     label: 'Climber',
     rankTitle: 'Climber',
     points: 120,
-    maxPoints: 250,
-    nextThreshold: 250,
+    maxPoints: 300,
+    nextThreshold: 300,
     sydeCredits: 480,
     boostPercentage: 5,
     perks: ['+5% Cashback Boost', '75% - 79% Signal Confidence', 'Better Broker Offers', 'Heatmap & Screener'],
@@ -135,8 +135,8 @@ export function applyLevelScenarioToUser(user: UserProfile, scenarioId: LevelSce
 /**
  * Derives tier, level, max points, perks and boost according to the system rules:
  * Level 1 = Rookie (0 - 99 pts, target: 100)
- * Level 2 = Climber (100 - 249 pts, target: 250)
- * Level 3 = Player (250 - 499 pts, target: 500)
+ * Level 2 = Climber (100 - 299 Active Points, target: 300)
+ * Level 3 = Player (300 - 499 Active Points, target: 500)
  * Level 4 = Boss (500+ pts, target: 1000)
  */
 export function getTierForPoints(points: number): {
@@ -154,7 +154,7 @@ export function getTierForPoints(points: number): {
       boostPercentage: 15,
       perks: ['+15% Cashback Boost', '90%+ Confidence Signals Full Access', 'Exclusive Member Only Benefits', 'VIP Concierge'],
     };
-  } else if (points >= 250) {
+  } else if (points >= 300) {
     return {
       level: 3,
       rankTitle: 'Player',
@@ -166,7 +166,7 @@ export function getTierForPoints(points: number): {
     return {
       level: 2,
       rankTitle: 'Climber',
-      maxPoints: 250,
+      maxPoints: 300,
       boostPercentage: 5,
       perks: ['+5% Cashback Boost', '75% - 79% Signal Confidence', 'Better Broker Offers', 'Heatmap & Screener'],
     };
@@ -203,9 +203,9 @@ export function getNextTierInfo(level: number, currentPoints: number): {
     return {
       nextTierName: 'Player',
       nextTierLevel: 3,
-      pointsNeeded: Math.max(0, 250 - currentPoints),
+      pointsNeeded: Math.max(0, 300 - currentPoints),
       isMaxLevel: false,
-      threshold: 250,
+      threshold: 300,
     };
   } else if (level === 3) {
     return {

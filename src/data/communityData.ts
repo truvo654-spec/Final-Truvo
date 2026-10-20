@@ -1399,7 +1399,7 @@ export const TIER_UNLOCK_MATRIX: TierUnlockItem[] = [
   {
     level: 3,
     title: 'Player',
-    minPoints: 250,
+    minPoints: 300,
     badge: '⚡',
     color: '#CAEB0E',
     cashbackBoost: 10,

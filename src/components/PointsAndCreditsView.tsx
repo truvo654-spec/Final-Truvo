@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { CREDITS_PER_POINT, CONVERSION_CAP_POINTS, CONVERSION_WINDOW_DAYS } from '../data/rewardRules';
 import { UserProfile, Mission, ActivityLogItem, MarketSignal } from '../types';
 import {
   Sparkles,
@@ -657,9 +658,9 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
       return;
     }
 
-    const pointsToAdd = Math.floor(creditsToDeduct / 5);
-    // Only charge for the points actually given; the remainder below 5 stays in the balance.
-    const creditsSpent = pointsToAdd * 5;
+    const pointsToAdd = Math.floor(creditsToDeduct / CREDITS_PER_POINT);
+    // Only charge for the Points actually given; the remainder stays in the balance.
+    const creditsSpent = pointsToAdd * CREDITS_PER_POINT;
     const newCredits = user.sydeCredits - creditsSpent;
     const newPoints = user.currentPoints + pointsToAdd;
 
@@ -684,7 +685,7 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
     onAddActivityLog({
       id: `conv-${Date.now()}`,
       title: `Converted ${creditsSpent} Syde Credits to Points`,
-      description: `Exchanged ecosystem credits at 5:1 ratio for +${pointsToAdd} Tier Points.${levelUpMsg}`,
+      description: `Converted ${creditsSpent} Credits at ${CREDITS_PER_POINT}:1 for +${pointsToAdd} Points.${levelUpMsg}`,
       timestamp: 'Just now',
       type: 'both',
       pointsChange: pointsToAdd,

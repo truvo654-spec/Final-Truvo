@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.74.0] - 2026-10-09
+### Changed
+- The rewards system follows the Final Beta workbook of 20 Oct 2026. The levels start at 0, 100, 300 and 500 Active Points, so Player now runs 300 to 499 rather than 250 to 499, and all three tier tables that disagreed say the same thing. Converting Credits to Points is 100 to 1, not 5 to 1, and the copy says so. Cashback reads as a share of the broker's commission, 10, 12, 14 and 16 per cent, rather than a boost stacked on the first level.
+### Added
+- rewardRules.ts holds the workbook's numbers in one place: the level starts, cashback shares, unlock discounts and lengths with their five-Credit rounding, the conversion rate with its ten-Point monthly cap, the ninety and hundred-and-eighty day lives of a Point and a Credit, the boost caps, the Credit caps per task, per day and per week, the repeat decay, and the signal confidence each level may see. Nothing downstream should keep its own copy of these.
+
 ## [1.73.0] - 2026-10-09
 ### Changed
 - The thinking state animates the way the reference does: a light sweeps across "Thinking it through" while a clock counts the seconds beside it, the steps hang off a rail with a pulsing dot that becomes a tick when each is done, and each one fades up a beat after the one above. The caret at the end of a sentence is a rounded pill, and while it is working the Send button becomes Stop, which cuts the answer short. All of the motion stops for anyone who asks for reduced motion.
