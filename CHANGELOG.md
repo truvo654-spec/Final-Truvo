@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.56.1] - 2026-10-09
+### Added
+- The AI Companion has its own address, /ai-companion, so it can be opened and linked to while its menu entry stays hidden.
+### Fixed
+- Buying a day without the limit left the old count on screen, because what is left was only recalculated when the count changed and buying the day does not change it.
+### Note
+- The allowance is now confirmed running: the count reads five at Rookie, falls as questions are asked, says when the day is spent, opens the shared unlock dialog priced at sixty credits, and clears the limit once the day is bought.
+
 ## [1.56.0] - 2026-10-09
 ### Changed
 - The AI dock keeps two tabs: Summary, which now carries the columns that used to be tabs of their own, and Suggestion, which lists what to ask or where to go next as things you can press. The strip that repeated those same prompts under the panel is gone.

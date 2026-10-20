@@ -109,8 +109,10 @@ export const AiCompanionPage: React.FC<AiCompanionPageProps> = ({ user, brokers,
   /** Re-read after every ask so the count on screen stays true. */
   const [asked, setAsked] = useState(() => asksUsedToday());
   const [unlockOpen, setUnlockOpen] = useState(false);
+  /** Bumped when a day pass is bought, so the line below re-reads. */
+  const [passBump, setPassBump] = useState(0);
   const allowance = aiAllowance(user.tierLevel);
-  const left = useMemo(() => asksLeft(user.tierLevel), [user.tierLevel, asked]);
+  const left = useMemo(() => asksLeft(user.tierLevel), [user.tierLevel, asked, passBump]);
   const outOfAsks = left !== null && left <= 0;
   const [thinking, setThinking] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -439,6 +441,7 @@ export const AiCompanionPage: React.FC<AiCompanionPageProps> = ({ user, brokers,
         onClose={() => setUnlockOpen(false)}
         onConfirm={() => {
           grantDayPass();
+          setPassBump((n) => n + 1);
           setAsked(asksUsedToday());
           onShowToast('Ask away. The limit is off for today.');
           setUnlockOpen(false);
