@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.80.0] - 2026-10-09
+### Added
+- The Admin panel requirements as a typed catalogue: thirty-six entries across eleven modules, twenty-four of them needed for the beta, each with the role that owns it, the phase it lands in and the guardrail that stops one keystroke breaking the economy. No admin code exists yet, so this is the list the build works through rather than a description of something already there.
+- The guardrails travel with the requirements rather than living in a document beside them: level starts must rise, boosts only add, the one-dollar-is-one-Point rule cannot be edited by anyone, a quest without server verification cannot be published, new expiry lives apply only to new entries, and nothing a member made is deleted when their access lapses.
+
 ## [1.79.0] - 2026-10-09
 ### Added
 - The fourteen social quests from the workbook, each with what it pays, how often it may pay, and what the server has to see before it does. The guardrails travel with them: liking your own posts, like-for-like rings and duplicate accounts earn nothing and can be reversed, an external share pays only when a real person visits, and shared content cannot promise profits.
