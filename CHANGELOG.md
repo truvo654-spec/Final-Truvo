@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.71.0] - 2026-10-09
+### Added
+- Currency pairs in search show their two flags, drawn rather than fetched: GBP/JPY is the Union flag with Japan tucked under it, EUR/USD is the European flag with the United States. Eight currencies are drawn, covering the majors; anything else keeps the mark it had.
+
 ## [1.70.0] - 2026-10-09
 ### Changed
 - While typing, the palette reads as the design lays it out: the closest matches under "Top results", everything else under "Suggestions", and each row ending in a chip saying where it leads, so the small repeated group headings are gone.

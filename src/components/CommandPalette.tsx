@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CurrencyPairFlags, currencyPair } from './common/CurrencyFlag';
 import { expandQuery } from './searchKeywords';
 import { InstrumentIcon } from './analysis/InstrumentIcon';
 import { iconTypeFor } from './analysis/instrumentIconType';
@@ -108,6 +109,9 @@ function score(item: PaletteItem, q: string): number {
 /** The picture at the start of a row: a broker's logo, an instrument's mark, or the generic icon. */
 const PaletteMark: React.FC<{ item: PaletteItem; Icon: React.ElementType }> = ({ item, Icon }) => {
   if (item.instrument) {
+    // A currency pair reads as two countries, so show their flags.
+    const pair = currencyPair(item.instrument);
+    if (pair) return <CurrencyPairFlags pair={pair} className="h-7 w-7" />;
     return (
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#f1f0fe] dark:bg-white/10">
         <InstrumentIcon iconType={iconTypeFor(item.instrument)} name={item.instrument} className="h-5 w-5" />
