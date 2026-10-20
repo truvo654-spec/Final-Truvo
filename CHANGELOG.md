@@ -9,6 +9,13 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.79.0] - 2026-10-09
+### Added
+- The fourteen social quests from the workbook, each with what it pays, how often it may pay, and what the server has to see before it does. The guardrails travel with them: liking your own posts, like-for-like rings and duplicate accounts earn nothing and can be reversed, an external share pays only when a real person visits, and shared content cannot promise profits.
+- awardQuest, which holds a quest to its own limit before the shared caps apply, and the weekly streak and live-session bonuses with their ceilings.
+### Note
+- Checked by running it: a quest limited to once a day pays ten the first time and nothing the second, saying why, and social rewards stop at sixty Credits in a day however they are reached.
+
 ## [1.78.0] - 2026-10-09
 ### Changed
 - Missions and the daily login pay through the ledger, so the anti-farming rules actually bite: doing the same task again pays half, then a quarter, then nothing, no task pays past two hundred Credits, and the weekly six hundred holds. What is credited is what was paid, not what was asked for, and when a limit cuts it the page says which one.

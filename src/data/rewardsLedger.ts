@@ -185,6 +185,38 @@ export function awardCredits(
   return { ledger: next, awarded: amount, note };
 }
 
+/**
+ * Pays a social quest, respecting its own limit as well as the daily cap.
+ *
+ * Each quest says how often it may pay, so the ledger counts what it has
+ * already paid for that quest in the period before anything else applies.
+ */
+export function awardQuest(
+  ledger: Ledger,
+  quest: { id: string; reward: number; limit: number; period: 'day' | 'week' },
+  reason: string,
+  now = new Date(),
+): AwardResult {
+  const days = quest.period === 'day' ? 1 : 7;
+  const paidAlready = ledger.credits.filter(
+    (e) => e.reason === `social:${quest.id}` && ageInDays(e.earnedAt, now) < days,
+  ).length;
+
+  if (paidAlready >= quest.limit) {
+    return {
+      ledger,
+      awarded: 0,
+      note: `That is ${quest.limit} time${quest.limit > 1 ? 's' : ''} for this quest ${quest.period === 'day' ? 'today' : 'this week'}.`,
+    };
+  }
+
+  return awardCredits(
+    ledger,
+    { task: quest.id, amount: quest.reward, reason: quest.id, social: true },
+    now,
+  );
+}
+
 /** Points from verified trading, which never decay and are never capped. */
 export function awardPoints(ledger: Ledger, amount: number, reason: string, now = new Date()): Ledger {
   if (amount <= 0) return ledger;
