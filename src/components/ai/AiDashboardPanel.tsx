@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { answerFromPage } from './aiAnswer';
 import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, RefreshCw, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiGhost } from './AiGhost';
@@ -54,8 +55,7 @@ export const AiDashboardPanel: React.FC<{
   const say = (text: string) => {
     const t = text.trim();
     if (!t) return;
-    const reply = data.onAsk?.(t)
-      ?? 'I read this page and said what stood out. Pick a suggestion and I will take you there.';
+    const reply = data.onAsk?.(t) ?? answerFromPage(data, t);
     setChat((c) => [...c, { id: Date.now(), from: 'you', text: t }, { id: Date.now() + 1, from: 'ai', text: reply }]);
     setDraft('');
   };

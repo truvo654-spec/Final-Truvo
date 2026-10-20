@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { answerFromPage } from './aiAnswer';
 import { ChevronDown, Maximize2, Minus, RefreshCw, Send, Sparkles } from 'lucide-react';
 
 /**
@@ -90,8 +91,7 @@ export const AiSpotlightPanel: React.FC<{
   const say = (text: string) => {
     const t = text.trim();
     if (!t) return;
-    const reply = data.onAsk?.(t)
-      ?? 'I can read this page for you, point you somewhere useful, or explain a term. Try one of the suggestions.';
+    const reply = data.onAsk?.(t) ?? answerFromPage(data, t);
     setChat((c) => [...c, { id: Date.now(), from: 'you', text: t }, { id: Date.now() + 1, from: 'ai', text: reply }]);
     setDraft('');
   };
