@@ -1,4 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { CREDIT_LIFE_DAYS, CREDIT_REMINDER_DAYS, POINT_LIFE_DAYS, POINT_REMINDER_DAYS } from '../data/rewardRules';
+import { activePoints, availableCredits, awardPoints, expiringSoon, readLedger, writeLedger } from '../data/rewardsLedger';
 import { CREDITS_PER_POINT, CONVERSION_CAP_POINTS, CONVERSION_WINDOW_DAYS } from '../data/rewardRules';
 import { UserProfile, Mission, ActivityLogItem, MarketSignal } from '../types';
 import {
@@ -586,6 +588,39 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
   const hasTraded = (user.lotsTradedTotal ?? 0) > 0;
   const hasBroker = (user.connectedBrokersCount ?? 0) > 0;
   const hasCredits = user.sydeCredits >= 250;
+
+  /**
+   * What the dated ledger holds. Seeded from the profile the first time, so an
+   * existing member does not appear to have lost everything the day this
+   * shipped; from then on the ledger is the record.
+   */
+  const ledgerView = useMemo(() => {
+    let led = readLedger();
+    if (led.points.length === 0 && led.credits.length === 0) {
+      if (user.currentPoints > 0) led = awardPoints(led, user.currentPoints, 'opening balance');
+      if (user.sydeCredits > 0) {
+        led = {
+          ...led,
+          credits: [{
+            id: 'opening',
+            earnedAt: new Date().toISOString(),
+            amount: user.sydeCredits,
+            spent: 0,
+            reason: 'opening balance',
+          }],
+        };
+      }
+      writeLedger(led);
+    }
+    const soon = expiringSoon(led, POINT_REMINDER_DAYS[0]);
+    const soonC = expiringSoon(led, CREDIT_REMINDER_DAYS[0]);
+    return {
+      points: activePoints(led),
+      credits: availableCredits(led),
+      soonPoints: soon.points,
+      soonCredits: soonC.credits,
+    };
+  }, [user.currentPoints, user.sydeCredits]);
   const converterScenario: 'not-met' | 'met' | 'insufficient' =
     scenarioOverride ?? (!hasTraded || !hasBroker ? 'not-met' : hasCredits ? 'met' : 'insufficient');
   const setConverterScenario = (v: 'not-met' | 'met' | 'insufficient') => setScenarioOverride(v);
@@ -827,6 +862,30 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
         <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto leading-relaxed">
           Everything you’ve earned so far, plus what you’re currently missing out on.
         </p>
+
+        {/* What the dated ledger actually holds, and what is about to lapse */}
+        {(ledgerView.points > 0 || ledgerView.credits > 0 || ledgerView.soonPoints > 0 || ledgerView.soonCredits > 0) && (
+          <div className="mx-auto mt-3 flex max-w-xl flex-wrap items-center justify-center gap-x-5 gap-y-1.5 rounded-xl border border-[#CCC6FB] bg-white px-4 py-3 text-left">
+            <span className="text-[13px] text-slate-600">
+              <b className="font-bold text-slate-900">{ledgerView.points.toLocaleString()}</b> Active Points
+              <span className="text-slate-400"> · last {POINT_LIFE_DAYS} days</span>
+            </span>
+            <span className="text-[13px] text-slate-600">
+              <b className="font-bold text-slate-900">{ledgerView.credits.toLocaleString()}</b> Credits
+              <span className="text-slate-400"> · each lasts {CREDIT_LIFE_DAYS} days</span>
+            </span>
+            {ledgerView.soonPoints > 0 && (
+              <span className="rounded-md bg-[#fef3c7] px-2 py-0.5 text-[12.5px] font-bold text-[#92400e]">
+                {ledgerView.soonPoints} Points expire within {POINT_REMINDER_DAYS[0]} days
+              </span>
+            )}
+            {ledgerView.soonCredits > 0 && (
+              <span className="rounded-md bg-[#fef3c7] px-2 py-0.5 text-[12.5px] font-bold text-[#92400e]">
+                {ledgerView.soonCredits} Credits expire within {CREDIT_REMINDER_DAYS[0]} days
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Daily login, claimable once a day */}
         <div className="flex justify-center pt-2">

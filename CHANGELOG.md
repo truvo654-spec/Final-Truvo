@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.76.0] - 2026-10-09
+### Added
+- The Points and Credits page reads the dated ledger: Active Points over the last ninety days, Credits with the hundred and eighty day life said plainly beside them, and an amber line when something is about to lapse. The ledger is seeded from the profile the first time, so nobody appears to have lost everything the day this shipped, and from then on it is the record.
+### Note
+- Seen running: four hundred Points dated ninety-five days ago do not count towards Active Points, and seventy-five Credits dated a hundred and sixty days ago raise "75 Credits expire within 30 days".
+
 ## [1.75.0] - 2026-10-09
 ### Added
 - The dated ledger the workbook asks for, which a running total cannot express. Every Point and every Credit keeps the day it was earned; a Point counts for ninety days and a Credit for a hundred and eighty, and the balance is what is left once the lapsed entries drop out. Spending takes the oldest live Credits first, which is the member's interest rather than the house's: it uses what would expire soonest.
