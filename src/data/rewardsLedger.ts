@@ -105,10 +105,16 @@ function dayKey(now: Date): string {
   return now.toLocaleDateString('en-CA');
 }
 
-/** Credits already earned today, and this week, from platform activity. */
+/**
+ * Credits earned from platform activity within the last so many days.
+ *
+ * The weekly cap is on activity, so an opening balance carried over from the
+ * old running total must not count against it; otherwise a member who already
+ * had Credits could earn nothing for a week.
+ */
 function earnedIn(ledger: Ledger, days: number, now: Date): number {
   return ledger.credits
-    .filter((e) => ageInDays(e.earnedAt, now) < days)
+    .filter((e) => ageInDays(e.earnedAt, now) < days && !e.reason.startsWith('opening'))
     .reduce((sum, e) => sum + e.amount, 0);
 }
 

@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.78.0] - 2026-10-09
+### Changed
+- Missions and the daily login pay through the ledger, so the anti-farming rules actually bite: doing the same task again pays half, then a quarter, then nothing, no task pays past two hundred Credits, and the weekly six hundred holds. What is credited is what was paid, not what was asked for, and when a limit cuts it the page says which one.
+### Fixed
+- The weekly cap counted the opening balance carried over from the old running total, so a member who already had Credits earned nothing for a week. The cap counts platform activity only.
+
 ## [1.77.0] - 2026-10-09
 ### Changed
 - Spending runs through the dated ledger. Converting Credits to Points and unlocking a tool both take the oldest live Credits first, and the Points a conversion produces carry their own date, so each side expires on its own clock.

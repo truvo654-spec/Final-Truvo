@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { CREDIT_LIFE_DAYS, CREDIT_REMINDER_DAYS, POINT_LIFE_DAYS, POINT_REMINDER_DAYS } from '../data/rewardRules';
-import { activePoints, availableCredits, awardPoints, expiringSoon, readLedger, spendCredits, writeLedger } from '../data/rewardsLedger';
+import { activePoints, availableCredits, awardCredits, awardPoints, expiringSoon, readLedger, spendCredits, writeLedger } from '../data/rewardsLedger';
 import { CREDITS_PER_POINT, CONVERSION_CAP_POINTS, CONVERSION_WINDOW_DAYS } from '../data/rewardRules';
 import { UserProfile, Mission, ActivityLogItem, MarketSignal } from '../types';
 import {
@@ -765,7 +765,9 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
 
   const handleClaimBonusCredits = () => {
     if (dailyClaimed === today) return;
-    const bonus = 5;
+    const paid = awardCredits(readLedger(), { task: 'daily-login', amount: 5, reason: 'daily login' });
+    writeLedger(paid.ledger);
+    const bonus = paid.awarded;
     setDailyClaimed(today);
     try { window.localStorage.setItem(DAILY_KEY, today); } catch { /* storage can be blocked */ }
     onUpdateUser({
@@ -807,22 +809,40 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
 
     onUpdateMissions(updated);
 
+    // Credits from platform activity run through the ledger: a repeat pays
+    // half, then a quarter, then nothing, and the caps hold.
+    const paid = awardCredits(readLedger(), {
+      task: `${missionId}:${taskId}`,
+      amount: rewardCrd,
+      reason: customTitle || 'mission task',
+    });
+    const ledgerAfterPoints = rewardPts > 0
+      ? awardPoints(paid.ledger, rewardPts, customTitle || 'mission task')
+      : paid.ledger;
+    writeLedger(ledgerAfterPoints);
+
+    const granted = paid.awarded;
     const newPoints = user.currentPoints + rewardPts;
-    const newCredits = user.sydeCredits + rewardCrd;
+    const newCredits = user.sydeCredits + granted;
 
     onUpdateUser({
       currentPoints: newPoints,
       sydeCredits: newCredits,
     });
 
+    if (paid.note) {
+      setConversionSuccess(paid.note);
+      window.setTimeout(() => setConversionSuccess(null), 4000);
+    }
+
     onAddActivityLog({
       id: `task-${Date.now()}`,
       title: customTitle || 'Completed Mission Task',
-      description: `Earned +${rewardPts} Points and +${rewardCrd} Credits for mission advancement.`,
+      description: `Earned +${rewardPts} Points and +${granted} Credits for mission advancement.`,
       timestamp: 'Just now',
       type: 'both',
       pointsChange: rewardPts,
-      creditsChange: rewardCrd,
+      creditsChange: granted,
       category: 'Mission',
     });
 
