@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.86.0] - 2026-10-09
+### Added
+- The Credits Spending sheet: the nine rules for what Credits buy, the backtest allowance of three, five, ten and thirty runs a month by level, and the fifteen Credits an extra run costs once that is spent, at the same price for everyone because it is usage rather than access.
+- The entry that matters most is the one saying what Credits never buy: cash, trade execution, higher leverage or a bigger position. They buy time with a tool, never an advantage in the market.
+- Market News Research is wired as the agreed exception to the one-level-up rule, so a LV1 member can reach it two levels up while everything else still stops at one.
+### Note
+- Checked by running it: a Rookie gets three free runs and pays fifteen for the fourth, a Boss gets thirty and pays the same fifteen for the thirty-first, and LV1 can buy Research but not correlation analytics even though both are LV3.
+
 ## [1.85.0] - 2026-10-09
 ### Added
 - The Credit Missions sheet in full: a hundred and sixteen missions across twenty-three groups, each with its difficulty, its reward and how often it can pay. These are the halved platform-activity figures, so what a member receives can still be less once the ledger's caps and repeat decay apply, and the reason is always shown.

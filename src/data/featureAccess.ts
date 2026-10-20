@@ -1,4 +1,5 @@
 import { UNLOCK_DISCOUNT, UNLOCK_LEVELS_ABOVE, UNLOCK_ROUNDING } from './rewardRules';
+import { RESEARCH_EXCEPTION_FEATURE } from './creditSpending';
 
 /**
  * Who can reach each feature, and what a temporary unlock costs.
@@ -117,7 +118,12 @@ export function canUnlock(id: string, level: number): boolean {
   const f = FEATURE_ACCESS.find((x) => x.id === id);
   if (!f || f.unlockFrom === null) return false;
   if (level >= f.includedFrom) return false;
-  return level >= f.unlockFrom && f.includedFrom - level <= UNLOCK_LEVELS_ABOVE;
+  if (level < f.unlockFrom) return false;
+
+  // Market News Research is the agreed exception: a LV1 member may reach it
+  // two levels up, where everything else stops at one.
+  const reach = f.id === RESEARCH_EXCEPTION_FEATURE ? 2 : UNLOCK_LEVELS_ABOVE;
+  return f.includedFrom - level <= reach;
 }
 
 /** What this member pays for this length, after their level's discount. */
