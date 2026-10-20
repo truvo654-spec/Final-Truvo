@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { answerFromPage } from './aiAnswer';
-import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, RefreshCw, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
+import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, RefreshCw, Search, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiGhost } from './AiGhost';
 import robot from '../../assets/community/ai-robot.png';
@@ -233,29 +233,68 @@ export const AiDashboardPanel: React.FC<{
             </div>
 
             {/* the composer */}
-            <div className="overflow-hidden rounded-xl border border-[#CCC6FB]">
-              <textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); say(draft); } }}
-                aria-label="Ask MarketSyde AI"
-                placeholder="Ask me anything about this page"
-                rows={2}
-                className="w-full resize-none bg-transparent px-3.5 py-3 text-[14px] leading-relaxed text-[#0b1c30] outline-none placeholder:text-[#94a3b8] dark:text-white"
-              />
-              <div className="flex items-center justify-between gap-2 border-t border-[#CCC6FB] bg-[#faf9ff] px-3 py-2 dark:bg-white/5">
-                <span className="text-[12px] text-[#94a3b8]">
-                  Enter to send, Shift and Enter for a new line
-                </span>
+            <div className="overflow-hidden rounded-xl border border-[#CCC6FB] bg-white dark:bg-transparent">
+              <div className="relative">
+                <Search
+                  className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#94a3b8]"
+                  aria-hidden
+                />
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); say(draft); } }}
+                  aria-label="Ask MarketSyde AI"
+                  placeholder="Ask me anything..."
+                  rows={3}
+                  className="w-full resize-none bg-transparent py-3 pl-9 pr-10 text-[14px] leading-relaxed text-[#0b1c30] outline-none placeholder:text-[#94a3b8] dark:text-white"
+                />
                 <button
                   type="button"
                   onClick={() => say(draft)}
                   disabled={!draft.trim()}
                   aria-label="Send"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#5945F1] text-white transition-colors hover:bg-[#4a38d6] disabled:opacity-40"
+                  className="absolute right-2 top-2.5 flex h-8 w-8 items-center justify-center rounded-lg text-[#94a3b8] transition-colors hover:text-[#5945F1] disabled:opacity-40"
                 >
                   <Send className="h-4 w-4" aria-hidden />
                 </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 border-t border-[#CCC6FB] bg-[#faf9ff] px-2.5 py-2 dark:bg-white/5">
+                {/* what the openers would ask, without leaving the box */}
+                <span className="relative">
+                  <select
+                    value=""
+                    onChange={(e) => { if (e.target.value) setDraft(e.target.value); }}
+                    aria-label="Use a suggestion"
+                    className="h-7 cursor-pointer appearance-none rounded-lg border border-[#CCC6FB] bg-white py-0 pl-2.5 pr-6 text-[12px] text-[#0b1c30] outline-none dark:bg-transparent dark:text-white"
+                  >
+                    <option value="">Suggestions</option>
+                    {(data.suggestions ?? []).map((sg) => (
+                      <option key={sg.label} value={sg.label}>{sg.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" aria-hidden />
+                </span>
+
+                <span className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setChat([])}
+                    disabled={chat.length === 0}
+                    className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] text-[#64748b] transition-colors hover:bg-white hover:text-[#0b1c30] disabled:opacity-40 dark:text-white/60"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => say(draft)}
+                    disabled={!draft.trim()}
+                    className="flex h-7 items-center gap-1.5 rounded-lg bg-[#5945F1] px-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#4a38d6] disabled:opacity-40"
+                  >
+                    Send
+                  </button>
+                </span>
               </div>
             </div>
           </div>
