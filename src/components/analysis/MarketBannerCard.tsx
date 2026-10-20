@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { priceFor } from '../../data/featureAccess';
+import { readLedger, spendCredits, writeLedger } from '../../data/rewardsLedger';
 import { MarketCategory } from './instrumentAnalysisData';
 import { ChevronRight, ArrowUpRight, ArrowDownRight, Sparkles, Lock, X } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -110,13 +112,29 @@ export const MarketBannerCard: React.FC<MarketBannerCardProps> = ({
     onDurationChange?.(id);
   };
 
-  /** What a longer timeframe costs for a day. */
-  const TIMEFRAME_UNLOCK_CREDITS = 60;
+  /**
+   * A day of a longer timeframe, at the member's own price.
+   *
+   * The workbook prices history and chart intervals at 120 Credits a day at
+   * LV1 (S02), with the usual level discount on top, rather than the flat
+   * sixty this used to charge.
+   */
+  const TIMEFRAME_UNLOCK_CREDITS = priceFor('IA10', 'oneDay', userTierLevel) ?? 120;
 
   const handleUnlockModalDuration = () => {
     if (!lockedModalTarget) return;
     const targetId = lockedModalTarget.id;
     const targetLabel = lockedModalTarget.label;
+
+    // Take it from the dated ledger, oldest live Credits first, so this is a
+    // real charge against the account rather than one page's own state.
+    const spend = spendCredits(readLedger(), TIMEFRAME_UNLOCK_CREDITS);
+    if (!spend.ok) {
+      onShowToast?.(`You need ${spend.shortBy} more credits to unlock ${targetLabel}.`);
+      return;
+    }
+    writeLedger(spend.ledger);
+
     if (onSpendCredits && !onSpendCredits(TIMEFRAME_UNLOCK_CREDITS, `Unlocked the ${targetLabel} timeframe for a day`)) {
       onShowToast?.(`You need ${TIMEFRAME_UNLOCK_CREDITS} credits to unlock ${targetLabel}.`);
       return;

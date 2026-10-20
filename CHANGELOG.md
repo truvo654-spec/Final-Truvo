@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.91.0] - 2026-10-09
+### Fixed
+- Gap 3: unlocking a longer chart timeframe charged a flat sixty Credits held in one page's own state, so the account balance never moved. It is priced from the feature table at 120 a day with the level discount, and the charge leaves the dated ledger, oldest Credits first.
+- Gap 16: the daily check-in paid five and called itself a login streak. It is the workbook's C01, worth ten, and the modal now announces what was actually paid rather than a figure of its own.
+### Note
+- Gaps 1, 2, 12 and 15 were already closed by earlier work and have been checked rather than taken on trust: mission rewards are added once by the ledger and only announced by the modal, unlocks spend through the ledger, calculator slots come from the level, and every Credit charge is logged with its own reason.
+- Seen running: the check-in writes a dated entry of ten Credits and says "You earned 10 credits for today's market check-in."
+
 ## [1.90.0] - 2026-10-09
 ### Fixed
 - Gap 10, in the four remaining places: the level was treated as an uplift on a base rate, so a Rookie read as "+0% Boost" and every estimate was scaled by a boost that does not exist. The level is the share of the broker's commission, 10 to 16 per cent, on the signals pages, the dashboard calculator and the level-up message.

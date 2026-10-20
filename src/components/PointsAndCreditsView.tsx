@@ -2,6 +2,9 @@ import React, { useState, useRef, useMemo } from 'react';
 import { CREDIT_LIFE_DAYS, CREDIT_REMINDER_DAYS, POINT_LIFE_DAYS, POINT_REMINDER_DAYS } from '../data/rewardRules';
 import { activePoints, availableCredits, awardCredits, awardPoints, expiringSoon, readLedger, spendCredits, writeLedger } from '../data/rewardsLedger';
 import { CASHBACK_SHARE, CREDITS_PER_POINT, CONVERSION_CAP_POINTS, CONVERSION_WINDOW_DAYS } from '../data/rewardRules';
+
+/** What the daily market check-in pays, from the workbook's C01. */
+const DAILY_CHECK_IN_CREDITS = 10;
 import { UserProfile, Mission, ActivityLogItem, MarketSignal } from '../types';
 import {
   Sparkles,
@@ -765,7 +768,8 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
 
   const handleClaimBonusCredits = () => {
     if (dailyClaimed === today) return;
-    const paid = awardCredits(readLedger(), { task: 'daily-login', amount: 5, reason: 'daily login' });
+    // C01, the daily market check-in, pays ten.
+    const paid = awardCredits(readLedger(), { task: 'daily-login', amount: DAILY_CHECK_IN_CREDITS, reason: 'daily market check-in' });
     writeLedger(paid.ledger);
     const bonus = paid.awarded;
     setDailyClaimed(today);
@@ -786,12 +790,12 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
     if (onTriggerEarningModal) {
       onTriggerEarningModal({
         type: 'quest',
-        credits: 5,
-        questName: 'login in today',
+        credits: bonus,
+        questName: 'today\u2019s market check-in',
         subtitle: 'Way to go!',
       });
     } else {
-      setConversionSuccess('🎉 +5 Credits added for daily login streak!');
+      setConversionSuccess(`🎉 +${bonus} Credits for today\u2019s market check-in!`);
       setTimeout(() => setConversionSuccess(null), 4000);
     }
   };
