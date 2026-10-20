@@ -321,9 +321,15 @@ export const CommandPalette: React.FC<{
             </>
           )}
 
-          {grouped.map(({ group, rows: list }) => (
+          {query && grouped.length > 0 && (
+            <p className="px-3.5 pb-1 pt-4 text-[14px] font-bold text-slate-900 dark:text-white">Top results</p>
+          )}
+          {grouped.map(({ group, rows: list }, gi) => (
             <div key={group}>
-              <p className="px-3.5 pb-1 pt-4 text-[12px] font-semibold uppercase tracking-wide text-slate-400">{group}</p>
+              {query && gi === 1 && (
+                <p className="px-3.5 pb-1 pt-5 text-[14px] font-bold text-slate-900 dark:text-white">Suggestions</p>
+              )}
+              {!query && <p className="px-3.5 pb-1 pt-4 text-[12px] font-semibold uppercase tracking-wide text-slate-400">{group}</p>}
               {list.map((item) => {
                 index += 1;
                 const i = index;
@@ -345,6 +351,9 @@ export const CommandPalette: React.FC<{
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] text-slate-900 dark:text-white">{markMatch(item.label, query)}</span>
                       {item.sub && <span className="block truncate text-[12.5px] text-slate-500 dark:text-white/50">{item.sub}</span>}
+                    </span>
+                    <span className="hidden shrink-0 items-center gap-1.5 rounded-lg bg-[#f1f0fe] px-2.5 py-1 text-[12px] font-semibold text-[#5945F1] sm:inline-flex dark:bg-white/10 dark:text-[#a99bff]">
+                      {group}
                     </span>
                     {item.meta && <span className="shrink-0 text-[13px] text-slate-500 dark:text-white/50">{item.meta}</span>}
                     {item.navigates && <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />}
