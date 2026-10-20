@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { readLedger, spendCredits, writeLedger } from '../../../data/rewardsLedger';
 import { UnlockStateModal } from '../../common/UnlockStateModal';
 import { UserProfile, Broker } from '../../../types';
 import { PremiumFeature, UnlockDuration } from './types';
@@ -170,6 +171,16 @@ export const MarketEngagementProvider: React.FC<MarketEngagementProviderProps> =
 
     const durationInfo = DURATION_MULTIPLIERS[duration];
     const expiryDate = new Date(Date.now() + durationInfo.ms).toISOString();
+
+    // Take it from the dated ledger first: oldest live Credits go, so what
+    // would lapse soonest is used rather than wasted.
+    const spend = spendCredits(readLedger(), cost);
+    if (!spend.ok) {
+      const short = `You need ${spend.shortBy} more credits to unlock ${feat.title}.`;
+      onShowToast?.(short);
+      return { ok: false, message: short };
+    }
+    writeLedger(spend.ledger);
 
     if (onSpendCredits) {
       if (!onSpendCredits(cost, `Unlocked ${feat.title} for ${durationInfo.label}`)) {

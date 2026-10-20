@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { CREDIT_LIFE_DAYS, CREDIT_REMINDER_DAYS, POINT_LIFE_DAYS, POINT_REMINDER_DAYS } from '../data/rewardRules';
-import { activePoints, availableCredits, awardPoints, expiringSoon, readLedger, writeLedger } from '../data/rewardsLedger';
+import { activePoints, availableCredits, awardPoints, expiringSoon, readLedger, spendCredits, writeLedger } from '../data/rewardsLedger';
 import { CREDITS_PER_POINT, CONVERSION_CAP_POINTS, CONVERSION_WINDOW_DAYS } from '../data/rewardRules';
 import { UserProfile, Mission, ActivityLogItem, MarketSignal } from '../types';
 import {
@@ -693,9 +693,31 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
       return;
     }
 
-    const pointsToAdd = Math.floor(creditsToDeduct / CREDITS_PER_POINT);
+    let pointsToAdd = Math.floor(creditsToDeduct / CREDITS_PER_POINT);
+
+    // No more than ten converted Points in a rolling month, and no boosts
+    // on them, as the Final Beta sets it.
+    const convertedLately = readLedger().points
+      .filter((e) => e.reason === 'converted'
+        && (Date.now() - new Date(e.earnedAt).getTime()) / 86_400_000 < CONVERSION_WINDOW_DAYS)
+      .reduce((sum, e) => sum + e.amount, 0);
+    const room = Math.max(0, CONVERSION_CAP_POINTS - convertedLately);
+    if (pointsToAdd > room) {
+      pointsToAdd = room;
+      if (room === 0) {
+        setConversionSuccess(`\u26a0\ufe0f That is ${CONVERSION_CAP_POINTS} converted Points in ${CONVERSION_WINDOW_DAYS} days. Trade to earn more Points.`);
+        setTimeout(() => setConversionSuccess(null), 4000);
+        return;
+      }
+    }
+
     // Only charge for the Points actually given; the remainder stays in the balance.
     const creditsSpent = pointsToAdd * CREDITS_PER_POINT;
+
+    // The ledger is the record: take the oldest live Credits and date the
+    // Points, so both expire on their own clocks.
+    const spend = spendCredits(readLedger(), creditsSpent);
+    if (spend.ok) writeLedger(awardPoints(spend.ledger, pointsToAdd, 'converted'));
     const newCredits = user.sydeCredits - creditsSpent;
     const newPoints = user.currentPoints + pointsToAdd;
 
