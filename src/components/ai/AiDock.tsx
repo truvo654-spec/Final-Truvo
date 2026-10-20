@@ -314,7 +314,7 @@ export const AiDock: React.FC<AiDockContext> = (ctx) => {
         greeting={greeting}
         storageKey={ctx.tab}
         onClose={() => shut(true)}
-        className="h-[min(800px,calc(100vh-2rem))]"
+        className="h-[min(800px,calc(100vh-7.5rem))]"
       />
     </div>
   );
