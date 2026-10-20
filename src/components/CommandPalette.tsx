@@ -176,9 +176,16 @@ export const CommandPalette: React.FC<{
   const rows = useMemo(() => {
     const q = query.trim();
     if (!q) return items.filter((i) => i.group === 'Browse' || i.group === 'Jump to').slice(0, 40);
+    // Somebody typing a ticker wants the instrument, not an article that
+    // happens to mention it, so what a row *is* counts alongside how well it
+    // matched: tradables first, then the pages and partners, then reading.
+    const KIND: Record<string, number> = {
+      Signals: 30, Instruments: 30, Browse: 18, 'Jump to': 18,
+      Brokers: 14, Promotions: 10, Missions: 8, Education: 4, Community: 4, News: 0,
+    };
     const scored = items
-      .map((i) => ({ i, s: score(i, q) }))
-      .filter((x) => x.s >= 0)
+      .map((i) => ({ i, s: score(i, q) + (KIND[i.group] ?? 6) }))
+      .filter((x) => x.s >= (KIND[items[0]?.group ?? ''] ?? 0) - 1000 && score(x.i, q) >= 0)
       .sort((a, b) => b.s - a.s)
       .slice(0, 24);
 
