@@ -49,7 +49,13 @@ export const AiDashboardPanel: React.FC<{
   const active = useMemo(() => data.tabs.find((t) => t.id === tab) ?? data.tabs[0], [data.tabs, tab]);
   const first = active?.id === data.tabs[0]?.id;
   /** The conversation on the Chat tab, for as long as the panel is open. */
-  const [chat, setChat] = useState<{ id: number; from: 'you' | 'ai'; text: string }[]>([]);
+  const [chat, setChat] = useState<{
+    id: number;
+    from: 'you' | 'ai';
+    text: string;
+    /** Where this answer could take the person, if they want to go. */
+    go?: { label: string; run: () => void };
+  }[]>([]);
   const [draft, setDraft] = useState('');
   /** A file the person attached, with its text if we could read it. */
   const [file, setFile] = useState<{ name: string; size: number; text?: string } | null>(null);
@@ -90,11 +96,15 @@ export const AiDashboardPanel: React.FC<{
     return `From ${file.name}:\n${hits.join('\n')}`;
   };
 
-  const say = (text: string) => {
+  const say = (text: string, go?: { label: string; run: () => void }) => {
     const t = text.trim();
     if (!t) return;
     const reply = readFile(t) ?? data.onAsk?.(t) ?? answerFromPage(data, t);
-    setChat((c) => [...c, { id: Date.now(), from: 'you', text: t }, { id: Date.now() + 1, from: 'ai', text: reply }]);
+    setChat((c) => [
+      ...c,
+      { id: Date.now(), from: 'you', text: t },
+      { id: Date.now() + 1, from: 'ai', text: reply, go },
+    ]);
     setDraft('');
   };
 
@@ -244,7 +254,19 @@ export const AiDashboardPanel: React.FC<{
                     {m.from === 'ai' && (
                       <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#5945F1]" aria-hidden />
                     )}
-                    <span className="min-w-0">{m.text}</span>
+                    <span className="min-w-0">
+                      <span className="block whitespace-pre-line">{m.text}</span>
+                      {m.go && (
+                        <button
+                          type="button"
+                          onClick={m.go.run}
+                          className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#5945F1] px-3 py-1.5 text-[12.5px] font-bold text-white transition-colors hover:bg-[#4a38d6]"
+                        >
+                          {m.go.label}
+                          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                      )}
+                    </span>
                   </span>
                 ))}
               </div>
@@ -260,7 +282,7 @@ export const AiDashboardPanel: React.FC<{
                     key={sg.label}
                     type="button"
                     title={sg.sub}
-                    onClick={() => { say(sg.label); sg.onClick?.(); }}
+                    onClick={() => say(sg.label, sg.onClick ? { label: sg.sub ? `Open: ${sg.label}` : 'Take me there', run: sg.onClick } : undefined)}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-[#0b1c30] transition hover:border-[#5945F1] hover:bg-[#f7f6ff] dark:bg-transparent dark:text-white"
                   >
                     <Icon className={`h-3.5 w-3.5 shrink-0 ${tint}`} aria-hidden />

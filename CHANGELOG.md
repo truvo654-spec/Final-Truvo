@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.64.0] - 2026-10-09
+### Changed
+- Pressing a suggestion in the chat answers it there instead of leaving the page. The reply arrives in the conversation and carries its own way out: a button underneath that says where it leads, so going is a second, deliberate press rather than something that happens to you.
+
 ## [1.63.0] - 2026-10-09
 ### Added
 - Attach takes a real file now. Pick a csv, tsv, json, md or txt and MarketSyde reads it in the browser, shows it as a chip you can remove, and answers from its lines: ask about XAUUSD with a trade export attached and it quotes the matching rows back. Nothing is uploaded anywhere.
