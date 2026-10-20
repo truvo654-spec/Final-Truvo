@@ -1,4 +1,5 @@
 import {
+  CapGroup,
   CREDIT_CAPS,
   CREDIT_LIFE_DAYS,
   POINT_LIFE_DAYS,
@@ -135,9 +136,10 @@ export interface AwardResult {
  */
 export function awardCredits(
   ledger: Ledger,
-  args: { task: string; amount: number; reason: string; social?: boolean },
+  args: { task: string; amount: number; reason: string; social?: boolean; capGroup?: CapGroup },
   now = new Date(),
 ): AwardResult {
+  const capGroup: CapGroup = args.capGroup ?? (args.social ? 1 : 1);
   const key = `${args.task}:${dayKey(now)}`;
   const already = ledger.taskCounts[key] ?? 0;
   const decay = REPEAT_DECAY[Math.min(already, REPEAT_DECAY.length - 1)];
@@ -151,6 +153,8 @@ export function awardCredits(
     note = `Capped at ${CREDIT_CAPS.perTask} Credits for one task.`;
   }
 
+  // Social first, because the social sixty sits inside the farmable hundred
+  // rather than beside it.
   if (args.social) {
     const today = ledger.credits
       .filter((e) => ageInDays(e.earnedAt, now) === 0 && e.reason.startsWith('social:'))
@@ -162,10 +166,36 @@ export function awardCredits(
     }
   }
 
-  const weekRoom = Math.max(0, CREDIT_CAPS.tasksPerWeek - earnedIn(ledger, 7, now));
+  // Group 1 is what a member can do alone and repeat, so it is the one held
+  // to a hundred a day. Groups 2 and 3 answer to their own rules.
+  if (capGroup === 1) {
+    const farmableToday = ledger.credits
+      .filter((e) => ageInDays(e.earnedAt, now) === 0 && !e.reason.startsWith('opening'))
+      .reduce((sum, e) => sum + e.amount, 0);
+    const dayRoom = Math.max(0, CREDIT_CAPS.farmablePerDay - farmableToday);
+    if (amount > dayRoom) {
+      amount = dayRoom;
+      note = `That is today\u2019s ${CREDIT_CAPS.farmablePerDay} Credits from repeatable actions.`;
+    }
+  }
+
+  if (capGroup === 3) {
+    const rvThisMonth = ledger.credits
+      .filter((e) => ageInDays(e.earnedAt, now) < 30 && e.reason.startsWith('rv:'))
+      .reduce((sum, e) => sum + e.amount, 0);
+    const rvRoom = Math.max(0, CREDIT_CAPS.revenueLinkedPerMonth - rvThisMonth);
+    if (amount > rvRoom) {
+      amount = rvRoom;
+      note = `That is this month\u2019s ${CREDIT_CAPS.revenueLinkedPerMonth} broker-confirmed Credits.`;
+    }
+  }
+
+  // The safety net: it should never be what stops anyone, so if it does, a
+  // bug or a ring has got past the caps above.
+  const weekRoom = Math.max(0, CREDIT_CAPS.safetyPerWeek - earnedIn(ledger, 7, now));
   if (amount > weekRoom) {
     amount = weekRoom;
-    note = `That is this week\u2019s ${CREDIT_CAPS.tasksPerWeek} Credits.`;
+    note = `That is this week\u2019s ${CREDIT_CAPS.safetyPerWeek} Credits.`;
   }
 
   const next: Ledger = {
@@ -177,7 +207,9 @@ export function awardCredits(
           earnedAt: now.toISOString(),
           amount,
           spent: 0,
-          reason: args.social ? `social:${args.reason}` : args.reason,
+          reason: args.social
+        ? `social:${args.reason}`
+        : capGroup === 3 ? `rv:${args.reason}` : args.reason,
         }]
       : ledger.credits,
   };

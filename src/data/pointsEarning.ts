@@ -36,8 +36,6 @@ export const POINTS_SOURCES: PointsSource[] = [
   { id: 'P07', source: 'D6 milestone', whatTheMemberDoes: 'Complete the monthly exploration journey', points: `${MILESTONE_POINTS}`, flat: MILESTONE_POINTS },
   { id: 'P08', source: 'D6 milestone', whatTheMemberDoes: 'Complete the weekly social set four weeks in a row', points: `${MILESTONE_POINTS}`, flat: MILESTONE_POINTS },
   { id: 'P09', source: 'Conversion', whatTheMemberDoes: 'Convert Credits into Points', points: `1 per ${CREDITS_PER_POINT} Credits, no boosts` },
-  { id: 'P10', source: 'Backtesting', whatTheMemberDoes: 'Save a backtest run', points: '5', flat: 5 },
-  { id: 'P11', source: 'Backtesting', whatTheMemberDoes: 'Finish a replay session that had trades', points: '10', flat: 10 },
   { id: 'P12', source: 'Brokers', whatTheMemberDoes: 'Connect or verify a broker account', points: '0 \u2014 this pays Credits instead', flat: 0 },
   { id: 'P13', source: 'Missions', whatTheMemberDoes: 'Complete a mission task', points: '0 \u2014 this pays Credits instead', flat: 0 },
   { id: 'P14', source: 'Education', whatTheMemberDoes: 'Finish a lesson or a course', points: '0 \u2014 this pays Credits instead', flat: 0 },

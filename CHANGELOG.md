@@ -9,6 +9,17 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.0.0] - 2026-10-09
+### Changed
+- The rewards system follows the workbook's v2.9, which arrived three versions ahead of what the build had. The big one is the unlock rule: v2.7 opened every locked feature to Credits from LV1, so a Rookie can buy a day of an Elite tool. The reach limit no longer refuses anything, price is what limits how far a member goes, and the Research exception it replaced is gone with it.
+- Caps became the hybrid rule of v2.8. A mission belongs to a cap group: group 1 is what a member can do alone and repeat, held to a hundred Credits a day with the sixty social Credits inside that hundred rather than beside it; group 2 is confirmed by someone else and keeps only its own limit; group 3 is broker-confirmed and answers to fifteen hundred a month. The weekly cap rose from six hundred to twelve hundred and became a safety net: if it is ever what stops someone, a bug or a ring has got past the others.
+- Feature Access is the v2.9 table: sixty-three features with their new prices, the workbook's own LV2 and LV3 day prices where it gives them, and no Trading Journal or backtesting, which v2.7 took out of scope.
+- Credit Missions is the merged catalogue of a hundred and thirty-one, social quests included, each carrying its cap group. Q01 to Q14 are rows here now rather than a list of their own, and socialQuests.ts reads from the one catalogue instead of keeping a second copy.
+### Added
+- The rules that stop one action paying twice: an alias row names an event another row already pays for, so C19 is built under RV-01 and never beside it; comments and answers share one limit of two a day across Q07, MN-M04 and CM-M02; and first-use rewards stop at ten per member with a fourteen-day hold on one-off and referral Credits.
+### Note
+- Checked by running it: a hundred and thirty-one missions with thirteen social quests and thirteen revenue-linked among them, C01 in group 1 and RV-01 in group 3, C19 marked an alias and C21 demo; LV1 can buy order flow, an LV4 tool; and a day of correlation costs 180, 145 and nothing at LV1, LV2 and LV3.
+
 ## [1.91.0] - 2026-10-09
 ### Fixed
 - Gap 3: unlocking a longer chart timeframe charged a flat sixty Credits held in one page's own state, so the account balance never moved. It is priced from the feature table at 120 a day with the level discount, and the charge leaves the dated ledger, oldest Credits first.

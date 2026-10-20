@@ -28,8 +28,14 @@ export const UNLOCK_LENGTH = {
 /** Unlock prices round to this many Credits. */
 export const UNLOCK_ROUNDING = 5;
 
-/** How many levels above their own a member may unlock. */
-export const UNLOCK_LEVELS_ABOVE = 1;
+/**
+ * How many levels above their own a member may unlock.
+ *
+ * v2.7 opened this up: any locked feature can be bought with Credits from LV1,
+ * so a Rookie can reach an Elite tool. Three is the whole ladder, which means
+ * the rule no longer refuses anything and the price is what limits reach.
+ */
+export const UNLOCK_LEVELS_ABOVE = 3;
 
 /** The yardstick: neither currency can be cashed out. */
 export const USD_PER_POINT = 1;
@@ -60,13 +66,40 @@ export const BOOSTS = {
   combinedCap: [2, 2.5],
 } as const;
 
-/** Caps on Credits from platform activity. */
+/**
+ * Caps on Credits from platform activity, as the hybrid rule of v2.8 sets them.
+ *
+ * Every mission belongs to a cap group. Group 1 is what a member can do alone
+ * and repeat, and it is the one held to a hundred a day; the sixty social
+ * Credits sit inside that hundred rather than beside it. The weekly twelve
+ * hundred is a safety net for bugs and rings that slip past the others, not a
+ * budget anyone is meant to reach.
+ */
 export const CREDIT_CAPS = {
   perTask: 200,
+  /** Group 1: actions a member can do alone and repeat. */
+  farmablePerDay: 100,
+  /** Social actions, counted inside the farmable daily cap. */
   socialPerDay: 60,
-  tasksPerWeek: 600,
+  /** Catches what the other caps miss. All activity Credits. */
+  safetyPerWeek: 1200,
+  /** Group 3: broker-confirmed rewards, all of them together. */
   revenueLinkedPerMonth: 1500,
 } as const;
+
+/** First use of a feature or tool pays only so many times per member. */
+export const FIRST_USE_REWARD_LIMIT = 10;
+
+/** One-off and referral rewards are held before they count. */
+export const REWARD_HOLDING_DAYS = 14;
+
+/**
+ * Which cap a mission answers to.
+ *
+ * 1: farmable, repeatable actions. 2: one-off or verified work outside the
+ * daily cap. 3: revenue-linked, confirmed by a broker.
+ */
+export type CapGroup = 1 | 2 | 3;
 
 /** Repeating the same task pays less each time. */
 export const REPEAT_DECAY = [1, 0.5, 0.25, 0] as const;
