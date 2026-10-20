@@ -110,7 +110,7 @@ export const AiDashboardPanel: React.FC<{
         </div>
       </div>
 
-      <div key={`${active?.id}-${run}`} className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+      <div key={`${active?.id}-${run}`} className={`min-h-0 flex-1 overflow-y-auto px-5 py-4 ${active?.id === 'chat' ? 'flex flex-col' : ''}`}>
         {busy && (
           <div role="status" aria-live="polite" className="mb-4">
             <p className="text-[12px] font-semibold text-[#5945F1] dark:text-[#a99bff]">{data.pretext}…</p>
@@ -174,7 +174,7 @@ export const AiDashboardPanel: React.FC<{
         ) : active?.id === 'chat' ? (
           /* A conversation about this page: ask in your own words, or take an
              opener, which both says it and takes you where it leads. */
-          <div className="flex min-h-[320px] flex-col gap-5">
+          <div className="flex min-h-full flex-1 flex-col gap-5">
             {chat.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-5 px-2 text-center">
                 <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[#5945F1] to-[#2a1b7a]" aria-hidden>
@@ -213,7 +213,7 @@ export const AiDashboardPanel: React.FC<{
             )}
 
             {/* openers for this feature, each one a place to go */}
-            <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="mt-auto flex flex-wrap items-center justify-center gap-2">
               {(data.suggestions ?? []).map((sg, i) => {
                 const Icon = [Compass, CalendarDays, MessageCircle, BarChart3, BookOpenCheck][i % 5];
                 const tint = ['text-[#5945F1]', 'text-[#0ea5e9]', 'text-[#16a34a]', 'text-[#ec4899]', 'text-[#f59e0b]'][i % 5];
@@ -233,7 +233,7 @@ export const AiDashboardPanel: React.FC<{
             </div>
 
             {/* the composer */}
-            <div className="mt-auto overflow-hidden rounded-xl border border-[#CCC6FB]">
+            <div className="overflow-hidden rounded-xl border border-[#CCC6FB]">
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}

@@ -308,13 +308,13 @@ export const AiDock: React.FC<AiDockContext> = (ctx) => {
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 w-[min(720px,calc(100vw-2rem))] print:hidden">
+    <div className="fixed bottom-4 right-4 z-40 w-[min(480px,calc(100vw-2rem))] print:hidden">
       <AiDashboardPanel
         data={data}
         greeting={greeting}
         storageKey={ctx.tab}
         onClose={() => shut(true)}
-        className="h-[min(550px,calc(100vh-2rem))]"
+        className="h-[min(800px,calc(100vh-2rem))]"
       />
     </div>
   );
