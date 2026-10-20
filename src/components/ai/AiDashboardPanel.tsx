@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { answerFromPage } from './aiAnswer';
-import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
+import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiGhost } from './AiGhost';
 import robot from '../../assets/community/ai-robot.png';
@@ -55,7 +55,13 @@ export const AiDashboardPanel: React.FC<{
     text: string;
     /** Where this answer could take the person, if they want to go. */
     go?: { label: string; run: () => void };
+    /** What it looked at before answering, and how long that took. */
+    thought?: { seconds: number; steps: string[] };
   }[]>([]);
+  /** What it is doing right now, while the answer is still coming. */
+  const [thinking, setThinking] = useState<{ steps: string[]; done: number } | null>(null);
+  /** Which answers have their working opened. */
+  const [openThought, setOpenThought] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
   /** A file the person attached, with its text if we could read it. */
   const [file, setFile] = useState<{ name: string; size: number; text?: string } | null>(null);
@@ -98,17 +104,41 @@ export const AiDashboardPanel: React.FC<{
 
   const say = (text: string, go?: { label: string; run: () => void }) => {
     const t = text.trim();
-    if (!t) return;
-    const reply = readFile(t) ?? data.onAsk?.(t) ?? answerFromPage(data, t);
-    setChat((c) => [
-      ...c,
-      { id: Date.now(), from: 'you', text: t },
-      { id: Date.now() + 1, from: 'ai', text: reply, go },
-    ]);
-    setDraft('');
-  };
+    if (!t || thinking) return;
 
-  useEffect(() => { setTab(data.tabs[0]?.id ?? 'summary'); }, [storageKey, data.tabs]);
+    // What it actually consults, named plainly, so the wait says something
+    // true rather than filling time.
+    const steps = [
+      'Reading what is on this page',
+      file ? `Opening ${file.name}` : 'Checking the figures on this page',
+      'Putting the answer together',
+    ];
+
+    setChat((c) => [...c, { id: Date.now(), from: 'you', text: t }]);
+    setDraft('');
+    setThinking({ steps, done: 0 });
+
+    const started = Date.now();
+    const tick = (i: number) => {
+      window.setTimeout(() => {
+        if (i < steps.length) {
+          setThinking({ steps, done: i + 1 });
+          tick(i + 1);
+          return;
+        }
+        const reply = readFile(t) ?? data.onAsk?.(t) ?? answerFromPage(data, t);
+        setThinking(null);
+        setChat((c) => [...c, {
+          id: Date.now() + 1,
+          from: 'ai',
+          text: reply,
+          go,
+          thought: { seconds: Math.max(1, Math.round((Date.now() - started) / 1000)), steps },
+        }]);
+      }, 420);
+    };
+    tick(0);
+  };
 
   const pill = 'rounded-lg px-3 py-1.5 text-[14px] transition-colors';
 
@@ -255,6 +285,25 @@ export const AiDashboardPanel: React.FC<{
                       <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#5945F1]" aria-hidden />
                     )}
                     <span className="min-w-0">
+                      {m.thought && (
+                        <button
+                          type="button"
+                          onClick={() => setOpenThought(openThought === m.id ? null : m.id)}
+                          aria-expanded={openThought === m.id}
+                          className="mb-1.5 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[12px] text-[#64748b] transition-colors hover:text-[#0b1c30]"
+                        >
+                          <Sparkles className="h-3 w-3" aria-hidden />
+                          Thought for {m.thought.seconds}s
+                          <ChevronRight className={`h-3 w-3 transition-transform ${openThought === m.id ? 'rotate-90' : ''}`} aria-hidden />
+                        </button>
+                      )}
+                      {m.thought && openThought === m.id && (
+                        <span className="mb-2 block border-l border-[#CCC6FB] pl-3">
+                          {m.thought.steps.map((st) => (
+                            <span key={st} className="block py-0.5 text-[12.5px] text-[#64748b]">{st}</span>
+                          ))}
+                        </span>
+                      )}
                       <span className="block whitespace-pre-line">{m.text}</span>
                       {m.go && (
                         <button
@@ -269,6 +318,28 @@ export const AiDashboardPanel: React.FC<{
                     </span>
                   </span>
                 ))}
+                {thinking && (
+                  <span className="mr-auto flex max-w-[85%] flex-col gap-2 rounded-2xl rounded-bl-md bg-[#f5f4ff] px-3.5 py-3">
+                    <span className="flex items-center gap-2 text-[13.5px] font-medium text-[#5945F1]">
+                      <Sparkles className="h-4 w-4 animate-pulse" aria-hidden />
+                      Thinking it through
+                    </span>
+                    {thinking.steps.map((st, i) => (
+                      <span
+                        key={st}
+                        className={`flex items-center gap-2 border-l border-[#CCC6FB] pl-3 text-[13px] ${
+                          i < thinking.done ? 'text-[#0b1c30]' : 'text-[#94a3b8]'
+                        }`}
+                      >
+                        {i < thinking.done
+                          ? <Check className="h-3.5 w-3.5 shrink-0 text-[#5f7a00]" aria-hidden />
+                          : <span className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+                        {st}
+                        {i >= thinking.done ? '\u2026' : ''}
+                      </span>
+                    ))}
+                  </span>
+                )}
               </div>
             )}
 

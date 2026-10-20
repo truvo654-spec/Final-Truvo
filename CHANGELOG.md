@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.65.0] - 2026-10-09
+### Added
+- The chat shows its working. While an answer is coming it says "Thinking it through" and ticks off what it is consulting, one line at a time; when it lands, that collapses to a "Thought for 2s" chip above the answer, which opens again if you want to see what it looked at. The steps name real things, including the file you attached by name, rather than filling the wait with invented activity.
+
 ## [1.64.0] - 2026-10-09
 ### Changed
 - Pressing a suggestion in the chat answers it there instead of leaving the page. The reply arrives in the conversation and carries its own way out: a button underneath that says where it leads, so going is a second, deliberate press rather than something that happens to you.
