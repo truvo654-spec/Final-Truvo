@@ -202,8 +202,6 @@ export const AiDashboardPanel: React.FC<{
             market<span className="text-[#bef226]">syde</span>
           </span>
         </span>
-        <span className="shrink-0 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-bold text-white">AI</span>
-        <span className="shrink-0 rounded-full border border-white/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white/85">Beta</span>
 
         <nav aria-label="AI panel sections" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto no-scrollbar">
           {data.tabs.map((t) => (
