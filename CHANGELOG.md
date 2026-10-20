@@ -9,6 +9,13 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.87.0] - 2026-10-09
+### Added
+- The Points Earning sheet: fifteen sources, including the four that pay nothing. Connecting a broker, finishing a mission, completing a lesson and posting in the community are all written down as zero Points on purpose, because screens have promised otherwise and that is the thing to be able to check against.
+- pointsWithBoosts applies Partner, Campaign and Consistency together and holds them to the combined cap, returning Base Points and the multiplier separately so the member can be shown which is which: a promotion ending should not look like the baseline falling.
+### Note
+- Checked by running it: a hundred Base Points with a partner and a campaign boost become 225, and with everything at its maximum 250 rather than 360, flagged as capped.
+
 ## [1.86.0] - 2026-10-09
 ### Added
 - The Credits Spending sheet: the nine rules for what Credits buy, the backtest allowance of three, five, ten and thirty runs a month by level, and the fifteen Credits an extra run costs once that is spent, at the same price for everyone because it is usage rather than access.
