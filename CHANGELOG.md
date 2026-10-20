@@ -9,6 +9,15 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.56.0] - 2026-10-09
+### Changed
+- The AI dock keeps two tabs: Summary, which now carries the columns that used to be tabs of their own, and Suggestion, which lists what to ask or where to go next as things you can press. The strip that repeated those same prompts under the panel is gone.
+### Added
+- Openers for the AI Companion built from what the person actually has: the broker they connected by name, the signal in front of them, the level they are on and what the next one would give. Every one can be answered from data on hand, so none of them invites an answer the companion cannot give.
+- A daily allowance on the companion, priced the way the instrument analysis tools are: five questions a day at Rookie, fifteen at Climber, forty at Player, no limit at Elite. Below Elite a day without the limit can be bought with credits, discounted by level exactly as the tools are, through the same unlock dialog. The count says what is left and resets at midnight.
+### Note
+- The allowance and the openers are written and type check, but have not been seen running: the AI Companion has no address of its own and its menu entry is now hidden, so the test could not reach the page.
+
 ## [1.55.0] - 2026-10-09
 ### Changed
 - Strategy Builder, Portfolio Tracker, Price Alerts, Expert Advisors and the AI Companion are out of the Trade menu, on both desktop and mobile. The pages are untouched and still reachable by their addresses; only the menu entries are hidden, by the flags that already existed for exactly this. Trade now reads Trading Signals, Instrument Analysis, Economic Calendar and the Trading Journal.

@@ -1118,13 +1118,22 @@ export function toSpotlight(d: AiSectionData, pretext: string, suggestions: Spot
     headline: d.headline,
     overview: d.overview,
     stats: (d.chips ?? []).map((c) => ({ label: c.label, value: c.value, tone: c.tone === 'lime' ? 'good' : c.tone === 'pink' ? 'bad' : 'neutral' })),
+    // Two tabs only: what the feature says, and what to ask next. The
+    // columns that used to be tabs of their own read better underneath the
+    // summary than hidden behind headings nobody clicked.
     tabs: [
-      { id: 'summary', label: 'Summary', lines: [] },
-      ...(d.columns ?? []).map((c, i) => ({
-        id: `c${i}`,
-        label: c.title,
-        lines: c.items.map((it) => ({ label: it.title, body: it.text })),
-      })),
+      {
+        id: 'summary',
+        label: 'Summary',
+        lines: (d.columns ?? []).flatMap((c) =>
+          c.items.map((it) => ({ label: it.title, body: it.text })),
+        ),
+      },
+      {
+        id: 'suggestion',
+        label: 'Suggestion',
+        lines: suggestions.map((sg) => ({ label: sg.label, body: sg.sub ?? '' })),
+      },
     ],
     suggestions,
     statNotes,

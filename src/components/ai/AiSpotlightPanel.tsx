@@ -195,33 +195,26 @@ export const AiSpotlightPanel: React.FC<{
                     )}
                   </div>
                 )}
-                {(active?.lines ?? []).map((l, i) => (
-                  <Line key={l.label} line={l} delay={(first ? 160 : 0) + i * 140} reduced={!!reduced} />
-                ))}
+                {active?.id === 'suggestion'
+                  ? (data.suggestions ?? []).map((sg) => (
+                      <button
+                        key={sg.label}
+                        type="button"
+                        onClick={sg.onClick}
+                        className="flex w-full flex-col items-start gap-0.5 rounded-xl border border-[#ece9fb] bg-white px-3.5 py-2.5 text-left transition hover:border-[#5945F1] hover:bg-[#fbfbff]"
+                      >
+                        <span className="text-[13.5px] font-bold text-[#0b1c30]">{sg.label}</span>
+                        {sg.sub && <span className="text-[12.5px] leading-snug text-[#64748b]">{sg.sub}</span>}
+                      </button>
+                    ))
+                  : (active?.lines ?? []).map((l, i) => (
+                      <Line key={l.label} line={l} delay={(first ? 160 : 0) + i * 140} reduced={!!reduced} />
+                    ))}
               </div>
             )}
           </div>
 
-          {/* bottom strip: the feature's own suggestions, not a composer */}
-          {data.suggestions && data.suggestions.length > 0 && (
-            <div className="p-1.5 pt-0">
-              <div className="rounded-xl border border-[#ece9fb] bg-[#fbfbff] p-2.5">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">Where to go next</p>
-                <div className="flex flex-wrap gap-2">
-                  {data.suggestions.map((s) => (
-                    <button
-                      key={s.label}
-                      type="button"
-                      onClick={s.onClick}
-                      className="rounded-lg border border-[#d7d3fb] bg-white px-3 py-1.5 text-[13px] text-[#5945F1] transition-colors hover:bg-[#f1f0fe]"
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+
 
           {data.footnote && <p className="px-3 pb-3 text-[11px] leading-relaxed text-[#94a3b8]">{data.footnote}</p>}
         </>

@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { UnlockStateModal } from '../common/UnlockStateModal';
+import { aiAllowance, aiSuggestions, asksLeft, asksUsedToday, grantDayPass, recordAsk } from './aiAllowance';
 import { Send, Building2, GraduationCap, Newspaper, LineChart, HeartPulse, Compass, ShieldCheck, ChevronRight, Copy, ThumbsUp, ThumbsDown, Trash2, BookMarked, Gift, Wallet, FlaskConical, Bot, Users } from 'lucide-react';
 import { Broker, MarketSignal, UserProfile } from '../../types';
 import { PORTFOLIO_TRADES } from '../../data/portfolioData';
@@ -104,6 +106,12 @@ export const AiCompanionPage: React.FC<AiCompanionPageProps> = ({ user, brokers,
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>(saved.quizAnswers ?? {});
   const [feedback, setFeedback] = useState<Record<string, 'up' | 'down'>>(saved.feedback ?? {});
   const [input, setInput] = useState('');
+  /** Re-read after every ask so the count on screen stays true. */
+  const [asked, setAsked] = useState(() => asksUsedToday());
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const allowance = aiAllowance(user.tierLevel);
+  const left = useMemo(() => asksLeft(user.tierLevel), [user.tierLevel, asked]);
+  const outOfAsks = left !== null && left <= 0;
   const [thinking, setThinking] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -133,6 +141,9 @@ export const AiCompanionPage: React.FC<AiCompanionPageProps> = ({ user, brokers,
   const ask = (text: string) => {
     const t = text.trim();
     if (!t || thinking) return;
+    if (outOfAsks) { setUnlockOpen(true); return; }
+    recordAsk();
+    setAsked(asksUsedToday());
     setMessages((m) => [...m, { id: `u${Date.now()}`, role: 'user', text: t }]);
     setInput('');
     respond(() => route(t, ctx));
@@ -315,8 +326,33 @@ export const AiCompanionPage: React.FC<AiCompanionPageProps> = ({ user, brokers,
           </div>
 
           <div className="border-t border-[#f1f5f9] p-4 space-y-3">
+            {left !== null && (
+              <p className="flex flex-wrap items-center gap-2 text-[12.5px] text-slate-500">
+                <span>
+                  {left > 0
+                    ? `${left} of ${allowance.perDay} questions left today`
+                    : 'You have used today\u2019s questions'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setUnlockOpen(true)}
+                  className="font-bold text-[#5338ec] underline-offset-2 hover:underline"
+                >
+                  Unlock a day with credits
+                </button>
+              </p>
+            )}
             <div className="flex gap-2 overflow-x-auto pb-0.5">
-              {SURFACE_PROMPTS[active].map((p) => <button key={p} type="button" onClick={() => ask(p)} className="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#EEF0FE] text-[#5338ec] hover:bg-[#E0E3FC] transition-colors">{p}</button>)}
+              {[...aiSuggestions({ user, brokers, signals }), ...SURFACE_PROMPTS[active]].slice(0, 8).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => ask(p)}
+                  className="shrink-0 rounded-full bg-[#EEF0FE] px-3 py-1.5 text-xs font-semibold text-[#5338ec] transition-colors hover:bg-[#E0E3FC]"
+                >
+                  {p}
+                </button>
+              ))}
             </div>
             <div className="flex items-center gap-2">
               <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && ask(input)} aria-label="Ask the AI Companion" placeholder="Ask about brokers, a term, the market or your trades" className="flex-1 min-w-0 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30" />
@@ -384,6 +420,30 @@ export const AiCompanionPage: React.FC<AiCompanionPageProps> = ({ user, brokers,
           <p className="flex items-start gap-2 text-[11px] text-[#474556] leading-relaxed px-1"><ShieldCheck className="w-4 h-4 text-[#5338ec] shrink-0" />Answers are built from MarketSyde data on this page and show where they came from. The chat is kept on this device only. Not financial advice.</p>
         </div>
       </div>
+
+      <UnlockStateModal
+        open={unlockOpen}
+        title="AI Companion, without the daily limit"
+        description={`Use credits to lift today\u2019s limit from level ${allowance.freeAtLevel} for a certain period of time.`}
+        minLevel={allowance.freeAtLevel}
+        levelLabel={`Level ${user.tierLevel} (${user.rankTitle})`}
+        credits={user.sydeCredits}
+        durations={[{
+          id: '1d',
+          label: '1 day',
+          cost: allowance.dayPrice,
+          endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleString('en-US', {
+            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+          }),
+        }]}
+        onClose={() => setUnlockOpen(false)}
+        onConfirm={() => {
+          grantDayPass();
+          setAsked(asksUsedToday());
+          onShowToast('Ask away. The limit is off for today.');
+          setUnlockOpen(false);
+        }}
+      />
     </div>
   );
 };
