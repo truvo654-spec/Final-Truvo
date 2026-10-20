@@ -9,6 +9,13 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.85.0] - 2026-10-09
+### Added
+- The Credit Missions sheet in full: a hundred and sixteen missions across twenty-three groups, each with its difficulty, its reward and how often it can pay. These are the halved platform-activity figures, so what a member receives can still be less once the ledger's caps and repeat decay apply, and the reason is always shown.
+- parseLimit turns "1/day" and "2/week" into something the ledger can enforce, and returns nothing for "Once per broker" or "Max 5 a month" rather than pretending a daily cap covers them: those need their own handling and the caller is made to notice.
+### Note
+- Only a verified server event pays. A browser timer, a page view or a click the server never saw earns nothing, which is what keeps these from being farmed.
+
 ## [1.84.0] - 2026-10-09
 ### Added
 - The Feature Access sheet in full: sixty-eight features, each with the level that includes it, the lowest level allowed to buy it with Credits, and the workbook's own prices for one use, an hour, a day and seven days. Where a length is absent that length is not sold, and a feature with no unlock level cannot be bought at all, only reached by levelling up.
