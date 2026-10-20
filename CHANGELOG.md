@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.0.1] - 2026-10-09
+### Changed
+- The stock robot illustration is off the AI panel's Summary, replaced by the same gradient mark the Chat tab greets people with, so the two tabs look like one thing.
+### Fixed
+- The composer slid out of sight once a conversation got going: it sat inside the scrolling area, so each answer pushed it below the floor of the panel and there was no way to ask anything else. It stays on the floor now, with a soft shadow where the conversation passes behind it.
+
 ## [2.0.0] - 2026-10-09
 ### Changed
 - The rewards system follows the workbook's v2.9, which arrived three versions ahead of what the build had. The big one is the unlock rule: v2.7 opened every locked feature to Credits from LV1, so a Rookie can buy a day of an Elite tool. The reach limit no longer refuses anything, price is what limits how far a member goes, and the Research exception it replaced is gone with it.

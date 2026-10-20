@@ -4,7 +4,6 @@ import { answerFromPage } from './aiAnswer';
 import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Square, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiGhost } from './AiGhost';
-import robot from '../../assets/community/ai-robot.png';
 
 /**
  * The AI panel as a small dashboard: a greeting, the headline read, four
@@ -265,7 +264,12 @@ export const AiDashboardPanel: React.FC<{
                 <h2 className="mt-1.5 font-display text-[21px] font-bold leading-tight sm:text-[21px]">{data.headline}</h2>
                 {data.overview && <p className="mt-2.5 max-w-[520px] text-[14px] leading-relaxed text-[#474556] dark:text-white/70">{data.overview}</p>}
               </div>
-              <img src={robot} alt="" aria-hidden className="w-[150px] shrink-0 self-center rounded-xl lg:w-[185px]" />
+              <span
+                className="grid h-14 w-14 shrink-0 self-center place-items-center rounded-2xl bg-gradient-to-br from-[#5945F1] to-[#2a1b7a]"
+                aria-hidden
+              >
+                <Sparkles className="h-7 w-7 text-white/90" />
+              </span>
             </div>
 
             {data.visual && <div className="mt-4">{data.visual}</div>}
@@ -416,7 +420,7 @@ export const AiDashboardPanel: React.FC<{
             )}
 
             {/* openers for this feature, each one a place to go */}
-            <div className="mt-auto flex flex-wrap items-center justify-center gap-2">
+            <div className="mt-auto flex flex-wrap items-center justify-center gap-2 pb-1">
               {(data.suggestions ?? []).map((sg, i) => {
                 const Icon = [Compass, CalendarDays, MessageCircle, BarChart3, BookOpenCheck][i % 5];
                 const tint = ['text-[#5945F1]', 'text-[#0ea5e9]', 'text-[#16a34a]', 'text-[#ec4899]', 'text-[#f59e0b]'][i % 5];
@@ -453,7 +457,7 @@ export const AiDashboardPanel: React.FC<{
               className="hidden"
               onChange={(e) => { void takeFile(e.target.files?.[0]); e.target.value = ''; }}
             />
-            <div className="overflow-hidden rounded-xl border border-[#CCC6FB] bg-white dark:bg-transparent">
+            <div className="sticky bottom-0 overflow-hidden rounded-xl border border-[#CCC6FB] bg-white shadow-[0_-8px_16px_-12px_rgba(11,28,48,0.25)] dark:bg-[#170345]">
               <div className="relative">
                 <Search
                   className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#94a3b8]"
