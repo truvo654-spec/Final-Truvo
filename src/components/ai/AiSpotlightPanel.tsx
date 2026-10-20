@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Maximize2, Minus, RefreshCw, Sparkles } from 'lucide-react';
+import { ChevronDown, Maximize2, Minus, RefreshCw, Send, Sparkles } from 'lucide-react';
 
 /**
  * The spotlight panel: one shape for every AI read in the app.
@@ -45,6 +45,8 @@ export interface SpotlightData {
   suggestions?: SpotlightSuggestion[];
   /** One line explaining a figure, keyed by its label. */
   statNotes?: Record<string, string>;
+  /** Answers a typed question on the Chat tab. Returns what to say back. */
+  onAsk?: (text: string) => string;
   /** The feature's own presentation, shown instead of the stat tiles. */
   visual?: React.ReactNode;
   footnote?: string;
@@ -81,6 +83,18 @@ export const AiSpotlightPanel: React.FC<{
   const [minimised, setMinimised] = useState(false);
   const [run, setRun] = useState(0);
   const [reading, setReading] = useState(!reduced);
+  /** The conversation on the Chat tab, kept while the panel is open. */
+  const [chat, setChat] = useState<{ id: number; from: 'you' | 'ai'; text: string }[]>([]);
+  const [draft, setDraft] = useState('');
+
+  const say = (text: string) => {
+    const t = text.trim();
+    if (!t) return;
+    const reply = data.onAsk?.(t)
+      ?? 'I can read this page for you, point you somewhere useful, or explain a term. Try one of the suggestions.';
+    setChat((c) => [...c, { id: Date.now(), from: 'you', text: t }, { id: Date.now() + 1, from: 'ai', text: reply }]);
+    setDraft('');
+  };
   const read = useRef(false);
 
   useEffect(() => {
@@ -195,21 +209,67 @@ export const AiSpotlightPanel: React.FC<{
                     )}
                   </div>
                 )}
-                {active?.id === 'suggestion'
-                  ? (data.suggestions ?? []).map((sg) => (
-                      <button
-                        key={sg.label}
-                        type="button"
-                        onClick={sg.onClick}
-                        className="flex w-full flex-col items-start gap-0.5 rounded-xl border border-[#ece9fb] bg-white px-3.5 py-2.5 text-left transition hover:border-[#5945F1] hover:bg-[#fbfbff]"
+                {active?.id === 'chat' ? (
+                  <div className="space-y-2.5">
+                    {chat.length === 0 && (
+                      <p className="text-[13px] leading-relaxed text-[#64748b]">
+                        Ask me about what is on this page, or pick one of these.
+                      </p>
+                    )}
+
+                    {chat.map((m) => (
+                      <p
+                        key={m.id}
+                        className={`max-w-[85%] rounded-xl px-3 py-2 text-[13px] leading-relaxed ${
+                          m.from === 'you'
+                            ? 'ml-auto bg-[#5945F1] text-white'
+                            : 'bg-[#f5f4ff] text-[#0b1c30]'
+                        }`}
                       >
-                        <span className="text-[13.5px] font-bold text-[#0b1c30]">{sg.label}</span>
-                        {sg.sub && <span className="text-[12.5px] leading-snug text-[#64748b]">{sg.sub}</span>}
-                      </button>
-                    ))
-                  : (active?.lines ?? []).map((l, i) => (
-                      <Line key={l.label} line={l} delay={(first ? 160 : 0) + i * 140} reduced={!!reduced} />
+                        {m.text}
+                      </p>
                     ))}
+
+                    {/* openers for this feature, and where each one leads */}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {(data.suggestions ?? []).map((sg) => (
+                        <button
+                          key={sg.label}
+                          type="button"
+                          onClick={() => { say(sg.label); sg.onClick?.(); }}
+                          title={sg.sub}
+                          className="rounded-full bg-[#EEF0FE] px-3 py-1.5 text-[12px] font-semibold text-[#5338ec] transition-colors hover:bg-[#E0E3FC]"
+                        >
+                          {sg.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') say(draft); }}
+                        aria-label="Ask MarketSyde AI"
+                        placeholder="Ask about this page"
+                        className="min-w-0 flex-1 rounded-xl border border-[#ece9fb] px-3 py-2 text-[13px] outline-none focus:border-[#5945F1]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => say(draft)}
+                        disabled={!draft.trim()}
+                        aria-label="Send"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#5945F1] text-white transition-colors hover:bg-[#4a38d6] disabled:opacity-40"
+                      >
+                        <Send className="h-4 w-4" aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  (active?.lines ?? []).map((l, i) => (
+                    <Line key={l.label} line={l} delay={(first ? 160 : 0) + i * 140} reduced={!!reduced} />
+                  ))
+                )}
               </div>
             )}
           </div>

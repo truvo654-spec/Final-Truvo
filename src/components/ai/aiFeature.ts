@@ -1129,11 +1129,7 @@ export function toSpotlight(d: AiSectionData, pretext: string, suggestions: Spot
           c.items.map((it) => ({ label: it.title, body: it.text })),
         ),
       },
-      {
-        id: 'suggestion',
-        label: 'Suggestion',
-        lines: suggestions.map((sg) => ({ label: sg.label, body: sg.sub ?? '' })),
-      },
+      { id: 'chat', label: 'Chat', lines: [] },
     ],
     suggestions,
     statNotes,

@@ -100,7 +100,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
         headline: 'Cheapest spread is not the same as cheapest',
         overview: brokerListStrip(brokers as never),
         visual: <AiStrip bare text={brokerListStrip(brokers as never)} />,
-        tabs: [{ id: 'summary', label: 'Summary', lines: [] }],
+        tabs: [{ id: 'summary', label: 'Summary', lines: [] }, { id: 'chat', label: 'Chat', lines: [] }],
         suggestions: [
           { label: 'Compare side by side', sub: 'Costs, platforms and regulation in one table.', onClick: () => go('broker-comparison') },
           { label: 'See offers', sub: 'What is live for your level and when it closes.', onClick: () => go('promotions') },
@@ -116,7 +116,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
         headline: 'What the gap is worth at 20 lots a month',
         overview: n.text,
         visual: <AiMetrics bare headline="" note={n.text} metrics={brokers.slice(0, 4).map((x) => ({ label: x.name, value: x.spreadFrom }))} />,
-        tabs: [{ id: 'summary', label: 'Summary', lines: [] }],
+        tabs: [{ id: 'summary', label: 'Summary', lines: [] }, { id: 'chat', label: 'Chat', lines: [] }],
         suggestions: [
           { label: 'See offers', sub: 'What is live for your level and when it closes.', onClick: () => go('promotions') },
           { label: 'Open cashback', sub: 'Credited, pending and the rate per lot.', onClick: () => go('cashback-overview') },

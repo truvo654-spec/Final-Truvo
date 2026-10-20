@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, RefreshCw, Shield, Sun, X } from 'lucide-react';
+import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, RefreshCw, Send, Shield, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiGhost } from './AiGhost';
 import robot from '../../assets/community/ai-robot.png';
@@ -47,6 +47,18 @@ export const AiDashboardPanel: React.FC<{
   }, [run]);
   const active = useMemo(() => data.tabs.find((t) => t.id === tab) ?? data.tabs[0], [data.tabs, tab]);
   const first = active?.id === data.tabs[0]?.id;
+  /** The conversation on the Chat tab, for as long as the panel is open. */
+  const [chat, setChat] = useState<{ id: number; from: 'you' | 'ai'; text: string }[]>([]);
+  const [draft, setDraft] = useState('');
+
+  const say = (text: string) => {
+    const t = text.trim();
+    if (!t) return;
+    const reply = data.onAsk?.(t)
+      ?? 'I read this page and said what stood out. Pick a suggestion and I will take you there.';
+    setChat((c) => [...c, { id: Date.now(), from: 'you', text: t }, { id: Date.now() + 1, from: 'ai', text: reply }]);
+    setDraft('');
+  };
 
   useEffect(() => { setTab(data.tabs[0]?.id ?? 'summary'); }, [storageKey, data.tabs]);
 
@@ -159,6 +171,60 @@ export const AiDashboardPanel: React.FC<{
               </div>
             )}
           </>
+        ) : active?.id === 'chat' ? (
+          /* A conversation about this page: ask in your own words, or take an
+             opener, which both says it and takes you where it leads. */
+          <div className="space-y-3">
+            {chat.length === 0 && (
+              <p className="text-[14px] leading-relaxed text-[#474556] dark:text-white/70">
+                Ask me about what is on this page, or pick one of these.
+              </p>
+            )}
+            {chat.map((m) => (
+              <p
+                key={m.id}
+                className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-[14px] leading-relaxed ${
+                  m.from === 'you' ? 'ml-auto bg-[#5945F1] text-white' : 'bg-[#f5f4ff] text-[#0b1c30]'
+                }`}
+              >
+                {m.text}
+              </p>
+            ))}
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              {(data.suggestions ?? []).map((sg) => (
+                <button
+                  key={sg.label}
+                  type="button"
+                  title={sg.sub}
+                  onClick={() => { say(sg.label); sg.onClick?.(); }}
+                  className="rounded-full bg-[#EEF0FE] px-3 py-1.5 text-[12.5px] font-semibold text-[#5338ec] transition-colors hover:bg-[#E0E3FC]"
+                >
+                  {sg.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') say(draft); }}
+                aria-label="Ask MarketSyde AI"
+                placeholder="Ask about this page"
+                className="min-w-0 flex-1 rounded-xl border border-[#CCC6FB] px-3.5 py-2.5 text-[14px] outline-none focus:border-[#5945F1]"
+              />
+              <button
+                type="button"
+                onClick={() => say(draft)}
+                disabled={!draft.trim()}
+                aria-label="Send"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#5945F1] text-white transition-colors hover:bg-[#4a38d6] disabled:opacity-40"
+              >
+                <Send className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="space-y-5">
             {(active?.lines ?? []).map((l) => (
@@ -170,7 +236,7 @@ export const AiDashboardPanel: React.FC<{
           </div>
         )}
 
-        {data.suggestions && data.suggestions.length > 0 && (
+        {active?.id !== 'chat' && data.suggestions && data.suggestions.length > 0 && (
           <>
             <p className="mt-5 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#5945F1] dark:text-[#d6f73a]">
               <Compass className="h-4 w-4" aria-hidden />Where to go next

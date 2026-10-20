@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.57.0] - 2026-10-09
+### Changed
+- The dock's second tab is Chat, and it is a conversation rather than a list: ask in your own words and MarketSyde answers from what it just read on the page, with your message and its reply as bubbles. Each feature brings its own openers, and pressing one both says it and takes you where it leads, so every call to action differs by feature and none of them repeats what Summary already says.
+### Fixed
+- The chat was first written into AiSpotlightPanel, which nothing mounts. The panel the dock actually renders is AiDashboardPanel, which is where it lives now. The "where to go next" strip is hidden on the Chat tab, since the openers are already there.
+
 ## [1.56.1] - 2026-10-09
 ### Added
 - The AI Companion has its own address, /ai-companion, so it can be opened and linked to while its menu entry stays hidden.
