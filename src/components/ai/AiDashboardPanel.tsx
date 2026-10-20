@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { answerFromPage } from './aiAnswer';
-import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, RefreshCw, Search, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
+import { Activity, BarChart3, BookOpenCheck, CalendarDays, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiGhost } from './AiGhost';
 import robot from '../../assets/community/ai-robot.png';
@@ -277,6 +277,27 @@ export const AiDashboardPanel: React.FC<{
                 </span>
 
                 <span className="flex items-center gap-1">
+                  {/* bring one of the page's own figures into the question */}
+                  {(data.stats ?? []).length > 0 && (
+                    <span className="relative">
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const stat = (data.stats ?? []).find((st) => st.label === e.target.value);
+                          if (!stat) return;
+                          setDraft((d) => `${d ? `${d.trim()} ` : ''}about ${stat.label} (${stat.value})`.trim());
+                        }}
+                        aria-label="Attach a figure from this page"
+                        className="h-7 w-[86px] cursor-pointer appearance-none rounded-lg px-2 text-[12px] text-[#64748b] outline-none hover:bg-white dark:text-white/60"
+                      >
+                        <option value="">Attach</option>
+                        {(data.stats ?? []).map((st) => (
+                          <option key={st.label} value={st.label}>{st.label}: {st.value}</option>
+                        ))}
+                      </select>
+                      <Paperclip className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" aria-hidden />
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => setChat([])}

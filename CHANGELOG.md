@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [1.62.0] - 2026-10-09
+### Added
+- Attach on the chat composer, in the place the reference puts it. It attaches one of the figures the page is already showing: picking "Open signals: 5" writes "about Open signals (5)" into the box, which can then be edited or sent. It attaches what MarketSyde can actually read rather than offering a file picker for files it cannot.
+
 ## [1.61.0] - 2026-10-09
 ### Changed
 - The chat composer takes the shape of the reference: a search mark at the start of the box, "Ask me anything...", a send arrow at its corner, and a footer bar carrying a Suggestions picker on the left with Clear and Send on the right. Picking a suggestion fills the box rather than sending it, so it can be edited first.
