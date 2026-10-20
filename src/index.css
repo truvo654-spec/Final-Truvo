@@ -951,3 +951,49 @@ select:not(.appearance-none) {
 ::after {
   border-color: var(--border-default);
 }
+
+/* ── The AI's thinking, while it is happening ────────────────────────────── */
+
+/* A light sweeping across the words, so the wait reads as work rather than a
+   frozen label. Falls back to plain text where motion is not wanted. */
+@keyframes ai-think-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0% 0; }
+}
+
+.ai-shimmer {
+  background: linear-gradient(
+    90deg,
+    #8a7af6 0%,
+    #8a7af6 42%,
+    #2a1b7a 50%,
+    #8a7af6 58%,
+    #8a7af6 100%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: ai-think-shimmer 1.8s linear infinite;
+}
+
+/* Each consulted step arrives a beat after the one above it. */
+@keyframes ai-step-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-step-in {
+  animation: ai-step-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-shimmer {
+    animation: none;
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    color: #5945F1;
+  }
+  .ai-step-in { animation: none; }
+}

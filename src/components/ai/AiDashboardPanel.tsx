@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { aiAllowance, asksLeft, asksUsedToday, recordAsk } from './aiAllowance';
 import { answerFromPage } from './aiAnswer';
-import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Sun, X } from 'lucide-react';
+import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Square, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiGhost } from './AiGhost';
 import robot from '../../assets/community/ai-robot.png';
@@ -63,7 +63,7 @@ export const AiDashboardPanel: React.FC<{
     thought?: { seconds: number; steps: string[] };
   }[]>([]);
   /** What it is doing right now, while the answer is still coming. */
-  const [thinking, setThinking] = useState<{ steps: string[]; done: number } | null>(null);
+  const [thinking, setThinking] = useState<{ steps: string[]; done: number; seconds: number } | null>(null);
   /** Which answers have their working opened. */
   const [openThought, setOpenThought] = useState<number | null>(null);
   /** The answer still being said, if any. */
@@ -75,6 +75,17 @@ export const AiDashboardPanel: React.FC<{
   const stream = useRef<number | undefined>(undefined);
 
   useEffect(() => () => window.clearTimeout(stream.current), []);
+
+  /** True while it is thinking or still speaking. */
+  const chatBusy = thinking !== null || streaming !== null;
+
+  /** Cut it short: stop the clock, the steps and whatever is being said. */
+  const stop = () => {
+    window.clearTimeout(stream.current);
+    setStreaming(null);
+    setThinking(null);
+  };
+
   const [draft, setDraft] = useState('');
   /** A file the person attached, with its text if we could read it. */
   const [file, setFile] = useState<{ name: string; size: number; text?: string } | null>(null);
@@ -142,18 +153,23 @@ export const AiDashboardPanel: React.FC<{
 
     setChat((c) => [...c, { id: Date.now(), from: 'you', text: t }]);
     setDraft('');
-    setThinking({ steps, done: 0 });
+    setThinking({ steps, done: 0, seconds: 0 });
+    const clock = window.setInterval(
+      () => setThinking((t) => (t ? { ...t, seconds: t.seconds + 1 } : t)),
+      1000,
+    );
 
     const started = Date.now();
     const tick = (i: number) => {
       window.setTimeout(() => {
         if (i < steps.length) {
-          setThinking({ steps, done: i + 1 });
+          setThinking((t) => (t ? { ...t, done: i + 1 } : t));
           tick(i + 1);
           return;
         }
         const reply = readFile(t) ?? data.onAsk?.(t) ?? answerFromPage(data, t);
         const id = Date.now() + 1;
+        window.clearInterval(clock);
         setThinking(null);
         setChat((c) => [...c, {
           id,
@@ -349,7 +365,7 @@ export const AiDashboardPanel: React.FC<{
                       <span className="block whitespace-pre-line">
                         {m.text}
                         {streaming === m.id && (
-                          <span className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] animate-pulse bg-[#5945F1]" aria-hidden />
+                          <span className="ml-1 inline-block h-3.5 w-1 translate-y-0.5 animate-pulse rounded-full bg-[#5945F1]" aria-hidden />
                         )}
                       </span>
                       {m.go && (
@@ -366,25 +382,34 @@ export const AiDashboardPanel: React.FC<{
                   </span>
                 ))}
                 {thinking && (
-                  <span className="mr-auto flex max-w-[85%] flex-col gap-2 rounded-2xl rounded-bl-md bg-[#f5f4ff] px-3.5 py-3">
-                    <span className="flex items-center gap-2 text-[13.5px] font-medium text-[#5945F1]">
-                      <Sparkles className="h-4 w-4 animate-pulse" aria-hidden />
-                      Thinking it through
+                  <span className="mr-auto flex w-full max-w-[92%] flex-col gap-1 rounded-2xl rounded-bl-md bg-[#f5f4ff] px-3.5 py-3">
+                    <span className="flex items-center gap-2 text-[13px]">
+                      <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#8a7af6]" aria-hidden />
+                      <span className="ai-shimmer font-medium">Thinking it through</span>
+                      <span className="ml-auto font-mono text-[11px] tabular-nums text-[#94a3b8]">{thinking.seconds}s</span>
                     </span>
-                    {thinking.steps.map((st, i) => (
-                      <span
-                        key={st}
-                        className={`flex items-center gap-2 border-l border-[#CCC6FB] pl-3 text-[13px] ${
-                          i < thinking.done ? 'text-[#0b1c30]' : 'text-[#94a3b8]'
-                        }`}
-                      >
-                        {i < thinking.done
-                          ? <Check className="h-3.5 w-3.5 shrink-0 text-[#5f7a00]" aria-hidden />
-                          : <span className="h-3.5 w-3.5 shrink-0" aria-hidden />}
-                        {st}
-                        {i >= thinking.done ? '\u2026' : ''}
-                      </span>
-                    ))}
+
+                    <ol className="relative ml-[7px] border-l border-[#CCC6FB] pl-5 pt-1">
+                      {thinking.steps.slice(0, thinking.done + 1).map((st, i) => {
+                        const complete = i < thinking.done;
+                        return (
+                          <li
+                            key={st}
+                            className="ai-step-in relative flex min-h-8 items-center gap-3 py-1 text-[12.5px] leading-5"
+                            style={{ animationDelay: `${i * 45}ms` }}
+                          >
+                            <span className="absolute -left-[26px] grid size-[11px] place-items-center rounded-full bg-[#f5f4ff] ring-4 ring-[#f5f4ff]">
+                              {complete
+                                ? <Check className="h-3 w-3 text-[#5f7a00]" aria-label="Done" />
+                                : <span className="size-1.5 animate-pulse rounded-full bg-[#5945F1]" aria-label="In progress" />}
+                            </span>
+                            <span className={complete ? 'text-[#64748b]' : 'text-[#0b1c30]'}>
+                              {st}{complete ? '' : '\u2026'}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ol>
                   </span>
                 )}
               </div>
@@ -504,11 +529,12 @@ export const AiDashboardPanel: React.FC<{
                   </button>
                   <button
                     type="button"
-                    onClick={() => say(draft)}
-                    disabled={!draft.trim()}
+                    onClick={() => (chatBusy ? stop() : say(draft))}
+                    disabled={!chatBusy && !draft.trim()}
+                    aria-label={chatBusy ? 'Stop' : 'Send'}
                     className="flex h-7 items-center gap-1.5 rounded-lg bg-[#5945F1] px-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#4a38d6] disabled:opacity-40"
                   >
-                    Send
+                    {chatBusy ? <><Square className="h-3 w-3 fill-current" aria-hidden />Stop</> : 'Send'}
                   </button>
                 </span>
               </div>
