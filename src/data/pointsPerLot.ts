@@ -1,3 +1,5 @@
+import { PV_PER_POINT } from './rewardRules';
+
 /**
  * One source for how many points a traded lot is worth.
  * The figures match the published table on the Level & Points guide, so the
@@ -39,11 +41,28 @@ export const POINTS_PER_LOT: InstrumentPointRate[] = [
 /** Points for an instrument that is not in the table. */
 export const DEFAULT_POINTS_PER_LOT = 50;
 
-/** What a trade of this size on this instrument is worth, booster included. */
-export function pointsForTrade(symbol: string | undefined, lots: number): number {
+/**
+ * What a trade is worth in Points.
+ *
+ * The Final Beta sets one rule for every market: a trade becomes one fair
+ * dollar figure, its Point Value, and a dollar of Point Value is a Point. The
+ * per-instrument rates below are what a lot is worth in Point Value, so a lot
+ * of gold and a lot of a currency pair are compared on the same footing
+ * rather than each path inventing its own number.
+ *
+ * Boosts are deliberately not applied here. Partner, Campaign and Consistency
+ * Boosts multiply Points, but the member has to see them separately from Base
+ * Points, so whatever awards the trade adds them and says so.
+ */
+export function pointValueForTrade(symbol: string | undefined, lots: number): number {
   const key = (symbol || '').toUpperCase();
   const row = POINTS_PER_LOT.find((r) => r.symbol.toUpperCase() === key)
     ?? POINTS_PER_LOT.find((r) => key.startsWith(r.symbol.split('/')[0].toUpperCase()));
-  const rate = row ? row.points * (row.booster ?? 1) : DEFAULT_POINTS_PER_LOT;
-  return Math.max(1, Math.round(Math.max(0, lots) * rate));
+  const perLot = row ? row.points : DEFAULT_POINTS_PER_LOT;
+  return Math.max(0, lots) * perLot;
+}
+
+/** Base Points for a trade: one Point for each dollar of Point Value. */
+export function pointsForTrade(symbol: string | undefined, lots: number): number {
+  return Math.max(1, Math.round(pointValueForTrade(symbol, lots) / PV_PER_POINT));
 }

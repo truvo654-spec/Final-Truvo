@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { CASHBACK_SHARE } from '../data/rewardRules';
 import { MarketSignal, Broker, UserProfile } from '../types';
 import { REFERENCE_SIGNALS } from '../data/signalsReferenceData';
 import { TabMain, TabMainItem } from './common/TabMain';
@@ -402,7 +403,11 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
     if (!tradeModalBroker) return;
     const lots = parseFloat(tradeModalLotSize) || 1.0;
     const rebatePerLot = tradeModalBroker === 'Exness' ? 6.2 : tradeModalBroker === 'HFM' ? 3.8 : 3.25;
-    const totalRebate = +(lots * rebatePerLot * (1 + user.boostPercentage / 100)).toFixed(2);
+    // The level sets the share of commission returned, it does not multiply
+    // the rebate. Only Partner, Campaign and Consistency Boosts multiply, and
+    // those apply to Points rather than cashback.
+    const levelShare = CASHBACK_SHARE[Math.min(Math.max(user.tierLevel, 1), 4) - 1];
+    const totalRebate = +(lots * rebatePerLot * (levelShare / CASHBACK_SHARE[0])).toFixed(2);
 
     onSimulateTradeCashback(tradeModalBroker, lots, totalRebate);
     setTradeModalSuccess(true);
@@ -1194,9 +1199,9 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-slate-600">
-                    <span>Rookie Perk (+{user.boostPercentage}%):</span>
+                    <span>{user.rankTitle} rate ({Math.round(CASHBACK_SHARE[Math.min(Math.max(user.tierLevel, 1), 4) - 1] * 100)}% of commission):</span>
                     <span className="font-bold text-[#5030e5]">
-                      +${((parseFloat(tradeModalLotSize || '1') * 3.8 * user.boostPercentage) / 100).toFixed(2)}
+                      +${(parseFloat(tradeModalLotSize || '1') * 3.8 * CASHBACK_SHARE[Math.min(Math.max(user.tierLevel, 1), 4) - 1]).toFixed(2)}
                     </span>
                   </div>
                   <div className="pt-1 border-t border-slate-200 flex justify-between text-sm font-extrabold text-[#0b1c30]">

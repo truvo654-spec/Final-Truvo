@@ -1,4 +1,5 @@
 import React from 'react';
+import { CASHBACK_SHARE } from '../data/rewardRules';
 import { UserProfile } from '../types';
 import { GAMIFICATION_TIERS } from '../data/mockData';
 import { getNextTierInfo } from '../data/levelScenarios';
@@ -82,7 +83,7 @@ export const ViewPlanModal: React.FC<ViewPlanModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-[#474556] mt-1">
-                Currently earning {user.boostPercentage > 0 ? `+${user.boostPercentage}% boosted` : 'standard'} cashback on every executed lot.
+                Currently earning {Math.round(CASHBACK_SHARE[Math.min(Math.max(user.tierLevel, 1), 4) - 1] * 100)}% of the broker&rsquo;s commission on every executed lot.
               </p>
             </div>
 
