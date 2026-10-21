@@ -429,7 +429,7 @@ export const AiDashboardPanel: React.FC<{
                     key={sg.label}
                     type="button"
                     title={sg.sub}
-                    onClick={() => say(sg.label, sg.onClick ? { label: sg.sub ? `Open: ${sg.label}` : 'Take me there', run: sg.onClick } : undefined)}
+                    onClick={() => say(sg.label, sg.cta ?? (sg.onClick ? { label: `Open: ${sg.label}`, run: sg.onClick } : undefined))}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-[#0b1c30] transition hover:border-[#5945F1] hover:bg-[#f7f6ff] dark:bg-transparent dark:text-white"
                   >
                     <Icon className={`h-3.5 w-3.5 shrink-0 ${tint}`} aria-hidden />
@@ -572,7 +572,7 @@ export const AiDashboardPanel: React.FC<{
                     type="button"
                     onClick={() => {
                       setTab('chat');
-                      say(s.label, s.onClick ? { label: `Open: ${s.label}`, run: s.onClick } : undefined);
+                      say(s.label, s.cta ?? (s.onClick ? { label: `Open: ${s.label}`, run: s.onClick } : undefined));
                     }}
                     className={`flex items-start gap-3 rounded-xl p-3.5 text-left transition ${
                       rank === 'first'

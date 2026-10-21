@@ -49,7 +49,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
       const live = signals.filter((s) => s.action !== 'UPGRADE');
       return { ...toSpotlight(signalsRead(signals as never, user.tierLevel), `Read ${live.length} open signals`, [
         { label: 'Find a broker', sub: 'Compare spreads, cashback and regulation.', onClick: () => go('brokers') },
-        { label: 'Where the risk sits', sub: 'Which open calls lean the same way, and what that means together.', onClick: () => go('signals') },
+        { label: 'Where the risk sits', sub: 'Which open calls lean the same way, and what that means together.', onClick: () => go('signals'), cta: { label: 'Open the instrument', run: () => go('instrument-analysis') } },
         to('signals', 'The strongest call', 'The highest confidence open right now, and its reward to risk.'),
       ], {
         'Open signals': 'Calls currently published for your level.',
@@ -65,7 +65,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
         'Read the instrument list, signals and calendar',
         [
           { label: 'Open signals', sub: 'The current calls and how confident they are.', onClick: () => go('signals') },
-          { label: 'What changed today', sub: 'The movers on this list and how far they have come.', onClick: () => go('instrument-analysis') },
+          { label: 'What changed today', sub: 'The movers on this list and how far they have come.', onClick: () => go('instrument-analysis'), cta: { label: 'See the calls on these', run: () => go('signals') } },
           to('instrument-analysis', 'What is due on these', 'The releases that touch the instruments on this list.'),
         ],
         {
@@ -78,7 +78,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
     }
     case 'economic-calendar':
       return { ...toSpotlight(calendarRead(), 'Read the calendar', [
-        { label: 'What moves this week', sub: 'The high-impact releases and which pairs they touch.', onClick: () => go('economic-calendar') },
+        { label: 'What moves this week', sub: 'The high-impact releases and which pairs they touch.', onClick: () => go('economic-calendar'), cta: { label: 'See the calls affected', run: () => go('signals') } },
         { label: 'Review my positions', sub: 'Equity, drawdown and what is open.', onClick: () => go('portfolio-tracker') },
         to('instrument-analysis', 'What is due on these', 'The releases that touch the instruments on this list.'),
       ], {
@@ -89,7 +89,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
       }), visual: (() => { const n = calendarNext(); return n ? <AiNext bare {...n} /> : null; })() };
     case 'news':
       return { ...toSpotlight(newsRead(), "Read today's stories", [
-        { label: 'What the desk leans', sub: 'How today\u2019s coverage splits bullish against bearish.', onClick: () => go('news') },
+        { label: 'What the desk leans', sub: 'How today\u2019s coverage splits bullish against bearish.', onClick: () => go('news'), cta: { label: 'Look at the instruments', run: () => go('instrument-analysis') } },
         { label: 'Open the calendar', sub: 'Check upcoming news, earnings and events.', onClick: () => go('economic-calendar') },
         to('instrument-analysis', 'Look at the instruments', 'Prices, momentum and what is due next.'),
       ], {
@@ -101,8 +101,8 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
       }), visual: <AiVerdict bare {...newsVerdict()} /> };
     case 'education-hub':
       return { ...toSpotlight(educationRead(undefined, undefined, user.tierLevel), 'Read the course list', [
-        { label: 'Where to start', sub: 'The shortest course open at your level.', onClick: () => go('education-hub') },
-        { label: 'Who pays most per lot', sub: 'Cashback against spread, which is the pair that matters.', onClick: () => go('brokers') },
+        { label: 'Where to start', sub: 'The shortest course open at your level.', onClick: () => go('education-hub'), cta: { label: 'Open the course', run: () => go('education-hub') } },
+        { label: 'Who pays most per lot', sub: 'Cashback against spread, which is the pair that matters.', onClick: () => go('brokers'), cta: { label: 'Open cashback', run: () => go('cashback-overview') } },
         to('community', 'See what traders write', 'Articles and posts from the floor.'),
       ], {
         Courses: 'Courses open at your level.',
@@ -120,7 +120,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
         tabs: [{ id: 'summary', label: 'Summary', lines: [] }, { id: 'chat', label: 'Chat', lines: [] }],
         suggestions: [
           { label: 'Compare side by side', sub: 'Costs, platforms and regulation in one table.', onClick: () => go('broker-comparison') },
-          { label: 'What the table hides', sub: 'Regulation and execution, which no column ranks.', onClick: () => go('broker-comparison') },
+          { label: 'What the table hides', sub: 'Regulation and execution, which no column ranks.', onClick: () => go('broker-comparison'), cta: { label: 'Read the broker profiles', run: () => go('brokers') } },
           to('cashback-overview', 'Open cashback', 'Credited, pending and the rate per lot.'),
         ],
         footnote: 'Built from the broker directory. Not financial advice.',
@@ -135,8 +135,8 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
         visual: <AiMetrics bare headline="" note={n.text} metrics={brokers.slice(0, 4).map((x) => ({ label: x.name, value: x.spreadFrom }))} />,
         tabs: [{ id: 'summary', label: 'Summary', lines: [] }, { id: 'chat', label: 'Chat', lines: [] }],
         suggestions: [
-          { label: 'What closes soonest', sub: 'The offer with the least time left on it.', onClick: () => go('promotions') },
-          { label: 'What each one asks first', sub: 'Which need a connected account before they pay.', onClick: () => go('promotions') },
+          { label: 'What closes soonest', sub: 'The offer with the least time left on it.', onClick: () => go('promotions'), cta: { label: 'Open the offer', run: () => go('promotions') } },
+          { label: 'What each one asks first', sub: 'Which need a connected account before they pay.', onClick: () => go('promotions'), cta: { label: 'Connect a broker', run: () => go('brokers') } },
           to('connect-to-truvo', 'Connect an account', 'Track the costs and cashback automatically.'),
         ],
         footnote: 'Commission tiers and execution are not in this number.',
@@ -144,7 +144,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
     }
     case 'promotions':
       return { ...toSpotlight(promotionsRead(undefined, user.tierLevel), 'Read the live offers', [
-        { label: 'What I can claim now', sub: 'Open at your level, and what each one asks for first.', onClick: () => go('promotions') },
+        { label: 'What I can claim now', sub: 'Open at your level, and what each one asks for first.', onClick: () => go('promotions'), cta: { label: 'Connect an account', run: () => go('brokers') } },
         { label: 'See my level', onClick: () => go('points-credits') },
         to('brokers', 'Browse brokers', 'Who is behind these offers and how they trade.'),
       ], {
@@ -155,7 +155,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
       }), visual: (() => { const n = promotionsNext(undefined, user.tierLevel); return n ? <AiNext bare tone="amber" {...n} /> : null; })() };
     case 'portfolio-tracker':
       return { ...toSpotlight(portfolioRead([], 30), 'Read your accounts, trades and goals', [
-        { label: 'What is exposed', sub: 'Where the open positions overlap, and the drawdown behind them.', onClick: () => go('portfolio-tracker') },
+        { label: 'What is exposed', sub: 'Where the open positions overlap, and the drawdown behind them.', onClick: () => go('portfolio-tracker'), cta: { label: 'Open the chart', run: () => go('instrument-analysis') } },
         { label: 'Review alerts', sub: 'What is close to firing and what is noise.', onClick: () => go('alerts') },
         to('economic-calendar', 'Check the calendar', 'What can move these positions this week.'),
       ], {
@@ -166,8 +166,8 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
       }), visual: <AiMetrics bare {...portfolioMetrics([], 30)} /> };
     case 'alerts':
       return { ...toSpotlight(alertsRead(DEMO_ALERTS, user.tierLevel >= 3 ? 999 : user.tierLevel === 2 ? 25 : 5), 'Read your alerts and the live quotes', [
-        { label: 'Which are close to firing', sub: 'The levels price is nearest, and the ones just sitting there.', onClick: () => go('alerts') },
-        { label: 'Which are only noise', sub: 'Alerts that fire often and tell you nothing.', onClick: () => go('alerts') },
+        { label: 'Which are close to firing', sub: 'The levels price is nearest, and the ones just sitting there.', onClick: () => go('alerts'), cta: { label: 'Open the chart', run: () => go('instrument-analysis') } },
+        { label: 'Which are only noise', sub: 'Alerts that fire often and tell you nothing.', onClick: () => go('alerts'), cta: { label: 'Check what is due', run: () => go('economic-calendar') } },
         to('trading-journal', 'Open the journal', 'Write up what happened after the last one fired.'),
       ], {
         Armed: 'Alerts watching the market right now.',
@@ -178,12 +178,12 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
     case 'expert-advisors':
       return { ...toSpotlight(advisorsRead(undefined, user.tierLevel), 'Read the advisor listings', [
         { label: 'Open the backtest', sub: 'Test a playbook before you trade it again.', onClick: () => go('trading-journal') },
-        { label: 'What their drawdown looks like', sub: 'The deepest fall each advisor has taken, not just the return.', onClick: () => go('expert-advisors') },
+        { label: 'What their drawdown looks like', sub: 'The deepest fall each advisor has taken, not just the return.', onClick: () => go('expert-advisors'), cta: { label: 'Open the journal', run: () => go('trading-journal') } },
         to('strategy-builder', 'Build your own', 'Turn a rule set into something you can test.'),
       ]), visual: (() => { const n = advisorsCompare(); return n ? <AiCompare bare {...n} /> : null; })() };
     case 'trading-journal':
       return toSpotlight(journalRead(), 'Read your journal entries', [
-        { label: 'What the entries show', sub: 'The habit the last trades keep repeating.', onClick: () => go('trading-journal') },
+        { label: 'What the entries show', sub: 'The habit the last trades keep repeating.', onClick: () => go('trading-journal'), cta: { label: 'Read the coverage', run: () => go('news') } },
         { label: 'Build a strategy', sub: 'Turn the pattern into rules and test it.', onClick: () => go('strategy-builder') },
         to('trading-journal', 'What to test next', 'The pattern worth writing into a rule.'),
       ], {
@@ -195,7 +195,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
     case 'strategy-builder':
       return { ...toSpotlight(strategyRead(), 'Read your playbooks and their live trades', [
         { label: 'Open the journal', sub: 'Your entries, playbooks and reviews.', onClick: () => go('trading-journal') },
-        { label: 'Which playbook earns', sub: 'The strongest rule set by money, and the one giving it back.', onClick: () => go('strategy-builder') },
+        { label: 'Which playbook earns', sub: 'The strongest rule set by money, and the one giving it back.', onClick: () => go('strategy-builder'), cta: { label: 'Open the journal', run: () => go('trading-journal') } },
         to('expert-advisors', 'See expert advisors', 'Ready-made rule sets, with their drawdown shown.'),
       ], {
         Playbooks: 'Rule sets you have written up.',
@@ -205,14 +205,14 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
       }), visual: <AiChecklist bare {...backtestChecklist()} /> };
     case 'points-credits':
       return { ...toSpotlight(pointsRead(user), 'Read your level, credits and missions', [
-        { label: 'What expires first', sub: 'Points and Credits with the least time left.', onClick: () => go('points-credits') },
+        { label: 'What expires first', sub: 'Points and Credits with the least time left.', onClick: () => go('points-credits'), cta: { label: 'Spend them on an offer', run: () => go('promotions') } },
         { label: 'Open the leaderboard', sub: 'Where you stand and the gap above.', onClick: () => go('leaderboard') },
         to('education-hub', 'Finish a course', 'Lessons pay points and the certificate sticks.'),
       ]), visual: <AiProgress bare {...pointsProgress(user)} /> };
     case 'leaderboard':
       return toSpotlight(leaderboardRead(), 'Read the standings for this period', [
-        { label: 'What the gap is', sub: 'How far above you the next place sits.', onClick: () => go('leaderboard') },
-        { label: 'What the leader does differently', sub: 'Where the top of the board earns, by volume or by missions.', onClick: () => go('leaderboard') },
+        { label: 'What the gap is', sub: 'How far above you the next place sits.', onClick: () => go('leaderboard'), cta: { label: 'See how points are earned', run: () => go('points-credits') } },
+        { label: 'What the leader does differently', sub: 'Where the top of the board earns, by volume or by missions.', onClick: () => go('leaderboard'), cta: { label: 'See my missions', run: () => go('points-credits') } },
         to('community', 'See the community', 'Who is posting and what they are writing.'),
       ], {
         'Your rank': 'Where you sit on this board, this period.',
@@ -232,7 +232,7 @@ export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): Spo
       }));
       return toSpotlight(communityRead(posts, articles), 'Read the community', [
         { label: 'Open the articles', sub: 'What the community is writing this week.', onClick: () => go('community') },
-        { label: 'What is worth reading', sub: 'The posts with real engagement rather than the newest.', onClick: () => go('community') },
+        { label: 'What is worth reading', sub: 'The posts with real engagement rather than the newest.', onClick: () => go('community'), cta: { label: 'Open the feed', run: () => go('community') } },
         to('education-hub', 'Open the education hub', 'Courses that cover what the floor is arguing about.'),
       ]);
     }

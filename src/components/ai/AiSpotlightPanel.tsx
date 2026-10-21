@@ -33,6 +33,14 @@ export interface SpotlightSuggestion {
   /** One line under the label in the dashboard panel. */
   sub?: string;
   onClick: () => void;
+  /**
+   * Where the answer leads, when that is somewhere other than here.
+   *
+   * Most openers now ask something the current page can answer, so the plain
+   * onClick would go nowhere visible. This names a real destination and what
+   * to call it, and the answer carries it as a button.
+   */
+  cta?: { label: string; run: () => void };
 }
 
 export interface SpotlightData {

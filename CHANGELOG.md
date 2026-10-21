@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.4.0] - 2026-10-09
+### Added
+- Twenty openers now name where the answer leads, and say so: asking where the risk sits on signals answers there and offers "Open the instrument"; what the entries show in the journal offers to read the coverage; what expires first on points offers to spend them on an offer. The answer stays on the page and the move is a second, deliberate press.
+### Fixed
+- Five of those destinations were pages hidden behind feature flags, so pressing them would have dropped the person on the dashboard with no explanation. They lead somewhere real instead.
+### Note
+- Seen running: the answer appears without the page moving, and pressing the button lands on the instrument analysis page.
+
 ## [2.3.0] - 2026-10-09
 ### Fixed
 - Pressing a card under "Where to go next" did nothing visible when its answer lived on the page you were already standing on, which is most of them now that each feature asks its own question. Every card opens the Chat tab and answers there instead, with the way there as a button under the answer for anyone who wants it.
