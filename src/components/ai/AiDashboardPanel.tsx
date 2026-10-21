@@ -451,9 +451,11 @@ export const AiDashboardPanel: React.FC<{
                         )}
                       </span>
                       {m.rows && m.rows.length > 0 && (
-                        <span className="mt-2 flex flex-col gap-1.5">
+                        <span className={m.rows.some((r) => r.node)
+                          ? 'mt-2 -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 no-scrollbar'
+                          : 'mt-2 flex flex-col gap-1.5'}>
                           {m.rows.map((row) => row.node ? (
-                            <span key={row.title} className="block">{row.node}</span>
+                            <span key={row.title} className="block w-[72%] shrink-0 snap-start">{row.node}</span>
                           ) : (
                             <span
                               key={row.title}
@@ -547,8 +549,11 @@ export const AiDashboardPanel: React.FC<{
             {picks && picks.rows.length > 0 && (
               <div className="mt-3 flex flex-col gap-1.5">
                 <p className="text-[13px] leading-relaxed text-[#474556] dark:text-white/70">{picks.intro}</p>
+                <div className={picks.rows.some((r) => r.node)
+                  ? '-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 no-scrollbar'
+                  : 'flex flex-col gap-1.5'}>
                 {picks.rows.map((row) => row.node ? (
-                  <div key={row.title}>{row.node}</div>
+                  <div key={row.title} className="w-[72%] shrink-0 snap-start">{row.node}</div>
                 ) : (
                   <div
                     key={row.title}
@@ -569,6 +574,7 @@ export const AiDashboardPanel: React.FC<{
                     )}
                   </div>
                 ))}
+                </div>
               </div>
             )}
 

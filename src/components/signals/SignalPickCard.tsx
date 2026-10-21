@@ -32,12 +32,12 @@ export const SignalPickCard: React.FC<{ signal: SignalPick; onTrade?: () => void
   const sell = signal.direction === 'SELL';
 
   return (
-    <div className="rounded-2xl border border-[#CCC6FB] bg-white p-3.5 dark:bg-transparent">
+    <div className="h-full rounded-2xl border border-[#CCC6FB] bg-white p-3 dark:bg-transparent">
       <div className="flex items-center gap-2.5">
         {pair
           ? <CurrencyPairFlags pair={pair} className="h-8 w-8" />
           : <InstrumentIcon iconType={signal.ticker} name={signal.ticker} className="h-8 w-8" />}
-        <span className="font-display text-[17px] font-extrabold tracking-tight text-[#0b1c30] dark:text-white">
+        <span className="font-display text-[15.5px] font-extrabold tracking-tight text-[#0b1c30] dark:text-white">
           {signal.ticker}
         </span>
       </div>
@@ -46,8 +46,8 @@ export const SignalPickCard: React.FC<{ signal: SignalPick; onTrade?: () => void
         <dl className="min-w-0 flex-1 space-y-1">
           {([['Target', signal.target], ['Entry', signal.entry], ['Stop', signal.stop]] as const).map(([label, value]) => (
             <div key={label} className="flex items-baseline justify-between gap-3">
-              <dt className="text-[13px] text-[#64748b] dark:text-white/60">{label}</dt>
-              <dd className="font-display text-[15px] font-bold tabular-nums text-[#0b1c30] dark:text-white">
+              <dt className="text-[12.5px] text-[#64748b] dark:text-white/60">{label}</dt>
+              <dd className="font-display text-[14px] font-bold tabular-nums text-[#0b1c30] dark:text-white">
                 {money(value)}
               </dd>
             </div>
@@ -56,10 +56,10 @@ export const SignalPickCard: React.FC<{ signal: SignalPick; onTrade?: () => void
 
         {signal.confidence !== undefined && (
           <div className="shrink-0 text-right">
-            <span className="block font-display text-[26px] font-extrabold leading-none text-[#5945F1]">
+            <span className="block font-display text-[22px] font-extrabold leading-none text-[#5945F1]">
               {signal.confidence}%
             </span>
-            <span className="block text-[12px] font-bold text-[#5945F1]">Confidence</span>
+            <span className="block text-[11px] font-bold text-[#5945F1]">Confidence</span>
           </div>
         )}
       </div>
