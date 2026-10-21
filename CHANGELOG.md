@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.24.1] - 2026-10-09
+### Fixed
+- The stars were missing from the rating in the broker header. The app strips icons out of buttons that also hold text, a rule from index.css, and this button was caught by it: the five stars were rendering at nothing by nothing. It is marked to keep its icons now.
+
 ## [2.24.0] - 2026-10-09
 ### Added
 - The member rating sits at the top right of the broker header: the average, its stars, the review count and the share who would recommend. Pressing it opens the Reviews tab, so nobody has to hunt for it, and a broker with none says "No reviews yet · Be the first" rather than showing a hollow zero.

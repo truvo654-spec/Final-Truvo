@@ -212,6 +212,7 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
                       type="button"
                       onClick={() => setActiveTab('reviews')}
                       aria-label={`${stats.average} out of 5 from ${stats.count} reviews. Read them.`}
+                      data-keep-button-icons
                       className="shrink-0 rounded-xl border border-[#CCC6FB] px-3.5 py-2 text-right transition hover:border-[#5945F1] hover:bg-[#f8f7ff]"
                     >
                       <span className="flex items-center justify-end gap-1.5">
