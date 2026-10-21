@@ -9,6 +9,15 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.17.0] - 2026-10-09
+### Fixed
+- Audited every action button on every surface by pressing it and recording where it landed, rather than reading the code and assuming.
+- "Earn more" on the Points page led back to the Points page, so it did nothing. Points come from verified trading, so it now says "Earn Points" and goes to the signals.
+- Opening a story dropped the person on the dashboard: the app has a news-detail view but the router had never been told about it, so the path could not be resolved. It has an address now, /news/article, and Read opens the story itself.
+- The dashboard had no rows of its own and fell back to three links. It leads with the open calls, the same as the signals page.
+### Note
+- Where it lands now, button by button: Buy on the dashboard and on signals to that call, Trade to the broker, Read to the story, See how to Points, Earn Points to the signals. Claim, Start, Watch and the community Read reach their list rather than the single item, because the app has no single-item view for an offer, a course, a calendar entry or a post yet.
+
 ## [2.16.0] - 2026-10-09
 ### Fixed
 - The signals page showed brokers under "Where to go next". Its first opener was "Find a broker", and the panel took whichever question came first as the one to answer, so a page about calls filled up with cashback rates. The signals questions come first there now.

@@ -2426,7 +2426,12 @@ export default function App() {
               setActiveTab('signals');
               return;
             }
-            if (kind === 'article') { setActiveTab('news'); return; }
+            if (kind === 'article') {
+              const a = NEWS_ARTICLES.find((x) => x.id === id);
+              if (a) { setSelectedNewsArticle(a); setActiveTab('news-detail'); return; }
+              setActiveTab('news');
+              return;
+            }
             if (kind === 'course') { setActiveTab('education-hub'); return; }
             setActiveTab('promotions');
           }}

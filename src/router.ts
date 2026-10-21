@@ -251,6 +251,13 @@ export const ROUTE_REGISTRY: Record<string, RouteItem> = {
     category: 'Trade',
     breadcrumbs: ['Trade', 'Trading Journal'],
   },
+  'news-detail': {
+    path: '/news/article',
+    tab: 'news-detail',
+    title: 'Article | MarketSyde',
+    category: 'Knowledge Hub',
+    breadcrumbs: ['Knowledge Hub', 'News', 'Article'],
+  },
   'ai-companion': {
     path: '/ai-companion',
     tab: 'ai-companion',
@@ -458,6 +465,7 @@ export function pathToState(rawPath: string): RouteResolution {
   if (pathname === '/trade/strategy-builder' || pathname === '/strategy-builder') return { tab: 'strategy-builder' };
   if (pathname === '/trade/journal' || pathname === '/journal') return { tab: 'trading-journal' };
   if (pathname === '/ai-companion' || pathname === '/trade/ai-companion') return { tab: 'ai-companion' };
+  if (pathname === '/news/article') return { tab: 'news-detail' };
   if (pathname === '/news' || pathname === '/knowledge/news') return { tab: 'news' };
   if (pathname === '/knowledge/education' || pathname === '/education') return { tab: 'education-hub' };
 

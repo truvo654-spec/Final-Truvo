@@ -122,6 +122,8 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
 
       case 'Open signals':
       case 'See the calls on these':
+      case 'See my open positions':
+      case 'What the entries show':
       case 'The strongest call':
       case 'Where the risk sits':
         return signalRows.length
@@ -260,7 +262,7 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
                   subtitle={e.reason}
                   headline={{ value: String(left), label: left === 1 ? 'day left' : 'days left' }}
                   notes={[{ text: `counts towards your level for ${POINT_LIFE_DAYS} days`, tone: left <= 14 ? 'warn' : 'neutral' }]}
-                  action={{ label: 'Earn more', run: () => go('points-credits') }}
+                  action={{ label: 'Earn Points', run: () => go('signals') }}
                   quiet
                 />
               ),
@@ -348,6 +350,7 @@ function dockRead({ tab, user, signals, brokers, go }: AiDockContext): Spotlight
     case 'dashboard': {
       const d = dashboardRead(user, signals as never);
       return toSpotlight(d, 'Read your trades, the calendar and today\u2019s news', [
+        { label: 'See my open positions', sub: 'What is live right now and what it is exposed to.', onClick: () => go('signals') },
         { label: 'Open my journal', sub: 'Log trades, review results and track your progress.', onClick: () => go('trading-journal') },
         { label: 'See the calendar', sub: 'Check upcoming news, earnings and events.', onClick: () => go('economic-calendar') },
         to('news', 'Read the morning news', 'What moved overnight and what the desk is watching.'),
