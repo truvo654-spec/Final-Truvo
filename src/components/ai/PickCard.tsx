@@ -26,36 +26,35 @@ export interface PickCardProps {
   quiet?: boolean;
 }
 
-const TONES = {
-  neutral: 'text-[#64748b] dark:text-white/55',
-  good: 'text-[#16a34a]',
-  warn: 'text-[#b45309]',
+/** Notes read as quiet chips rather than loose coloured words. */
+const TONE_CHIPS = {
+  neutral: 'bg-[#f3f4f8] text-[#64748b]',
+  good: 'bg-[#eaf7ee] text-[#16803c]',
+  warn: 'bg-[#fdf2e3] text-[#b45309]',
 } as const;
 
 export const PickCard: React.FC<PickCardProps> = ({
   mark, title, subtitle, figures, headline, notes, action, quiet,
 }) => (
-  <div className="flex h-full flex-col rounded-2xl border border-[#CCC6FB] bg-white p-3 dark:bg-transparent">
+  <div className="flex h-full flex-col gap-3 rounded-2xl border border-[#CCC6FB] bg-white p-4 dark:bg-transparent">
     <div className="flex items-start gap-2.5">
       {mark && <span className="shrink-0">{mark}</span>}
       <span className="min-w-0 flex-1">
         <span className="block text-[14px] font-bold leading-snug text-[#0b1c30] dark:text-white">{title}</span>
         {subtitle && (
-          <span className="mt-0.5 block text-[12px] leading-snug text-[#64748b] dark:text-white/55">{subtitle}</span>
+          <span className="mt-1 block text-[12px] leading-snug text-[#64748b] dark:text-white/55">{subtitle}</span>
         )}
       </span>
       {headline && (
-        <span className="shrink-0 text-right">
-          <span className="block font-display text-[20px] font-extrabold leading-none text-[#5945F1]">
-            {headline.value}
-          </span>
-          <span className="block text-[11px] font-bold text-[#5945F1]">{headline.label}</span>
+        <span className="shrink-0 text-right leading-none">
+          <span className="block font-display text-[19px] font-extrabold text-[#5945F1]">{headline.value}</span>
+          <span className="mt-1 block text-[11px] font-semibold text-[#8a7af6]">{headline.label}</span>
         </span>
       )}
     </div>
 
     {figures && figures.length > 0 && (
-      <dl className="mt-2.5 space-y-1">
+      <dl className="space-y-1.5 border-t border-[#eceafb] pt-3">
         {figures.slice(0, 3).map((f) => (
           <div key={f.label} className="flex items-baseline justify-between gap-3">
             <dt className="text-[12.5px] text-[#64748b] dark:text-white/55">{f.label}</dt>
@@ -68,9 +67,14 @@ export const PickCard: React.FC<PickCardProps> = ({
     )}
 
     {notes && notes.length > 0 && (
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[#CCC6FB] pt-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         {notes.map((n) => (
-          <span key={n.text} className={`text-[12px] font-bold ${TONES[n.tone ?? 'neutral']}`}>{n.text}</span>
+          <span
+            key={n.text}
+            className={`rounded-md px-2 py-0.5 text-[11.5px] font-semibold ${TONE_CHIPS[n.tone ?? 'neutral']}`}
+          >
+            {n.text}
+          </span>
         ))}
       </div>
     )}
@@ -79,11 +83,11 @@ export const PickCard: React.FC<PickCardProps> = ({
       <button
         type="button"
         onClick={action.run}
-        className={`mt-auto w-full rounded-xl border pt-2 pb-2 font-display text-[14px] font-extrabold transition ${
+        className={`mt-auto w-full rounded-xl border py-2.5 font-display text-[14px] font-extrabold transition ${
           quiet
-            ? 'border-[#CCC6FB] text-[#5945F1] hover:bg-[#f5f4ff]'
+            ? 'border-[#CCC6FB] bg-white text-[#5945F1] hover:bg-[#f5f4ff]'
             : 'border-transparent bg-[#5945F1] text-white hover:bg-[#4a38d6]'
-        } ${figures || notes ? 'mt-2.5' : 'mt-3'}`}
+        }`}
       >
         {action.label}
       </button>

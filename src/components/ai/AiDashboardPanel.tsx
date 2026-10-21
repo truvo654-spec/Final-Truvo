@@ -548,7 +548,9 @@ export const AiDashboardPanel: React.FC<{
                 them a person can act on. */}
             {picks && picks.rows.length > 0 && (
               <div className="mt-3 flex flex-col gap-1.5">
-                <p className="text-[13px] leading-relaxed text-[#474556] dark:text-white/70">{picks.intro}</p>
+                {picks.intro !== data.overview && (
+                  <p className="text-[13px] leading-relaxed text-[#474556] dark:text-white/70">{picks.intro}</p>
+                )}
                 <div className={picks.rows.some((r) => r.node)
                   ? '-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 no-scrollbar'
                   : 'flex flex-col gap-1.5'}>
