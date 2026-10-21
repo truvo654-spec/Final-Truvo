@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.26.1] - 2026-10-09
+### Fixed
+- Buying a watchlist place said nothing. The card's own banner was set and then immediately overwritten by the usual "Asset Favourited" a line later, and the page has no toast host, so ten Credits left the account in silence. The purchase is now what the banner says, and being short says how short.
+### Note
+- Driven through the page this time rather than only in the rules: filling the five places a Rookie gets and pressing the star on a sixth instrument spends ten Credits, raises the limit to six, adds the instrument, and shows "+1 place for 10 Credits · BTC/USD added".
+
 ## [2.26.0] - 2026-10-09
 ### Added
 - The watchlist limit is wired to the level at last, not hard-coded: five places at Rookie, ten at Climber, fifteen at Player and no limit at Elite, plus whatever slots the member has bought.

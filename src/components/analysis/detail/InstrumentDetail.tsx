@@ -665,15 +665,25 @@ export function InstrumentDetail({
       const price = slotPrice('watchlist', snapshot.level.level, watchlistCount);
       if (price === null) {
         onToast(`Your watchlist is full at ${watchlistLimit} instruments and there are no more places to add.`);
+        setBanner(`Watchlist full at ${watchlistLimit}`);
+        window.setTimeout(() => setBanner(null), 4000);
         return;
       }
       const bought = buySlot(readLedger(), 'watchlist', price);
       if (!bought.ok) {
         onToast(`One more place costs ${price} Credits. You are ${bought.shortBy} short.`);
+        setBanner(`${bought.shortBy} Credits short of one more place`);
+        window.setTimeout(() => setBanner(null), 4000);
         return;
       }
       writeLedger(bought.ledger);
       onToast(`+1 watchlist place for ${price} Credits. ${instrument.symbol} added.`);
+      setWatching(true);
+      // Said instead of the usual "Asset Favourited", which would otherwise
+      // overwrite it a line later and hide the fact that Credits were spent.
+      setBanner(`+1 place for ${price} Credits \u00b7 ${instrument.symbol} added`);
+      window.setTimeout(() => setBanner(null), 4000);
+      return;
     }
     const nowWatching = !watching;
     setWatching(nowWatching);
