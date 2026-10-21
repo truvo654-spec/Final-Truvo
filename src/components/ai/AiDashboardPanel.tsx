@@ -189,6 +189,18 @@ export const AiDashboardPanel: React.FC<{
     }]);
   };
 
+  /**
+   * The rows behind this feature's first question, for the Summary tab.
+   *
+   * Only shown when the feature actually has something: no placeholder rows,
+   * and the links below stay either way.
+   */
+  const picks = useMemo(() => {
+    const first = (data.suggestions ?? [])[0];
+    if (!first || !data.onResults) return null;
+    return data.onResults(first.cta?.label ?? first.label) ?? data.onResults(first.label);
+  }, [data.suggestions, data.onResults]);
+
   const say = (text: string, go?: { label: string; run: () => void }) => {
     const t = text.trim();
     if (!t || thinking) return;
@@ -525,6 +537,35 @@ export const AiDashboardPanel: React.FC<{
             <p className="mt-5 flex items-center gap-2 text-[12px] font-bold uppercase tracking-wide text-[#5945F1] dark:text-[#d6f73a]">
               <Compass className="h-4 w-4" aria-hidden />Where to go next
             </p>
+            {/* What the first question actually brings back, shown here rather
+                than behind a link, so the figures above have something under
+                them a person can act on. */}
+            {picks && picks.rows.length > 0 && (
+              <div className="mt-3 flex flex-col gap-1.5">
+                <p className="text-[13px] leading-relaxed text-[#474556] dark:text-white/70">{picks.intro}</p>
+                {picks.rows.map((row) => (
+                  <div
+                    key={row.title}
+                    className="flex items-center gap-2 rounded-xl border border-[#CCC6FB] bg-white px-3 py-2.5 dark:bg-transparent"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] font-bold text-[#0b1c30] dark:text-white">{row.title}</span>
+                      <span className="block truncate text-[12.5px] text-[#64748b] dark:text-white/60">{row.meta}</span>
+                    </span>
+                    {row.action && (
+                      <button
+                        type="button"
+                        onClick={row.action.run}
+                        className="shrink-0 rounded-lg bg-[#5945F1] px-3 py-1.5 text-[12.5px] font-bold text-white transition hover:bg-[#4a38d6]"
+                      >
+                        {row.action.label}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="mt-3 grid gap-2.5">
               {data.suggestions.map((s, i) => {
                 const Icon = [BookOpenCheck, CalendarDays, MessageCircle][i % 3];

@@ -1,4 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { CALENDAR_NOW, ECONOMIC_EVENTS } from '../../data/economicCalendarData';
+import { NEWS_ARTICLES } from '../../data/newsData';
+import { POINT_LIFE_DAYS } from '../../data/rewardRules';
+import { isLive, readLedger } from '../../data/rewardsLedger';
 import { PROMOTIONS } from '../../data/promotionsData';
 import { COURSES } from '../../data/educationData';
 import { AiGhost } from './AiGhost';
@@ -60,6 +64,8 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
     switch (label) {
       case 'Find a broker':
       case 'Open: Find a broker':
+      case 'Compare side by side':
+      case 'What the table hides':
       case 'Who pays most per lot':
       case 'Connect a broker':
       case 'Connect an account':
@@ -109,6 +115,59 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
           }));
         return courses.length
           ? { intro: `${courses.length} courses open to you. Finishing a lesson pays Credits; Points come from trading alone.`, rows: courses }
+          : null;
+      }
+
+      case 'What moves this week':
+      case 'Open the calendar':
+      case 'Check what is due':
+      case 'What is due on these': {
+        // High impact first, soonest first, and only what is still ahead.
+        const now = new Date(CALENDAR_NOW).getTime();
+        const due = ECONOMIC_EVENTS
+          .filter((e) => new Date(e.at).getTime() >= now && e.impact === 'High')
+          .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+          .slice(0, 5)
+          .map((e) => ({
+            title: `${e.currency} \u00b7 ${e.title}`,
+            meta: `${new Date(e.at).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}${e.forecast ? ` \u00b7 forecast ${e.forecast}` : ''}`,
+            action: { label: 'Watch', run: () => go('economic-calendar') },
+          }));
+        return due.length
+          ? { intro: `The ${due.length} high-impact releases still ahead. These are the ones that usually move price on the minute.`, rows: due }
+          : null;
+      }
+
+      case 'What the desk leans':
+      case 'Read the coverage': {
+        const stories = NEWS_ARTICLES.slice(0, 5).map((a) => ({
+          title: a.headline,
+          meta: `${a.source} \u00b7 ${a.assetClass}${a.sentiment ? ` \u00b7 ${a.sentiment}` : ''}`,
+          action: { label: 'Read', run: () => go('news') },
+        }));
+        return stories.length
+          ? { intro: `${stories.length} stories the desk published. A lean is an opinion, not a forecast.`, rows: stories }
+          : null;
+      }
+
+      case 'What expires first':
+      case 'See my points':
+      case 'See my missions': {
+        const led = readLedger();
+        const soon = [...led.points]
+          .filter((e) => isLive(e, POINT_LIFE_DAYS))
+          .sort((a, b) => new Date(a.earnedAt).getTime() - new Date(b.earnedAt).getTime())
+          .slice(0, 5)
+          .map((e) => {
+            const left = POINT_LIFE_DAYS - Math.floor((Date.now() - new Date(e.earnedAt).getTime()) / 86_400_000);
+            return {
+              title: `${e.amount} Points \u00b7 ${e.reason}`,
+              meta: `${left} day${left === 1 ? '' : 's'} left before they stop counting towards your level`,
+              action: { label: 'Earn more', run: () => go('points-credits') },
+            };
+          });
+        return soon.length
+          ? { intro: `Your Points, oldest first. Each one counts towards your level for ${POINT_LIFE_DAYS} days from the day it was earned.`, rows: soon }
           : null;
       }
 
