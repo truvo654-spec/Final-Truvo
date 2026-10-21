@@ -9,6 +9,13 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.20.0] - 2026-10-09
+### Added
+- The seam the ledger has to move through is cut. useLedgerStore takes a read, a write and a trusted flag, and every caller already goes through it, so putting the record behind an API is one implementation rather than a rewrite of everything that touches Points and Credits.
+- Until that store is set, the Points page says plainly that the balance is kept on this device for the beta. A member can clear their browser and start again, and that is worth admitting on the page rather than only in a changelog.
+### Note
+- The three pages left unverified are fine, checked by waiting for them properly rather than reading them too early: /pricing opens on the Rookie tier, /account/notifications opens with its list, and the journal renders in about five seconds. The earlier failure on the journal was the test browser running out of resources after many navigations, not the page.
+
 ## [2.19.0] - 2026-10-09
 ### Changed
 - Brokers and offers are drawn with the brand mark the rest of the app already uses, not the stock photos the mock data points at. HFM is black on its own black square, XM is its red, Exness its yellow, and they look right offline and inside a published artifact where a remote image would never load at all.

@@ -40,10 +40,13 @@ no execution, no leverage, no bigger positions. This one is not a setting.
 
 - **No Admin panel.** `adminRequirements.ts` is the list to work through, not
   a description of something that exists.
-- **No server.** The ledger lives in `localStorage`, which means a member can
-  clear it. Every award needs to move server-side before launch; the workbook
-  is firm that only a verified server event pays, and a browser timer never
-  does.
+- **No server, but the seam is cut.** The ledger lives in `localStorage`, which
+  means a member can clear it. `useLedgerStore()` in `rewardsLedger.ts` takes a
+  `{ read, write, trusted }` object and every caller goes through it, so moving
+  the record behind an API is one implementation rather than a rewrite. Until
+  one is set, `isTrusted()` is false and the Points page says the balance is
+  kept on this device. Only a verified server event may pay: a browser timer
+  never does, whatever the catalogue says a task is worth.
 - **No boosts.** Partner, Campaign and Consistency Boosts are in the rules and
   the calculator but nothing issues them yet.
 - **No D6 milestones**, no expiry reminders, no first-use counter, no holding

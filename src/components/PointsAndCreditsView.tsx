@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { CREDIT_LIFE_DAYS, CREDIT_REMINDER_DAYS, POINT_LIFE_DAYS, POINT_REMINDER_DAYS } from '../data/rewardRules';
-import { activePoints, availableCredits, awardCredits, awardPoints, expiringSoon, readLedger, spendCredits, writeLedger } from '../data/rewardsLedger';
+import { activePoints, availableCredits, awardCredits, awardPoints, expiringSoon, isTrusted, readLedger, spendCredits, writeLedger } from '../data/rewardsLedger';
 import { CASHBACK_SHARE, CREDITS_PER_POINT, CONVERSION_CAP_POINTS, CONVERSION_WINDOW_DAYS } from '../data/rewardRules';
 
 /** What the daily market check-in pays, from the workbook's C01. */
@@ -923,6 +923,11 @@ export const PointsAndCreditsView: React.FC<PointsAndCreditsViewProps> = ({
             {ledgerView.soonPoints > 0 && (
               <span className="rounded-md bg-[#fef3c7] px-2 py-0.5 text-[12.5px] font-bold text-[#92400e]">
                 {ledgerView.soonPoints} Points expire within {POINT_REMINDER_DAYS[0]} days
+              </span>
+            )}
+            {!isTrusted() && (
+              <span className="rounded-md bg-[#eef0fe] px-2 py-0.5 text-[12px] font-semibold text-[#5338ec]">
+                Kept on this device for the beta
               </span>
             )}
             {ledgerView.soonCredits > 0 && (

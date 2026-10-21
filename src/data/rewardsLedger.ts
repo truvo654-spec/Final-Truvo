@@ -38,9 +38,39 @@ export interface Ledger {
 
 const KEY = 'marketsyde_ledger';
 
+/**
+ * Where the ledger lives.
+ *
+ * It is in the browser today, which means a member can clear it, and the
+ * workbook is firm that only a verified server event may pay. Rather than
+ * leave that as a note in a document, the seam is here: set a store and every
+ * read and write in the app goes through it instead, no caller changed.
+ *
+ * The server version is the same two methods over fetch. Until one is set,
+ * `isTrusted` stays false and anything that wants to be sure can ask.
+ */
+export interface LedgerStore {
+  read(): Ledger;
+  write(ledger: Ledger): void;
+  /** True once the record lives somewhere the member cannot edit. */
+  readonly trusted: boolean;
+}
+
+let store: LedgerStore | null = null;
+
+export function useLedgerStore(next: LedgerStore | null) {
+  store = next;
+}
+
+/** Whether the ledger is kept somewhere the member cannot edit. */
+export function isTrusted(): boolean {
+  return store?.trusted ?? false;
+}
+
 const EMPTY: Ledger = { points: [], credits: [], taskCounts: {} };
 
 export function readLedger(): Ledger {
+  if (store) return store.read();
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return { ...EMPTY };
@@ -56,6 +86,7 @@ export function readLedger(): Ledger {
 }
 
 export function writeLedger(ledger: Ledger) {
+  if (store) { store.write(ledger); return; }
   try {
     window.localStorage.setItem(KEY, JSON.stringify(ledger));
   } catch { /* storage can be blocked */ }
