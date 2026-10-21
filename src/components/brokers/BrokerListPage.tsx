@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { reviewStats } from './brokerReviewStats';
+import { ReviewStars } from './tabs/BrokerReviewsTabContent';
 import { Broker, UserProfile } from '../../types';
 import {
   Search,
@@ -287,6 +289,31 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
                           <span>Score</span>
                           <Info className="w-3 h-3 text-slate-400" />
                         </div>
+
+                        {/* What members said, which is a different thing from
+                            the score: one is ours, this one is theirs. */}
+                        {(() => {
+                          const stats = reviewStats(broker.id, broker.name);
+                          if (!stats) {
+                            return (
+                              <p className="mt-1 text-[11.5px] text-slate-400">No member reviews yet</p>
+                            );
+                          }
+                          return (
+                            <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                              <ReviewStars value={stats.average} size={13} />
+                              <span className="text-[12px] font-bold text-slate-700">{stats.average.toFixed(1)}</span>
+                              <span className="text-[11.5px] text-slate-500">
+                                ({stats.count} review{stats.count === 1 ? '' : 's'})
+                              </span>
+                              {stats.recommend !== null && (
+                                <span className="text-[11.5px] text-slate-500">
+                                  · {stats.recommend}% recommend
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         {/* Badges: Verified (Lime) & Top Pick (Pink) */}
                         <div className="flex flex-wrap items-center gap-1.5 mt-2">

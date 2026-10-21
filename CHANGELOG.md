@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.22.0] - 2026-10-09
+### Added
+- Every broker on the list carries what members said: stars, the average, how many reviews and the share who would recommend, or "No member reviews yet" where there are none. It sits under the MarketSyde score rather than replacing it, because the two are different things and should not be confused: one is ours, the other is theirs.
+- The AI panel can rank by reviews, which is a different question from who pays most. "Who traders rate" brings back the best reviewed with their average, their review count and their cashback beside it, each with a Read reviews button.
+- One set of figures behind all three places. The reviews tab, the list and the AI read the same averages from brokerReviewStats, so the list and the detail page cannot disagree.
+### Note
+- A broker with a handful of reviews is not ranked above one with many on the strength of two opinions: the average is pulled towards the middle until there are enough of them to mean something.
+
 ## [2.21.0] - 2026-10-09
 ### Added
 - A Reviews tab on the broker page, read the way Glassdoor reads: the average with its stars, the share who would recommend, a bar for each rating, then the reviews themselves with a headline, what the person trades, their relationship to the broker, ticks or crosses for recommend, withdrawals on time and would fund again, what works and what does not, and a Helpful count.

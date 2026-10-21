@@ -45,6 +45,20 @@ function readReviews(brokerId: string, seed: BrokerReview[]): BrokerReview[] {
   }
 }
 
+/** A row of stars at any size, used here and on the broker list. */
+export const ReviewStars: React.FC<{ value: number; size?: number }> = ({ value, size = 16 }) => (
+  <span className="inline-flex items-center gap-0.5" aria-label={`${value} out of 5`}>
+    {[1, 2, 3, 4, 5].map((n) => (
+      <Star
+        key={n}
+        style={{ width: size, height: size }}
+        className={n <= Math.round(value) ? 'fill-[#5945F1] text-[#5945F1]' : 'text-[#CCC6FB]'}
+        aria-hidden
+      />
+    ))}
+  </span>
+);
+
 function writeReview(brokerId: string, review: BrokerReview) {
   try {
     const raw = window.localStorage.getItem(STORE_KEY(brokerId));

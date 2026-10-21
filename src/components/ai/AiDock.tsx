@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { byRating } from '../brokers/brokerReviewStats';
 import { brokerMark } from '../brokers/brokerMark';
 import { CurrencyPairFlags, currencyPair } from '../common/CurrencyFlag';
 import { MarkWithFallback, PickCard } from './PickCard';
@@ -122,6 +123,45 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
     });
 
     switch (label) {
+      case 'Best reviewed brokers':
+      case 'What members say':
+      case 'Who traders rate': {
+        const rated = byRating(brokers ?? []).slice(0, 5).map((b) => ({
+          title: b.name,
+          meta: `${b.stats.average.toFixed(1)} from ${b.stats.count} reviews`,
+          node: (
+            <PickCard
+              mark={(() => {
+                const bm = brokerMark(b.name);
+                return (
+                  <span
+                    className="grid h-9 w-9 place-items-center rounded-lg px-1 text-[11px] font-extrabold leading-none"
+                    style={{ background: bm.bg, color: bm.color }}
+                  >
+                    {bm.text}
+                  </span>
+                );
+              })()}
+              title={b.name}
+              subtitle={b.stats.recommend !== null ? `${b.stats.recommend}% would recommend` : 'Too few answers to say'}
+              headline={{ value: b.stats.average.toFixed(1), label: 'out of 5' }}
+              figures={[
+                { label: 'Reviews', value: String(b.stats.count) },
+                { label: 'Cashback', value: `$${((b as never as { cashbackPerLot?: number }).cashbackPerLot ?? 0).toFixed(2)} a lot` },
+              ]}
+              action={{ label: 'Read reviews', run: openOr({ kind: 'broker', id: b.id }, 'brokers') }}
+              quiet
+            />
+          ),
+        }));
+        return rated.length
+          ? {
+              intro: `Ranked by what members wrote, not by what they pay. A broker with a handful of reviews is held back until there are enough of them to mean something.`,
+              rows: rated,
+            }
+          : null;
+      }
+
       case 'Find a broker':
       case 'Open: Find a broker':
       case 'Compare side by side':
@@ -403,7 +443,7 @@ function dockRead({ tab, user, signals, brokers, go }: AiDockContext): Spotlight
       return { ...toSpotlight(signalsRead(signals as never, user.tierLevel), `Read ${live.length} open signals`, [
         { label: 'Where the risk sits', sub: 'Which open calls lean the same way, and what that means together.', onClick: () => go('signals'), cta: { label: 'Open the instrument', run: () => go('instrument-analysis') } },
         to('signals', 'The strongest call', 'The highest confidence open right now, and its reward to risk.'),
-        { label: 'Find a broker', sub: 'Compare spreads, cashback and regulation.', onClick: () => go('brokers') },
+        { label: 'Who traders rate', sub: 'Ranked by member reviews rather than by what they pay.', onClick: () => go('brokers') },
       ], {
         'Open signals': 'Calls currently published for your level.',
         Long: 'How many of them point up.',
@@ -472,6 +512,7 @@ function dockRead({ tab, user, signals, brokers, go }: AiDockContext): Spotlight
         visual: <AiStrip bare text={brokerListStrip(brokers as never)} />,
         tabs: [{ id: 'summary', label: 'Summary', lines: [] }, { id: 'chat', label: 'Chat', lines: [] }],
         suggestions: [
+          { label: 'Who traders rate', sub: 'Ranked by member reviews rather than by what they pay.', onClick: () => go('brokers') },
           { label: 'Compare side by side', sub: 'Costs, platforms and regulation in one table.', onClick: () => go('broker-comparison') },
           { label: 'What the table hides', sub: 'Regulation and execution, which no column ranks.', onClick: () => go('broker-comparison'), cta: { label: 'Read the broker profiles', run: () => go('brokers') } },
           to('cashback-overview', 'Open cashback', 'Credited, pending and the rate per lot.'),
