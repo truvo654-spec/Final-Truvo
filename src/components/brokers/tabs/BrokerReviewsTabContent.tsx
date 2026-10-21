@@ -1,0 +1,460 @@
+import React, { useMemo, useState } from 'react';
+import { Check, Minus, Star, ThumbsUp, X } from 'lucide-react';
+import { awardCredits, readLedger, writeLedger } from '../../../data/rewardsLedger';
+
+/**
+ * What members say about a broker.
+ *
+ * Two rules shape this. A review is only worth reading if it cannot be bought
+ * or deleted by the company it is about, so reviews are never editable here
+ * and the page says so plainly. And a review has to be written by someone who
+ * is signed in, both so it can be attributed and so the Credits it earns can
+ * go to a real account; anyone else is asked to sign in rather than shown a
+ * form that will fail.
+ */
+
+export interface BrokerReview {
+  id: string;
+  rating: number;
+  title: string;
+  /** Said once, kept short: "Trading for 2 years", "Former client". */
+  role: string;
+  relationship: string;
+  location?: string;
+  recommend: boolean | null;
+  trustworthy: boolean | null;
+  wouldFundAgain: boolean | null;
+  pros: string;
+  cons: string;
+  postedOn: string;
+  helpful: number;
+  isNew?: boolean;
+}
+
+/** What writing one pays, from the workbook's social quests. */
+export const REVIEW_CREDITS = 20;
+
+const STORE_KEY = (brokerId: string) => `marketsyde_reviews_${brokerId}`;
+
+function readReviews(brokerId: string, seed: BrokerReview[]): BrokerReview[] {
+  try {
+    const raw = window.localStorage.getItem(STORE_KEY(brokerId));
+    return raw ? [...(JSON.parse(raw) as BrokerReview[]), ...seed] : seed;
+  } catch {
+    return seed;
+  }
+}
+
+function writeReview(brokerId: string, review: BrokerReview) {
+  try {
+    const raw = window.localStorage.getItem(STORE_KEY(brokerId));
+    const mine = raw ? (JSON.parse(raw) as BrokerReview[]) : [];
+    window.localStorage.setItem(STORE_KEY(brokerId), JSON.stringify([review, ...mine]));
+  } catch { /* storage can be blocked */ }
+}
+
+const Stars: React.FC<{ value: number; size?: number }> = ({ value, size = 16 }) => (
+  <span className="inline-flex items-center gap-0.5" aria-label={`${value} out of 5`}>
+    {[1, 2, 3, 4, 5].map((n) => (
+      <Star
+        key={n}
+        style={{ width: size, height: size }}
+        className={n <= Math.round(value) ? 'fill-[#5945F1] text-[#5945F1]' : 'text-[#CCC6FB]'}
+        aria-hidden
+      />
+    ))}
+  </span>
+);
+
+const Verdict: React.FC<{ label: string; value: boolean | null }> = ({ label, value }) => (
+  <span className="inline-flex items-center gap-1.5 text-[13px] text-[#0b1c30]">
+    {value === true && <Check className="h-4 w-4 text-[#16a34a]" aria-hidden />}
+    {value === false && <X className="h-4 w-4 text-[#dc2626]" aria-hidden />}
+    {value === null && <Minus className="h-4 w-4 text-[#94a3b8]" aria-hidden />}
+    {label}
+  </span>
+);
+
+export const BrokerReviewsTabContent: React.FC<{
+  brokerId: string;
+  brokerName: string;
+  isLoggedIn: boolean;
+  /** Opens the sign-in or sign-up dialog the rest of the app uses. */
+  onRequireLogin: () => void;
+  onShowToast?: (message: string) => void;
+  seedReviews?: BrokerReview[];
+}> = ({ brokerId, brokerName, isLoggedIn, onRequireLogin, onShowToast, seedReviews = [] }) => {
+  const [reviews, setReviews] = useState(() => readReviews(brokerId, seedReviews));
+  const [writing, setWriting] = useState(false);
+  const [sort, setSort] = useState<'relevant' | 'newest' | 'highest' | 'lowest'>('relevant');
+
+  const [draft, setDraft] = useState({
+    rating: 0,
+    title: '',
+    role: '',
+    relationship: 'Current client',
+    pros: '',
+    cons: '',
+    recommend: null as boolean | null,
+    trustworthy: null as boolean | null,
+    wouldFundAgain: null as boolean | null,
+  });
+
+  const stats = useMemo(() => {
+    if (reviews.length === 0) return null;
+    const total = reviews.reduce((sum, r) => sum + r.rating, 0);
+    const yes = reviews.filter((r) => r.recommend === true).length;
+    const counted = reviews.filter((r) => r.recommend !== null).length;
+    const spread = [5, 4, 3, 2, 1].map((n) => ({
+      stars: n,
+      count: reviews.filter((r) => Math.round(r.rating) === n).length,
+    }));
+    return {
+      average: total / reviews.length,
+      count: reviews.length,
+      recommend: counted ? Math.round((yes / counted) * 100) : null,
+      spread,
+    };
+  }, [reviews]);
+
+  const sorted = useMemo(() => {
+    const list = [...reviews];
+    if (sort === 'newest') return list.sort((a, b) => b.postedOn.localeCompare(a.postedOn));
+    if (sort === 'highest') return list.sort((a, b) => b.rating - a.rating);
+    if (sort === 'lowest') return list.sort((a, b) => a.rating - b.rating);
+    return list.sort((a, b) => b.helpful - a.helpful);
+  }, [reviews, sort]);
+
+  const start = () => {
+    if (!isLoggedIn) { onRequireLogin(); return; }
+    setWriting(true);
+  };
+
+  const ready = draft.rating > 0 && draft.title.trim().length >= 8 && draft.pros.trim().length >= 20;
+
+  const submit = () => {
+    if (!isLoggedIn) { onRequireLogin(); return; }
+    if (!ready) return;
+
+    const review: BrokerReview = {
+      id: `r${Date.now()}`,
+      rating: draft.rating,
+      title: draft.title.trim(),
+      role: draft.role.trim() || 'Trader',
+      relationship: draft.relationship,
+      recommend: draft.recommend,
+      trustworthy: draft.trustworthy,
+      wouldFundAgain: draft.wouldFundAgain,
+      pros: draft.pros.trim(),
+      cons: draft.cons.trim(),
+      postedOn: new Date().toISOString().slice(0, 10),
+      helpful: 0,
+      isNew: true,
+    };
+    writeReview(brokerId, review);
+    setReviews((r) => [review, ...r]);
+    setWriting(false);
+
+    // Paid through the ledger like any other task, so the daily and weekly
+    // caps hold and a second review of the same broker pays less.
+    const paid = awardCredits(readLedger(), {
+      task: `review:${brokerId}`,
+      amount: REVIEW_CREDITS,
+      reason: `Reviewed ${brokerName}`,
+      social: true,
+    });
+    writeLedger(paid.ledger);
+    onShowToast?.(paid.awarded > 0
+      ? `Thanks. +${paid.awarded} Credits for reviewing ${brokerName}.`
+      : paid.note ?? 'Thanks for the review.');
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-[#CCC6FB] bg-white p-5">
+        <h3 className="font-display text-[20px] font-extrabold text-[#0b1c30]">{brokerName} reviews</h3>
+
+        <p className="mt-3 flex items-start gap-2 rounded-xl bg-[#f5f4ff] px-3.5 py-2.5 text-[13px] leading-relaxed text-[#474556]">
+          <span aria-hidden>ℹ️</span>
+          Brokers cannot edit or remove what members write here. Reviews are opinions from
+          traders, not advice, and a good experience is not a promise of profit.
+        </p>
+
+        {stats ? (
+          <>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="font-display text-[40px] font-extrabold leading-none text-[#5945F1]">
+                {stats.average.toFixed(1)}
+              </span>
+              <Stars value={stats.average} size={22} />
+              <span className="text-[13px] text-[#64748b]">({stats.count} reviews)</span>
+            </div>
+
+            {stats.recommend !== null && (
+              <p className="mt-2 text-[15px] font-bold text-[#0b1c30]">
+                {stats.recommend}% would recommend this broker
+              </p>
+            )}
+
+            <div className="mt-4 space-y-1.5">
+              {stats.spread.map((row) => (
+                <div key={row.stars} className="flex items-center gap-2.5">
+                  <span className="w-3 text-[12.5px] text-[#64748b]">{row.stars}</span>
+                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-[#eceafb]">
+                    <span
+                      className="block h-full rounded-full bg-[#5945F1]"
+                      style={{ width: `${stats.count ? (row.count / stats.count) * 100 : 0}%` }}
+                    />
+                  </span>
+                  <span className="w-6 text-right text-[12.5px] tabular-nums text-[#64748b]">{row.count}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="mt-4 text-[14px] text-[#64748b]">
+            Nobody has reviewed {brokerName} yet. Yours would be the first.
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={start}
+          className="mt-5 w-full rounded-xl bg-[#5945F1] py-3 font-display text-[15px] font-extrabold text-white transition hover:bg-[#4a38d6] sm:w-auto sm:px-6"
+        >
+          Write a review · earn {REVIEW_CREDITS} Credits
+        </button>
+        {!isLoggedIn && (
+          <p className="mt-2 text-[12.5px] text-[#64748b]">
+            You will be asked to sign in first, so the review can be attributed and the Credits
+            can reach your account.
+          </p>
+        )}
+      </div>
+
+      {writing && (
+        <div className="rounded-2xl border border-[#CCC6FB] bg-white p-5">
+          <h4 className="font-display text-[17px] font-extrabold text-[#0b1c30]">
+            Your review of {brokerName}
+          </h4>
+
+          <p className="mt-1 text-[12.5px] text-[#64748b]">
+            Write what you would want to read before funding an account. Once it is posted you
+            cannot edit it, and neither can the broker.
+          </p>
+
+          <div className="mt-4">
+            <span className="block text-[13px] font-bold text-[#0b1c30]">Overall rating</span>
+            <span className="mt-1.5 flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                  onClick={() => setDraft((d) => ({ ...d, rating: n }))}
+                  className="p-0.5"
+                >
+                  <Star
+                    className={`h-7 w-7 transition ${n <= draft.rating ? 'fill-[#5945F1] text-[#5945F1]' : 'text-[#CCC6FB] hover:text-[#8a7af6]'}`}
+                    aria-hidden
+                  />
+                </button>
+              ))}
+            </span>
+          </div>
+
+          <label className="mt-4 block">
+            <span className="block text-[13px] font-bold text-[#0b1c30]">Headline</span>
+            <input
+              value={draft.title}
+              onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+              placeholder="Sum it up in a line"
+              className="mt-1.5 w-full rounded-xl border border-[#CCC6FB] px-3.5 py-2.5 text-[14px] outline-none focus:border-[#5945F1]"
+            />
+          </label>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="block text-[13px] font-bold text-[#0b1c30]">What you trade</span>
+              <input
+                value={draft.role}
+                onChange={(e) => setDraft((d) => ({ ...d, role: e.target.value }))}
+                placeholder="Forex swing trader"
+                className="mt-1.5 w-full rounded-xl border border-[#CCC6FB] px-3.5 py-2.5 text-[14px] outline-none focus:border-[#5945F1]"
+              />
+            </label>
+            <label className="block">
+              <span className="block text-[13px] font-bold text-[#0b1c30]">Your relationship</span>
+              <select
+                value={draft.relationship}
+                onChange={(e) => setDraft((d) => ({ ...d, relationship: e.target.value }))}
+                className="mt-1.5 w-full rounded-xl border border-[#CCC6FB] bg-white px-3.5 py-2.5 text-[14px] outline-none focus:border-[#5945F1]"
+              >
+                <option>Current client</option>
+                <option>Former client</option>
+                <option>Demo account only</option>
+              </select>
+            </label>
+          </div>
+
+          <label className="mt-4 block">
+            <span className="block text-[13px] font-bold text-[#0b1c30]">What works</span>
+            <textarea
+              value={draft.pros}
+              onChange={(e) => setDraft((d) => ({ ...d, pros: e.target.value }))}
+              rows={3}
+              placeholder="Execution, spreads, withdrawals, support"
+              className="mt-1.5 w-full resize-none rounded-xl border border-[#CCC6FB] px-3.5 py-2.5 text-[14px] outline-none focus:border-[#5945F1]"
+            />
+          </label>
+
+          <label className="mt-4 block">
+            <span className="block text-[13px] font-bold text-[#0b1c30]">What does not</span>
+            <textarea
+              value={draft.cons}
+              onChange={(e) => setDraft((d) => ({ ...d, cons: e.target.value }))}
+              rows={3}
+              placeholder="Be specific. "
+              className="mt-1.5 w-full resize-none rounded-xl border border-[#CCC6FB] px-3.5 py-2.5 text-[14px] outline-none focus:border-[#5945F1]"
+            />
+          </label>
+
+          <div className="mt-4 space-y-2.5">
+            {([
+              ['recommend', 'Would you recommend this broker?'],
+              ['trustworthy', 'Did withdrawals arrive as promised?'],
+              ['wouldFundAgain', 'Would you fund an account again?'],
+            ] as const).map(([key, question]) => (
+              <div key={key} className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[13.5px] text-[#0b1c30]">{question}</span>
+                <span className="flex gap-1.5">
+                  {([['Yes', true], ['No', false], ['Not sure', null]] as const).map(([label, value]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setDraft((d) => ({ ...d, [key]: value }))}
+                      className={`rounded-lg border px-3 py-1.5 text-[12.5px] font-bold transition ${
+                        draft[key] === value
+                          ? 'border-[#5945F1] bg-[#f1f0fe] text-[#5945F1]'
+                          : 'border-[#CCC6FB] text-[#64748b] hover:border-[#5945F1]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!ready}
+              className="rounded-xl bg-[#5945F1] px-5 py-2.5 font-display text-[14px] font-extrabold text-white transition hover:bg-[#4a38d6] disabled:bg-[#cdc7f5]"
+            >
+              Post review
+            </button>
+            <button
+              type="button"
+              onClick={() => setWriting(false)}
+              className="rounded-xl border border-[#CCC6FB] px-4 py-2.5 text-[14px] font-bold text-[#64748b] transition hover:border-[#5945F1] hover:text-[#5945F1]"
+            >
+              Cancel
+            </button>
+            {!ready && (
+              <span className="text-[12.5px] text-[#94a3b8]">
+                A rating, a headline and a few words on what works are needed.
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-2xl border border-[#CCC6FB] bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#CCC6FB] px-5 py-3.5">
+          <span className="text-[13px] text-[#64748b]">{reviews.length} reviews</span>
+          <label className="flex items-center gap-2 text-[13px] text-[#64748b]">
+            Sort by
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as typeof sort)}
+              className="rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[13px] font-bold text-[#0b1c30] outline-none"
+            >
+              <option value="relevant">most helpful</option>
+              <option value="newest">newest</option>
+              <option value="highest">highest rated</option>
+              <option value="lowest">lowest rated</option>
+            </select>
+          </label>
+        </div>
+
+        {sorted.length === 0 ? (
+          <p className="px-5 py-8 text-center text-[14px] text-[#64748b]">
+            No reviews yet.
+          </p>
+        ) : (
+          <ul className="divide-y divide-[#eceafb]">
+            {sorted.map((r) => (
+              <li key={r.id} className="px-5 py-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <span className="font-display text-[15px] font-extrabold text-[#0b1c30]">
+                      {r.rating.toFixed(1)}
+                    </span>
+                    <Stars value={r.rating} />
+                  </span>
+                  <span className="text-[13px] text-[#94a3b8]">{r.postedOn}</span>
+                </div>
+
+                {r.isNew && (
+                  <span className="mt-2 inline-block rounded-md bg-[#eaf7ee] px-2 py-0.5 text-[11.5px] font-bold text-[#16803c]">
+                    New
+                  </span>
+                )}
+
+                <h4 className="mt-2 font-display text-[16px] font-extrabold leading-snug text-[#0b1c30]">
+                  {r.title}
+                </h4>
+
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-[#f3f4f8] px-2 py-0.5 text-[12px] text-[#64748b]">{r.role}</span>
+                  <span className="rounded-md bg-[#f3f4f8] px-2 py-0.5 text-[12px] text-[#64748b]">{r.relationship}</span>
+                  {r.location && (
+                    <span className="rounded-md bg-[#f3f4f8] px-2 py-0.5 text-[12px] text-[#64748b]">{r.location}</span>
+                  )}
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                  <Verdict label="Recommend" value={r.recommend} />
+                  <Verdict label="Withdrawals on time" value={r.trustworthy} />
+                  <Verdict label="Would fund again" value={r.wouldFundAgain} />
+                </div>
+
+                <p className="mt-3 text-[13px] font-bold text-[#16803c]">What works</p>
+                <p className="mt-0.5 text-[14px] leading-relaxed text-[#474556]">{r.pros}</p>
+
+                {r.cons && (
+                  <>
+                    <p className="mt-3 text-[13px] font-bold text-[#b91c1c]">What does not</p>
+                    <p className="mt-0.5 text-[14px] leading-relaxed text-[#474556]">{r.cons}</p>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setReviews((list) => list.map((x) => (x.id === r.id ? { ...x, helpful: x.helpful + 1 } : x)))}
+                  className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-bold text-[#64748b] transition hover:text-[#5945F1]"
+                >
+                  <ThumbsUp className="h-4 w-4" aria-hidden />
+                  Helpful {r.helpful > 0 && `(${r.helpful})`}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+};

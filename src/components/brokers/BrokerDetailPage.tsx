@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { BrokerReviewsTabContent } from './tabs/BrokerReviewsTabContent';
+import { seedReviewsFor } from './brokerReviewSeeds';
 import { Broker, UserProfile, UserTierType } from '../../types';
-import {
-  Check,
-  ArrowLeft,
-  Calendar,
-  Wallet,
-  WalletCards,
-  Building2,
-  CircleDollarSign,
-  Users,
-} from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, Check, CircleDollarSign, Star, Users, Wallet, WalletCards } from 'lucide-react';
 import { AuthModal } from '../AuthModal';
 import { Tier1CashbackTab } from './tabs/Tier1CashbackTab';
 import { Tier1AccountTab } from './tabs/Tier1AccountTab';
@@ -33,6 +26,8 @@ interface BrokerDetailPageProps {
   onNavigateToRebateTable?: () => void;
   onOpenViewPlan?: () => void;
   onShowToast?: (msg: string) => void;
+  /** Opens the sign-in dialog, for anything a guest cannot do. */
+  onOpenAuth?: (mode: 'signin' | 'signup') => void;
   onOpenSignUp?: () => void;
   onLoginSuccess?: (email?: string, name?: string) => void;
 }
@@ -47,6 +42,7 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
   onNavigateToRebateTable,
   onOpenViewPlan,
   onShowToast,
+  onOpenAuth,
   onOpenSignUp,
   onLoginSuccess,
 }) => {
@@ -63,7 +59,7 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
 
   // Active Tab Scenario (Cashback, Account, Deposit & Withdrawal, Company)
   // If broker has no cashback, default to 'account'
-  const [activeTab, setActiveTab] = useState<'cashback' | 'account' | 'deposit-withdrawal' | 'company'>(
+  const [activeTab, setActiveTab] = useState<'cashback' | 'account' | 'deposit-withdrawal' | 'company' | 'reviews'>(
     broker.hasCashback !== false && (broker.cashbackPerLot > 0 || broker.maxCashback !== '-') ? 'cashback' : 'account'
   );
 
@@ -418,7 +414,7 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
          ───────────────────────────────────────────────────────────── */}
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#B8ABFB]/90 pb-0">
-          <FolderTabs<'cashback' | 'account' | 'deposit-withdrawal' | 'company'>
+          <FolderTabs<'cashback' | 'account' | 'deposit-withdrawal' | 'company' | 'reviews'>
             className="flex-1"
             tabs={
               hasCashbackProgram
@@ -443,6 +439,11 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
                       label: 'Company',
                       icon: <Building2 className="w-5 h-5" strokeWidth={2} />,
                     },
+                    {
+                      id: 'reviews',
+                      label: 'Reviews',
+                      icon: <Star className="w-5 h-5" strokeWidth={2} />,
+                    },
                   ]
                 : [
                     {
@@ -459,6 +460,11 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
                       id: 'company',
                       label: 'Company',
                       icon: <Building2 className="w-5 h-5" strokeWidth={2} />,
+                    },
+                    {
+                      id: 'reviews',
+                      label: 'Reviews',
+                      icon: <Star className="w-5 h-5" strokeWidth={2} />,
                     },
                   ]
             }
@@ -696,6 +702,17 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
         )}
 
         {/* SCENARIO 4: ABOUT COMPANY TAB */}
+        {activeTab === 'reviews' && (
+          <BrokerReviewsTabContent
+            brokerId={broker.id}
+            brokerName={broker.name}
+            isLoggedIn={isLoggedIn}
+            onRequireLogin={() => onOpenAuth?.('signin')}
+            onShowToast={onShowToast}
+            seedReviews={seedReviewsFor(broker.name)}
+          />
+        )}
+
         {activeTab === 'company' && (
           <>
             {userTier === 'tier-1' && (

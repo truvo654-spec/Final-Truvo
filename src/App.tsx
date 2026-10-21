@@ -1343,6 +1343,7 @@ export default function App() {
             }}
             onOpenViewPlan={() => setActiveTab('member-plan')}
             onShowToast={showToast}
+            onOpenAuth={(mode) => { setAuthModalMode(mode); setIsAuthModalOpen(true); }}
             onOpenSignUp={() => {
               setAuthModalMode('signup');
               setIsAuthModalOpen(true);

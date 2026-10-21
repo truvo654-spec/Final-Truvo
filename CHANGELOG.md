@@ -9,6 +9,15 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.21.0] - 2026-10-09
+### Added
+- A Reviews tab on the broker page, read the way Glassdoor reads: the average with its stars, the share who would recommend, a bar for each rating, then the reviews themselves with a headline, what the person trades, their relationship to the broker, ticks or crosses for recommend, withdrawals on time and would fund again, what works and what does not, and a Helpful count.
+- Writing one pays twenty Credits through the ledger, so the daily and weekly caps hold and a second review of the same broker pays less rather than paying again.
+- A guest pressing "Write a review" gets the sign-in dialog rather than a form that would fail, said plainly under the button: the review has to be attributable and the Credits have to reach an account.
+### Note
+- Two things are deliberate. A review cannot be edited once posted, by the member or the broker, and the page says so, because a review a company can have changed is not worth reading. The seeded examples are about execution, spreads and withdrawals and none of them claims a return, since a review promising profit is the kind this tab exists to keep out.
+- Seen running: the guest path opens the sign-in dialog and keeps the form hidden; as a member the form opens, posting adds the review, moves the count from three to four, writes a dated Credits entry and says "+20 Credits for reviewing HFM".
+
 ## [2.20.0] - 2026-10-09
 ### Added
 - The seam the ledger has to move through is cut. useLedgerStore takes a read, a write and a trusted flag, and every caller already goes through it, so putting the record behind an API is one implementation rather than a rewrite of everything that touches Points and Credits.
