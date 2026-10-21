@@ -66,7 +66,13 @@ export interface SpotlightData {
    */
   onResults?: (label: string) => {
     intro: string;
-    rows: { title: string; meta: string; action?: { label: string; run: () => void } }[];
+    rows: {
+      title: string;
+      meta: string;
+      action?: { label: string; run: () => void };
+      /** The feature's own card, where it has one worth showing whole. */
+      node?: React.ReactNode;
+    }[];
   } | null;
   /** The feature's own presentation, shown instead of the stat tiles. */
   visual?: React.ReactNode;

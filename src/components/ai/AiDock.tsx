@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { SignalPickCard } from '../signals/SignalPickCard';
 import { LEADERBOARD_USERS } from '../../data/mockData';
 import { CALENDAR_NOW, ECONOMIC_EVENTS } from '../../data/economicCalendarData';
 import { NEWS_ARTICLES } from '../../data/newsData';
@@ -52,13 +53,35 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
         action: { label: 'Trade', run: () => go('brokers') },
       }));
 
+    // A call is shown as the signals page draws it, because entry, stop and
+    // target only mean something together.
     const signalRows = open.slice(0, 3).map((sg) => {
-      const side = String((sg as never as { direction?: string }).direction ?? '').toUpperCase();
-      const conf = (sg as never as { confidence?: number }).confidence;
+      const row = sg as never as {
+        ticker?: string; pair?: string; symbol?: string; direction?: string;
+        entryPrice?: string | number; stopLoss?: string | number; takeProfit1?: string | number;
+        confidence?: number; riskReward?: string; timeframe?: string; validFor?: string;
+      };
+      const ticker = row.ticker ?? row.pair ?? row.symbol ?? 'Signal';
+      const side = String(row.direction ?? '').toUpperCase() === 'SELL' ? 'SELL' as const : 'BUY' as const;
       return {
-        title: `${(sg as never as { pair?: string; symbol?: string }).pair ?? (sg as never as { symbol?: string }).symbol ?? 'Signal'} \u00b7 ${side || 'BUY'}`,
-        meta: `${conf ? `${conf}% confidence` : 'confidence withheld'} \u00b7 ${(sg as never as { timeframe?: string }).timeframe ?? ''}`.trim(),
-        action: { label: side === 'SELL' ? 'Sell' : 'Buy', run: () => go('instrument-analysis') },
+        title: `${ticker} \u00b7 ${side}`,
+        meta: `${row.confidence ? `${row.confidence}% confidence` : 'confidence withheld'}`,
+        node: (
+          <SignalPickCard
+            signal={{
+              ticker,
+              direction: side,
+              entry: row.entryPrice,
+              stop: row.stopLoss,
+              target: row.takeProfit1,
+              confidence: row.confidence,
+              riskReward: row.riskReward,
+              timeframe: row.timeframe,
+              validFor: row.validFor,
+            }}
+            onTrade={() => go('instrument-analysis')}
+          />
+        ),
       };
     });
 

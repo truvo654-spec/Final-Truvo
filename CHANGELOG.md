@@ -9,6 +9,13 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.12.0] - 2026-10-09
+### Added
+- A signal in the AI panel is drawn as the signals page draws it: flags, target, entry and stop with the confidence beside them, the reward-to-risk and the period, and Buy or Sell across the foot. Summarising a call in a line of text left out the three numbers that decide whether it is worth taking, and those three only mean anything together, so they are shown as a set or not at all. Rows anywhere in the panel can now carry a feature's own card this way.
+### Fixed
+- A button under an answer was asked about its own label rather than the question it belonged to, so a feature that had rows for that question was never asked for them and the button just opened the page instead.
+- The card read the wrong field for the target and showed a dash where the first take-profit should be.
+
 ## [2.11.0] - 2026-10-09
 ### Added
 - The community and the leaderboard answer with rows like everything else, which completes the set: the five posts people actually answered, ranked by replies rather than recency, and the top five on the board with their Points, tier and cashback. Each carries the caveat that matters: a busy thread is a conversation rather than a recommendation, and the board rewards volume traded rather than accuracy.

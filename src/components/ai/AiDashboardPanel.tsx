@@ -57,11 +57,11 @@ export const AiDashboardPanel: React.FC<{
     from: 'you' | 'ai';
     text: string;
     /** Where this answer could take the person, if they want to go. */
-    go?: { label: string; run: () => void };
+    go?: { label: string; run: () => void; asked?: string };
     /** What it looked at before answering, and how long that took. */
     thought?: { seconds: number; steps: string[] };
     /** What it found, when the question was worked rather than answered. */
-    rows?: { title: string; meta: string; action?: { label: string; run: () => void } }[];
+    rows?: { title: string; meta: string; action?: { label: string; run: () => void }; node?: React.ReactNode }[];
   }[]>([]);
   /** What it is doing right now, while the answer is still coming. */
   const [thinking, setThinking] = useState<{ steps: string[]; done: number; seconds: number } | null>(null);
@@ -178,8 +178,10 @@ export const AiDashboardPanel: React.FC<{
    * actions. If it cannot, the button does what it always did and opens the
    * page, because a dead end is worse than a jump.
    */
-  const work = (go: { label: string; run: () => void }) => {
-    const found = data.onResults?.(go.label);
+  const work = (go: { label: string; run: () => void; asked?: string }) => {
+    const found = (go.asked ? data.onResults?.(go.asked) : null)
+      ?? data.onResults?.(go.label)
+      ?? data.onResults?.(go.label.replace(/^Open:\s*/, ''));
     if (!found || found.rows.length === 0) { go.run(); return; }
     setChat((c) => [...c, {
       id: Date.now(),
@@ -201,7 +203,7 @@ export const AiDashboardPanel: React.FC<{
     return data.onResults(first.label) ?? (first.cta ? data.onResults(first.cta.label) : null);
   }, [data.suggestions, data.onResults]);
 
-  const say = (text: string, go?: { label: string; run: () => void }) => {
+  const say = (text: string, go?: { label: string; run: () => void; asked?: string }) => {
     const t = text.trim();
     if (!t || thinking) return;
     if (left !== null && left <= 0) {
@@ -250,7 +252,7 @@ export const AiDashboardPanel: React.FC<{
           id,
           from: 'ai',
           text: '',
-          go,
+          go: go ? { ...go, asked: go.asked ?? t } : undefined,
           thought: { seconds: Math.max(1, Math.round((Date.now() - started) / 1000)), steps },
         }]);
 
@@ -450,7 +452,9 @@ export const AiDashboardPanel: React.FC<{
                       </span>
                       {m.rows && m.rows.length > 0 && (
                         <span className="mt-2 flex flex-col gap-1.5">
-                          {m.rows.map((row) => (
+                          {m.rows.map((row) => row.node ? (
+                            <span key={row.title} className="block">{row.node}</span>
+                          ) : (
                             <span
                               key={row.title}
                               className="flex items-center gap-2 rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-2"
@@ -543,7 +547,9 @@ export const AiDashboardPanel: React.FC<{
             {picks && picks.rows.length > 0 && (
               <div className="mt-3 flex flex-col gap-1.5">
                 <p className="text-[13px] leading-relaxed text-[#474556] dark:text-white/70">{picks.intro}</p>
-                {picks.rows.map((row) => (
+                {picks.rows.map((row) => row.node ? (
+                  <div key={row.title}>{row.node}</div>
+                ) : (
                   <div
                     key={row.title}
                     className="flex items-center gap-2 rounded-xl border border-[#CCC6FB] bg-white px-3 py-2.5 dark:bg-transparent"
