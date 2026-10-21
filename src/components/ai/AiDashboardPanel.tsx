@@ -508,26 +508,6 @@ export const AiDashboardPanel: React.FC<{
               </div>
             )}
 
-            {/* openers for this feature: its own, topped up from the figures */}
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1.5 no-scrollbar">
-              {openers.map((sg, i) => {
-                const Icon = [Compass, CalendarDays, MessageCircle, BarChart3, BookOpenCheck][i % 5];
-                const tint = ['text-[#5945F1]', 'text-[#0ea5e9]', 'text-[#16a34a]', 'text-[#ec4899]', 'text-[#f59e0b]'][i % 5];
-                return (
-                  <button
-                    key={sg.label}
-                    type="button"
-                    title={sg.sub}
-                    onClick={() => say(sg.label, sg.cta)}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-[#0b1c30] transition hover:border-[#5945F1] hover:bg-[#f7f6ff] dark:bg-transparent dark:text-white"
-                  >
-                    <Icon className={`h-3.5 w-3.5 shrink-0 ${tint}`} aria-hidden />
-                    {sg.label}
-                  </button>
-                );
-              })}
-            </div>
-
           </div>
         ) : (
           <div className="space-y-5">
@@ -623,6 +603,26 @@ export const AiDashboardPanel: React.FC<{
           className="hidden"
           onChange={(e) => { void takeFile(e.target.files?.[0]); e.target.value = ''; }}
         />
+        {/* openers for this feature: its own, topped up from the figures */}
+        <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-0.5 no-scrollbar">
+          {openers.map((sg, i) => {
+            const Icon = [Compass, CalendarDays, MessageCircle, BarChart3, BookOpenCheck][i % 5];
+            const tint = ['text-[#5945F1]', 'text-[#0ea5e9]', 'text-[#16a34a]', 'text-[#ec4899]', 'text-[#f59e0b]'][i % 5];
+            return (
+              <button
+                key={sg.label}
+                type="button"
+                title={sg.sub}
+                onClick={() => say(sg.label, sg.cta)}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-[#0b1c30] transition hover:border-[#5945F1] hover:bg-[#f7f6ff] dark:bg-transparent dark:text-white"
+              >
+                <Icon className={`h-3.5 w-3.5 shrink-0 ${tint}`} aria-hidden />
+                {sg.label}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="rounded-xl border border-[#CCC6FB] bg-white dark:bg-[#170345]">
           <div className="relative">
             <Search
