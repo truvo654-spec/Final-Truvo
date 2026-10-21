@@ -570,7 +570,10 @@ export const AiDashboardPanel: React.FC<{
                   <button
                     key={s.label}
                     type="button"
-                    onClick={s.onClick}
+                    onClick={() => {
+                      setTab('chat');
+                      say(s.label, s.onClick ? { label: `Open: ${s.label}`, run: s.onClick } : undefined);
+                    }}
                     className={`flex items-start gap-3 rounded-xl p-3.5 text-left transition ${
                       rank === 'first'
                         ? 'bg-[#5945F1] text-white hover:bg-[#4a38d6]'
