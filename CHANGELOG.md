@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.24.0] - 2026-10-09
+### Added
+- The member rating sits at the top right of the broker header: the average, its stars, the review count and the share who would recommend. Pressing it opens the Reviews tab, so nobody has to hunt for it, and a broker with none says "No reviews yet · Be the first" rather than showing a hollow zero.
+### Note
+- Seen running: HFM reads 3.6 out of 5 from 5 reviews with 75% recommend, and the figure matches the list and the Reviews tab because all three read the same source.
+
 ## [2.23.1] - 2026-10-09
 ### Fixed
 - The review form would not submit and would not say why. The rules were a rating, eight characters of headline and twenty on what works, but all three were reported as one vague sentence, so somebody who had typed four words could not tell which part was short. It now names exactly what is still needed, and the headline and what-works fields count down the characters left while you type.

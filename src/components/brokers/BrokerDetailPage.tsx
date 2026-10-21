@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { reviewStats } from './brokerReviewStats';
+import { ReviewStars } from './tabs/BrokerReviewsTabContent';
 import { BrokerReviewsTabContent } from './tabs/BrokerReviewsTabContent';
 import { seedReviewsFor } from './brokerReviewSeeds';
 import { Broker, UserProfile, UserTierType } from '../../types';
@@ -188,6 +190,43 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
                     Headquarter: {broker.headquarters || 'Cyprus'} | Founded: {broker.founded || 2009}
                   </p>
                 </div>
+
+                {/* What members said, at the top right. Pressing it opens the
+                    reviews rather than making anyone hunt for the tab. */}
+                {(() => {
+                  const stats = reviewStats(broker.id, broker.name);
+                  if (!stats) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('reviews')}
+                        className="shrink-0 rounded-xl border border-[#CCC6FB] px-3 py-2 text-right transition hover:border-[#5945F1]"
+                      >
+                        <span className="block text-[12px] text-slate-500">No reviews yet</span>
+                        <span className="block text-[12px] font-bold text-[#5945F1]">Be the first</span>
+                      </button>
+                    );
+                  }
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('reviews')}
+                      aria-label={`${stats.average} out of 5 from ${stats.count} reviews. Read them.`}
+                      className="shrink-0 rounded-xl border border-[#CCC6FB] px-3.5 py-2 text-right transition hover:border-[#5945F1] hover:bg-[#f8f7ff]"
+                    >
+                      <span className="flex items-center justify-end gap-1.5">
+                        <span className="font-display text-[22px] font-extrabold leading-none text-[#5945F1]">
+                          {stats.average.toFixed(1)}
+                        </span>
+                        <ReviewStars value={stats.average} size={14} />
+                      </span>
+                      <span className="mt-1 block text-[11.5px] text-slate-500">
+                        {stats.count} review{stats.count === 1 ? '' : 's'}
+                        {stats.recommend !== null && ` · ${stats.recommend}% recommend`}
+                      </span>
+                    </button>
+                  );
+                })()}
               </div>
 
               {/* Highlights Pill Banner */}
