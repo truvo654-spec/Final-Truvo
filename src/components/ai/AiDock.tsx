@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { brokerMark } from '../brokers/brokerMark';
+import { CurrencyPairFlags, currencyPair } from '../common/CurrencyFlag';
 import { MarkWithFallback, PickCard } from './PickCard';
 import { SignalPickCard } from '../signals/SignalPickCard';
 import { LEADERBOARD_USERS } from '../../data/mockData';
@@ -64,7 +66,17 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
         meta: `$${(b.cashbackPerLot ?? 0).toFixed(2)} a lot`,
         node: (
           <PickCard
-            mark={<MarkWithFallback src={b.logo} name={b.name} />}
+            mark={(() => {
+              const bm = brokerMark(b.name);
+              return (
+                <span
+                  className="grid h-9 w-9 place-items-center rounded-lg px-1 text-[11px] font-extrabold leading-none"
+                  style={{ background: bm.bg, color: bm.color }}
+                >
+                  {bm.text}
+                </span>
+              );
+            })()}
             title={b.name}
             subtitle={(b.regulations ?? [])[0] ?? 'See the profile for regulation'}
             headline={{ value: `$${(b.cashbackPerLot ?? 0).toFixed(2)}`, label: 'a lot' }}
@@ -146,6 +158,17 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
             meta: `${pr.brokerName} \u00b7 ${pr.value} \u00b7 ${pr.endsInDays <= 0 ? 'ends today' : `${pr.endsInDays} days left`}${pr.requiresConnected ? ' \u00b7 needs a connected account' : ''}`,
             node: (
               <PickCard
+                mark={(() => {
+                  const bm = brokerMark(pr.brokerName);
+                  return (
+                    <span
+                      className="grid h-9 w-9 place-items-center rounded-lg px-1 text-[11px] font-extrabold leading-none"
+                      style={{ background: bm.bg, color: bm.color }}
+                    >
+                      {bm.text}
+                    </span>
+                  );
+                })()}
                 title={pr.title}
                 subtitle={pr.brokerName}
                 headline={{ value: pr.value, label: pr.kind }}
@@ -208,6 +231,12 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
             meta: `${new Date(e.at).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}${e.forecast ? ` \u00b7 forecast ${e.forecast}` : ''}`,
             node: (
               <PickCard
+                mark={(() => {
+                  const pair = currencyPair(`${e.currency}/USD`);
+                  return pair
+                    ? <CurrencyPairFlags pair={[pair[0], pair[0]]} className="h-8 w-8" />
+                    : <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#f1f0fe] text-[11px] font-extrabold text-[#5945F1]">{e.currency}</span>;
+                })()}
                 title={e.title}
                 subtitle={`${e.currency} \u00b7 ${new Date(e.at).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`}
                 figures={[
@@ -263,6 +292,7 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
               meta: `${left} day${left === 1 ? '' : 's'} left before they stop counting towards your level`,
               node: (
                 <PickCard
+                  mark={<span className="grid h-9 w-9 place-items-center rounded-lg bg-[#f1f0fe] text-[16px]">\u2b50</span>}
                   title={`${e.amount} Points`}
                   subtitle={e.reason}
                   headline={{ value: String(left), label: left === 1 ? 'day left' : 'days left' }}

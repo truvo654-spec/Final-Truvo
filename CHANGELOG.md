@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.19.0] - 2026-10-09
+### Changed
+- Brokers and offers are drawn with the brand mark the rest of the app already uses, not the stock photos the mock data points at. HFM is black on its own black square, XM is its red, Exness its yellow, and they look right offline and inside a published artifact where a remote image would never load at all.
+### Added
+- The last three surfaces carry a mark too: a calendar entry shows the flag of the currency whose release it is, an offer shows the broker behind it, and a Points entry shows a star.
+### Note
+- Checked on all eight surfaces: stories and courses load their artwork, and brokers, offers, community, leaderboard, calendar and points each carry a mark that needs no network.
+
 ## [2.18.0] - 2026-10-09
 ### Added
 - The cards carry a picture of the thing. Stories and courses lead with their own artwork across the top, labelled with the market or category, and brokers, community posts and the leaderboard carry a mark beside the name. A thing is recognised by its image before its name is read, which is most of the point of showing it.
