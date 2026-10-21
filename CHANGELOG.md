@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.23.1] - 2026-10-09
+### Fixed
+- The review form would not submit and would not say why. The rules were a rating, eight characters of headline and twenty on what works, but all three were reported as one vague sentence, so somebody who had typed four words could not tell which part was short. It now names exactly what is still needed, and the headline and what-works fields count down the characters left while you type.
+
 ## [2.23.0] - 2026-10-09
 ### Added
 - Ratings by category on the reviews tab, scored on the six things traders actually compare brokers on: execution, spreads and fees, withdrawals, platform, support and transparency. Anything the writer has no view on is left blank rather than counted as a middling score.

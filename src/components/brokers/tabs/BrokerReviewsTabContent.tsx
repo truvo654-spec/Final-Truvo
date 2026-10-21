@@ -168,7 +168,17 @@ export const BrokerReviewsTabContent: React.FC<{
     setWriting(true);
   };
 
-  const ready = draft.rating > 0 && draft.title.trim().length >= 8 && draft.pros.trim().length >= 20;
+  const TITLE_MIN = 8;
+  const PROS_MIN = 20;
+
+  /** What is still missing, in the person's own terms. */
+  const missing = [
+    draft.rating === 0 && 'a rating',
+    draft.title.trim().length < TITLE_MIN && `a headline of at least ${TITLE_MIN} characters`,
+    draft.pros.trim().length < PROS_MIN && `at least ${PROS_MIN} characters on what works`,
+  ].filter(Boolean) as string[];
+
+  const ready = missing.length === 0;
 
   const submit = () => {
     if (!isLoggedIn) { onRequireLogin(); return; }
@@ -354,6 +364,11 @@ export const BrokerReviewsTabContent: React.FC<{
               placeholder="Sum it up in a line"
               className="mt-1.5 w-full rounded-xl border border-[#CCC6FB] px-3.5 py-2.5 text-[14px] outline-none focus:border-[#5945F1]"
             />
+            <span className="mt-1 block text-[11.5px] text-[#94a3b8]">
+              {draft.title.trim().length < TITLE_MIN
+                ? `${TITLE_MIN - draft.title.trim().length} more characters`
+                : 'Long enough'}
+            </span>
           </label>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -389,6 +404,11 @@ export const BrokerReviewsTabContent: React.FC<{
               placeholder="Execution, spreads, withdrawals, support"
               className="mt-1.5 w-full resize-none rounded-xl border border-[#CCC6FB] px-3.5 py-2.5 text-[14px] outline-none focus:border-[#5945F1]"
             />
+            <span className="mt-1 block text-[11.5px] text-[#94a3b8]">
+              {draft.pros.trim().length < PROS_MIN
+                ? `${PROS_MIN - draft.pros.trim().length} more characters`
+                : 'Long enough'}
+            </span>
           </label>
 
           <label className="mt-4 block">
@@ -447,8 +467,8 @@ export const BrokerReviewsTabContent: React.FC<{
               Cancel
             </button>
             {!ready && (
-              <span className="text-[12.5px] text-[#94a3b8]">
-                A rating, a headline and a few words on what works are needed.
+              <span className="text-[12.5px] text-[#b45309]">
+                Still needed: {missing.join(', ')}.
               </span>
             )}
           </div>
