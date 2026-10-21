@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { aiAllowance, asksLeft, asksUsedToday, recordAsk } from './aiAllowance';
 import { answerFromPage } from './aiAnswer';
-import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, Lightbulb, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Square, Sun, X } from 'lucide-react';
+import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, Lightbulb, MessageCircle, Paperclip, Plus, RefreshCw, Search, Send, Shield, Sparkles, Square, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiGhost } from './AiGhost';
 
@@ -67,6 +67,8 @@ export const AiDashboardPanel: React.FC<{
   const [openThought, setOpenThought] = useState<number | null>(null);
   /** The answer still being said, if any. */
   const [streaming, setStreaming] = useState<number | null>(null);
+  /** The plus menu above the composer. */
+  const [plusOpen, setPlusOpen] = useState(false);
   /** What the person's level allows today, and what they have used. */
   const [asked, setAsked] = useState(() => asksUsedToday());
   const allowance = aiAllowance(tierLevel);
@@ -124,6 +126,29 @@ export const AiDashboardPanel: React.FC<{
     }
     return `From ${file.name}:\n${hits.join('\n')}`;
   };
+
+  /**
+   * What to offer above the composer.
+   *
+   * The feature brings its own, and where that is fewer than five the figures
+   * on the page make up the rest: each one is a question this panel can answer
+   * from what it already read, so nothing here leads to a shrug.
+   */
+  const openers = useMemo(() => {
+    const own = (data.suggestions ?? []).map((sg) => ({
+      label: sg.label,
+      sub: sg.sub,
+      cta: sg.cta ?? (sg.onClick ? { label: `Open: ${sg.label}`, run: sg.onClick } : undefined),
+    }));
+    const fromStats = (data.stats ?? [])
+      .filter((st) => !own.some((o) => o.label.toLowerCase().includes(st.label.toLowerCase())))
+      .map((st) => ({
+        label: `What is ${st.label.toLowerCase()}?`,
+        sub: data.statNotes?.[st.label],
+        cta: undefined,
+      }));
+    return [...own, ...fromStats].slice(0, 5);
+  }, [data.suggestions, data.stats, data.statNotes]);
 
   const say = (text: string, go?: { label: string; run: () => void }) => {
     const t = text.trim();
@@ -419,9 +444,9 @@ export const AiDashboardPanel: React.FC<{
               </div>
             )}
 
-            {/* openers for this feature, each one a place to go */}
-            <div className="mt-auto flex flex-wrap items-center justify-center gap-2 pb-1">
-              {(data.suggestions ?? []).map((sg, i) => {
+            {/* openers for this feature: its own, topped up from the figures */}
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1.5 no-scrollbar">
+              {openers.map((sg, i) => {
                 const Icon = [Compass, CalendarDays, MessageCircle, BarChart3, BookOpenCheck][i % 5];
                 const tint = ['text-[#5945F1]', 'text-[#0ea5e9]', 'text-[#16a34a]', 'text-[#ec4899]', 'text-[#f59e0b]'][i % 5];
                 return (
@@ -429,8 +454,8 @@ export const AiDashboardPanel: React.FC<{
                     key={sg.label}
                     type="button"
                     title={sg.sub}
-                    onClick={() => say(sg.label, sg.cta ?? (sg.onClick ? { label: `Open: ${sg.label}`, run: sg.onClick } : undefined))}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-[#0b1c30] transition hover:border-[#5945F1] hover:bg-[#f7f6ff] dark:bg-transparent dark:text-white"
+                    onClick={() => say(sg.label, sg.cta)}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[12.5px] font-medium text-[#0b1c30] transition hover:border-[#5945F1] hover:bg-[#f7f6ff] dark:bg-transparent dark:text-white"
                   >
                     <Icon className={`h-3.5 w-3.5 shrink-0 ${tint}`} aria-hidden />
                     {sg.label}
@@ -457,7 +482,7 @@ export const AiDashboardPanel: React.FC<{
               className="hidden"
               onChange={(e) => { void takeFile(e.target.files?.[0]); e.target.value = ''; }}
             />
-            <div className="sticky bottom-0 overflow-hidden rounded-xl border border-[#CCC6FB] bg-white shadow-[0_-8px_16px_-12px_rgba(11,28,48,0.25)] dark:bg-[#170345]">
+            <div className="sticky bottom-0 rounded-xl border border-[#CCC6FB] bg-white shadow-[0_-8px_16px_-12px_rgba(11,28,48,0.25)] dark:bg-[#170345]">
               <div className="relative">
                 <Search
                   className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#94a3b8]"
@@ -470,7 +495,7 @@ export const AiDashboardPanel: React.FC<{
                   aria-label="Ask MarketSyde AI"
                   placeholder="Ask me anything..."
                   rows={3}
-                  className="w-full resize-none bg-transparent py-3 pl-9 pr-10 text-[14px] leading-relaxed text-[#0b1c30] outline-none placeholder:text-[#94a3b8] dark:text-white"
+                  className="w-full resize-none rounded-t-xl bg-transparent py-3 pl-9 pr-10 text-[14px] leading-relaxed text-[#0b1c30] outline-none placeholder:text-[#94a3b8] dark:text-white"
                 />
                 <button
                   type="button"
@@ -483,44 +508,86 @@ export const AiDashboardPanel: React.FC<{
                 </button>
               </div>
 
-              <div className="flex items-center gap-1.5 border-t border-[#CCC6FB] bg-[#faf9ff] px-2 py-2 dark:bg-white/5">
-                {/* A suggestion fills the box so it can be edited before it goes. */}
+              <div className="flex items-center gap-1.5 rounded-b-xl border-t border-[#CCC6FB] bg-[#faf9ff] px-2 py-2 dark:bg-white/5">
+                {/* One control rather than two pickers: a file, a figure from
+                    this page, or one of the openers, all under the same plus. */}
                 <span className="relative">
-                  <Lightbulb className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#5945F1]" aria-hidden />
-                  <select
-                    value=""
-                    onChange={(e) => { if (e.target.value) setDraft(e.target.value); }}
-                    aria-label="Use a suggestion"
-                    className="h-8 cursor-pointer appearance-none rounded-lg border border-[#CCC6FB] bg-white py-0 pl-7 pr-6 text-[12.5px] font-medium text-[#0b1c30] outline-none transition hover:border-[#5945F1] dark:bg-transparent dark:text-white"
+                  <button
+                    type="button"
+                    onClick={() => setPlusOpen((o) => !o)}
+                    aria-expanded={plusOpen}
+                    aria-label="Add to this question"
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${
+                      plusOpen
+                        ? 'border-[#5945F1] bg-white text-[#5945F1]'
+                        : 'border-[#CCC6FB] bg-white text-[#64748b] hover:border-[#5945F1] hover:text-[#5945F1] dark:bg-transparent'
+                    }`}
                   >
-                    <option value="">Suggestions</option>
-                    {(data.suggestions ?? []).map((sg) => (
-                      <option key={sg.label} value={sg.label}>{sg.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" aria-hidden />
-                </span>
+                    <Plus className="h-4 w-4" aria-hidden />
+                  </button>
 
-                {/* A file, or one of the figures this page is already showing. */}
-                <span className="relative">
-                  <Paperclip className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#64748b]" aria-hidden />
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value === '__file') { filePicker.current?.click(); return; }
-                      const stat = (data.stats ?? []).find((st) => st.label === e.target.value);
-                      if (!stat) return;
-                      setDraft((d) => `${d ? `${d.trim()} ` : ''}about ${stat.label} (${stat.value})`.trim());
-                    }}
-                    aria-label="Attach"
-                    className="h-8 w-[94px] cursor-pointer appearance-none rounded-lg border border-transparent bg-transparent pl-7 pr-2 text-[12.5px] text-[#64748b] outline-none transition hover:border-[#CCC6FB] hover:bg-white dark:text-white/60"
-                  >
-                    <option value="">Attach</option>
-                    <option value="__file">A file…</option>
-                    {(data.stats ?? []).map((st) => (
-                      <option key={st.label} value={st.label}>{st.label}: {st.value}</option>
-                    ))}
-                  </select>
+                  {plusOpen && (
+                    <span
+                      className="absolute bottom-10 left-0 z-20 flex max-h-[260px] w-[250px] flex-col overflow-y-auto rounded-xl border border-[#CCC6FB] bg-white p-1.5 shadow-[0_12px_32px_-12px_rgba(11,28,48,0.35)]"
+                      role="menu"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => { setPlusOpen(false); filePicker.current?.click(); }}
+                        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
+                      >
+                        <Paperclip className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
+                        Upload a file
+                      </button>
+
+                      {(data.stats ?? []).length > 0 && (
+                        <>
+                          <span className="my-1 block h-px bg-[#eceafb]" />
+                          <span className="px-2.5 pb-1 pt-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+                            From this page
+                          </span>
+                          {(data.stats ?? []).map((st) => (
+                            <button
+                              key={st.label}
+                              type="button"
+                              role="menuitem"
+                              onClick={() => {
+                                setPlusOpen(false);
+                                setDraft((d) => `${d ? `${d.trim()} ` : ''}about ${st.label} (${st.value})`.trim());
+                              }}
+                              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
+                            >
+                              <BarChart3 className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
+                              <span className="min-w-0 flex-1 truncate">{st.label}</span>
+                              <span className="shrink-0 text-[12px] font-bold text-[#5945F1]">{st.value}</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
+
+                      {openers.length > 0 && (
+                        <>
+                          <span className="my-1 block h-px bg-[#eceafb]" />
+                          <span className="px-2.5 pb-1 pt-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+                            Ask about
+                          </span>
+                          {openers.map((sg) => (
+                            <button
+                              key={sg.label}
+                              type="button"
+                              role="menuitem"
+                              onClick={() => { setPlusOpen(false); setDraft(sg.label); }}
+                              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
+                            >
+                              <Lightbulb className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
+                              <span className="min-w-0 truncate">{sg.label}</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </span>
+                  )}
                 </span>
 
                 <span className="flex-1" />

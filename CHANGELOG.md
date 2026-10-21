@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.6.0] - 2026-10-09
+### Changed
+- Five openers above the composer instead of three, and they scroll sideways rather than wrapping. The feature brings its own, and where that is fewer than five the figures on the page make up the rest, so a question like "What is bullish?" is offered only because the panel can answer it from what it already read.
+- The two dropdowns under the box are one plus button, the way an attachment menu usually works. It holds Upload a file, then the figures this page is showing with their values, then the openers; picking a figure writes it into the question rather than sending anything, so it can still be edited.
+
 ## [2.5.0] - 2026-10-09
 ### Changed
 - The composer's footer is tidied. Suggestions and Attach both lead with their icon instead of trailing a paperclip after the word, and they read as what they are: Suggestions is a bordered picker, Attach is quiet until you reach for it. Clear is the icon alone with its name on hover, since the word was competing with Send for attention, and Send is solid violet with its arrow, greying rather than fading when there is nothing to send.
