@@ -9,6 +9,13 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.18.0] - 2026-10-09
+### Added
+- The cards carry a picture of the thing. Stories and courses lead with their own artwork across the top, labelled with the market or category, and brokers, community posts and the leaderboard carry a mark beside the name. A thing is recognised by its image before its name is read, which is most of the point of showing it.
+- Where a picture is missing or fails to load, the initials show through instead, because a broken image is worse than none. Broker logos are remote, so they fall back often and by design.
+### Note
+- Checked on five surfaces: stories and courses load their artwork, and the marks that cannot load show initials rather than grey holes.
+
 ## [2.17.0] - 2026-10-09
 ### Fixed
 - Audited every action button on every surface by pressing it and recording where it landed, rather than reading the code and assuming.

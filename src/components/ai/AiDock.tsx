@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { PickCard } from './PickCard';
+import { MarkWithFallback, PickCard } from './PickCard';
 import { SignalPickCard } from '../signals/SignalPickCard';
 import { LEADERBOARD_USERS } from '../../data/mockData';
 import { CALENDAR_NOW, ECONOMIC_EVENTS } from '../../data/economicCalendarData';
@@ -64,6 +64,7 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
         meta: `$${(b.cashbackPerLot ?? 0).toFixed(2)} a lot`,
         node: (
           <PickCard
+            mark={<MarkWithFallback src={b.logo} name={b.name} />}
             title={b.name}
             subtitle={(b.regulations ?? [])[0] ?? 'See the profile for regulation'}
             headline={{ value: `$${(b.cashbackPerLot ?? 0).toFixed(2)}`, label: 'a lot' }}
@@ -173,6 +174,8 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
             meta: `${c.lessons.length} lessons \u00b7 ${c.level} \u00b7 ${c.requiredPlan === 'Free' ? 'open to you' : `${c.requiredPlan} plan`}`,
             node: (
               <PickCard
+                image={c.thumbnail}
+                imageLabel={c.category}
                 title={c.title}
                 subtitle={c.instructorName}
                 headline={{ value: String(c.lessons.length), label: 'lessons' }}
@@ -229,6 +232,8 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
           meta: `${a.source} \u00b7 ${a.assetClass}${a.sentiment ? ` \u00b7 ${a.sentiment}` : ''}`,
           node: (
             <PickCard
+              image={a.thumbnail}
+              imageLabel={`${a.assetClass}${(a.tags ?? [])[2] ? ` \u00b7 ${(a.tags ?? [])[2]}` : ''}`}
               title={a.headline}
               subtitle={`${a.source} \u00b7 ${a.assetClass}`}
               notes={a.sentiment ? [{ text: a.sentiment, tone: a.sentiment === 'Bullish' ? 'good' : a.sentiment === 'Bearish' ? 'warn' : 'neutral' }] : undefined}
@@ -289,6 +294,7 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
             meta: `${(po.content ?? '').slice(0, 70)}${(po.content ?? '').length > 70 ? '\u2026' : ''}`,
             node: (
               <PickCard
+                mark={<MarkWithFallback src={po.author.avatar} name={po.author.name} round />}
                 title={po.author.name}
                 subtitle={(po.content ?? '').slice(0, 90)}
                 notes={[
@@ -313,6 +319,7 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
           meta: `${u.points.toLocaleString()} Points \u00b7 ${u.tier} \u00b7 $${u.cashbackEarned.toLocaleString()} cashback`,
           node: (
             <PickCard
+              mark={<span className="grid h-9 w-9 place-items-center rounded-full bg-[#f1f0fe] text-[18px]">{u.avatar}</span>}
               title={`${u.rank}. ${u.username}`}
               subtitle={u.tier}
               headline={{ value: u.points.toLocaleString(), label: 'Points' }}

@@ -13,6 +13,16 @@ import React from 'react';
 export interface PickCardProps {
   /** A flag, logo or letter mark. */
   mark?: React.ReactNode;
+  /**
+   * A picture of the thing, where it has one.
+   *
+   * A story, a course or a broker is recognised by its image before its name
+   * is read, which is most of the point of showing it at all. A missing or
+   * broken image collapses rather than leaving a grey hole.
+   */
+  image?: string;
+  /** Printed over the foot of the image, for a market or a category. */
+  imageLabel?: string;
   title: string;
   subtitle?: string;
   /** The figures that decide it, at most three. */
@@ -33,10 +43,59 @@ const TONE_CHIPS = {
   warn: 'bg-[#fdf2e3] text-[#b45309]',
 } as const;
 
+/**
+ * A small mark that falls back to initials.
+ *
+ * Several of these pictures are remote and some are missing, and a broken
+ * image is worse than none, so the initials sit underneath and show through
+ * the moment the picture fails.
+ */
+export const MarkWithFallback: React.FC<{ src?: string; name: string; round?: boolean }> = ({ src, name, round }) => {
+  const [failed, setFailed] = React.useState(!src);
+  const initials = name.trim().slice(0, 2).toUpperCase();
+  const shape = round ? 'rounded-full' : 'rounded-lg';
+
+  if (failed) {
+    return (
+      <span className={`grid h-9 w-9 place-items-center ${shape} bg-[#f1f0fe] text-[12px] font-extrabold text-[#5945F1]`}>
+        {initials}
+      </span>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className={`h-9 w-9 ${shape} bg-[#f1f0fe] object-cover`}
+    />
+  );
+};
+
 export const PickCard: React.FC<PickCardProps> = ({
-  mark, title, subtitle, figures, headline, notes, action, quiet,
+  mark, image, imageLabel, title, subtitle, figures, headline, notes, action, quiet,
 }) => (
-  <div className="flex h-full flex-col gap-3 rounded-2xl border border-[#CCC6FB] bg-white p-4 dark:bg-transparent">
+  <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#CCC6FB] bg-white dark:bg-transparent">
+    {image && (
+      <span className="relative block aspect-[16/9] w-full overflow-hidden bg-[#f1f0fe]">
+        <img
+          src={image}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          className="h-full w-full object-cover"
+          onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+        />
+        {imageLabel && (
+          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 pb-1.5 pt-6 text-[11px] font-bold uppercase tracking-wide text-white">
+            {imageLabel}
+          </span>
+        )}
+      </span>
+    )}
+    <div className="flex flex-1 flex-col gap-3 p-4">
     <div className="flex items-start gap-2.5">
       {mark && <span className="shrink-0">{mark}</span>}
       <span className="min-w-0 flex-1">
@@ -92,5 +151,6 @@ export const PickCard: React.FC<PickCardProps> = ({
         {action.label}
       </button>
     )}
+    </div>
   </div>
 );
