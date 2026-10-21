@@ -289,7 +289,7 @@ export const AiDashboardPanel: React.FC<{
         </div>
       </div>
 
-      <div key={`${active?.id}-${run}`} className={`min-h-0 flex-1 overflow-y-auto px-5 py-4 ${active?.id === 'chat' ? 'flex flex-col' : ''}`}>
+      <div key={`${active?.id}-${run}`} className={`min-h-0 flex-1 overflow-y-auto px-5 ${active?.id === 'chat' ? 'flex flex-col pb-0 pt-4' : 'py-4'}`}>
         {busy && (
           <div role="status" aria-live="polite" className="mb-4">
             <p className="text-[12px] font-semibold text-[#5945F1] dark:text-[#a99bff]">{data.pretext}…</p>
@@ -501,7 +501,7 @@ export const AiDashboardPanel: React.FC<{
               className="hidden"
               onChange={(e) => { void takeFile(e.target.files?.[0]); e.target.value = ''; }}
             />
-            <div className="sticky bottom-0 rounded-xl border border-[#CCC6FB] bg-white shadow-[0_-8px_16px_-12px_rgba(11,28,48,0.25)] dark:bg-[#170345]">
+            <div className="sticky bottom-0 -mx-5 rounded-t-xl border-x border-t border-[#CCC6FB] bg-white shadow-[0_-8px_16px_-12px_rgba(11,28,48,0.25)] dark:bg-[#170345]">
               <div className="relative">
                 <Search
                   className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#94a3b8]"
@@ -527,7 +527,7 @@ export const AiDashboardPanel: React.FC<{
                 </button>
               </div>
 
-              <div className="flex items-center gap-1.5 rounded-b-xl border-t border-[#CCC6FB] bg-[#faf9ff] px-2 py-2 dark:bg-white/5">
+              <div className="flex items-center gap-1.5 border-t border-[#CCC6FB] bg-[#faf9ff] px-3 py-2 dark:bg-white/5">
                 {/* One control rather than two pickers: a file, a figure from
                     this page, or one of the openers, all under the same plus. */}
                 <span className="relative" ref={plusRef}>
