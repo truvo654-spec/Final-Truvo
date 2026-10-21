@@ -198,9 +198,12 @@ export const AiDashboardPanel: React.FC<{
    * and the links below stay either way.
    */
   const picks = useMemo(() => {
-    const first = (data.suggestions ?? [])[0];
-    if (!first || !data.onResults) return null;
-    return data.onResults(first.label) ?? (first.cta ? data.onResults(first.cta.label) : null);
+    if (!data.onResults) return null;
+    for (const sg of data.suggestions ?? []) {
+      const found = data.onResults(sg.label);
+      if (found && found.rows.length > 0) return found;
+    }
+    return null;
   }, [data.suggestions, data.onResults]);
 
   const say = (text: string, go?: { label: string; run: () => void; asked?: string }) => {

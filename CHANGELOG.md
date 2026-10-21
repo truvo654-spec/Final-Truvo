@@ -9,6 +9,13 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.16.0] - 2026-10-09
+### Fixed
+- The signals page showed brokers under "Where to go next". Its first opener was "Find a broker", and the panel took whichever question came first as the one to answer, so a page about calls filled up with cashback rates. The signals questions come first there now.
+- The same mistake was waiting on any page whose first opener pointed elsewhere, so the panel no longer assumes: it takes the first question the feature can actually answer with rows of its own.
+### Note
+- Checked on all eight surfaces: each now shows its own subject, signals with calls, brokers with brokers, news with stories, education with courses, community with posts, the leaderboard with the board, the calendar with releases and points with Points.
+
 ## [2.15.1] - 2026-10-09
 ### Changed
 - The pick card is laid out properly. The figures sit under a hairline with room to breathe, the button no longer touches the row above it, the headline figure is sized to sit beside the title rather than shout over it, and the notes read as quiet chips in the palette's own tints instead of loose coloured words.

@@ -361,9 +361,9 @@ function dockRead({ tab, user, signals, brokers, go }: AiDockContext): Spotlight
     case 'signals': {
       const live = signals.filter((s) => s.action !== 'UPGRADE');
       return { ...toSpotlight(signalsRead(signals as never, user.tierLevel), `Read ${live.length} open signals`, [
-        { label: 'Find a broker', sub: 'Compare spreads, cashback and regulation.', onClick: () => go('brokers') },
         { label: 'Where the risk sits', sub: 'Which open calls lean the same way, and what that means together.', onClick: () => go('signals'), cta: { label: 'Open the instrument', run: () => go('instrument-analysis') } },
         to('signals', 'The strongest call', 'The highest confidence open right now, and its reward to risk.'),
+        { label: 'Find a broker', sub: 'Compare spreads, cashback and regulation.', onClick: () => go('brokers') },
       ], {
         'Open signals': 'Calls currently published for your level.',
         Long: 'How many of them point up.',
