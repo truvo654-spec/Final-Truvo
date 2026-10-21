@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.1.0] - 2026-10-09
+### Changed
+- The AI panel speaks about the feature it is on rather than offering the same three ways to leave. Six surfaces that opened with "See open signals" now open with something about the page itself: what moves this week on the calendar, how today's coverage leans on news, which alerts are close to firing, what can be claimed now on offers, where to start in education, and what the gap is on the leaderboard.
+- Six surfaces that showed figures with no explanation now explain their own: what "Busiest currency" means on the calendar and why its pairs matter, what "Need a connected account" asks of you on offers, that "Plan limit" is how many alerts your level allows at once, and that "Board average" is the more useful comparison than the leader.
+- The education figures say plainly that "Points on offer" is what the courses advertise, while lessons pay Credits and Points come from trading, because the two currencies had been blurred there.
+
 ## [2.0.1] - 2026-10-09
 ### Changed
 - The stock robot illustration is off the AI panel's Summary, replaced by the same gradient mark the Chat tab greets people with, so the two tabs look like one thing.
