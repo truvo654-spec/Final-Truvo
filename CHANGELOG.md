@@ -9,6 +9,13 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.15.0] - 2026-10-09
+### Added
+- Every feature shows cards now, not just signals. One shared card carries what the pick is, the two or three figures that decide it and the one thing to do about it, so the layout does not have to be relearned on each page: brokers lead with what they pay a lot and show the minimum deposit and spread, offers show their value with how many days are left and whether an account must be connected, courses show their length with the level and that they pay Credits, calendar entries show forecast against previous, news shows its source and lean, the leaderboard shows Points and cashback, community posts show likes against replies, and Points show how many days each has left.
+- A quieter button for picks that are not an invitation to act, so Read and Watch do not shout the way Trade and Claim do.
+### Fixed
+- The broker card printed the spread unit twice: the field already reads "0.0 pips".
+
 ## [2.14.0] - 2026-10-09
 ### Changed
 - Cards in the AI panel read sideways as a carousel rather than stacking down the panel. One and a half is in view at a time, which says there are more without burying the composer under a column of them, and each card snaps into place as you swipe. The signal card is trimmed to suit the narrower width: smaller numbers, tighter padding, same information.

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { PickCard } from './PickCard';
 import { SignalPickCard } from '../signals/SignalPickCard';
 import { LEADERBOARD_USERS } from '../../data/mockData';
 import { CALENDAR_NOW, ECONOMIC_EVENTS } from '../../data/economicCalendarData';
@@ -60,8 +61,19 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
       .slice(0, 5)
       .map((b) => ({
         title: b.name,
-        meta: `$${(b.cashbackPerLot ?? 0).toFixed(2)} a lot \u00b7 from ${b.minDeposit ?? '$0'} \u00b7 ${(b.regulations ?? [])[0] ?? 'see profile'}`,
-        action: { label: 'Trade', run: openOr({ kind: 'broker', id: b.id }, 'brokers') },
+        meta: `$${(b.cashbackPerLot ?? 0).toFixed(2)} a lot`,
+        node: (
+          <PickCard
+            title={b.name}
+            subtitle={(b.regulations ?? [])[0] ?? 'See the profile for regulation'}
+            headline={{ value: `$${(b.cashbackPerLot ?? 0).toFixed(2)}`, label: 'a lot' }}
+            figures={[
+              { label: 'Minimum deposit', value: String(b.minDeposit ?? '\u2014') },
+              { label: 'Spread from', value: b.spreadFrom !== undefined ? String(b.spreadFrom) : '\u2014' },
+            ]}
+            action={{ label: 'Trade', run: openOr({ kind: 'broker', id: b.id }, 'brokers') }}
+          />
+        ),
       }));
 
     // A call is shown as the signals page draws it, because entry, stop and
@@ -129,7 +141,18 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
           .map((pr) => ({
             title: pr.title,
             meta: `${pr.brokerName} \u00b7 ${pr.value} \u00b7 ${pr.endsInDays <= 0 ? 'ends today' : `${pr.endsInDays} days left`}${pr.requiresConnected ? ' \u00b7 needs a connected account' : ''}`,
-            action: { label: 'Claim', run: openOr({ kind: 'promotion', id: pr.id }, 'promotions') },
+            node: (
+              <PickCard
+                title={pr.title}
+                subtitle={pr.brokerName}
+                headline={{ value: pr.value, label: pr.kind }}
+                notes={[
+                  { text: pr.endsInDays <= 0 ? 'ends today' : `${pr.endsInDays} days left`, tone: pr.endsInDays <= 2 ? 'warn' : 'neutral' },
+                  ...(pr.requiresConnected ? [{ text: 'needs a connected account', tone: 'neutral' as const }] : []),
+                ]}
+                action={{ label: 'Claim', run: openOr({ kind: 'promotion', id: pr.id }, 'promotions') }}
+              />
+            ),
           }));
         return offers.length
           ? { intro: `${offers.length} offers live now. Most need a connected and verified account before they pay anything.`, rows: offers }
@@ -146,7 +169,19 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
           .map((c) => ({
             title: c.title,
             meta: `${c.lessons.length} lessons \u00b7 ${c.level} \u00b7 ${c.requiredPlan === 'Free' ? 'open to you' : `${c.requiredPlan} plan`}`,
-            action: { label: 'Start', run: openOr({ kind: 'course', id: c.id }, 'education-hub') },
+            node: (
+              <PickCard
+                title={c.title}
+                subtitle={c.instructorName}
+                headline={{ value: String(c.lessons.length), label: 'lessons' }}
+                notes={[
+                  { text: c.level, tone: 'neutral' },
+                  { text: c.requiredPlan === 'Free' ? 'open to you' : `${c.requiredPlan} plan`, tone: c.requiredPlan === 'Free' ? 'good' : 'warn' },
+                  { text: 'pays Credits', tone: 'neutral' },
+                ]}
+                action={{ label: 'Start', run: openOr({ kind: 'course', id: c.id }, 'education-hub') }}
+              />
+            ),
           }));
         return courses.length
           ? { intro: `${courses.length} courses open to you. Finishing a lesson pays Credits; Points come from trading alone.`, rows: courses }
@@ -166,7 +201,19 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
           .map((e) => ({
             title: `${e.currency} \u00b7 ${e.title}`,
             meta: `${new Date(e.at).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}${e.forecast ? ` \u00b7 forecast ${e.forecast}` : ''}`,
-            action: { label: 'Watch', run: () => go('economic-calendar') },
+            node: (
+              <PickCard
+                title={e.title}
+                subtitle={`${e.currency} \u00b7 ${new Date(e.at).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                figures={[
+                  { label: 'Forecast', value: e.forecast ?? '\u2014' },
+                  { label: 'Previous', value: e.previous ?? '\u2014' },
+                ]}
+                notes={[{ text: 'high impact', tone: 'warn' }]}
+                action={{ label: 'Watch', run: () => go('economic-calendar') }}
+                quiet
+              />
+            ),
           }));
         return due.length
           ? { intro: `The ${due.length} high-impact releases still ahead. These are the ones that usually move price on the minute.`, rows: due }
@@ -178,7 +225,15 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
         const stories = NEWS_ARTICLES.slice(0, 5).map((a) => ({
           title: a.headline,
           meta: `${a.source} \u00b7 ${a.assetClass}${a.sentiment ? ` \u00b7 ${a.sentiment}` : ''}`,
-          action: { label: 'Read', run: () => go('news') },
+          node: (
+            <PickCard
+              title={a.headline}
+              subtitle={`${a.source} \u00b7 ${a.assetClass}`}
+              notes={a.sentiment ? [{ text: a.sentiment, tone: a.sentiment === 'Bullish' ? 'good' : a.sentiment === 'Bearish' ? 'warn' : 'neutral' }] : undefined}
+              action={{ label: 'Read', run: openOr({ kind: 'article', id: a.id }, 'news') }}
+              quiet
+            />
+          ),
         }));
         return stories.length
           ? { intro: `${stories.length} stories the desk published. A lean is an opinion, not a forecast.`, rows: stories }
@@ -199,7 +254,16 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
             return {
               title: `${e.amount} Points \u00b7 ${e.reason}`,
               meta: `${left} day${left === 1 ? '' : 's'} left before they stop counting towards your level`,
-              action: { label: 'Earn more', run: () => go('points-credits') },
+              node: (
+                <PickCard
+                  title={`${e.amount} Points`}
+                  subtitle={e.reason}
+                  headline={{ value: String(left), label: left === 1 ? 'day left' : 'days left' }}
+                  notes={[{ text: `counts towards your level for ${POINT_LIFE_DAYS} days`, tone: left <= 14 ? 'warn' : 'neutral' }]}
+                  action={{ label: 'Earn more', run: () => go('points-credits') }}
+                  quiet
+                />
+              ),
             };
           });
         return soon.length
@@ -221,7 +285,18 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
           .map((po) => ({
             title: po.author.name,
             meta: `${(po.content ?? '').slice(0, 70)}${(po.content ?? '').length > 70 ? '\u2026' : ''}`,
-            action: { label: 'Read', run: () => go('community') },
+            node: (
+              <PickCard
+                title={po.author.name}
+                subtitle={(po.content ?? '').slice(0, 90)}
+                notes={[
+                  { text: `${po.likes ?? 0} likes`, tone: 'neutral' },
+                  { text: `${po.comments?.length ?? 0} replies`, tone: (po.comments?.length ?? 0) > 2 ? 'good' : 'neutral' },
+                ]}
+                action={{ label: 'Read', run: () => go('community') }}
+                quiet
+              />
+            ),
           }));
         return posts.length
           ? { intro: `The ${posts.length} posts people actually answered. A busy thread is a conversation, not a recommendation.`, rows: posts }
@@ -234,7 +309,16 @@ function resultsFor({ signals, brokers, go, open }: AiDockContext) {
         const board = LEADERBOARD_USERS.slice(0, 5).map((u) => ({
           title: `${u.rank}. ${u.username}`,
           meta: `${u.points.toLocaleString()} Points \u00b7 ${u.tier} \u00b7 $${u.cashbackEarned.toLocaleString()} cashback`,
-          action: { label: 'See how', run: () => go('points-credits') },
+          node: (
+            <PickCard
+              title={`${u.rank}. ${u.username}`}
+              subtitle={u.tier}
+              headline={{ value: u.points.toLocaleString(), label: 'Points' }}
+              notes={[{ text: `$${u.cashbackEarned.toLocaleString()} cashback`, tone: 'neutral' }]}
+              action={{ label: 'See how', run: () => go('points-credits') }}
+              quiet
+            />
+          ),
         }));
         return board.length
           ? { intro: `The top ${board.length} this period. Points come from volume traded, so the board rewards activity rather than accuracy.`, rows: board }
