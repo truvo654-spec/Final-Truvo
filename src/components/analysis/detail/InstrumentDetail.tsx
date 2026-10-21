@@ -1,4 +1,6 @@
 import "./market.css";
+import { slotPrice } from '../../../data/rewardRules';
+import { buySlot, readLedger, writeLedger } from '../../../data/rewardsLedger';
 import { InstrumentIcon } from '../InstrumentIcon';
 import { iconTypeFor } from '../instrumentIconType';
 import { priceAlertNotification, raiseNotification } from '../../notifications/notificationStore';
@@ -658,8 +660,20 @@ export function InstrumentDetail({
   const positive = instrument.change >= 0;
   const toggleWatching = () => {
     if (!watching && watchlistCount >= watchlistLimit) {
-      onToast(`Level ${snapshot.level.level} watchlists are limited to ${watchlistLimit} symbols.`);
-      return;
+      // Saying "you cannot" and stopping there is no help: the member can
+      // buy one more place, so say what it costs and let them.
+      const price = slotPrice('watchlist', snapshot.level.level, watchlistCount);
+      if (price === null) {
+        onToast(`Your watchlist is full at ${watchlistLimit} instruments and there are no more places to add.`);
+        return;
+      }
+      const bought = buySlot(readLedger(), 'watchlist', price);
+      if (!bought.ok) {
+        onToast(`One more place costs ${price} Credits. You are ${bought.shortBy} short.`);
+        return;
+      }
+      writeLedger(bought.ledger);
+      onToast(`+1 watchlist place for ${price} Credits. ${instrument.symbol} added.`);
     }
     const nowWatching = !watching;
     setWatching(nowWatching);

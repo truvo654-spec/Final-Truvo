@@ -34,6 +34,34 @@ export interface Ledger {
   credits: LedgerEntry[];
   /** Tasks already paid, so a repeat pays less. Keyed by task and day. */
   taskCounts: Record<string, number>;
+  /** Extra watchlist and alert space bought with Credits. */
+  slots?: { watchlist: number; alert: number };
+}
+
+/** How many extra slots of this kind the member has bought. */
+export function slotsOwned(ledger: Ledger, kind: 'watchlist' | 'alert'): number {
+  return ledger.slots?.[kind] ?? 0;
+}
+
+/**
+ * Buys one slot, taking the Credits from the oldest live batch.
+ *
+ * Returns what went wrong rather than throwing, because every refusal here is
+ * something the person should be told: the price, what they are short, or
+ * that there is nothing left to buy.
+ */
+export function buySlot(
+  ledger: Ledger,
+  kind: 'watchlist' | 'alert',
+  price: number,
+  now = new Date(),
+): { ledger: Ledger; ok: boolean; shortBy?: number } {
+  const spend = spendCredits(ledger, price, now);
+  if (!spend.ok) return { ledger, ok: false, shortBy: spend.shortBy };
+
+  const slots = { watchlist: 0, alert: 0, ...(ledger.slots ?? {}) };
+  slots[kind] += 1;
+  return { ledger: { ...spend.ledger, slots }, ok: true };
 }
 
 const KEY = 'marketsyde_ledger';
@@ -67,7 +95,7 @@ export function isTrusted(): boolean {
   return store?.trusted ?? false;
 }
 
-const EMPTY: Ledger = { points: [], credits: [], taskCounts: {} };
+const EMPTY: Ledger = { points: [], credits: [], taskCounts: {}, slots: { watchlist: 0, alert: 0 } };
 
 export function readLedger(): Ledger {
   if (store) return store.read();
@@ -79,6 +107,7 @@ export function readLedger(): Ledger {
       points: parsed.points ?? [],
       credits: parsed.credits ?? [],
       taskCounts: parsed.taskCounts ?? {},
+      slots: { watchlist: 0, alert: 0, ...(parsed.slots ?? {}) },
     };
   } catch {
     return { ...EMPTY };

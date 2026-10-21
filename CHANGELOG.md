@@ -9,6 +9,15 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.26.0] - 2026-10-09
+### Added
+- The watchlist limit is wired to the level at last, not hard-coded: five places at Rookie, ten at Climber, fifteen at Player and no limit at Elite, plus whatever slots the member has bought.
+- Slots can be bought. Reaching the limit used to say "watchlists are limited to five symbols" and stop there, which is no help when one more place costs ten Credits; it now takes the Credits from the oldest live batch, adds the place and adds the instrument in the same press, or says exactly how short the balance is.
+- The ledger remembers slots alongside Points and Credits, so they survive as part of the same record.
+### Note
+- Checked by running the arithmetic: a Rookie with forty Credits starts on five places, buys four at ten each, and on the fifth is told it wants ten and the balance is ten short. Price is held to the ceiling and to Elite, so a slot that cannot be used is never sold.
+- The purchase is proved in the rules but not yet driven through the page: the instrument list would not open a detail view in the test browser, so what has been seen running is the arithmetic rather than the press. Price alerts are still untouched, and their page is hidden behind a feature flag anyway.
+
 ## [2.25.0] - 2026-10-09
 ### Changed
 - The Credit limits follow v3.6, which replaced the hybrid caps with a limit per day, per week and per month: everyday activity stops at 100, 700 and 3,000, social sits inside that at 60, 420 and 1,800, community-approved work has 200, 400 and 1,700 of its own, and everything from activity together stops at 360, 1,500 and 6,400. An award pays the smallest of what is left under any of them and says which one stopped it.

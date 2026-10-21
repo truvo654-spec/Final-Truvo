@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { WATCHLIST_SIZE } from '../data/rewardRules';
+import { readLedger, slotsOwned } from '../data/rewardsLedger';
 import { MarketSignal, Broker, UserProfile } from '../types';
 import {
   MARKET_CATEGORIES,
@@ -704,7 +706,14 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
             showLinkedTags={true}
             onShowLinkedTagsChange={() => {}}
             watchlistCount={favorites.size}
-            watchlistLimit={user.tierLevel >= 3 ? 999 : user.tierLevel >= 2 ? 20 : 5}
+            watchlistLimit={(() => {
+              // v3.5: the level sets the space and bought slots add to it,
+              // rather than the old timed unlocks.
+              const lv = Math.min(Math.max(user.tierLevel, 1), 4);
+              const included = WATCHLIST_SIZE[lv - 1];
+              if (included === Infinity) return Number.MAX_SAFE_INTEGER;
+              return included + slotsOwned(readLedger(), 'watchlist');
+            })()}
             followedPublisher={null}
             onFollowPublisher={(name) => onShowToast?.(`Followed ${name}`)}
             onCommunityChart={() => {}}
