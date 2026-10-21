@@ -483,168 +483,6 @@ export const AiDashboardPanel: React.FC<{
               })}
             </div>
 
-            {/* the composer */}
-            {file && (
-              <span className="flex items-center gap-2 self-start rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[12.5px] text-[#0b1c30] dark:bg-transparent dark:text-white">
-                <Paperclip className="h-3.5 w-3.5 shrink-0 text-[#5945F1]" aria-hidden />
-                <span className="max-w-[220px] truncate">{file.name}</span>
-                <span className="shrink-0 text-[#94a3b8]">{Math.max(1, Math.round(file.size / 1024))} KB</span>
-                <button type="button" onClick={() => setFile(null)} aria-label={`Remove ${file.name}`} className="shrink-0 text-[#94a3b8] hover:text-[#0b1c30]">
-                  <X className="h-3.5 w-3.5" aria-hidden />
-                </button>
-              </span>
-            )}
-            <input
-              ref={filePicker}
-              type="file"
-              accept=".csv,.tsv,.txt,.json,.md,image/*"
-              className="hidden"
-              onChange={(e) => { void takeFile(e.target.files?.[0]); e.target.value = ''; }}
-            />
-            <div className="sticky bottom-0 -mx-5 rounded-t-xl border-x border-t border-[#CCC6FB] bg-white shadow-[0_-8px_16px_-12px_rgba(11,28,48,0.25)] dark:bg-[#170345]">
-              <div className="relative">
-                <Search
-                  className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#94a3b8]"
-                  aria-hidden
-                />
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); say(draft); } }}
-                  aria-label="Ask MarketSyde AI"
-                  placeholder="Ask me anything..."
-                  rows={3}
-                  className="w-full resize-none rounded-t-xl bg-transparent py-3 pl-9 pr-10 text-[14px] leading-relaxed text-[#0b1c30] outline-none placeholder:text-[#94a3b8] dark:text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => say(draft)}
-                  disabled={!draft.trim()}
-                  aria-label="Send"
-                  className="absolute right-2 top-2.5 flex h-8 w-8 items-center justify-center rounded-lg text-[#94a3b8] transition-colors hover:text-[#5945F1] disabled:opacity-40"
-                >
-                  <Send className="h-4 w-4" aria-hidden />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-1.5 border-t border-[#CCC6FB] bg-[#faf9ff] px-3 py-2 dark:bg-white/5">
-                {/* One control rather than two pickers: a file, a figure from
-                    this page, or one of the openers, all under the same plus. */}
-                <span className="relative" ref={plusRef}>
-                  <button
-                    type="button"
-                    onClick={() => setPlusOpen((o) => !o)}
-                    aria-expanded={plusOpen}
-                    aria-label="Add to this question"
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${
-                      plusOpen
-                        ? 'border-[#5945F1] bg-white text-[#5945F1]'
-                        : 'border-[#CCC6FB] bg-white text-[#64748b] hover:border-[#5945F1] hover:text-[#5945F1] dark:bg-transparent'
-                    }`}
-                  >
-                    <Plus className="h-4 w-4" aria-hidden />
-                  </button>
-
-                  {plusOpen && (
-                    <span
-                      className="absolute bottom-10 left-0 z-20 flex max-h-[260px] w-[250px] flex-col overflow-y-auto rounded-xl border border-[#CCC6FB] bg-white p-1.5 shadow-[0_12px_32px_-12px_rgba(11,28,48,0.35)]"
-                      role="menu"
-                    >
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => { setPlusOpen(false); filePicker.current?.click(); }}
-                        className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
-                      >
-                        <Paperclip className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
-                        {file ? 'Replace the file' : 'Upload a file'}
-                      </button>
-
-                      {file && (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => { setPlusOpen(false); setFile(null); }}
-                          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
-                        >
-                          <X className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
-                          <span className="min-w-0 flex-1 truncate">Remove {file.name}</span>
-                        </button>
-                      )}
-
-                      {(data.stats ?? []).length > 0 && (
-                        <>
-                          <span className="my-1 block h-px bg-[#eceafb]" />
-                          <span className="px-2.5 pb-1 pt-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">
-                            From this page
-                          </span>
-                          {(data.stats ?? []).map((st) => (
-                            <button
-                              key={st.label}
-                              type="button"
-                              role="menuitem"
-                              onClick={() => {
-                                setPlusOpen(false);
-                                setDraft((d) => `${d ? `${d.trim()} ` : ''}about ${st.label} (${st.value})`.trim());
-                              }}
-                              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
-                            >
-                              <BarChart3 className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
-                              <span className="min-w-0 flex-1 truncate">{st.label}</span>
-                              <span className="shrink-0 text-[12px] font-bold text-[#5945F1]">{st.value}</span>
-                            </button>
-                          ))}
-                        </>
-                      )}
-
-                      {openers.length > 0 && (
-                        <>
-                          <span className="my-1 block h-px bg-[#eceafb]" />
-                          <span className="px-2.5 pb-1 pt-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">
-                            Ask about
-                          </span>
-                          {openers.map((sg) => (
-                            <button
-                              key={sg.label}
-                              type="button"
-                              role="menuitem"
-                              onClick={() => { setPlusOpen(false); setDraft(sg.label); }}
-                              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
-                            >
-                              <Lightbulb className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
-                              <span className="min-w-0 truncate">{sg.label}</span>
-                            </button>
-                          ))}
-                        </>
-                      )}
-                    </span>
-                  )}
-                </span>
-
-                <span className="flex-1" />
-
-                <button
-                  type="button"
-                  onClick={() => { setChat([]); setFile(null); }}
-                  disabled={chat.length === 0}
-                  aria-label="Clear the conversation"
-                  title="Clear the conversation"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-[#64748b] transition hover:bg-white hover:text-[#0b1c30] disabled:opacity-30 dark:text-white/60"
-                >
-                  <RefreshCw className="h-4 w-4" aria-hidden />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => (chatBusy ? stop() : say(draft))}
-                  disabled={!chatBusy && !draft.trim()}
-                  aria-label={chatBusy ? 'Stop' : 'Send'}
-                  className="flex h-8 items-center gap-1.5 rounded-lg bg-[#5945F1] pl-3 pr-2.5 text-[12.5px] font-bold text-white transition hover:bg-[#4a38d6] disabled:bg-[#cdc7f5] disabled:text-white/80"
-                >
-                  {chatBusy ? <>Stop<Square className="h-3 w-3 fill-current" aria-hidden /></> : <>Send<Send className="h-3.5 w-3.5" aria-hidden /></>}
-                </button>
-              </div>
-            </div>
           </div>
         ) : (
           <div className="space-y-5">
@@ -717,7 +555,176 @@ export const AiDashboardPanel: React.FC<{
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />{data.footnote}
           </p>
         )}
+
       </div>
+
+      {active?.id === 'chat' && (
+        <div className="shrink-0 border-t border-[#CCC6FB] bg-white px-5 pb-4 pt-3 dark:bg-[#170345]">
+        {/* the composer */}
+        {file && (
+          <span className="flex items-center gap-2 self-start rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-1.5 text-[12.5px] text-[#0b1c30] dark:bg-transparent dark:text-white">
+            <Paperclip className="h-3.5 w-3.5 shrink-0 text-[#5945F1]" aria-hidden />
+            <span className="max-w-[220px] truncate">{file.name}</span>
+            <span className="shrink-0 text-[#94a3b8]">{Math.max(1, Math.round(file.size / 1024))} KB</span>
+            <button type="button" onClick={() => setFile(null)} aria-label={`Remove ${file.name}`} className="shrink-0 text-[#94a3b8] hover:text-[#0b1c30]">
+              <X className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </span>
+        )}
+        <input
+          ref={filePicker}
+          type="file"
+          accept=".csv,.tsv,.txt,.json,.md,image/*"
+          className="hidden"
+          onChange={(e) => { void takeFile(e.target.files?.[0]); e.target.value = ''; }}
+        />
+        <div className="rounded-t-xl border-t border-[#CCC6FB] bg-white shadow-[0_-8px_16px_-12px_rgba(11,28,48,0.25)] dark:bg-[#170345]">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#94a3b8]"
+              aria-hidden
+            />
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); say(draft); } }}
+              aria-label="Ask MarketSyde AI"
+              placeholder="Ask me anything..."
+              rows={3}
+              className="w-full resize-none rounded-t-xl bg-transparent py-3 pl-9 pr-10 text-[14px] leading-relaxed text-[#0b1c30] outline-none placeholder:text-[#94a3b8] dark:text-white"
+            />
+            <button
+              type="button"
+              onClick={() => say(draft)}
+              disabled={!draft.trim()}
+              aria-label="Send"
+              className="absolute right-2 top-2.5 flex h-8 w-8 items-center justify-center rounded-lg text-[#94a3b8] transition-colors hover:text-[#5945F1] disabled:opacity-40"
+            >
+              <Send className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 border-t border-[#CCC6FB] bg-[#faf9ff] px-3 py-2 dark:bg-white/5">
+            {/* One control rather than two pickers: a file, a figure from
+                this page, or one of the openers, all under the same plus. */}
+            <span className="relative" ref={plusRef}>
+              <button
+                type="button"
+                onClick={() => setPlusOpen((o) => !o)}
+                aria-expanded={plusOpen}
+                aria-label="Add to this question"
+                className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${
+                  plusOpen
+                ? 'border-[#5945F1] bg-white text-[#5945F1]'
+                : 'border-[#CCC6FB] bg-white text-[#64748b] hover:border-[#5945F1] hover:text-[#5945F1] dark:bg-transparent'
+                }`}
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+              </button>
+
+              {plusOpen && (
+                <span
+                  className="absolute bottom-10 left-0 z-20 flex max-h-[260px] w-[250px] flex-col overflow-y-auto rounded-xl border border-[#CCC6FB] bg-white p-1.5 shadow-[0_12px_32px_-12px_rgba(11,28,48,0.35)]"
+                  role="menu"
+                >
+                  <button
+                type="button"
+                role="menuitem"
+                onClick={() => { setPlusOpen(false); filePicker.current?.click(); }}
+                className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
+                  >
+                <Paperclip className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
+                {file ? 'Replace the file' : 'Upload a file'}
+                  </button>
+
+                  {file && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => { setPlusOpen(false); setFile(null); }}
+                  className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
+                >
+                  <X className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
+                  <span className="min-w-0 flex-1 truncate">Remove {file.name}</span>
+                </button>
+                  )}
+
+                  {(data.stats ?? []).length > 0 && (
+                <>
+                  <span className="my-1 block h-px bg-[#eceafb]" />
+                  <span className="px-2.5 pb-1 pt-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+                    From this page
+                  </span>
+                  {(data.stats ?? []).map((st) => (
+                    <button
+                      key={st.label}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setPlusOpen(false);
+                        setDraft((d) => `${d ? `${d.trim()} ` : ''}about ${st.label} (${st.value})`.trim());
+                      }}
+                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
+                    >
+                      <BarChart3 className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
+                      <span className="min-w-0 flex-1 truncate">{st.label}</span>
+                      <span className="shrink-0 text-[12px] font-bold text-[#5945F1]">{st.value}</span>
+                    </button>
+                  ))}
+                </>
+                  )}
+
+                  {openers.length > 0 && (
+                <>
+                  <span className="my-1 block h-px bg-[#eceafb]" />
+                  <span className="px-2.5 pb-1 pt-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+                    Ask about
+                  </span>
+                  {openers.map((sg) => (
+                    <button
+                      key={sg.label}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => { setPlusOpen(false); setDraft(sg.label); }}
+                      className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
+                    >
+                      <Lightbulb className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
+                      <span className="min-w-0 truncate">{sg.label}</span>
+                    </button>
+                  ))}
+                </>
+                  )}
+                </span>
+              )}
+            </span>
+
+            <span className="flex-1" />
+
+            <button
+              type="button"
+              onClick={() => { setChat([]); setFile(null); }}
+              disabled={chat.length === 0}
+              aria-label="Clear the conversation"
+              title="Clear the conversation"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#64748b] transition hover:bg-white hover:text-[#0b1c30] disabled:opacity-30 dark:text-white/60"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => (chatBusy ? stop() : say(draft))}
+              disabled={!chatBusy && !draft.trim()}
+              aria-label={chatBusy ? 'Stop' : 'Send'}
+              className="flex h-8 items-center gap-1.5 rounded-lg bg-[#5945F1] pl-3 pr-2.5 text-[12.5px] font-bold text-white transition hover:bg-[#4a38d6] disabled:bg-[#cdc7f5] disabled:text-white/80"
+            >
+              {chatBusy ? <>Stop<Square className="h-3 w-3 fill-current" aria-hidden /></> : <>Send<Send className="h-3.5 w-3.5" aria-hidden /></>}
+            </button>
+          </div>
+        </div>
+        </div>
+      )}
+
     </section>
   );
 };
