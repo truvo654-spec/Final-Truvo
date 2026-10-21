@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.13.0] - 2026-10-09
+### Changed
+- A row's button opens the thing itself rather than the list it sits in. Pressing Trade on HFM lands on HFM, pressing Buy on a call lands on that call, and the same holds for a story, a course and an offer. The dock asks the app to open one particular thing and falls back to the page only where the app has no handler for that kind, so nothing can land nowhere.
+### Note
+- Seen running: Trade on the HFM row goes to /brokers/hfm, and Buy on the first call goes to /trade/signals/sig_1.
+
 ## [2.12.0] - 2026-10-09
 ### Added
 - A signal in the AI panel is drawn as the signals page draws it: flags, target, entry and stop with the confidence beside them, the reward-to-risk and the period, and Buy or Sell across the foot. Summarising a call in a line of text left out the three numbers that decide whether it is worth taking, and those three only mean anything together, so they are shown as a set or not at all. Rows anywhere in the panel can now carry a feature's own card this way.

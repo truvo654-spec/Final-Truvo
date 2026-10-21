@@ -30,6 +30,14 @@ export interface AiDockContext {
   signals: MarketSignal[];
   brokers: Broker[];
   go: (tab: string) => void;
+  /**
+   * Opens one particular thing, where the app can.
+   *
+   * A row about HFM should land on HFM, not on the broker list with HFM
+   * somewhere in it. Falls back to the page when the app has no handler for
+   * that kind of thing.
+   */
+  open?: (what: { kind: 'broker' | 'signal' | 'article' | 'course' | 'promotion'; id: string }) => void;
 }
 
 const line = (label: string, body: string) => ({ label, body });
@@ -40,7 +48,10 @@ export function dockFor(ctx: AiDockContext): SpotlightData | null {
   return read ? { ...read, onResults: resultsFor(ctx) } : null;
 }
 
-function resultsFor({ signals, brokers, go }: AiDockContext) {
+function resultsFor({ signals, brokers, go, open }: AiDockContext) {
+  /** Open the thing itself where we can, the page where we cannot. */
+  const openOr = (what: Parameters<NonNullable<AiDockContext['open']>>[0], tab: string) =>
+    () => (open ? open(what) : go(tab));
   return (label: string) => {
     const open = (signals ?? []).filter((sg) => (sg as never as { status?: string }).status !== 'closed');
 
@@ -50,7 +61,7 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
       .map((b) => ({
         title: b.name,
         meta: `$${(b.cashbackPerLot ?? 0).toFixed(2)} a lot \u00b7 from ${b.minDeposit ?? '$0'} \u00b7 ${(b.regulations ?? [])[0] ?? 'see profile'}`,
-        action: { label: 'Trade', run: () => go('brokers') },
+        action: { label: 'Trade', run: openOr({ kind: 'broker', id: b.id }, 'brokers') },
       }));
 
     // A call is shown as the signals page draws it, because entry, stop and
@@ -58,7 +69,7 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
     const signalRows = open.slice(0, 3).map((sg) => {
       const row = sg as never as {
         ticker?: string; pair?: string; symbol?: string; direction?: string;
-        entryPrice?: string | number; stopLoss?: string | number; takeProfit1?: string | number;
+        id?: string; entryPrice?: string | number; stopLoss?: string | number; takeProfit1?: string | number;
         confidence?: number; riskReward?: string; timeframe?: string; validFor?: string;
       };
       const ticker = row.ticker ?? row.pair ?? row.symbol ?? 'Signal';
@@ -79,7 +90,7 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
               timeframe: row.timeframe,
               validFor: row.validFor,
             }}
-            onTrade={() => go('instrument-analysis')}
+            onTrade={openOr({ kind: 'signal', id: String(row.id ?? ticker) }, 'instrument-analysis')}
           />
         ),
       };
@@ -118,7 +129,7 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
           .map((pr) => ({
             title: pr.title,
             meta: `${pr.brokerName} \u00b7 ${pr.value} \u00b7 ${pr.endsInDays <= 0 ? 'ends today' : `${pr.endsInDays} days left`}${pr.requiresConnected ? ' \u00b7 needs a connected account' : ''}`,
-            action: { label: 'Claim', run: () => go('promotions') },
+            action: { label: 'Claim', run: openOr({ kind: 'promotion', id: pr.id }, 'promotions') },
           }));
         return offers.length
           ? { intro: `${offers.length} offers live now. Most need a connected and verified account before they pay anything.`, rows: offers }
@@ -135,7 +146,7 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
           .map((c) => ({
             title: c.title,
             meta: `${c.lessons.length} lessons \u00b7 ${c.level} \u00b7 ${c.requiredPlan === 'Free' ? 'open to you' : `${c.requiredPlan} plan`}`,
-            action: { label: 'Start', run: () => go('education-hub') },
+            action: { label: 'Start', run: openOr({ kind: 'course', id: c.id }, 'education-hub') },
           }));
         return courses.length
           ? { intro: `${courses.length} courses open to you. Finishing a lesson pays Credits; Points come from trading alone.`, rows: courses }

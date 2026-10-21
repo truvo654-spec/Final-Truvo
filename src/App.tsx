@@ -2412,6 +2412,24 @@ export default function App() {
           signals={signals}
           brokers={brokers}
           go={(t) => setActiveTab(t)}
+          open={({ kind, id }) => {
+            // A row about one thing should land on that thing.
+            if (kind === 'broker') {
+              const b = brokers.find((x) => x.id === id);
+              if (b) { setSelectedBrokerForDetail(b); setActiveTab('broker-detail'); return; }
+              setActiveTab('brokers');
+              return;
+            }
+            if (kind === 'signal') {
+              const sig = signals.find((x) => x.id === id || x.ticker === id);
+              if (sig) { setSelectedSignal(sig); setActiveTab('signal-detail'); return; }
+              setActiveTab('signals');
+              return;
+            }
+            if (kind === 'article') { setActiveTab('news'); return; }
+            if (kind === 'course') { setActiveTab('education-hub'); return; }
+            setActiveTab('promotions');
+          }}
         />
       )}
     </div>
