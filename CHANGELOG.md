@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.11.0] - 2026-10-09
+### Added
+- The community and the leaderboard answer with rows like everything else, which completes the set: the five posts people actually answered, ranked by replies rather than recency, and the top five on the board with their Points, tier and cashback. Each carries the caveat that matters: a busy thread is a conversation rather than a recommendation, and the board rewards volume traded rather than accuracy.
+### Fixed
+- The Points page was showing live offers under "Where to go next" instead of the Points about to expire. It was reading the opener's destination rather than the opener itself, and the two are different subjects: the question is what expires first, where it leads is somewhere to spend them.
+### Note
+- Every surface checked: points, community, signals and brokers each show their own rows with their own actions.
+
 ## [2.10.0] - 2026-10-09
 ### Added
 - "Where to go next" shows the things themselves rather than three links to go and find them. On brokers it lists the five paying most per lot with a Trade button each, on signals the strongest calls with Buy or Sell, on news the stories with Read, on education the shortest courses with Start, on the calendar the high-impact releases still ahead with Watch, and on points your oldest Points with how many days each has left. The links stay underneath for anyone who wants the full page.

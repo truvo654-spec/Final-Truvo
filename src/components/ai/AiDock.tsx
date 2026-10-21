@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { LEADERBOARD_USERS } from '../../data/mockData';
 import { CALENDAR_NOW, ECONOMIC_EVENTS } from '../../data/economicCalendarData';
 import { NEWS_ARTICLES } from '../../data/newsData';
 import { POINT_LIFE_DAYS } from '../../data/rewardRules';
@@ -151,6 +152,7 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
       }
 
       case 'What expires first':
+      case 'Open: What expires first':
       case 'See my points':
       case 'See my missions': {
         const led = readLedger();
@@ -168,6 +170,40 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
           });
         return soon.length
           ? { intro: `Your Points, oldest first. Each one counts towards your level for ${POINT_LIFE_DAYS} days from the day it was earned.`, rows: soon }
+          : null;
+      }
+
+      case 'What is worth reading':
+      case 'Open the articles':
+      case 'Open the feed':
+      case 'See the community':
+      case 'See what traders write': {
+        // Engagement rather than recency: the newest post is not the one
+        // worth your time, the one people answered is.
+        const posts = [...INITIAL_FEED_POSTS, ...MORE_FEED_POSTS]
+          .filter((po) => !po.isCurrentUser)
+          .sort((a, b) => ((b.likes ?? 0) + (b.comments?.length ?? 0) * 3) - ((a.likes ?? 0) + (a.comments?.length ?? 0) * 3))
+          .slice(0, 5)
+          .map((po) => ({
+            title: po.author.name,
+            meta: `${(po.content ?? '').slice(0, 70)}${(po.content ?? '').length > 70 ? '\u2026' : ''}`,
+            action: { label: 'Read', run: () => go('community') },
+          }));
+        return posts.length
+          ? { intro: `The ${posts.length} posts people actually answered. A busy thread is a conversation, not a recommendation.`, rows: posts }
+          : null;
+      }
+
+      case 'What the leader does differently':
+      case 'Open the leaderboard':
+      case 'What the gap is': {
+        const board = LEADERBOARD_USERS.slice(0, 5).map((u) => ({
+          title: `${u.rank}. ${u.username}`,
+          meta: `${u.points.toLocaleString()} Points \u00b7 ${u.tier} \u00b7 $${u.cashbackEarned.toLocaleString()} cashback`,
+          action: { label: 'See how', run: () => go('points-credits') },
+        }));
+        return board.length
+          ? { intro: `The top ${board.length} this period. Points come from volume traded, so the board rewards activity rather than accuracy.`, rows: board }
           : null;
       }
 
