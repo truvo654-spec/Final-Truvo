@@ -29,7 +29,24 @@ export interface BrokerReview {
   postedOn: string;
   helpful: number;
   isNew?: boolean;
+  /** Scores for the things traders actually compare brokers on. */
+  categories?: Partial<Record<ReviewCategory, number>>;
 }
+
+/** The six things a broker is judged on, in the order they are shown. */
+export const REVIEW_CATEGORIES = [
+  'Execution',
+  'Spreads and fees',
+  'Withdrawals',
+  'Platform',
+  'Support',
+  'Transparency',
+] as const;
+
+export type ReviewCategory = (typeof REVIEW_CATEGORIES)[number];
+
+/** How many reviews a guest may read before being asked to write one. */
+export const FREE_REVIEWS = 3;
 
 /** What writing one pays, from the workbook's social quests. */
 export const REVIEW_CREDITS = 20;
@@ -109,6 +126,7 @@ export const BrokerReviewsTabContent: React.FC<{
     relationship: 'Current client',
     pros: '',
     cons: '',
+    categories: {} as Partial<Record<ReviewCategory, number>>,
     recommend: null as boolean | null,
     trustworthy: null as boolean | null,
     wouldFundAgain: null as boolean | null,
@@ -123,9 +141,15 @@ export const BrokerReviewsTabContent: React.FC<{
       stars: n,
       count: reviews.filter((r) => Math.round(r.rating) === n).length,
     }));
+    const categories = REVIEW_CATEGORIES.map((name) => {
+      const scored = reviews.map((r) => r.categories?.[name]).filter((n): n is number => typeof n === 'number');
+      return { name, value: scored.length ? scored.reduce((a, n) => a + n, 0) / scored.length : null };
+    }).filter((c) => c.value !== null) as { name: ReviewCategory; value: number }[];
+
     return {
       average: total / reviews.length,
       count: reviews.length,
+      categories,
       recommend: counted ? Math.round((yes / counted) * 100) : null,
       spread,
     };
@@ -159,6 +183,7 @@ export const BrokerReviewsTabContent: React.FC<{
       recommend: draft.recommend,
       trustworthy: draft.trustworthy,
       wouldFundAgain: draft.wouldFundAgain,
+      categories: draft.categories,
       pros: draft.pros.trim(),
       cons: draft.cons.trim(),
       postedOn: new Date().toISOString().slice(0, 10),
@@ -210,7 +235,23 @@ export const BrokerReviewsTabContent: React.FC<{
               </p>
             )}
 
-            <div className="mt-4 space-y-1.5">
+            {stats.categories.length > 0 && (
+              <>
+                <h4 className="mt-5 font-display text-[15px] font-extrabold text-[#0b1c30]">Ratings by category</h4>
+                <dl className="mt-2.5 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                  {[...stats.categories].sort((a, b) => b.value - a.value).map((c) => (
+                    <div key={c.name} className="flex items-baseline gap-2">
+                      <dt className="order-2 text-[13.5px] text-[#474556]">{c.name}</dt>
+                      <dd className="order-1 w-7 font-display text-[14px] font-extrabold tabular-nums text-[#5945F1]">
+                        {c.value.toFixed(1)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </>
+            )}
+
+            <div className="mt-5 space-y-1.5">
               {stats.spread.map((row) => (
                 <div key={row.stars} className="flex items-center gap-2.5">
                   <span className="w-3 text-[12.5px] text-[#64748b]">{row.stars}</span>
@@ -275,6 +316,34 @@ export const BrokerReviewsTabContent: React.FC<{
                 </button>
               ))}
             </span>
+          </div>
+
+          <div className="mt-4">
+            <span className="block text-[13px] font-bold text-[#0b1c30]">Score the parts that matter</span>
+            <p className="mt-0.5 text-[12px] text-[#64748b]">Leave anything you have no view on blank.</p>
+            <div className="mt-2 space-y-2">
+              {REVIEW_CATEGORIES.map((name) => (
+                <div key={name} className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[13.5px] text-[#0b1c30]">{name}</span>
+                  <span className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-label={`${name}: ${n}`}
+                        onClick={() => setDraft((d) => ({ ...d, categories: { ...d.categories, [name]: n } }))}
+                        className="p-0.5"
+                      >
+                        <Star
+                          className={`h-4 w-4 ${(draft.categories[name] ?? 0) >= n ? 'fill-[#5945F1] text-[#5945F1]' : 'text-[#CCC6FB] hover:text-[#8a7af6]'}`}
+                          aria-hidden
+                        />
+                      </button>
+                    ))}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <label className="mt-4 block">
@@ -388,7 +457,12 @@ export const BrokerReviewsTabContent: React.FC<{
 
       <div className="rounded-2xl border border-[#CCC6FB] bg-white">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#CCC6FB] px-5 py-3.5">
-          <span className="text-[13px] text-[#64748b]">{reviews.length} reviews</span>
+          <span className="text-[13px] text-[#64748b]">
+            {reviews.length} reviews
+            {!isLoggedIn && reviews.length > FREE_REVIEWS && (
+              <span className="text-[#94a3b8]"> · {FREE_REVIEWS} shown</span>
+            )}
+          </span>
           <label className="flex items-center gap-2 text-[13px] text-[#64748b]">
             Sort by
             <select
@@ -410,8 +484,26 @@ export const BrokerReviewsTabContent: React.FC<{
           </p>
         ) : (
           <ul className="divide-y divide-[#eceafb]">
-            {sorted.map((r) => (
-              <li key={r.id} className="px-5 py-5">
+            {sorted.map((r, i) => {
+              const locked = !isLoggedIn && i >= FREE_REVIEWS;
+              return (
+              <li key={r.id} className={`relative px-5 py-5 ${locked ? 'select-none' : ''}`}>
+                {locked && (
+                  <>
+                    <span className="absolute inset-0 z-10 backdrop-blur-[5px]" aria-hidden />
+                    {i === FREE_REVIEWS && (
+                      <span className="absolute inset-x-0 top-1/2 z-20 flex -translate-y-1/2 justify-center px-5">
+                        <button
+                          type="button"
+                          onClick={start}
+                          className="rounded-xl bg-[#0b1c30] px-5 py-3 font-display text-[14.5px] font-extrabold text-white shadow-lg transition hover:bg-black"
+                        >
+                          Share your experience to get access
+                        </button>
+                      </span>
+                    )}
+                  </>
+                )}
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
                     <span className="font-display text-[15px] font-extrabold text-[#0b1c30]">
@@ -465,7 +557,8 @@ export const BrokerReviewsTabContent: React.FC<{
                   Helpful {r.helpful > 0 && `(${r.helpful})`}
                 </button>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </div>
