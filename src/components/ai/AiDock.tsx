@@ -27,7 +27,68 @@ export interface AiDockContext {
 const line = (label: string, body: string) => ({ label, body });
 
 /** The read for the page the person is on, or null where the dock stays shut. */
-export function dockFor({ tab, user, signals, brokers, go }: AiDockContext): SpotlightData | null {
+export function dockFor(ctx: AiDockContext): SpotlightData | null {
+  const read = dockRead(ctx);
+  return read ? { ...read, onResults: resultsFor(ctx) } : null;
+}
+
+function resultsFor({ signals, brokers, go }: AiDockContext) {
+  return (label: string) => {
+    const open = (signals ?? []).filter((sg) => (sg as never as { status?: string }).status !== 'closed');
+
+    const brokerRows = (brokers ?? []).slice()
+      .sort((a, b) => (b.cashbackPerLot ?? 0) - (a.cashbackPerLot ?? 0))
+      .slice(0, 5)
+      .map((b) => ({
+        title: b.name,
+        meta: `$${(b.cashbackPerLot ?? 0).toFixed(2)} a lot \u00b7 from ${b.minDeposit ?? '$0'} \u00b7 ${(b.regulations ?? [])[0] ?? 'see profile'}`,
+        action: { label: 'Trade', run: () => go('brokers') },
+      }));
+
+    const signalRows = open.slice(0, 3).map((sg) => {
+      const side = String((sg as never as { direction?: string }).direction ?? '').toUpperCase();
+      const conf = (sg as never as { confidence?: number }).confidence;
+      return {
+        title: `${(sg as never as { pair?: string; symbol?: string }).pair ?? (sg as never as { symbol?: string }).symbol ?? 'Signal'} \u00b7 ${side || 'BUY'}`,
+        meta: `${conf ? `${conf}% confidence` : 'confidence withheld'} \u00b7 ${(sg as never as { timeframe?: string }).timeframe ?? ''}`.trim(),
+        action: { label: side === 'SELL' ? 'Sell' : 'Buy', run: () => go('instrument-analysis') },
+      };
+    });
+
+    switch (label) {
+      case 'Find a broker':
+      case 'Open: Find a broker':
+      case 'Who pays most per lot':
+      case 'Connect a broker':
+      case 'Connect an account':
+        return brokerRows.length
+          ? { intro: `The ${brokerRows.length} paying most per lot right now. Cashback is only part of it: regulation and execution decide more.`, rows: brokerRows }
+          : null;
+
+      case 'Open signals':
+      case 'See the calls on these':
+      case 'The strongest call':
+      case 'Where the risk sits':
+        return signalRows.length
+          ? { intro: `The ${signalRows.length} strongest calls open at your level. Each one comes with its own stop and target: take them as a set.`, rows: signalRows }
+          : null;
+
+      default:
+        return null;
+    }
+  };
+}
+
+/** What each surface reads, before the chat results are attached. */
+function dockRead({ tab, user, signals, brokers, go }: AiDockContext): SpotlightData | null {
+  /**
+   * What a chat button brings back, rather than where it jumps to.
+   *
+   * Each question is answered with the real rows behind it: the brokers that
+   * actually pay most, the calls actually open, the offers actually closing.
+   * Anything not listed here returns null, and the button opens the page as
+   * before rather than showing invented rows.
+   */
   /** The third card: a neighbouring page, never the AI page itself. */
   const to = (tab: string, label: string, sub: string) => ({ label, sub, onClick: () => go(tab) });
 

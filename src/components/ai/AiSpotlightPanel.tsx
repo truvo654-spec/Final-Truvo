@@ -56,6 +56,18 @@ export interface SpotlightData {
   statNotes?: Record<string, string>;
   /** Answers a typed question on the Chat tab. Returns what to say back. */
   onAsk?: (text: string) => string;
+  /**
+   * Works a question further, in the conversation.
+   *
+   * Pressing "Find a broker" should bring the brokers back as rows a person
+   * can act on, not drop them on another page. A feature returns what it
+   * found, each row with its own action, and null when it has nothing for
+   * that question so the panel can say so instead of inventing rows.
+   */
+  onResults?: (label: string) => {
+    intro: string;
+    rows: { title: string; meta: string; action?: { label: string; run: () => void } }[];
+  } | null;
   /** The feature's own presentation, shown instead of the stat tiles. */
   visual?: React.ReactNode;
   footnote?: string;

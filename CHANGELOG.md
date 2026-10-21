@@ -9,6 +9,15 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.8.0] - 2026-10-09
+### Added
+- A button in the conversation works the question further instead of jumping off the page. Pressing "Find a broker" brings back the five paying most per lot, each with what it pays, what it opens from, how it is regulated and a Trade button; "Open signals" brings back the strongest calls open at your level, each with Buy or Sell. The rows are the real ones, and when a feature has nothing to show the button still opens the page, because a dead end is worse than a jump.
+### Fixed
+- The conversation could not be scrolled. The column was pinned to the container's height, so a long conversation had nowhere to go and the scroller never saw any overflow.
+- The broker rows printed two dollar signs on the minimum deposit.
+### Note
+- Seen running: pressing the button leaves the page where it is, writes "The 5 paying most per lot right now", and lists HFM, XM, Exness, IC Markets and Axi with their rates and a Trade button each.
+
 ## [2.7.0] - 2026-10-09
 ### Changed
 - The composer is the panel's footer rather than the last thing in the conversation. It used to live inside the scrolling area, which is why it kept being pushed around by whatever was above it; it now sits outside that area entirely, so it is always there no matter how long the conversation runs.

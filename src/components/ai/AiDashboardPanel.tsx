@@ -60,6 +60,8 @@ export const AiDashboardPanel: React.FC<{
     go?: { label: string; run: () => void };
     /** What it looked at before answering, and how long that took. */
     thought?: { seconds: number; steps: string[] };
+    /** What it found, when the question was worked rather than answered. */
+    rows?: { title: string; meta: string; action?: { label: string; run: () => void } }[];
   }[]>([]);
   /** What it is doing right now, while the answer is still coming. */
   const [thinking, setThinking] = useState<{ steps: string[]; done: number; seconds: number } | null>(null);
@@ -168,6 +170,24 @@ export const AiDashboardPanel: React.FC<{
       }));
     return [...own, ...fromStats].slice(0, 5);
   }, [data.suggestions, data.stats, data.statNotes]);
+
+  /**
+   * Carries a question one step further inside the conversation.
+   *
+   * If the feature can show something, it arrives as rows with their own
+   * actions. If it cannot, the button does what it always did and opens the
+   * page, because a dead end is worse than a jump.
+   */
+  const work = (go: { label: string; run: () => void }) => {
+    const found = data.onResults?.(go.label);
+    if (!found || found.rows.length === 0) { go.run(); return; }
+    setChat((c) => [...c, {
+      id: Date.now(),
+      from: 'ai',
+      text: found.intro,
+      rows: found.rows,
+    }]);
+  };
 
   const say = (text: string, go?: { label: string; run: () => void }) => {
     const t = text.trim();
@@ -358,9 +378,9 @@ export const AiDashboardPanel: React.FC<{
         ) : active?.id === 'chat' ? (
           /* A conversation about this page: ask in your own words, or take an
              opener, which both says it and takes you where it leads. */
-          <div className="flex min-h-0 flex-1 flex-col gap-5">
+          <div className="flex flex-col gap-5">
             {chat.length === 0 ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-5 px-2 text-center">
+              <div className="flex min-h-[260px] flex-1 flex-col items-center justify-center gap-5 px-2 text-center">
                 <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[#5945F1] to-[#2a1b7a]" aria-hidden>
                   <Sparkles className="h-6 w-6 text-white/90" />
                 </span>
@@ -416,10 +436,35 @@ export const AiDashboardPanel: React.FC<{
                           <span className="ml-1 inline-block h-3.5 w-1 translate-y-0.5 animate-pulse rounded-full bg-[#5945F1]" aria-hidden />
                         )}
                       </span>
-                      {m.go && (
+                      {m.rows && m.rows.length > 0 && (
+                        <span className="mt-2 flex flex-col gap-1.5">
+                          {m.rows.map((row) => (
+                            <span
+                              key={row.title}
+                              className="flex items-center gap-2 rounded-lg border border-[#CCC6FB] bg-white px-2.5 py-2"
+                            >
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-[13px] font-bold text-[#0b1c30]">{row.title}</span>
+                                <span className="block truncate text-[12px] text-[#64748b]">{row.meta}</span>
+                              </span>
+                              {row.action && (
+                                <button
+                                  type="button"
+                                  onClick={row.action.run}
+                                  className="shrink-0 rounded-md bg-[#5945F1] px-2.5 py-1 text-[12px] font-bold text-white transition hover:bg-[#4a38d6]"
+                                >
+                                  {row.action.label}
+                                </button>
+                              )}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+
+                      {m.go && !m.rows && (
                         <button
                           type="button"
-                          onClick={m.go.run}
+                          onClick={() => work(m.go!)}
                           className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#5945F1] px-3 py-1.5 text-[12.5px] font-bold text-white transition-colors hover:bg-[#4a38d6]"
                         >
                           {m.go.label}
