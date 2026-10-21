@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.4.1] - 2026-10-09
+### Fixed
+- On the Chat tab the openers sat on top of the page footnote and the composer was pushed out of reach. The chat column was asking for the container's full height while the footnote still took its own space below it, so the two landed in the same place. The column takes what is left instead, and the footnote stays on Summary, where the conversation carries its own caveats anyway.
+
 ## [2.4.0] - 2026-10-09
 ### Added
 - Twenty openers now name where the answer leads, and say so: asking where the risk sits on signals answers there and offers "Open the instrument"; what the entries show in the journal offers to read the coverage; what expires first on points offers to spend them on an offer. The answer stays on the page and the move is a second, deliberate press.

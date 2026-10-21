@@ -314,7 +314,7 @@ export const AiDashboardPanel: React.FC<{
         ) : active?.id === 'chat' ? (
           /* A conversation about this page: ask in your own words, or take an
              opener, which both says it and takes you where it leads. */
-          <div className="flex min-h-full flex-1 flex-col gap-5">
+          <div className="flex min-h-0 flex-1 flex-col gap-5">
             {chat.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-5 px-2 text-center">
                 <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-[#5945F1] to-[#2a1b7a]" aria-hidden>
@@ -610,7 +610,7 @@ export const AiDashboardPanel: React.FC<{
           </>
         )}
 
-        {data.footnote && (
+        {data.footnote && active?.id !== 'chat' && (
           <p className="mt-6 flex items-start gap-2 text-[12px] leading-relaxed text-[#94a3b8] dark:text-white/45">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />{data.footnote}
           </p>
