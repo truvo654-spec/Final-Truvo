@@ -69,6 +69,25 @@ export const AiDashboardPanel: React.FC<{
   const [streaming, setStreaming] = useState<number | null>(null);
   /** The plus menu above the composer. */
   const [plusOpen, setPlusOpen] = useState(false);
+  const plusRef = useRef<HTMLSpanElement | null>(null);
+
+  // A menu that only closes by pressing the same button again is a trap on
+  // touch, so a press anywhere else or the escape key closes it too.
+  useEffect(() => {
+    if (!plusOpen) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      if (!plusRef.current?.contains(e.target as Node)) setPlusOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPlusOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('touchstart', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [plusOpen]);
   /** What the person's level allows today, and what they have used. */
   const [asked, setAsked] = useState(() => asksUsedToday());
   const allowance = aiAllowance(tierLevel);
@@ -511,7 +530,7 @@ export const AiDashboardPanel: React.FC<{
               <div className="flex items-center gap-1.5 rounded-b-xl border-t border-[#CCC6FB] bg-[#faf9ff] px-2 py-2 dark:bg-white/5">
                 {/* One control rather than two pickers: a file, a figure from
                     this page, or one of the openers, all under the same plus. */}
-                <span className="relative">
+                <span className="relative" ref={plusRef}>
                   <button
                     type="button"
                     onClick={() => setPlusOpen((o) => !o)}
@@ -538,8 +557,20 @@ export const AiDashboardPanel: React.FC<{
                         className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
                       >
                         <Paperclip className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
-                        Upload a file
+                        {file ? 'Replace the file' : 'Upload a file'}
                       </button>
+
+                      {file && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => { setPlusOpen(false); setFile(null); }}
+                          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] text-[#0b1c30] transition hover:bg-[#f5f4ff]"
+                        >
+                          <X className="h-4 w-4 shrink-0 text-[#64748b]" aria-hidden />
+                          <span className="min-w-0 flex-1 truncate">Remove {file.name}</span>
+                        </button>
+                      )}
 
                       {(data.stats ?? []).length > 0 && (
                         <>
