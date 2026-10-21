@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.9.0] - 2026-10-09
+### Added
+- Offers and courses answer in the conversation too. Asking what can be claimed brings back the five live offers soonest to close, each saying what it pays, how long is left and whether it needs a connected account, with a Claim button; asking where to start brings back the five shortest courses, each with its level and a Start button, and says plainly that lessons pay Credits while Points come from trading.
+### Fixed
+- The composer had lost three of its four borders, left over from when it was stuck to the scrolling area. It is a bordered card again, with the corners on the pieces rather than clipped by the card, so the plus menu is not cut off.
+### Note
+- Seen running on both pages: the button brings the rows back without the page moving, and every row carries its own action.
+
 ## [2.8.0] - 2026-10-09
 ### Added
 - A button in the conversation works the question further instead of jumping off the page. Pressing "Find a broker" brings back the five paying most per lot, each with what it pays, what it opens from, how it is regulated and a Trade button; "Open signals" brings back the strongest calls open at your level, each with Buy or Sell. The rows are the real ones, and when a feature has nothing to show the button still opens the page, because a dead end is worse than a jump.

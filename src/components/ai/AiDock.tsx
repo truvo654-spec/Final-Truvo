@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { PROMOTIONS } from '../../data/promotionsData';
+import { COURSES } from '../../data/educationData';
 import { AiGhost } from './AiGhost';
 import { AiChecklist, AiCompare, AiMetrics, AiNext, AiProgress, AiVerdict } from './AiWidgets';
 import { AiStrip } from './AiSection';
@@ -72,6 +74,43 @@ function resultsFor({ signals, brokers, go }: AiDockContext) {
         return signalRows.length
           ? { intro: `The ${signalRows.length} strongest calls open at your level. Each one comes with its own stop and target: take them as a set.`, rows: signalRows }
           : null;
+
+      case 'What I can claim now':
+      case 'See offers':
+      case 'What closes soonest':
+      case 'Spend them on an offer': {
+        // Live now, soonest to close first: the one with least time left is
+        // the one worth seeing.
+        const offers = PROMOTIONS
+          .filter((pr) => pr.startsInDays === 0)
+          .sort((a, b) => a.endsInDays - b.endsInDays)
+          .slice(0, 5)
+          .map((pr) => ({
+            title: pr.title,
+            meta: `${pr.brokerName} \u00b7 ${pr.value} \u00b7 ${pr.endsInDays <= 0 ? 'ends today' : `${pr.endsInDays} days left`}${pr.requiresConnected ? ' \u00b7 needs a connected account' : ''}`,
+            action: { label: 'Claim', run: () => go('promotions') },
+          }));
+        return offers.length
+          ? { intro: `${offers.length} offers live now. Most need a connected and verified account before they pay anything.`, rows: offers }
+          : null;
+      }
+
+      case 'Where to start':
+      case 'Finish a course':
+      case 'Open the course': {
+        // Shortest first, because the hard part is starting.
+        const courses = COURSES.slice()
+          .sort((a, b) => a.lessons.length - b.lessons.length)
+          .slice(0, 5)
+          .map((c) => ({
+            title: c.title,
+            meta: `${c.lessons.length} lessons \u00b7 ${c.level} \u00b7 ${c.requiredPlan === 'Free' ? 'open to you' : `${c.requiredPlan} plan`}`,
+            action: { label: 'Start', run: () => go('education-hub') },
+          }));
+        return courses.length
+          ? { intro: `${courses.length} courses open to you. Finishing a lesson pays Credits; Points come from trading alone.`, rows: courses }
+          : null;
+      }
 
       default:
         return null;

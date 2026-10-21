@@ -623,7 +623,7 @@ export const AiDashboardPanel: React.FC<{
           className="hidden"
           onChange={(e) => { void takeFile(e.target.files?.[0]); e.target.value = ''; }}
         />
-        <div className="rounded-t-xl border-t border-[#CCC6FB] bg-white shadow-[0_-8px_16px_-12px_rgba(11,28,48,0.25)] dark:bg-[#170345]">
+        <div className="rounded-xl border border-[#CCC6FB] bg-white dark:bg-[#170345]">
           <div className="relative">
             <Search
               className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#94a3b8]"
