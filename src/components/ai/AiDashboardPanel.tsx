@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { aiAllowance, asksLeft, asksUsedToday, recordAsk } from './aiAllowance';
 import { answerFromPage } from './aiAnswer';
-import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Square, Sun, X } from 'lucide-react';
+import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, Lightbulb, MessageCircle, Paperclip, RefreshCw, Search, Send, Shield, Sparkles, Square, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiGhost } from './AiGhost';
 
@@ -483,14 +483,15 @@ export const AiDashboardPanel: React.FC<{
                 </button>
               </div>
 
-              <div className="flex items-center justify-between gap-2 border-t border-[#CCC6FB] bg-[#faf9ff] px-2.5 py-2 dark:bg-white/5">
-                {/* what the openers would ask, without leaving the box */}
+              <div className="flex items-center gap-1.5 border-t border-[#CCC6FB] bg-[#faf9ff] px-2 py-2 dark:bg-white/5">
+                {/* A suggestion fills the box so it can be edited before it goes. */}
                 <span className="relative">
+                  <Lightbulb className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#5945F1]" aria-hidden />
                   <select
                     value=""
                     onChange={(e) => { if (e.target.value) setDraft(e.target.value); }}
                     aria-label="Use a suggestion"
-                    className="h-7 cursor-pointer appearance-none rounded-lg border border-[#CCC6FB] bg-white py-0 pl-2.5 pr-6 text-[12px] text-[#0b1c30] outline-none dark:bg-transparent dark:text-white"
+                    className="h-8 cursor-pointer appearance-none rounded-lg border border-[#CCC6FB] bg-white py-0 pl-7 pr-6 text-[12.5px] font-medium text-[#0b1c30] outline-none transition hover:border-[#5945F1] dark:bg-transparent dark:text-white"
                   >
                     <option value="">Suggestions</option>
                     {(data.suggestions ?? []).map((sg) => (
@@ -500,47 +501,50 @@ export const AiDashboardPanel: React.FC<{
                   <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" aria-hidden />
                 </span>
 
-                <span className="flex items-center gap-1">
-                  {/* attach a file, or one of the figures this page is showing */}
-                  <span className="relative">
-                    <select
-                      value=""
-                      onChange={(e) => {
-                        if (e.target.value === '__file') { filePicker.current?.click(); return; }
-                        const stat = (data.stats ?? []).find((st) => st.label === e.target.value);
-                        if (!stat) return;
-                        setDraft((d) => `${d ? `${d.trim()} ` : ''}about ${stat.label} (${stat.value})`.trim());
-                      }}
-                      aria-label="Attach"
-                      className="h-7 w-[92px] cursor-pointer appearance-none rounded-lg px-2 text-[12px] text-[#64748b] outline-none hover:bg-white dark:text-white/60"
-                    >
-                      <option value="">Attach</option>
-                      <option value="__file">A file…</option>
-                      {(data.stats ?? []).map((st) => (
-                        <option key={st.label} value={st.label}>{st.label}: {st.value}</option>
-                      ))}
-                    </select>
-                    <Paperclip className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" aria-hidden />
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setChat([])}
-                    disabled={chat.length === 0}
-                    className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[12px] text-[#64748b] transition-colors hover:bg-white hover:text-[#0b1c30] disabled:opacity-40 dark:text-white/60"
+                {/* A file, or one of the figures this page is already showing. */}
+                <span className="relative">
+                  <Paperclip className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#64748b]" aria-hidden />
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value === '__file') { filePicker.current?.click(); return; }
+                      const stat = (data.stats ?? []).find((st) => st.label === e.target.value);
+                      if (!stat) return;
+                      setDraft((d) => `${d ? `${d.trim()} ` : ''}about ${stat.label} (${stat.value})`.trim());
+                    }}
+                    aria-label="Attach"
+                    className="h-8 w-[94px] cursor-pointer appearance-none rounded-lg border border-transparent bg-transparent pl-7 pr-2 text-[12.5px] text-[#64748b] outline-none transition hover:border-[#CCC6FB] hover:bg-white dark:text-white/60"
                   >
-                    <RefreshCw className="h-3.5 w-3.5" aria-hidden />
-                    Clear
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => (chatBusy ? stop() : say(draft))}
-                    disabled={!chatBusy && !draft.trim()}
-                    aria-label={chatBusy ? 'Stop' : 'Send'}
-                    className="flex h-7 items-center gap-1.5 rounded-lg bg-[#5945F1] px-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#4a38d6] disabled:opacity-40"
-                  >
-                    {chatBusy ? <><Square className="h-3 w-3 fill-current" aria-hidden />Stop</> : 'Send'}
-                  </button>
+                    <option value="">Attach</option>
+                    <option value="__file">A file…</option>
+                    {(data.stats ?? []).map((st) => (
+                      <option key={st.label} value={st.label}>{st.label}: {st.value}</option>
+                    ))}
+                  </select>
                 </span>
+
+                <span className="flex-1" />
+
+                <button
+                  type="button"
+                  onClick={() => { setChat([]); setFile(null); }}
+                  disabled={chat.length === 0}
+                  aria-label="Clear the conversation"
+                  title="Clear the conversation"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-[#64748b] transition hover:bg-white hover:text-[#0b1c30] disabled:opacity-30 dark:text-white/60"
+                >
+                  <RefreshCw className="h-4 w-4" aria-hidden />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => (chatBusy ? stop() : say(draft))}
+                  disabled={!chatBusy && !draft.trim()}
+                  aria-label={chatBusy ? 'Stop' : 'Send'}
+                  className="flex h-8 items-center gap-1.5 rounded-lg bg-[#5945F1] pl-3 pr-2.5 text-[12.5px] font-bold text-white transition hover:bg-[#4a38d6] disabled:bg-[#cdc7f5] disabled:text-white/80"
+                >
+                  {chatBusy ? <>Stop<Square className="h-3 w-3 fill-current" aria-hidden /></> : <>Send<Send className="h-3.5 w-3.5" aria-hidden /></>}
+                </button>
               </div>
             </div>
           </div>
