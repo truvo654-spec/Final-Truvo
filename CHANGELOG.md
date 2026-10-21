@@ -9,6 +9,15 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.25.0] - 2026-10-09
+### Changed
+- The Credit limits follow v3.6, which replaced the hybrid caps with a limit per day, per week and per month: everyday activity stops at 100, 700 and 3,000, social sits inside that at 60, 420 and 1,800, community-approved work has 200, 400 and 1,700 of its own, and everything from activity together stops at 360, 1,500 and 6,400. An award pays the smallest of what is left under any of them and says which one stopped it.
+- Watchlist and alert space are levels rather than timed unlocks, as v3.5 and v3.6 set them: 5, 10, 15 and unlimited instruments, 2, 4, 8 and unlimited alerts, with slots able to raise those to 10, 15 and 25, and to 5, 8 and 15.
+### Added
+- slotPrice, which charges the base price at LV1, a fifth less at LV2 and half at LV3, and refuses to sell a slot to anyone already at the ceiling or at Elite, because taking Credits for a slot that cannot be used is taking money for nothing.
+### Note
+- Checked by running it: twenty awards of thirty Credits pay a hundred in total and say "That is today's 100 Credits from everyday actions"; a watchlist slot costs 10, 10 and 5 Credits at LV1, LV2 and LV3, nothing at Elite, and nothing at the ceiling.
+
 ## [2.24.1] - 2026-10-09
 ### Fixed
 - The stars were missing from the rating in the broker header. The app strips icons out of buttons that also hold text, a rule from index.css, and this button was caught by it: the five stars were rendering at nothing by nothing. It is marked to keep its icons now.

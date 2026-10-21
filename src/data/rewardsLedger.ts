@@ -206,7 +206,14 @@ export function awardCredits(
     const dayRoom = Math.max(0, CREDIT_CAPS.farmablePerDay - farmableToday);
     if (amount > dayRoom) {
       amount = dayRoom;
-      note = `That is today\u2019s ${CREDIT_CAPS.farmablePerDay} Credits from repeatable actions.`;
+      note = `That is today\u2019s ${CREDIT_CAPS.farmablePerDay} Credits from everyday actions.`;
+    }
+
+    const weekFarmable = earnedIn(ledger, 7, now);
+    const weekRoom = Math.max(0, CREDIT_CAPS.farmablePerWeek - weekFarmable);
+    if (amount > weekRoom) {
+      amount = weekRoom;
+      note = `That is this week\u2019s ${CREDIT_CAPS.farmablePerWeek} Credits from everyday actions.`;
     }
   }
 
@@ -221,12 +228,20 @@ export function awardCredits(
     }
   }
 
-  // The safety net: it should never be what stops anyone, so if it does, a
-  // bug or a ring has got past the caps above.
-  const weekRoom = Math.max(0, CREDIT_CAPS.safetyPerWeek - earnedIn(ledger, 7, now));
-  if (amount > weekRoom) {
-    amount = weekRoom;
-    note = `That is this week\u2019s ${CREDIT_CAPS.safetyPerWeek} Credits.`;
+  // v3.6 replaced the hybrid caps with a limit per day, per week and per
+  // month on everything from activity. An award pays the smallest of what is
+  // left under any of them, and says which one stopped it.
+  const windows: [string, number, number][] = [
+    ['today', 1, CREDIT_CAPS.allActivityPerDay],
+    ['this week', 7, CREDIT_CAPS.allActivityPerWeek],
+    ['this month', 30, CREDIT_CAPS.allActivityPerMonth],
+  ];
+  for (const [when, days, cap] of windows) {
+    const room = Math.max(0, cap - earnedIn(ledger, days, now));
+    if (amount > room) {
+      amount = room;
+      note = `That is ${when}\u2019s ${cap} Credits from activity.`;
+    }
   }
 
   const next: Ledger = {

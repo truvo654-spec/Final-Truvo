@@ -77,12 +77,24 @@ export const BOOSTS = {
  */
 export const CREDIT_CAPS = {
   perTask: 200,
-  /** Group 1: actions a member can do alone and repeat. */
+  /** Group 1: actions a member does alone and can repeat. */
   farmablePerDay: 100,
-  /** Social actions, counted inside the farmable daily cap. */
+  farmablePerWeek: 700,
+  farmablePerMonth: 3000,
+  /** Social actions, counted inside the everyday limit rather than beside it. */
   socialPerDay: 60,
-  /** Catches what the other caps miss. All activity Credits. */
-  safetyPerWeek: 1200,
+  socialPerWeek: 420,
+  socialPerMonth: 1800,
+  /** Shares that leave the platform, their own limit of the same size. */
+  outsideSharePerDay: 60,
+  /** Group 2: work somebody else approved. */
+  approvedPerDay: 200,
+  approvedPerWeek: 400,
+  approvedPerMonth: 1700,
+  /** Everything from activity, whatever group it came from. */
+  allActivityPerDay: 360,
+  allActivityPerWeek: 1500,
+  allActivityPerMonth: 6400,
   /** Group 3: broker-confirmed rewards, all of them together. */
   revenueLinkedPerMonth: 1500,
 } as const;
@@ -92,6 +104,36 @@ export const FIRST_USE_REWARD_LIMIT = 10;
 
 /** One-off and referral rewards are held before they count. */
 export const REWARD_HOLDING_DAYS = 14;
+
+/** Watchlist space included at each level, and the most slots can add. */
+export const WATCHLIST_SIZE = [5, 10, 15, Infinity] as const;
+export const WATCHLIST_MAX_WITH_SLOTS = [10, 15, 25, Infinity] as const;
+export const WATCHLIST_SLOT_PRICE = 10;
+
+/** Active price alerts included at each level, and the most slots can add. */
+export const ALERT_COUNT = [2, 4, 8, Infinity] as const;
+export const ALERT_MAX_WITH_SLOTS = [5, 8, 15, Infinity] as const;
+export const ALERT_SLOT_PRICE = 5;
+
+/**
+ * What one extra slot costs this member.
+ *
+ * The base price at LV1, a fifth off at LV2 and half at LV3; Elite has no
+ * limit to lift. Rounded to the usual five Credits, and refused once the
+ * member is already at the most slots can add, because selling a slot that
+ * cannot be used would be taking money for nothing.
+ */
+export function slotPrice(kind: 'watchlist' | 'alert', level: number, owned: number): number | null {
+  const lv = Math.min(Math.max(level, 1), 4);
+  if (lv === 4) return null;
+
+  const ceiling = kind === 'watchlist' ? WATCHLIST_MAX_WITH_SLOTS[lv - 1] : ALERT_MAX_WITH_SLOTS[lv - 1];
+  if (owned >= ceiling) return null;
+
+  const base = kind === 'watchlist' ? WATCHLIST_SLOT_PRICE : ALERT_SLOT_PRICE;
+  const share = UNLOCK_DISCOUNT[lv - 1];
+  return Math.max(UNLOCK_ROUNDING, Math.round((base * share) / UNLOCK_ROUNDING) * UNLOCK_ROUNDING);
+}
 
 /**
  * Which cap a mission answers to.
