@@ -546,10 +546,44 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             <div className="space-y-3">
               <section className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2" aria-label="Review queue">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-bold">Review queue · {pendingEntries.length} pending<JournalHelp label="Review queue" /></h3>
+                  <h3 className="text-sm font-bold">Review your trades<JournalHelp label="Review queue" /></h3>
                   {!!pendingEntries.length && <button type="button" className="text-xs font-semibold text-[#5338ec] hover:underline" onClick={() => setReviewQueueOpen(true)}>See full pending list</button>}
                 </div>
-                <p className="text-xs text-slate-500">In this scope. Incomplete information is not a negative result.</p>
+                <p className="text-xs text-slate-500">
+                  {pendingEntries.length === 0
+                    ? 'Nothing is waiting. Reviewing a trade while it is fresh is what makes the rest of this page worth reading.'
+                    : `You have ${pendingEntries.length} trade${pendingEntries.length === 1 ? '' : 's'} waiting for review. Completing them gives you more accurate insights and analytics.`}
+                </p>
+
+                {pendingEntries.length > 0 && (
+                  <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 no-scrollbar">
+                    {pendingEntries.slice(0, 6).map((e) => {
+                      const long = String(e.direction ?? '').toLowerCase().startsWith('b');
+                      const value = eligible(e) ? valueOf(e) : null;
+                      return (
+                        <button
+                          key={e.id}
+                          type="button"
+                          onClick={() => openEntry(e.id)}
+                          className="w-[58%] shrink-0 snap-start rounded-xl border border-[#CCC6FB] bg-white p-3 text-left transition hover:border-[#5338ec] sm:w-[220px]"
+                        >
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="truncate text-[13.5px] font-bold text-[#0b1c30]">{e.symbol}</span>
+                            <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11.5px] font-bold ${long ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                              {long ? 'Buy' : 'Sell'}
+                            </span>
+                          </span>
+                          <span className="mt-1 block text-[11.5px] text-[#64748b]">{shortDate(e.date, true)}</span>
+                          <span className="mt-1.5 block text-[12.5px] text-[#474556]">
+                            P/L <b className={value === null ? 'text-[#94a3b8]' : value > 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                              {value === null ? '(not recorded)' : money(value)}
+                            </b>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
                 {pendingEntries.slice(0,3).map(e=><button key={e.id} className="block text-left text-xs text-[#5338ec] underline" onClick={()=>openEntry(e.id,pendingEntries.map(x=>x.id))}>{e.symbol} · {e.date} · {incompleteFields(e).join(', ') || 'Review reopened'}</button>)}
                 <details className="pt-1 text-xs">
                   <summary className="cursor-pointer font-semibold text-[#5338ec] hover:underline">Show more information</summary>
@@ -563,7 +597,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               </section>
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold">
-                  {selectedDay ? `Trades on ${shortDate(selectedDay, true)}` : 'Recent entries'}<JournalHelp label="Recent entries" />
+                  {selectedDay ? `Trades on ${shortDate(selectedDay, true)}` : 'Recent trades'}<JournalHelp label="Recent entries" />
                 </h3>
                 {selectedDay ? (
                   <button onClick={() => setSelectedDay(null)} className="text-xs font-semibold text-[#5338ec] hover:underline">Clear day</button>
@@ -589,7 +623,53 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                   No entries match this date range and filters.
                 </div>
               ) : (
-                [...scoped].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4).map((e) => <EntryRow key={e.id} e={e} />)
+                <div className="overflow-x-auto rounded-2xl border border-[#e2e8f0] bg-white">
+                  <table className="w-full min-w-[640px] text-left">
+                    <thead>
+                      <tr className="border-b border-[#eceafb] text-[11px] font-bold uppercase tracking-wide text-[#64748b]">
+                        <th className="px-4 py-3">Broker</th>
+                        <th className="px-4 py-3">Asset</th>
+                        <th className="px-4 py-3">Date closed</th>
+                        <th className="px-4 py-3">Direction</th>
+                        <th className="px-4 py-3">Setup</th>
+                        <th className="px-4 py-3 text-right">R-Multiple</th>
+                        <th className="px-4 py-3 text-right">P&amp;L</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...scoped].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map((e) => {
+                        const r = realizedR(e);
+                        const value = eligible(e) ? valueOf(e) : null;
+                        const long = String(e.direction ?? '').toLowerCase().startsWith('b');
+                        return (
+                          <tr
+                            key={e.id}
+                            onClick={() => openEntry(e.id)}
+                            className="cursor-pointer border-b border-[#f3f4f8] text-[13px] transition-colors last:border-0 hover:bg-[#f8f7ff]"
+                          >
+                            <td className="px-4 py-3 text-[#474556]">{brokerName(e.brokerId) || '\u2014'}</td>
+                            <td className="px-4 py-3 font-bold text-[#0b1c30]">{e.symbol}</td>
+                            <td className="px-4 py-3 text-[#474556]">{shortDate(e.date, true)}</td>
+                            <td className="px-4 py-3">
+                              <span className={`rounded-md px-2 py-0.5 text-[12px] font-bold ${long ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                                {long ? 'Buy' : 'Sell'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-[#474556]">{e.strategy || '\u2014'}</td>
+                            <td className="px-4 py-3 text-right font-mono font-bold text-[#0b1c30]">
+                              {r === null ? '\u2014' : `${r > 0 ? '+' : ''}${r.toFixed(1)}R`}
+                            </td>
+                            <td className={`px-4 py-3 text-right font-mono font-bold ${
+                              value === null ? 'text-[#94a3b8]' : value > 0 ? 'text-emerald-600' : value < 0 ? 'text-rose-600' : 'text-[#0b1c30]'
+                            }`}>
+                              {value === null ? 'Not recorded' : money(value)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
               <JournalOverviewAnalytics entries={scoped} currency={currency} basis={pnlMode} onTrade={id=>openEntry(id,scoped.map(e=>e.id))} onDay={openDay}/>
             </div>
