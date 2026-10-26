@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { track } from '../../../data/analytics';
 import { Check, Minus, Star, ThumbsUp, X } from 'lucide-react';
 import { awardCredits, readLedger, writeLedger } from '../../../data/rewardsLedger';
 
@@ -164,7 +165,12 @@ export const BrokerReviewsTabContent: React.FC<{
   }, [reviews, sort]);
 
   const start = () => {
-    if (!isLoggedIn) { onRequireLogin(); return; }
+    if (!isLoggedIn) {
+      track('review_gate_hit', { broker_id: brokerId, reviews_seen: Math.min(FREE_REVIEWS, reviews.length) });
+      onRequireLogin();
+      return;
+    }
+    track('review_started', { broker_id: brokerId });
     setWriting(true);
   };
 
@@ -200,6 +206,11 @@ export const BrokerReviewsTabContent: React.FC<{
       helpful: 0,
       isNew: true,
     };
+    track('review_submitted', {
+      broker_id: brokerId, rating: review.rating,
+      has_cons: review.cons.length > 0,
+      categories_scored: Object.keys(review.categories ?? {}).length,
+    });
     writeReview(brokerId, review);
     setReviews((r) => [review, ...r]);
     setWriting(false);

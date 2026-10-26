@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { hashQuery, track } from '../../data/analytics';
 import { aiAllowance, asksLeft, asksUsedToday, recordAsk } from './aiAllowance';
 import { answerFromPage } from './aiAnswer';
 import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, Lightbulb, MessageCircle, Paperclip, Plus, RefreshCw, Search, Send, Shield, Sparkles, Square, Sun, X } from 'lucide-react';
@@ -210,6 +211,7 @@ export const AiDashboardPanel: React.FC<{
     const t = text.trim();
     if (!t || thinking) return;
     if (left !== null && left <= 0) {
+      track('ai_limit_hit', { member_level: tierLevel, asks_used: asked, page: data.pretext });
       setChat((c) => [...c, {
         id: Date.now(),
         from: 'ai',
@@ -218,6 +220,7 @@ export const AiDashboardPanel: React.FC<{
       setDraft('');
       return;
     }
+    track('ai_question_asked', { question_hashed: hashQuery(t), asks_left: left, page: data.pretext });
     recordAsk();
     setAsked(asksUsedToday());
     window.clearTimeout(stream.current);

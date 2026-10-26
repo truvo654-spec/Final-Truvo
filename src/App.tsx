@@ -1,4 +1,5 @@
 import React, { useState, useEffect , useMemo} from 'react';
+import { track } from './data/analytics';
 import { DemoDashboardView as DemoDashboard1 } from './components/demo1/DemoDashboard1';
 import { COURSES } from './data/educationData';
 import { PROMOTIONS } from './data/promotionsData';
@@ -306,6 +307,11 @@ export default function App() {
   // Modals state
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [selectedBrokerForConnect, setSelectedBrokerForConnect] = useState<Broker | null>(null);
+
+  // page_view, from the one place that knows the route changed.
+  useEffect(() => {
+    track('page_view', { page_title: document.title, referrer: document.referrer });
+  }, [activeTab]);
   const [connectReturnTab, setConnectReturnTab] = useState<string>('dashboard');
   const [selectedBrokerForDetail, setSelectedBrokerForDetail] = useState<Broker>(() => {
     if (initialRoute.brokerId) {

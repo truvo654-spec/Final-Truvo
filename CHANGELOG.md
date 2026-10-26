@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.33.0] - 2026-10-09
+### Added
+- The client half of the tracking plan, in analytics.ts, with the plan's rules enforced in code rather than left to whoever writes the next call site. Nothing is sent without analytics consent. Anything that pays is refused outright, because a browser must never be the authority that Credits were earned. Search queries and AI questions are hashed on the device, so the shape of demand is measured without reading what anyone typed.
+- Ten events wired where the plan says they belong: page_view, search_performed, ai_question_asked, ai_limit_hit, watchlist_limit_hit, watchlist_slot_bought, instrument_favourited, review_gate_hit, review_started and review_submitted. Four of those are refusals, which the plan marks P0 because each one is either an upgrade prompt or a mistake and counting is the only way to tell which.
+- useCollector, so pointing the stream at a real endpoint is one function rather than a rewrite; until then events sit in a ring buffer readable from the console.
+### Note
+- Seen running rather than assumed: a visit that searched and asked the assistant recorded page_view twice, search_performed with the query hashed to q1tlcmtv_4 and seven results, and ai_question_asked, each carrying the member level and the page it happened on.
+
 ## [2.32.0] - 2026-10-09
 ### Changed
 - Every mission in the catalogue now names the event that proves it happened, and says whether it still pays. The two were agreed in the tracking plan and are carried here so the code and the plan cannot drift apart.

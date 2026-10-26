@@ -1,4 +1,5 @@
 import "./market.css";
+import { track } from '../../../data/analytics';
 import { slotPrice } from '../../../data/rewardRules';
 import { buySlot, readLedger, writeLedger } from '../../../data/rewardsLedger';
 import { InstrumentIcon } from '../InstrumentIcon';
@@ -659,9 +660,11 @@ export function InstrumentDetail({
   }, [focusId, instrument.symbol]);
   const positive = instrument.change >= 0;
   const toggleWatching = () => {
+    if (!watching) track('instrument_favourited', { symbol: instrument.symbol, watchlist_size: watchlistCount });
     if (!watching && watchlistCount >= watchlistLimit) {
       // Saying "you cannot" and stopping there is no help: the member can
       // buy one more place, so say what it costs and let them.
+      track('watchlist_limit_hit', { watchlist_size: watchlistCount, member_level: snapshot.level.level });
       const price = slotPrice('watchlist', snapshot.level.level, watchlistCount);
       if (price === null) {
         onToast(`Your watchlist is full at ${watchlistLimit} instruments and there are no more places to add.`);
@@ -677,6 +680,7 @@ export function InstrumentDetail({
         return;
       }
       writeLedger(bought.ledger);
+      track('watchlist_slot_bought', { price_credits: price, watchlist_size: watchlistCount, member_level: snapshot.level.level });
       onToast(`+1 watchlist place for ${price} Credits. ${instrument.symbol} added.`);
       setWatching(true);
       // Said instead of the usual "Asset Favourited", which would otherwise

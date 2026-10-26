@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { hashQuery, track } from '../data/analytics';
 import { CurrencyPairFlags, currencyPair } from './common/CurrencyFlag';
 import { expandQuery } from './searchKeywords';
 import { InstrumentIcon } from './analysis/InstrumentIcon';
@@ -198,6 +199,17 @@ export const CommandPalette: React.FC<{
       .sort((a, b) => (bestByGroup.get(b.i.group)! - bestByGroup.get(a.i.group)!) || (b.s - a.s))
       .map((x) => x.i);
   }, [items, query]);
+
+  // The query is hashed on the device: the shape of demand is worth
+  // measuring, reading what people typed is not.
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    const t = window.setTimeout(() => {
+      track('search_performed', { query_hashed: hashQuery(q), result_count: rows.length, has_results: rows.length > 0 });
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [query, rows.length]);
 
   /** The rows in render order, with their group headings. */
   const grouped = useMemo(() => {
