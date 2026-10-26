@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { track } from '../../data/analytics';
 import { reviewStats } from './brokerReviewStats';
 import { ReviewStars } from './tabs/BrokerReviewsTabContent';
 import { BrokerReviewsTabContent } from './tabs/BrokerReviewsTabContent';
@@ -64,6 +65,14 @@ export const BrokerDetailPage: React.FC<BrokerDetailPageProps> = ({
   const [activeTab, setActiveTab] = useState<'cashback' | 'account' | 'deposit-withdrawal' | 'company' | 'reviews'>(
     broker.hasCashback !== false && (broker.cashbackPerLot > 0 || broker.maxCashback !== '-') ? 'cashback' : 'account'
   );
+
+  useEffect(() => {
+    track('broker_viewed', { broker_id: broker.id, broker_name: broker.name });
+  }, [broker.id, broker.name]);
+
+  useEffect(() => {
+    track('broker_tab_viewed', { broker_id: broker.id, tab: activeTab });
+  }, [activeTab, broker.id]);
 
   // Synchronize activeTab if cashback availability changes
   useEffect(() => {

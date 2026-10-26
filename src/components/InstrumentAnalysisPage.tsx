@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { track } from '../data/analytics';
 import { WATCHLIST_SIZE } from '../data/rewardRules';
 import { readLedger, slotsOwned } from '../data/rewardsLedger';
 import { MarketSignal, Broker, UserProfile } from '../types';
@@ -155,6 +156,14 @@ export const InstrumentAnalysisPage: React.FC<InstrumentAnalysisPageProps> = ({
   // View tab state (Table | Heatmap | Scatter | Correlation)
   const [activeViewTab, setActiveViewTab] = useState<'table' | 'heatmap' | 'scatter' | 'correlation'>('table');
   const [selectedDetailInstrument, setSelectedDetailInstrument] = useState<Instrument | null>(null);
+
+  useEffect(() => {
+    if (selectedDetailInstrument) {
+      track('instrument_viewed', { symbol: selectedDetailInstrument.symbol, market: selectedDetailInstrument.market });
+    } else {
+      track('instrument_list_viewed', { category: selectedCategoryId });
+    }
+  }, [selectedDetailInstrument, selectedCategoryId]);
   const initialSymbolHandledRef = useRef<string | null>(null);
 
   useEffect(() => {

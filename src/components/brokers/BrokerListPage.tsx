@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { track } from '../../data/analytics';
 import { reviewStats } from './brokerReviewStats';
 import { ReviewStars } from './tabs/BrokerReviewsTabContent';
 import { Broker, UserProfile } from '../../types';
@@ -39,6 +40,10 @@ export const BrokerListPage: React.FC<BrokerListPageProps> = ({
   onOpenViewPlan,
   onShowToast,
 }) => {
+  useEffect(() => {
+    track('broker_list_viewed', { result_count: brokers.length });
+  }, [brokers.length]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'cashback' | 'toppick' | 'verified'>('all');
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);

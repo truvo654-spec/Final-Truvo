@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.34.0] - 2026-10-09
+### Added
+- Six more events wired where the plan puts them: signals_viewed, broker_list_viewed, broker_viewed, broker_tab_viewed, instrument_list_viewed and instrument_viewed. Sixteen of the plan's events now fire from the application.
+### Note
+- Captured by driving the pages rather than written from memory: broker_viewed carries broker_id "hfm" and broker_name "HFM", broker_tab_viewed carries the tab, signals_viewed carries six open calls and the level, and every one of them carries the eight global parameters the plan requires.
+
 ## [2.33.0] - 2026-10-09
 ### Added
 - The client half of the tracking plan, in analytics.ts, with the plan's rules enforced in code rather than left to whoever writes the next call site. Nothing is sent without analytics consent. Anything that pays is refused outright, because a browser must never be the authority that Credits were earned. Search queries and AI questions are hashed on the device, so the shape of demand is measured without reading what anyone typed.

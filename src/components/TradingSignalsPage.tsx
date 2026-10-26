@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { track } from '../data/analytics';
 import { CASHBACK_SHARE } from '../data/rewardRules';
 import { MarketSignal, Broker, UserProfile } from '../types';
 import { REFERENCE_SIGNALS } from '../data/signalsReferenceData';
@@ -66,6 +67,10 @@ export const TradingSignalsPage: React.FC<TradingSignalsPageProps> = ({
   onLeadToVisitorPage,
 }) => {
   // Category filter state
+  useEffect(() => {
+    track('signals_viewed', { open_count: initialSignals.length, level: user.tierLevel });
+  }, [initialSignals.length, user.tierLevel]);
+
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
