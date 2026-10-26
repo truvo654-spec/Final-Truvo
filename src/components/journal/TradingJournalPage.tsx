@@ -1,7 +1,7 @@
 import { JournalHelp, getJournalHelp } from './JournalHelp';
 import { useMoney, formatMoney, JournalCurrency } from './JournalCurrency';
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, BookOpen, ChevronRight, Clock, Flame, Lock, PlayCircle, ShieldCheck, Target, Trash2, TrendingUp, X } from 'lucide-react';
+import { AlertTriangle, BookOpen, ChevronRight, Clock, Flame, Lock, PlayCircle, ShieldCheck, SlidersHorizontal, Target, Trash2, TrendingUp, X } from 'lucide-react';
 import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview } from '../../types';
 import {
   JOURNAL_ENTRIES,
@@ -102,6 +102,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [reviewQueueOpen, setReviewQueueOpen] = useState(false);
   const [logPreset, setLogPreset] = useState<{ ids: string[]; label: string } | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+  /** The design keeps the scope controls behind one button. */
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [checklist, setChecklist] = useJournalState<JournalChecklistItem[]>('checklist', DEFAULT_CHECKLIST);
   const [newItem, setNewItem] = useState('');
@@ -455,6 +457,23 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       </div>
       {journalSandbox && <p role="status" className="text-xs text-purple-700 mb-3">Isolated journal test workspace — separate from your journal records.</p>}
       {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
+      <div className="mb-4 flex justify-end">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((o) => !o)}
+          aria-expanded={filtersOpen}
+          data-keep-button-icons
+          className={`flex h-9 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition ${
+            filtersOpen ? 'border-[#5338ec] bg-[#f1f0fe] text-[#5338ec]' : 'border-[#CCC6FB] text-[#474556] hover:border-[#5338ec]'
+          }`}
+        >
+          <SlidersHorizontal className="h-4 w-4" aria-hidden />
+          Filters
+        </button>
+      </div>
+
+      {filtersOpen && (
+        <div className="mb-4 rounded-2xl border border-[#CCC6FB] bg-white p-4">
       <div className="flex flex-wrap gap-3 mb-3 text-xs">
         <label title="Keep calculations in one currency. No currency conversion is applied.">Account currency<JournalHelp label="Account currency" /> <select aria-label="Account currency" title="Choose the account currency; entries in other currencies are excluded." value={currency} onChange={e=>{setCurrency(e.target.value);setAccount('all');setSelectedDay(null);}}>{[...new Set(['USD',...entries.map(currencyOf)])].map(c=><option key={c}>{c}</option>)}</select></label>
         <label title="Limit the journal scope to one account or include all accounts in the selected currency.">Account<JournalHelp label="Account" /> <select aria-label="Account" title="Choose one account or all accounts in the selected currency." value={account} onChange={e=>{setAccount(e.target.value);setSelectedDay(null);}}><option value="all">All accounts in this currency</option>{[...new Set(entries.filter(e=>currencyOf(e)===currency).map(e=>e.accountId || 'legacy-demo'))].map(a=><option key={a}>{a}</option>)}</select></label>
@@ -487,11 +506,16 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           </div>
 
         </div>
+        </div>
+      )}
+
       {tab === 'overview' && (
         <div className="space-y-6 mt-6">
           {/* MarketSyde reads the journal and says what it sees, above the
               figures it is reading, so the words come before the numbers. */}
 
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
+            <div className="space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1 capitalize">{cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`}<JournalHelp label={cbMode === 'points' ? 'Points' : pnlMode === 'net' ? 'Net P&L' : 'Gross P&L'} /></p>
@@ -541,9 +565,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
 
           <JournalCumulativeChart entries={scoped} valueOf={valueOf} title={cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`} unit={cbMode === 'points' ? 'pts' : 'usd'} rangeLabel={rangeLabel} brokers={chartBrokers} off={brokerOff} onDay={openDay}/>
-
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
-            <div className="space-y-3">
               <section className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2" aria-label="Review queue">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-bold">Review your trades<JournalHelp label="Review queue" /></h3>
@@ -761,6 +782,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
             <h4 className="text-sm font-bold mb-4">By strategy<JournalHelp label="By strategy" /></h4>
             <div className="space-y-3">
+
               {insights.byStrategy.map((s) => (
                 <div key={s.name} className="flex items-center justify-between text-xs">
                   <span className="font-semibold w-28 shrink-0">{s.name}</span>

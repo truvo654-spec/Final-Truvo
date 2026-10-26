@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.31.0] - 2026-10-09
+### Changed
+- The journal is laid out in two columns from the top, as the design draws it: the summary cards, the cumulative chart, the trades and the rest run down the left, with the calendar, the monitors and the AI coach beside them, rather than the sidebar starting halfway down the page.
+- Nine filter chips and two currency selectors are behind one Filters button. The page opens on the person's trades rather than on a row of controls most people never touch, and everything is still there for anyone who does.
+
 ## [2.30.0] - 2026-10-09
 ### Changed
 - Recent trades is the table the design draws: broker, asset, date closed, direction, setup, R-multiple and P&L, five rows, each one opening that trade. A result that was never recorded says "Not recorded" rather than showing a zero, because a trade with no number is not a trade that broke even.
