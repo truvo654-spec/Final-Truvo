@@ -9,6 +9,15 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.32.0] - 2026-10-09
+### Changed
+- Every mission in the catalogue now names the event that proves it happened, and says whether it still pays. The two were agreed in the tracking plan and are carried here so the code and the plan cannot drift apart.
+- Twenty-six missions stop paying. Each of them paid for something only the browser could claim had happened — opening an instrument, opening an article, asking the assistant — and no server event could honestly confirm it. The rows stay, because the behaviour may still be worth encouraging as progress towards a badge, but they pay nothing until there is proof.
+### Added
+- paying() and rewardFor(), so nothing has to remember which missions were retired: a retired mission returns zero, whatever its listed reward says.
+### Note
+- Checked by running it: 131 missions, 105 still paying, 26 retired, and 317 Credits a round no longer payable on evidence a console could forge. C03 "Review high-impact economic events" returns 0; C01, paired with the server-fired daily_checkin, still returns 5.
+
 ## [2.31.0] - 2026-10-09
 ### Changed
 - The journal is laid out in two columns from the top, as the design draws it: the summary cards, the cumulative chart, the trades and the rest run down the left, with the calendar, the monitors and the AI coach beside them, rather than the sidebar starting halfway down the page.
