@@ -1,5 +1,4 @@
 import { JournalHelp, getJournalHelp } from './JournalHelp';
-import { AiJournalSummary } from './AiJournalSummary';
 import { useMoney, formatMoney, JournalCurrency } from './JournalCurrency';
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BookOpen, ChevronRight, Clock, Flame, Lock, PlayCircle, ShieldCheck, Target, Trash2, TrendingUp, X } from 'lucide-react';
@@ -186,6 +185,43 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   useEffect(()=>{if(pendingSymbol!=='all'&&!pendingSymbols.includes(pendingSymbol))setPendingSymbol('all');},[pendingSymbols,pendingSymbol]);
   const filteredPending=useMemo(()=>pendingEntries.filter(e=>(pendingMarket==='all'||e.assetClass===pendingMarket)&&(pendingSymbol==='all'||e.symbol===pendingSymbol)),[pendingEntries,pendingMarket,pendingSymbol]);
   const kpi = useMemo(() => computeKpis(scoped, pnlMode), [scoped, pnlMode]);
+
+  /**
+   * The same figures for the window immediately before this one.
+   *
+   * A delta is only shown where the earlier window had something to compare
+   * against: "+100%" against nothing is not a gain, it is a first trade.
+   */
+  const prevKpi = useMemo(() => {
+    const dates = scoped.map((e) => e.date).filter(Boolean).sort();
+    if (dates.length === 0) return null;
+    const from = new Date(dates[0]).getTime();
+    const to = new Date(dates[dates.length - 1]).getTime();
+    const span = Math.max(to - from, 86_400_000);
+    const prior = entries.filter((e) => {
+      const t = new Date(e.date).getTime();
+      return t < from && t >= from - span;
+    });
+    return prior.length ? computeKpis(prior, pnlMode) : null;
+  }, [scoped, entries, pnlMode]);
+
+  /** A chip saying how a figure moved, or nothing when there is no honest comparison. */
+  const delta = (now: number | null, before: number | null | undefined, kind: 'count' | 'percent' | 'value') => {
+    if (now === null || before === null || before === undefined) return null;
+    const diff = now - before;
+    if (Math.abs(diff) < 0.0001) return null;
+    const up = diff > 0;
+    const text = kind === 'count'
+      ? `${up ? '+' : ''}${Math.round(diff)}`
+      : kind === 'percent'
+        ? `${up ? '+' : ''}${diff.toFixed(1)}%`
+        : `${up ? '+' : ''}${Math.abs(diff) >= 100 ? Math.round(diff) : diff.toFixed(2)}`;
+    return (
+      <span className={`mt-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10.5px] font-bold ${up ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+        {up ? '\u2197' : '\u2198'} {text}
+      </span>
+    );
+  };
   const cashbackTotal = useMemo(() => Math.round(scoped.reduce((a, e) => a + entryCashback(e, brokerMap), 0) * 100) / 100, [scoped, brokerMap]);
   const shownTotal = useMemo(() => Math.round(scoped.reduce((a, e) => a + valueOf(e), 0) * 100) / 100, [scoped, valueOf]);
   // brokers that actually have entries (before the broker filter) -> options for the Brokers popover
@@ -460,23 +496,28 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1 capitalize">{cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`}<JournalHelp label={cbMode === 'points' ? 'Points' : pnlMode === 'net' ? 'Net P&L' : 'Gross P&L'} /></p>
               <p className={`text-xl font-bold font-mono ${shownTotal > 0 ? 'text-emerald-600' : shownTotal < 0 ? 'text-rose-600' : ''}`}>{kpi.count ? (cbMode === 'points' ? `${shownTotal.toLocaleString('en-US')} pts` : money(shownTotal)) : '—'}</p>
+              {delta(kpi.pnl, prevKpi?.pnl, 'value')}
               <p className="text-[10px] text-[#94a3b8] mt-0.5">{kpi.realizedCount} eligible / {kpi.count} recorded · cashback {formatMoney(cashbackTotal,'USD')}</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1">Win rate<JournalHelp label="Win rate" /></p>
               <p className="text-xl font-bold flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-emerald-500" /> {kpi.winRate == null ? '—' : `${kpi.winRate}%`}</p>
+              {delta(kpi.winRate, prevKpi?.winRate, 'percent')}
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1">Profit factor<JournalHelp label="Profit factor" /></p>
               <p className="text-xl font-bold font-mono">{kpi.profitFactor === null ? '—' : kpi.profitFactor === Infinity ? '∞' : kpi.profitFactor.toFixed(2)}</p>
+              {delta(kpi.profitFactor === Infinity ? null : kpi.profitFactor, prevKpi?.profitFactor, 'value')}
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1">Average R<JournalHelp label="Average R" /></p>
               <p className="text-xl font-bold flex items-center gap-1.5"><Target className="w-4 h-4 text-[#5338ec]" /> {kpi.avgR==null?'—':`${kpi.avgR.toFixed(2)}R`}</p>
+              {delta(kpi.avgR, prevKpi?.avgR, 'value')}
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1">Total trades<JournalHelp label="Total trades" /></p>
               <p className="text-xl font-bold font-mono">{kpi.count}</p>
+              {delta(kpi.count, prevKpi?.count, 'count')}
               <p className="text-[10px] text-[#94a3b8] mt-0.5">{kpi.realizedCount} with a closed result</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 col-span-2 md:col-span-1">
@@ -497,13 +538,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             </div>
           </div>
 
-          <AiJournalSummary
-            entries={scoped}
-            checklistSize={checklist.length}
-            today={JOURNAL_TODAY}
-            onWriteEntry={() => setTab('entries')}
-            onOpenInsights={() => setTab('insights')}
-          />
+
 
           <JournalCumulativeChart entries={scoped} valueOf={valueOf} title={cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`} unit={cbMode === 'points' ? 'pts' : 'usd'} rangeLabel={rangeLabel} brokers={chartBrokers} off={brokerOff} onDay={openDay}/>
 

@@ -9,6 +9,13 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.29.0] - 2026-10-09
+### Added
+- The summary cards show how each figure moved, as the design does: the same window immediately before this one, as an up or down chip under the number.
+- A delta is only shown where the earlier window actually had trades in it. "+100%" against nothing is not an improvement, it is a first trade, and a chip claiming otherwise would flatter the person at the moment they can least afford it.
+### Removed
+- The dark AI summary from the journal's Overview. The design does not have it there, and the same read already lives in the right column as "What your journal says" and on its own AI Coach tab, so it was a third copy taking the top of the page before any of the person's own figures were visible.
+
 ## [2.28.0] - 2026-10-09
 ### Changed
 - The journal page is laid out as the design draws it: the title centred and set in the brand gradient, the subtitle under it saying what the page is for, and the tabs centred with Import / link beside them rather than the button competing with the heading.
