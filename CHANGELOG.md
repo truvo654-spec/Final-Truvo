@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.28.0] - 2026-10-09
+### Changed
+- The journal page is laid out as the design draws it: the title centred and set in the brand gradient, the subtitle under it saying what the page is for, and the tabs centred with Import / link beside them rather than the button competing with the heading.
+- The six summary cards come before the AI read. A dark card filling the screen before a single figure was visible made the page feel like a report about the person rather than their own numbers; the figures lead now and the read follows.
+
 ## [2.27.0] - 2026-10-09
 ### Changed
 - The journal's summary cards match the design: Total trades and Avg. trade duration replace Plan followed and Journal streak, so the six read Net P&L, Win rate, Total trades, Profit factor, Average R and Avg. trade duration.

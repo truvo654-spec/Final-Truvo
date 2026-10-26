@@ -392,24 +392,30 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
   return (
     <JournalCurrency.Provider value={currency}><div className="w-full max-w-[1360px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
-      <div className="flex items-start justify-between gap-6 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Trading Journal<JournalHelp label="Trading Journal" /></h1>
-          <p className="text-sm text-[#474556] mt-1">
-            Write down why you traded, how you felt, and what you'd change. Patterns show up fast.
-          </p>
-        </div>
+      {/* The design centres the title and sets the tabs under it, with the
+          import action sitting to the right of the tab row rather than
+          competing with the heading. */}
+      <div className="mb-6 text-center">
+        <h1 className="font-display text-3xl font-bold sm:text-4xl">
+          <span className="bg-gradient-to-r from-[#5338ec] to-[#c026d3] bg-clip-text text-transparent">
+            Trading Journal
+          </span>
+          <JournalHelp label="Trading Journal" />
+        </h1>
+        <p className="mx-auto mt-2 max-w-2xl text-sm text-[#474556]">
+          Log trades, track setup rules, and review execution in one place. Spot recurring patterns fast to refine your playbook.
+        </p>
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-end justify-center gap-x-3 gap-y-2">
+        <div className="min-w-0"><FolderTabs tabs={tabs} activeTab={tab} onChange={setTab} /></div>
         <button
           type="button"
           onClick={() => setWizardOpen(true)}
-          className="shrink-0 text-sm font-semibold bg-[#5338ec] hover:bg-[#4326d8] text-white rounded-xl px-4 py-2.5 transition-colors"
+          className="mb-1 shrink-0 rounded-xl bg-[#5338ec] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#4326d8]"
         >
           Import / link
         </button>
-      </div>
-
-      <div className="mb-6">
-        <FolderTabs tabs={tabs} activeTab={tab} onChange={setTab} />
       </div>
       {journalSandbox && <p role="status" className="text-xs text-purple-700 mb-3">Isolated journal test workspace — separate from your journal records.</p>}
       {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
@@ -449,13 +455,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         <div className="space-y-6 mt-6">
           {/* MarketSyde reads the journal and says what it sees, above the
               figures it is reading, so the words come before the numbers. */}
-          <AiJournalSummary
-            entries={scoped}
-            checklistSize={checklist.length}
-            today={JOURNAL_TODAY}
-            onWriteEntry={() => setTab('entries')}
-            onOpenInsights={() => setTab('insights')}
-          />
+
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1 capitalize">{cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`}<JournalHelp label={cbMode === 'points' ? 'Points' : pnlMode === 'net' ? 'Net P&L' : 'Gross P&L'} /></p>
@@ -496,6 +496,14 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               </p>
             </div>
           </div>
+
+          <AiJournalSummary
+            entries={scoped}
+            checklistSize={checklist.length}
+            today={JOURNAL_TODAY}
+            onWriteEntry={() => setTab('entries')}
+            onOpenInsights={() => setTab('insights')}
+          />
 
           <JournalCumulativeChart entries={scoped} valueOf={valueOf} title={cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`} unit={cbMode === 'points' ? 'pts' : 'usd'} rangeLabel={rangeLabel} brokers={chartBrokers} off={brokerOff} onDay={openDay}/>
 
