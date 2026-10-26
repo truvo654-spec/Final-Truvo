@@ -2,7 +2,7 @@ import { JournalHelp, getJournalHelp } from './JournalHelp';
 import { AiJournalSummary } from './AiJournalSummary';
 import { useMoney, formatMoney, JournalCurrency } from './JournalCurrency';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Flame, Target, TrendingUp, ShieldCheck, Lock, Trash2, BookOpen, ChevronRight, AlertTriangle, PlayCircle, X } from 'lucide-react';
+import { AlertTriangle, BookOpen, ChevronRight, Clock, Flame, Lock, PlayCircle, ShieldCheck, Target, Trash2, TrendingUp, X } from 'lucide-react';
 import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview } from '../../types';
 import {
   JOURNAL_ENTRIES,
@@ -475,12 +475,25 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               <p className="text-xl font-bold flex items-center gap-1.5"><Target className="w-4 h-4 text-[#5338ec]" /> {kpi.avgR==null?'—':`${kpi.avgR.toFixed(2)}R`}</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
-              <p className="text-[11px] font-semibold text-[#474556] mb-1">Plan followed<JournalHelp label="Plan followed" /></p>
-              <p className="text-xl font-bold flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-500" /> {kpi.plan==null?'—':`${kpi.plan.toFixed(0)}%`}</p>
+              <p className="text-[11px] font-semibold text-[#474556] mb-1">Total trades<JournalHelp label="Total trades" /></p>
+              <p className="text-xl font-bold font-mono">{kpi.count}</p>
+              <p className="text-[10px] text-[#94a3b8] mt-0.5">{kpi.realizedCount} with a closed result</p>
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 col-span-2 md:col-span-1">
-              <p className="text-[11px] font-semibold text-[#474556] mb-1">Journal streak<JournalHelp label="Journal streak" /></p>
-              <p className="text-xl font-bold flex items-center gap-1.5"><Flame className="w-4 h-4 text-orange-500" /> {stats.streak} days</p>
+              <p className="text-[11px] font-semibold text-[#474556] mb-1">Avg. trade duration<JournalHelp label="Avg. trade duration" /></p>
+              <p className="text-xl font-bold flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-sky-500" />
+                {kpi.avgHoldMinutes === null
+                  ? '\u2014'
+                  : kpi.avgHoldMinutes < 60
+                    ? `${kpi.avgHoldMinutes} min`
+                    : kpi.avgHoldMinutes < 1440
+                      ? `${(kpi.avgHoldMinutes / 60).toFixed(1)} hr`
+                      : `${(kpi.avgHoldMinutes / 1440).toFixed(1)} days`}
+              </p>
+              <p className="text-[10px] text-[#94a3b8] mt-0.5">
+                {kpi.avgHoldMinutes === null ? 'No trade has both timestamps yet' : 'Entry to exit, where both are recorded'}
+              </p>
             </div>
           </div>
 

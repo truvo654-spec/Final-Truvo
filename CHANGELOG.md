@@ -9,6 +9,14 @@ All notable changes to this project will be documented in this file.
 - Taken file by file rather than as a whole-branch merge, because that branch predates work of ours it would have undone: the news data, the points-per-lot table and the promotion alerts all live only on this side.
 - The fixes we made to those files were re-applied on top, so the generic trap in the segmented control, the filter that passed an array index as an accounting basis, the SVG that carried a title attribute instead of a title child and the currency that was never narrowed are all still fixed.
 
+## [2.27.0] - 2026-10-09
+### Changed
+- The journal's summary cards match the design: Total trades and Avg. trade duration replace Plan followed and Journal streak, so the six read Net P&L, Win rate, Total trades, Profit factor, Average R and Avg. trade duration.
+### Added
+- Average hold is worked out from the entry and exit timestamps a trade actually has. A trade still open, or missing one of them, is left out rather than counted as zero, which would drag the average down and make somebody look faster than they trade. Where nothing can be measured the card says so instead of showing a number.
+### Note
+- Seen running: the card reads 2.9 hr with "Entry to exit, where both are recorded" beneath it.
+
 ## [2.26.1] - 2026-10-09
 ### Fixed
 - Buying a watchlist place said nothing. The card's own banner was set and then immediately overwritten by the usual "Asset Favourited" a line later, and the page has no toast host, so ten Credits left the account in silence. The purchase is now what the banner says, and being short says how short.

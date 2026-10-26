@@ -1,4 +1,5 @@
 import { Broker, JournalEntry } from '../../types';
+import { timestampMs } from './journalMath';
 import { eligible, realized, metrics, currencyOf } from './journalMath';
 
 export type PnlMode = 'gross' | 'net';
@@ -68,6 +69,29 @@ export interface Kpis {
   profitFactor: number | null; // null = no losing trades
   avgR: number | null;
   plan: number | null;
+  /** Average time a closed trade was held, in minutes. */
+  avgHoldMinutes: number | null;
+}
+
+/**
+ * How long a closed trade was held, on average.
+ *
+ * Only trades with both ends recorded can be measured; an open trade has no
+ * duration yet and counting it as zero would drag the average down and make
+ * someone look faster than they trade.
+ */
+function avgHold(entries: JournalEntry[]): number | null {
+  const spans = entries
+    .map((e) => {
+      const open = timestampMs(e.entryTime);
+      const close = timestampMs(e.exitTime);
+      if (!Number.isFinite(open) || !Number.isFinite(close)) return null;
+      const ms = close - open;
+      return ms > 0 ? ms / 60000 : null;
+    })
+    .filter((n): n is number => n !== null);
+  if (spans.length === 0) return null;
+  return Math.round(spans.reduce((a, n) => a + n, 0) / spans.length);
 }
 
 export function computeKpis(entries: JournalEntry[], mode: PnlMode): Kpis {
@@ -77,6 +101,7 @@ export function computeKpis(entries: JournalEntry[], mode: PnlMode): Kpis {
     realizedCount: m.n, pnl: m.total,
     winRate: m.winRate === null ? null : Math.round(m.winRate * 10) / 10,
     profitFactor: m.pf, avgR: m.avgR, plan: m.plan,
+    avgHoldMinutes: avgHold(entries),
   };
 }
 
