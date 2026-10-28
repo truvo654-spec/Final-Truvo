@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.33.0] - 2026-10-28
+### Changed
+- Easy Playbook now displays strategy cards with markets, instruments, rules and expandable details. The full workspace remains accessible from each card; Standard and Advanced are unchanged.
+- Each card includes a clearly labeled illustrative pattern and filtered closed-trade results in the profile reporting currency. The illustrations are not market data, forecasts or trade signals.
+
 ## [2.32.0] - 2026-10-28
 ### Added
 - An Easy-view quick-create dialog with strategy name, market and instruments, starter templates, history-based instrument suggestions, optional details and House risk-limit defaults.

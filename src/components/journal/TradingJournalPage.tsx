@@ -839,6 +839,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onToast={onShowToast}
           houseChecklist={checklist}
           houseLimits={rules}
+          reportingCurrency={reporting.settings.currency}
           easy={view.baseLevel === 'easy'}
           recordings={recordings}
           onSetRecording={(id, blob) => setRecordings((r) => {

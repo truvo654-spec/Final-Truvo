@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.32.0)
+### Journal views (v2.33.0)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -107,13 +107,20 @@ Preferences are versioned in the existing browser-local journal storage, with
 in-memory fallback and a visible warning if storage is unavailable or unreadable.
 This static Vite application has no preferences API or server database; views are
 not synced between devices. The existing journal demo-date basis is retained.
-Overview, Playbook, Backtest, and AI Coach retain their existing content behind
-the shared view/card foundation. Easy Playbook now opens a three-field
-quick-create dialog with optional templates and details; Standard and Advanced
-keep the existing creation flow. Defaults use the House risk and trade-count
-limits, and the shared House checklist remains in the existing check flow.
-The rest of the Easy Playbook redesign, scenario technical details and linked
-trade/backtest integration are not implemented yet.
+Overview, Backtest, and AI Coach retain their existing content behind the shared
+view/card foundation. Easy Playbook shows strategy cards with the saved markets,
+instruments, rules and expandable details. Their example chart patterns are
+illustrations, not actual market data, backtests or predictions. Card results
+use the current journal filters and closed trades with recorded costs in the
+profile reporting currency; other currencies and unknown-cost records are
+excluded. **Edit or open full workspace** retains the original Playbook editor
+and tools; **House rules & full workspace** is available even with no playbooks.
+Standard and Advanced keep the original interface.
+
+Easy Playbook has a three-field quick-create dialog with optional templates and
+details. Defaults use the House risk and trade-count limits, and the shared
+House checklist remains in the existing check flow. Scenario technical details
+and linked trade/backtest integration are not implemented yet.
 
 ### Simple Insights
 

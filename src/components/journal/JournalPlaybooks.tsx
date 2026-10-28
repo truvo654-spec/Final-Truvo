@@ -1,7 +1,7 @@
 import { JournalHelp } from './JournalHelp';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronRight, Search, Sparkles, X } from 'lucide-react';
 import { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
 import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, ReviewDecision, ScenarioStatus, PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
@@ -17,6 +17,7 @@ import { JOURNAL_TODAY } from '../../data/journalData';
 import { TradingStatusBadge, tradingStatusOf } from './tradingStatus';
 import { buildPlaybookRecommendations, RECOMMENDATION_MARKETS } from './playbookRecommendations';
 import { QuickPlaybookCreate } from './QuickPlaybookCreate';
+import { EasyPlaybookCards } from './EasyPlaybookCards';
 import { nextPlaybookId } from './playbookDefaults';
 
 // Strategy playbooks (light theme, after the uploaded concept): library with market/status filters,
@@ -119,6 +120,7 @@ interface Props {
   houseRules: React.ReactNode;
   houseChecklist: JournalChecklistItem[];
   houseLimits: { maxRisk: number; maxTrades: number };
+  reportingCurrency: string;
   easy?: boolean;
   recordings: Record<string, string>;
   onSetRecording: (entryId: string, blob: Blob | null) => void;
@@ -133,7 +135,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, houseLimits, easy = false, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, houseLimits, reportingCurrency, easy = false, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -147,6 +149,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
 
   const [recommendationOpen, setRecommendationOpen] = useState(false);
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [fullWorkspace, setFullWorkspace] = useState(false);
+  useEffect(() => { setFullWorkspace(false); }, [easy]);
   const [recommendationMarket, setRecommendationMarket] = useState<'all' | PortfolioAssetClass>('all');
   const [recommendationQuery, setRecommendationQuery] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -494,8 +498,21 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const statusCount = (st: 'all' | PlaybookStatus) => matchingInventory.filter((p) => st === 'all' || p.status === st).length;
   const marketCount = (m: 'all' | PortfolioAssetClass) => inStatus.filter((p) => m === 'all' || p.markets.includes(m)).length;
 
+  if (easy && !fullWorkspace && !editing) {
+    return <EasyPlaybookCards playbooks={playbooks} entries={allJournalEntries} scopedEntries={entries} currency={reportingCurrency} houseLimits={houseLimits} onCreate={book => {
+      setPlaybooks(previous => [...previous, book]);
+      setSelId(book.id);
+      onToast('Playbook created with smart defaults. Review them in the full workspace.');
+    }} onOpenWorkspace={id => {
+      if (id) setSelId(id);
+      setStatus('all'); setMarket('all'); setQuery(''); setEditing(null); setStep('setup'); setFullWorkspace(true);
+      requestAnimationFrame(() => document.getElementById('playbook-full-workspace')?.scrollIntoView({ block: 'start' }));
+    }}/>;
+  }
+
   return (
-    <div className="space-y-5">
+    <div id="playbook-full-workspace" className="space-y-5 scroll-mt-24">
+      {easy && !editing && <button type="button" onClick={() => setFullWorkspace(false)} className="text-sm font-semibold text-[#5338ec] hover:underline">← Back to strategy cards</button>}
       {tip}
       {recommendationOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-3 sm:p-6" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setRecommendationOpen(false); }}>

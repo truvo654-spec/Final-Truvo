@@ -29,7 +29,7 @@ export interface JournalCardDefinition {
 export const JOURNAL_CARD_REGISTRY: readonly JournalCardDefinition[] = [
   ...JOURNAL_VIEW_TABS.filter(tab => tab !== 'insights').map(tab => ({
     id: `${tab}-workspace`, tab, title: JOURNAL_TABS[tab],
-    plainSummary: `Your existing ${JOURNAL_TABS[tab]} workspace. Its dedicated simplification will come later.`,
+    plainSummary: tab === 'playbook' ? 'Browse your strategies as cards in Easy view, or open the full workspace for editing and detailed tools.' : `Your existing ${JOURNAL_TABS[tab]} workspace. Its dedicated simplification will come later.`,
     level: 'easy' as const, order: 0, canHide: true, lazy: true, component: 'existing',
   })),
   ...([
