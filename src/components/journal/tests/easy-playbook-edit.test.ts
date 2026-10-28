@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { DEFAULT_PLAYBOOKS } from '../../../data/journalPlaybooks';
 import { JOURNAL_ENTRIES } from '../../../data/journalData';
 import { EasyPlaybookEdit, easySetupChanges, easySetupDraft, easySetupErrors } from '../EasyPlaybookEdit';
+import { operand } from '../technicalPatternRules';
 
 const book = DEFAULT_PLAYBOOKS[0];
 const errors = (draft: ReturnType<typeof easySetupDraft>, entries = [], books = [book], source = book) =>
@@ -92,5 +93,21 @@ test('editor renders an accessible dialog and locks linked names', () => {
   assert.match(html, /Strategy name<input[^>]*disabled=""/);
   assert.match(html, /Name locked: 1 journal trade/);
   assert.match(html, /Save changes/);
-  assert.match(html, /Custom symbol/);
+  assert.doesNotMatch(html, /Custom symbol|Add symbol/);
+  assert.match(html, /Advanced technical conditions/);
+});
+
+test('technical condition edits are isolated, validated, and removable', () => {
+  const conditions = { matchMode: 'all' as const, rules: [{ id: 'tc-1', left: operand('RSI'), operator: 'below' as const, right: operand('number', 30), timeframe: '1h' as const }] };
+  const original = { ...book, technicalConditions: conditions };
+  const draft = easySetupDraft(original);
+  assert.deepEqual(easySetupChanges(original, draft), {});
+  draft.technicalConditions!.rules[0].left.period = 21;
+  assert.equal(conditions.rules[0].left.period, 14);
+  assert.deepEqual(Object.keys(easySetupChanges(original, draft)), ['technicalConditions']);
+  assert.deepEqual(errors(draft, [], [original], original), []);
+  draft.technicalConditions!.rules[0].left.period = 0;
+  assert.match(errors(draft, [], [original], original).join(' '), /period must be/);
+  draft.technicalConditions = undefined;
+  assert.deepEqual(easySetupChanges(original, draft), { technicalConditions: undefined });
 });

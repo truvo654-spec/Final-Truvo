@@ -1,10 +1,12 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Plus, Sparkles, X } from 'lucide-react';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
+import type { PlaybookTechnicalConditions } from '../../data/instrumentPatterns';
 import type { JournalEntry, PortfolioAssetClass } from '../../types';
 import { canonicalInstrument, INSTRUMENT_MARKETS, PLAYBOOK_INSTRUMENTS } from './instrumentMatching';
 import { defaultPlaybook, nextPlaybookId, PLAYBOOK_STARTERS, popularFromHistory } from './playbookDefaults';
 import { useDialogFocus } from './useDialogFocus';
+import { PlaybookTechnicalConditionsEditor, validatePlaybookConditions } from './PlaybookTechnicalConditions';
 
 const field = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-2 focus:outline-[#5338ec] dark:border-slate-700 dark:bg-slate-900 dark:text-white';
 const chip = (active: boolean) => `rounded-lg border px-3 py-2 text-xs font-semibold ${active ? 'border-[#5338ec] bg-[#f0edff] text-[#5338ec] dark:bg-violet-950 dark:text-violet-200' : 'border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'}`;
@@ -27,6 +29,7 @@ export function QuickPlaybookCreate({ entries, playbooks, houseLimits, onClose, 
   const [thesis, setThesis] = useState('');
   const [rr, setRr] = useState('');
   const [session, setSession] = useState<'default' | 'overlap' | 'any'>('default');
+  const [technicalConditions, setTechnicalConditions] = useState<PlaybookTechnicalConditions>();
   const [errors, setErrors] = useState<string[]>([]);
   const candidates = useMemo(() => {
     const history = entries.filter(entry => markets.includes(entry.assetClass) && entry.symbol.trim()).map(entry => ({ symbol: canonicalInstrument(entry.symbol), name: 'From your journal', market: entry.assetClass }));
@@ -44,6 +47,8 @@ export function QuickPlaybookCreate({ entries, playbooks, houseLimits, onClose, 
     if (!markets.length) issues.push('Choose at least one market.');
     if (!symbols.length) issues.push('Choose at least one instrument.');
     if (rr && (!Number.isFinite(Number(rr)) || Number(rr) <= 0)) issues.push('Minimum reward:risk must be greater than zero.');
+    const conditionError = validatePlaybookConditions(technicalConditions);
+    if (conditionError) { issues.push(conditionError); setCustom(true); }
     setErrors(issues);
     if (issues.length) return;
     const book = defaultPlaybook(name, markets, symbols, houseLimits, nextPlaybookId(playbooks), new Date());
@@ -56,6 +61,7 @@ export function QuickPlaybookCreate({ entries, playbooks, houseLimits, onClose, 
     if (rr) book.benchmarkRR = Number(rr);
     if (session === 'any') book.window = null;
     if (session === 'overlap') book.window = { start: 12, end: 16, label: 'London / NY overlap' };
+    if (technicalConditions) book.technicalConditions = technicalConditions;
     onCreate(book);
   };
   const visible = candidates.filter(item => `${item.symbol} ${item.name}`.toLowerCase().includes(query.toLowerCase())).slice(0, 40);
@@ -88,7 +94,7 @@ export function QuickPlaybookCreate({ entries, playbooks, houseLimits, onClose, 
                   <p className="mt-2 break-words text-xs text-slate-500 dark:text-slate-400">Selected: {symbols.join(', ') || 'None'}</p>
                 </div>
                 <div><button type="button" className="text-xs font-semibold text-[#5338ec] underline dark:text-violet-300" onClick={() => setCustom(!custom)} aria-expanded={custom}>Customize details</button>
-                  {custom && <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-xs">Style<input className={`${field} mt-1`} value={style} onChange={event => setStyle(event.target.value)} placeholder="Inferred from strategy"/></label><label className="text-xs">Minimum R:R<input type="number" min="0.1" step="0.1" className={`${field} mt-1`} value={rr} onChange={event => setRr(event.target.value)} placeholder="Default 1:2"/></label><label className="text-xs">Session<select className={`${field} mt-1`} value={session} onChange={event => setSession(event.target.value as typeof session)}><option value="default">Use market default</option><option value="overlap">London / NY overlap (12:00–16:00 UTC)</option><option value="any">Any time</option></select></label><label className="text-xs sm:col-span-2">Thesis<textarea className={`${field} mt-1`} value={thesis} onChange={event => setThesis(event.target.value)} placeholder="Default from strategy"/></label></div>}
+                  {custom && <div className="mt-3 space-y-4"><div className="grid gap-3 sm:grid-cols-2"><label className="text-xs">Style<input className={`${field} mt-1`} value={style} onChange={event => setStyle(event.target.value)} placeholder="Inferred from strategy"/></label><label className="text-xs">Minimum R:R<input type="number" min="0.1" step="0.1" className={`${field} mt-1`} value={rr} onChange={event => setRr(event.target.value)} placeholder="Default 1:2"/></label><label className="text-xs">Session<select className={`${field} mt-1`} value={session} onChange={event => setSession(event.target.value as typeof session)}><option value="default">Use market default</option><option value="overlap">London / NY overlap (12:00–16:00 UTC)</option><option value="any">Any time</option></select></label><label className="text-xs sm:col-span-2">Thesis<textarea className={`${field} mt-1`} value={thesis} onChange={event => setThesis(event.target.value)} placeholder="Default from strategy"/></label></div><PlaybookTechnicalConditionsEditor value={technicalConditions} onChange={setTechnicalConditions}/></div>}
                 </div>
               </section>
             </div>

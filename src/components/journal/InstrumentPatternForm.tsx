@@ -3,9 +3,9 @@ import type { InstrumentPatternSetup, TechnicalOperand, TechnicalPatternRule, Te
 import { validateInstrumentPattern } from './instrumentMatching';
 import { editableTechnicalSetup, hasPeriod, newTechnicalRule, operand, RULE_OPERATORS, TECHNICAL_TOOLS } from './technicalPatternRules';
 
-const field = 'mt-1.5 h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-xs font-normal text-slate-800';
+const field = 'mt-1.5 h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-xs font-normal text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100';
 const numberValue = (value:number) => Number.isNaN(value) ? '' : value;
-const OperandFields: React.FC<{side:TechnicalOperand;onChange:(value:TechnicalOperand)=>void;label:string;maxPeriod:number}> = ({side,onChange,label,maxPeriod}) => {
+export const OperandFields: React.FC<{side:TechnicalOperand;onChange:(value:TechnicalOperand)=>void;label:string;maxPeriod:number}> = ({side,onChange,label,maxPeriod}) => {
   const update=(key:keyof TechnicalOperand,value:unknown)=>onChange({...side,[key]:value});
   return <fieldset className="min-w-0 space-y-2"><legend className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</legend>
     <label className="block text-xs font-semibold">Technical tool<select aria-label={`${label} technical tool`} value={side.tool} onChange={e=>onChange(operand(e.target.value as TechnicalTool))} className={field}>{Object.entries(TECHNICAL_TOOLS).map(([tool,name])=><option key={tool} value={tool}>{name}</option>)}</select></label>

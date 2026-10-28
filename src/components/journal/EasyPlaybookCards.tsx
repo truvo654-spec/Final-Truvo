@@ -5,6 +5,7 @@ import { PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
 import type { JournalEntry } from '../../types';
 import { QuickPlaybookCreate } from './QuickPlaybookCreate';
 import { EasyPlaybookEdit } from './EasyPlaybookEdit';
+import { PlaybookTechnicalConditionsSummary } from './PlaybookTechnicalConditions';
 import { currencyOf, eligible, netOf, realizedR, resultOf } from './journalMath';
 import { InsightTradeDrawer } from './insights/InsightsShared';
 
@@ -133,6 +134,7 @@ export function EasyPlaybookCards({ playbooks, entries, scopedEntries, currency,
             <div id={detailsId} hidden={!open} className="space-y-3 border-t border-slate-100 pt-3 text-xs text-slate-700 dark:border-slate-700 dark:text-slate-200">
               <div><h4 className="font-bold">Thesis</h4><p className="mt-1 whitespace-pre-wrap break-words leading-relaxed">{book.thesis || 'No thesis recorded.'}</p></div>
               <div><h4 className="font-bold">All rules</h4>{book.rules.length ? <ol className="mt-1 space-y-2">{book.rules.map((rule, index) => <li key={`${rule.id}-${index}`} className="break-words"><span className="font-semibold">{index + 1}. {rule.title || 'Untitled rule'}</span>{rule.detail && <p className="mt-0.5 whitespace-pre-wrap text-slate-500 dark:text-slate-400">{rule.detail}</p>}</li>)}</ol> : <p className="mt-1 text-slate-500">No rules recorded.</p>}</div>
+              {book.technicalConditions?.rules.length ? <PlaybookTechnicalConditionsSummary conditions={book.technicalConditions}/> : null}
               <p>Minimum reward:risk: <strong>1:{book.benchmarkRR}</strong></p>
               <p>Session: <strong>{book.window ? `${book.window.label} (${String(book.window.start).padStart(2, '0')}:00–${String(book.window.end).padStart(2, '0')}:00 UTC)` : 'Any time'}</strong></p>
               <button type="button" data-keep-button-icons onClick={() => onOpenWorkspace(book.id)} className="inline-flex items-center gap-1 font-semibold text-[#5338ec] underline dark:text-violet-300">Edit or open full workspace <ArrowRight size={14}/></button>

@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.33.4)
+### Journal views (v2.34.0)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -118,6 +118,10 @@ their respective outcomes. Empty groups cannot be opened.
 **Edit setup** changes the card's strategy details, markets, instruments, rules
 and session without leaving Easy view. A name used by journal trades is locked
 to preserve those links; other saved playbook data is retained.
+Under **Customize details**, add optional technical conditions using indicators,
+comparisons, thresholds and timeframes. Review and edit them on the card; they
+are saved with the playbook but are not evaluated as live signals or applied
+automatically to instrument scans or backtests.
 Results use the current journal filters and closed trades with recorded costs in
 the profile reporting currency; breakevens count toward the win-rate denominator,
 and other currencies and unknown-cost records are excluded. **Edit or open full workspace** retains the original Playbook editor

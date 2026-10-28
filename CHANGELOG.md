@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.34.0] - 2026-10-28
+### Added
+- Easy Playbook creation and editing support saved technical conditions, indicator comparisons and optional timeframes. Conditions are notes for the playbook, not live signals or automatic scan/backtest rules.
+### Changed
+- Removed the duplicate custom-symbol controls from Easy setup editing.
+
 ## [2.33.4] - 2026-10-28
 ### Added
 - Easy Playbook cards now offer an Edit setup dialog for strategy details, status, markets, instruments, rules and session. Linked trade names remain locked; other saved playbook data is preserved.

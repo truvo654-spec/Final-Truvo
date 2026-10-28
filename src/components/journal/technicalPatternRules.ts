@@ -18,26 +18,29 @@ export const RULE_OPERATORS: Record<TechnicalPatternRule['operator'], string> = 
 export const hasPeriod = (tool: TechnicalTool) => Object.hasOwn(IND_DEFAULT_PERIOD,tool) || tool === 'relativeVolume' || tool.startsWith('breakout');
 export const operand = (tool: TechnicalTool = 'RSI', value = 50): TechnicalOperand => ({tool,period:IND_DEFAULT_PERIOD[tool as IndType] || (tool === 'relativeVolume' || tool.startsWith('breakout') ? 20 : 14),atrPeriod:14,value,multiplier:1,offset:0,session:'asia',fastPeriod:12,slowPeriod:26,signalPeriod:9,deviations:2});
 export const newTechnicalRule = (): TechnicalPatternRule => ({id:crypto.randomUUID(),left:operand(),operator:'above',right:operand('number',50)});
-export function validateTechnicalRules(setup: InstrumentPatternSetup): string | null {
-  if (!setup.patternType?.trim() || setup.patternType.trim().length > 80) return 'Enter a custom pattern type of 1–80 characters.';
-  if (!['all','any'].includes(setup.matchMode || '')) return 'Choose All rules or Any rule.';
-  if (!setup.technicalRules?.length || setup.technicalRules.length > 12) return 'Add between 1 and 12 technical rules.';
+export function validateConditionRules(rules: TechnicalPatternRule[], maxPeriod: number): string | null {
+  if (!rules.length || rules.length > 12) return 'Add between 1 and 12 technical rules.';
   const ids = new Set<string>();
-  for (const [index,rule] of setup.technicalRules.entries()) {
+  for (const [index,rule] of rules.entries()) {
     if (!rule.id || ids.has(rule.id)) return 'Each technical rule must have a unique ID.';
     ids.add(rule.id);
     if (!Object.hasOwn(RULE_OPERATORS,rule.operator)) return `Rule ${index+1}: choose a comparison.`;
     for (const side of [rule.left,rule.right]) {
       if (!side || !Object.hasOwn(TECHNICAL_TOOLS,side.tool)) return `Rule ${index+1}: choose a supported technical tool.`;
       if (![side.value,side.multiplier,side.offset].every(Number.isFinite)) return `Rule ${index+1}: enter finite numeric parameters.`;
-      if (hasPeriod(side.tool) && (!Number.isInteger(side.period) || side.period < 2 || side.period > setup.lookbackBars-2)) return `Rule ${index+1}: period must be 2–${setup.lookbackBars-2} candles.`;
-      if (side.tool.startsWith('breakout') && (!Number.isInteger(side.atrPeriod) || side.atrPeriod < 2 || side.atrPeriod > setup.lookbackBars-2)) return `Rule ${index+1}: choose a valid ATR period.`;
+      if (hasPeriod(side.tool) && (!Number.isInteger(side.period) || side.period < 2 || side.period > maxPeriod)) return `Rule ${index+1}: period must be 2–${maxPeriod} candles.`;
+      if (side.tool.startsWith('breakout') && (!Number.isInteger(side.atrPeriod) || side.atrPeriod < 2 || side.atrPeriod > maxPeriod)) return `Rule ${index+1}: choose a valid ATR period.`;
       if (side.tool.startsWith('SESSION_') && !['asia','london','ny'].includes(side.session)) return `Rule ${index+1}: choose a session.`;
-      if (side.tool === 'MACD' && ([side.fastPeriod,side.slowPeriod,side.signalPeriod].some(period=>!Number.isInteger(period) || period! < 2 || period! > setup.lookbackBars-2) || side.fastPeriod! >= side.slowPeriod!)) return `Rule ${index+1}: MACD needs valid fast, slow and signal periods, with fast below slow.`;
+      if (side.tool === 'MACD' && ([side.fastPeriod,side.slowPeriod,side.signalPeriod].some(period=>!Number.isInteger(period) || period! < 2 || period! > maxPeriod) || side.fastPeriod! >= side.slowPeriod!)) return `Rule ${index+1}: MACD needs valid fast, slow and signal periods, with fast below slow.`;
       if (side.tool.startsWith('BB_') && (!Number.isFinite(side.deviations) || side.deviations! <= 0 || side.deviations! > 10)) return `Rule ${index+1}: Bollinger deviation must be greater than 0 and at most 10.`;
     }
   }
   return null;
+}
+export function validateTechnicalRules(setup: InstrumentPatternSetup): string | null {
+  if (!setup.patternType?.trim() || setup.patternType.trim().length > 80) return 'Enter a custom pattern type of 1–80 characters.';
+  if (!['all','any'].includes(setup.matchMode || '')) return 'Choose All rules or Any rule.';
+  return validateConditionRules(setup.technicalRules || [], setup.lookbackBars - 2);
 }
 export function describeOperand(side: TechnicalOperand): string {
   const label = side.tool === 'number' ? `${side.value}` : `${TECHNICAL_TOOLS[side.tool]}${hasPeriod(side.tool) ? ` (${side.period})` : ''}${side.tool.startsWith('breakout') ? ` / ATR ${side.atrPeriod}` : ''}${side.tool.startsWith('SESSION_') ? ` · ${side.session} UTC` : ''}`;

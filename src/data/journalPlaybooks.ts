@@ -1,7 +1,7 @@
 // Strategy playbooks for the trading journal: the written rules for each setup.
 // A playbook's name matches JournalEntry.strategy, which is how its stats are computed.
 import { PortfolioAssetClass } from '../types';
-import type { InstrumentPatternSetup } from './instrumentPatterns';
+import type { InstrumentPatternSetup, PlaybookTechnicalConditions } from './instrumentPatterns';
 
 export type PlaybookGrade = 'A+' | 'A' | 'B+' | 'B' | 'C';
 export type PlaybookStatus = 'draft' | 'active' | 'testing' | 'archived';
@@ -43,6 +43,8 @@ export interface JournalPlaybook {
   instrumentPatterns?: InstrumentPatternSetup[];
   instrumentPatternId?: string;
   instrumentTimeframe?: '1h' | '4h' | '1D';
+  /** User-defined conditions for the written playbook; not automatically evaluated. */
+  technicalConditions?: PlaybookTechnicalConditions;
   /** Trade ideas (hypotheses) waiting for this setup to trigger. */
   scenarios?: PlaybookScenario[];
 }

@@ -1,5 +1,5 @@
 /** Saved, local rules for matching instruments against generated sample candles. */
-import type { IndType } from '../backtest/types';
+import type { IndType, Timeframe } from '../backtest/types';
 export type InstrumentPattern = 'trend' | 'breakout' | 'range' | 'custom';
 export type TechnicalTool = IndType | 'close' | 'open' | 'high' | 'low' | 'volume' | 'relativeVolume' | 'breakoutUp' | 'breakoutDown' | 'breakoutEither' | 'number';
 export interface TechnicalOperand {
@@ -20,6 +20,13 @@ export interface TechnicalPatternRule {
   left: TechnicalOperand;
   operator: 'above' | 'below' | 'atLeast' | 'atMost' | 'crossAbove' | 'crossBelow';
   right: TechnicalOperand;
+}
+export interface PlaybookTechnicalCondition extends TechnicalPatternRule {
+  timeframe?: Timeframe;
+}
+export interface PlaybookTechnicalConditions {
+  matchMode: 'all' | 'any';
+  rules: PlaybookTechnicalCondition[];
 }
 export interface InstrumentPatternSetup {
   id: string;
