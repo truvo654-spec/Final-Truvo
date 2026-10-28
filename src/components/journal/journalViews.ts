@@ -37,7 +37,7 @@ export const JOURNAL_CARD_REGISTRY: readonly JournalCardDefinition[] = [
     ['insights-playbooks', 'Your playbook progress', 'Automatic setup results and plan-following bars from this view. Progress reflects answered plan checks, not profit targets or account rewards.'],
     ['insights-discipline', 'Your discipline track', 'The existing Overview discipline score, review coverage and current reviewed-plan streak. Visual habit markers only; no Points or Credits are awarded.'],
     ['insights-calendar', 'Trading calendar', 'Closed-trade results by local exit date, with weekly totals.'],
-    ['insights-curve', 'Cumulative P&L', 'Closed-trade profit over time, with realized drawdown and chart-only zoom.'],
+    ['insights-curve', 'Cumulative P&L', 'Switch between cumulative and daily closed-trade P&L with the same realized drawdown, chart-only zoom and day drill-downs.'],
     ['insights-weekdays', 'Day-of-week performance', 'Compare net results and win rates by closing weekday.'],
     ['insights-hours', 'Time-of-day performance', 'Compare net results by entry hour in your profile timezone.'],
     ['insights-heatmap', 'Day × hour', 'Explore entry weekdays and hours together. Select a cell to inspect its trades.'],

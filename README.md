@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.30.0)
+### Journal views (v2.31.0)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -180,12 +180,27 @@ original Trade Log. Costs are shown separately, not deducted from a value that
 may already include them. Missing reported P&L keeps full totals unknown; known
 subtotals are explicitly labeled. Different currencies are never combined.
 Floating losses are **not historical peak-to-trough drawdown**: no mark-to-market
-history for the open positions is available. The cumulative chart remains
-closed-result-only.
+history for the open positions is available. The cumulative and daily realized
+chart views remain closed-result-only.
 
 When no closed results match but saved open positions are available, **View open
 positions** opens the same drawer directly. Switching tabs resets the list to
 the top, and both views retain load-more controls and Trade Log actions.
+
+### P&L chart views
+
+The P&L card has two local view toggles: **Cumulative P&L** and **Daily P&L**
+(non-cumulative net result per local exit date).
+Cumulative and Daily share the same closed trades and realized drawdown; changing
+the view resets chart-only zoom, not report filters, totals or journal records.
+The chosen mode stays selected when report filters change; zoom resets for the
+new scope.
+Hover values, keyboard navigation and day drill-downs work in both realized
+views.
+
+The chart has no Floating losses option or View open positions in drawer button.
+Saved open-position information remains available through the existing toggle
+inside the shared trade drawer.
 
 ### Automatic personal progress
 

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.31.0] - 2026-10-28
+### Added
+- Cumulative P&L / Daily P&L toggles inside the Insights P&L chart card, using existing exit-day aggregates and retaining realized drawdown, zoom and day drill-downs.
+### Changed
+- Excluded the Floating losses chart option and View open positions in drawer button. The existing Closed trades / Open positions drawer toggle is unchanged.
+- Chart mode stays selected when report filters change, without changing closed totals or journal records.
+
 ## [2.30.0] - 2026-10-28
 ### Added
 - A Closed trades / Open positions toggle in the shared Insights trade drawer, with saved unrealized P&L, floating losses, position details and original Trade Log links.

@@ -15,6 +15,7 @@ import { InsightsPlaybookProgress, InsightsDisciplineProgress } from '../insight
 import { computeDiscipline, hasDisciplineEvidence } from '../journalDiscipline';
 import { computeDiscipline as overviewDiscipline } from '../JournalMonitors';
 import { easyInsightsLayout } from '../insights/insightsLayout';
+import { InsightsCurve, InsightsRealizedCurve } from '../insights/InsightsCurve';
 import { JOURNAL_CARD_REGISTRY, defaultJournalViews, journalCardAvailable, journalCardsFor, migrateJournalViews, updateJournalViews } from '../journalViews';
 import type { JournalCardsController } from '../useJournalCards';
 
@@ -450,4 +451,32 @@ test('open-only journals can enter the shared drawer without fabricating a close
     assert.match(html, /View open positions \(1\)/);
     assert.doesNotMatch(html, /Interactive cumulative P&amp;L/);
   } finally { Reflect.deleteProperty(globalThis, 'window'); }
+});
+test('daily P&L plots each exit-day result without changing cumulative values or realized drawdown', () => {
+  const entries = [100, -40, 50].map((pnl, index) => trade({
+    id: `daily-${index}`, commission: 0, pnl, date: `2026-10-0${index + 1}`,
+    entryTime: `2026-10-0${index + 1}T00:00:00Z`, exitTime: `2026-10-0${index + 1}T01:00:00Z`,
+  }));
+  const data = aggregateInsights(entries, filters, settings), before = JSON.stringify(data.curve);
+  assert.deepEqual(data.curve.map(point => point.net), [100, -40, 50]);
+  assert.deepEqual(data.curve.map(point => point.cumulative), [100, 60, 110]);
+  const props = { data, onDrill: () => {} };
+  const cumulative = renderToStaticMarkup(React.createElement(InsightsRealizedCurve, { ...props, view: 'cumulative' }));
+  const daily = renderToStaticMarkup(React.createElement(InsightsRealizedCurve, { ...props, view: 'daily' }));
+  assert.ok(daily.includes(`daily ${formatInsightsMoney(-40, settings)}`));
+  assert.ok(cumulative.includes(`cumulative ${formatInsightsMoney(60, settings)}`));
+  const cy = (html: string) => [...html.matchAll(/<circle[^>]* cy="([^"]+)"/g)].map(match => Number(match[1]));
+  assert.ok(cy(daily)[0] < cy(cumulative)[0]);
+  assert.ok(cy(daily)[1] > cy(cumulative)[1]);
+  const drawdown = (html: string) => html.match(/<path d="([^"]+)" fill="var\(--insights-loss\)"/)![1];
+  assert.equal(drawdown(daily), drawdown(cumulative));
+  assert.equal(JSON.stringify(data.curve), before);
+});
+test('chart view controls expose only cumulative and daily P&L without floating-loss or drawer-launch buttons', () => {
+  const data = aggregateInsights([trade()], filters, settings);
+  const html = renderToStaticMarkup(React.createElement(InsightsCurve, { data, view: 'cumulative', onViewChange: () => {}, onDrill: () => {} }));
+  assert.match(html, /aria-label="P&amp;L chart view"/);
+  for (const label of ['Cumulative P&amp;L', 'Daily P&amp;L']) assert.ok(html.includes(label));
+  assert.match(html, /Interactive cumulative P&amp;L and drawdown/);
+  assert.doesNotMatch(html, /Floating losses|View open positions in drawer|<input|<select/);
 });

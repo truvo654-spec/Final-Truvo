@@ -2,7 +2,21 @@ import React, { useEffect, useRef, useState } from 'react';
 import { dateLabel, insightButton, InsightsTooltip, useInsightsChartWidth, type InsightsWidgetProps } from './InsightsShared';
 import { formatInsightsMoney } from './insightsData';
 
-export function InsightsCurve({ data, onDrill, compact = false }: InsightsWidgetProps) {
+export type InsightsPnlView = 'cumulative' | 'daily';
+export function InsightsCurve(props: InsightsWidgetProps & { view: InsightsPnlView; onViewChange: (view: InsightsPnlView) => void }) {
+  const view = props.view;
+  return <div className="min-w-0">
+    <div role="group" aria-label="P&L chart view" className="mb-3 flex flex-wrap gap-1">
+      {([
+        ['cumulative', 'Cumulative P&L'], ['daily', 'Daily P&L'],
+      ] as const).map(([id, label]) => <button key={id} type="button" className={`${insightButton} ${view === id ? 'border-[#5338ec] text-[#5338ec]' : 'text-slate-500'}`} aria-pressed={view === id} onClick={() => props.onViewChange(id)}
+        title={id === 'daily' ? 'Non-cumulative closed-trade P&L for each exit date' : 'Running total of closed-trade results'}>{label}</button>)}
+    </div>
+    <InsightsRealizedCurve key={view} {...props} view={view}/>
+  </div>;
+}
+export function InsightsRealizedCurve({ data, onDrill, compact = false, view }: InsightsWidgetProps & { view: 'cumulative' | 'daily' }) {
+  const daily = view === 'daily';
   const svg = useRef<SVGSVGElement>(null), drag = useRef<{ index: number; x: number } | null>(null);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelClick = () => { if (clickTimer.current) clearTimeout(clickTimer.current); clickTimer.current = null; };
@@ -13,13 +27,14 @@ export function InsightsCurve({ data, onDrill, compact = false }: InsightsWidget
   const chartHeight = compact ? 260 : 310;
   const left = 72, right = 15, top = 16, bottom = compact ? 150 : 190, ddTop = compact ? 176 : 216, ddBottom = compact ? 228 : 278;
   const dateTicks = Math.max(2, Math.floor((width - left - right) / 120));
-  const low = Math.min(0, ...points.map(point => point.cumulative)), high = Math.max(0, ...points.map(point => point.cumulative));
+  const pnl = (point: typeof data.curve[number]) => daily ? point.net : point.cumulative;
+  const low = Math.min(0, ...points.map(pnl)), high = Math.max(0, ...points.map(pnl));
   const maxDD = Math.max(0.01, ...points.map(point => -point.drawdown));
   const firstTime = Date.parse(`${points[0]?.key}T00:00:00Z`), lastTime = Date.parse(`${points.at(-1)?.key}T00:00:00Z`);
   const x = (index: number) => points.length === 1 ? (left + width - right) / 2 : left + (Date.parse(`${points[index].key}T00:00:00Z`) - firstTime) / (lastTime - firstTime || 1) * (width - left - right);
   const y = (value: number) => bottom - (value - low) / (high - low || 1) * (bottom - top);
   const dy = (value: number) => ddTop + (-value / maxDD) * (ddBottom - ddTop);
-  const line = points.map((point, index) => `${index ? 'L' : 'M'}${x(index)},${y(point.cumulative)}`).join(' ');
+  const line = points.map((point, index) => `${index ? 'L' : 'M'}${x(index)},${y(pnl(point))}`).join(' ');
   const area = points.length ? `M${x(0)},${ddTop} ${points.map((point, index) => `L${x(index)},${dy(point.drawdown)}`).join(' ')} L${x(points.length - 1)},${ddTop} Z` : '';
   const pick = (clientX: number) => {
     const rect = svg.current?.getBoundingClientRect();
@@ -33,11 +48,11 @@ export function InsightsCurve({ data, onDrill, compact = false }: InsightsWidget
   const point = active === null ? null : points[active];
   return <div ref={container} className="min-w-0">
     <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-      <span>Cumulative closed-trade P&L, not a balance including deposits.</span>
+      <span>{daily ? 'Daily closed-trade P&L by exit date—not a running total. Drawdown below still uses cumulative closed results.' : 'Cumulative closed-trade P&L, not a balance including deposits.'}</span>
       {zoom && <button className={insightButton} onClick={reset}>Reset zoom</button>}
     </div>
     {!points.length ? <p className="py-10 text-center text-sm text-slate-500">No closed results in this period.</p> :
-      <svg ref={svg} role="group" aria-label="Interactive cumulative P&L and drawdown" viewBox={`0 0 ${width} ${chartHeight}`} className={`block ${compact ? 'h-[260px]' : 'h-[310px]'} w-full select-none overflow-hidden`} style={{ touchAction: 'pan-y' }}
+      <svg ref={svg} role="group" aria-label={daily ? 'Interactive daily P&L and drawdown' : 'Interactive cumulative P&L and drawdown'} viewBox={`0 0 ${width} ${chartHeight}`} className={`block ${compact ? 'h-[260px]' : 'h-[310px]'} w-full select-none overflow-hidden`} style={{ touchAction: 'pan-y' }}
         onPointerMove={event => { const index = pick(event.clientX); setActive(index); if (drag.current) setDragTo(index); }}
         onPointerLeave={() => { if (!drag.current) setActive(null); }}
         onPointerDown={event => { if (event.button !== 0) return; cancelClick(); drag.current = { index: pick(event.clientX), x: event.clientX }; setDragTo(null); event.currentTarget.setPointerCapture(event.pointerId); }}
@@ -58,8 +73,8 @@ export function InsightsCurve({ data, onDrill, compact = false }: InsightsWidget
         <path d={area} fill="var(--insights-loss)" fillOpacity="0.2"/>
         <text x={left} y={ddTop - 5} fontSize="10" fill="var(--text-secondary)">Realized drawdown</text>
         {points.map((p, index) => <g key={p.key}>
-          <circle role="button" tabIndex={0} aria-label={`${dateLabel(p.key, data.settings.locale)}: cumulative ${formatInsightsMoney(p.cumulative, data.settings)}, day ${formatInsightsMoney(p.net, data.settings)}, drawdown ${formatInsightsMoney(p.drawdown, data.settings)}`}
-            cx={x(index)} cy={y(p.cumulative)} r={active === index ? 5 : 3} fill="var(--color-brand-primary)" className="cursor-pointer outline-none"
+          <circle role="button" tabIndex={0} aria-label={`${dateLabel(p.key, data.settings.locale)}: ${daily ? 'daily' : 'cumulative'} ${formatInsightsMoney(pnl(p), data.settings)}, ${daily ? 'cumulative' : 'day'} ${formatInsightsMoney(daily ? p.cumulative : p.net, data.settings)}, drawdown ${formatInsightsMoney(p.drawdown, data.settings)}`}
+            cx={x(index)} cy={y(pnl(p))} r={active === index ? 5 : 3} fill="var(--color-brand-primary)" className="cursor-pointer outline-none"
             onFocus={() => setActive(index)} onBlur={() => setActive(null)} onKeyDown={event => {
               if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onDrill(`Closed on ${dateLabel(p.key, data.settings.locale)}`, p.trades); }
               if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {

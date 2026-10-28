@@ -7,7 +7,7 @@ import { INSIGHTS_RANGES, type InsightTrade, type InsightsSettings } from './ins
 import { dateLabel, insightButton, InsightTradeDrawer, type InsightsWidgetProps } from './InsightsShared';
 import { InsightsKpis } from './InsightsKpis';
 import { InsightsCalendar } from './InsightsCalendar';
-import { InsightsCurve } from './InsightsCurve';
+import { InsightsCurve, type InsightsPnlView } from './InsightsCurve';
 import { InsightsWeekdays, InsightsHours, InsightsHeatmap } from './InsightsDistributions';
 import { InsightsPlaybookProgress, InsightsDisciplineProgress } from './InsightsProgress';
 import { easyInsightsLayout } from './insightsLayout';
@@ -26,6 +26,7 @@ function InsightsCallouts({ data, onDrill, compact }: InsightsWidgetProps) {
 export function SimpleInsights({ entries, settings, view, settingsWarnings, checklistLength = 0, onTradeLog, onOpenProfile, onOpenTrade, onOpenTrades }: Props) {
   const { data, today, errors, update } = useInsightsData(entries, settings, checklistLength);
   const [drill, setDrill] = useState<{ label: string; trades: InsightTrade[]; view?: 'closed' | 'open' } | null>(null);
+  const [pnlView, setPnlView] = useState<InsightsPnlView>('cumulative');
   useEffect(() => setDrill(null), [data]);
   const open = (label: string, trades: InsightTrade[]) => setDrill({ label, trades });
   const compact = view.baseLevel === 'easy';
@@ -42,7 +43,7 @@ export function SimpleInsights({ entries, settings, view, settingsWarnings, chec
       case 'insights-playbooks': return <InsightsPlaybookProgress {...widgetProps}/>;
       case 'insights-discipline': return <InsightsDisciplineProgress {...widgetProps}/>;
       case 'insights-calendar': return <InsightsCalendar {...widgetProps} today={today}/>;
-      case 'insights-curve': return <InsightsCurve {...widgetProps}/>;
+      case 'insights-curve': return <InsightsCurve {...widgetProps} view={pnlView === 'daily' ? 'daily' : 'cumulative'} onViewChange={setPnlView}/>;
       case 'insights-weekdays': return <InsightsWeekdays {...widgetProps}/>;
       case 'insights-hours': return <InsightsHours {...widgetProps}/>;
       case 'insights-heatmap': return <InsightsHeatmap {...widgetProps}/>;
