@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.33.1] - 2026-10-28
+### Changed
+- Easy Playbook cards now show winning and losing trade counts and their net P&L subtotals, alongside total trades, win rate and net P&L. Breakeven trades and excluded records are disclosed.
+- Refreshed the illustrative strategy charts with stylized candles and a richer card design; they remain examples, not market data or predictions.
+
 ## [2.33.0] - 2026-10-28
 ### Changed
 - Easy Playbook now displays strategy cards with markets, instruments, rules and expandable details. The full workspace remains accessible from each card; Standard and Advanced are unchanged.

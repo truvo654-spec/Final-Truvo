@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useId, useMemo, useState } from 'react';
 import { ArrowRight, BookOpen, Plus } from 'lucide-react';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
@@ -39,17 +39,47 @@ const PATTERNS: Record<PatternKind, { label: string; line: string; guide?: strin
 
 function PatternIllustration({ book }: { book: JournalPlaybook }) {
   const pattern = PATTERNS[playbookIllustration(book)];
-  return <div className="overflow-hidden rounded-xl border border-violet-100 bg-[#f7f5ff] p-3 dark:border-violet-900 dark:bg-[#211b38]">
-    <div className="flex flex-wrap items-center justify-between gap-1">
-      <span className="text-[11px] font-semibold text-[#5338ec] dark:text-violet-300">{pattern.label}</span>
-      <span className="text-[10px] text-slate-500 dark:text-slate-400">Illustration · not market data</span>
+  const gradient = `pattern-${useId().replace(/:/g, '')}`;
+  const points = pattern.line.split(' ').map(point => point.split(',').map(Number));
+  const area = `M${points[0][0]} 100 ${points.map(([x, y]) => `L${x} ${y}`).join(' ')} L${points[points.length - 1][0]} 100 Z`;
+  return <div className="overflow-hidden rounded-xl border border-[#403570] bg-gradient-to-br from-[#171136] via-[#242055] to-[#292064] p-3 shadow-sm">
+    <div className="flex flex-wrap items-start justify-between gap-2">
+      <div><p className="text-[10px] font-semibold uppercase tracking-wider text-violet-200">Strategy blueprint</p><p className="mt-1 text-xs font-bold text-white">{pattern.label}</p></div>
+      <span className="rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[10px] font-semibold text-violet-100">Example</span>
     </div>
-    <svg role="img" aria-label={`${pattern.label}: illustrative pattern, not market data or a prediction`} viewBox="0 0 258 100" className="mt-1 h-24 w-full" preserveAspectRatio="none">
-      <path d="M8 25 H250 M8 50 H250 M8 75 H250" fill="none" stroke="currentColor" strokeOpacity=".12" className="text-slate-500" strokeWidth="1"/>
-      {pattern.guide && <path d={pattern.guide} fill="none" stroke="currentColor" strokeOpacity=".45" className="text-violet-600 dark:text-violet-300" strokeDasharray="4 4" strokeWidth="1"/>}
-      <polyline points={pattern.line} fill="none" stroke="currentColor" className="text-[#5338ec] dark:text-violet-300" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+    <svg role="img" aria-label={`${pattern.label}: illustrative pattern, not market data or a prediction`} viewBox="0 0 258 100" className="mt-2 h-24 w-full" preserveAspectRatio="none">
+      <defs><linearGradient id={gradient} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#b6a4ff" stopOpacity=".28"/><stop offset="1" stopColor="#b6a4ff" stopOpacity="0"/></linearGradient></defs>
+      <path d="M8 25 H250 M8 50 H250 M8 75 H250 M52 8 V95 M104 8 V95 M156 8 V95 M208 8 V95" fill="none" stroke="#fff" strokeOpacity=".1" strokeWidth="1"/>
+      <path d={area} fill={`url(#${gradient})`}/>
+      {pattern.guide && <path d={pattern.guide} fill="none" stroke="#d7ccff" strokeOpacity=".6" strokeDasharray="4 4" strokeWidth="1"/>}
+      <polyline points={pattern.line} fill="none" stroke="#bcaeff" strokeOpacity=".65" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+      {points.slice(1).map(([x, close], index) => {
+        const open = points[index][1];
+        const rising = close < open;
+        const color = rising ? '#6ee7c1' : '#fda4af';
+        const top = Math.min(open, close), bottom = Math.max(open, close);
+        return <g key={index} fill={color} stroke={color}>
+          <line x1={x} x2={x} y1={Math.max(3, top - 4)} y2={Math.min(97, bottom + 4)} strokeWidth="1" vectorEffect="non-scaling-stroke"/>
+          <rect x={x - 3} y={top} width="6" height={Math.max(2, bottom - top)} rx="1" stroke="none"/>
+        </g>;
+      })}
     </svg>
+    <p className="mt-1 text-[10px] text-violet-100">Illustration · not market data</p>
   </div>;
+}
+
+export function playbookPerformance(trades: JournalEntry[], currency: string) {
+  const groups = new Map<string, { count: number; wins: number; losses: number; net: number; winNet: number; lossNet: number }>();
+  for (const trade of trades) {
+    if (!eligible(trade) || currencyOf(trade) !== currency) continue;
+    const current = groups.get(trade.strategy) || { count: 0, wins: 0, losses: 0, net: 0, winNet: 0, lossNet: 0 };
+    const cents = Math.round(netOf(trade) * 100), result = resultOf(trade);
+    current.count++; current.net += cents;
+    if (result === 'win') { current.wins++; current.winNet += cents; }
+    if (result === 'loss') { current.losses++; current.lossNet += cents; }
+    groups.set(trade.strategy, current);
+  }
+  return groups;
 }
 
 export function EasyPlaybookCards({ playbooks, entries, scopedEntries, currency, houseLimits, onCreate, onOpenWorkspace }: Props) {
@@ -57,17 +87,8 @@ export function EasyPlaybookCards({ playbooks, entries, scopedEntries, currency,
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const visible = status === 'active' ? playbooks.filter(book => book.status === 'active') : playbooks;
-  const performance = useMemo(() => {
-    const groups = new Map<string, { count: number; wins: number; net: number }>();
-    for (const trade of scopedEntries) {
-      if (!eligible(trade) || currencyOf(trade) !== currency) continue;
-      const current = groups.get(trade.strategy) || { count: 0, wins: 0, net: 0 };
-      current.count++; current.net += Math.round(netOf(trade) * 100); if (resultOf(trade) === 'win') current.wins++;
-      groups.set(trade.strategy, current);
-    }
-    return groups;
-  }, [scopedEntries, currency]);
-  const money = new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2 });
+  const performance = useMemo(() => playbookPerformance(scopedEntries, currency), [scopedEntries, currency]);
+  const money = new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2, signDisplay: 'exceptZero' });
   return <div className="min-w-0 space-y-5" aria-label="Strategy cards">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div><p className="text-xs font-bold uppercase tracking-wider text-[#5338ec] dark:text-violet-300">Your strategy collection</p><h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Playbooks</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Keep your setups and rules close, one card at a time.</p></div>
@@ -89,10 +110,15 @@ export function EasyPlaybookCards({ playbooks, entries, scopedEntries, currency,
             <div><h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Markets</h4><div className="mt-2 flex flex-wrap gap-1.5">{book.markets.length ? book.markets.map(market => <span key={market} className="break-all rounded-full bg-violet-50 px-2 py-1 text-xs font-medium text-violet-700 dark:bg-violet-950 dark:text-violet-200">{market === 'Commodity' ? 'Commodities' : market}</span>) : <span className="text-xs text-slate-500">Not set</span>}</div></div>
             <div><h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Instruments</h4><div className="mt-2 flex flex-wrap gap-1.5">{book.symbols?.length ? book.symbols.map(symbol => <span key={symbol} className="break-all rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">{symbol}</span>) : <span className="text-xs text-slate-500">None selected</span>}</div></div>
             <div><h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Key rules</h4>{book.rules.length ? <ul className="mt-2 space-y-1.5">{book.rules.slice(0, 3).map((rule, index) => <li key={`${rule.id}-${index}`} className="flex gap-2 text-xs leading-relaxed text-slate-700 dark:text-slate-200"><span className="font-bold text-[#5338ec] dark:text-violet-300">{index + 1}.</span><span className="min-w-0 break-words">{rule.title || 'Untitled rule'}</span></li>)}</ul> : <p className="mt-2 text-xs text-slate-500">No rules yet.</p>}{book.rules.length > 3 && <p className="mt-1 text-[11px] text-slate-500">+{book.rules.length - 3} more in details</p>}</div>
-            <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-              <div className="min-w-0"><span className="block text-[10px] text-slate-500 dark:text-slate-400">Net P&amp;L</span><strong className={`block break-words text-xs ${!stats || stats.net === 0 ? 'text-slate-700 dark:text-slate-200' : stats.net > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>{stats ? money.format(stats.net / 100) : '—'}</strong></div>
-              <div><span className="block text-[10px] text-slate-500 dark:text-slate-400">Win rate</span><strong className="text-xs text-slate-700 dark:text-slate-200">{stats ? `${(stats.wins / stats.count * 100).toFixed(0)}%` : '—'}</strong></div>
-              <div><span className="block text-[10px] text-slate-500 dark:text-slate-400">Trades</span><strong className="text-xs text-slate-700 dark:text-slate-200">{stats?.count ?? 0}</strong></div>
+            <div aria-label={`${book.name} performance`} className="space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800">
+              <div className="flex items-center justify-between gap-2"><h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Performance</h4><span className="text-[10px] text-slate-500 dark:text-slate-400">{stats?.count ?? 0} closed trade{stats?.count === 1 ? '' : 's'}</span></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="min-w-0 rounded-lg bg-white p-2 dark:bg-slate-900"><span className="block text-[10px] text-slate-500 dark:text-slate-400">Net P&amp;L</span><strong className={`block break-words text-sm ${!stats || stats.net === 0 ? 'text-slate-700 dark:text-slate-200' : stats.net > 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>{stats ? money.format(stats.net / 100) : '—'}</strong></div>
+                <div className="rounded-lg bg-white p-2 dark:bg-slate-900"><span className="block text-[10px] text-slate-500 dark:text-slate-400">Win rate</span><strong className="text-sm text-slate-700 dark:text-slate-200">{stats ? `${(stats.wins / stats.count * 100).toFixed(0)}%` : '—'}</strong></div>
+                <div className="min-w-0 rounded-lg border border-emerald-100 bg-emerald-50 p-2 dark:border-emerald-900 dark:bg-emerald-950/30"><span className="block text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">Winning P&amp;L</span><strong className="block break-words text-xs text-emerald-800 dark:text-emerald-200">{stats ? money.format(stats.winNet / 100) : '—'}</strong><span className="text-[10px] text-emerald-700 dark:text-emerald-300">{stats?.wins ?? 0} win{stats?.wins === 1 ? '' : 's'}</span></div>
+                <div className="min-w-0 rounded-lg border border-rose-100 bg-rose-50 p-2 dark:border-rose-900 dark:bg-rose-950/30"><span className="block text-[10px] font-semibold text-rose-700 dark:text-rose-300">Losing P&amp;L</span><strong className="block break-words text-xs text-rose-800 dark:text-rose-200">{stats ? money.format(stats.lossNet / 100) : '—'}</strong><span className="text-[10px] text-rose-700 dark:text-rose-300">{stats?.losses ?? 0} loss{stats?.losses === 1 ? '' : 'es'}</span></div>
+              </div>
+              {stats && stats.count - stats.wins - stats.losses > 0 && <p className="text-[10px] text-slate-500 dark:text-slate-400">{stats.count - stats.wins - stats.losses} breakeven trade{stats.count - stats.wins - stats.losses === 1 ? '' : 's'} included in the total.</p>}
             </div>
             <button type="button" aria-expanded={open} aria-controls={detailsId} onClick={() => setOpenId(open ? null : book.id)} className="w-full rounded-xl border border-violet-200 px-3 py-2.5 text-sm font-semibold text-[#5338ec] hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-[#5338ec] dark:border-violet-800 dark:text-violet-200 dark:hover:bg-violet-950">{open ? 'Hide details' : 'Show details'}</button>
             <div id={detailsId} hidden={!open} className="space-y-3 border-t border-slate-100 pt-3 text-xs text-slate-700 dark:border-slate-700 dark:text-slate-200">
@@ -106,7 +132,7 @@ export function EasyPlaybookCards({ playbooks, entries, scopedEntries, currency,
         </article>;
       })}
     </div> : <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700"><p className="font-semibold text-slate-700 dark:text-slate-200">{playbooks.length ? 'No active playbooks. Choose All to see the rest.' : 'Create your first playbook to start your strategy collection.'}</p><button type="button" onClick={() => setCreating(true)} className="mt-4 rounded-xl bg-[#5338ec] px-4 py-2.5 text-sm font-semibold text-white">Create new playbook</button></div>}
-    {visible.length > 0 && <p className="text-xs text-slate-500 dark:text-slate-400">Results use filtered closed trades with recorded costs in {currency}. Trades with unknown costs or other currencies are excluded.</p>}
+    {visible.length > 0 && <p className="text-xs text-slate-500 dark:text-slate-400">Results use filtered closed trades with recorded costs in {currency}. Win and loss amounts are net of recorded costs. Breakeven trades are included in the win-rate denominator. Trades with unknown costs or other currencies are excluded.</p>}
     {creating && <QuickPlaybookCreate entries={entries} playbooks={playbooks} houseLimits={houseLimits} onClose={() => setCreating(false)} onCreate={book => { onCreate(book); setStatus('active'); setOpenId(book.id); setCreating(false); }}/>}
   </div>;
 }

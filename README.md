@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.33.0)
+### Journal views (v2.33.1)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -110,10 +110,11 @@ not synced between devices. The existing journal demo-date basis is retained.
 Overview, Backtest, and AI Coach retain their existing content behind the shared
 view/card foundation. Easy Playbook shows strategy cards with the saved markets,
 instruments, rules and expandable details. Their example chart patterns are
-illustrations, not actual market data, backtests or predictions. Card results
-use the current journal filters and closed trades with recorded costs in the
-profile reporting currency; other currencies and unknown-cost records are
-excluded. **Edit or open full workspace** retains the original Playbook editor
+illustrations, not actual market data, backtests or predictions. Cards show net
+P&L, win rate, total trades, and winning/losing counts and net P&L subtotals.
+Results use the current journal filters and closed trades with recorded costs in
+the profile reporting currency; breakevens count toward the win-rate denominator,
+and other currencies and unknown-cost records are excluded. **Edit or open full workspace** retains the original Playbook editor
 and tools; **House rules & full workspace** is available even with no playbooks.
 Standard and Advanced keep the original interface.
 
