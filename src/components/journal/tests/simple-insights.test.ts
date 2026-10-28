@@ -11,6 +11,9 @@ import {
 import { SimpleInsights } from '../insights/SimpleInsights';
 import { InsightsLoading } from '../insights/InsightsShared';
 import { JournalReportingSettings } from '../insights/JournalReportingSettings';
+import { InsightsPlaybookProgress, InsightsDisciplineProgress } from '../insights/InsightsProgress';
+import { computeDiscipline, hasDisciplineEvidence } from '../journalDiscipline';
+import { computeDiscipline as overviewDiscipline } from '../JournalMonitors';
 import { JOURNAL_CARD_REGISTRY, defaultJournalViews, journalCardsFor, migrateJournalViews, updateJournalViews } from '../journalViews';
 import type { JournalCardsController } from '../useJournalCards';
 
@@ -140,17 +143,18 @@ test('callouts require at least five observations in every compared group', () =
 });
 test('Insights widgets have independent registry identities, persist hide/order, and migrate the old workspace safely', () => {
   let prefs = defaultJournalViews();
-  assert.equal(journalCardsFor(prefs, 'insights').length, 7);
+  assert.equal(journalCardsFor(prefs, 'insights').length, 9);
+  const before = journalCardsFor(prefs, 'insights').findIndex(card => card.id === 'insights-calendar');
   prefs = updateJournalViews(prefs, { type: 'move', tab: 'insights', id: 'insights-calendar', direction: -1 });
-  assert.equal(journalCardsFor(prefs, 'insights')[0].id, 'insights-calendar');
+  assert.equal(journalCardsFor(prefs, 'insights')[before - 1].id, 'insights-calendar');
   prefs = updateJournalViews(prefs, { type: 'hide', tab: 'insights', id: 'insights-heatmap' });
-  assert.equal(journalCardsFor(prefs, 'insights').length, 6);
+  assert.equal(journalCardsFor(prefs, 'insights').length, 8);
   const restored = migrateJournalViews(JSON.parse(JSON.stringify(prefs)));
   assert.deepEqual(restored, prefs);
   const legacy = migrateJournalViews({ version: 1, tabs: { insights: { level: 'easy', hidden: ['insights-workspace'], added: [], order: [] } } });
-  assert.equal(journalCardsFor(legacy, 'insights').length, 7);
+  assert.equal(journalCardsFor(legacy, 'insights').length, 9);
 });
-test('default screen renders seven widgets with only the requested filters and one-account selector hidden', () => {
+test('default screen renders nine widgets with only the requested filters and one-account selector hidden', () => {
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { search: '?journalTab=insights&insightsAsOf=2026-10-28' } } });
   const cards = JOURNAL_CARD_REGISTRY.filter(card => card.tab === 'insights');
   const view: JournalCardsController = {
@@ -158,14 +162,14 @@ test('default screen renders seven widgets with only the requested filters and o
     setLevel: () => {}, add: () => {}, hide: () => {}, moveUp: () => {}, moveDown: () => {}, reset: () => {}, dismissWelcome: () => {},
   };
   const html = renderToStaticMarkup(React.createElement(SimpleInsights, {
-    entries: JOURNAL_ENTRIES, settings, view, settingsWarnings: [],
+    entries: JOURNAL_ENTRIES, settings, view, settingsWarnings: [], checklistLength: 5,
     onTradeLog: () => {}, onOpenTrade: () => {}, onOpenTrades: () => {},
   }));
   for (const card of cards) assert.ok(html.includes(`aria-label="${card.title.replace(/&/g, '&amp;')}"`));
   assert.match(html, /Insights date range/); assert.match(html, /Insights side/);
   assert.doesNotMatch(html, /aria-label="Insights account"|SESSION FILTER|Export CSV|Cross analysis matrix/);
   assert.match(html, /overflow-x-auto/);
-  assert.equal((renderToStaticMarkup(React.createElement(InsightsLoading)).match(/aria-label="Loading /g) || []).length, 8);
+  assert.equal((renderToStaticMarkup(React.createElement(InsightsLoading)).match(/aria-label="Loading /g) || []).length, 10);
   Reflect.deleteProperty(globalThis, 'window');
 });
 test('international formatting and selector performance meet the instant-data budget', () => {
@@ -184,4 +188,102 @@ test('profile reporting controls expose the saved IANA timezone and ISO reportin
   assert.match(html, /aria-label="Profile journal currency"/);
   assert.match(html, /selected="">Asia\/Kathmandu<\/option>/);
   assert.match(html, /<option selected="">EUR<\/option>/);
+});
+const reviewed = (patch: Partial<JournalEntry> = {}) => trade({
+  date: '2026-10-02', entryTime: '2026-10-02T09:00:00Z', exitTime: '2026-10-02T11:00:00Z',
+  strategy: 'Breakout', followedPlan: true, mistakesReviewed: true, checklistDone: ['a', 'b'], ...patch,
+});
+test('automatic discipline uses the exact existing Overview score and evidence rules', () => {
+  const rows = [
+    reviewed({ id: 'newest' }),
+    reviewed({ id: 'older', date: '2026-10-01', entryTime: '2026-10-01T09:00:00Z', exitTime: '2026-10-01T11:00:00Z', followedPlan: false, checklistDone: [], mistakes: ['Chased price'] }),
+    reviewed({ id: 'unknown', followedPlan: null }),
+  ];
+  assert.equal(overviewDiscipline, computeDiscipline);
+  const data = aggregateInsights(rows, filters, settings, 2), track = data.discipline;
+  assert.deepEqual(track.score, { score: 50, plan: 50, checklist: 50, clean: 50, run: 1 });
+  assert.equal(track.reviewed.length, 2);
+  assert.equal(track.unanswered.length, 1);
+  assert.deepEqual(track.streak.map(trade => trade.entry.id), ['newest']);
+  assert.equal(track.nextMilestone, 3);
+  assert.equal(track.streakKnown, true);
+  assert.equal(hasDisciplineEvidence(reviewed({ followedPlan: null })), false);
+  assert.equal(hasDisciplineEvidence(reviewed({ mistakesReviewed: false, emotionBefore: 'Calm', emotionAfter: 'Calm', rating: 5 })), false);
+  assert.equal(hasDisciplineEvidence(reviewed({ mistakesReviewed: undefined, emotionBefore: 'Calm', emotionAfter: 'Calm', rating: 5 })), true);
+});
+test('playbook progress uses each recorded setup and excludes unanswered plan checks from percentages', () => {
+  const data = aggregateInsights([
+    reviewed({ id: 'b1' }), reviewed({ id: 'b2', followedPlan: null }),
+    reviewed({ id: 's1', strategy: 'Swing', followedPlan: false, pnl: -10, commission: 0 }),
+    reviewed({ id: 'none', strategy: '' }), reviewed({ id: 'unassigned', strategy: 'Unassigned' }),
+    reviewed({ id: 'blank', strategy: '  ' }),
+  ], filters, settings, 2);
+  assert.equal(data.playbooks.reduce((sum, playbook) => sum + playbook.n, 0), data.summary.n);
+  assert.equal(data.playbookFocus!.name, 'Breakout');
+  const breakout = data.playbooks.find(playbook => playbook.name === 'Breakout')!;
+  assert.equal(breakout.n, 2); assert.equal(breakout.answered.length, 1); assert.equal(breakout.adherence, 100);
+  assert.equal(data.playbooks.find(playbook => !playbook.assigned)!.n, 3);
+  assert.equal(data.playbooks.find(playbook => playbook.name === 'Swing')!.adherence, 0);
+  assert.equal(aggregateInsights([reviewed({ strategy: '' })], filters, settings, 2).playbookFocus, null);
+});
+test('progress respects currency/date/account/side filters and previous-period comparison', () => {
+  const rows = [
+    reviewed({ id: 'current', accountId: 'A', direction: 'SELL' }),
+    reviewed({ id: 'wrong-account', accountId: 'B', direction: 'SELL', strategy: 'Other' }),
+    reviewed({ id: 'wrong-side', direction: 'BUY', strategy: 'Other' }),
+    reviewed({ id: 'open', tradingStatus: 'open', direction: 'SELL', strategy: 'Other' }),
+    reviewed({ id: 'eur', accountCurrency: 'EUR', direction: 'SELL', strategy: 'Other' }),
+    reviewed({ id: 'previous', date: '2026-09-10', entryTime: '2026-09-10T09:00:00Z', exitTime: '2026-09-10T11:00:00Z', direction: 'SELL', followedPlan: false, checklistDone: [], mistakes: ['Chased price'] }),
+  ];
+  const data = aggregateInsights(rows, { ...filters, account: 'A', side: 'short' }, settings, 2);
+  assert.equal(data.playbooks.length, 1);
+  assert.deepEqual(data.discipline.reviewed.map(trade => trade.entry.id), ['current']);
+  assert.equal(data.discipline.score!.score, 100);
+  assert.equal(data.discipline.previousScore!.score, 0);
+});
+test('streak order is deterministic within a day and timing gaps never become fabricated streaks', () => {
+  const rows = [
+    reviewed({ id: 'early', entryTime: '2026-10-02T08:00:00Z', followedPlan: false }),
+    reviewed({ id: 'late', entryTime: '2026-10-02T10:00:00Z' }),
+    reviewed({ id: 'unanswered-between', entryTime: '2026-10-02T09:00:00Z', followedPlan: null }),
+  ];
+  const data = aggregateInsights(rows, filters, settings, 2);
+  assert.equal(data.discipline.score!.run, 1);
+  assert.deepEqual(data.discipline.streak.map(trade => trade.entry.id), ['late']);
+  const unknown = aggregateInsights([reviewed({ entryTime: undefined })], filters, settings, 2).discipline;
+  assert.equal(unknown.score!.score, 100);
+  assert.equal(unknown.streakKnown, false);
+  assert.equal(unknown.nextMilestone, null);
+});
+test('habit markers are read-only current-view progress, independent of profit and trading rewards', () => {
+  const rows = Array.from({ length: 5 }, (_, i) => reviewed({ id: `row-${i}`, entryTime: `2026-10-02T0${i}:00:00Z`, pnl: -100, commission: 0 }));
+  const before = JSON.stringify(rows), data = aggregateInsights(rows, filters, settings, 2);
+  assert.equal(data.discipline.score!.score, 100);
+  assert.equal(data.discipline.score!.run, 5);
+  assert.equal(data.discipline.nextMilestone, 10);
+  assert.equal(JSON.stringify(rows), before);
+  const profitable = aggregateInsights(rows.map(entry => ({ ...entry, pnl: 100 })), filters, settings, 2);
+  assert.deepEqual(profitable.discipline.score, data.discipline.score);
+  assert.equal(aggregateInsights(rows.slice(0, 3), filters, settings, 2).discipline.nextMilestone, 5);
+  assert.throws(() => aggregateInsights(rows, filters, settings, -1), /checklist length/);
+});
+test('automatic cards stay basic, show evidence gaps and never render extra settings', () => {
+  const empty = aggregateInsights([trade()], filters, settings, 2);
+  const missing = renderToStaticMarkup(React.createElement(InsightsDisciplineProgress, { data: empty, onDrill: () => {} }));
+  assert.match(missing, /Missing answers are not failures/);
+  assert.doesNotMatch(missing, /aria-valuenow="0"/);
+  const data = aggregateInsights([reviewed()], filters, settings, 2);
+  const playbook = renderToStaticMarkup(React.createElement(InsightsPlaybookProgress, { data, onDrill: () => {} }));
+  const discipline = renderToStaticMarkup(React.createElement(InsightsDisciplineProgress, { data, onDrill: () => {} }));
+  assert.match(playbook, /Early progress/);
+  assert.match(playbook, /Small sample/);
+  assert.match(discipline, /No Points or Credits are awarded/);
+  assert.match(discipline, /aria-label="Discipline score"/);
+  assert.match(discipline, /data-keep-button-icons/);
+  assert.doesNotMatch(playbook + discipline, /<input|<select|Earn XP|Claim reward/);
+  const noChecklist = aggregateInsights([reviewed({ checklistDone: [] })], filters, settings, 0);
+  assert.equal(noChecklist.discipline.score!.score, 100);
+  const noChecklistHtml = renderToStaticMarkup(React.createElement(InsightsDisciplineProgress, { data: noChecklist, onDrill: () => {} }));
+  assert.match(noChecklistHtml, /No checklist configured/);
+  assert.match(noChecklistHtml, /existing calculator gives full checklist credit/);
 });

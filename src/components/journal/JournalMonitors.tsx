@@ -2,6 +2,8 @@ import { JournalHelp } from './JournalHelp';
 import React, { useMemo } from 'react';
 import { JournalEntry } from '../../types';
 import { eligible, resultOf, statusOf } from './journalMath';
+import { computeDiscipline } from './journalDiscipline';
+export { computeDiscipline } from './journalDiscipline';
 
 export interface JournalRules {
   maxRisk: number;
@@ -19,22 +21,6 @@ const bar = (pct: number, color: string) => (
 );
 
 /* ───────────────────────── Discipline ───────────────────────── */
-
-export function computeDiscipline(entries: JournalEntry[], checklistLength: number) {
-  entries = entries.filter(e => typeof e.followedPlan === 'boolean' && (e.mistakesReviewed === true || (e.mistakesReviewed === undefined && e.emotionBefore && e.emotionAfter && e.rating != null)));
-  if (!entries.length) return null;
-  const plan = entries.filter((e) => e.followedPlan).length / entries.length;
-  const checklist = checklistLength
-    ? entries.reduce((a, e) => a + Math.min(1, e.checklistDone.length / checklistLength), 0) / entries.length
-    : 1;
-  const clean = entries.filter((e) => e.mistakes.length === 0).length / entries.length;
-  const score = Math.round((plan * 0.5 + checklist * 0.3 + clean * 0.2) * 100);
-  // current run of plan-following trades, newest first
-  const newestFirst = [...entries].sort((a, b) => b.date.localeCompare(a.date));
-  let run = 0;
-  for (const e of newestFirst) { if (e.followedPlan) run++; else break; }
-  return { score, plan: Math.round(plan * 100), checklist: Math.round(checklist * 100), clean: Math.round(clean * 100), run };
-}
 
 export const DisciplineCard: React.FC<{ entries: JournalEntry[]; checklistLength: number }> = ({ entries, checklistLength }) => {
   const d = useMemo(() => computeDiscipline(entries, checklistLength), [entries, checklistLength]);

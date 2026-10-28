@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { JournalEntry } from '../../../types';
 import { aggregateInsights, insightsUrl, readInsightsFilters, zonedParts, type InsightsFilters, type InsightsSettings } from './insightsData';
 
-export function useInsightsData(entries: JournalEntry[], settings: InsightsSettings) {
+export function useInsightsData(entries: JournalEntry[], settings: InsightsSettings, checklistLength = 0) {
   const today = zonedParts(Date.now(), settings.timeZone).date;
   const [selection, setSelection] = useState(() => readInsightsFilters(window.location.search, today));
   useEffect(() => {
@@ -20,6 +20,6 @@ export function useInsightsData(entries: JournalEntry[], settings: InsightsSetti
     window.history.pushState(window.history.state, '', url);
     setSelection({ filters, errors: [] });
   };
-  const data = useMemo(() => aggregateInsights(entries, selection.filters, settings), [entries, selection.filters, settings.timeZone, settings.currency, settings.locale]);
+  const data = useMemo(() => aggregateInsights(entries, selection.filters, settings, checklistLength), [entries, selection.filters, settings.timeZone, settings.currency, settings.locale, checklistLength]);
   return { data, today, errors: selection.errors, update };
 }

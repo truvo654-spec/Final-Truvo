@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.28.0)
+### Journal views (v2.29.0)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -116,8 +116,9 @@ audit fixes remain deferred.
 Insights defaults to a ready-to-read report with six KPI cards and trends, a
 trading calendar with weekly totals, a cumulative realized P&L / drawdown curve,
 closing-weekday bars, entry-hour bars, an entry day/hour heatmap, and rule-based
-observations. Every chart supports exact-value hover/focus details and opens the
-same trade drawer. Drawer links open the original Trade Log and full review.
+observations, plus automatic playbook and discipline progress cards. Every chart
+supports exact-value hover/focus details and opens the same trade drawer. Drawer
+links open the original Trade Log and full review.
 The curve supports drag-to-zoom and double-click/Escape reset; chart interactions
 do not change the report filters.
 
@@ -146,6 +147,32 @@ an empty previous period is labeled, not treated as a measured zero. Observation
 require at least five trades in every compared group. Widgets can be hidden or
 reordered through the existing card controls. Choose **Advanced** for Insights in
 Profile's **Journal view** section to retain the original reports and tools.
+
+### Automatic personal progress
+
+Easy Insights adds two basic, read-only trackers with no new settings or goals
+to configure. They inherit the same date, account, side, timezone and reporting
+currency scope as the other Insights widgets.
+
+- **Your playbook progress:** recorded setups, their results and win rate, and
+  simple plan-following bars. The most-used named setup is highlighted, not
+  recommended as the best strategy. Three groups show initially; **Show all
+  playbooks** reveals the rest, including unassigned trades. Unanswered plan
+  checks are excluded from percentages, and consistency labels require five
+  answers.
+- **Your discipline track:** the existing Overview discipline calculation
+  (plan 50%, checklist 30%, reviewed mistake-free trades 20%), review coverage,
+  previous-period score change, and the current reviewed-plan streak. Automatic
+  habit markers at 1, 3, 5 and 10 reviews reflect this view's current streak, not
+  lifetime achievements. Streaks are withheld when entry timing is unreliable.
+
+Scores use the current house checklist and the existing review-evidence rules;
+they are not profit targets or account levels. Progress does not require profits
+or additional trading, and **no Points or Credits are awarded**. Missing evidence
+is never counted as a pass or failure. Select a result or progress bar to inspect
+its trades in the shared drawer; this does not change global filters. Both cards
+use the existing hide/reorder controls. Full Advanced analytics, Playbook, Trade
+Log and review workflows remain unchanged.
 
 Focused journal regression checks:
 

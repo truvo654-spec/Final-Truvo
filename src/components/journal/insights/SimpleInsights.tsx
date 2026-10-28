@@ -9,9 +9,11 @@ import { InsightsKpis } from './InsightsKpis';
 import { InsightsCalendar } from './InsightsCalendar';
 import { InsightsCurve } from './InsightsCurve';
 import { InsightsWeekdays, InsightsHours, InsightsHeatmap } from './InsightsDistributions';
+import { InsightsPlaybookProgress, InsightsDisciplineProgress } from './InsightsProgress';
 
 interface Props {
   entries: JournalEntry[]; settings: InsightsSettings; view: JournalCardsController; settingsWarnings: string[];
+  checklistLength?: number;
   onTradeLog: () => void; onOpenProfile?: () => void;
   onOpenTrade: (entry: JournalEntry) => void; onOpenTrades: (entries: JournalEntry[], label: string) => void;
 }
@@ -20,8 +22,8 @@ function InsightsCallouts({ data, onDrill }: InsightsWidgetProps) {
     {data.callouts.map(callout => <button key={callout.id} className="block w-full rounded-lg bg-slate-50 p-3 text-left text-sm hover:underline" onClick={() => onDrill(callout.text, callout.trades)}>{callout.text} <span className="text-xs text-slate-500">({callout.trades.length} trades)</span></button>)}
   </div> : <p className="text-sm text-slate-500">Patterns appear when a comparable group has at least 5 closed trades. No conclusions are drawn from smaller samples.</p>;
 }
-export function SimpleInsights({ entries, settings, view, settingsWarnings, onTradeLog, onOpenProfile, onOpenTrade, onOpenTrades }: Props) {
-  const { data, today, errors, update } = useInsightsData(entries, settings);
+export function SimpleInsights({ entries, settings, view, settingsWarnings, checklistLength = 0, onTradeLog, onOpenProfile, onOpenTrade, onOpenTrades }: Props) {
+  const { data, today, errors, update } = useInsightsData(entries, settings, checklistLength);
   const [drill, setDrill] = useState<{ label: string; trades: InsightTrade[] } | null>(null);
   useEffect(() => setDrill(null), [data]);
   const open = (label: string, trades: InsightTrade[]) => setDrill({ label, trades });
@@ -33,6 +35,8 @@ export function SimpleInsights({ entries, settings, view, settingsWarnings, onTr
   const render = (id: string) => {
     switch (id) {
       case 'insights-kpis': return <InsightsKpis data={data} onDrill={open}/>;
+      case 'insights-playbooks': return <InsightsPlaybookProgress data={data} onDrill={open}/>;
+      case 'insights-discipline': return <InsightsDisciplineProgress data={data} onDrill={open}/>;
       case 'insights-calendar': return <InsightsCalendar data={data} onDrill={open} today={today}/>;
       case 'insights-curve': return <InsightsCurve data={data} onDrill={open}/>;
       case 'insights-weekdays': return <InsightsWeekdays data={data} onDrill={open}/>;

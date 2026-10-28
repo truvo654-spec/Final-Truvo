@@ -2,6 +2,7 @@ import type { JournalEntry } from '../../../types';
 import { currencyOf, rawNet, realized, realizedR, statusOf, timestampMs } from '../journalMath';
 import { addDays } from '../journalOverview';
 import { validDate } from '../journalDay';
+import { computeDiscipline, hasDisciplineEvidence } from '../journalDiscipline';
 
 export const INSIGHTS_RANGES = ['7D', '30D', '90D', 'YTD', 'All'] as const;
 export type InsightsRange = typeof INSIGHTS_RANGES[number];
@@ -103,8 +104,9 @@ export const weekdayLabel = (index: number, locale?: string, long = false) =>
   new Intl.DateTimeFormat(locale, { weekday: long ? 'long' : 'short', timeZone: 'UTC' }).format(Date.parse(`2024-01-0${index + 1}T12:00:00Z`));
 export const hourLabel = (hour: number, locale?: string) =>
   new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(Date.parse(`2024-01-01T${String(hour).padStart(2, '0')}:00:00Z`));
-export function aggregateInsights(entries: JournalEntry[], filters: InsightsFilters, settings: InsightsSettings) {
+export function aggregateInsights(entries: JournalEntry[], filters: InsightsFilters, settings: InsightsSettings, checklistLength = 0) {
   if (!validDate(filters.asOf) || !validTimeZone(settings.timeZone) || !validCurrency(settings.currency)) throw new Error('Insights requires a valid date, timezone and reporting currency.');
+  if (!Number.isInteger(checklistLength) || checklistLength < 0) throw new Error('Insights requires a non-negative checklist length.');
   const localFormat = new Intl.DateTimeFormat('en-US-u-ca-gregory-nu-latn', { timeZone: settings.timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' });
   const normalized: InsightTrade[] = [];
   const coverage = { closed: 0, otherCurrency: 0, missingExit: 0, unknownResult: 0, invalidCosts: 0, missingEntry: 0, unknownCosts: 0 };
@@ -137,6 +139,29 @@ export function aggregateInsights(entries: JournalEntry[], filters: InsightsFilt
   const heatmap = buckets(current, trade => trade.entryHour === null ? null : `${trade.entryWeekday}-${trade.entryHour}`, Array.from({ length: 168 }, (_, index) => `${Math.floor(index / 24)}-${index % 24}`));
   const weeks = buckets(current, trade => weekOf(trade.closeDate));
   const summary = insightStats(current), previousSummary = insightStats(previous);
+  const playbooks = buckets(current, trade => {
+    const name = trade.entry.strategy.trim();
+    return name === 'Unassigned' ? '' : name;
+  }).map(bucket => {
+    const answered = bucket.trades.filter(trade => typeof trade.entry.followedPlan === 'boolean');
+    const followed = answered.filter(trade => trade.entry.followedPlan === true);
+    return { ...bucket, name: bucket.key || 'No playbook recorded', assigned: !!bucket.key, answered, followed,
+      adherence: answered.length ? followed.length / answered.length * 100 : null };
+  }).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, settings.locale));
+  const disciplineFor = (trades: InsightTrade[]) => {
+    const newest = [...trades].sort((a, b) => b.entry.date.localeCompare(a.entry.date) ||
+      (timestampMs(b.entry.entryTime) || 0) - (timestampMs(a.entry.entryTime) || 0) || b.entry.id.localeCompare(a.entry.id));
+    const reviewed = newest.filter(trade => hasDisciplineEvidence(trade.entry));
+    const score = computeDiscipline(newest.map(trade => trade.entry), checklistLength);
+    const streakKnown = reviewed.length > 0 && reviewed.every(trade => trade.entryHour !== null &&
+      trade.entry.date === new Date(timestampMs(trade.entry.entryTime)).toISOString().slice(0, 10));
+    return { score, reviewed, streakKnown, unanswered: newest.filter(trade => !hasDisciplineEvidence(trade.entry)),
+      followed: reviewed.filter(trade => trade.entry.followedPlan === true),
+      clean: reviewed.filter(trade => trade.entry.mistakes.length === 0),
+      streak: reviewed.slice(0, score?.run || 0) };
+  };
+  const discipline = disciplineFor(current), previousDiscipline = disciplineFor(previous);
+  const nextMilestone = discipline.streakKnown ? [1, 3, 5, 10].find(goal => goal > (discipline.score?.run || 0)) ?? null : null;
   const extremes = (list: InsightBucket[]) => {
     const observed = list.filter(bucket => bucket.n);
     return { best: observed.reduce<InsightBucket | null>((best, bucket) => !best || bucket.net > best.net ? bucket : best, null),
@@ -176,6 +201,8 @@ export function aggregateInsights(entries: JournalEntry[], filters: InsightsFilt
   return { filters, settings, bounds, accounts, current, previous, summary, previousSummary, days,
     byDay: new Map(days.map(bucket => [bucket.key, bucket])), weeks: new Map(weeks.map(bucket => [bucket.key, bucket])),
     weekdays, hours, heatmap, curve, trends, dayExtremes: extremes(days), previousDayExtremes: extremes(previousDays),
-    hourExtremes: extremes(hours), callouts, coverage, available: normalized.length, filteredOut: normalized.length - current.length };
+    hourExtremes: extremes(hours), callouts, coverage, available: normalized.length, filteredOut: normalized.length - current.length,
+    playbooks, playbookFocus: playbooks.find(playbook => playbook.assigned) || null,
+    discipline: { ...discipline, previousScore: previousDiscipline.score, checklistLength, nextMilestone } };
 }
 export type InsightsData = ReturnType<typeof aggregateInsights>;

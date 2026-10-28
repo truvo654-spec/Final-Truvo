@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.29.0] - 2026-10-28
+### Added
+- Automatic personal progress in Easy Insights: playbook results, answered-plan progress bars, a most-used setup highlight, and small-sample consistency labels.
+- A basic discipline score ring, plan/checklist/mistake-free bars, review coverage, previous-period comparison, and reviewed-plan streak markers, using the existing discipline calculation.
+### Notes
+- No new settings, configurable goals, Points/Credits rewards, or permanent badges. Trackers use the current Insights scope and shared trade drawer.
+- Unknown review evidence is excluded, and unreliable entry timing suppresses streak claims. Advanced analytics and the original Trade Log/review workflows are unchanged.
+
 ## [2.28.0] - 2026-10-28
 ### Added
 - Instant default Insights: six KPI cards with trends and previous-period comparisons, a trading calendar with weekly totals, cumulative P&L and shaded drawdown, weekday/hour charts, an entry day/hour heatmap, and sample-guarded rule-based observations.

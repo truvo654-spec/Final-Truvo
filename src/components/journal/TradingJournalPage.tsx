@@ -689,7 +689,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       )}
 
       {simpleInsights && <Suspense fallback={<InsightsLoading/>}>
-        <SimpleInsights entries={entries} settings={reporting.settings} settingsWarnings={reporting.warnings} view={view}
+        <SimpleInsights entries={entries} settings={reporting.settings} settingsWarnings={reporting.warnings} view={view} checklistLength={checklist.length}
           onTradeLog={() => setTab('entries')} onOpenProfile={onOpenProfile}
           onOpenTrade={trade => openInsightTrades([trade], 'Trade from Insights', trade)}
           onOpenTrades={openInsightTrades}/>
