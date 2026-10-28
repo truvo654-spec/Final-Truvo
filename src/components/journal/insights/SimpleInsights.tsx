@@ -61,7 +61,7 @@ export function SimpleInsights({ entries, settings, view, settingsWarnings, chec
           {data.filters.account !== 'all' && !data.accounts.includes(data.filters.account) && <option value={data.filters.account}>Account not found: {data.filters.account}</option>}
         </select>
       </label>}
-      <div role="group" aria-label="Insights side" className="inline-flex overflow-hidden rounded-lg border border-slate-200">
+      <div role="group" aria-label="Insights side" className="ml-auto inline-flex shrink-0 overflow-hidden rounded-lg border border-slate-200">
         {(['all', 'long', 'short'] as const).map(side => <button key={side} aria-pressed={data.filters.side === side} className={`px-3 py-2 text-xs font-semibold capitalize ${data.filters.side === side ? 'bg-[#5338ec] text-white' : 'bg-white text-slate-500'}`} onClick={() => change({ side })}>{side}</button>)}
       </div>
     </div>

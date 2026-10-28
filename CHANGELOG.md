@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.29.4] - 2026-10-28
+### Changed
+- Right-aligned All / Long / Short in the Insights filter bar, retaining left-aligned date/account controls and clean wrapping on narrow screens.
+
 ## [2.29.3] - 2026-10-28
 ### Changed
 - Easy Insights now shows How am I doing? first and Trading calendar second by default, including loading placeholders. Both remain full-width, and saved custom orders are preserved.

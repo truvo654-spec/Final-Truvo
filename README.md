@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.29.3)
+### Journal views (v2.29.4)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -124,6 +124,8 @@ do not change the report filters.
 
 Only three report filters are shown: **7D / 30D / 90D / YTD / All** (30D by
 default), **Account** (hidden for a single account), and **All / Long / Short**.
+Dates and accounts stay on the left; the side selector aligns right and wraps
+without shrinking on narrow screens.
 Selections are stored as `insightsRange`, `insightsAccount`, and `insightsSide`
 query parameters, with `insightsAsOf` anchoring the final calendar date.
 `journalTab=insights` opens the report directly; `journalTab=entries&journalTrade=ID`

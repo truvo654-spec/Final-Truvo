@@ -172,6 +172,7 @@ test('default Easy screen renders eight widgets, full-width calendar/KPIs and no
   assert.match(html, /aria-label="Trading calendar" class="[^"]*xl:col-span-12/);
   assert.match(html, /aria-label="How am I doing\?" class="[^"]*xl:col-span-12/);
   assert.match(html, /Insights date range/); assert.match(html, /Insights side/);
+  assert.match(html, /aria-label="Insights side" class="[^"]*ml-auto[^"]*shrink-0/);
   assert.doesNotMatch(html, /aria-label="Insights account"|SESSION FILTER|Export CSV|Cross analysis matrix/);
   assert.doesNotMatch(html, /Scrollable entry day and hour heatmap|aria-label="Day × hour"/);
   assert.equal((renderToStaticMarkup(React.createElement(InsightsLoading)).match(/aria-label="Loading /g) || []).length, 10);
