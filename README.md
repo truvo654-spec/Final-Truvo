@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.33.2)
+### Journal views (v2.33.3)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -121,8 +121,9 @@ and other currencies and unknown-cost records are excluded. **Edit or open full 
 and tools; **House rules & full workspace** is available even with no playbooks.
 Standard and Advanced keep the original interface.
 
-Easy Playbook has a three-field quick-create dialog with optional templates and
-details. Defaults use the House risk and trade-count limits, and the shared
+Easy Playbook has an Advanced-inspired quick-create chooser with three required
+fields, optional starter cards and optional details. Defaults use the House risk
+and trade-count limits, and the shared
 House checklist remains in the existing check flow. Scenario technical details
 and linked trade/backtest integration are not implemented yet.
 

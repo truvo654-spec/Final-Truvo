@@ -51,5 +51,12 @@ test('quick create starts with the three required fields and optional details', 
   }));
   for (const label of ['Strategy name', 'Market type', 'Instrument symbols', 'Customize details', 'Create playbook']) assert.ok(html.includes(label));
   assert.match(html, /aria-label="Create playbook"/);
+  assert.match(html, /Set up a strategy/);
+  assert.match(html, /aria-label="Strategy starters"/);
+  assert.match(html, /Create your own/);
+  assert.match(html, /Rules and House limits are added automatically/);
+  assert.match(html, /<form[^>]*novalidate/i);
+  assert.equal((html.match(/aria-pressed="false"/g) || []).length, PLAYBOOK_STARTERS.length + 5);
+  assert.match(html, /<button type="submit"[^>]*>Create playbook<\/button>/);
   assert.doesNotMatch(html, /Step 1|Save draft/);
 });

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.33.3] - 2026-10-28
+### Changed
+- Easy Playbook quick creation now uses an Advanced-inspired strategy chooser with market controls and starter cards, while retaining the three required fields, automatic defaults and optional customization.
+
 ## [2.33.2] - 2026-10-28
 ### Added
 - Easy Playbook performance tiles open a trade-details popup without leaving Playbook. Net P&L and win rate show all included trades; winning and losing P&L show the corresponding outcomes.
