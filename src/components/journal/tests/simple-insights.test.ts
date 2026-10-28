@@ -6,10 +6,10 @@ import type { JournalEntry } from '../../../types';
 import { JOURNAL_ENTRIES } from '../../../data/journalData';
 import {
   aggregateInsights, insightsBounds, insightsUrl, readInsightsFilters, zonedParts,
-  formatInsightsMoney, type InsightsFilters, type InsightsSettings,
+  formatInsightsMoney, openPositionSnapshot, type InsightsFilters, type InsightsSettings,
 } from '../insights/insightsData';
 import { SimpleInsights } from '../insights/SimpleInsights';
-import { InsightsLoading } from '../insights/InsightsShared';
+import { InsightsLoading, InsightTradeDrawer } from '../insights/InsightsShared';
 import { JournalReportingSettings } from '../insights/JournalReportingSettings';
 import { InsightsPlaybookProgress, InsightsDisciplineProgress } from '../insights/InsightsProgress';
 import { computeDiscipline, hasDisciplineEvidence } from '../journalDiscipline';
@@ -356,4 +356,98 @@ test('automatic cards stay basic, show evidence gaps and never render extra sett
   const noChecklistHtml = renderToStaticMarkup(React.createElement(InsightsDisciplineProgress, { data: noChecklist, onDrill: () => {} }));
   assert.match(noChecklistHtml, /No checklist configured/);
   assert.match(noChecklistHtml, /existing calculator gives full checklist credit/);
+});
+const position = (patch: Partial<JournalEntry> = {}) => trade({
+  tradingStatus: 'open', outcome: 'open', exitTime: undefined, exitPrice: null, ...patch,
+});
+test('open snapshot applies account/side/currency but does not net reported P&L with recorded costs', () => {
+  const entries = [
+    position({ id: 'win', pnl: 120 }), position({ id: 'loss', pnl: -50 }),
+    position({ id: 'zero', pnl: 0 }), position({ id: 'eur', accountCurrency: 'EUR', pnl: 9999 }),
+    position({ id: 'other-account', accountId: 'B', pnl: 500 }), position({ id: 'short', direction: 'SELL', pnl: 100 }),
+    trade({ id: 'closed', pnl: 10000 }), position({ id: 'planned', tradingStatus: 'planned', pnl: 10000 }),
+  ];
+  const before = JSON.stringify(entries), snapshot = openPositionSnapshot(entries, { account: 'A', side: 'long' }, 'USD');
+  assert.deepEqual(new Set(snapshot.positions.map(row => row.entry.id)), new Set(['win', 'loss', 'zero']));
+  assert.equal(snapshot.known, 3); assert.equal(snapshot.unknown, 0); assert.equal(snapshot.otherCurrency, 1);
+  assert.equal(snapshot.unrealized, 70);
+  assert.equal(snapshot.floatingLosses, -50);
+  assert.equal(snapshot.knownSubtotal, 70);
+  assert.equal(JSON.stringify(entries), before);
+  assert.throws(() => openPositionSnapshot(entries, filters, 'invalid'), /currency/);
+});
+test('unknown open P&L never becomes a zero total or zero floating loss', () => {
+  const snapshot = openPositionSnapshot([
+    position({ id: 'win', pnl: 100 }), position({ id: 'loss', pnl: -40 }),
+    position({ id: 'unknown', pnl: 0, pnlKnown: false }), position({ id: 'invalid', pnl: NaN }),
+  ], filters, 'USD');
+  assert.equal(snapshot.known, 2); assert.equal(snapshot.unknown, 2);
+  assert.equal(snapshot.unrealized, null); assert.equal(snapshot.floatingLosses, null);
+  assert.equal(snapshot.knownSubtotal, 60); assert.equal(snapshot.knownFloatingLosses, -40);
+  const none = openPositionSnapshot([], filters, 'USD');
+  assert.equal(none.unrealized, null); assert.equal(none.floatingLosses, null);
+  const unreported = openPositionSnapshot([position({ pnlKnown: false })], filters, 'USD');
+  assert.equal(unreported.knownSubtotal, null); assert.equal(unreported.knownFloatingLosses, null);
+  const zero = openPositionSnapshot([position({ pnl: 0 })], filters, 'USD');
+  assert.equal(zero.unrealized, 0); assert.equal(zero.floatingLosses, 0);
+});
+test('saved open snapshot ignores historical date windows without changing closed stats or curve', () => {
+  const closed = trade({ id: 'closed-day', date: '2026-09-14', entryTime: '2026-09-14T09:00:00Z', exitTime: '2026-09-14T10:00:00Z' });
+  const historical: InsightsFilters = { ...filters, range: '7D', asOf: '2026-09-15' };
+  const baseline = aggregateInsights([closed], historical, settings);
+  const data = aggregateInsights([
+    closed,
+    position({ id: 'older-open', date: '2026-01-01', entryTime: '2026-01-01T09:00:00Z', pnl: 120 }),
+    position({ id: 'later-open', date: '2026-10-05', entryTime: '2026-10-05T09:00:00Z', pnl: -70 }),
+  ], historical, settings);
+  assert.equal(data.openSnapshot.positions.length, 2);
+  assert.equal(data.openSnapshot.unrealized, 50);
+  assert.deepEqual(data.summary, baseline.summary);
+  assert.deepEqual(data.curve, baseline.curve);
+  assert.deepEqual(data.current.map(row => row.entry.id), ['closed-day']);
+});
+test('drawer toggles preserve the closed cohort and render saved open positions without invented exits or R', () => {
+  const data = aggregateInsights([
+    trade({ id: 'closed-row', symbol: 'CLOSED' }),
+    position({ id: 'open-row', symbol: 'OPEN', pnl: -50, pnlKnown: true, rMultiple: 99 }),
+    position({ id: 'unknown-row', symbol: 'UNKNOWN', pnlKnown: false }),
+  ], filters, settings);
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { href: 'http://localhost:3000/trade/journal?journalTab=insights&insightsRange=30D' } } });
+  try {
+    const props = { label: 'Clicked closing day', trades: data.current, openSnapshot: data.openSnapshot, settings, onClose: () => {}, onOpenTrade: () => {}, onOpenTrades: () => {} };
+    const closed = renderToStaticMarkup(React.createElement(InsightTradeDrawer, props));
+    assert.match(closed, /Trade drawer view/);
+    assert.match(closed, /Closed trades \(1\)/); assert.match(closed, /Open positions \(2\)/);
+    assert.match(closed, /Clicked closing day/);
+    assert.match(closed, /journalTrade=closed-row/);
+    assert.doesNotMatch(closed, /journalTrade=open-row/);
+    const open = renderToStaticMarkup(React.createElement(InsightTradeDrawer, { ...props, initialView: 'open' }));
+    assert.match(open, /Open positions · saved snapshot/);
+    assert.match(open, /Reported unrealized P&amp;L/);
+    assert.match(open, /Floating losses/);
+    assert.match(open, /Full totals remain unknown/);
+    assert.match(open, /not historical peak-to-trough drawdown/);
+    assert.match(open, /report date range and clicked day\/group do not restrict/);
+    assert.match(open, /journalTrade=open-row/);
+    assert.match(open, /Not reported/);
+    assert.doesNotMatch(open, /journalTrade=closed-row|<dt>Exit<\/dt>|<dt>R-multiple<\/dt>|99\.00R/);
+  } finally { Reflect.deleteProperty(globalThis, 'window'); }
+});
+test('open-only journals can enter the shared drawer without fabricating a closed-result chart', () => {
+  const data = aggregateInsights([position()], filters, settings);
+  assert.equal(data.current.length, 0);
+  assert.equal(data.curve.length, 0);
+  assert.equal(data.openSnapshot.positions.length, 1);
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { search: '?journalTab=insights&insightsAsOf=2026-10-28' } } });
+  try {
+    const view: JournalCardsController = {
+      cards: journalCardsFor(defaultJournalViews(), 'insights'), level: 'easy', baseLevel: 'easy', error: '', welcomed: true,
+      setLevel: () => {}, add: () => {}, hide: () => {}, moveUp: () => {}, moveDown: () => {}, reset: () => {}, dismissWelcome: () => {},
+    };
+    const html = renderToStaticMarkup(React.createElement(SimpleInsights, {
+      entries: [position()], settings, view, settingsWarnings: [], onTradeLog: () => {}, onOpenTrade: () => {}, onOpenTrades: () => {},
+    }));
+    assert.match(html, /View open positions \(1\)/);
+    assert.doesNotMatch(html, /Interactive cumulative P&amp;L/);
+  } finally { Reflect.deleteProperty(globalThis, 'window'); }
 });

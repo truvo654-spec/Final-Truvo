@@ -2,7 +2,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import type { JournalEntry } from '../../../types';
 import { useDialogFocus } from '../useDialogFocus';
 import { timestampMs } from '../journalMath';
-import { formatInsightsMoney, type InsightBucket, type InsightTrade, type InsightsData, type InsightsSettings } from './insightsData';
+import { formatInsightsMoney, type InsightBucket, type InsightOpenSnapshot, type InsightTrade, type InsightsData, type InsightsSettings } from './insightsData';
 
 export type OpenInsightTrades = (label: string, trades: InsightTrade[]) => void;
 export interface InsightsWidgetProps { data: InsightsData; onDrill: OpenInsightTrades; compact?: boolean }
@@ -48,24 +48,51 @@ export function InsightsLoading({ compact = false }: { compact?: boolean }) {
       </div>)}
   </div>;
 }
-export function InsightTradeDrawer({ label, trades, settings, onClose, onOpenTrade, onOpenTrades }: {
-  label: string; trades: InsightTrade[]; settings: InsightsSettings; onClose: () => void;
+export function InsightTradeDrawer({ label, trades, openSnapshot, settings, onClose, onOpenTrade, onOpenTrades, initialView = 'closed' }: {
+  label: string; trades: InsightTrade[]; openSnapshot: InsightOpenSnapshot; settings: InsightsSettings; onClose: () => void;
   onOpenTrade: (trade: JournalEntry) => void; onOpenTrades: (trades: JournalEntry[], label: string) => void;
+  initialView?: 'closed' | 'open';
 }) {
   const ref = useDialogFocus(onClose), titleId = useId();
+  const body = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState<'closed' | 'open'>(initialView);
   const [limit, setLimit] = useState(50);
+  const open = view === 'open', count = open ? openSnapshot.positions.length : trades.length;
+  const title = open ? 'Open positions · saved snapshot' : label;
+  const rows = open ? openSnapshot.positions.slice(0, limit).map(position => ({ entry: position.entry, amount: position.unrealized, r: null }))
+    : trades.slice(0, limit).map(trade => ({ entry: trade.entry, amount: trade.net, r: trade.r }));
+  const switchView = (next: 'closed' | 'open') => { setView(next); setLimit(50); if (body.current) body.current.scrollTop = 0; };
+  const money = (value: number | null) => value === null ? 'Unknown' : formatInsightsMoney(value, settings);
   const number = new Intl.NumberFormat(settings.locale, { maximumFractionDigits: 6 });
   const time = (value?: string) => Number.isFinite(timestampMs(value))
     ? new Intl.DateTimeFormat(settings.locale, { timeZone: settings.timeZone, dateStyle: 'medium', timeStyle: 'short' }).format(timestampMs(value)) : 'Not recorded';
   return <div className="fixed inset-0 z-[70] flex justify-end bg-slate-900/40" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="flex h-full w-full max-w-2xl flex-col bg-white text-[#0b1c30] shadow-2xl outline-none">
       <header className="flex items-start gap-3 border-b border-slate-200 p-5">
-        <div className="min-w-0 flex-1"><h2 id={titleId} className="text-lg font-bold">{label}</h2><p className="mt-1 text-xs text-slate-500">{countLabel(trades.length, settings.locale)} · {settings.currency} · {settings.timeZone}</p></div>
+        <div className="min-w-0 flex-1"><h2 id={titleId} className="text-lg font-bold">{title}</h2><p className="mt-1 text-xs text-slate-500">{open ? `${count.toLocaleString(settings.locale)} open ${count === 1 ? 'position' : 'positions'}` : countLabel(count, settings.locale)} · {settings.currency} · {settings.timeZone}</p></div>
         <button className={insightButton} onClick={onClose}>Close</button>
       </header>
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-        {!trades.length && <p className="p-5 text-sm text-slate-500">No closed trades match this point.</p>}
-        {trades.slice(0, limit).map(trade => {
+      <div className="border-b border-slate-200 px-5 py-3">
+        <div role="group" aria-label="Trade drawer view" className="inline-flex max-w-full overflow-hidden rounded-lg border border-slate-200">
+          {(['closed', 'open'] as const).map(mode => <button key={mode} type="button" aria-pressed={view === mode} className={`px-3 py-2 text-xs font-semibold ${view === mode ? 'bg-[#5338ec] text-white' : 'bg-white text-slate-500'}`} onClick={() => switchView(mode)}>
+            {mode === 'closed' ? `Closed trades (${trades.length})` : `Open positions (${openSnapshot.positions.length})`}
+          </button>)}
+        </div>
+      </div>
+      <div ref={body} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+        {open && <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+          <p className="break-words">Latest saved open-position snapshot—not live prices or positions reconstructed for the clicked date. Account: {openSnapshot.account === 'all' ? 'All accounts' : openSnapshot.account} · Side: {openSnapshot.side}. The report date range and clicked day/group do not restrict this snapshot.</p>
+          {count > 0 && <dl className="grid min-w-0 grid-cols-3 gap-3">
+            <div className="min-w-0"><dt>Open positions</dt><dd className="mt-1 text-base font-semibold">{count.toLocaleString(settings.locale)}</dd></div>
+            <div className="min-w-0"><dt>Reported unrealized P&L</dt><dd className="mt-1 break-words text-base font-semibold" style={openSnapshot.unrealized === null ? undefined : resultStyle(openSnapshot.unrealized)}>{money(openSnapshot.unrealized)}</dd></div>
+            <div className="min-w-0"><dt>Floating losses</dt><dd className="mt-1 break-words text-base font-semibold" style={openSnapshot.floatingLosses === null ? undefined : resultStyle(openSnapshot.floatingLosses)}>{money(openSnapshot.floatingLosses)}</dd></div>
+          </dl>}
+          <p>Floating losses sum negative reported P&L on open positions. They are not historical peak-to-trough drawdown; no mark-to-market history is stored for these positions. Recorded costs stay separate from reported unrealized values.</p>
+          {openSnapshot.unknown > 0 && <p role="status">{openSnapshot.known} of {count} positions have reported P&L. Full totals remain unknown.{openSnapshot.known > 0 && <> Known P&L subtotal: {money(openSnapshot.knownSubtotal)}; known floating losses: {money(openSnapshot.knownFloatingLosses)}.</>}</p>}
+          {openSnapshot.otherCurrency > 0 && <p>{openSnapshot.otherCurrency} open positions in other currencies are excluded. Values are never combined across currencies.</p>}
+        </div>}
+        {!count && <p className="p-5 text-sm text-slate-500">{open ? 'No open positions match the selected account, side and reporting currency.' : 'No closed trades match this point.'}</p>}
+        {rows.map(trade => {
           const entry = trade.entry, url = new URL(window.location.href);
           url.searchParams.set('journalTab', 'entries'); url.searchParams.set('journalTrade', entry.id);
           return <article key={entry.id} className="rounded-xl border border-slate-200 p-4 text-sm">
@@ -74,20 +101,25 @@ export function InsightTradeDrawer({ label, trades, settings, onClose, onOpenTra
                 if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                 event.preventDefault(); onOpenTrade(entry);
               }} aria-label={`Open ${entry.symbol} ${entry.id} in Trade Log`}>{entry.symbol} · {entry.direction === 'BUY' ? 'Long' : 'Short'}</a>
-              <strong style={resultStyle(trade.net)}>{formatInsightsMoney(trade.net, settings)}</strong>
+              <span className="shrink-0 text-right"><span className="block text-xs text-slate-500">{open ? 'Unrealized P&L' : 'Net P&L'}</span><strong style={trade.amount === null ? undefined : resultStyle(trade.amount)}>{trade.amount === null ? 'Not reported' : money(trade.amount)}</strong></span>
             </div>
             <dl className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-600 sm:grid-cols-2">
               <div><dt>Entry</dt><dd>{time(entry.entryTime)} · {Number.isFinite(entry.entryPrice) ? number.format(entry.entryPrice) : 'Price not recorded'}</dd></div>
-              <div><dt>Exit</dt><dd>{time(entry.exitTime)} · {entry.exitPrice != null && Number.isFinite(entry.exitPrice) ? number.format(entry.exitPrice) : 'Price not recorded'}</dd></div>
-              <div><dt>R-multiple</dt><dd>{trade.r === null ? 'Not recorded' : `${trade.r.toFixed(2)}R`}</dd></div>
-              <div><dt>Recorded costs</dt><dd>{Number.isFinite(entry.commission) ? formatInsightsMoney(-entry.commission!, settings) : 'Not recorded; result deducts recorded costs only'}</dd></div>
+              {open ? <>
+                <div><dt>Recorded size</dt><dd>{Number.isFinite(entry.size) ? number.format(entry.size) : 'Not recorded'} · {entry.quantityUnit || 'unit not recorded'}</dd></div>
+                <div><dt>Floating loss</dt><dd>{trade.amount === null ? 'Not reported' : money(Math.min(0, trade.amount))}</dd></div>
+              </> : <>
+                <div><dt>Exit</dt><dd>{time(entry.exitTime)} · {entry.exitPrice != null && Number.isFinite(entry.exitPrice) ? number.format(entry.exitPrice) : 'Price not recorded'}</dd></div>
+                <div><dt>R-multiple</dt><dd>{trade.r === null ? 'Not recorded' : `${trade.r.toFixed(2)}R`}</dd></div>
+              </>}
+              <div><dt>{open ? 'Recorded costs (separate)' : 'Recorded costs'}</dt><dd>{entry.commission != null && (!Number.isFinite(entry.commission) || entry.commission < 0) ? 'Invalid recorded costs' : Number.isFinite(entry.commission) ? formatInsightsMoney(-entry.commission!, settings) : open ? 'Not recorded' : 'Not recorded; result deducts recorded costs only'}</dd></div>
             </dl>
             <p className="mt-3 break-words text-xs text-slate-500">Tags: {entry.tags.length ? entry.tags.join(' · ') : 'None'}</p>
           </article>;
         })}
-        {limit < trades.length && <button className={insightButton+' w-full'} onClick={() => setLimit(limit + 50)}>Load more trades</button>}
+        {limit < count && <button className={insightButton+' w-full'} onClick={() => setLimit(limit + 50)}>{open ? 'Load more positions' : 'Load more trades'}</button>}
       </div>
-      <footer className="border-t border-slate-200 p-4"><button className={insightButton+' w-full'} disabled={!trades.length} onClick={() => onOpenTrades(trades.map(trade => trade.entry), label)}>Open these trades in Trade Log</button></footer>
+      <footer className="border-t border-slate-200 p-4"><button className={insightButton+' w-full'} disabled={!count} onClick={() => onOpenTrades(open ? openSnapshot.positions.map(position => position.entry) : trades.map(trade => trade.entry), title)}>{open ? 'Open positions in Trade Log' : 'Open these trades in Trade Log'}</button></footer>
     </div>
   </div>;
 }

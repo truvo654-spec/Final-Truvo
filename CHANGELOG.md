@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.30.0] - 2026-10-28
+### Added
+- A Closed trades / Open positions toggle in the shared Insights trade drawer, with saved unrealized P&L, floating losses, position details and original Trade Log links.
+- An open-position entry point when no closed results match the report.
+### Notes
+- The open view uses the selected account, side and reporting currency, independently of the date range or clicked historical group. It is a saved snapshot, not live prices or a historical unrealized-drawdown curve.
+- Unknown P&L keeps full totals unknown; recorded costs remain separate. Closed KPIs, chart calculations and filter selections are unchanged.
+
 ## [2.29.4] - 2026-10-28
 ### Changed
 - Right-aligned All / Long / Short in the Insights filter bar, retaining left-aligned date/account controls and clean wrapping on narrow screens.

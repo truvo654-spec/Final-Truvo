@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.29.4)
+### Journal views (v2.30.0)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -163,6 +163,29 @@ Advanced analytics are unchanged.
 
 Existing custom orders are preserved. **Reset this tab** restores the new
 summary-first default without changing trades, filters, or review notes.
+
+### Closed trades and open positions in the drawer
+
+The shared trade drawer has a **Closed trades / Open positions** toggle.
+Closed trades restores the exact chart group that was clicked. Open positions
+shows the latest saved snapshot for the selected account, side and reporting
+currency; the date preset, period end and clicked historical day/group do not
+restrict that snapshot. It is not a reconstruction of past positions or a live
+broker feed. Changing drawer views never changes the chart filters or realized
+KPIs.
+
+The open view shows reported unrealized P&L, floating losses (the sum of negative
+reported open-position results), recorded position details, and links to the
+original Trade Log. Costs are shown separately, not deducted from a value that
+may already include them. Missing reported P&L keeps full totals unknown; known
+subtotals are explicitly labeled. Different currencies are never combined.
+Floating losses are **not historical peak-to-trough drawdown**: no mark-to-market
+history for the open positions is available. The cumulative chart remains
+closed-result-only.
+
+When no closed results match but saved open positions are available, **View open
+positions** opens the same drawer directly. Switching tabs resets the list to
+the top, and both views retain load-more controls and Trade Log actions.
 
 ### Automatic personal progress
 

@@ -4,6 +4,7 @@ export const statusOf = (e: JournalEntry): TradingStatus => e.tradingStatus ?? (
 // Legacy demo records are dollar-denominated. No implicit currency conversion.
 export const currencyOf = (e: JournalEntry): Currency => (e.accountCurrency as Currency) || 'USD';
 export const costsKnown = (e: JournalEntry) => Number.isFinite(e.commission);
+export const reportedPnlOf = (e: JournalEntry) => e.pnlKnown !== false && Number.isFinite(e.pnl) ? e.pnl : null;
 export const realized = (e: JournalEntry) => statusOf(e) === 'closed' && e.pnlKnown !== false && Number.isFinite(e.pnl);
 export const eligible = (e: JournalEntry, basis: 'gross' | 'net' = 'net') => realized(e) && (basis === 'gross' || costsKnown(e));
 export const rawNet = (e: JournalEntry) => Math.round((e.pnl - (e.commission ?? 0)) * 100) / 100;

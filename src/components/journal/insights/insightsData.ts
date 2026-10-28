@@ -1,5 +1,5 @@
 import type { JournalEntry } from '../../../types';
-import { currencyOf, rawNet, realized, realizedR, statusOf, timestampMs } from '../journalMath';
+import { currencyOf, rawNet, realized, realizedR, reportedPnlOf, statusOf, timestampMs } from '../journalMath';
 import { addDays } from '../journalOverview';
 import { validDate } from '../journalDay';
 import { computeDiscipline, hasDisciplineEvidence } from '../journalDiscipline';
@@ -49,6 +49,23 @@ function partsOf(format: Intl.DateTimeFormat, time: number) {
 function recordedTime(value?: string) {
   return typeof value === 'string' && validDate(value.slice(0, 10)) && /[T ]\d{2}:\d{2}/.test(value) ? timestampMs(value) : NaN;
 }
+export function openPositionSnapshot(entries: JournalEntry[], filters: Pick<InsightsFilters, 'account' | 'side'>, currency: string) {
+  if (!validCurrency(currency)) throw new Error('Open positions require a valid reporting currency.');
+  const scoped = entries.filter(entry => statusOf(entry) === 'open' &&
+    (filters.account === 'all' || accountOf(entry) === filters.account) &&
+    (filters.side === 'all' || entry.direction === (filters.side === 'long' ? 'BUY' : 'SELL')));
+  const positions = scoped.filter(entry => currencyOf(entry) === currency)
+    .sort((a, b) => (recordedTime(b.entryTime) || 0) - (recordedTime(a.entryTime) || 0) || b.date.localeCompare(a.date) || b.id.localeCompare(a.id))
+    .map(entry => ({ entry, unrealized: reportedPnlOf(entry) }));
+  const known = positions.map(position => position.unrealized).filter((value): value is number => value !== null);
+  const knownSubtotal = known.length ? round(known.reduce((sum, value) => sum + value, 0)) : null;
+  const knownFloatingLosses = known.length ? round(known.reduce((sum, value) => sum + Math.min(0, value), 0)) : null;
+  const complete = positions.length > 0 && known.length === positions.length;
+  return { positions, account: filters.account, side: filters.side, known: known.length, unknown: positions.length - known.length,
+    unrealized: complete ? knownSubtotal : null, floatingLosses: complete ? knownFloatingLosses : null,
+    knownSubtotal, knownFloatingLosses, otherCurrency: scoped.length - positions.length };
+}
+export type InsightOpenSnapshot = ReturnType<typeof openPositionSnapshot>;
 export function readInsightsFilters(search: string, today: string) {
   const query = new URLSearchParams(search), errors: string[] = [];
   const rawRange = query.get('insightsRange'), rawSide = query.get('insightsSide'), rawDate = query.get('insightsAsOf');
@@ -203,6 +220,7 @@ export function aggregateInsights(entries: JournalEntry[], filters: InsightsFilt
     weekdays, hours, heatmap, curve, trends, dayExtremes: extremes(days), previousDayExtremes: extremes(previousDays),
     hourExtremes: extremes(hours), callouts, coverage, available: normalized.length, filteredOut: normalized.length - current.length,
     playbooks, playbookFocus: playbooks.find(playbook => playbook.assigned) || null,
-    discipline: { ...discipline, previousScore: previousDiscipline.score, checklistLength, nextMilestone } };
+    discipline: { ...discipline, previousScore: previousDiscipline.score, checklistLength, nextMilestone },
+    openSnapshot: openPositionSnapshot(entries, filters, settings.currency) };
 }
 export type InsightsData = ReturnType<typeof aggregateInsights>;

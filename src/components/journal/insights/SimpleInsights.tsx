@@ -25,7 +25,7 @@ function InsightsCallouts({ data, onDrill, compact }: InsightsWidgetProps) {
 }
 export function SimpleInsights({ entries, settings, view, settingsWarnings, checklistLength = 0, onTradeLog, onOpenProfile, onOpenTrade, onOpenTrades }: Props) {
   const { data, today, errors, update } = useInsightsData(entries, settings, checklistLength);
-  const [drill, setDrill] = useState<{ label: string; trades: InsightTrade[] } | null>(null);
+  const [drill, setDrill] = useState<{ label: string; trades: InsightTrade[]; view?: 'closed' | 'open' } | null>(null);
   useEffect(() => setDrill(null), [data]);
   const open = (label: string, trades: InsightTrade[]) => setDrill({ label, trades });
   const compact = view.baseLevel === 'easy';
@@ -70,7 +70,7 @@ export function SimpleInsights({ entries, settings, view, settingsWarnings, chec
     <details className="text-xs text-slate-500">
       <summary className="cursor-pointer">Data coverage · {data.summary.n} shown of {data.coverage.closed} closed trades</summary>
       <div className="mt-2 space-y-1">
-        <p>All widgets use this same scope. Open trades are excluded. Results deduct recorded commissions and fees only; no exchange rates or account deposits are inferred.</p>
+        <p>All performance widgets use this same closed-trade scope. Open positions are available separately in the trade drawer and never added to these results. Results deduct recorded commissions and fees only; no exchange rates or account deposits are inferred.</p>
         <p>{data.coverage.otherCurrency} closed trades in other currencies, {data.coverage.missingExit} without a valid exit timestamp, {data.coverage.unknownResult} with unknown results and {data.coverage.invalidCosts} with invalid costs are excluded.</p>
         <p>{data.coverage.missingEntry} selected trades have missing or invalid entry times and cannot appear in {compact ? 'entry-hour views' : 'entry-hour or heatmap views'}. {data.coverage.unknownCosts} have no recorded costs.</p>
         <p>KPI changes compare with the previous {data.bounds.days} calendar days: {dateLabel(data.bounds.previousFrom, settings.locale)} – {dateLabel(data.bounds.previousTo, settings.locale)}. Win rate includes breakeven trades.</p>
@@ -85,11 +85,14 @@ export function SimpleInsights({ entries, settings, view, settingsWarnings, chec
       {data.coverage.missingEntry > 0 && `${data.coverage.missingEntry} selected trades have no valid entry time and are absent from hourly views.`}
     </p>}
     {!data.current.length ? <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
-      <p className="text-sm text-slate-500">{data.coverage.closed === 0 ? 'Log your first trade to see insights' : 'No closed trades match this period, account, side and reporting currency.'}</p>
-      <button className={insightButton+' mt-4'} onClick={onTradeLog}>Go to Trade Log</button>
+      <p className="text-sm text-slate-500">{data.openSnapshot.positions.length > 0 ? 'No closed results match this view. Your saved open positions are available to review.' : entries.length === 0 ? 'Log your first trade to see insights' : 'No closed trades match this period, account, side and reporting currency.'}</p>
+      {data.openSnapshot.positions.length > 0 ? <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+        <button className={insightButton} onClick={() => setDrill({ label: 'Open positions', trades: [], view: 'open' })}>View open positions ({data.openSnapshot.positions.length})</button>
+        <button className="text-sm text-[#5338ec] underline" onClick={onTradeLog}>Go to Trade Log</button>
+      </div> : <button className={insightButton+' mt-4'} onClick={onTradeLog}>Go to Trade Log</button>}
     </div> : <div data-insights-layout={compact ? 'dashboard' : 'stacked'} className={compact ? 'grid min-w-0 grid-cols-12 items-start gap-4' : 'min-w-0 space-y-5'}>
       {view.cards.map(card => <JournalCard key={`${card.id}:${filterKey}`} card={card} view={view} detail={card.plainSummary} compact={compact} className={layout[card.id]}>{render(card.component)}</JournalCard>)}
     </div>}
-    {drill && <InsightTradeDrawer label={drill.label} trades={drill.trades} settings={settings} onClose={() => setDrill(null)} onOpenTrade={onOpenTrade} onOpenTrades={onOpenTrades}/>}
+    {drill && <InsightTradeDrawer label={drill.label} trades={drill.trades} openSnapshot={data.openSnapshot} initialView={drill.view} settings={settings} onClose={() => setDrill(null)} onOpenTrade={onOpenTrade} onOpenTrades={onOpenTrades}/>}
   </section>;
 }

@@ -1,13 +1,12 @@
 import { JournalHelp } from './JournalHelp';
 import React, { useState } from 'react';
 import type { JournalEntry } from '../../types';
-import { currencyOf, statusOf } from './journalMath';
+import { currencyOf, statusOf, reportedPnlOf as reportedPnl } from './journalMath';
 import { formatMoney } from './JournalCurrency';
 import { useDialogFocus } from './useDialogFocus';
 
 export type InsightChartScope = 'closed' | 'open' | 'unrealized';
 type Bucket = { key: string; label: string; order: number };
-const reportedPnl = (entry: JournalEntry) => entry.pnlKnown !== false && Number.isFinite(entry.pnl) ? entry.pnl : null;
 
 export function openInsightGroups(entries: JournalEntry[], bucketOf: (entry: JournalEntry) => Bucket) {
   const grouped = new Map<string, Bucket & { entries: JournalEntry[] }>();
