@@ -126,6 +126,8 @@
 }
 
 :root {
+  --insights-gain: var(--color-emerald-600);
+  --insights-loss: var(--color-rose-600);
   --bg-app: #FBFBFF;
   --bg-card: #FFFFFF;
   --bg-subtle: #ECEEFA;
@@ -140,6 +142,8 @@
 }
 
 .dark {
+  --insights-gain: var(--color-emerald-400);
+  --insights-loss: var(--color-rose-400);
   color-scheme: dark;
   --bg-app: #090119;
   --bg-card: #170345;

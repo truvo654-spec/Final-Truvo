@@ -29,6 +29,7 @@ import { SavedCalculationsSidebar } from './calculators/SavedCalculationsSidebar
 import { SavedCalculation, INITIAL_SAVED_CALCULATIONS } from './calculators/savedCalculationsTypes';
 import { FolderTabs } from './common/FolderTabs';
 import { JournalViewSettings } from './journal/JournalViewSettings';
+import { JournalReportingSettings } from './journal/insights/JournalReportingSettings';
 
 interface ProfilePageProps {
   user: UserProfile;
@@ -63,7 +64,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onNavigateToDashboard,
   onSelectLevelScenario,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'slots' | 'trading-accounts'>(initialSubTab);
+  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'slots' | 'trading-accounts'>(() =>
+    new URLSearchParams(window.location.search).get('profileSection') === 'journal' ? 'profile' : initialSubTab
+  );
 
   // Synchronized Saved Calculations
   const [localSavedCalculations, setLocalSavedCalculations] = useState<SavedCalculation[]>(() => {
@@ -579,6 +582,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
               </div>
 
+              <JournalReportingSettings user={user} onUpdate={onUpdateUserProfile}/>
               <JournalViewSettings />
               <div className="rounded-2xl border border-[#e2e8f0] bg-white p-4 sm:p-5 shadow-2xs">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

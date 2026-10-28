@@ -64,6 +64,8 @@ export interface Broker {
 }
 
 export interface UserProfile {
+  timeZone?: string;
+  preferredCurrency?: string;
   /** Points needed for the next level; shown in the header progress. */
   nextTierThreshold?: number;
   id: string;

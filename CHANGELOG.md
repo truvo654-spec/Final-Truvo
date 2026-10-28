@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.28.0] - 2026-10-28
+### Added
+- Instant default Insights: six KPI cards with trends and previous-period comparisons, a trading calendar with weekly totals, cumulative P&L and shaded drawdown, weekday/hour charts, an entry day/hour heatmap, and sample-guarded rule-based observations.
+- One accessible trade drawer for all drill-downs, original Trade Log deep links, curve drag zoom/reset, per-widget loading placeholders, and independent widget hide/reorder controls.
+- URL-backed date/account/side filters with a shared period anchor and Back/Forward restoration; profile timezone and reporting-currency preferences.
+### Notes
+- Calendar/curve periods use local exit dates; hour patterns use local entry times. Open trades and other currencies are excluded. Missing timestamps, unknown results and recorded-cost coverage are disclosed.
+- Existing Advanced Insights, Trade Log, and full review components remain unchanged.
+
 ## [2.27.1] - 2026-10-28
 ### Changed
 - Restored the original Trade Log, its shared header, and the full review drawer. Trade Log no longer switches to Easy/Standard layouts or uses card customizations.

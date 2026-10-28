@@ -26,7 +26,7 @@ test('registry keeps foundation cards on other tabs and excludes Trade Log in ev
   for (const defaultLevel of ['easy', 'standard', 'advanced'] as const) {
     const prefs = { ...defaultJournalViews(), defaultLevel };
     assert.deepEqual(journalCardsFor(prefs, 'entries'), []);
-    for (const tab of JOURNAL_VIEW_TABS) assert.equal(journalCardsFor(prefs, tab)[0].id, `${tab}-workspace`);
+    for (const tab of JOURNAL_VIEW_TABS) assert.equal(journalCardsFor(prefs, tab)[0].id, tab === 'insights' ? 'insights-kpis' : `${tab}-workspace`);
   }
   const prefs = defaultJournalViews();
   assert.deepEqual(updateJournalViews(prefs, { type: 'level', tab: 'entries', level: 'standard' }), prefs);
@@ -35,7 +35,7 @@ test('card visibility, add, hide, order and reset are scoped to a tab', () => {
   let preferences = defaultJournalViews();
   preferences = updateJournalViews(preferences, { type: 'hide', tab: 'overview', id: 'overview-workspace' });
   assert.deepEqual(journalCardsFor(preferences, 'overview'), []);
-  assert.equal(journalCardsFor(preferences, 'insights')[0].id, 'insights-workspace');
+  assert.equal(journalCardsFor(preferences, 'insights')[0].id, 'insights-kpis');
   preferences = updateJournalViews(preferences, { type: 'add', tab: 'overview', id: 'overview-workspace' });
   assert.equal(journalCardsFor(preferences, 'overview')[0].id, 'overview-workspace');
   assert.deepEqual(updateJournalViews(preferences, { type: 'move', tab: 'overview', id: 'overview-workspace', direction: -1 }), preferences);

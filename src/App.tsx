@@ -264,7 +264,10 @@ export default function App() {
         if (updated.avatar) {
           localStorage.setItem('marketsyde_user_avatar', updated.avatar);
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Profile preferences could not be saved.', e);
+        showToast('Profile changes work in this session but could not be saved in this browser.');
+      }
       return next;
     });
   };
@@ -1728,6 +1731,11 @@ export default function App() {
         {/* ─── TAB: Trading Journal ─── */}
         {activeTab === 'trading-journal' && (
           <TradingJournalPage
+            reportingProfile={user}
+            onOpenProfile={() => {
+              window.history.pushState({ tab: 'profile' }, '', '/account/profile?profileSection=journal');
+              setActiveTab('profile');
+            }}
             userTierLevel={user.tierLevel}
             isLoggedIn={isLoggedIn}
             onUpgradePrompt={() => setActiveTab('member-plan')}

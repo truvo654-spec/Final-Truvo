@@ -3,6 +3,7 @@ export const JOURNAL_TABS = {
   playbook: 'Playbook', backtest: 'Backtest', review: 'AI Coach',
 } as const;
 export type JournalTab = keyof typeof JOURNAL_TABS;
+export const isJournalTab = (value: unknown): value is JournalTab => typeof value === 'string' && Object.hasOwn(JOURNAL_TABS, value);
 export const JOURNAL_VIEW_TABS = ['overview', 'insights', 'playbook', 'backtest', 'review'] as const;
 export const JOURNAL_LEVELS = ['easy', 'standard', 'advanced'] as const;
 export type JournalLevel = typeof JOURNAL_LEVELS[number];
@@ -23,12 +24,24 @@ export interface JournalCardDefinition {
   lazy: boolean;
   component: string;
 }
-export const JOURNAL_CARD_REGISTRY: readonly JournalCardDefinition[] =
-  JOURNAL_VIEW_TABS.map(tab => ({
+export const JOURNAL_CARD_REGISTRY: readonly JournalCardDefinition[] = [
+  ...JOURNAL_VIEW_TABS.filter(tab => tab !== 'insights').map(tab => ({
     id: `${tab}-workspace`, tab, title: JOURNAL_TABS[tab],
     plainSummary: `Your existing ${JOURNAL_TABS[tab]} workspace. Its dedicated simplification will come later.`,
     level: 'easy' as const, order: 0, canHide: true, lazy: true, component: 'existing',
-  }));
+  })),
+  ...([
+    ['insights-kpis', 'How am I doing?', 'Six result cards with daily trends and comparisons against the previous equal period.'],
+    ['insights-calendar', 'Trading calendar', 'Closed-trade results by local exit date, with weekly totals.'],
+    ['insights-curve', 'Cumulative P&L', 'Closed-trade profit over time, with realized drawdown and chart-only zoom.'],
+    ['insights-weekdays', 'Day-of-week performance', 'Compare net results and win rates by closing weekday.'],
+    ['insights-hours', 'Time-of-day performance', 'Compare net results by entry hour in your profile timezone.'],
+    ['insights-heatmap', 'Day × hour', 'Explore entry weekdays and hours together. Select a cell to inspect its trades.'],
+    ['insights-callouts', 'What your trades show', 'Rule-based observations supported by at least five trades in every compared group.'],
+  ] as const).map(([id, title, plainSummary], order) => ({
+    id, tab: 'insights' as const, title, plainSummary, level: 'easy' as const, order, canHide: true, lazy: true, component: id,
+  })),
+];
 export interface JournalTabPreference {
   level: JournalLevel;
   hidden: string[];

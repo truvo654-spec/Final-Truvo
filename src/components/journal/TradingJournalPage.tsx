@@ -1,9 +1,9 @@
 import { JournalHelp, getJournalHelp } from './JournalHelp';
 import { AiJournalSummary } from './AiJournalSummary';
 import { useMoney, formatMoney, JournalCurrency } from './JournalCurrency';
-import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Flame, Target, TrendingUp, ShieldCheck, Lock, Trash2, BookOpen, ChevronRight, AlertTriangle, PlayCircle, X } from 'lucide-react';
-import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview } from '../../types';
+import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview, UserProfile } from '../../types';
 import {
   JOURNAL_ENTRIES,
   hydrateDemoCfdEvidence,
@@ -38,12 +38,17 @@ import { JournalReviewDrawer } from './JournalReviewDrawer';
 import { JournalDateRange } from './JournalDateRange';
 import { JournalDayReview } from './JournalDayReview';
 import { JournalReplayAvailability } from './JournalReplayAvailability';
-import type { JournalTab } from './journalViews';
+import { isJournalTab, type JournalTab } from './journalViews';
 import { useJournalCards } from './useJournalCards';
 import { JournalAddCard, JournalLevelSwitch, JournalWorkspaceCard } from './JournalCards';
 import { useJournalPopover } from './useJournalPopover';
+import { browserTimeZone, validCurrency, validTimeZone } from './insights/insightsData';
+import { InsightsLoading } from './insights/InsightsShared';
+const SimpleInsights = lazy(() => import('./insights/SimpleInsights').then(module => ({ default: module.SimpleInsights })));
 
 interface TradingJournalPageProps {
+  reportingProfile?: Pick<UserProfile, 'timeZone' | 'preferredCurrency'>;
+  onOpenProfile?: () => void;
   userTierLevel: number;
   isLoggedIn: boolean;
   onUpgradePrompt: () => void;
@@ -81,6 +86,8 @@ const FILTER_HELP: Record<string, string> = {
 };
 
 export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
+  reportingProfile,
+  onOpenProfile,
   userTierLevel,
   isLoggedIn,
   onUpgradePrompt,
@@ -91,15 +98,44 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   onSpendCredits,
   onRewardPoints,
 }) => {
-  const [tab, setTab] = useJournalState<JournalTab>('tab', 'overview');
+  const [storedTab, setStoredTab] = useJournalState<JournalTab>('tab', 'overview');
+  const [tab, setTabState] = useState<JournalTab>(() => {
+    const queryTab = new URLSearchParams(window.location.search).get('journalTab');
+    return isJournalTab(queryTab) ? queryTab : storedTab;
+  });
+  const setTab = useCallback((next: JournalTab) => {
+    setTabState(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set('journalTab', next);
+    url.searchParams.delete('journalTrade');
+    window.history.replaceState(window.history.state, '', url);
+  }, []);
+  useEffect(() => { setStoredTab(tab); }, [tab, setStoredTab]);
+  useEffect(() => {
+    const pop = () => { const next = new URLSearchParams(window.location.search).get('journalTab'); setTabState(isJournalTab(next) ? next : 'overview'); };
+    window.addEventListener('popstate', pop);
+    return () => window.removeEventListener('popstate', pop);
+  }, []);
   const view = useJournalCards(tab);
   const originalView = tab === 'entries' || (view.baseLevel === 'advanced' && view.level !== 'custom');
+  const simpleInsights = tab === 'insights' && view.baseLevel !== 'advanced';
   const coachToday = new Date().toISOString().slice(0, 10);
   const [entries, setEntries, storageFailed] = useJournalState<JournalEntry[]>('entries', JOURNAL_ENTRIES);
   useEffect(() => { setEntries(current => hydrateDemoCfdEvidence(current)); }, [setEntries]);
   const [reviewCohort, setReviewCohort] = useState<string[]>([]);
   const [dailyNotes, setDailyNotes] = useJournalState<Record<string,string>>('daily-notes', {});
   const [currency, setCurrency] = useJournalState('currency', 'USD');
+  const reporting = useMemo(() => {
+    const warnings: string[] = [];
+    const preferredZone = reportingProfile?.timeZone || browserTimeZone();
+    const preferredCurrency = reportingProfile?.preferredCurrency || currency;
+    const reportCurrency = validCurrency(preferredCurrency) ? preferredCurrency : validCurrency(currency) ? currency : 'USD';
+    if (!validTimeZone(preferredZone)) warnings.push('Your profile timezone is invalid; the browser timezone is being used.');
+    if (!validCurrency(preferredCurrency)) warnings.push(`Your profile reporting currency is invalid; ${reportCurrency} is being used.`);
+    return { settings: { timeZone: validTimeZone(preferredZone) ? preferredZone : browserTimeZone(),
+      currency: reportCurrency,
+      locale: Intl.DateTimeFormat().resolvedOptions().locale }, warnings };
+  }, [reportingProfile?.timeZone, reportingProfile?.preferredCurrency, currency]);
   const [account, setAccount] = useJournalState('account', 'all');
   const money = (n:number,dp=2)=>formatMoney(n,currency,dp);
   const openEntry = (id: string, cohort?: string[]) => { setReviewCohort(cohort || scoped.map(e=>e.id)); setSelectedId(id); };
@@ -224,6 +260,29 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const accountIds = [...new Set(entries.filter(e => currencyOf(e) === currency).map(e => e.accountId || 'legacy-demo'))];
   const activeFilters = strategyOff.length + assetOff.length + outcomeOff.length + tradingStatusOff.length + brokerOff.length;
   const resetJournalScope=()=>{setRangeMode('all');setAccount('all');setStrategyOff([]);setAssetOff([]);setOutcomeOff([]);setTradingStatusOff([]);setBrokerOff([]);setSelectedDay(null);setOpenMenu(null);setLogPreset(null);};
+  const openInsightTrades = (trades: JournalEntry[], label: string, selected?: JournalEntry) => {
+    resetJournalScope();
+    setCurrency(trades.length ? currencyOf(trades[0]) : reporting.settings.currency);
+    setLogPreset({ ids: trades.map(trade => trade.id), label });
+    setTab('entries');
+    if (selected) {
+      setReviewCohort(trades.map(trade => trade.id)); setSelectedId(selected.id);
+      const url = new URL(window.location.href); url.searchParams.set('journalTrade', selected.id);
+      window.history.replaceState(window.history.state, '', url);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const handledTradeLink = useRef<string | null>(null);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('journalTrade');
+    if (!id) { handledTradeLink.current = null; return; }
+    if (tab !== 'entries' || handledTradeLink.current === id) return;
+    handledTradeLink.current = id;
+    const trade = entries.find(entry => entry.id === id);
+    if (!trade) { onShowToast('This trade is not saved in this browser.'); return; }
+    resetJournalScope(); setCurrency(currencyOf(trade));
+    setLogPreset({ ids: [id], label: 'Linked trade from Insights' }); setReviewCohort([id]); setSelectedId(id);
+  }, [tab, entries]);
   const dayEntries = useMemo(
     () => (selectedDay ? scoped.filter((e) => e.date === selectedDay) : []),
     [scoped, selectedDay]
@@ -415,13 +474,13 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             Write down why you traded, how you felt, and what you'd change. Patterns show up fast.
           </p>
         </div>
-        <button
+        {!simpleInsights && <button
           type="button"
           onClick={() => setWizardOpen(true)}
           className="shrink-0 text-sm font-semibold bg-[#5338ec] hover:bg-[#4326d8] text-white rounded-xl px-4 py-2.5 transition-colors"
         >
           Import / link
-        </button>
+        </button>}
       </div>
 
       <div className="mb-6">
@@ -434,7 +493,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {tab !== 'entries' && view.baseLevel === 'easy' && !view.welcomed && <div role="status" className="mb-4 flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
         <p>This is the Easy view. Use ⋯ on any card or '+ Add card' to see more.</p><button className="text-[#5338ec] font-semibold" onClick={view.dismissWelcome} aria-label="Dismiss Easy view welcome">Got it</button>
       </div>}
-      <div ref={scopeRef}>
+      {!simpleInsights && <div ref={scopeRef}>
       {(originalView || filtersOpen) && <div className="flex flex-wrap gap-3 mb-3 text-xs">
         <label title="Keep calculations in one currency. No currency conversion is applied.">Account currency<JournalHelp label="Account currency" /> <select aria-label="Account currency" title="Choose the account currency; entries in other currencies are excluded." value={currency} onChange={e=>{setCurrency(e.target.value);setAccount('all');setSelectedDay(null);}}>{[...new Set(['USD',...entries.map(currencyOf)])].map(c=><option key={c}>{c}</option>)}</select></label>
         <label title="Limit the journal scope to one account or include all accounts in the selected currency.">Account<JournalHelp label="Account" /> <select aria-label="Account" title="Choose one account or all accounts in the selected currency." value={account} onChange={e=>{setAccount(e.target.value);setSelectedDay(null);}}><option value="all">All accounts in this currency</option>{[...new Set(entries.filter(e=>currencyOf(e)===currency).map(e=>e.accountId || 'legacy-demo'))].map(a=><option key={a}>{a}</option>)}</select></label>
@@ -477,7 +536,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {!originalView && scoped.length < entries.length && <div role="status" className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
         <span>Showing {scoped.length} of {entries.length} saved trades · {currency} only</span><button className="font-semibold text-[#5338ec] underline" onClick={resetJournalScope}>Show all{currentCurrencyCount < entries.length ? ` ${currency} trades` : ''}</button>
       </div>}
-      </div>
+      </div>}
       {tab === 'overview' && <JournalWorkspaceCard key={tab} view={view}>
       {tab === 'overview' && (
         <div className="space-y-6 mt-6">
@@ -629,7 +688,13 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         </Suspense>
       )}
 
-      {tab !== 'entries' && tab !== 'overview' && <JournalWorkspaceCard key={tab} view={view}>
+      {simpleInsights && <Suspense fallback={<InsightsLoading/>}>
+        <SimpleInsights entries={entries} settings={reporting.settings} settingsWarnings={reporting.warnings} view={view}
+          onTradeLog={() => setTab('entries')} onOpenProfile={onOpenProfile}
+          onOpenTrade={trade => openInsightTrades([trade], 'Trade from Insights', trade)}
+          onOpenTrades={openInsightTrades}/>
+      </Suspense>}
+      {tab !== 'entries' && tab !== 'overview' && !simpleInsights && <JournalWorkspaceCard key={tab} view={view}>
       {/* ───── INSIGHTS ───── */}
       {tab === 'insights' && (
         <JournalInsights
