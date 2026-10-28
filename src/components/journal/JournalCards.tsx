@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MoreHorizontal, Plus, X } from 'lucide-react';
-import { JOURNAL_CARD_REGISTRY, JOURNAL_LEVELS, LEVEL_DESCRIPTIONS, type JournalCardDefinition, type JournalTab } from './journalViews';
+import { JOURNAL_CARD_REGISTRY, JOURNAL_LEVELS, LEVEL_DESCRIPTIONS, journalCardAvailable, type JournalCardDefinition, type JournalTab } from './journalViews';
 import type { JournalCardsController } from './useJournalCards';
 import { useJournalPopover } from './useJournalPopover';
 import { useDialogFocus } from './useDialogFocus';
@@ -62,7 +62,7 @@ export function JournalCard({ card, view, children, detail, compact = false, cla
 }
 function AddCardSheet({ tab, view, onClose }: { tab: JournalTab; view: JournalCardsController; onClose: () => void }) {
   const ref = useDialogFocus(onClose);
-  const available = JOURNAL_CARD_REGISTRY.filter(card => card.tab === tab && !view.cards.some(shown => shown.id === card.id));
+  const available = JOURNAL_CARD_REGISTRY.filter(card => card.tab === tab && journalCardAvailable(card, view.baseLevel) && !view.cards.some(shown => shown.id === card.id));
   return <div className="fixed inset-0 z-[70] flex justify-end bg-slate-900/35" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <div ref={ref} role="dialog" aria-modal="true" aria-label="Add a journal card" tabIndex={-1} className="h-full w-full max-w-md overflow-y-auto bg-white p-6 outline-none">
       <header className="mb-5 flex items-center justify-between"><h2 className="text-lg font-bold">Add a card</h2><button className={journalButton} aria-label="Close add card" onClick={onClose}><X size={18}/></button></header>

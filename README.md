@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.29.1)
+### Journal views (v2.29.2)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -115,7 +115,7 @@ audit fixes remain deferred.
 
 Insights defaults to a ready-to-read report with six KPI cards and trends, a
 trading calendar with weekly totals, a cumulative realized P&L / drawdown curve,
-closing-weekday bars, entry-hour bars, an entry day/hour heatmap, and rule-based
+closing-weekday bars, entry-hour bars, and rule-based
 observations, plus automatic playbook and discipline progress cards. Every chart
 supports exact-value hover/focus details and opens the same trade drawer. Drawer
 links open the original Trade Log and full review.
@@ -148,11 +148,13 @@ require at least five trades in every compared group. Widgets can be hidden or
 reordered through the existing card controls. Choose **Advanced** for Insights in
 Profile's **Journal view** section to retain the original reports and tools.
 
-Easy Insights uses a calendar-first, compact dashboard by default. Larger screens
-pair the calendar with the KPI summary, playbook progress with discipline, and
-the equity curve with weekday results. Hourly charts and the heatmap keep full
-width; short observations use a compact grid. Phones stack all widgets, and
-tablet layouts split only suitable cards. Hidden or reordered widgets re-pair
+Easy Insights uses a calendar-first, compact dashboard by default. **Trading
+calendar** and **How am I doing?** always use full-width rows. Larger screens
+pair playbook progress with discipline, and the equity curve with weekday results.
+Hourly charts keep full width; short observations use a compact grid. The
+**Day × Hour** heatmap is removed from Easy, including its Add card menu; Standard
+retains that widget, and Advanced analytics stay intact. Phones stack all widgets,
+and tablet layouts split only suitable cards. Hidden or reordered widgets re-pair
 or expand to fill rows without changing saved order. Hover details overlay the
 cards rather than resizing them. Standard keeps its stacked layout, and
 Advanced analytics are unchanged.

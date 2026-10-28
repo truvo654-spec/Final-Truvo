@@ -15,7 +15,7 @@ import { InsightsPlaybookProgress, InsightsDisciplineProgress } from '../insight
 import { computeDiscipline, hasDisciplineEvidence } from '../journalDiscipline';
 import { computeDiscipline as overviewDiscipline } from '../JournalMonitors';
 import { easyInsightsLayout } from '../insights/insightsLayout';
-import { defaultJournalViews, journalCardsFor, migrateJournalViews, updateJournalViews } from '../journalViews';
+import { JOURNAL_CARD_REGISTRY, defaultJournalViews, journalCardAvailable, journalCardsFor, migrateJournalViews, updateJournalViews } from '../journalViews';
 import type { JournalCardsController } from '../useJournalCards';
 
 const settings: InsightsSettings = { currency: 'USD', timeZone: 'UTC', locale: 'en-GB' };
@@ -144,18 +144,18 @@ test('callouts require at least five observations in every compared group', () =
 });
 test('Insights widgets have independent registry identities, persist hide/order, and migrate the old workspace safely', () => {
   let prefs = defaultJournalViews();
-  assert.equal(journalCardsFor(prefs, 'insights').length, 9);
+  assert.equal(journalCardsFor(prefs, 'insights').length, 8);
   const before = journalCardsFor(prefs, 'insights').findIndex(card => card.id === 'insights-kpis');
   prefs = updateJournalViews(prefs, { type: 'move', tab: 'insights', id: 'insights-kpis', direction: -1 });
   assert.equal(journalCardsFor(prefs, 'insights')[before - 1].id, 'insights-kpis');
-  prefs = updateJournalViews(prefs, { type: 'hide', tab: 'insights', id: 'insights-heatmap' });
-  assert.equal(journalCardsFor(prefs, 'insights').length, 8);
+  prefs = updateJournalViews(prefs, { type: 'hide', tab: 'insights', id: 'insights-hours' });
+  assert.equal(journalCardsFor(prefs, 'insights').length, 7);
   const restored = migrateJournalViews(JSON.parse(JSON.stringify(prefs)));
   assert.deepEqual(restored, prefs);
   const legacy = migrateJournalViews({ version: 1, tabs: { insights: { level: 'easy', hidden: ['insights-workspace'], added: [], order: [] } } });
-  assert.equal(journalCardsFor(legacy, 'insights').length, 9);
+  assert.equal(journalCardsFor(legacy, 'insights').length, 8);
 });
-test('default screen renders nine widgets with only the requested filters and one-account selector hidden', () => {
+test('default Easy screen renders eight widgets, full-width calendar/KPIs and no heatmap', () => {
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { search: '?journalTab=insights&insightsAsOf=2026-10-28' } } });
   const cards = journalCardsFor(defaultJournalViews(), 'insights');
   const view: JournalCardsController = {
@@ -169,12 +169,15 @@ test('default screen renders nine widgets with only the requested filters and on
   for (const card of cards) assert.ok(html.includes(`aria-label="${card.title.replace(/&/g, '&amp;')}"`));
   assert.ok(html.indexOf('aria-label="Trading calendar"') < html.indexOf('aria-label="How am I doing?"'));
   assert.match(html, /data-insights-layout="dashboard"/);
-  assert.match(html, /xl:col-span-7/);
+  assert.match(html, /aria-label="Trading calendar" class="[^"]*xl:col-span-12/);
+  assert.match(html, /aria-label="How am I doing\?" class="[^"]*xl:col-span-12/);
   assert.match(html, /Insights date range/); assert.match(html, /Insights side/);
   assert.doesNotMatch(html, /aria-label="Insights account"|SESSION FILTER|Export CSV|Cross analysis matrix/);
-  assert.match(html, /overflow-x-auto/);
+  assert.doesNotMatch(html, /Scrollable entry day and hour heatmap|aria-label="Day × hour"/);
   assert.equal((renderToStaticMarkup(React.createElement(InsightsLoading)).match(/aria-label="Loading /g) || []).length, 10);
   const skeleton = renderToStaticMarkup(React.createElement(InsightsLoading, { compact: true }));
+  assert.equal((skeleton.match(/aria-label="Loading /g) || []).length, 9);
+  assert.doesNotMatch(skeleton, /Loading Day and hour/);
   assert.ok(skeleton.indexOf('Loading Trading calendar') < skeleton.indexOf('Loading Overview'));
   const standardCards = journalCardsFor({ ...defaultJournalViews(), defaultLevel: 'standard' }, 'insights');
   const standard = renderToStaticMarkup(React.createElement(SimpleInsights, {
@@ -182,6 +185,7 @@ test('default screen renders nine widgets with only the requested filters and on
     onTradeLog: () => {}, onOpenTrade: () => {}, onOpenTrades: () => {},
   }));
   assert.match(standard, /data-insights-layout="stacked"/);
+  assert.match(standard, /Scrollable entry day and hour heatmap/);
   assert.ok(standard.indexOf('aria-label="How am I doing?"') < standard.indexOf('aria-label="Trading calendar"'));
   Reflect.deleteProperty(globalThis, 'window');
 });
@@ -200,12 +204,13 @@ test('calendar is first by default only in Easy; saved custom order and hidden c
 test('Easy dashboard pairs fit the row without reordering and unpaired cards expand', () => {
   const ids = journalCardsFor(defaultJournalViews(), 'insights').map(card => card.id);
   const layout = easyInsightsLayout(ids);
-  assert.match(layout['insights-calendar'], /xl:col-span-7/);
-  assert.match(layout['insights-kpis'], /xl:col-span-5/);
+  for (const id of ['insights-calendar', 'insights-kpis']) {
+    for (const breakpoint of ['md', 'lg', 'xl']) assert.ok(layout[id].includes(`${breakpoint}:col-span-12`));
+  }
   assert.match(layout['insights-playbooks'], /md:col-span-6/);
   assert.match(layout['insights-discipline'], /xl:col-span-5/);
   assert.match(layout['insights-curve'], /lg:col-span-7/);
-  for (const id of ['insights-hours', 'insights-heatmap', 'insights-callouts']) assert.match(layout[id], /xl:col-span-12/);
+  for (const id of ['insights-hours', 'insights-callouts']) assert.match(layout[id], /xl:col-span-12/);
   for (const selected of [ids, ids.filter(id => id !== 'insights-kpis'), ['insights-calendar', 'insights-curve', 'insights-weekdays'], ['insights-kpis', 'insights-hours', 'insights-discipline']]) {
     const sizes = easyInsightsLayout(selected);
     assert.deepEqual(Object.keys(sizes), selected);
@@ -219,6 +224,20 @@ test('Easy dashboard pairs fit the row without reordering and unpaired cards exp
       assert.equal(row, 0, `Unfilled row at ${breakpoint}`);
     }
   }
+});
+test('Easy heatmap removal survives saved layouts and cannot be undone through Add card', () => {
+  const defaults = defaultJournalViews(), heatmap = JOURNAL_CARD_REGISTRY.find(card => card.id === 'insights-heatmap');
+  assert.ok(heatmap);
+  assert.equal(journalCardAvailable(heatmap, 'easy'), false);
+  assert.equal(journalCardAvailable(heatmap, 'standard'), true);
+  assert.equal(journalCardAvailable(heatmap, 'advanced'), true);
+  const legacy = { ...defaults, tabs: { insights: { level: 'easy' as const, hidden: [], added: ['insights-heatmap'], order: ['insights-heatmap', 'insights-calendar', 'insights-kpis'] } } };
+  assert.equal(journalCardsFor(legacy, 'insights').some(card => card.id === 'insights-heatmap'), false);
+  const migrated = migrateJournalViews(legacy);
+  assert.deepEqual(migrated.tabs.insights!.added, []);
+  assert.deepEqual(migrated.tabs.insights!.order, ['insights-calendar', 'insights-kpis']);
+  assert.deepEqual(updateJournalViews(defaults, { type: 'add', tab: 'insights', id: 'insights-heatmap' }), defaults);
+  assert.equal(journalCardsFor({ ...defaults, defaultLevel: 'standard' }, 'insights').length, 9);
 });
 test('international formatting and selector performance meet the instant-data budget', () => {
   assert.match(formatInsightsMoney(1234.5, { ...settings, currency: 'EUR', locale: 'de-DE' }), /1\.234,50/);

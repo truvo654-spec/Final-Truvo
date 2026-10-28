@@ -21,6 +21,7 @@ export interface JournalCardDefinition {
   level: JournalLevel;
   order: number;
   easyOrder?: number;
+  availableLevels?: readonly JournalLevel[];
   canHide: boolean;
   lazy: boolean;
   component: string;
@@ -42,8 +43,9 @@ export const JOURNAL_CARD_REGISTRY: readonly JournalCardDefinition[] = [
     ['insights-heatmap', 'Day × hour', 'Explore entry weekdays and hours together. Select a cell to inspect its trades.'],
     ['insights-callouts', 'What your trades show', 'Rule-based observations supported by at least five trades in every compared group.'],
   ] as const).map(([id, title, plainSummary], order) => ({
-    id, tab: 'insights' as const, title, plainSummary, level: 'easy' as const, order,
+    id, tab: 'insights' as const, title, plainSummary, level: id === 'insights-heatmap' ? 'standard' as const : 'easy' as const, order,
     easyOrder: id === 'insights-calendar' ? 0 : order + 1,
+    availableLevels: id === 'insights-heatmap' ? ['standard', 'advanced'] as const : undefined,
     canHide: true, lazy: true, component: id,
   })),
 ];
@@ -61,9 +63,10 @@ export interface JournalViewPreferences {
 }
 export const defaultJournalViews = (): JournalViewPreferences => ({ version: 1, defaultLevel: 'easy', tabs: {}, welcomed: false });
 export const isJournalLevel = (value: unknown): value is JournalLevel => JOURNAL_LEVELS.some(level => level === value);
+export const journalCardAvailable = (card: JournalCardDefinition, level: JournalLevel) => !card.availableLevels || card.availableLevels.includes(level);
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
-const ids = (value: unknown, tab: JournalTab) => {
-  const allowed = JOURNAL_CARD_REGISTRY.filter(card => card.tab === tab).map(card => card.id);
+const ids = (value: unknown, tab: JournalTab, level: JournalLevel) => {
+  const allowed = JOURNAL_CARD_REGISTRY.filter(card => card.tab === tab && journalCardAvailable(card, level)).map(card => card.id);
   return Array.isArray(value) ? [...new Set(value.filter((id): id is string => typeof id === 'string' && allowed.includes(id)))] : [];
 };
 export function migrateJournalViews(value: unknown): JournalViewPreferences {
@@ -80,10 +83,11 @@ export function migrateJournalViews(value: unknown): JournalViewPreferences {
       const saved = value.tabs[tab];
       if (isJournalLevel(saved)) result.tabs[tab] = { level: saved, hidden: [], added: [], order: [] };
       else if (record(saved)) {
-        const hidden = ids(saved.hidden, tab);
+        const level = isJournalLevel(saved.level) ? saved.level : result.defaultLevel;
+        const hidden = ids(saved.hidden, tab, level);
         result.tabs[tab] = {
-          level: isJournalLevel(saved.level) ? saved.level : result.defaultLevel,
-          hidden, added: ids(saved.added, tab).filter(id => !hidden.includes(id)), order: ids(saved.order, tab),
+          level,
+          hidden, added: ids(saved.added, tab, level).filter(id => !hidden.includes(id)), order: ids(saved.order, tab, level),
         };
       }
     }
@@ -94,7 +98,7 @@ export const tabPreference = (prefs: JournalViewPreferences, tab: JournalTab): J
   prefs.tabs[tab] || { level: prefs.defaultLevel, hidden: [], added: [], order: [] };
 export function journalCardsFor(prefs: JournalViewPreferences, tab: JournalTab, subView?: string) {
   const pref = tabPreference(prefs, tab);
-  return JOURNAL_CARD_REGISTRY.filter(card => card.tab === tab && (!card.subView || card.subView === subView))
+  return JOURNAL_CARD_REGISTRY.filter(card => card.tab === tab && journalCardAvailable(card, pref.level) && (!card.subView || card.subView === subView))
     .filter(card => !pref.hidden.includes(card.id) && (pref.added.includes(card.id) || JOURNAL_LEVELS.indexOf(card.level) <= JOURNAL_LEVELS.indexOf(pref.level)))
     .sort((a, b) => {
       const rank = (card: JournalCardDefinition) => pref.order.includes(card.id) ? pref.order.indexOf(card.id) : pref.order.length + (pref.level === 'easy' ? card.easyOrder ?? card.order : card.order);
@@ -120,7 +124,7 @@ export function updateJournalViews(prefs: JournalViewPreferences, action: Journa
   if (action.type === 'level') Object.assign(pref, { level: action.level, hidden: [], added: [], order: [] });
   else if (action.type === 'add' || action.type === 'hide') {
     const card = JOURNAL_CARD_REGISTRY.find(card => card.tab === action.tab && card.id === action.id);
-    if (!card || (action.type === 'hide' && !card.canHide)) return prefs;
+    if (!card || !journalCardAvailable(card, pref.level) || (action.type === 'hide' && !card.canHide)) return prefs;
     pref.hidden = pref.hidden.filter(id => id !== action.id);
     pref.added = pref.added.filter(id => id !== action.id);
     if (action.type === 'hide') pref.hidden.push(action.id);

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.29.2] - 2026-10-28
+### Changed
+- Made Trading calendar and How am I doing? full-width in Easy Insights at every screen size.
+- Removed Day × Hour from Easy, including saved layout overrides, loading placeholders and Add card. Standard and Advanced analytics remain available.
+
 ## [2.29.1] - 2026-10-28
 ### Changed
 - Easy Insights now opens with the trading calendar first by default and uses a responsive, matched-width dashboard instead of full-width stacked cards.

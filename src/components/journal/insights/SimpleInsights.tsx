@@ -72,7 +72,7 @@ export function SimpleInsights({ entries, settings, view, settingsWarnings, chec
       <div className="mt-2 space-y-1">
         <p>All widgets use this same scope. Open trades are excluded. Results deduct recorded commissions and fees only; no exchange rates or account deposits are inferred.</p>
         <p>{data.coverage.otherCurrency} closed trades in other currencies, {data.coverage.missingExit} without a valid exit timestamp, {data.coverage.unknownResult} with unknown results and {data.coverage.invalidCosts} with invalid costs are excluded.</p>
-        <p>{data.coverage.missingEntry} selected trades have missing or invalid entry times and cannot appear in entry-hour or heatmap views. {data.coverage.unknownCosts} have no recorded costs.</p>
+        <p>{data.coverage.missingEntry} selected trades have missing or invalid entry times and cannot appear in {compact ? 'entry-hour views' : 'entry-hour or heatmap views'}. {data.coverage.unknownCosts} have no recorded costs.</p>
         <p>KPI changes compare with the previous {data.bounds.days} calendar days: {dateLabel(data.bounds.previousFrom, settings.locale)} – {dateLabel(data.bounds.previousTo, settings.locale)}. Win rate includes breakeven trades.</p>
       </div>
     </details>
