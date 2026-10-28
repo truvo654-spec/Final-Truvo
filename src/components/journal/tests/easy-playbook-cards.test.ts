@@ -7,7 +7,7 @@ import { JOURNAL_ENTRIES } from '../../../data/journalData';
 import { EasyPlaybookCards, playbookIllustration, playbookPerformance } from '../EasyPlaybookCards';
 
 const render = (playbooks = DEFAULT_PLAYBOOKS) => renderToStaticMarkup(React.createElement(EasyPlaybookCards, {
-  playbooks, entries: [], scopedEntries: [], currency: 'USD', timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
+  playbooks, entries: [], scopedEntries: [], currency: 'USD', timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onUpdate: () => {}, onOpenWorkspace: () => {},
 }));
 
 test('easy cards show actual markets, all instruments and real rule titles without simulating results', () => {
@@ -18,6 +18,7 @@ test('easy cards show actual markets, all instruments and real rule titles witho
   assert.match(html, /not market data or a prediction/);
   assert.match(html, /aria-expanded="false"/);
   assert.match(html, /Show details/);
+  assert.match(html, /aria-label="Edit Breakout setup"/);
   assert.match(html, /Edit or open full workspace/);
   assert.doesNotMatch(html, /Profit factor|Backtest this playbook|STEP 1/);
 });
@@ -70,7 +71,7 @@ test('performance excludes open, unknown-cost and other-currency results', () =>
   assert.deepEqual(losingTrades.map(trade => trade.id), ['loss']);
   const html = renderToStaticMarkup(React.createElement(EasyPlaybookCards, {
     playbooks: [DEFAULT_PLAYBOOKS[0]], entries, scopedEntries: entries, currency: 'USD',
-    timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
+    timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onUpdate: () => {}, onOpenWorkspace: () => {},
   })).replace(/<!-- -->/g, '');
   assert.match(html, /4 closed trades/);
   assert.match(html, /\+\$91\.25/);
@@ -93,7 +94,7 @@ test('empty and losing-only cards distinguish unavailable results from zero wins
   const loss = { ...JOURNAL_ENTRIES[0], strategy: 'Breakout', tradingStatus: 'closed' as const, pnlKnown: true, accountCurrency: 'USD', commission: 2, pnl: -10 };
   const html = renderToStaticMarkup(React.createElement(EasyPlaybookCards, {
     playbooks: [DEFAULT_PLAYBOOKS[0]], entries: [loss], scopedEntries: [loss], currency: 'USD',
-    timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
+    timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onUpdate: () => {}, onOpenWorkspace: () => {},
   })).replace(/<!-- -->/g, '');
   assert.match(html, /1 closed trade/);
   assert.match(html, /Winning P&amp;L<\/span><strong[^>]*>\$0\.00<\/strong><span[^>]*>0 wins/);
@@ -117,7 +118,7 @@ test('card results follow scoped trades, including the selected reporting curren
   assert.deepEqual(losingTrades.map(trade => trade.id), ['in-scope']);
   const html = renderToStaticMarkup(React.createElement(EasyPlaybookCards, {
     playbooks: [DEFAULT_PLAYBOOKS[0]], entries, scopedEntries, currency: 'EUR',
-    timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
+    timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onUpdate: () => {}, onOpenWorkspace: () => {},
   })).replace(/<!-- -->/g, '');
   assert.match(html, /1 closed trade/);
   assert.match(html, /-€25\.00/);

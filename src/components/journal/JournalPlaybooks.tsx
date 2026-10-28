@@ -500,7 +500,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const marketCount = (m: 'all' | PortfolioAssetClass) => inStatus.filter((p) => m === 'all' || p.markets.includes(m)).length;
 
   if (easy && !fullWorkspace && !editing) {
-    return <EasyPlaybookCards playbooks={playbooks} entries={allJournalEntries} scopedEntries={entries} currency={reportingCurrency} timeZone={reportingTimeZone} houseLimits={houseLimits} onCreate={book => {
+    return <EasyPlaybookCards playbooks={playbooks} entries={allJournalEntries} scopedEntries={entries} currency={reportingCurrency} timeZone={reportingTimeZone} houseLimits={houseLimits} onUpdate={(id, patch) => {
+      setPlaybooks(previous => previous.map(book => book.id === id ? { ...book, ...patch } : book));
+      onToast('Playbook setup saved.');
+    }} onCreate={book => {
       setPlaybooks(previous => [...previous, book]);
       setSelId(book.id);
       onToast('Playbook created with smart defaults. Review them in the full workspace.');

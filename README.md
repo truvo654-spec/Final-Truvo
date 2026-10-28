@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.33.3)
+### Journal views (v2.33.4)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -115,6 +115,9 @@ P&L, win rate, total trades, and winning/losing counts and net P&L subtotals.
 Select a performance tile to open its contributing trades in a popup; net
 P&L and win rate open all included trades, while winning and losing P&L open
 their respective outcomes. Empty groups cannot be opened.
+**Edit setup** changes the card's strategy details, markets, instruments, rules
+and session without leaving Easy view. A name used by journal trades is locked
+to preserve those links; other saved playbook data is retained.
 Results use the current journal filters and closed trades with recorded costs in
 the profile reporting currency; breakevens count toward the win-rate denominator,
 and other currencies and unknown-cost records are excluded. **Edit or open full workspace** retains the original Playbook editor

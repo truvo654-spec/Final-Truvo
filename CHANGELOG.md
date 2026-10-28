@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.33.4] - 2026-10-28
+### Added
+- Easy Playbook cards now offer an Edit setup dialog for strategy details, status, markets, instruments, rules and session. Linked trade names remain locked; other saved playbook data is preserved.
+
 ## [2.33.3] - 2026-10-28
 ### Changed
 - Easy Playbook quick creation now uses an Advanced-inspired strategy chooser with market controls and starter cards, while retaining the three required fields, automatic defaults and optional customization.

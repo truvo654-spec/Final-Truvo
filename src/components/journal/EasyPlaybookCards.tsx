@@ -1,9 +1,10 @@
 import React, { useId, useMemo, useState } from 'react';
-import { ArrowRight, BookOpen, Plus } from 'lucide-react';
+import { ArrowRight, BookOpen, PencilLine, Plus } from 'lucide-react';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
 import type { JournalEntry } from '../../types';
 import { QuickPlaybookCreate } from './QuickPlaybookCreate';
+import { EasyPlaybookEdit } from './EasyPlaybookEdit';
 import { currencyOf, eligible, netOf, realizedR, resultOf } from './journalMath';
 import { InsightTradeDrawer } from './insights/InsightsShared';
 
@@ -15,6 +16,7 @@ type Props = {
   timeZone: string;
   houseLimits: { maxRisk: number; maxTrades: number };
   onCreate: (book: JournalPlaybook) => void;
+  onUpdate: (id: string, patch: Partial<JournalPlaybook>) => void;
   onOpenWorkspace: (id?: string) => void;
 };
 
@@ -84,9 +86,10 @@ export function playbookPerformance(trades: JournalEntry[], currency: string) {
   return groups;
 }
 
-export function EasyPlaybookCards({ playbooks, entries, scopedEntries, currency, timeZone, houseLimits, onCreate, onOpenWorkspace }: Props) {
+export function EasyPlaybookCards({ playbooks, entries, scopedEntries, currency, timeZone, houseLimits, onCreate, onUpdate, onOpenWorkspace }: Props) {
   const [status, setStatus] = useState<'active' | 'all'>('active');
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [drill, setDrill] = useState<{ strategy: string; group: 'all' | 'wins' | 'losses' } | null>(null);
   const visible = status === 'active' ? playbooks.filter(book => book.status === 'active') : playbooks;
@@ -94,6 +97,7 @@ export function EasyPlaybookCards({ playbooks, entries, scopedEntries, currency,
   const money = new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2, signDisplay: 'exceptZero' });
   const selected = drill ? performance.get(drill.strategy) : undefined;
   const selectedTrades = !selected || !drill ? [] : drill.group === 'wins' ? selected.winningTrades : drill.group === 'losses' ? selected.losingTrades : selected.trades;
+  const editing = playbooks.find(book => book.id === editingId);
   return <div className="min-w-0 space-y-5" aria-label="Strategy cards">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div><p className="text-xs font-bold uppercase tracking-wider text-[#5338ec] dark:text-violet-300">Your strategy collection</p><h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Playbooks</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Keep your setups and rules close, one card at a time.</p></div>
@@ -125,7 +129,7 @@ export function EasyPlaybookCards({ playbooks, entries, scopedEntries, currency,
               </div>
               {stats && stats.count - stats.wins - stats.losses > 0 && <p className="text-[10px] text-slate-500 dark:text-slate-400">{stats.count - stats.wins - stats.losses} breakeven trade{stats.count - stats.wins - stats.losses === 1 ? '' : 's'} included in the total.</p>}
             </div>
-            <button type="button" aria-expanded={open} aria-controls={detailsId} onClick={() => setOpenId(open ? null : book.id)} className="w-full rounded-xl border border-violet-200 px-3 py-2.5 text-sm font-semibold text-[#5338ec] hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-[#5338ec] dark:border-violet-800 dark:text-violet-200 dark:hover:bg-violet-950">{open ? 'Hide details' : 'Show details'}</button>
+            <div className="grid grid-cols-2 gap-2"><button type="button" aria-expanded={open} aria-controls={detailsId} onClick={() => setOpenId(open ? null : book.id)} className="min-w-0 rounded-xl border border-violet-200 px-3 py-2.5 text-sm font-semibold text-[#5338ec] hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-[#5338ec] dark:border-violet-800 dark:text-violet-200 dark:hover:bg-violet-950">{open ? 'Hide details' : 'Show details'}</button><button type="button" data-keep-button-icons aria-label={`Edit ${book.name} setup`} onClick={() => setEditingId(book.id)} className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl bg-[#5338ec] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#4326d8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5338ec]"><PencilLine size={15} aria-hidden="true"/>Edit setup</button></div>
             <div id={detailsId} hidden={!open} className="space-y-3 border-t border-slate-100 pt-3 text-xs text-slate-700 dark:border-slate-700 dark:text-slate-200">
               <div><h4 className="font-bold">Thesis</h4><p className="mt-1 whitespace-pre-wrap break-words leading-relaxed">{book.thesis || 'No thesis recorded.'}</p></div>
               <div><h4 className="font-bold">All rules</h4>{book.rules.length ? <ol className="mt-1 space-y-2">{book.rules.map((rule, index) => <li key={`${rule.id}-${index}`} className="break-words"><span className="font-semibold">{index + 1}. {rule.title || 'Untitled rule'}</span>{rule.detail && <p className="mt-0.5 whitespace-pre-wrap text-slate-500 dark:text-slate-400">{rule.detail}</p>}</li>)}</ol> : <p className="mt-1 text-slate-500">No rules recorded.</p>}</div>
@@ -139,6 +143,7 @@ export function EasyPlaybookCards({ playbooks, entries, scopedEntries, currency,
     </div> : <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center dark:border-slate-700"><p className="font-semibold text-slate-700 dark:text-slate-200">{playbooks.length ? 'No active playbooks. Choose All to see the rest.' : 'Create your first playbook to start your strategy collection.'}</p><button type="button" onClick={() => setCreating(true)} className="mt-4 rounded-xl bg-[#5338ec] px-4 py-2.5 text-sm font-semibold text-white">Create new playbook</button></div>}
     {visible.length > 0 && <p className="text-xs text-slate-500 dark:text-slate-400">Results use filtered closed trades with recorded costs in {currency}. Win and loss amounts are net of recorded costs. Breakeven trades are included in the win-rate denominator. Trades with unknown costs or other currencies are excluded.</p>}
     {drill && <InsightTradeDrawer presentation="dialog" label={`${drill.strategy} · ${drill.group === 'wins' ? 'winning trades' : drill.group === 'losses' ? 'losing trades' : 'all closed trades'}`} trades={selectedTrades.map(entry => ({ entry, net: netOf(entry), r: realizedR(entry) }))} settings={{ currency, timeZone }} onClose={() => setDrill(null)}/>}
+    {editing && <EasyPlaybookEdit key={editing.id} book={editing} entries={entries} playbooks={playbooks} onClose={() => setEditingId(null)} onSave={patch => { if (Object.keys(patch).length) onUpdate(editing.id, patch); if (patch.status && patch.status !== 'active') setStatus('all'); setEditingId(null); }}/>}
     {creating && <QuickPlaybookCreate entries={entries} playbooks={playbooks} houseLimits={houseLimits} onClose={() => setCreating(false)} onCreate={book => { onCreate(book); setStatus('active'); setOpenId(book.id); setCreating(false); }}/>}
   </div>;
 }
