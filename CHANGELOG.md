@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.29.3] - 2026-10-28
+### Changed
+- Easy Insights now shows How am I doing? first and Trading calendar second by default, including loading placeholders. Both remain full-width, and saved custom orders are preserved.
+
 ## [2.29.2] - 2026-10-28
 ### Changed
 - Made Trading calendar and How am I doing? full-width in Easy Insights at every screen size.

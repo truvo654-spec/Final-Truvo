@@ -40,7 +40,7 @@ export function cellTint(net: number, max: number): React.CSSProperties {
 }
 export function InsightsLoading({ compact = false }: { compact?: boolean }) {
   const labels = ['Overview', 'Playbook progress', 'Discipline track', 'Trading calendar', 'Cumulative P&L', 'Day of week', 'Entry hour', 'Day and hour', 'Insights'];
-  const ordered = compact ? ['Trading calendar', ...labels.filter(label => label !== 'Trading calendar' && label !== 'Day and hour')] : labels;
+  const ordered = compact ? ['Overview', 'Trading calendar', ...labels.filter(label => !['Overview', 'Trading calendar', 'Day and hour'].includes(label))] : labels;
   return <div aria-label="Loading Insights" role="status" className="space-y-5">
     {ordered.map(label =>
       <div key={label} aria-label={`Loading ${label}`} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 motion-reduce:animate-none">

@@ -44,7 +44,7 @@ export const JOURNAL_CARD_REGISTRY: readonly JournalCardDefinition[] = [
     ['insights-callouts', 'What your trades show', 'Rule-based observations supported by at least five trades in every compared group.'],
   ] as const).map(([id, title, plainSummary], order) => ({
     id, tab: 'insights' as const, title, plainSummary, level: id === 'insights-heatmap' ? 'standard' as const : 'easy' as const, order,
-    easyOrder: id === 'insights-calendar' ? 0 : order + 1,
+    easyOrder: id === 'insights-kpis' ? 0 : id === 'insights-calendar' ? 1 : order + 1,
     availableLevels: id === 'insights-heatmap' ? ['standard', 'advanced'] as const : undefined,
     canHide: true, lazy: true, component: id,
   })),

@@ -145,9 +145,9 @@ test('callouts require at least five observations in every compared group', () =
 test('Insights widgets have independent registry identities, persist hide/order, and migrate the old workspace safely', () => {
   let prefs = defaultJournalViews();
   assert.equal(journalCardsFor(prefs, 'insights').length, 8);
-  const before = journalCardsFor(prefs, 'insights').findIndex(card => card.id === 'insights-kpis');
-  prefs = updateJournalViews(prefs, { type: 'move', tab: 'insights', id: 'insights-kpis', direction: -1 });
-  assert.equal(journalCardsFor(prefs, 'insights')[before - 1].id, 'insights-kpis');
+  const before = journalCardsFor(prefs, 'insights').findIndex(card => card.id === 'insights-calendar');
+  prefs = updateJournalViews(prefs, { type: 'move', tab: 'insights', id: 'insights-calendar', direction: -1 });
+  assert.equal(journalCardsFor(prefs, 'insights')[before - 1].id, 'insights-calendar');
   prefs = updateJournalViews(prefs, { type: 'hide', tab: 'insights', id: 'insights-hours' });
   assert.equal(journalCardsFor(prefs, 'insights').length, 7);
   const restored = migrateJournalViews(JSON.parse(JSON.stringify(prefs)));
@@ -167,7 +167,7 @@ test('default Easy screen renders eight widgets, full-width calendar/KPIs and no
     onTradeLog: () => {}, onOpenTrade: () => {}, onOpenTrades: () => {},
   }));
   for (const card of cards) assert.ok(html.includes(`aria-label="${card.title.replace(/&/g, '&amp;')}"`));
-  assert.ok(html.indexOf('aria-label="Trading calendar"') < html.indexOf('aria-label="How am I doing?"'));
+  assert.ok(html.indexOf('aria-label="How am I doing?"') < html.indexOf('aria-label="Trading calendar"'));
   assert.match(html, /data-insights-layout="dashboard"/);
   assert.match(html, /aria-label="Trading calendar" class="[^"]*xl:col-span-12/);
   assert.match(html, /aria-label="How am I doing\?" class="[^"]*xl:col-span-12/);
@@ -178,7 +178,7 @@ test('default Easy screen renders eight widgets, full-width calendar/KPIs and no
   const skeleton = renderToStaticMarkup(React.createElement(InsightsLoading, { compact: true }));
   assert.equal((skeleton.match(/aria-label="Loading /g) || []).length, 9);
   assert.doesNotMatch(skeleton, /Loading Day and hour/);
-  assert.ok(skeleton.indexOf('Loading Trading calendar') < skeleton.indexOf('Loading Overview'));
+  assert.ok(skeleton.indexOf('Loading Overview') < skeleton.indexOf('Loading Trading calendar'));
   const standardCards = journalCardsFor({ ...defaultJournalViews(), defaultLevel: 'standard' }, 'insights');
   const standard = renderToStaticMarkup(React.createElement(SimpleInsights, {
     entries: JOURNAL_ENTRIES, settings, view: { ...view, baseLevel: 'standard', level: 'standard', cards: standardCards }, settingsWarnings: [],
@@ -189,17 +189,17 @@ test('default Easy screen renders eight widgets, full-width calendar/KPIs and no
   assert.ok(standard.indexOf('aria-label="How am I doing?"') < standard.indexOf('aria-label="Trading calendar"'));
   Reflect.deleteProperty(globalThis, 'window');
 });
-test('calendar is first by default only in Easy; saved custom order and hidden cards are respected', () => {
+test('Easy defaults to KPI summary then calendar, preserving saved custom orders and hidden cards', () => {
   const defaults = defaultJournalViews();
-  assert.equal(journalCardsFor(defaults, 'insights')[0].id, 'insights-calendar');
+  assert.deepEqual(journalCardsFor(defaults, 'insights').slice(0, 2).map(card => card.id), ['insights-kpis', 'insights-calendar']);
   for (const level of ['standard', 'advanced'] as const) {
     assert.equal(journalCardsFor({ ...defaults, defaultLevel: level }, 'insights')[0].id, 'insights-kpis');
   }
-  const custom = updateJournalViews(defaults, { type: 'move', tab: 'insights', id: 'insights-kpis', direction: -1 });
-  assert.equal(journalCardsFor(migrateJournalViews(custom), 'insights')[0].id, 'insights-kpis');
-  assert.equal(journalCardsFor(updateJournalViews(custom, { type: 'reset', tab: 'insights' }), 'insights')[0].id, 'insights-calendar');
-  const hidden = updateJournalViews(defaults, { type: 'hide', tab: 'insights', id: 'insights-calendar' });
-  assert.equal(journalCardsFor(hidden, 'insights')[0].id, 'insights-kpis');
+  const custom = updateJournalViews(defaults, { type: 'move', tab: 'insights', id: 'insights-calendar', direction: -1 });
+  assert.equal(journalCardsFor(migrateJournalViews(custom), 'insights')[0].id, 'insights-calendar');
+  assert.equal(journalCardsFor(updateJournalViews(custom, { type: 'reset', tab: 'insights' }), 'insights')[0].id, 'insights-kpis');
+  const hidden = updateJournalViews(defaults, { type: 'hide', tab: 'insights', id: 'insights-kpis' });
+  assert.equal(journalCardsFor(hidden, 'insights')[0].id, 'insights-calendar');
 });
 test('Easy dashboard pairs fit the row without reordering and unpaired cards expand', () => {
   const ids = journalCardsFor(defaultJournalViews(), 'insights').map(card => card.id);
