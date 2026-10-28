@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.29.0)
+### Journal views (v2.29.1)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -147,6 +147,18 @@ an empty previous period is labeled, not treated as a measured zero. Observation
 require at least five trades in every compared group. Widgets can be hidden or
 reordered through the existing card controls. Choose **Advanced** for Insights in
 Profile's **Journal view** section to retain the original reports and tools.
+
+Easy Insights uses a calendar-first, compact dashboard by default. Larger screens
+pair the calendar with the KPI summary, playbook progress with discipline, and
+the equity curve with weekday results. Hourly charts and the heatmap keep full
+width; short observations use a compact grid. Phones stack all widgets, and
+tablet layouts split only suitable cards. Hidden or reordered widgets re-pair
+or expand to fill rows without changing saved order. Hover details overlay the
+cards rather than resizing them. Standard keeps its stacked layout, and
+Advanced analytics are unchanged.
+
+Existing custom orders are preserved. **Reset this tab** restores the new
+calendar-first default without changing trades, filters, or review notes.
 
 ### Automatic personal progress
 

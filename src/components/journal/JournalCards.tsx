@@ -20,7 +20,7 @@ export function JournalLevelSwitch({ view }: { view: JournalCardsController }) {
     </div>}
   </div>;
 }
-export function JournalCard({ card, view, children, detail }: { card: JournalCardDefinition; view: JournalCardsController; children: React.ReactNode; detail?: React.ReactNode }) {
+export function JournalCard({ card, view, children, detail, compact = false, className = '' }: { card: JournalCardDefinition; view: JournalCardsController; children: React.ReactNode; detail?: React.ReactNode; compact?: boolean; className?: string }) {
   const [menu, setMenu] = useState(false), [expanded, setExpanded] = useState(false);
   const ref = useJournalPopover(menu, () => setMenu(false));
   const menuRef = useRef<HTMLDivElement>(null);
@@ -29,13 +29,13 @@ export function JournalCard({ card, view, children, detail }: { card: JournalCar
   useEffect(() => () => cancelPress(), []);
   useEffect(() => { if (menu) menuRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus(); }, [menu]);
   const index = view.cards.findIndex(item => item.id === card.id);
-  return <section aria-label={card.title} className="relative min-w-0 rounded-2xl border border-slate-200 bg-white p-5 text-sm" onContextMenu={event => {
+  return <section aria-label={card.title} className={`relative min-w-0 rounded-2xl border border-slate-200 bg-white ${compact ? 'p-4' : 'p-5'} text-sm ${className}`} onContextMenu={event => {
     if ((event.target as HTMLElement).closest('input,textarea,a')) return;
     event.preventDefault(); setMenu(true);
   }} onPointerDown={event => {
     if (event.pointerType === 'touch' && !(event.target as HTMLElement).closest('button,input,textarea,select,a,summary')) timer.current = setTimeout(() => setMenu(true), 600);
   }} onPointerUp={cancelPress} onPointerCancel={cancelPress} onPointerMove={cancelPress}>
-    <header className="mb-4 flex items-center justify-between gap-3">
+    <header className={`${compact ? 'mb-3' : 'mb-4'} flex items-center justify-between gap-3`}>
       <h3 className="text-sm font-semibold text-[#0b1c30]">{card.title}</h3>
       <div ref={ref} className="relative">
         <button className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label={`Options for ${card.title}`} aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu(!menu)}><MoreHorizontal size={18}/></button>

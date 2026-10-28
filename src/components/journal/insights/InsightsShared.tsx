@@ -5,7 +5,7 @@ import { timestampMs } from '../journalMath';
 import { formatInsightsMoney, type InsightBucket, type InsightTrade, type InsightsData, type InsightsSettings } from './insightsData';
 
 export type OpenInsightTrades = (label: string, trades: InsightTrade[]) => void;
-export interface InsightsWidgetProps { data: InsightsData; onDrill: OpenInsightTrades }
+export interface InsightsWidgetProps { data: InsightsData; onDrill: OpenInsightTrades; compact?: boolean }
 export const insightButton = 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-[#5338ec] disabled:opacity-40';
 export const resultStyle = (net: number): React.CSSProperties => ({ color: net > 0 ? 'var(--insights-gain)' : net < 0 ? 'var(--insights-loss)' : 'var(--text-secondary)' });
 export const dateLabel = (date: string, locale?: string) => new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(Date.parse(`${date}T12:00:00Z`));
@@ -38,11 +38,13 @@ export function cellTint(net: number, max: number): React.CSSProperties {
   const percentage = 8 + Math.min(1, Math.abs(net) / Math.max(max, 0.01)) * 24;
   return { backgroundColor: net ? `color-mix(in srgb, var(${net > 0 ? '--insights-gain' : '--insights-loss'}) ${percentage}%, var(--bg-card))` : 'var(--bg-subtle)' };
 }
-export function InsightsLoading() {
+export function InsightsLoading({ compact = false }: { compact?: boolean }) {
+  const labels = ['Overview', 'Playbook progress', 'Discipline track', 'Trading calendar', 'Cumulative P&L', 'Day of week', 'Entry hour', 'Day and hour', 'Insights'];
+  const ordered = compact ? ['Trading calendar', ...labels.filter(label => label !== 'Trading calendar')] : labels;
   return <div aria-label="Loading Insights" role="status" className="space-y-5">
-    {['Overview', 'Playbook progress', 'Discipline track', 'Trading calendar', 'Cumulative P&L', 'Day of week', 'Entry hour', 'Day and hour', 'Insights'].map((label, index) =>
+    {ordered.map(label =>
       <div key={label} aria-label={`Loading ${label}`} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-5 motion-reduce:animate-none">
-        <div className="mb-4 h-3 w-36 rounded bg-slate-200"/><div className={`${index < 3 || index === 8 ? 'h-24' : 'h-52'} rounded-xl bg-slate-100`}/>
+        <div className="mb-4 h-3 w-36 rounded bg-slate-200"/><div className={`${['Overview', 'Playbook progress', 'Discipline track', 'Insights'].includes(label) ? 'h-24' : 'h-52'} rounded-xl bg-slate-100`}/>
       </div>)}
   </div>;
 }

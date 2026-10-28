@@ -10,6 +10,7 @@ import { InsightsCalendar } from './InsightsCalendar';
 import { InsightsCurve } from './InsightsCurve';
 import { InsightsWeekdays, InsightsHours, InsightsHeatmap } from './InsightsDistributions';
 import { InsightsPlaybookProgress, InsightsDisciplineProgress } from './InsightsProgress';
+import { easyInsightsLayout } from './insightsLayout';
 
 interface Props {
   entries: JournalEntry[]; settings: InsightsSettings; view: JournalCardsController; settingsWarnings: string[];
@@ -17,8 +18,8 @@ interface Props {
   onTradeLog: () => void; onOpenProfile?: () => void;
   onOpenTrade: (entry: JournalEntry) => void; onOpenTrades: (entries: JournalEntry[], label: string) => void;
 }
-function InsightsCallouts({ data, onDrill }: InsightsWidgetProps) {
-  return data.callouts.length ? <div className="space-y-3">
+function InsightsCallouts({ data, onDrill, compact }: InsightsWidgetProps) {
+  return data.callouts.length ? <div className={compact ? 'grid gap-2 md:grid-cols-2 xl:grid-cols-3' : 'space-y-3'}>
     {data.callouts.map(callout => <button key={callout.id} className="block w-full rounded-lg bg-slate-50 p-3 text-left text-sm hover:underline" onClick={() => onDrill(callout.text, callout.trades)}>{callout.text} <span className="text-xs text-slate-500">({callout.trades.length} trades)</span></button>)}
   </div> : <p className="text-sm text-slate-500">Patterns appear when a comparable group has at least 5 closed trades. No conclusions are drawn from smaller samples.</p>;
 }
@@ -27,6 +28,9 @@ export function SimpleInsights({ entries, settings, view, settingsWarnings, chec
   const [drill, setDrill] = useState<{ label: string; trades: InsightTrade[] } | null>(null);
   useEffect(() => setDrill(null), [data]);
   const open = (label: string, trades: InsightTrade[]) => setDrill({ label, trades });
+  const compact = view.baseLevel === 'easy';
+  const layout = compact ? easyInsightsLayout(view.cards.map(card => card.id)) : {};
+  const widgetProps = { data, onDrill: open, compact };
   const change = (patch: Parameters<typeof update>[0]) => { setDrill(null); update(patch); };
   const filterKey = `${data.filters.range}:${data.filters.account}:${data.filters.side}:${data.filters.asOf}:${settings.timeZone}:${settings.currency}`;
   const profileLink = <a href="/account/profile?profileSection=journal" className="text-[#5338ec] underline" onClick={event => {
@@ -34,15 +38,15 @@ export function SimpleInsights({ entries, settings, view, settingsWarnings, chec
   }}>Profile settings</a>;
   const render = (id: string) => {
     switch (id) {
-      case 'insights-kpis': return <InsightsKpis data={data} onDrill={open}/>;
-      case 'insights-playbooks': return <InsightsPlaybookProgress data={data} onDrill={open}/>;
-      case 'insights-discipline': return <InsightsDisciplineProgress data={data} onDrill={open}/>;
-      case 'insights-calendar': return <InsightsCalendar data={data} onDrill={open} today={today}/>;
-      case 'insights-curve': return <InsightsCurve data={data} onDrill={open}/>;
-      case 'insights-weekdays': return <InsightsWeekdays data={data} onDrill={open}/>;
-      case 'insights-hours': return <InsightsHours data={data} onDrill={open}/>;
-      case 'insights-heatmap': return <InsightsHeatmap data={data} onDrill={open}/>;
-      case 'insights-callouts': return <InsightsCallouts data={data} onDrill={open}/>;
+      case 'insights-kpis': return <InsightsKpis {...widgetProps} sidebar={compact && !layout[id].includes('xl:col-span-12')}/>;
+      case 'insights-playbooks': return <InsightsPlaybookProgress {...widgetProps}/>;
+      case 'insights-discipline': return <InsightsDisciplineProgress {...widgetProps}/>;
+      case 'insights-calendar': return <InsightsCalendar {...widgetProps} today={today}/>;
+      case 'insights-curve': return <InsightsCurve {...widgetProps}/>;
+      case 'insights-weekdays': return <InsightsWeekdays {...widgetProps}/>;
+      case 'insights-hours': return <InsightsHours {...widgetProps}/>;
+      case 'insights-heatmap': return <InsightsHeatmap {...widgetProps}/>;
+      case 'insights-callouts': return <InsightsCallouts {...widgetProps}/>;
       default: return <p role="alert" className="text-sm text-rose-600">This widget is unavailable. Reset the Insights view to restore its cards.</p>;
     }
   };
@@ -83,8 +87,8 @@ export function SimpleInsights({ entries, settings, view, settingsWarnings, chec
     {!data.current.length ? <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
       <p className="text-sm text-slate-500">{data.coverage.closed === 0 ? 'Log your first trade to see insights' : 'No closed trades match this period, account, side and reporting currency.'}</p>
       <button className={insightButton+' mt-4'} onClick={onTradeLog}>Go to Trade Log</button>
-    </div> : <div className="min-w-0 space-y-5">
-      {view.cards.map(card => <JournalCard key={`${card.id}:${filterKey}`} card={card} view={view} detail={card.plainSummary}>{render(card.component)}</JournalCard>)}
+    </div> : <div data-insights-layout={compact ? 'dashboard' : 'stacked'} className={compact ? 'grid min-w-0 grid-cols-12 items-start gap-4' : 'min-w-0 space-y-5'}>
+      {view.cards.map(card => <JournalCard key={`${card.id}:${filterKey}`} card={card} view={view} detail={card.plainSummary} compact={compact} className={layout[card.id]}>{render(card.component)}</JournalCard>)}
     </div>}
     {drill && <InsightTradeDrawer label={drill.label} trades={drill.trades} settings={settings} onClose={() => setDrill(null)} onOpenTrade={onOpenTrade} onOpenTrades={onOpenTrades}/>}
   </section>;

@@ -20,6 +20,7 @@ export interface JournalCardDefinition {
   plainSummary: string;
   level: JournalLevel;
   order: number;
+  easyOrder?: number;
   canHide: boolean;
   lazy: boolean;
   component: string;
@@ -41,7 +42,9 @@ export const JOURNAL_CARD_REGISTRY: readonly JournalCardDefinition[] = [
     ['insights-heatmap', 'Day × hour', 'Explore entry weekdays and hours together. Select a cell to inspect its trades.'],
     ['insights-callouts', 'What your trades show', 'Rule-based observations supported by at least five trades in every compared group.'],
   ] as const).map(([id, title, plainSummary], order) => ({
-    id, tab: 'insights' as const, title, plainSummary, level: 'easy' as const, order, canHide: true, lazy: true, component: id,
+    id, tab: 'insights' as const, title, plainSummary, level: 'easy' as const, order,
+    easyOrder: id === 'insights-calendar' ? 0 : order + 1,
+    canHide: true, lazy: true, component: id,
   })),
 ];
 export interface JournalTabPreference {
@@ -94,7 +97,7 @@ export function journalCardsFor(prefs: JournalViewPreferences, tab: JournalTab, 
   return JOURNAL_CARD_REGISTRY.filter(card => card.tab === tab && (!card.subView || card.subView === subView))
     .filter(card => !pref.hidden.includes(card.id) && (pref.added.includes(card.id) || JOURNAL_LEVELS.indexOf(card.level) <= JOURNAL_LEVELS.indexOf(pref.level)))
     .sort((a, b) => {
-      const rank = (card: JournalCardDefinition) => pref.order.includes(card.id) ? pref.order.indexOf(card.id) : pref.order.length + card.order;
+      const rank = (card: JournalCardDefinition) => pref.order.includes(card.id) ? pref.order.indexOf(card.id) : pref.order.length + (pref.level === 'easy' ? card.easyOrder ?? card.order : card.order);
       return rank(a) - rank(b);
     });
 }

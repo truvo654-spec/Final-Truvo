@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.29.1] - 2026-10-28
+### Changed
+- Easy Insights now opens with the trading calendar first by default and uses a responsive, matched-width dashboard instead of full-width stacked cards.
+- Compacted calendar cells, KPI tiles, progress panels and charts; kept hourly/heatmap widgets wide and arranged short observations in columns. Unpaired cards expand when widgets are hidden or reordered.
+- Preserved saved custom order, Standard's stacked layout, all data and drill-downs. Easy hover details no longer change tile heights.
+
 ## [2.29.0] - 2026-10-28
 ### Added
 - Automatic personal progress in Easy Insights: playbook results, answered-plan progress bars, a most-used setup highlight, and small-sample consistency labels.

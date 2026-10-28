@@ -14,7 +14,8 @@ import { JournalReportingSettings } from '../insights/JournalReportingSettings';
 import { InsightsPlaybookProgress, InsightsDisciplineProgress } from '../insights/InsightsProgress';
 import { computeDiscipline, hasDisciplineEvidence } from '../journalDiscipline';
 import { computeDiscipline as overviewDiscipline } from '../JournalMonitors';
-import { JOURNAL_CARD_REGISTRY, defaultJournalViews, journalCardsFor, migrateJournalViews, updateJournalViews } from '../journalViews';
+import { easyInsightsLayout } from '../insights/insightsLayout';
+import { defaultJournalViews, journalCardsFor, migrateJournalViews, updateJournalViews } from '../journalViews';
 import type { JournalCardsController } from '../useJournalCards';
 
 const settings: InsightsSettings = { currency: 'USD', timeZone: 'UTC', locale: 'en-GB' };
@@ -144,9 +145,9 @@ test('callouts require at least five observations in every compared group', () =
 test('Insights widgets have independent registry identities, persist hide/order, and migrate the old workspace safely', () => {
   let prefs = defaultJournalViews();
   assert.equal(journalCardsFor(prefs, 'insights').length, 9);
-  const before = journalCardsFor(prefs, 'insights').findIndex(card => card.id === 'insights-calendar');
-  prefs = updateJournalViews(prefs, { type: 'move', tab: 'insights', id: 'insights-calendar', direction: -1 });
-  assert.equal(journalCardsFor(prefs, 'insights')[before - 1].id, 'insights-calendar');
+  const before = journalCardsFor(prefs, 'insights').findIndex(card => card.id === 'insights-kpis');
+  prefs = updateJournalViews(prefs, { type: 'move', tab: 'insights', id: 'insights-kpis', direction: -1 });
+  assert.equal(journalCardsFor(prefs, 'insights')[before - 1].id, 'insights-kpis');
   prefs = updateJournalViews(prefs, { type: 'hide', tab: 'insights', id: 'insights-heatmap' });
   assert.equal(journalCardsFor(prefs, 'insights').length, 8);
   const restored = migrateJournalViews(JSON.parse(JSON.stringify(prefs)));
@@ -156,7 +157,7 @@ test('Insights widgets have independent registry identities, persist hide/order,
 });
 test('default screen renders nine widgets with only the requested filters and one-account selector hidden', () => {
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { search: '?journalTab=insights&insightsAsOf=2026-10-28' } } });
-  const cards = JOURNAL_CARD_REGISTRY.filter(card => card.tab === 'insights');
+  const cards = journalCardsFor(defaultJournalViews(), 'insights');
   const view: JournalCardsController = {
     cards, level: 'easy', baseLevel: 'easy', error: '', welcomed: true,
     setLevel: () => {}, add: () => {}, hide: () => {}, moveUp: () => {}, moveDown: () => {}, reset: () => {}, dismissWelcome: () => {},
@@ -166,11 +167,58 @@ test('default screen renders nine widgets with only the requested filters and on
     onTradeLog: () => {}, onOpenTrade: () => {}, onOpenTrades: () => {},
   }));
   for (const card of cards) assert.ok(html.includes(`aria-label="${card.title.replace(/&/g, '&amp;')}"`));
+  assert.ok(html.indexOf('aria-label="Trading calendar"') < html.indexOf('aria-label="How am I doing?"'));
+  assert.match(html, /data-insights-layout="dashboard"/);
+  assert.match(html, /xl:col-span-7/);
   assert.match(html, /Insights date range/); assert.match(html, /Insights side/);
   assert.doesNotMatch(html, /aria-label="Insights account"|SESSION FILTER|Export CSV|Cross analysis matrix/);
   assert.match(html, /overflow-x-auto/);
   assert.equal((renderToStaticMarkup(React.createElement(InsightsLoading)).match(/aria-label="Loading /g) || []).length, 10);
+  const skeleton = renderToStaticMarkup(React.createElement(InsightsLoading, { compact: true }));
+  assert.ok(skeleton.indexOf('Loading Trading calendar') < skeleton.indexOf('Loading Overview'));
+  const standardCards = journalCardsFor({ ...defaultJournalViews(), defaultLevel: 'standard' }, 'insights');
+  const standard = renderToStaticMarkup(React.createElement(SimpleInsights, {
+    entries: JOURNAL_ENTRIES, settings, view: { ...view, baseLevel: 'standard', level: 'standard', cards: standardCards }, settingsWarnings: [],
+    onTradeLog: () => {}, onOpenTrade: () => {}, onOpenTrades: () => {},
+  }));
+  assert.match(standard, /data-insights-layout="stacked"/);
+  assert.ok(standard.indexOf('aria-label="How am I doing?"') < standard.indexOf('aria-label="Trading calendar"'));
   Reflect.deleteProperty(globalThis, 'window');
+});
+test('calendar is first by default only in Easy; saved custom order and hidden cards are respected', () => {
+  const defaults = defaultJournalViews();
+  assert.equal(journalCardsFor(defaults, 'insights')[0].id, 'insights-calendar');
+  for (const level of ['standard', 'advanced'] as const) {
+    assert.equal(journalCardsFor({ ...defaults, defaultLevel: level }, 'insights')[0].id, 'insights-kpis');
+  }
+  const custom = updateJournalViews(defaults, { type: 'move', tab: 'insights', id: 'insights-kpis', direction: -1 });
+  assert.equal(journalCardsFor(migrateJournalViews(custom), 'insights')[0].id, 'insights-kpis');
+  assert.equal(journalCardsFor(updateJournalViews(custom, { type: 'reset', tab: 'insights' }), 'insights')[0].id, 'insights-calendar');
+  const hidden = updateJournalViews(defaults, { type: 'hide', tab: 'insights', id: 'insights-calendar' });
+  assert.equal(journalCardsFor(hidden, 'insights')[0].id, 'insights-kpis');
+});
+test('Easy dashboard pairs fit the row without reordering and unpaired cards expand', () => {
+  const ids = journalCardsFor(defaultJournalViews(), 'insights').map(card => card.id);
+  const layout = easyInsightsLayout(ids);
+  assert.match(layout['insights-calendar'], /xl:col-span-7/);
+  assert.match(layout['insights-kpis'], /xl:col-span-5/);
+  assert.match(layout['insights-playbooks'], /md:col-span-6/);
+  assert.match(layout['insights-discipline'], /xl:col-span-5/);
+  assert.match(layout['insights-curve'], /lg:col-span-7/);
+  for (const id of ['insights-hours', 'insights-heatmap', 'insights-callouts']) assert.match(layout[id], /xl:col-span-12/);
+  for (const selected of [ids, ids.filter(id => id !== 'insights-kpis'), ['insights-calendar', 'insights-curve', 'insights-weekdays'], ['insights-kpis', 'insights-hours', 'insights-discipline']]) {
+    const sizes = easyInsightsLayout(selected);
+    assert.deepEqual(Object.keys(sizes), selected);
+    for (const breakpoint of ['md', 'lg', 'xl']) {
+      let row = 0;
+      for (const id of selected) {
+        row += Number(sizes[id].match(new RegExp(`${breakpoint}:col-span-(\\d+)`))![1]);
+        assert.ok(row <= 12, `Row overflow at ${breakpoint}`);
+        if (row === 12) row = 0;
+      }
+      assert.equal(row, 0, `Unfilled row at ${breakpoint}`);
+    }
+  }
 });
 test('international formatting and selector performance meet the instant-data budget', () => {
   assert.match(formatInsightsMoney(1234.5, { ...settings, currency: 'EUR', locale: 'de-DE' }), /1\.234,50/);
@@ -281,6 +329,8 @@ test('automatic cards stay basic, show evidence gaps and never render extra sett
   assert.match(discipline, /aria-label="Discipline score"/);
   assert.match(discipline, /data-keep-button-icons/);
   assert.doesNotMatch(playbook + discipline, /<input|<select|Earn XP|Claim reward/);
+  const compact = renderToStaticMarkup(React.createElement(InsightsPlaybookProgress, { data, onDrill: () => {}, compact: true }));
+  assert.match(compact, /aria-label="Plan followed · Breakout: 1 of 1 answered · 100%"/);
   const noChecklist = aggregateInsights([reviewed({ checklistDone: [] })], filters, settings, 0);
   assert.equal(noChecklist.discipline.score!.score, 100);
   const noChecklistHtml = renderToStaticMarkup(React.createElement(InsightsDisciplineProgress, { data: noChecklist, onDrill: () => {} }));

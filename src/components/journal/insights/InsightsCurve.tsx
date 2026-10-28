@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { dateLabel, insightButton, InsightsTooltip, useInsightsChartWidth, type InsightsWidgetProps } from './InsightsShared';
 import { formatInsightsMoney } from './insightsData';
 
-export function InsightsCurve({ data, onDrill }: InsightsWidgetProps) {
+export function InsightsCurve({ data, onDrill, compact = false }: InsightsWidgetProps) {
   const svg = useRef<SVGSVGElement>(null), drag = useRef<{ index: number; x: number } | null>(null);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelClick = () => { if (clickTimer.current) clearTimeout(clickTimer.current); clickTimer.current = null; };
@@ -10,7 +10,8 @@ export function InsightsCurve({ data, onDrill }: InsightsWidgetProps) {
   const [zoom, setZoom] = useState<[number, number] | null>(null), [active, setActive] = useState<number | null>(null), [dragTo, setDragTo] = useState<number | null>(null);
   const { ref: container, width } = useInsightsChartWidth();
   const points = data.curve.slice(zoom?.[0] ?? 0, (zoom?.[1] ?? data.curve.length - 1) + 1);
-  const left = 72, right = 15, top = 16, bottom = 190, ddTop = 216, ddBottom = 278;
+  const chartHeight = compact ? 260 : 310;
+  const left = 72, right = 15, top = 16, bottom = compact ? 150 : 190, ddTop = compact ? 176 : 216, ddBottom = compact ? 228 : 278;
   const dateTicks = Math.max(2, Math.floor((width - left - right) / 120));
   const low = Math.min(0, ...points.map(point => point.cumulative)), high = Math.max(0, ...points.map(point => point.cumulative));
   const maxDD = Math.max(0.01, ...points.map(point => -point.drawdown));
@@ -36,7 +37,7 @@ export function InsightsCurve({ data, onDrill }: InsightsWidgetProps) {
       {zoom && <button className={insightButton} onClick={reset}>Reset zoom</button>}
     </div>
     {!points.length ? <p className="py-10 text-center text-sm text-slate-500">No closed results in this period.</p> :
-      <svg ref={svg} role="group" aria-label="Interactive cumulative P&L and drawdown" viewBox={`0 0 ${width} 310`} className="block h-[310px] w-full select-none overflow-hidden" style={{ touchAction: 'pan-y' }}
+      <svg ref={svg} role="group" aria-label="Interactive cumulative P&L and drawdown" viewBox={`0 0 ${width} ${chartHeight}`} className={`block ${compact ? 'h-[260px]' : 'h-[310px]'} w-full select-none overflow-hidden`} style={{ touchAction: 'pan-y' }}
         onPointerMove={event => { const index = pick(event.clientX); setActive(index); if (drag.current) setDragTo(index); }}
         onPointerLeave={() => { if (!drag.current) setActive(null); }}
         onPointerDown={event => { if (event.button !== 0) return; cancelClick(); drag.current = { index: pick(event.clientX), x: event.clientX }; setDragTo(null); event.currentTarget.setPointerCapture(event.pointerId); }}
@@ -67,7 +68,7 @@ export function InsightsCurve({ data, onDrill }: InsightsWidgetProps) {
               }
               if (event.key === 'Escape') reset();
             }}/>
-          {(index === 0 || index === points.length - 1 || (dateTicks > 2 && points.length > 6 && index % Math.ceil(points.length / dateTicks) === 0)) && <text x={x(index)} y="300" fill="var(--text-secondary)" fontSize="10" textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'}>{dateLabel(p.key, data.settings.locale)}</text>}
+          {(index === 0 || index === points.length - 1 || (dateTicks > 2 && points.length > 6 && index % Math.ceil(points.length / dateTicks) === 0)) && <text x={x(index)} y={chartHeight - 10} fill="var(--text-secondary)" fontSize="10" textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'}>{dateLabel(p.key, data.settings.locale)}</text>}
         </g>)}
         {point && <line x1={x(active!)} x2={x(active!)} y1={top} y2={ddBottom} stroke="var(--text-secondary)" strokeDasharray="3 3" pointerEvents="none"/>}
         {drag.current && dragTo !== null && <rect x={Math.min(x(drag.current.index), x(dragTo))} width={Math.abs(x(dragTo) - x(drag.current.index))} y={top} height={ddBottom - top} fill="var(--color-brand-primary)" fillOpacity="0.12" pointerEvents="none"/>}
