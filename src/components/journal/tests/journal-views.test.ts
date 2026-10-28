@@ -2,15 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { defaultJournalViews, JOURNAL_CARD_REGISTRY, journalCardsFor, migrateJournalViews, updateJournalViews } from '../journalViews';
+import { defaultJournalViews, JOURNAL_CARD_REGISTRY, JOURNAL_VIEW_TABS, journalCardsFor, migrateJournalViews, updateJournalViews } from '../journalViews';
 import { createJournalViewStore } from '../journalViewStore';
 import { useJournalCards, type JournalCardsController } from '../useJournalCards';
-import { JournalSimpleTradeLog } from '../JournalSimpleTradeLog';
 import { JournalTradeLog } from '../JournalTradeLog';
+import { JournalReviewDrawer } from '../JournalReviewDrawer';
 import { JournalWorkspaceCard } from '../JournalCards';
 import { formatPlainPF, pluralize } from '../journalPlain';
-import { filterTradeLogEntries, planAnswer, quickReviewPatch, tradeLogKpis } from '../journalTradeLogModel';
-import { metrics } from '../journalMath';
 import type { JournalEntry } from '../../../types';
 
 const trade = (patch: Partial<JournalEntry> = {}): JournalEntry => ({
@@ -23,37 +21,44 @@ const storage = () => {
   const data = new Map<string, string>();
   return { data, getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => { data.set(key, value); } };
 };
-test('registry has unique IDs and Easy has exactly summary and trades; Standard has four figures and table', () => {
+test('registry keeps foundation cards on other tabs and excludes Trade Log in every level', () => {
   assert.equal(new Set(JOURNAL_CARD_REGISTRY.map(card => card.id)).size, JOURNAL_CARD_REGISTRY.length);
-  const easy = defaultJournalViews();
-  assert.deepEqual(journalCardsFor(easy, 'entries').map(card => card.id), ['summary', 'trades']);
-  const standard = updateJournalViews(easy, { type: 'level', tab: 'entries', level: 'standard' });
-  assert.deepEqual(journalCardsFor(standard, 'entries').map(card => card.id), ['net', 'win-rate', 'payoff', 'profit-factor', 'trades']);
-  const advanced = updateJournalViews(easy, { type: 'level', tab: 'entries', level: 'advanced' });
-  assert.ok(journalCardsFor(advanced, 'entries').some(card => card.id === 'tools'));
+  for (const defaultLevel of ['easy', 'standard', 'advanced'] as const) {
+    const prefs = { ...defaultJournalViews(), defaultLevel };
+    assert.deepEqual(journalCardsFor(prefs, 'entries'), []);
+    for (const tab of JOURNAL_VIEW_TABS) assert.equal(journalCardsFor(prefs, tab)[0].id, `${tab}-workspace`);
+  }
+  const prefs = defaultJournalViews();
+  assert.deepEqual(updateJournalViews(prefs, { type: 'level', tab: 'entries', level: 'standard' }), prefs);
 });
 test('card visibility, add, hide, order and reset are scoped to a tab', () => {
   let preferences = defaultJournalViews();
-  preferences = updateJournalViews(preferences, { type: 'add', tab: 'entries', id: 'profit-factor' });
-  preferences = updateJournalViews(preferences, { type: 'move', tab: 'entries', id: 'profit-factor', direction: -1 });
-  assert.equal(journalCardsFor(preferences, 'entries')[0].id, 'profit-factor');
-  preferences = updateJournalViews(preferences, { type: 'hide', tab: 'entries', id: 'summary' });
-  assert.deepEqual(journalCardsFor(preferences, 'entries').map(card => card.id), ['profit-factor', 'trades']);
+  preferences = updateJournalViews(preferences, { type: 'hide', tab: 'overview', id: 'overview-workspace' });
+  assert.deepEqual(journalCardsFor(preferences, 'overview'), []);
   assert.equal(journalCardsFor(preferences, 'insights')[0].id, 'insights-workspace');
-  preferences = updateJournalViews(preferences, { type: 'reset', tab: 'entries' });
-  assert.deepEqual(journalCardsFor(preferences, 'entries').map(card => card.id), ['summary', 'trades']);
-  assert.deepEqual(updateJournalViews(preferences, { type: 'add', tab: 'entries', id: 'insights-workspace' }), preferences);
+  preferences = updateJournalViews(preferences, { type: 'add', tab: 'overview', id: 'overview-workspace' });
+  assert.equal(journalCardsFor(preferences, 'overview')[0].id, 'overview-workspace');
+  assert.deepEqual(updateJournalViews(preferences, { type: 'move', tab: 'overview', id: 'overview-workspace', direction: -1 }), preferences);
+  assert.deepEqual(updateJournalViews(preferences, { type: 'move', tab: 'overview', id: 'overview-workspace', direction: 1 }), preferences);
+  preferences = updateJournalViews(preferences, { type: 'reset', tab: 'overview' });
+  assert.equal(preferences.tabs.overview, undefined);
+  assert.deepEqual(updateJournalViews(preferences, { type: 'add', tab: 'overview', id: 'insights-workspace' }), preferences);
 });
 test('versioned migration accepts legacy levels, de-duplicates and removes stale IDs without importing old trade filters', () => {
   assert.equal(migrateJournalViews('advanced').defaultLevel, 'advanced');
   const migrated = migrateJournalViews({
     version: 0, defaultLevel: 'standard',
-    tabs: { insights: 'advanced', entries: { level: 'easy', hidden: ['summary', 'stale', 'summary'], added: ['summary', 'points', 'points'], order: ['points', 'stale'] } },
+    tabs: {
+      insights: 'advanced',
+      entries: { level: 'easy', hidden: ['summary'], added: ['points'], order: ['trades'] },
+      overview: { level: 'easy', hidden: ['overview-workspace', 'stale', 'overview-workspace'], added: ['overview-workspace'], order: ['overview-workspace', 'stale'] },
+    },
     brokerOff: ['old-broker'],
   });
   assert.equal(migrated.version, 1);
   assert.equal(migrated.tabs.insights.level, 'advanced');
-  assert.deepEqual(migrated.tabs.entries, { level: 'easy', hidden: ['summary'], added: ['points'], order: ['points'] });
+  assert.equal(migrated.tabs.entries, undefined);
+  assert.deepEqual(migrated.tabs.overview, { level: 'easy', hidden: ['overview-workspace'], added: [], order: ['overview-workspace'] });
   assert.deepEqual(migrateJournalViews(migrated), migrated);
   assert.throws(() => migrateJournalViews({ version: 9 }));
 });
@@ -61,86 +66,51 @@ test('preference store notifies subscribers, survives reload and reports blocked
   const memory = storage(), store = createJournalViewStore(memory, 'views');
   let notifications = 0;
   const unsubscribe = store.subscribe(() => notifications++);
-  store.dispatch({ type: 'add', tab: 'entries', id: 'fees' });
+  memory.setItem('entries', JSON.stringify([trade()]));
+  const savedTrades = memory.getItem('entries');
+  store.dispatch({ type: 'hide', tab: 'overview', id: 'overview-workspace' });
   assert.equal(notifications, 1);
   const restored = createJournalViewStore(memory, 'views');
   assert.deepEqual(restored.getSnapshot().preferences, store.getSnapshot().preferences);
+  assert.equal(memory.getItem('entries'), savedTrades);
   unsubscribe();
   store.dispatch({ type: 'welcome' });
   assert.equal(notifications, 1);
   const failing = createJournalViewStore({ getItem: () => null, setItem: () => { throw new Error('quota'); } }, 'views');
-  failing.dispatch({ type: 'level', tab: 'entries', level: 'standard' });
+  failing.dispatch({ type: 'level', tab: 'overview', level: 'standard' });
   assert.match(failing.getSnapshot().error, /could not be saved/);
-  assert.equal(failing.getSnapshot().preferences.tabs.entries.level, 'standard');
+  assert.equal(failing.getSnapshot().preferences.tabs.overview.level, 'standard');
 });
 test('corrupt/future preferences remain untouched until an explicit reset', () => {
   const memory = storage();
   memory.setItem('views', '{"version":42}');
   const store = createJournalViewStore(memory, 'views');
-  store.dispatch({ type: 'hide', tab: 'entries', id: 'summary' });
+  store.dispatch({ type: 'hide', tab: 'overview', id: 'overview-workspace' });
   assert.equal(memory.getItem('views'), '{"version":42}');
   assert.match(store.getSnapshot().error, /preserved/);
   store.dispatch({ type: 'reset' });
   assert.equal(JSON.parse(memory.getItem('views')).version, 1);
   assert.equal(store.getSnapshot().error, '');
 });
-test('useJournalCards exposes Custom, persistence, move and reset; Easy does not render heavy tools', () => {
+test('useJournalCards retains Custom, persistence, move and reset on foundation tabs', () => {
   const memory = storage();
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { localStorage: memory, addEventListener: () => {} } });
   let view: JournalCardsController;
-  function Probe() { view = useJournalCards('entries'); return null; }
+  function Probe() { view = useJournalCards('overview'); return null; }
   const read = () => { renderToStaticMarkup(React.createElement(Probe)); return view; };
   assert.equal(read().level, 'easy');
-  view.add('fees');
+  view.hide('overview-workspace');
   assert.equal(read().level, 'custom');
-  view.moveUp('fees');
-  assert.deepEqual(read().cards.map(card => card.id), ['summary', 'fees', 'trades']);
-  view.hide('fees');
-  assert.equal(read().cards.length, 2);
+  assert.equal(view.cards.length, 0);
+  view.add('overview-workspace');
+  view.moveUp('overview-workspace');
+  assert.deepEqual(read().cards.map(card => card.id), ['overview-workspace']);
   view.setLevel('standard');
   assert.equal(read().baseLevel, 'standard');
-  assert.equal(JSON.parse(memory.getItem('ms-journal-v2-views')).tabs.entries.level, 'standard');
+  assert.equal(JSON.parse(memory.getItem('ms-journal-v2-views')).tabs.overview.level, 'standard');
   view.reset();
-  read();
-  const html = renderToStaticMarkup(React.createElement(JournalSimpleTradeLog, {
-    entries: [trade()], brokers: [], currency: 'USD', rangeLabel: 'All time', view,
-    onClearPreset: () => {}, onChange: () => {}, onOpen: () => {}, onToast: () => {}, onAdd: () => {},
-    onImport: () => {}, onReplay: () => {}, onReplayLog: () => {}, onBacktestTrades: () => {},
-  }));
-  assert.match(html, /My trades/);
-  assert.match(html, /\+\$20\.00/);
-  assert.doesNotMatch(html, /Columns|GROUP:|Export all|Profit Factor|type="checkbox"|Loading trade tools/);
+  assert.equal(read().level, 'easy');
   Reflect.deleteProperty(globalThis, 'window');
-});
-test('Quick review merges only its answers and preserves advanced fields and trading status', () => {
-  const original = trade({
-    emotionBefore: 'Calm', commission: 3, initialRisk: 9, rating: 4, reviewState: 'complete',
-    fills: [{ id: 'fill', time: '2026-10-01T10:00:00Z', side: 'entry', quantity: 1, price: 10, fee: 3 }],
-    ruleEvidence: [], mistakes: ['Chased price'], checklistDone: ['check'], setupNotes: 'Keep',
-  });
-  const patch = quickReviewPatch({ emotionAfter: 'Confident', plan: 'partly', lessons: 'Wait for confirmation' });
-  const updated = { ...original, ...patch };
-  assert.deepEqual(Object.keys(patch).sort(), ['emotionAfter', 'followedPlan', 'lessons', 'planAdherence']);
-  assert.equal(updated.followedPlan, false);
-  assert.equal(planAnswer(updated), 'partly');
-  assert.equal(updated.emotionBefore, 'Calm');
-  for (const key of ['commission', 'initialRisk', 'rating', 'reviewState', 'fills', 'ruleEvidence', 'mistakes', 'checklistDone', 'setupNotes', 'tradingStatus'] as const) assert.deepEqual(updated[key], original[key]);
-  assert.equal(quickReviewPatch({ emotionAfter: null, plan: '', lessons: '' }).followedPlan, null);
-  assert.equal(quickReviewPatch({ emotionAfter: 'Calm', plan: 'yes', lessons: 'Kept' }).followedPlan, true);
-});
-test('Easy and Advanced use identical filtering and KPI formulas, with ineligible trades excluded from money', () => {
-  const entries = [trade(), trade({ id: 'two', pnl: -10, commission: 2 }), trade({ id: 'open', tradingStatus: 'open', pnl: 200 }), trade({ id: 'unknown', commission: undefined })];
-  const filters = { query: '', needsReview: false, fOutcome: 'all', fTradingStatus: 'all' as const, marketOff: [], brokerOff: [] };
-  const rows = filterTradeLogEntries(entries, filters, new Map());
-  const kpi = tradeLogKpis(rows, new Map()), expected = metrics(rows);
-  assert.equal(kpi.net, expected.total);
-  assert.equal(kpi.n, expected.n);
-  assert.equal(kpi.pf, expected.pf);
-  assert.equal(kpi.winRate, expected.winRate);
-  assert.equal(kpi.net, 8);
-  assert.equal(kpi.fees, 2);
-  assert.equal(filterTradeLogEntries(entries, { ...filters, query: 'nothing' }, new Map()).length, 0);
-  assert.equal(filterTradeLogEntries(entries, { ...filters, query: 'nothing' }, new Map(), { ids: ['one'] }).length, 1);
 });
 test('plain language handles missing results, infinity, currency and singular counts', () => {
   assert.equal(formatPlainPF(2.21), '$2.21 won for every $1 lost');
@@ -150,22 +120,20 @@ test('plain language handles missing results, infinity, currency and singular co
   assert.equal(pluralize(1, 'trade'), '1 trade');
   assert.equal(pluralize(2, 'trade'), '2 trades');
 });
-test('Standard table has the requested six-column order; Advanced keeps the original eight KPI strip and tools', () => {
+test('Trade Log renders the original KPI strip, columns, grouping, export and pagination', () => {
   const props = { entries: [trade()], brokers: [], onChange: () => {}, onOpen: () => {}, onToast: () => {} };
-  const standard = renderToStaticMarkup(React.createElement(JournalTradeLog, { ...props, variant: 'standard' }));
-  const head = standard.slice(standard.indexOf('<thead'), standard.indexOf('</thead>'));
-  const labels = ['Date &amp; Time', 'Instrument', 'Side', 'Net P&amp;L', 'Review', 'Playbook'];
-  let previous = -1;
-  for (const label of labels) {
-    const index = head.indexOf(label);
-    assert.ok(index > previous, `${label} must follow the preceding column`);
-    previous = index;
-  }
-  assert.equal((head.match(/<th /g) || []).length, 7); // Six data columns plus selection.
-  assert.doesNotMatch(standard, /Cumul\. Net P&amp;L/);
-  const advanced = renderToStaticMarkup(React.createElement(JournalTradeLog, props));
-  for (const text of ['Cumul. Net P&amp;L', 'Profit Factor', 'Realized R-Avg', 'Export all', 'GROUP:']) assert.ok(advanced.includes(text));
-  assert.ok(advanced.includes('+$20.00') && standard.includes('+$20.00'));
+  const html = renderToStaticMarkup(React.createElement(JournalTradeLog, props));
+  for (const text of ['Cumul. Net P&amp;L', 'Profit Factor', 'Realized R-Avg', 'Export all', 'GROUP:', 'PER PAGE:', 'Columns (9/17)']) assert.ok(html.includes(text));
+  assert.match(html, /\+\$20\.00/);
+  assert.doesNotMatch(html, /My trades|Quick review|Table settings|Load more/);
+});
+test('trade selection uses the original full review with existing notes and risk fields', () => {
+  const entry = trade({ lessons: 'Keep my existing lesson', initialRisk: 10, emotionAfter: 'Calm' });
+  const html = renderToStaticMarkup(React.createElement(JournalReviewDrawer, {
+    entry, cohort: [entry.id], onSelect: () => {}, onClose: () => {}, onSave: () => {}, onDelete: () => {}, onReplay: () => {},
+  }));
+  for (const text of ['Psychology and review', 'Initial monetary risk', 'Rule evidence', 'Pre-trade checklist', 'Complete review', 'Keep my existing lesson']) assert.ok(html.includes(text));
+  assert.doesNotMatch(html, /Quick review|More detail|How it went/);
 });
 test('hidden workspace cards never mount their existing components; Advanced adds no card wrapper', () => {
   let mounts = 0;

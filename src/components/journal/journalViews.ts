@@ -3,6 +3,7 @@ export const JOURNAL_TABS = {
   playbook: 'Playbook', backtest: 'Backtest', review: 'AI Coach',
 } as const;
 export type JournalTab = keyof typeof JOURNAL_TABS;
+export const JOURNAL_VIEW_TABS = ['overview', 'insights', 'playbook', 'backtest', 'review'] as const;
 export const JOURNAL_LEVELS = ['easy', 'standard', 'advanced'] as const;
 export type JournalLevel = typeof JOURNAL_LEVELS[number];
 export const LEVEL_DESCRIPTIONS: Record<JournalLevel, string> = {
@@ -22,26 +23,12 @@ export interface JournalCardDefinition {
   lazy: boolean;
   component: string;
 }
-const logCard = (id: string, title: string, plainSummary: string, level: JournalLevel, order: number): JournalCardDefinition =>
-  ({ id, tab: 'entries', title, plainSummary, level, order, canHide: true, lazy: true, component: id });
-export const JOURNAL_CARD_REGISTRY: readonly JournalCardDefinition[] = [
-  logCard('summary', 'Your results', 'A sentence and three figures for the trades shown.', 'easy', 0),
-  logCard('net', 'Net result', 'What you made after recorded trading costs.', 'standard', 1),
-  logCard('win-rate', 'Win rate', 'How many closed trades finished with a gain.', 'standard', 2),
-  logCard('payoff', 'Average win vs average loss', 'Compare the size of your average gain and loss.', 'standard', 3),
-  logCard('profit-factor', 'Wins compared with losses', 'Money won for every unit of money lost.', 'standard', 4),
-  logCard('trades', 'My trades', 'Your trades, newest first. Select one to review it.', 'easy', 10),
-  logCard('realized-r', 'Result compared with risk', 'The existing average realized R and its coverage.', 'advanced', 20),
-  logCard('fees', 'Commissions and fees', 'Recorded costs on closed trades.', 'advanced', 21),
-  logCard('cashback', 'Cashback estimate', 'Estimated rewards in USD, separate from trading results.', 'advanced', 22),
-  logCard('points', 'Points estimate', 'Estimated points before boosters.', 'advanced', 23),
-  logCard('tools', 'Advanced trade tools', 'Grouping, all columns, CSV export, bulk actions and replay.', 'advanced', 30),
-  ...(['overview', 'insights', 'playbook', 'backtest', 'review'] as const).map(tab => ({
+export const JOURNAL_CARD_REGISTRY: readonly JournalCardDefinition[] =
+  JOURNAL_VIEW_TABS.map(tab => ({
     id: `${tab}-workspace`, tab, title: JOURNAL_TABS[tab],
     plainSummary: `Your existing ${JOURNAL_TABS[tab]} workspace. Its dedicated simplification will come later.`,
     level: 'easy' as const, order: 0, canHide: true, lazy: true, component: 'existing',
-  })),
-];
+  }));
 export interface JournalTabPreference {
   level: JournalLevel;
   hidden: string[];
@@ -71,7 +58,7 @@ export function migrateJournalViews(value: unknown): JournalViewPreferences {
   result.defaultLevel = isJournalLevel(value.defaultLevel) ? value.defaultLevel : 'easy';
   result.welcomed = value.welcomed === true;
   if (record(value.tabs)) {
-    for (const tab of Object.keys(JOURNAL_TABS) as JournalTab[]) {
+    for (const tab of JOURNAL_VIEW_TABS) {
       const saved = value.tabs[tab];
       if (isJournalLevel(saved)) result.tabs[tab] = { level: saved, hidden: [], added: [], order: [] };
       else if (record(saved)) {
@@ -91,8 +78,6 @@ export function journalCardsFor(prefs: JournalViewPreferences, tab: JournalTab, 
   const pref = tabPreference(prefs, tab);
   return JOURNAL_CARD_REGISTRY.filter(card => card.tab === tab && (!card.subView || card.subView === subView))
     .filter(card => !pref.hidden.includes(card.id) && (pref.added.includes(card.id) || JOURNAL_LEVELS.indexOf(card.level) <= JOURNAL_LEVELS.indexOf(pref.level)))
-    // The Standard summary is replaced by its four individual figures.
-    .filter(card => card.id !== 'summary' || pref.level === 'easy' || pref.added.includes(card.id))
     .sort((a, b) => {
       const rank = (card: JournalCardDefinition) => pref.order.includes(card.id) ? pref.order.indexOf(card.id) : pref.order.length + card.order;
       return rank(a) - rank(b);
@@ -112,6 +97,7 @@ export function updateJournalViews(prefs: JournalViewPreferences, action: Journa
   }
   if (action.type === 'welcome') return { ...prefs, welcomed: true };
   if (action.type === 'default') return { ...prefs, defaultLevel: action.level, tabs: {} };
+  if (action.tab === 'entries') return prefs;
   const pref = { ...tabPreference(prefs, action.tab) };
   if (action.type === 'level') Object.assign(pref, { level: action.level, hidden: [], added: [], order: [] });
   else if (action.type === 'add' || action.type === 'hide') {

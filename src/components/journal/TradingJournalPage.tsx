@@ -41,9 +41,6 @@ import { JournalReplayAvailability } from './JournalReplayAvailability';
 import type { JournalTab } from './journalViews';
 import { useJournalCards } from './useJournalCards';
 import { JournalAddCard, JournalLevelSwitch, JournalWorkspaceCard } from './JournalCards';
-import { JournalSimpleTradeLog } from './JournalSimpleTradeLog';
-import { JournalQuickReview } from './JournalQuickReview';
-import { JournalManualEntry } from './JournalManualEntry';
 import { useJournalPopover } from './useJournalPopover';
 
 interface TradingJournalPageProps {
@@ -96,7 +93,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 }) => {
   const [tab, setTab] = useJournalState<JournalTab>('tab', 'overview');
   const view = useJournalCards(tab);
-  const originalView = view.baseLevel === 'advanced' && view.level !== 'custom';
+  const originalView = tab === 'entries' || (view.baseLevel === 'advanced' && view.level !== 'custom');
   const coachToday = new Date().toISOString().slice(0, 10);
   const [entries, setEntries, storageFailed] = useJournalState<JournalEntry[]>('entries', JOURNAL_ENTRIES);
   useEffect(() => { setEntries(current => hydrateDemoCfdEvidence(current)); }, [setEntries]);
@@ -110,8 +107,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [reviewQueueOpen, setReviewQueueOpen] = useState(false);
   const [logPreset, setLogPreset] = useState<{ ids: string[]; label: string } | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [manualOpen, setManualOpen] = useState(false);
-  const [quickId, setQuickId] = useState<string | null>(null);
 
   const [checklist, setChecklist] = useJournalState<JournalChecklistItem[]>('checklist', DEFAULT_CHECKLIST);
   const [newItem, setNewItem] = useState('');
@@ -420,13 +415,13 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             Write down why you traded, how you felt, and what you'd change. Patterns show up fast.
           </p>
         </div>
-        {(originalView || tab !== 'entries') && <button
+        <button
           type="button"
           onClick={() => setWizardOpen(true)}
           className="shrink-0 text-sm font-semibold bg-[#5338ec] hover:bg-[#4326d8] text-white rounded-xl px-4 py-2.5 transition-colors"
         >
           Import / link
-        </button>}
+        </button>
       </div>
 
       <div className="mb-6">
@@ -435,8 +430,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {journalSandbox && <p role="status" className="text-xs text-purple-700 mb-3">Isolated journal test workspace — separate from your journal records.</p>}
       {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
       {view.error && <p role="alert" className="mb-3 text-xs text-rose-700">{view.error}</p>}
-      <div className="mb-3 flex justify-end"><JournalLevelSwitch key={tab} view={view}/></div>
-      {view.baseLevel === 'easy' && !view.welcomed && <div role="status" className="mb-4 flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+      {tab !== 'entries' && <div className="mb-3 flex justify-end"><JournalLevelSwitch key={tab} view={view}/></div>}
+      {tab !== 'entries' && view.baseLevel === 'easy' && !view.welcomed && <div role="status" className="mb-4 flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
         <p>This is the Easy view. Use ⋯ on any card or '+ Add card' to see more.</p><button className="text-[#5338ec] font-semibold" onClick={view.dismissWelcome} aria-label="Dismiss Easy view welcome">Got it</button>
       </div>}
       <div ref={scopeRef}>
@@ -618,7 +613,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       </JournalWorkspaceCard>}
       {/* ───── ENTRIES ───── */}
       {tab === 'entries' && (
-        originalView ? <Suspense fallback={<p role="status" className="py-6 text-sm text-slate-500">Loading Trade Log…</p>}>
+        <Suspense fallback={<p role="status" className="py-6 text-sm text-slate-500">Loading Trade Log…</p>}>
         <JournalTradeLog
           entries={scoped}
           brokers={brokers || []}
@@ -631,15 +626,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onReplayLog={setApiReplayId}
           onBacktestTrades={(ids) => goBacktest({ view: 'setup', benchmarkTradeIds: ids })}
         />
-        </Suspense> : <JournalSimpleTradeLog
-          key={view.baseLevel}
-          entries={scoped} brokers={brokers || []} currency={currency} rangeLabel={rangeLabel} view={view}
-          onChange={setEntries} onOpen={(id, cohort) => { if (view.baseLevel === 'easy') { setReviewCohort(cohort || scoped.map(entry => entry.id)); setQuickId(id); } else openEntry(id, cohort); }}
-          onToast={onShowToast} onAdd={() => setManualOpen(true)} onImport={() => setWizardOpen(true)}
-          preset={logPreset} onClearPreset={() => setLogPreset(null)}
-          onReplay={id => goBacktest({ view: 'replay', entryId: id })} onReplayLog={setApiReplayId}
-          onBacktestTrades={ids => goBacktest({ view: 'setup', benchmarkTradeIds: ids })}
-        />
+        </Suspense>
       )}
 
       {tab !== 'entries' && tab !== 'overview' && <JournalWorkspaceCard key={tab} view={view}>
@@ -938,10 +925,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       )}
 
       </JournalWorkspaceCard>}
-      <JournalAddCard key={`add-${tab}`} tab={tab} view={view}/>
-      {quickId && (() => { const entry = entries.find(item => item.id === quickId); return entry ? <JournalQuickReview key={entry.id} entry={entry} onClose={() => setQuickId(null)} onSave={(id, patch) => { setEntries(previous => previous.map(current => current.id === id ? { ...current, ...patch } : current)); onShowToast('Quick review saved locally'); }} onFullReview={() => { setQuickId(null); setSelectedId(entry.id); }} onDelete={() => { setEntries(previous => previous.filter(current => current.id !== entry.id)); setQuickId(null); onShowToast('Trade deleted locally'); }}/> : null; })()}
-      {manualOpen && <JournalManualEntry currency={currency} account={account} brokers={brokers || []} strategies={playbooks.filter(playbook => playbook.status !== 'archived').map(playbook => playbook.name)} onClose={() => setManualOpen(false)} onSave={entry => { setEntries(previous => [entry, ...previous]); setManualOpen(false); setTab('entries'); onShowToast('Trade saved locally. Use Show all if your current filters hide it.'); }}/>}
-      {selected && <JournalReviewDrawer variant={originalView ? 'advanced' : 'standard'} entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
+      {tab !== 'entries' && <JournalAddCard key={`add-${tab}`} tab={tab} view={view}/>}
+      {selected && <JournalReviewDrawer entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
       {reviewQueueOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0b1c30]/40 p-3 sm:p-6" role="presentation" onMouseDown={() => setReviewQueueOpen(false)}>
           <section

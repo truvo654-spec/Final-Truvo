@@ -87,27 +87,21 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.27.0)
+### Journal views (v2.27.1)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
-Standard, or the original Advanced interface independently for each tab. Use a
+Standard, or the original Advanced interface independently for each supported tab. Use a
 card's **⋯** menu to hide it, read more detail, or move it; **+ Add card** restores
 hidden cards and reveals extra tools. Customized layouts are labeled **Custom**.
 Profile → About You → **Journal view** controls the default, per-tab levels, and
 reset. Resetting views never changes trades.
 
-Trade Log's Easy view is **My trades**: one results summary, newest-first rows,
-search, load more, manual entry, broker import, and a three-question Quick review.
-Standard adds four result cards, a six-column sortable table, table settings, and
-bulk tools. Advanced keeps the original workspace. Both simplified views use the
-same filters and KPI calculations as Advanced; visible scope chips identify hidden
-trades. Currency totals are never combined.
-
-Quick review saves the **after-trade emotion**, plan adherence, lesson, and an
-optional chart image without replacing other trade fields. **Partly** is preserved
-as additional review detail and is not counted as fully following the plan in
-existing analytics. A quick save does not bypass the full review's completion
-requirements. **Open full review** saves the quick answers first.
+**Trade Log keeps its original interface**, including its shared header, eight
+KPI cards, filters, grouping, columns, bulk actions, replay, exports, pagination,
+and full review drawer. It is not affected by the journal view level or card
+customizations. The simplified "My trades", manual-entry, and Quick review
+interfaces from v2.27.0 have been withdrawn. Saved trades and review notes are
+retained; no journal records are reset.
 
 Preferences are versioned in the existing browser-local journal storage, with
 in-memory fallback and a visible warning if storage is unavailable or unreadable.

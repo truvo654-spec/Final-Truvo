@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.27.1] - 2026-10-28
+### Changed
+- Restored the original Trade Log, its shared header, and the full review drawer. Trade Log no longer switches to Easy/Standard layouts or uses card customizations.
+- Removed the Prompt 1 "My trades", manual-entry, and Quick review interfaces while preserving existing saved trades and notes.
+- Retained the Prompt 0 foundation, profile settings, and card controls for the other journal tabs. Obsolete Trade Log view preferences are ignored during preference migration.
+
 ## [2.27.0] - 2026-10-28
 ### Added
 - Journal view foundation: per-tab Easy / Standard / Advanced levels, Custom layouts, versioned local preferences, card options, add-card sheet, profile defaults and resets, shared plain-language formatting, and an Easy welcome tip.
