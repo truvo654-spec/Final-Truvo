@@ -15,7 +15,7 @@ export interface JournalPlaybook {
   rulesEffectiveAt?: string;
   id: string;
   name: string;
-  grade: PlaybookGrade;
+  grade: PlaybookGrade | null;
   style: string; // short label e.g. "Momentum"
   status: PlaybookStatus;
   markets: PortfolioAssetClass[];

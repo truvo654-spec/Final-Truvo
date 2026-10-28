@@ -16,6 +16,8 @@ import { JournalReplayAvailability } from './JournalReplayAvailability';
 import { JOURNAL_TODAY } from '../../data/journalData';
 import { TradingStatusBadge, tradingStatusOf } from './tradingStatus';
 import { buildPlaybookRecommendations, RECOMMENDATION_MARKETS } from './playbookRecommendations';
+import { QuickPlaybookCreate } from './QuickPlaybookCreate';
+import { nextPlaybookId } from './playbookDefaults';
 
 // Strategy playbooks (light theme, after the uploaded concept): library with market/status filters,
 // search and sort; detail with thesis, a live pre-trade rules check, entry/stop/target, edge metrics
@@ -116,6 +118,8 @@ interface Props {
   onToast: (msg: string) => void;
   houseRules: React.ReactNode;
   houseChecklist: JournalChecklistItem[];
+  houseLimits: { maxRisk: number; maxTrades: number };
+  easy?: boolean;
   recordings: Record<string, string>;
   onSetRecording: (entryId: string, blob: Blob | null) => void;
   /** Saved backtest expectations by playbook id. */
@@ -129,7 +133,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, houseLimits, easy = false, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -142,6 +146,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const [isNew, setIsNew] = useState(false);
 
   const [recommendationOpen, setRecommendationOpen] = useState(false);
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [recommendationMarket, setRecommendationMarket] = useState<'all' | PortfolioAssetClass>('all');
   const [recommendationQuery, setRecommendationQuery] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -180,7 +185,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         case 'net': return sb.net - sa.net;
         case 'winRate': return sb.winRate - sa.winRate;
         case 'trades': return sb.n - sa.n;
-        case 'grade': return GRADE_RANK[b.grade] - GRADE_RANK[a.grade];
+        case 'grade': return (b.grade ? GRADE_RANK[b.grade] : 0) - (a.grade ? GRADE_RANK[a.grade] : 0);
         default: return (sb.pf ?? (sb.n ? 99 : -1)) - (sa.pf ?? (sa.n ? 99 : -1));
       }
     });
@@ -188,7 +193,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const s = sel ? stats.get(sel.id)! : null;
   const selTrades = sel ? entries.filter((e) => e.strategy === sel.name) : [];
 
-  const nextId = () => `PB-${pad(Math.max(0, ...playbooks.map((p) => Number(p.id.replace(/\D/g, '')) || 0)) + 1).padStart(3, '0')}`;
+  const nextId = () => nextPlaybookId(playbooks);
 
   const startNew = () => { setEditing(blank()); setIsNew(true); setConfirmDelete(false); setRecommendationOpen(false); };
   const useRecommendation = (recommendation: (typeof recommendations)[number]) => {
@@ -279,10 +284,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const gradeBadge = (p: JournalPlaybook, size: 'sm' | 'md', label?: string) => (
     <span
       tabIndex={0}
-      aria-label={`Grade ${p.grade}. Hover or focus for the grading criteria.`}
+      aria-label={`${p.grade ? `Grade ${p.grade}` : 'Not graded'}. Hover or focus for the grading criteria.`}
       onMouseEnter={showTip(p.id)} onMouseLeave={() => setGradeTip(null)} onFocus={showTip(p.id)} onBlur={() => setGradeTip(null)}
-      className={`${size === 'sm' ? 'px-1 text-[9px]' : 'px-1.5 py-0.5 text-[10px]'} rounded border font-bold cursor-help ${GRADE_STYLE[p.grade]}`}
-    >{label ?? p.grade}</span>
+      className={`${size === 'sm' ? 'px-1 text-[9px]' : 'px-1.5 py-0.5 text-[10px]'} rounded border font-bold cursor-help ${p.grade ? GRADE_STYLE[p.grade] : 'bg-slate-100 text-slate-500 border-slate-200'}`}
+    >{label ?? p.grade ?? 'Not graded'}</span>
   );
   const tipPb = gradeTip ? playbooks.find((p) => p.id === gradeTip.id) : undefined;
   const tipStats = tipPb ? stats.get(tipPb.id) : undefined;
@@ -291,13 +296,13 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     const plan = tipStats.n ? Math.round((tipStats.followed / tipStats.n) * 100) : 0;
     return (
       <div role="tooltip" className="fixed z-50 w-[320px] max-w-[calc(100vw-16px)] max-h-[calc(100vh-16px)] overflow-y-auto rounded-xl bg-[#0b1c30] text-white shadow-2xl p-3 text-[11px] pointer-events-none" style={{ left: gradeTip.x, top: gradeTip.y }}>
-        <p className="font-bold text-xs">Grade {tipPb.grade} <span className="font-normal text-slate-300">· set by you in Edit playbook</span></p>
+        <p className="font-bold text-xs">{tipPb.grade ? `Grade ${tipPb.grade}` : 'Not graded'} <span className="font-normal text-slate-300">· set in Edit playbook</span></p>
         <p className="text-slate-300 mt-1">Grades rank how proven a setup is. A playbook earns the highest grade whose every line it meets:</p>
         <ul className="mt-1.5 space-y-0.5 font-mono">
           {GRADE_RULES.map((x) => (
             <li key={x.g} className={`flex gap-2 ${x.g === sg.grade ? 'text-emerald-300 font-bold' : ''}`}><span className="w-5 shrink-0">{x.g}</span><span>{x.text}</span></li>
           ))}
-          <li className={`flex gap-2 ${sg.grade === 'C' ? 'text-emerald-300 font-bold' : ''}`}><span className="w-5 shrink-0">C</span><span>below B, or under 10 trades</span></li>
+          <li className={`flex gap-2 ${tipStats.n >= 10 && sg.grade === 'C' ? 'text-emerald-300 font-bold' : ''}`}><span className="w-5 shrink-0">C</span><span>below B with at least 10 trades</span></li>
         </ul>
         <dl className="mt-2 pt-2 border-t border-white/15 space-y-1">
           <div><dt className="inline font-bold">PF (profit factor)<JournalHelp label="PF (profit factor)" /></dt><dd className="inline text-slate-300">: positive net results ÷ absolute negative net results. Costs are deducted.</dd></div>
@@ -307,7 +312,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         </dl>
         <div className="mt-2 pt-2 border-t border-white/15">
           <p className="text-slate-300">This playbook: PF {fmtPf(tipStats.pf)} · avg {tipStats.avgR === null ? '—' : `${tipStats.avgR >= 0 ? '+' : ''}${tipStats.avgR.toFixed(2)}R`} · recorded on plan {plan}% · {tipStats.n} trades</p>
-          <p className="mt-0.5 font-bold">Data suggests: {sg.grade}{sg.grade !== tipPb.grade ? ` (you set ${tipPb.grade})` : ' (matches)'}</p>
+          <p className="mt-0.5 font-bold">{tipStats.n < 10 ? `Not enough data for a suggested grade (${tipStats.n}/10 trades)` : <>Data suggests: {sg.grade}{tipPb.grade ? sg.grade !== tipPb.grade ? ` (you set ${tipPb.grade})` : ' (matches)' : ' (not yet set)'}</>}</p>
           {sg.next && <p className="text-slate-300">{sg.next}</p>}
         </div>
       </div>
@@ -360,8 +365,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
           <input aria-label="Style" className={`${input} mt-1`} value={editing.style} onChange={(e) => setEditing({ ...editing, style: e.target.value })} placeholder="Momentum, Mean reversion..." />
         </label>
         <label className="block"><span className={lbl}>Grade<JournalHelp label="Grade" /></span>
-          <select aria-label="Grade" className={`${input} mt-1`} value={editing.grade} onChange={(e) => setEditing({ ...editing, grade: e.target.value as PlaybookGrade })}>{GRADES.map((g) => <option key={g}>{g}</option>)}</select>
-          {!isNew && stats.get(editing.id) && <span className="text-[10px] text-slate-500">Data suggests {suggestGrade(stats.get(editing.id)!).grade}. Hover a grade badge to see the criteria.</span>}
+          <select aria-label="Grade" className={`${input} mt-1`} value={editing.grade ?? ''} onChange={(e) => setEditing({ ...editing, grade: e.target.value ? e.target.value as PlaybookGrade : null })}><option value="">Not graded</option>{GRADES.map((g) => <option key={g}>{g}</option>)}</select>
+          {!isNew && stats.get(editing.id) && <span className="text-[10px] text-slate-500">{stats.get(editing.id)!.n < 10 ? `Not enough data for a suggested grade (${stats.get(editing.id)!.n}/10 trades).` : `Data suggests ${suggestGrade(stats.get(editing.id)!).grade}.`} Hover a grade badge to see the criteria.</span>}
         </label>
         <label className="block"><span className={lbl}>Status<JournalHelp label="Status" /></span>
           <select aria-label="Status" className={`${input} mt-1`} value={editing.status} onChange={(e) => setEditing({ ...editing, status: e.target.value as PlaybookStatus })}>
@@ -566,7 +571,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter setups, symbols, scenarios..." aria-label="Filter playbooks" className="h-9 w-60 border border-slate-200 rounded-lg px-3 text-xs bg-white" />
-          <button type="button" onClick={() => setRecommendationOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]"><Sparkles className="h-3.5 w-3.5" /> Create new playbook</button>
+          <button type="button" onClick={() => easy ? setQuickCreateOpen(true) : setRecommendationOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]"><Sparkles className="h-3.5 w-3.5" /> Create new playbook</button>
         </div>
       </div>
 
@@ -634,7 +639,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
-                    {gradeBadge(sel, 'md', `${sel.grade} · ${sel.style || 'Setup'}`)}
+                    {gradeBadge(sel, 'md', `${sel.grade ?? 'Not graded'} · ${sel.style || 'Setup'}`)}
                     <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-600">{sel.markets.join(' / ')}</span>
                     <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono text-slate-500">ID: #{sel.id}</span>
                     <span className="px-1.5 py-0.5 rounded bg-[#EEF0FE] text-[10px] font-bold text-[#5338ec]">{STATUS_LABEL[sel.status]}</span>
@@ -682,7 +687,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
               {step === 'setup' && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {[['Grade · style', `${sel.grade} · ${sel.style || '—'}`], ['Markets', sel.markets.join(', ')], ['Session', sel.window ? `${pad(sel.window.start)}:00–${pad(sel.window.end)}:00 UTC` : 'Any time'], ['Min reward:risk', `1:${sel.benchmarkRR}`]].map(([l, v]) => (
+                    {[['Grade · style', `${sel.grade ?? 'Not graded'} · ${sel.style || '—'}`], ['Markets', sel.markets.join(', ')], ['Session', sel.window ? `${pad(sel.window.start)}:00–${pad(sel.window.end)}:00 UTC` : 'Any time'], ['Min reward:risk', `1:${sel.benchmarkRR}`]].map(([l, v]) => (
                       <div key={l} className="rounded-xl border border-slate-200 px-3 py-2.5"><p className={lbl}>{l}<JournalHelp label={l} /></p><p className="text-sm font-bold text-[#0b1c30] mt-0.5">{v}</p></div>
                     ))}
                   </div>
@@ -1085,6 +1090,11 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
       </div>
 
       {/* House rules (global checklist + risk limits) */}
+      {quickCreateOpen && <QuickPlaybookCreate entries={allJournalEntries} playbooks={playbooks} houseLimits={houseLimits} onClose={() => setQuickCreateOpen(false)} onCreate={book => {
+        setPlaybooks(previous => [...previous, book]);
+        setStatus('active'); setMarket('all'); setQuery(''); setSelId(book.id); setStep('setup'); setQuickCreateOpen(false);
+        onToast('Playbook created with smart defaults. Review them in Edit playbook.');
+      }}/>}
       <div>
         <h3 className="text-sm font-bold text-[#0b1c30] mb-1">House rules<JournalHelp label="House rules" /></h3>
         <p className="text-xs text-[#474556] mb-3">Apply to every playbook: the pre-trade checklist in each new entry and your hard risk limits.</p>

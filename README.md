@@ -87,7 +87,7 @@ npm install
 npm run dev
 ```
 
-### Journal views (v2.31.0)
+### Journal views (v2.32.0)
 
 The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
 Standard, or the original Advanced interface independently for each supported tab. Use a
@@ -108,8 +108,12 @@ in-memory fallback and a visible warning if storage is unavailable or unreadable
 This static Vite application has no preferences API or server database; views are
 not synced between devices. The existing journal demo-date basis is retained.
 Overview, Playbook, Backtest, and AI Coach retain their existing content behind
-the shared view/card foundation. Their dedicated simplification and the optional
-audit fixes remain deferred.
+the shared view/card foundation. Easy Playbook now opens a three-field
+quick-create dialog with optional templates and details; Standard and Advanced
+keep the existing creation flow. Defaults use the House risk and trade-count
+limits, and the shared House checklist remains in the existing check flow.
+The rest of the Easy Playbook redesign, scenario technical details and linked
+trade/backtest integration are not implemented yet.
 
 ### Simple Insights
 

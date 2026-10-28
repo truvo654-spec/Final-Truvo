@@ -146,7 +146,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
   const [checklist, setChecklist] = useJournalState<JournalChecklistItem[]>('checklist', DEFAULT_CHECKLIST);
   const [newItem, setNewItem] = useState('');
-  const [playbooks, setPlaybooks] = useJournalState<JournalPlaybook[]>('playbooks', DEFAULT_PLAYBOOKS);
+  const [playbooks, setPlaybooks, playbookStorageFailed] = useJournalState<JournalPlaybook[]>('playbooks', DEFAULT_PLAYBOOKS);
   const setVersionedPlaybooks:React.Dispatch<React.SetStateAction<JournalPlaybook[]>> = update=>setPlaybooks(previous=>{
     const next=typeof update==='function'?update(previous):update;
     return next.map(pb=>{const old=previous.find(p=>p.id===pb.id);if(!old || JSON.stringify(old.rules)===JSON.stringify(pb.rules))return pb;
@@ -488,6 +488,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       </div>
       {journalSandbox && <p role="status" className="text-xs text-purple-700 mb-3">Isolated journal test workspace — separate from your journal records.</p>}
       {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
+      {playbookStorageFailed && <p role="alert" className="text-xs text-rose-700">Playbooks could not be read or saved to local storage. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
       {view.error && <p role="alert" className="mb-3 text-xs text-rose-700">{view.error}</p>}
       {tab !== 'entries' && <div className="mb-3 flex justify-end"><JournalLevelSwitch key={tab} view={view}/></div>}
       {tab !== 'entries' && view.baseLevel === 'easy' && !view.welcomed && <div role="status" className="mb-4 flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
@@ -837,6 +838,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onShowTrades={(ids, label) => { setLogPreset({ ids, label }); setTab('entries'); }}
           onToast={onShowToast}
           houseChecklist={checklist}
+          houseLimits={rules}
+          easy={view.baseLevel === 'easy'}
           recordings={recordings}
           onSetRecording={(id, blob) => setRecordings((r) => {
             const next = { ...r };

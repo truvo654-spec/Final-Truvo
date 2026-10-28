@@ -338,7 +338,7 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
                     <input type="checkbox" checked={checked} onChange={(e) => onSelectionChange(e.target.checked ? [...selectedPlaybookIds, option.id] : selectedPlaybookIds.filter((id) => id !== option.id))} className="accent-[#5338ec]" />
                     <span className="min-w-0">
                       <span className="block text-sm font-semibold text-[#0b1c30]">{option.name}</span>
-                      <span className="block text-[10px] text-slate-500">{option.grade} · {PLAYBOOK_STATUS_LABELS[option.status]}</span>
+                      <span className="block text-[10px] text-slate-500">{option.grade ?? 'Not graded'} · {PLAYBOOK_STATUS_LABELS[option.status]}</span>
                     </span>
                   </label>
                 );

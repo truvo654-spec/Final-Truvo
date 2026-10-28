@@ -25,7 +25,7 @@ function playbookRows(): PbRow[] {
     const mine = JOURNAL_ENTRIES.filter((e) => e.strategy === p.name);
     return {
       name: p.name,
-      grade: p.grade,
+      grade: p.grade ?? 'Not graded',
       status: p.status,
       n: mine.length,
       wins: mine.filter((e) => e.outcome === 'win').length,

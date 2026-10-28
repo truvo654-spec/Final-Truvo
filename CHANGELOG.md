@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.32.0] - 2026-10-28
+### Added
+- An Easy-view quick-create dialog with strategy name, market and instruments, starter templates, history-based instrument suggestions, optional details and House risk-limit defaults.
+- New playbooks can be ungraded instead of receiving an invented grade. Existing playbooks and the complete original workspace remain available.
+### Notes
+- This is a first step, not the complete Easy Playbook redesign: scenario technical details, linked trade creation, backtesting integration, inline editing and automatic grading are not yet implemented.
+
 ## [2.31.0] - 2026-10-28
 ### Added
 - Cumulative P&L / Daily P&L toggles inside the Insights P&L chart card, using existing exit-day aggregates and retaining realized drawdown, zoom and day drill-downs.

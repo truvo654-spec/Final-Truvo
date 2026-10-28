@@ -78,7 +78,7 @@ export const BacktestHome: React.FC<Props> = ({ playbooks, entries, expected, ru
               <tbody>
                 {rows.map(({ p, live, exp, h }) => (
                   <tr key={p.id} className="border-b border-slate-100">
-                    <td className="py-2.5 pr-2"><p className="font-bold text-[#0b1c30]">{p.name}</p><p className="text-[10px] text-slate-400">{p.grade} · {PLAYBOOK_STATUS_LABELS[p.status]}</p></td>
+                    <td className="py-2.5 pr-2"><p className="font-bold text-[#0b1c30]">{p.name}</p><p className="text-[10px] text-slate-400">{p.grade ?? 'Not graded'} · {PLAYBOOK_STATUS_LABELS[p.status]}</p></td>
                     <td className="py-2.5 px-2 text-right">{live.trades ? <><b>{pct(live.winRate, 0)}</b> · {rr(live.avgR)}<p className="text-[10px] text-slate-400">{live.trades} trades</p></> : <span className="text-slate-400">No trades</span>}</td>
                     <td className="py-2.5 px-2 text-right">{exp ? <><b>{pct(exp.winRate, 0)}</b> · {rr(exp.avgR)}<p className="text-[10px] text-slate-400">{exp.trades} trades · {exp.symbol}</p></> : <span className="text-slate-400">—</span>}</td>
                     <td className="py-2.5 px-2"><Pill tone={h.health === 'on-track' ? 'good' : h.health === 'behind' ? 'bad' : 'neutral'} title={h.health === 'behind' ? `Live average is ${rr(h.gapR)} vs the backtest` : undefined}>{HEALTH_LABEL[h.health]}</Pill></td>
