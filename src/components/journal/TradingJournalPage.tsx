@@ -2,7 +2,8 @@ import { JournalHelp, getJournalHelp } from './JournalHelp';
 import { useMoney, formatMoney, JournalCurrency } from './JournalCurrency';
 import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BookOpen, ChevronRight, Clock, Flame, Lock, PlayCircle, ShieldCheck, SlidersHorizontal, Target, Trash2, TrendingUp, X } from 'lucide-react';
-import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview } from '../../types';
+import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview, UserProfile } from '../../types';
+import type { UnlockDurationOption } from '../analysis/toolUnlockPricing';
 import {
   JOURNAL_ENTRIES,
   hydrateDemoCfdEvidence,
@@ -41,8 +42,11 @@ import { JournalReplayAvailability } from './JournalReplayAvailability';
 type JournalTab = 'overview' | 'entries' | 'insights' | 'playbook' | 'backtest' | 'review';
 
 interface TradingJournalPageProps {
+  user: UserProfile;
   userTierLevel: number;
   isLoggedIn: boolean;
+  onSignIn: () => void;
+  onUnlockCrossAnalysis: (duration: UnlockDurationOption) => boolean;
   onUpgradePrompt: () => void;
   onShowToast: (msg: string) => void;
   brokers?: Broker[];
@@ -78,8 +82,11 @@ const FILTER_HELP: Record<string, string> = {
 };
 
 export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
+  user,
   userTierLevel,
   isLoggedIn,
+  onSignIn,
+  onUnlockCrossAnalysis,
   onUpgradePrompt,
   onShowToast,
   brokers,
@@ -752,6 +759,10 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {/* ───── INSIGHTS ───── */}
       {tab === 'insights' && (
         <JournalInsights
+          user={user}
+          isLoggedIn={isLoggedIn}
+          onSignIn={onSignIn}
+          onUnlockCrossAnalysis={onUnlockCrossAnalysis}
           entries={scoped}
           brokers={brokers || []}
           onToast={onShowToast}

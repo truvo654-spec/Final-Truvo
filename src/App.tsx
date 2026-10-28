@@ -1,4 +1,4 @@
-import React, { useState, useEffect , useMemo} from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { track } from './data/analytics';
 import { DemoDashboardView as DemoDashboard1 } from './components/demo1/DemoDashboard1';
 import { COURSES } from './data/educationData';
@@ -69,6 +69,8 @@ import { EconomicCalendarPage } from './components/calendar/EconomicCalendarPage
 import { EducationHubPage } from './components/education/EducationHubPage';
 import { PortfolioTrackerPage } from './components/portfolio/PortfolioTrackerPage';
 import { TradingJournalPage } from './components/journal/TradingJournalPage';
+import { crossAnalysisPurchase } from './components/journal/crossAnalysisAccess';
+import type { UnlockDurationOption } from './components/analysis/toolUnlockPricing';
 import { AiDock } from './components/ai/AiDock';
 import { PromotionsPage } from './components/promotions/PromotionsPage';
 import { ExpertAdvisorsPage } from './components/advisors/ExpertAdvisorsPage';
@@ -228,6 +230,8 @@ export default function App() {
       return INITIAL_USER;
     }
   });
+  const currentUser = useRef(user);
+  currentUser.current = user;
 
   // Ensure full app state and localStorage are strictly synced to toh
   useEffect(() => {
@@ -826,6 +830,44 @@ export default function App() {
     };
     setActivityLogs((prev) => [newLogItem, ...prev]);
     showToast(`🔓 Unlocked with ${amount} Syde Credits!`);
+    return true;
+  };
+
+  const handleUnlockCrossAnalysis = (duration: UnlockDurationOption): boolean => {
+    if (!isLoggedIn) {
+      showToast('Sign in to unlock cross analysis.');
+      return false;
+    }
+    const purchase = crossAnalysisPurchase(currentUser.current, duration);
+    if (purchase.ok === false) {
+      const messages = {
+        included: 'Cross analysis is already included in your level.',
+        active: 'Cross analysis is already unlocked.',
+        insufficient: 'Not enough Syde Credits to unlock cross analysis.',
+        invalid: 'That unlock duration is not available.',
+      };
+      showToast(messages[purchase.reason]);
+      return false;
+    }
+    try {
+      localStorage.setItem('marketsyde_user_profile', JSON.stringify(purchase.user));
+    } catch {
+      showToast('Unable to save the unlock. No credits were spent.');
+      return false;
+    }
+    currentUser.current = purchase.user;
+    setUser(purchase.user);
+    setActivityLogs(prev => [{
+      id: `act-${Date.now()}`,
+      title: 'Unlocked Cross analysis matrix',
+      description: `Spent ${purchase.cost} credits for ${duration} of cross analysis.`,
+      pointsChange: 0,
+      creditsChange: -purchase.cost,
+      timestamp: 'Just now',
+      type: 'credits',
+      category: 'Bonus',
+    }, ...prev]);
+    showToast(`Cross analysis unlocked for ${duration}. ${purchase.cost} credits spent.`);
     return true;
   };
 
@@ -1734,8 +1776,11 @@ export default function App() {
         {/* ─── TAB: Trading Journal ─── */}
         {activeTab === 'trading-journal' && (
           <TradingJournalPage
+            user={user}
             userTierLevel={user.tierLevel}
             isLoggedIn={isLoggedIn}
+            onSignIn={() => { setAuthModalMode('signin'); setIsAuthModalOpen(true); }}
+            onUnlockCrossAnalysis={handleUnlockCrossAnalysis}
             onUpgradePrompt={() => setActiveTab('member-plan')}
             onShowToast={showToast}
             brokers={brokers}

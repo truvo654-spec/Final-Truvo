@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.38.1] - 2026-10-28
+### Fixed
+- Restored scrolling in the playbook recommendation chooser and positioned the purple create-your-own button at the bottom of its market sidebar on desktop.
+
+## [2.38.0] - 2026-10-28
+### Changed
+- Recommendation cards now open a simple prefilled playbook setup popup; returning to recommendations preserves edits, and creation still requires confirmation.
+
+## [2.37.0] - 2026-10-28
+### Changed
+- Playbook creation opens the recommendation chooser first. Selecting a recommendation fills an editable name, markets and instruments in the sidebar while retaining its rules and Backtest recipe; creation requires confirmation.
+
+## [2.36.0] - 2026-10-28
+### Added
+- Playbook quick setup: select a starter, markets and instruments directly, then create the playbook or customize its details. Existing journal-guided and technical recommendations remain available from the setup dialog.
+
+## [2.35.0] - 2026-10-28
+### Added
+- The Trading Journal's cross-analysis matrix is included at Level 4. Signed-in members at lower levels can use credits for one, seven, or thirty days, with the standard analytics level discounts; their balance and expiry are saved in the browser profile.
+
 ## [1.53.0] - 2026-10-09
 ### Added
 - The newer Trading Journal work from orangeecat's branch: help text on the journal's own tabs, playbooks you can configure per instrument with pattern matching behind them, the unified replay comparisons, the personalised AI Coach candle comparisons, and the What-if lab's saved scenario snapshots.

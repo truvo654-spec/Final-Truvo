@@ -1,5 +1,5 @@
 import React from 'react';
-import MS_LOCK from '../../assets/community/ms-lock.png';
+const MS_LOCK = new URL('../../assets/community/ms-lock.png', import.meta.url).href;
 
 /**
  * What sits over a panel the person cannot open yet.

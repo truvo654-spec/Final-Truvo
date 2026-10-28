@@ -2,13 +2,16 @@ import { JournalHelp } from './JournalHelp';
 import { useJournalState } from './journalStorage';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
-import React, { useId, useMemo, useState } from 'react';
-import { Broker, JournalEntry } from '../../types';
+import React, { useEffect, useId, useMemo, useState } from 'react';
+import { Broker, JournalEntry, UserProfile } from '../../types';
 import { JOURNAL_STRATEGIES, JOURNAL_TODAY } from '../../data/journalData';
 import { JOURNAL_MARKET_TYPES, UNASSIGNED, addDays, entryCashback, entryPoints, shortDate } from './journalOverview';
 import { TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
 import { JournalOpenInsightsChart, type InsightChartScope } from './JournalOpenInsightsChart';
 import { useDialogFocus } from './useDialogFocus';
+import { LockStateContainer } from '../common/LockStateContainer';
+import { ToolCreditUnlockModal, type UnlockDurationOption } from '../analysis/ToolCreditUnlockModal';
+import { CROSS_ANALYSIS_TOOL, hasCrossAnalysisAccess } from './crossAnalysisAccess';
 
 // Insights › reports. "Day & Time" follows the uploaded concept (light theme): view tabs, benchmark,
 // insight cards, distribution chart, cross-analysis matrix, detailed breakdown with drill-down.
@@ -154,12 +157,36 @@ interface Props {
   overview: React.ReactNode;
   onDrill: (ids: string[], label: string) => void;
   onToast: (msg: string) => void;
+  user: UserProfile;
+  isLoggedIn: boolean;
+  onSignIn: () => void;
+  onUnlockCrossAnalysis: (duration: UnlockDurationOption) => boolean;
   /** Open Backtest → What-if on these trades. */
   onWhatIf?: () => void;
 }
 
-export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, onDrill, onToast, onWhatIf }) => {
+export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, onDrill, onToast, onWhatIf, user, isLoggedIn, onSignIn, onUnlockCrossAnalysis }) => {
   const money = useMoney();
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const [, refreshAccess] = useState(0);
+  const matrixAccessible = hasCrossAnalysisAccess(user, isLoggedIn);
+  useEffect(() => {
+    const until = user.journalCrossAnalysisUntil;
+    if (!isLoggedIn || user.tierLevel >= 4 || typeof until !== 'number' || !Number.isFinite(until) || until <= Date.now()) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const refresh = () => {
+      refreshAccess(value => value + 1);
+      const remaining = until - Date.now();
+      if (remaining > 0) timer = setTimeout(refresh, Math.min(remaining, 2147483647));
+    };
+    timer = setTimeout(refresh, Math.min(until - Date.now(), 2147483647));
+    const onVisibility = () => {
+      clearTimeout(timer);
+      refresh();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', onVisibility); };
+  }, [isLoggedIn, user.tierLevel, user.journalCrossAnalysisUntil]);
 
   const brokerMap = useMemo(() => new Map(brokers.map((b) => [b.id, b] as const)), [brokers]);
   const brokerName = (id: string) => (id === UNASSIGNED ? 'Unassigned' : brokerMap.get(id)?.name || id);
@@ -194,7 +221,10 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const hover=focusedBucket===-1?null:focusedBucket ?? mouseHover;
   const [expanded, setExpanded] = useState<string[]>([]);
   const [rowFilter, setRowFilter] = useJournalState('JournalInsights-rowFilter', '');
-  const [drill, setDrill] = useState<{ label: string; ids: string[] } | null>(null);
+  const [drill, setDrill] = useState<{ label: string; ids: string[]; matrix?: boolean } | null>(null);
+  useEffect(() => {
+    if (!matrixAccessible) setDrill(current => current?.matrix ? null : current);
+  }, [matrixAccessible]);
 
   const stats = (list: JournalEntry[]): Stats => {
     list = list.filter(e => eligible(e));
@@ -604,6 +634,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cross analysis matrix">
               <h4 className="text-sm font-bold">Cross analysis matrix<JournalHelp label="Cross analysis matrix" /></h4>
               <p className="text-[11px] text-slate-500 mb-3">Closed performance only. Each cell is net P&amp;L, trades and win rate for that pair. Click a cell to see its trades. Open-position chart toggles do not change realized statistics or CSV exports.</p>
+              {matrixAccessible ? <>
               <div className="flex flex-wrap gap-1.5 mb-3" role="tablist" aria-label="Compare by">
                 {DIMS.map(([id, label]) => (
                   <button key={id} type="button" role="tab" aria-selected={dim === id} onClick={() => setDim(id)}
@@ -630,7 +661,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                           return (
                             <td key={c.key} className="p-0">
                               {c.s.n ? (
-                                <button type="button" onClick={() => setDrill({ label: `${row.k} · ${matrixCols.find((m) => m.key === c.key)!.label}`, ids: c.list.map((e) => e.id) })}
+                                <button type="button" onClick={() => setDrill({ label: `${row.k} · ${matrixCols.find((m) => m.key === c.key)!.label}`, ids: c.list.map((e) => e.id), matrix: true })}
                                   className="w-full min-w-[96px] rounded-lg px-2 py-2 text-center border border-transparent hover:border-[#5338ec]/50"
                                   style={{ backgroundColor: c.s.net >= 0 ? `rgba(16,185,129,${a})` : `rgba(244,63,94,${a})` }}>
                                   <span className={`block font-mono font-bold ${tone(c.s.net)}`}>{money(c.s.net, 0)}</span>
@@ -650,9 +681,18 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                   </tbody>
                 </table>
               </div>
+              </> : (
+                <div className="relative min-h-[280px] overflow-hidden rounded-xl bg-slate-50">
+                  <LockStateContainer
+                    title="Cross analysis matrix · Level 4"
+                    buttonText={isLoggedIn ? 'Unlock with Credits' : 'Sign in to unlock'}
+                    onUnlock={() => isLoggedIn ? setUnlockOpen(true) : onSignIn()}
+                  />
+                </div>
+              )}
             </section>
 
-            {drill && (() => {
+            {drill && (!drill.matrix || matrixAccessible) && (() => {
               const list = entries.filter((e) => drill.ids.includes(e.id)).sort((a, b) => (b.entryTime || b.date).localeCompare(a.entryTime || a.date));
               const s = stats(list);
               const formatEntryTime = (entry: JournalEntry) => entry.entryTime
@@ -671,6 +711,15 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                 />
               );
             })()}
+            <ToolCreditUnlockModal
+              isOpen={unlockOpen && isLoggedIn && !matrixAccessible}
+              tool={CROSS_ANALYSIS_TOOL}
+              user={user}
+              onClose={() => setUnlockOpen(false)}
+              onConfirmUnlock={(_tool, duration) => {
+                if (onUnlockCrossAnalysis(duration)) setUnlockOpen(false);
+              }}
+            />
 
             {/* Detailed breakdown */}
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Detailed breakdown">

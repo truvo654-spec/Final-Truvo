@@ -3,8 +3,9 @@ import { UnlockStateModal } from '../common/UnlockStateModal';
 import { Sparkles, X, ChevronDown, Check, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserProfile } from '../../types';
+import { TOOL_UNLOCK_DURATIONS, toolUnlockCost, type UnlockDurationOption } from './toolUnlockPricing';
 
-export type UnlockDurationOption = '1d' | '7d' | '30d';
+export type { UnlockDurationOption } from './toolUnlockPricing';
 
 export interface UnlockableTool {
   id: string;
@@ -71,21 +72,12 @@ export const ToolCreditUnlockModal: React.FC<ToolCreditUnlockModalProps> = ({
 }) => {
   if (!isOpen || !tool) return null;
 
-  const DURATIONS: Record<UnlockDurationOption, { label: string; ms: number; multiplier: number }> = {
-    '1d': { label: '1 day', ms: 24 * 60 * 60 * 1000, multiplier: 1 },
-    '7d': { label: '7 days', ms: 7 * 24 * 60 * 60 * 1000, multiplier: 5 },
-    '30d': { label: '30 days', ms: 30 * 24 * 60 * 60 * 1000, multiplier: 15.5 },
-  };
-
-  /** The level discount the tiers already give, unchanged. */
-  const discount = user.tierLevel >= 4 ? 0 : user.tierLevel === 3 ? 0.5 : user.tierLevel === 2 ? 0.8 : 1;
-
-  const choices = (Object.keys(DURATIONS) as UnlockDurationOption[]).map((id) => {
-    const d = DURATIONS[id];
+  const choices = (Object.keys(TOOL_UNLOCK_DURATIONS) as UnlockDurationOption[]).map((id) => {
+    const d = TOOL_UNLOCK_DURATIONS[id];
     return {
       id,
       label: d.label,
-      cost: Math.round(tool.dailyPrice * d.multiplier * discount),
+      cost: toolUnlockCost(tool.dailyPrice, user.tierLevel, id),
       endsAt: new Date(Date.now() + d.ms).toLocaleString('en-US', {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
       }),

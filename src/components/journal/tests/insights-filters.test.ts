@@ -2,14 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { JournalEntry } from '../../../types';
+import type { JournalEntry, UserProfile } from '../../../types';
+import { INITIAL_USER } from '../../../data/mockData';
 import { InsightsDrillDialog, JournalInsights } from '../JournalInsights';
 import { JOURNAL_MARKET_TYPES } from '../journalOverview';
 import { JournalOpenInsightsChart, openInsightGroups } from '../JournalOpenInsightsChart';
 
 const trade=(patch:Partial<JournalEntry>={}):JournalEntry=>({id:'isolated',date:'2026-10-01',symbol:'TEST',assetClass:'Stocks',direction:'BUY',entryPrice:10,exitPrice:12,size:1,pnl:20,rMultiple:null,outcome:'win',tradingStatus:'closed',commission:0,strategy:'Breakout',tags:[],setupNotes:'',emotionBefore:null,emotionAfter:null,followedPlan:null,checklistDone:[],mistakes:[],lessons:'',rating:null,source:'manual',accountCurrency:'USD',...patch});
 
-function render(entries:JournalEntry[],saved:Record<string,unknown>={}) {
+function render(entries:JournalEntry[],saved:Record<string,unknown>={},user:UserProfile={...INITIAL_USER,tierLevel:4},isLoggedIn=true) {
   const original=Object.getOwnPropertyDescriptor(globalThis,'localStorage');
   const read:string[]=[];
   Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:(key:string)=>{
@@ -18,7 +19,7 @@ function render(entries:JournalEntry[],saved:Record<string,unknown>={}) {
     return name in saved?JSON.stringify(saved[name]):null;
   }}});
   try {
-    const html=renderToStaticMarkup(createElement(JournalInsights,{entries,brokers:[],overview:null,onDrill:()=>{},onToast:()=>{}}));
+    const html=renderToStaticMarkup(createElement(JournalInsights,{entries,brokers:[],overview:null,onDrill:()=>{},onToast:()=>{},user,isLoggedIn,onSignIn:()=>{},onUnlockCrossAnalysis:()=>false}));
     return {html,text:html.replace(/<[^>]*>/g,''),read};
   } finally {
     if(original)Object.defineProperty(globalThis,'localStorage',original);
@@ -26,6 +27,21 @@ function render(entries:JournalEntry[],saved:Record<string,unknown>={}) {
   }
 }
 
+test('Cross analysis renders its controls only for included or actively unlocked members',()=>{
+  const entries=[trade({brokerId:'unique-broker'})];
+  const section=(html:string)=>html.split('aria-label="Cross analysis matrix">')[1].split('</section>')[0];
+  const locked=section(render(entries,{}, {...INITIAL_USER,tierLevel:3}).html);
+  assert.match(locked,/Unlock with Credits/);
+  assert.doesNotMatch(locked,/role="tab"|unique-broker/);
+  const guest=section(render(entries,{}, {...INITIAL_USER,tierLevel:4},false).html);
+  assert.match(guest,/Sign in to unlock/);
+  const included=section(render(entries,{}, {...INITIAL_USER,tierLevel:4}).html);
+  assert.match(included,/role="tab"/);
+  const paid=section(render(entries,{}, {...INITIAL_USER,tierLevel:1,journalCrossAnalysisUntil:Date.now()+60000}).html);
+  assert.match(paid,/role="tab"/);
+  const expired=section(render(entries,{}, {...INITIAL_USER,tierLevel:1,journalCrossAnalysisUntil:Date.now()-1}).html);
+  assert.match(expired,/Unlock with Credits/);
+});
 test('Insights keeps all five journal market choices even in an empty cohort',()=>{
   assert.deepEqual(JOURNAL_MARKET_TYPES,['Forex','Crypto','Stocks','Commodity','Indices']);
   assert.ok(render([]).text.includes('Market type (5/5)'));

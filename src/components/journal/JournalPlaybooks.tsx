@@ -2,7 +2,7 @@ import { JournalHelp } from './JournalHelp';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
 import React, { useMemo, useState } from 'react';
-import { ChevronRight, Search, Sparkles, X } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
 import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, ReviewDecision, ScenarioStatus, PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
 import { PlaybookInstruments } from './PlaybookInstruments';
@@ -15,7 +15,8 @@ import type { PlaybookExpectedStats } from '../../backtest/store';
 import { JournalReplayAvailability } from './JournalReplayAvailability';
 import { JOURNAL_TODAY } from '../../data/journalData';
 import { TradingStatusBadge, tradingStatusOf } from './tradingStatus';
-import { buildPlaybookRecommendations, RECOMMENDATION_MARKETS } from './playbookRecommendations';
+import { buildPlaybookRecommendations } from './playbookRecommendations';
+import { StrategyRecommendationDialog } from './StrategyRecommendationDialog';
 
 // Strategy playbooks (light theme, after the uploaded concept): library with market/status filters,
 // search and sort; detail with thesis, a live pre-trade rules check, entry/stop/target, edge metrics
@@ -142,8 +143,6 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const [isNew, setIsNew] = useState(false);
 
   const [recommendationOpen, setRecommendationOpen] = useState(false);
-  const [recommendationMarket, setRecommendationMarket] = useState<'all' | PortfolioAssetClass>('all');
-  const [recommendationQuery, setRecommendationQuery] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [step, setStep] = useState<Step>('setup');
   const [replayId, setReplayId] = useState<string | null>(null);
@@ -160,11 +159,6 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     () => buildPlaybookRecommendations(allJournalEntries, playbooks, JOURNAL_TODAY),
     [allJournalEntries, playbooks],
   );
-  const shownRecommendations = recommendations.filter((recommendation) =>
-    (recommendationMarket === 'all' || recommendation.market === recommendationMarket) &&
-    (!recommendationQuery.trim() || `${recommendation.title} ${recommendation.description} ${recommendation.market} ${recommendation.tools.join(' ')}`.toLowerCase().includes(recommendationQuery.trim().toLowerCase()))
-  );
-
   const stats = useMemo(() => {
     const m = new Map<string, PbStats>();
     playbooks.forEach((p) => m.set(p.id, statsFor(entries.filter((e) => e.strategy === p.name))));
@@ -190,37 +184,34 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
 
   const nextId = () => `PB-${pad(Math.max(0, ...playbooks.map((p) => Number(p.id.replace(/\D/g, '')) || 0)) + 1).padStart(3, '0')}`;
 
-  const startNew = () => { setEditing(blank()); setIsNew(true); setConfirmDelete(false); setRecommendationOpen(false); };
-  const useRecommendation = (recommendation: (typeof recommendations)[number]) => {
-    const baseName = recommendation.draft.name;
-    let name = baseName;
-    let suffix = 2;
-    while (playbooks.some((playbook) => playbook.name.toLowerCase() === name.toLowerCase())) name = `${baseName} (${suffix++})`;
-    setEditing({ ...recommendation.draft, name, status: 'draft' });
-    setIsNew(true);
+  const startNew = () => {
+    setRecommendationOpen(true);
     setConfirmDelete(false);
-    setRecommendationOpen(false);
-    window.requestAnimationFrame(() => document.getElementById('playbook-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
   const startEdit = () => { if (sel) { setEditing(JSON.parse(JSON.stringify(sel))); setIsNew(false); setConfirmDelete(false); } };
-  const save = (statusOverride?: PlaybookStatus) => {
-    if (!editing) return;
-    const name = editing.name.trim();
-    if (!name) { onToast('Give the playbook a name'); return; }
-    if (playbooks.some((p) => p.id !== editing.id && p.name.toLowerCase() === name.toLowerCase())) { onToast('A playbook with that name already exists'); return; }
-    const outsideMarket = (editing.symbols || []).find(symbol => {
-      const market = instrumentMarket(symbol, editing);
-      return market && !editing.markets.includes(market);
+  const persistPlaybook = (draft: JournalPlaybook, newPlaybook: boolean, statusOverride?: PlaybookStatus): string | null => {
+    const name = draft.name.trim();
+    if (!name) return 'Give the playbook a name';
+    if (playbooks.some((p) => p.id !== draft.id && p.name.trim().toLowerCase() === name.toLowerCase())) return 'A playbook with that name already exists';
+    const outsideMarket = (draft.symbols || []).find(symbol => {
+      const market = instrumentMarket(symbol, draft);
+      return market && !draft.markets.includes(market);
     });
-    if (outsideMarket) { onToast(`${outsideMarket} is outside the selected market types. Edit instruments or update Markets before saving.`); return; }
-    const clean: JournalPlaybook = { ...editing, name, status: statusOverride ?? editing.status, avoid: (editing.avoid || []).map((a) => a.trim()).filter(Boolean), rules: editing.rules.filter((r) => r.title.trim()).map((r, i) => ({ ...r, id: `r${i + 1}` })) };
-    if (isNew) {
+    if (outsideMarket) return `${outsideMarket} is outside the selected market types. Edit instruments or update Markets before saving.`;
+    const clean: JournalPlaybook = { ...draft, name, status: statusOverride ?? draft.status, avoid: (draft.avoid || []).map((a) => a.trim()).filter(Boolean), rules: draft.rules.filter((r) => r.title.trim()).map((r, i) => ({ ...r, id: `r${i + 1}` })) };
+    if (newPlaybook) {
       clean.id = nextId();
       setPlaybooks((prev) => [...prev, clean]);
       setStatus('all'); setMarket('all'); setQuery('');
     } else setPlaybooks((prev) => prev.map((p) => (p.id === clean.id ? clean : p)));
     setStatus(clean.status); setMarket('all'); setQuery(''); setSelId(clean.id); setEditing(null);
-    onToast(statusOverride === 'archived' ? `Archived "${name}"` : isNew ? `Created "${name}"` : `Saved "${name}"`);
+    onToast(statusOverride === 'archived' ? `Archived "${name}"` : newPlaybook ? `Created "${name}"` : `Saved "${name}"`);
+    return null;
+  };
+  const save = (statusOverride?: PlaybookStatus) => {
+    if (!editing) return;
+    const error = persistPlaybook(editing, isNew, statusOverride);
+    if (error) onToast(error);
   };
   const remove = () => {
     if (!sel) return;
@@ -492,70 +483,25 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   return (
     <div className="space-y-5">
       {tip}
-      {recommendationOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-3 sm:p-6" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setRecommendationOpen(false); }}>
-          <section className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-[#0b1c30] shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="strategy-recommendation-title">
-            <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-7">
-              <div>
-                <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-[#5338ec]"><Sparkles className="h-4 w-4" /> MARKETSYDE AI</div>
-                <h2 id="strategy-recommendation-title" className="text-xl font-bold">Set up a strategy<JournalHelp label="Set up a strategy" /></h2>
-                <p className="mt-1 text-sm text-slate-600">Explore journal patterns and 20 technical scenarios, or start with your own rules.</p>
-              </div>
-              <button type="button" aria-label="Close strategy recommendations" onClick={() => setRecommendationOpen(false)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-[#0b1c30]"><X className="h-5 w-5" /></button>
-            </header>
-            <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[205px_minmax(0,1fr)]">
-              <aside className="flex flex-col border-b border-slate-200 bg-slate-50 p-3 md:border-b-0 md:border-r">
-                <p className="px-2 pb-2 text-[10px] font-bold tracking-wider text-slate-500">BROWSE MARKETS</p>
-                <button type="button" aria-pressed={recommendationMarket === 'all'} onClick={() => setRecommendationMarket('all')} className={`mb-2 rounded-lg px-3 py-2 text-left text-xs font-semibold ${recommendationMarket === 'all' ? 'bg-[#F0EDFF] text-[#5338ec]' : 'text-slate-700 hover:bg-white'}`}>All markets</button>
-                <p className="px-2 pb-1 pt-2 text-[10px] font-bold tracking-wider text-slate-500">ASSET CLASS</p>
-                <div className="grid grid-cols-2 gap-1 md:grid-cols-1">
-                  {RECOMMENDATION_MARKETS.map((assetClass) => (
-                    <button key={assetClass} type="button" aria-pressed={recommendationMarket === assetClass} onClick={() => setRecommendationMarket(assetClass)} className={`rounded-lg px-3 py-2 text-left text-xs font-semibold ${recommendationMarket === assetClass ? 'bg-[#F0EDFF] text-[#5338ec]' : 'text-slate-700 hover:bg-white'}`}>
-                      {assetClass === 'Commodity' ? 'Commodities' : assetClass}
-                    </button>
-                  ))}
-                </div>
-                <button type="button" onClick={startNew} className="mt-4 flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-3 text-left text-xs font-semibold text-[#0b1c30] hover:border-[#5338ec]/50 hover:bg-[#FBFAFF] md:mt-auto">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#5338ec] text-base text-white">+</span>
-                  Create your own
-                </button>
-              </aside>
-              <div className="flex min-h-0 flex-col">
-                <div className="border-b border-slate-200 p-4 sm:px-5">
-                  <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 focus-within:border-[#5338ec] focus-within:ring-2 focus-within:ring-[#5338ec]/15">
-                    <Search className="h-4 w-4 shrink-0 text-slate-400" />
-                    <input value={recommendationQuery} onChange={(event) => setRecommendationQuery(event.target.value)} placeholder="Search scenarios, indicators, or asset class" aria-label="Search strategy recommendations" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
-                  </label>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
-                  <p className="mb-3 text-xs text-slate-500">Journal patterns use your full saved history. Technical scenarios use the same computed tools available in the backtest rule builder.</p>
-                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                    {shownRecommendations.map((recommendation) => (
-                      <article key={recommendation.id} className="flex min-h-48 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <h3 className="text-sm font-bold text-[#0b1c30]">{recommendation.title}</h3>
-                          <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${recommendation.personalized ? 'bg-emerald-50 text-emerald-700' : recommendation.kind === 'technical' ? 'bg-[#F0EDFF] text-[#5338ec]' : 'bg-slate-100 text-slate-600'}`}>{recommendation.personalized ? 'Journal-guided' : recommendation.kind === 'technical' ? 'Technical scenario' : 'Starter framework'}</span>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          <span className="rounded-full border border-[#5338ec]/25 bg-[#F7F5FF] px-2 py-0.5 text-[10px] font-semibold text-[#5338ec]">{recommendation.market === 'Commodity' ? 'Commodities' : recommendation.market}</span>
-                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-600">{recommendation.evidence}</span>
-                        </div>
-                        {recommendation.tools.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{recommendation.tools.map((tool) => <span key={tool} className="rounded border border-violet-100 bg-violet-50 px-1.5 py-0.5 text-[9px] font-medium text-violet-700">{tool}</span>)}</div>}
-                        <p className="mt-3 text-xs leading-relaxed text-slate-600">{recommendation.description}</p>
-                        <button type="button" onClick={() => useRecommendation(recommendation)} className="mt-auto self-start pt-4 text-xs font-semibold text-[#5338ec] hover:underline">Use this draft <ChevronRight className="ml-0.5 inline h-3.5 w-3.5" /></button>
-                      </article>
-                    ))}
-                    {shownRecommendations.length === 0 && <p className="col-span-full rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No recommendations match that search.</p>}
-                  </div>
-                  <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2.5 text-[11px] leading-relaxed text-slate-600">
-                    This chooser is local and rule-based, not generated by a connected AI model or a source of live signals or forecasts. Journal rankings require at least 5 eligible closed trades and 5 recorded R results for a setup; technical scenarios are hypotheses, not performance rankings. Selecting one stores its exact computed indicators in the playbook so Backtest can load the same rules. Review every rule and test costs, gaps, and market conditions before trading.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
+      {recommendationOpen && <StrategyRecommendationDialog
+        recommendations={recommendations}
+        blankDraft={{ ...blank(), markets: [], symbols: [] }}
+        entries={allJournalEntries}
+        existingNames={playbooks.map(playbook => playbook.name)}
+        createdAt={JOURNAL_TODAY}
+        onClose={() => setRecommendationOpen(false)}
+        onCustomize={draft => {
+          setRecommendationOpen(false);
+          setEditing(draft);
+          setIsNew(true);
+          window.requestAnimationFrame(() => document.getElementById('playbook-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        }}
+        onCreate={draft => {
+          const error = persistPlaybook(draft, true, 'active');
+          if (!error) setRecommendationOpen(false);
+          return error;
+        }}
+      />}
       {replayId&&(()=>{const trade=allJournalEntries.find(e=>e.id===replayId)??entries.find(e=>e.id===replayId);return trade?<JournalReplayAvailability entry={trade} entries={allJournalEntries} playbooks={playbooks} returnLabel="Return to playbook" recording={recordings[trade.id]} onAttachRecording={blob=>onSetRecording(trade.id,blob)} onRemoveRecording={()=>onSetRecording(trade.id,null)} onClose={()=>setReplayId(null)}/>:null;})()}
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -566,7 +512,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter setups, symbols, scenarios..." aria-label="Filter playbooks" className="h-9 w-60 border border-slate-200 rounded-lg px-3 text-xs bg-white" />
-          <button type="button" onClick={() => setRecommendationOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]"><Sparkles className="h-3.5 w-3.5" /> Create new playbook</button>
+          <button type="button" onClick={startNew} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]"><Sparkles className="h-3.5 w-3.5" /> Create new playbook</button>
         </div>
       </div>
 

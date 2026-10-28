@@ -79,6 +79,8 @@ export interface UserProfile {
   currentPoints: number;
   maxPoints: number;
   sydeCredits: number;
+  /** Browser-local expiry of a paid Trading Journal cross-analysis unlock. */
+  journalCrossAnalysisUntil?: number;
   lastWeekCredits: number;
   perks: string[];
   boostPercentage: number;
