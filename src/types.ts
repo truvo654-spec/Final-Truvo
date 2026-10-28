@@ -609,6 +609,8 @@ export interface JournalEntry {
   emotionBefore: JournalEmotion | null;
   emotionAfter: JournalEmotion | null;
   followedPlan: boolean | null;
+  /** Partial adherence is not counted as fully following the plan. */
+  planAdherence?: 'partly';
   checklistDone: string[];
   mistakes: string[];
   lessons: string;

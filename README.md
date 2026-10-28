@@ -86,3 +86,38 @@ flowchart TD
 npm install
 npm run dev
 ```
+
+### Journal views (v2.27.0)
+
+The journal opens in **Easy** for new preferences. Use **View** to choose Easy,
+Standard, or the original Advanced interface independently for each tab. Use a
+card's **⋯** menu to hide it, read more detail, or move it; **+ Add card** restores
+hidden cards and reveals extra tools. Customized layouts are labeled **Custom**.
+Profile → About You → **Journal view** controls the default, per-tab levels, and
+reset. Resetting views never changes trades.
+
+Trade Log's Easy view is **My trades**: one results summary, newest-first rows,
+search, load more, manual entry, broker import, and a three-question Quick review.
+Standard adds four result cards, a six-column sortable table, table settings, and
+bulk tools. Advanced keeps the original workspace. Both simplified views use the
+same filters and KPI calculations as Advanced; visible scope chips identify hidden
+trades. Currency totals are never combined.
+
+Quick review saves the **after-trade emotion**, plan adherence, lesson, and an
+optional chart image without replacing other trade fields. **Partly** is preserved
+as additional review detail and is not counted as fully following the plan in
+existing analytics. A quick save does not bypass the full review's completion
+requirements. **Open full review** saves the quick answers first.
+
+Preferences are versioned in the existing browser-local journal storage, with
+in-memory fallback and a visible warning if storage is unavailable or unreadable.
+This static Vite application has no preferences API or server database; views are
+not synced between devices. The existing journal demo-date basis is retained.
+Other tabs receive the shared view/card foundation only; the dedicated Insights,
+Playbook, Backtest, and optional fix prompts remain deferred.
+
+Focused journal regression checks:
+
+```powershell
+node --import tsx --test src\components\journal\tests\journal-views.test.ts src\components\journal\tests\journal.test.ts src\components\journal\tests\day-review.test.ts
+```

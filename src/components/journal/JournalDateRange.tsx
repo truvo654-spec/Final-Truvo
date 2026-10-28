@@ -9,7 +9,7 @@ import { useDialogFocus } from './useDialogFocus';
 const button = 'rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-[#5338ec]';
 const calendarMonth = (date: string) => date.slice(0, 7) > '9999-11' ? '9999-11' : date.slice(0, 7);
 
-function RangeDialog({ initial, initialAll, today, entries, onApply, onClose }: { initial: DateRange; initialAll: boolean; today: string; entries: JournalEntry[]; onApply: (range: DateRange, all: boolean) => void; onClose: () => void }) {
+function RangeDialog({ initial, initialAll, today, entries, onApply, onClose, compact }: { initial: DateRange; initialAll: boolean; today: string; entries: JournalEntry[]; onApply: (range: DateRange, all: boolean) => void; onClose: () => void; compact?: boolean }) {
   const [draft, setDraft] = useState(initial);
   const [month, setMonth] = useState(calendarMonth(initial.from));
   const [endpoint, setEndpoint] = useState<'from' | 'to'>('from');
@@ -57,8 +57,8 @@ function RangeDialog({ initial, initialAll, today, entries, onApply, onClose }: 
             })}</div>
           </section>)}
         </div>
-        <aside className="border-t lg:border-t-0 lg:border-l border-slate-200 p-4 bg-slate-50"><h3 className="text-[11px] uppercase tracking-wide font-bold text-slate-500 mb-2">Presets</h3><div className="grid grid-cols-2 lg:grid-cols-1 gap-1">{[...RANGE_PRESETS, 'All time'].map(label => <button key={label} aria-pressed={preset === label} onClick={() => {
-          const range = label === 'All time' ? { from: [...entries.map(e => e.date), today].sort()[0], to: [...entries.map(e => e.date), today].sort().at(-1)! } : presetRange(label as typeof RANGE_PRESETS[number], today);
+        <aside className="border-t lg:border-t-0 lg:border-l border-slate-200 p-4 bg-slate-50"><h3 className="text-[11px] uppercase tracking-wide font-bold text-slate-500 mb-2">Presets</h3><div className="grid grid-cols-2 lg:grid-cols-1 gap-1">{(compact ? ['This week', 'This month', 'Last 3 months', 'All time'] : [...RANGE_PRESETS, 'All time']).map(label => <button key={label} aria-pressed={preset === label} onClick={() => {
+          const range = label === 'All time' ? { from: [...entries.map(e => e.date), today].sort()[0], to: [...entries.map(e => e.date), today].sort().at(-1)! } : label === 'Last 3 months' ? { from: `${addMonth(today.slice(0, 7), -2)}-01`, to: today } : presetRange(label as typeof RANGE_PRESETS[number], today);
           setDraft(range); setMonth(calendarMonth(range.from)); setPreset(label); setAll(label === 'All time'); setEndpoint('from');
         }} className={`text-left rounded-lg px-3 py-2 text-xs ${preset === label ? 'bg-[#f0edff] text-[#5338ec] font-semibold' : 'hover:bg-white'}`}>{label}</button>)}</div><p className="text-[10px] text-slate-500 mt-3">Presets use the journal demo date: {today}. No exchange-session calendar is assumed.</p></aside>
       </div>
@@ -67,8 +67,8 @@ function RangeDialog({ initial, initialAll, today, entries, onApply, onClose }: 
   </div>;
 }
 
-export function JournalDateRange({ from, to, label, today, entries, onApply }: { from: string; to: string; label: string; today: string; entries: JournalEntry[]; onApply: (range: DateRange, all: boolean) => void }) {
+export function JournalDateRange({ from, to, label, today, entries, onApply, compact = false }: { from: string; to: string; label: string; today: string; entries: JournalEntry[]; onApply: (range: DateRange, all: boolean) => void; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const initial = { from: label !== 'All time' && validDate(from) ? from : [...entries.map(e => e.date), today].sort()[0], to: label !== 'All time' && validDate(to) ? to : [...entries.map(e => e.date), today].sort().at(-1)! };
-  return <><span className="relative inline-flex"><button className={`${button} inline-flex items-center gap-2 h-9 !pr-10`} aria-label={`Date range: ${label}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><CalendarDays size={15} className="text-[#5338ec]"/>{label}</button><span className="absolute right-1 top-1/2 -translate-y-1/2"><JournalHelp label="Date range" /></span></span>{open && <RangeDialog initial={initial} initialAll={label === 'All time'} today={today} entries={entries} onClose={() => setOpen(false)} onApply={(range, all) => { onApply(range, all); setOpen(false); }}/>}</>;
+  return <><span className="relative inline-flex"><button className={`${button} inline-flex items-center gap-2 h-9 ${compact ? '' : '!pr-10'}`} aria-label={`Date range: ${label}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><CalendarDays size={15} className="text-[#5338ec]"/>{label}</button>{!compact && <span className="absolute right-1 top-1/2 -translate-y-1/2"><JournalHelp label="Date range" /></span>}</span>{open && <RangeDialog compact={compact} initial={initial} initialAll={label === 'All time'} today={today} entries={entries} onClose={() => setOpen(false)} onApply={(range, all) => { onApply(range, all); setOpen(false); }}/>}</>;
 }

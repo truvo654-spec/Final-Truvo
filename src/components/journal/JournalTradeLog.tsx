@@ -7,6 +7,9 @@ import { ArrowRight, PlayCircle } from 'lucide-react';
 import { Broker, JournalEntry } from '../../types';
 import { UNASSIGNED, brokerColor, entryCashback, entryPoints } from './journalOverview';
 import { TradingStatusBadge, ReviewStateBadge, reviewStateOf, TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
+import { filterTradeLogEntries, tradeLogKpis, tradeLogTotals } from './journalTradeLogModel';
+import { useJournalPopover } from './useJournalPopover';
+import { useTradeLogFilters, type TradeLogFilterController } from './useTradeLogFilters';
 
 // Dark "trade log" workspace: KPI strip, bulk actions, grouping, column picker, sortable table with
 // totals and pagination. Figures are net of commissions; cashback and points are estimates.
@@ -36,6 +39,7 @@ const COLS: ColDef[] = [
   { key: 'playbook', label: 'Playbook', sortable: true, defaultOn: false },
   { key: 'outcome', label: 'Outcome', sortable: true, defaultOn: false },
 ];
+const STANDARD_COLS: ColKey[] = ['time', 'instrument', 'side', 'net', 'review', 'playbook'];
 
 type GroupBy = 'none' | 'day' | 'week' | 'instrument' | 'broker' | 'playbook' | 'side' | 'outcome' | 'tradingStatus';
 
@@ -85,9 +89,21 @@ interface Props {
   onReplay?: (id: string) => void;
   onReplayLog?: (id:string) => void;
   onBacktestTrades?: (ids: string[]) => void;
+  variant?: 'advanced' | 'standard';
+  filters?: TradeLogFilterController;
 }
 
-export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay, onReplayLog, onBacktestTrades }) => {
+function StoredTradeLog(props: Props) {
+  const filters = useTradeLogFilters();
+  return <TradeLogContent {...props} filters={filters}/>;
+}
+export const JournalTradeLog: React.FC<Props> = props => props.filters ? <TradeLogContent {...props} filters={props.filters}/> : <StoredTradeLog {...props}/>;
+
+const TradeLogContent: React.FC<Props & { filters: TradeLogFilterController }> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay, onReplayLog, onBacktestTrades, variant = 'advanced', filters }) => {
+  const standard = variant === 'standard';
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actionsRef = useJournalPopover(actionsOpen, () => setActionsOpen(false));
   const money = useMoney();
   const tradingPlain = (n:number,dp=2)=>money(Math.abs(n),dp).replace(/^\+/, '');
 
@@ -95,14 +111,9 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
   const brokerOrder = useMemo(() => brokers.map((b) => b.id), [brokers]);
   const brokerName = (id?: string) => (id ? brokerMap.get(id)?.name || id : 'Unassigned');
 
-  const [query, setQuery] = useJournalState('JournalTradeLog-query', '');
-  const [needsReview, setNeedsReview] = useJournalState('JournalTradeLog-needsReview', false);
-  const [fOutcome, setFOutcome] = useJournalState('JournalTradeLog-fOutcome', 'all');
-  const [fTradingStatus, setFTradingStatus] = useJournalState<'all' | 'planned' | 'open' | 'closed'>('JournalTradeLog-fTradingStatus', 'all');
-  const [marketOff, setMarketOff] = useJournalState<string[]>('JournalTradeLog-marketOff', []);
-  const [brokerOff, setBrokerOff] = useJournalState<string[]>('JournalTradeLog-brokerOff', []);
+  const { query, setQuery, needsReview, setNeedsReview, fOutcome, setFOutcome, fTradingStatus, setFTradingStatus, marketOff, setMarketOff, brokerOff, setBrokerOff } = filters;
   const [groupBy, setGroupBy] = useJournalState<GroupBy>('JournalTradeLog-groupBy', 'none');
-  const [cols, setCols] = useJournalState<ColKey[]>('JournalTradeLog-cols', COLS.filter((c) => c.defaultOn).map((c) => c.key));
+  const [cols, setCols] = useJournalState<ColKey[]>(standard ? 'JournalTradeLog-standard-cols' : 'JournalTradeLog-cols', standard ? STANDARD_COLS : COLS.filter((c) => c.defaultOn).map((c) => c.key));
   const [colsOpen, setColsOpen] = useState(false);
   const [sort, setSort] = useState<{ key: ColKey; dir: 'asc' | 'desc' }>({ key: 'time', dir: 'desc' });
   const [perPage, setPerPage] = useJournalState('JournalTradeLog-perPage', 10);
@@ -112,21 +123,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
   const [tagText, setTagText] = useState('');
   const [moveTo, setMoveTo] = useState('');
 
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return entries.filter((e) => {
-      // A contributing-trade handoff must not silently inherit unrelated Log subfilters.
-      if(preset)return preset.ids.includes(e.id);
-      if (needsReview && reviewStateOf(e) === 'complete') return false;
-      if (fOutcome !== 'all' && (!eligible(e) || resultOf(e) !== fOutcome)) return false;
-      if (fTradingStatus !== 'all' && tradingStatusOf(e) !== fTradingStatus) return false;
-      if (marketOff.includes(e.assetClass)) return false;
-      if (brokerOff.includes(e.brokerId || UNASSIGNED)) return false;
-      if (!q) return true;
-      return [e.symbol, e.strategy, brokerName(e.brokerId), ...e.tags].some((s) => s.toLowerCase().includes(q));
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, query, needsReview, fOutcome, fTradingStatus, marketOff, brokerOff, brokerMap, preset]);
+  const rows = useMemo(() => filterTradeLogEntries(entries, { query, needsReview, fOutcome, fTradingStatus, marketOff, brokerOff }, brokerMap, preset), [entries, query, needsReview, fOutcome, fTradingStatus, marketOff, brokerOff, brokerMap, preset]);
 
   const sortVal = (e: JournalEntry, k: ColKey): number | string => {
     switch (k) {
@@ -167,50 +164,8 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
   useEffect(() => { setPage(1); }, [query, fOutcome, fTradingStatus, marketOff, brokerOff, perPage, groupBy]);
   useEffect(() => { setSel((s) => s.filter((id) => entries.some((e) => e.id === id))); }, [entries]);
 
-  const sum = (list: JournalEntry[]) => {
-    list = list.filter(e => eligible(e));
-    const net = list.reduce((a, e) => a + netOf(e), 0);
-    const gross = list.reduce((a, e) => a + e.pnl, 0);
-    const fees = list.reduce((a, e) => a + (e.commission ?? 0), 0);
-    const rs = list.map((e) => realizedR(e)).filter((r): r is number => r !== null);
-    return {
-      n: list.length,
-      net: Math.round(net * 100) / 100,
-      gross,
-      fees: Math.round(fees * 100) / 100,
-      cb: Math.round(list.reduce((a, e) => a + entryCashback(e, brokerMap), 0) * 100) / 100,
-      pts: list.reduce((a, e) => a + entryPoints(e), 0),
-      r: rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : 0,
-      rn: rs.length,
-    };
-  };
-
-  const kpi = useMemo(() => {
-    const t = sum(rows);
-    const nets = rows.filter(e => eligible(e)).map(netOf);
-    const wins = nets.filter((n) => n > 0);
-    const losses = nets.filter((n) => n < 0);
-    const be = nets.length - wins.length - losses.length;
-    const gW = wins.reduce((a, b) => a + b, 0);
-    const gL = Math.abs(losses.reduce((a, b) => a + b, 0));
-    const avgW = wins.length ? gW / wins.length : 0;
-    const avgL = losses.length ? gL / losses.length : 0;
-    const pf = gL > 0 ? gW / gL : gW>0 ? Infinity : null;
-    const rs = rows.map((e) => realizedR(e)).filter((r): r is number => r !== null);
-    return {
-      ...t,
-      pf,
-      wins: wins.length,
-      losses: losses.length,
-      be,
-      winRate: nets.length ? Math.round((wins.length / nets.length) * 1000) / 10 : 0,
-      avgW, avgL,
-      payoff: avgL > 0 ? avgW / avgL : null,
-      maxR: rs.length ? Math.max(...rs) : 0,
-      feePct: t.gross !== 0 ? (t.fees / Math.abs(t.gross)) * 100 : null,
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, brokerMap]);
+  const sum = (list: JournalEntry[]) => tradeLogTotals(list, brokerMap);
+  const kpi = useMemo(() => tradeLogKpis(rows, brokerMap), [rows, brokerMap]);
 
   const selEntries = useMemo(() => entries.filter((e) => sel.includes(e.id)), [entries, sel]);
   const selSum = sum(selEntries);
@@ -242,6 +197,16 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
 
   const btn = 'h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-[#0b1c30] disabled:opacity-40 disabled:hover:bg-white';
   const [openMenu, setOpenMenu] = useState<null | 'market' | 'broker' | 'cols'>(null);
+  useEffect(() => {
+    if (!openMenu && !colsOpen) return;
+    const close = () => { setOpenMenu(null); setColsOpen(false); };
+    const outside = (event: PointerEvent) => {
+      if (!(event.target instanceof Element) || event.target.closest('[data-trade-log-menu]')?.getAttribute('data-trade-log-menu') !== (colsOpen ? 'cols' : openMenu)) close();
+    };
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') close(); };
+    document.addEventListener('pointerdown', outside); document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape); };
+  }, [openMenu, colsOpen]);
   const filterMenu = (
     id: 'market' | 'broker',
     title: string,
@@ -249,7 +214,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
     off: string[],
     set: React.Dispatch<React.SetStateAction<string[]>>
   ) => (
-    <div className="relative">
+    <div className="relative" data-trade-log-menu={id}>
       <button type="button" disabled={!!preset} aria-expanded={openMenu === id} onClick={() => { setColsOpen(false); setOpenMenu(openMenu === id ? null : id); }} className={`${btn} ${off.length ? 'border-[#5338ec] text-[#5338ec]' : ''}`}>
         {title} ({opts.length - off.length}/{opts.length})
       </button>
@@ -272,7 +237,10 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
   );
 
   const colOn = (k: ColKey) => cols.includes(k);
-  const shownCols = COLS.filter((c) => colOn(c.key));
+  const shownCols = (standard ? [...COLS].sort((a, b) => {
+    const rank = (key: ColKey) => STANDARD_COLS.includes(key) ? STANDARD_COLS.indexOf(key) : STANDARD_COLS.length + COLS.findIndex(col => col.key === key);
+    return rank(a.key) - rank(b.key);
+  }) : COLS).filter((c) => colOn(c.key));
   const allVisibleSelected = visible.length > 0 && visible.every((e) => sel.includes(e.id));
   const someVisibleSelected = visible.some((e) => sel.includes(e.id));
 
@@ -283,11 +251,13 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
   const applyTag = () => {
     const t = tagText.trim().replace(/^#/, '');
     if (!t) return;
+    if (standard && !window.confirm(`Add this tag to ${sel.length} selected trades?`)) return;
     onChange((prev) => prev.map((e) => (sel.includes(e.id) && !e.tags.includes(t) ? { ...e, tags: [...e.tags, t] } : e)));
     onToast(`Tagged ${sel.length} trade${sel.length === 1 ? '' : 's'} ${tagLabel(t)}`);
     setTagText(''); setPanel(null);
   };
   const applyMove = () => {
+    if (standard && !window.confirm(`Change the broker for ${sel.length} selected trades?`)) return;
     onChange((prev) => prev.map((e) => (sel.includes(e.id) ? { ...e, brokerId: moveTo || undefined, cashback: undefined } : e)));
     onToast(`Moved ${sel.length} trade${sel.length === 1 ? '' : 's'} to ${brokerName(moveTo || undefined)}`);
     setPanel(null);
@@ -298,8 +268,8 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
     setSel([]); setPanel(null);
   };
 
-  const exportCsv = () => {
-    const list = sel.length ? selEntries : sorted;
+  const exportCsv = (scope: 'selection' | 'shown' = 'selection') => {
+    const list = scope === 'selection' && sel.length ? selEntries : sorted;
     const head = ['Date', 'Instrument', 'Side', 'Size', 'Entry', 'Exit', 'Gross P&L', 'Commissions', 'Net P&L', 'Realized R', 'Trading status', 'Broker', 'Cashback (est. USD)', 'Points (est.)', 'Playbook', 'Tags', 'Journal ID', 'Account ID', 'Account currency', 'Review state', 'Net eligible'];
     const esc = (v: string | number) => `"${(typeof v==='string' && /^[=+@\-]/.test(v)?`'${v}`:String(v)).replace(/"/g, '""')}"`;
     const lines = list.map((e) => [e.entryTime || e.date, e.symbol, e.direction === 'BUY' ? 'LONG' : 'SHORT', e.size, e.entryPrice, e.exitPrice ?? '', e.pnlKnown===false?'':e.pnl, e.commission ?? '', eligible(e)?netOf(e):'', realizedR(e) ?? '', TRADING_STATUS_LABEL[tradingStatusOf(e)], brokerName(e.brokerId), entryCashback(e, brokerMap), entryPoints(e), e.strategy, e.tags.join('|'),e.id,e.accountId || 'legacy-demo',currencyOf(e),reviewStateOf(e),eligible(e)?'yes':'no'].map(esc).join(','));
@@ -383,7 +353,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
   return (
     <div className="rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] p-4 sm:p-5 text-[#0b1c30] space-y-4">
       {/* KPI strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
+      {!standard && <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
         <div className={card}>
           <p className={lbl}>Cumul. Net P&amp;L<JournalHelp label="Cumul. Net P&L" /></p>
           <p className={`text-xl font-bold font-mono mt-1 ${tone(kpi.net)}`}>{kpi.n ? money(kpi.net) : '—'}</p>
@@ -424,28 +394,28 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
           <p className="text-xl font-bold font-mono mt-1 text-violet-600">{kpi.pts.toLocaleString('en-US')}</p>
           <p className="text-[10px] text-slate-500 mt-1">Base rate, before boosters</p>
         </div>
-      </div>
+      </div>}
       {/* Bulk actions */}
-      <div className="flex items-center text-[11px] font-semibold text-slate-500">Selection & actions<JournalHelp label="Bulk actions" /></div>
-      <div className="flex flex-wrap items-center gap-2 min-h-[36px]">
+      {!standard && <div className="flex items-center text-[11px] font-semibold text-slate-500">Selection & actions<JournalHelp label="Bulk actions" /></div>}
+      <div className={`flex flex-wrap items-center gap-2 min-h-[36px] ${standard && hasSel ? 'sticky top-0 z-20 rounded-xl border border-slate-200 bg-white p-3 shadow-sm' : ''}`}>
         {hasSel ? (
           <>
             <span className="px-3 py-1.5 rounded-lg bg-[#EEF0FE] text-[#5338ec] border border-[#5338ec]/30 text-[11px] font-bold tracking-wide">{sel.length} TRADE{sel.length === 1 ? '' : 'S'} SELECTED</span>
             <button type="button" className={btn} onClick={() => setPanel(panel === 'tag' ? null : 'tag')}>Tag</button>
             <button type="button" className={btn} onClick={() => { setMoveTo(''); setPanel(panel === 'move' ? null : 'move'); }}>Change broker</button>
-            <button type="button" className={btn} onClick={exportCsv}>Export</button>
-            {onReplay && sel.length === 1 && <button type="button" className={btn} title="Practise this trade bar by bar with the date and outcome hidden" onClick={() => onReplay(sel[0])}>Replay this trade blind</button>}
-            <button type="button" className={`${btn} text-rose-600`} onClick={() => setPanel(panel === 'delete' ? null : 'delete')}>Delete</button>
+            <button type="button" className={btn} onClick={() => exportCsv()}>Export</button>
+            {!standard && onReplay && sel.length === 1 && <button type="button" className={btn} title="Practise this trade bar by bar with the date and outcome hidden" onClick={() => onReplay(sel[0])}>Replay this trade blind</button>}
+            {standard ? <details className="relative"><summary className={btn+' flex cursor-pointer items-center'} aria-label="Bulk trade options">⋯</summary><button type="button" className={`${btn} absolute z-30 mt-1 text-rose-600`} onClick={() => setPanel('delete')}>Delete selected trades</button></details> : <button type="button" className={`${btn} text-rose-600`} onClick={() => setPanel(panel === 'delete' ? null : 'delete')}>Delete</button>}
             <button type="button" className="px-2 py-1.5 text-xs font-semibold text-slate-500 hover:text-[#0b1c30]" onClick={() => { setSel([]); setPanel(null); }}>Deselect ({sel.length})</button>
             <span className="ml-auto text-[11px] font-mono text-slate-500">
               Selected: <span className={tone(selSum.net)}>{money(selSum.net)}</span> net · cashback <span className="text-emerald-600">{plain(selSum.cb)}</span> · {selSum.pts} pts · fees {plain(selSum.fees)}
             </span>
           </>
         ) : (
-          <>
+          !standard ? <>
             <span className="text-[11px] text-slate-500">Tick trades to tag, move to another broker, export or delete them.</span>
-            <button type="button" className={`${btn} ml-auto`} onClick={exportCsv}>Export all</button>
-          </>
+            <button type="button" className={`${btn} ml-auto`} onClick={() => exportCsv()}>Export all</button>
+          </> : null
         )}
       </div>
 
@@ -485,10 +455,21 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
+      {standard && <div className="flex flex-wrap items-center gap-2">
+        <input aria-label="Search trades" placeholder="Search trades" disabled={!!preset} value={query} onChange={event => setQuery(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-xs"/>
+        <button className={btn} disabled={!!preset} aria-pressed={needsReview} onClick={() => setNeedsReview(!needsReview)}>Needs review</button>
+        <button className={btn} aria-expanded={settingsOpen} onClick={() => setSettingsOpen(!settingsOpen)}>⚙ Table settings</button>
+        <div ref={actionsRef} className="relative"><button className={btn} aria-label="Trade table options" aria-expanded={actionsOpen} onClick={() => setActionsOpen(!actionsOpen)}>⋯</button>
+          {actionsOpen && <div className="absolute right-0 z-30 mt-1 w-56 rounded-xl border bg-white p-2 shadow-xl"><button className="p-2 text-left text-xs" onClick={() => { exportCsv('shown'); setActionsOpen(false); }}>Export shown trades (CSV)</button></div>}
+        </div>
+      </div>}
+      {standard && rows.length < entries.length && <p className="text-xs text-slate-600">Showing {rows.length} of {entries.length} trades · <button className="text-[#5338ec] underline" onClick={resetLogFilters}>Show all</button></p>}
+      <div className={`${standard && !settingsOpen ? 'hidden' : 'flex'} flex-wrap items-center gap-2`}>
+        {!standard && <>
         <input disabled={!!preset} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter symbols, tags, playbooks, brokers..." aria-label="Filter trades" className="flex-1 min-w-[220px] max-w-md h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs text-[#0b1c30] placeholder:text-slate-400" />
         <JournalHelp label="Trade filters" />
         <button type="button" disabled={!!preset} aria-pressed={needsReview} onClick={() => { setNeedsReview(v => !v); setPage(1); }} className={btn}>Needs Review ({entries.filter(e => reviewStateOf(e) !== 'complete').length})</button>
+        </>}
         <label className="flex items-center gap-2 h-9 rounded-lg bg-white border border-slate-200 px-3 text-[10px] font-bold tracking-wide text-slate-500">
           GROUP:<JournalHelp label="GROUP:" />
           <select aria-label="GROUP:" value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)} className="bg-transparent text-xs font-semibold text-[#0b1c30] focus:outline-none">
@@ -501,7 +482,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
             <option value="outcome" className="text-black">Outcome</option>
           </select>
         </label>
-        <select disabled={!!preset} value={fOutcome} onChange={(e) => setFOutcome(e.target.value)} aria-label="Outcome" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs font-semibold text-[#0b1c30]">
+        {!standard && <><select disabled={!!preset} value={fOutcome} onChange={(e) => setFOutcome(e.target.value)} aria-label="Outcome" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs font-semibold text-[#0b1c30]">
           <option value="all" className="text-black">Any outcome</option>
           <option value="win" className="text-black">Wins</option>
           <option value="loss" className="text-black">Losses</option>
@@ -515,7 +496,8 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
         </select>
         {filterMenu('market', 'Market type', marketOpts, marketOff, setMarketOff)}
         {filterMenu('broker', 'Broker', brokerOpts, brokerOff, setBrokerOff)}
-        <div className="relative">
+        </>}
+        <div className="relative" data-trade-log-menu="cols">
           <button type="button" aria-expanded={colsOpen} onClick={() => { setOpenMenu(null); setColsOpen((o) => !o); }} className={btn}>Columns ({cols.length}/{COLS.length})</button>
           <JournalHelp label="Columns" />{colsOpen && (
             <div className="absolute z-20 mt-2 w-56 rounded-xl bg-white border border-slate-200 shadow-2xl p-2 max-h-72 overflow-y-auto">
@@ -525,7 +507,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
                   {c.label}
                 </label>
               ))}
-              <button type="button" className="w-full text-left px-2 py-1.5 text-[11px] font-semibold text-[#5338ec] hover:underline" onClick={() => setCols(COLS.filter((c) => c.defaultOn).map((c) => c.key))}>Reset columns</button>
+              <button type="button" className="w-full text-left px-2 py-1.5 text-[11px] font-semibold text-[#5338ec] hover:underline" onClick={() => setCols(standard ? STANDARD_COLS : COLS.filter((c) => c.defaultOn).map((c) => c.key))}>Reset columns</button>
             </div>
           )}
         </div>
@@ -571,7 +553,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
                   return (
                     <tr key={e.id} tabIndex={0} aria-label={`Review ${e.symbol} ${e.date}`} onKeyDown={ev => { if (ev.target===ev.currentTarget&&ev.key === 'Enter') onOpen(e.id, sorted.map(x=>x.id)); }} onClick={() => onOpen(e.id, sorted.map(x=>x.id))} className={`border-t border-[#e2e8f0] cursor-pointer focus:outline-2 focus:outline-[#5338ec] ${on ? 'bg-[#EEF0FE]' : 'hover:bg-slate-50'}`}>
                       <td className="px-3 py-2.5" onClick={(ev) => ev.stopPropagation()}>
-                        <div className="flex items-center gap-2"><input type="checkbox" aria-label={`Select ${e.symbol} ${e.date}`} checked={on} onChange={() => toggleRow(e.id)} />{onReplayLog&&<button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} title="Replay log" onClick={()=>onReplayLog(e.id)} className="rounded-lg p-1.5 text-[#5338ec] hover:bg-purple-50"><PlayCircle size={17}/></button>}</div>
+                        <div className="flex items-center gap-2"><input type="checkbox" aria-label={`Select ${e.symbol} ${e.date}`} checked={on} onChange={() => toggleRow(e.id)} />{!standard&&onReplayLog&&<button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} title="Replay log" onClick={()=>onReplayLog(e.id)} className="rounded-lg p-1.5 text-[#5338ec] hover:bg-purple-50"><PlayCircle size={17}/></button>}</div>
                       </td>
                       {shownCols.map((c) => cell(e, c.key))}
                     </tr>
@@ -603,7 +585,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
       {/* Pagination */}
       <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
         <span>Showing <b className="text-[#0b1c30]">{sorted.length ? (curPage - 1) * perPage + 1 : 0}–{Math.min(curPage * perPage, sorted.length)}</b> of <b className="text-[#0b1c30]">{sorted.length}</b> executions</span>
-        <label className="flex items-center gap-1.5 font-bold tracking-wide">
+        <label className={`${standard && !settingsOpen ? 'hidden' : 'flex'} items-center gap-1.5 font-bold tracking-wide`}>
           PER PAGE:<JournalHelp label="PER PAGE:" />
           <select aria-label="PER PAGE:" value={perPage} onChange={(e) => setPerPage(Number(e.target.value))} className="bg-white border border-slate-200 rounded-md px-2 py-1 text-[#0b1c30]">
             {[10, 25, 50].map((n) => <option key={n} value={n}>{n}</option>)}

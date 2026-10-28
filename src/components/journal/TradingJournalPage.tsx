@@ -1,7 +1,7 @@
 import { JournalHelp, getJournalHelp } from './JournalHelp';
 import { AiJournalSummary } from './AiJournalSummary';
 import { useMoney, formatMoney, JournalCurrency } from './JournalCurrency';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Flame, Target, TrendingUp, ShieldCheck, Lock, Trash2, BookOpen, ChevronRight, AlertTriangle, PlayCircle, X } from 'lucide-react';
 import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview } from '../../types';
 import {
@@ -18,7 +18,7 @@ import { JournalEntryWizard } from './JournalEntryWizard';
 
 import { JournalEntryDetail } from './JournalEntryDetail';
 import { JournalCalendar } from './JournalCalendar';
-import { JournalTradeLog } from './JournalTradeLog';
+const JournalTradeLog = lazy(() => import('./JournalTradeLog').then(module => ({ default: module.JournalTradeLog })));
 import { JournalInsights } from './JournalInsights';
 import { JournalAICoach, CoachOverviewCard } from './JournalAICoach';
 import { createCoachDraft, type CoachScenario } from './aiCoach';
@@ -38,8 +38,13 @@ import { JournalReviewDrawer } from './JournalReviewDrawer';
 import { JournalDateRange } from './JournalDateRange';
 import { JournalDayReview } from './JournalDayReview';
 import { JournalReplayAvailability } from './JournalReplayAvailability';
-
-type JournalTab = 'overview' | 'entries' | 'insights' | 'playbook' | 'backtest' | 'review';
+import type { JournalTab } from './journalViews';
+import { useJournalCards } from './useJournalCards';
+import { JournalAddCard, JournalLevelSwitch, JournalWorkspaceCard } from './JournalCards';
+import { JournalSimpleTradeLog } from './JournalSimpleTradeLog';
+import { JournalQuickReview } from './JournalQuickReview';
+import { JournalManualEntry } from './JournalManualEntry';
+import { useJournalPopover } from './useJournalPopover';
 
 interface TradingJournalPageProps {
   userTierLevel: number;
@@ -90,6 +95,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   onRewardPoints,
 }) => {
   const [tab, setTab] = useJournalState<JournalTab>('tab', 'overview');
+  const view = useJournalCards(tab);
+  const originalView = view.baseLevel === 'advanced' && view.level !== 'custom';
   const coachToday = new Date().toISOString().slice(0, 10);
   const [entries, setEntries, storageFailed] = useJournalState<JournalEntry[]>('entries', JOURNAL_ENTRIES);
   useEffect(() => { setEntries(current => hydrateDemoCfdEvidence(current)); }, [setEntries]);
@@ -103,6 +110,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [reviewQueueOpen, setReviewQueueOpen] = useState(false);
   const [logPreset, setLogPreset] = useState<{ ids: string[]; label: string } | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [quickId, setQuickId] = useState<string | null>(null);
 
   const [checklist, setChecklist] = useJournalState<JournalChecklistItem[]>('checklist', DEFAULT_CHECKLIST);
   const [newItem, setNewItem] = useState('');
@@ -146,6 +155,16 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [apiReplayId, setApiReplayId] = useState<string | null>(null);
   const openDay = (date: string) => { setSelectedDay(date); setDayReviewOpen(true); };
   const [openMenu, setOpenMenu] = useState<null | 'strategy' | 'asset' | 'outcome' | 'broker' | 'tradingStatus' | 'show' | 'basis'>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const scopeRef = useJournalPopover(!!openMenu || filtersOpen, () => { setOpenMenu(null); setFiltersOpen(false); });
+  useEffect(() => {
+    if (!openMenu) return;
+    const outside = (event: PointerEvent) => {
+      if (!(event.target instanceof Element) || event.target.closest('[data-journal-filter]')?.getAttribute('data-journal-filter') !== openMenu) setOpenMenu(null);
+    };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [openMenu]);
   const [strategyOff, setStrategyOff] = useJournalState<string[]>('TradingJournalPage-strategyOff', []);
   const [assetOff, setAssetOff] = useJournalState<string[]>('TradingJournalPage-assetOff', []);
   const [outcomeOff, setOutcomeOff] = useJournalState<string[]>('TradingJournalPage-outcomeOff', []);
@@ -207,6 +226,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const rangeLabel =
     rangeMode === 'all' ? 'All time' : `${shortDate(rangeFrom)} – ${shortDate(rangeTo, true)}`;
   const currentCurrencyCount=entries.filter(e=>currencyOf(e)===currency).length;
+  const accountIds = [...new Set(entries.filter(e => currencyOf(e) === currency).map(e => e.accountId || 'legacy-demo'))];
+  const activeFilters = strategyOff.length + assetOff.length + outcomeOff.length + tradingStatusOff.length + brokerOff.length;
   const resetJournalScope=()=>{setRangeMode('all');setAccount('all');setStrategyOff([]);setAssetOff([]);setOutcomeOff([]);setTradingStatusOff([]);setBrokerOff([]);setSelectedDay(null);setOpenMenu(null);setLogPreset(null);};
   const dayEntries = useMemo(
     () => (selectedDay ? scoped.filter((e) => e.date === selectedDay) : []),
@@ -220,7 +241,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     off: string[],
     set: React.Dispatch<React.SetStateAction<string[]>>
   ) => (
-    <div className="relative">
+    <div className="relative" data-journal-filter={id}>
       <button
         type="button"
         aria-expanded={openMenu === id}
@@ -229,7 +250,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         className={`h-9 text-xs font-semibold border rounded-lg pl-3 pr-10 bg-white hover:bg-slate-50 ${off.length ? 'border-[#5338ec] text-[#5338ec]' : 'border-slate-200 text-[#0b1c30]'}`}
       >
         {title} ({opts.length - off.length}/{opts.length})
-      </button><span className="absolute right-1 top-1.5"><JournalHelp label={title} text={`${FILTER_HELP[title]} ${title === 'Playbook' ? 'The selected count shows included categories, not the number of trades.' : getJournalHelp(title) || ''}`} /></span>
+      </button>{originalView && <span className="absolute right-1 top-1.5"><JournalHelp label={title} text={`${FILTER_HELP[title]} ${title === 'Playbook' ? 'The selected count shows included categories, not the number of trades.' : getJournalHelp(title) || ''}`} /></span>}
       {openMenu === id && (
         <div className="absolute z-20 mt-2 w-56 rounded-xl bg-white border border-slate-200 shadow-xl p-2 max-h-72 overflow-y-auto">
           {opts.map((o) => (
@@ -260,7 +281,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     value: T,
     set: (v: T) => void
   ) => (
-    <div className="relative">
+    <div className="relative" data-journal-filter={id}>
       <button
         type="button"
         aria-expanded={openMenu === id}
@@ -394,18 +415,18 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     <JournalCurrency.Provider value={currency}><div className="w-full max-w-[1360px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
       <div className="flex items-start justify-between gap-6 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Trading Journal<JournalHelp label="Trading Journal" /></h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-[#0b1c30]">Trading Journal{originalView && <JournalHelp label="Trading Journal" />}</h1>
           <p className="text-sm text-[#474556] mt-1">
             Write down why you traded, how you felt, and what you'd change. Patterns show up fast.
           </p>
         </div>
-        <button
+        {(originalView || tab !== 'entries') && <button
           type="button"
           onClick={() => setWizardOpen(true)}
           className="shrink-0 text-sm font-semibold bg-[#5338ec] hover:bg-[#4326d8] text-white rounded-xl px-4 py-2.5 transition-colors"
         >
           Import / link
-        </button>
+        </button>}
       </div>
 
       <div className="mb-6">
@@ -413,13 +434,19 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       </div>
       {journalSandbox && <p role="status" className="text-xs text-purple-700 mb-3">Isolated journal test workspace — separate from your journal records.</p>}
       {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
-      <div className="flex flex-wrap gap-3 mb-3 text-xs">
+      {view.error && <p role="alert" className="mb-3 text-xs text-rose-700">{view.error}</p>}
+      <div className="mb-3 flex justify-end"><JournalLevelSwitch key={tab} view={view}/></div>
+      {view.baseLevel === 'easy' && !view.welcomed && <div role="status" className="mb-4 flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+        <p>This is the Easy view. Use ⋯ on any card or '+ Add card' to see more.</p><button className="text-[#5338ec] font-semibold" onClick={view.dismissWelcome} aria-label="Dismiss Easy view welcome">Got it</button>
+      </div>}
+      <div ref={scopeRef}>
+      {(originalView || filtersOpen) && <div className="flex flex-wrap gap-3 mb-3 text-xs">
         <label title="Keep calculations in one currency. No currency conversion is applied.">Account currency<JournalHelp label="Account currency" /> <select aria-label="Account currency" title="Choose the account currency; entries in other currencies are excluded." value={currency} onChange={e=>{setCurrency(e.target.value);setAccount('all');setSelectedDay(null);}}>{[...new Set(['USD',...entries.map(currencyOf)])].map(c=><option key={c}>{c}</option>)}</select></label>
         <label title="Limit the journal scope to one account or include all accounts in the selected currency.">Account<JournalHelp label="Account" /> <select aria-label="Account" title="Choose one account or all accounts in the selected currency." value={account} onChange={e=>{setAccount(e.target.value);setSelectedDay(null);}}><option value="all">All accounts in this currency</option>{[...new Set(entries.filter(e=>currencyOf(e)===currency).map(e=>e.accountId || 'legacy-demo'))].map(a=><option key={a}>{a}</option>)}</select></label>
         <span>{currency} only · entry-date basis (UTC) · no currency conversion · net win rate includes breakeven</span>
-      </div>
+      </div>}
 
-      {(tab==='entries'||tab==='insights')&&<section className={`mb-4 flex flex-wrap items-center gap-3 rounded-xl border p-3 text-xs ${entries.length===0?'border-amber-200 bg-amber-50 text-amber-900':'border-[#5338ec]/20 bg-[#FBFAFF] text-slate-700'}`} aria-label="Journal data coverage">
+      {originalView && (tab==='entries'||tab==='insights')&&<section className={`mb-4 flex flex-wrap items-center gap-3 rounded-xl border p-3 text-xs ${entries.length===0?'border-amber-200 bg-amber-50 text-amber-900':'border-[#5338ec]/20 bg-[#FBFAFF] text-slate-700'}`} aria-label="Journal data coverage">
         {entries.length===0?<><div className="min-w-0 flex-1"><p className="font-semibold">No journal trades are saved in this browser.</p><p className="mt-1">Broker sync is not active in this build. Import a CSV statement or add journal trades to populate these reports.</p></div><button type="button" onClick={()=>setWizardOpen(true)} className="h-8 rounded-lg bg-[#5338ec] px-3 font-semibold text-white hover:bg-[#4326d8]">Import trades</button></>:<>
           <div className="min-w-0 flex-1"><p><strong>{scoped.length} shown of {entries.length} saved trades.</strong> Current view: {rangeLabel} · {currency} · {account==='all'?'all accounts':account}.</p><p className="mt-1 text-[11px] text-slate-500">{currentCurrencyCount===0?`No saved trades use ${currency}; choose a currency with records above.`:`${currentCurrencyCount} saved trades use ${currency}.`} Date, account, and journal filters affect both Trade Log and Insights.</p></div>
           {scoped.length<entries.length&&<button type="button" onClick={resetJournalScope} className="h-8 rounded-lg border border-[#5338ec]/30 bg-white px-3 font-semibold text-[#5338ec] hover:bg-[#F7F5FF]">Show all saved trades</button>}
@@ -431,9 +458,15 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           {/* Toolbar */}
           <div className="flex flex-wrap items-start gap-2" role="toolbar" aria-label="Journal scope">
             <div className="flex items-center gap-0.5">
-                <JournalDateRange from={rangeFrom} to={rangeTo} label={rangeLabel} today={JOURNAL_TODAY} entries={calEntries} onApply={(range, all) => { setCustomRange(range); setRangeMode(all ? 'all' : 'custom'); setCalMonth(range.to.slice(0,7)); setSelectedDay(null); setDayReviewOpen(false); }}/>
+                <JournalDateRange compact={!originalView} from={rangeFrom} to={rangeTo} label={rangeLabel} today={JOURNAL_TODAY} entries={calEntries} onApply={(range, all) => { setCustomRange(range); setRangeMode(all ? 'all' : 'custom'); setCalMonth(range.to.slice(0,7)); setSelectedDay(null); setDayReviewOpen(false); }}/>
             </div>
 
+            {!originalView && <>
+              {accountIds.length > 1 && <label className="flex items-center gap-2 text-xs">Account<select aria-label="Journal account" value={account} onChange={event => setAccount(event.target.value)} className="h-9 max-w-48 rounded-lg border border-slate-200 bg-white px-2"><option value="all">All accounts</option>{accountIds.map(id => <option key={id}>{id}</option>)}</select></label>}
+              <button type="button" className="h-9 px-3 text-xs font-semibold text-[#5338ec]" aria-expanded={filtersOpen} onClick={() => { setFiltersOpen(!filtersOpen); setOpenMenu(null); }}>Filters{activeFilters ? ` (${activeFilters})` : ''}</button>
+              <JournalHelp label="Journal scope and basis" text={`${rangeLabel} · ${currency} only · entry-date basis (UTC) · no currency conversion. Net results include known recorded costs. Win rate includes breakeven. ${entries.length} saved trades across all currencies. Use Filters to change currency; money in different currencies is never combined.`}/>
+            </>}
+            {(originalView || view.baseLevel === 'standard' || filtersOpen) && <>
             {filterMenu('strategy', 'Playbook', JOURNAL_STRATEGIES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.strategy === v).length })), strategyOff, setStrategyOff)}
             {filterMenu('asset', 'Market type', JOURNAL_MARKET_TYPES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.assetClass === v).length })), assetOff, setAssetOff)}
             {filterMenu('outcome', 'Net outcome', (['win', 'loss', 'breakeven', 'open'] as const).map((v) => ({ id: v, label: v === 'win' ? 'Wins' : v === 'loss' ? 'Losses' : v === 'breakeven' ? 'Breakeven' : 'Not realized / unknown', n: entries.filter((e) => resultOf(e) === v).length })), outcomeOff, setOutcomeOff)}
@@ -442,9 +475,15 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
             {tab==='overview' && choiceMenu<CashbackMode>('show', 'Overview show', [{ id: 'off', label: 'Trading' }, { id: 'include', label: '+ Cashback' }, { id: 'points', label: 'Points' }], cbMode, setCbMode)}
             {tab==='overview' && choiceMenu<PnlMode>('basis', 'Overview basis', [{ id: 'gross', label: 'Gross' }, { id: 'net', label: 'Net' }], pnlMode, setPnlMode)}
+            </>}
           </div>
 
         </div>
+      {!originalView && scoped.length < entries.length && <div role="status" className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+        <span>Showing {scoped.length} of {entries.length} saved trades · {currency} only</span><button className="font-semibold text-[#5338ec] underline" onClick={resetJournalScope}>Show all{currentCurrencyCount < entries.length ? ` ${currency} trades` : ''}</button>
+      </div>}
+      </div>
+      {tab === 'overview' && <JournalWorkspaceCard key={tab} view={view}>
       {tab === 'overview' && (
         <div className="space-y-6 mt-6">
           {/* MarketSyde reads the journal and says what it sees, above the
@@ -576,8 +615,10 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         </div>
       )}
 
+      </JournalWorkspaceCard>}
       {/* ───── ENTRIES ───── */}
       {tab === 'entries' && (
+        originalView ? <Suspense fallback={<p role="status" className="py-6 text-sm text-slate-500">Loading Trade Log…</p>}>
         <JournalTradeLog
           entries={scoped}
           brokers={brokers || []}
@@ -590,8 +631,18 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onReplayLog={setApiReplayId}
           onBacktestTrades={(ids) => goBacktest({ view: 'setup', benchmarkTradeIds: ids })}
         />
+        </Suspense> : <JournalSimpleTradeLog
+          key={view.baseLevel}
+          entries={scoped} brokers={brokers || []} currency={currency} rangeLabel={rangeLabel} view={view}
+          onChange={setEntries} onOpen={(id, cohort) => { if (view.baseLevel === 'easy') { setReviewCohort(cohort || scoped.map(entry => entry.id)); setQuickId(id); } else openEntry(id, cohort); }}
+          onToast={onShowToast} onAdd={() => setManualOpen(true)} onImport={() => setWizardOpen(true)}
+          preset={logPreset} onClearPreset={() => setLogPreset(null)}
+          onReplay={id => goBacktest({ view: 'replay', entryId: id })} onReplayLog={setApiReplayId}
+          onBacktestTrades={ids => goBacktest({ view: 'setup', benchmarkTradeIds: ids })}
+        />
       )}
 
+      {tab !== 'entries' && tab !== 'overview' && <JournalWorkspaceCard key={tab} view={view}>
       {/* ───── INSIGHTS ───── */}
       {tab === 'insights' && (
         <JournalInsights
@@ -886,7 +937,11 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         </div>
       )}
 
-      {selected && <JournalReviewDrawer entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
+      </JournalWorkspaceCard>}
+      <JournalAddCard key={`add-${tab}`} tab={tab} view={view}/>
+      {quickId && (() => { const entry = entries.find(item => item.id === quickId); return entry ? <JournalQuickReview key={entry.id} entry={entry} onClose={() => setQuickId(null)} onSave={(id, patch) => { setEntries(previous => previous.map(current => current.id === id ? { ...current, ...patch } : current)); onShowToast('Quick review saved locally'); }} onFullReview={() => { setQuickId(null); setSelectedId(entry.id); }} onDelete={() => { setEntries(previous => previous.filter(current => current.id !== entry.id)); setQuickId(null); onShowToast('Trade deleted locally'); }}/> : null; })()}
+      {manualOpen && <JournalManualEntry currency={currency} account={account} brokers={brokers || []} strategies={playbooks.filter(playbook => playbook.status !== 'archived').map(playbook => playbook.name)} onClose={() => setManualOpen(false)} onSave={entry => { setEntries(previous => [entry, ...previous]); setManualOpen(false); setTab('entries'); onShowToast('Trade saved locally. Use Show all if your current filters hide it.'); }}/>}
+      {selected && <JournalReviewDrawer variant={originalView ? 'advanced' : 'standard'} entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
       {reviewQueueOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0b1c30]/40 p-3 sm:p-6" role="presentation" onMouseDown={() => setReviewQueueOpen(false)}>
           <section

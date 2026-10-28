@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.27.0] - 2026-10-28
+### Added
+- Journal view foundation: per-tab Easy / Standard / Advanced levels, Custom layouts, versioned local preferences, card options, add-card sheet, profile defaults and resets, shared plain-language formatting, and an Easy welcome tip.
+- Easy Trade Log ("My trades") with one summary, simple newest-first rows, load more, compact search, a review reminder, manual trade entry, and three-question Quick review with optional chart images.
+- Standard Trade Log with four plain-language result cards, a six-column sortable table, table settings, sticky bulk actions, scoped CSV export, and a progressively disclosed full review.
+### Changed
+- Easy journal headers reveal secondary filters on demand and display hidden-trade scope explicitly. Advanced retains the original journal header and workspace.
+- All Trade Log levels share the original filtering and KPI formulas. Quick review merges only its answer fields; partial plan adherence preserves existing boolean analytics without being counted as full adherence.
+- Advanced trade tools are loaded only when opened. Other journal tabs keep their existing content behind the shared card foundation; their dedicated simplification and optional audit fixes are deferred.
+### Notes
+- Preferences follow this static app's existing browser-local persistence, not a new server API. Storage failures are reported without overwriting unreadable preferences.
+- The pre-existing broker-link assertion in `entry-wizard.test.ts` still fails on the simulated account-link flow described in optional Prompt 1B; that unrelated flow is unchanged.
+
 ## [1.53.0] - 2026-10-09
 ### Added
 - The newer Trading Journal work from orangeecat's branch: help text on the journal's own tabs, playbooks you can configure per instrument with pattern matching behind them, the unified replay comparisons, the personalised AI Coach candle comparisons, and the What-if lab's saved scenario snapshots.
