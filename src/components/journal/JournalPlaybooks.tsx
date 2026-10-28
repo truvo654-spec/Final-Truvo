@@ -121,6 +121,7 @@ interface Props {
   houseChecklist: JournalChecklistItem[];
   houseLimits: { maxRisk: number; maxTrades: number };
   reportingCurrency: string;
+  reportingTimeZone: string;
   easy?: boolean;
   recordings: Record<string, string>;
   onSetRecording: (entryId: string, blob: Blob | null) => void;
@@ -135,7 +136,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, houseLimits, reportingCurrency, easy = false, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, houseLimits, reportingCurrency, reportingTimeZone, easy = false, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -499,7 +500,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const marketCount = (m: 'all' | PortfolioAssetClass) => inStatus.filter((p) => m === 'all' || p.markets.includes(m)).length;
 
   if (easy && !fullWorkspace && !editing) {
-    return <EasyPlaybookCards playbooks={playbooks} entries={allJournalEntries} scopedEntries={entries} currency={reportingCurrency} houseLimits={houseLimits} onCreate={book => {
+    return <EasyPlaybookCards playbooks={playbooks} entries={allJournalEntries} scopedEntries={entries} currency={reportingCurrency} timeZone={reportingTimeZone} houseLimits={houseLimits} onCreate={book => {
       setPlaybooks(previous => [...previous, book]);
       setSelId(book.id);
       onToast('Playbook created with smart defaults. Review them in the full workspace.');

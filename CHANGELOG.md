@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.33.2] - 2026-10-28
+### Added
+- Easy Playbook performance tiles open a trade-details popup without leaving Playbook. Net P&L and win rate show all included trades; winning and losing P&L show the corresponding outcomes.
+
 ## [2.33.1] - 2026-10-28
 ### Changed
 - Easy Playbook cards now show winning and losing trade counts and their net P&L subtotals, alongside total trades, win rate and net P&L. Breakeven trades and excluded records are disclosed.

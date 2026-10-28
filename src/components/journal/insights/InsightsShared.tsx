@@ -48,39 +48,39 @@ export function InsightsLoading({ compact = false }: { compact?: boolean }) {
       </div>)}
   </div>;
 }
-export function InsightTradeDrawer({ label, trades, openSnapshot, settings, onClose, onOpenTrade, onOpenTrades, initialView = 'closed' }: {
-  label: string; trades: InsightTrade[]; openSnapshot: InsightOpenSnapshot; settings: InsightsSettings; onClose: () => void;
-  onOpenTrade: (trade: JournalEntry) => void; onOpenTrades: (trades: JournalEntry[], label: string) => void;
-  initialView?: 'closed' | 'open';
+export function InsightTradeDrawer({ label, trades, openSnapshot, settings, onClose, onOpenTrade, onOpenTrades, initialView = 'closed', presentation = 'drawer' }: {
+  label: string; trades: Pick<InsightTrade, 'entry' | 'net' | 'r'>[]; openSnapshot?: InsightOpenSnapshot; settings: InsightsSettings; onClose: () => void;
+  onOpenTrade?: (trade: JournalEntry) => void; onOpenTrades?: (trades: JournalEntry[], label: string) => void;
+  initialView?: 'closed' | 'open'; presentation?: 'drawer' | 'dialog';
 }) {
   const ref = useDialogFocus(onClose), titleId = useId();
   const body = useRef<HTMLDivElement>(null);
-  const [view, setView] = useState<'closed' | 'open'>(initialView);
+  const [view, setView] = useState<'closed' | 'open'>(openSnapshot ? initialView : 'closed');
   const [limit, setLimit] = useState(50);
-  const open = view === 'open', count = open ? openSnapshot.positions.length : trades.length;
+  const open = view === 'open' && !!openSnapshot, count = open && openSnapshot ? openSnapshot.positions.length : trades.length;
   const title = open ? 'Open positions · saved snapshot' : label;
-  const rows = open ? openSnapshot.positions.slice(0, limit).map(position => ({ entry: position.entry, amount: position.unrealized, r: null }))
+  const rows = open && openSnapshot ? openSnapshot.positions.slice(0, limit).map(position => ({ entry: position.entry, amount: position.unrealized, r: null }))
     : trades.slice(0, limit).map(trade => ({ entry: trade.entry, amount: trade.net, r: trade.r }));
   const switchView = (next: 'closed' | 'open') => { setView(next); setLimit(50); if (body.current) body.current.scrollTop = 0; };
   const money = (value: number | null) => value === null ? 'Unknown' : formatInsightsMoney(value, settings);
   const number = new Intl.NumberFormat(settings.locale, { maximumFractionDigits: 6 });
   const time = (value?: string) => Number.isFinite(timestampMs(value))
     ? new Intl.DateTimeFormat(settings.locale, { timeZone: settings.timeZone, dateStyle: 'medium', timeStyle: 'short' }).format(timestampMs(value)) : 'Not recorded';
-  return <div className="fixed inset-0 z-[70] flex justify-end bg-slate-900/40" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
-    <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="flex h-full w-full max-w-2xl flex-col bg-white text-[#0b1c30] shadow-2xl outline-none">
+  return <div className={`fixed inset-0 z-[70] flex bg-slate-900/40 ${presentation === 'dialog' ? 'items-center justify-center p-4' : 'justify-end'}`} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
+    <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className={`flex w-full max-w-2xl flex-col bg-white text-[#0b1c30] shadow-2xl outline-none ${presentation === 'dialog' ? 'max-h-[85vh] rounded-2xl' : 'h-full'}`}>
       <header className="flex items-start gap-3 border-b border-slate-200 p-5">
-        <div className="min-w-0 flex-1"><h2 id={titleId} className="text-lg font-bold">{title}</h2><p className="mt-1 text-xs text-slate-500">{open ? `${count.toLocaleString(settings.locale)} open ${count === 1 ? 'position' : 'positions'}` : countLabel(count, settings.locale)} · {settings.currency} · {settings.timeZone}</p></div>
+        <div className="min-w-0 flex-1"><h2 id={titleId} className="break-words text-lg font-bold">{title}</h2><p className="mt-1 text-xs text-slate-500">{open ? `${count.toLocaleString(settings.locale)} open ${count === 1 ? 'position' : 'positions'}` : countLabel(count, settings.locale)} · {settings.currency} · {settings.timeZone}</p></div>
         <button className={insightButton} onClick={onClose}>Close</button>
       </header>
-      <div className="border-b border-slate-200 px-5 py-3">
+      {openSnapshot && <div className="border-b border-slate-200 px-5 py-3">
         <div role="group" aria-label="Trade drawer view" className="inline-flex max-w-full overflow-hidden rounded-lg border border-slate-200">
           {(['closed', 'open'] as const).map(mode => <button key={mode} type="button" aria-pressed={view === mode} className={`px-3 py-2 text-xs font-semibold ${view === mode ? 'bg-[#5338ec] text-white' : 'bg-white text-slate-500'}`} onClick={() => switchView(mode)}>
             {mode === 'closed' ? `Closed trades (${trades.length})` : `Open positions (${openSnapshot.positions.length})`}
           </button>)}
         </div>
-      </div>
+      </div>}
       <div ref={body} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-        {open && <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+        {open && openSnapshot && <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
           <p className="break-words">Latest saved open-position snapshot—not live prices or positions reconstructed for the clicked date. Account: {openSnapshot.account === 'all' ? 'All accounts' : openSnapshot.account} · Side: {openSnapshot.side}. The report date range and clicked day/group do not restrict this snapshot.</p>
           {count > 0 && <dl className="grid min-w-0 grid-cols-3 gap-3">
             <div className="min-w-0"><dt>Open positions</dt><dd className="mt-1 text-base font-semibold">{count.toLocaleString(settings.locale)}</dd></div>
@@ -93,14 +93,15 @@ export function InsightTradeDrawer({ label, trades, openSnapshot, settings, onCl
         </div>}
         {!count && <p className="p-5 text-sm text-slate-500">{open ? 'No open positions match the selected account, side and reporting currency.' : 'No closed trades match this point.'}</p>}
         {rows.map(trade => {
-          const entry = trade.entry, url = new URL(window.location.href);
-          url.searchParams.set('journalTab', 'entries'); url.searchParams.set('journalTrade', entry.id);
+          const entry = trade.entry;
+          const url = onOpenTrade ? new URL(window.location.href) : null;
+          if (url) { url.searchParams.set('journalTab', 'entries'); url.searchParams.set('journalTrade', entry.id); }
           return <article key={entry.id} className="rounded-xl border border-slate-200 p-4 text-sm">
             <div className="flex items-start justify-between gap-3">
-              <a className="font-semibold text-[#5338ec] underline" href={url.pathname + url.search} onClick={event => {
+              {onOpenTrade && url ? <a className="font-semibold text-[#5338ec] underline" href={url.pathname + url.search} onClick={event => {
                 if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                 event.preventDefault(); onOpenTrade(entry);
-              }} aria-label={`Open ${entry.symbol} ${entry.id} in Trade Log`}>{entry.symbol} · {entry.direction === 'BUY' ? 'Long' : 'Short'}</a>
+              }} aria-label={`Open ${entry.symbol} ${entry.id} in Trade Log`}>{entry.symbol} · {entry.direction === 'BUY' ? 'Long' : 'Short'}</a> : <strong>{entry.symbol} · {entry.direction === 'BUY' ? 'Long' : 'Short'}</strong>}
               <span className="shrink-0 text-right"><span className="block text-xs text-slate-500">{open ? 'Unrealized P&L' : 'Net P&L'}</span><strong style={trade.amount === null ? undefined : resultStyle(trade.amount)}>{trade.amount === null ? 'Not reported' : money(trade.amount)}</strong></span>
             </div>
             <dl className="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-600 sm:grid-cols-2">
@@ -119,7 +120,7 @@ export function InsightTradeDrawer({ label, trades, openSnapshot, settings, onCl
         })}
         {limit < count && <button className={insightButton+' w-full'} onClick={() => setLimit(limit + 50)}>{open ? 'Load more positions' : 'Load more trades'}</button>}
       </div>
-      <footer className="border-t border-slate-200 p-4"><button className={insightButton+' w-full'} disabled={!count} onClick={() => onOpenTrades(open ? openSnapshot.positions.map(position => position.entry) : trades.map(trade => trade.entry), title)}>{open ? 'Open positions in Trade Log' : 'Open these trades in Trade Log'}</button></footer>
+      {onOpenTrades && <footer className="border-t border-slate-200 p-4"><button className={insightButton+' w-full'} disabled={!count} onClick={() => onOpenTrades(open && openSnapshot ? openSnapshot.positions.map(position => position.entry) : trades.map(trade => trade.entry), title)}>{open ? 'Open positions in Trade Log' : 'Open these trades in Trade Log'}</button></footer>}
     </div>
   </div>;
 }

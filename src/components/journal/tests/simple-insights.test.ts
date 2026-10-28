@@ -434,6 +434,19 @@ test('drawer toggles preserve the closed cohort and render saved open positions 
     assert.doesNotMatch(open, /journalTrade=closed-row|<dt>Exit<\/dt>|<dt>R-multiple<\/dt>|99\.00R/);
   } finally { Reflect.deleteProperty(globalThis, 'window'); }
 });
+test('closed-only popup renders trade details without navigation or an open-positions toggle', () => {
+  const entry = trade({ id: 'popup-row', symbol: 'POPUP' });
+  const html = renderToStaticMarkup(React.createElement(InsightTradeDrawer, {
+    label: 'Breakout · winning trades', trades: [{ entry, net: 20, r: 1.5 }],
+    settings, onClose: () => {}, presentation: 'dialog',
+  }));
+  assert.match(html, /role="dialog"/);
+  assert.match(html, /Breakout · winning trades/);
+  assert.match(html, /POPUP/);
+  assert.match(html, /Net P&amp;L/);
+  assert.match(html, /1\.50R/);
+  assert.doesNotMatch(html, /Trade drawer view|Open positions|journalTrade=|Open these trades in Trade Log/);
+});
 test('open-only journals can enter the shared drawer without fabricating a closed-result chart', () => {
   const data = aggregateInsights([position()], filters, settings);
   assert.equal(data.current.length, 0);

@@ -7,7 +7,7 @@ import { JOURNAL_ENTRIES } from '../../../data/journalData';
 import { EasyPlaybookCards, playbookIllustration, playbookPerformance } from '../EasyPlaybookCards';
 
 const render = (playbooks = DEFAULT_PLAYBOOKS) => renderToStaticMarkup(React.createElement(EasyPlaybookCards, {
-  playbooks, entries: [], scopedEntries: [], currency: 'USD', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
+  playbooks, entries: [], scopedEntries: [], currency: 'USD', timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
 }));
 
 test('easy cards show actual markets, all instruments and real rule titles without simulating results', () => {
@@ -63,12 +63,14 @@ test('performance excludes open, unknown-cost and other-currency results', () =>
     { ...base, id: 'eur', pnl: 500, accountCurrency: 'EUR' },
     { ...base, id: 'other-strategy', strategy: 'Another setup', pnl: 1000 },
   ];
-  assert.deepEqual(playbookPerformance(entries, 'USD').get('Breakout'), {
-    count: 4, wins: 2, losses: 1, net: 9125, winNet: 10325, lossNet: -1200,
-  });
+  const { trades, winningTrades, losingTrades, ...totals } = playbookPerformance(entries, 'USD').get('Breakout')!;
+  assert.deepEqual(totals, { count: 4, wins: 2, losses: 1, net: 9125, winNet: 10325, lossNet: -1200 });
+  assert.deepEqual(trades.map(trade => trade.id), ['win', 'second-win', 'loss', 'breakeven']);
+  assert.deepEqual(winningTrades.map(trade => trade.id), ['win', 'second-win']);
+  assert.deepEqual(losingTrades.map(trade => trade.id), ['loss']);
   const html = renderToStaticMarkup(React.createElement(EasyPlaybookCards, {
     playbooks: [DEFAULT_PLAYBOOKS[0]], entries, scopedEntries: entries, currency: 'USD',
-    houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
+    timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
   })).replace(/<!-- -->/g, '');
   assert.match(html, /4 closed trades/);
   assert.match(html, /\+\$91\.25/);
@@ -76,6 +78,9 @@ test('performance excludes open, unknown-cost and other-currency results', () =>
   assert.match(html, /Losing P&amp;L<\/span><strong[^>]*>-\$12\.00<\/strong><span[^>]*>1 loss/);
   assert.match(html, /1 breakeven trade included in the total/);
   assert.match(html, /50%/);
+  assert.match(html, /aria-label="Show all Breakout closed trades"/);
+  assert.match(html, /aria-label="Show Breakout winning trades"/);
+  assert.match(html, /aria-label="Show Breakout losing trades"/);
   assert.match(html, /unknown costs or other currencies are excluded/);
   assert.doesNotMatch(html, /\$998\.00/);
 });
@@ -88,12 +93,13 @@ test('empty and losing-only cards distinguish unavailable results from zero wins
   const loss = { ...JOURNAL_ENTRIES[0], strategy: 'Breakout', tradingStatus: 'closed' as const, pnlKnown: true, accountCurrency: 'USD', commission: 2, pnl: -10 };
   const html = renderToStaticMarkup(React.createElement(EasyPlaybookCards, {
     playbooks: [DEFAULT_PLAYBOOKS[0]], entries: [loss], scopedEntries: [loss], currency: 'USD',
-    houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
+    timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
   })).replace(/<!-- -->/g, '');
   assert.match(html, /1 closed trade/);
   assert.match(html, /Winning P&amp;L<\/span><strong[^>]*>\$0\.00<\/strong><span[^>]*>0 wins/);
   assert.match(html, /Losing P&amp;L<\/span><strong[^>]*>-\$12\.00<\/strong><span[^>]*>1 loss/);
   assert.match(html, /0%/);
+  assert.match(html, /<button[^>]*disabled=""[^>]*aria-label="Show Breakout winning trades"/);
 });
 
 test('card results follow scoped trades, including the selected reporting currency', () => {
@@ -104,12 +110,14 @@ test('card results follow scoped trades, including the selected reporting curren
     { ...base, id: 'other-currency', pnl: 500, accountCurrency: 'USD' },
   ];
   const scopedEntries = entries.slice(1);
-  assert.deepEqual(playbookPerformance(scopedEntries, 'EUR').get('Breakout'), {
-    count: 1, wins: 0, losses: 1, net: -2500, winNet: 0, lossNet: -2500,
-  });
+  const { trades, winningTrades, losingTrades, ...totals } = playbookPerformance(scopedEntries, 'EUR').get('Breakout')!;
+  assert.deepEqual(totals, { count: 1, wins: 0, losses: 1, net: -2500, winNet: 0, lossNet: -2500 });
+  assert.deepEqual(trades.map(trade => trade.id), ['in-scope']);
+  assert.deepEqual(winningTrades, []);
+  assert.deepEqual(losingTrades.map(trade => trade.id), ['in-scope']);
   const html = renderToStaticMarkup(React.createElement(EasyPlaybookCards, {
     playbooks: [DEFAULT_PLAYBOOKS[0]], entries, scopedEntries, currency: 'EUR',
-    houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
+    timeZone: 'UTC', houseLimits: { maxRisk: 1, maxTrades: 3 }, onCreate: () => {}, onOpenWorkspace: () => {},
   })).replace(/<!-- -->/g, '');
   assert.match(html, /1 closed trade/);
   assert.match(html, /-€25\.00/);

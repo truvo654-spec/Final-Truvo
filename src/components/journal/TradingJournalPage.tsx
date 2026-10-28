@@ -840,6 +840,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           houseChecklist={checklist}
           houseLimits={rules}
           reportingCurrency={reporting.settings.currency}
+          reportingTimeZone={reporting.settings.timeZone}
           easy={view.baseLevel === 'easy'}
           recordings={recordings}
           onSetRecording={(id, blob) => setRecordings((r) => {
