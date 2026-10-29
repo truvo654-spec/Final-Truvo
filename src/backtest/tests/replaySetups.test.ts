@@ -37,6 +37,25 @@ test('saved automated setups preserve percent risk but transfer monetary equity 
   assert.equal(copies[1].equity,undefined);assert.equal(copies[1].riskPercent,undefined);assert.equal(copies[1].stopAtr,undefined);
   assert.match(copies[1].notes.join(' '),/not converted/);assert.equal(JSON.stringify([usd,euro]),before);
 });
+test('playbook backtest settings use that playbook limits and respect disabled limits',()=>{
+  const tradingRules={
+    values:{maxRisk:0.5,maxDailyLoss:1.75,maxTrades:4,stopAfterLosses:2},
+    enabled:{maxRisk:true,maxDailyLoss:true,maxTrades:true,stopAfterLosses:true},
+    customRules:[],
+  };
+  const book={...DEFAULT_PLAYBOOKS[0],riskPerTrade:9,maxTradesPerDay:9,tradingRules};
+  const enabled=defaultSettings({playbook:book});
+  assert.equal(enabled.risk.percent,0.5);
+  assert.equal(enabled.risk.dailyLossPct,1.75);
+  assert.equal(enabled.rules.maxTradesPerDay,4);
+  const disabled=defaultSettings({
+    playbook:{...book,tradingRules:{...tradingRules,enabled:{maxRisk:false,maxDailyLoss:false,maxTrades:false,stopAfterLosses:false}}},
+    journalRules:{maxRisk:1.25,maxDailyLoss:3,maxTrades:5,stopAfterLosses:2},
+  });
+  assert.equal(disabled.risk.percent,1.25);
+  assert.equal(disabled.risk.dailyLossPct,null);
+  assert.equal(disabled.rules.maxTradesPerDay,null);
+});
 test('position adaptation retains costs and size for exit-only comparisons and keeps instruments isolated',()=>{
   const next=applyReplayPositionSetup(draft,{targetR:3,stopFraction:.5},'NVDA');
   assert.equal(next.stop,'95.00');assert.equal(next.target,'115.00');assert.equal(next.quantity,draft.quantity);assert.equal(next.costs,draft.costs);

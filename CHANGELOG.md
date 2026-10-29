@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.45.3] - 2026-10-29
+### Changed
+- Restored an editable shared Trading rules card beside the pre-trade checklist; shared edits and removals propagate to existing playbooks.
+
+## [2.45.2] - 2026-10-29
+### Changed
+- Replaced the instrument editor button in basic setup with direct searchable instrument selection, keeping AI suggestions available.
+
+## [2.45.1] - 2026-10-29
+### Changed
+- Combined AI instrument suggestions, instrument editing and tags in the basic playbook setup, removing the duplicate instruments-and-tags detail topic.
+
+## [2.45.0] - 2026-10-29
+### Changed
+- Moved trading rule setup into each playbook. Existing limits and reminders are copied into playbooks as enabled defaults; users can edit, disable or remove them per strategy.
+- Updated journal monitoring and playbook backtests to respect each playbook's selected built-in limits.
+
+## [2.44.2] - 2026-10-29
+### Changed
+- Consolidated trading rule editing behind one Edit control. Added rules can be customized or removed in edit mode and saved together.
+
+## [2.44.1] - 2026-10-29
+### Fixed
+- Made existing trading limits explicitly editable and made the main Save rules button save the rule currently being added or edited.
+
+## [2.44.0] - 2026-10-29
+### Changed
+- Combined built-in and user-added trading rules into one list and one add-rule flow, preserving their different monitoring behavior.
+
+## [2.43.0] - 2026-10-29
+### Added
+- Custom trading rules can include editable numeric reference conditions with a comparison, value and optional unit.
+
+## [2.42.1] - 2026-10-29
+### Added
+- Custom trading rules can now be edited inline, with save and cancel controls.
+
+## [2.42.0] - 2026-10-29
+### Added
+- Add and remove custom written trading rules for reference, with the current rules shown in playbook setup.
+
+## [2.41.0] - 2026-10-29
+### Added
+- Playbook details show current global trading limits and support optional strategy notes, separate from execution rules.
+
+## [2.40.1] - 2026-10-29
+### Changed
+- Simplified technical condition setup to one indicator or price, a comparison and a number, while retaining existing multi-tool recommendation rules.
+
+## [2.40.0] - 2026-10-29
+### Added
+- Playbook setup supports editable technical entry conditions for recommended and custom playbooks. Saved conditions prefill automated backtests and can be used to scan generated sample instruments.
+
+## [2.39.2] - 2026-10-29
+### Changed
+- Organized the playbook setup's advanced details into expandable topics so users can focus on the settings they want to customize.
+
+## [2.39.1] - 2026-10-29
+### Changed
+- Customize details keeps the same strategy name, market and instrument selector visible, with selections shared across both setup views.
+
+## [2.39.0] - 2026-10-29
+### Changed
+- Playbook setup expands within the popup to show the full detailed editor, including rules, risk limits and instrument tools, without navigating away.
+
 ## [2.38.1] - 2026-10-28
 ### Fixed
 - Restored scrolling in the playbook recommendation chooser and positioned the purple create-your-own button at the bottom of its market sidebar on desktop.

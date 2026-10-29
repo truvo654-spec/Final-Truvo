@@ -81,7 +81,7 @@ export const OP_LABEL: Record<Op, string> = { gt: 'is above', lt: 'is below', cr
 const isFvg = (o: Operand) => o.kind === 'ind' && (o.ind.type === 'FVG_BULL' || o.ind.type === 'FVG_BEAR');
 
 export function describeCondition(c: Condition): string {
-  if (isFvg(c.left)) return `${describeOperand(c.left)} forms`;
+  if (isFvg(c.left) && c.op === 'gt' && c.right.kind === 'value' && c.right.value === 0.5) return `${describeOperand(c.left)} forms`;
   return `${describeOperand(c.left)} ${OP_TEXT[c.op]} ${describeOperand(c.right)}`;
 }
 
@@ -243,7 +243,18 @@ export function defaultSettings(opts: { playbook?: JournalPlaybook | null; journ
   const pb = opts.playbook ?? null;
   const tpl = templateFor(pb);
   const jr = opts.journalRules;
-  const rules: StrategyRules = { ...tpl.rules, maxTradesPerDay: pb?.maxTradesPerDay ?? jr?.maxTrades ?? tpl.rules.maxTradesPerDay };
+  const pbRules = pb?.tradingRules;
+  const maxTradesPerDay = pbRules
+    ? pbRules.enabled.maxTrades ? pbRules.values.maxTrades : null
+    : pb?.maxTradesPerDay ?? jr?.maxTrades ?? tpl.rules.maxTradesPerDay;
+  const riskPercent = pbRules
+    ? pbRules.enabled.maxRisk ? pbRules.values.maxRisk : jr?.maxRisk ?? 1
+    : pb?.riskPerTrade ?? jr?.maxRisk ?? 1;
+  const dailyLossPct = pbRules
+    ? pbRules.enabled.maxDailyLoss ? pbRules.values.maxDailyLoss : null
+    : jr?.maxDailyLoss ?? 3;
+  const rules: StrategyRules = { ...tpl.rules, maxTradesPerDay };
+  if (pb?.technicalEntryConditions) rules.entry = deepClone(pb.technicalEntryConditions);
   const symbol = symbolForPlaybook(pb, opts.mostTraded);
   return {
     name: pb ? `${pb.name} backtest` : 'New backtest',
@@ -256,8 +267,8 @@ export function defaultSettings(opts: { playbook?: JournalPlaybook | null; journ
     news: tpl.news ?? 'include',
     rules,
     risk: {
-      mode: 'percent', percent: pb?.riskPerTrade ?? jr?.maxRisk ?? 1, fixedR: 500, qty: 1, startBalance: 100000, currency: 'USD',
-      dailyLossPct: jr?.maxDailyLoss ?? 3, maxDrawdownPct: null,
+      mode: 'percent', percent: riskPercent, fixedR: 500, qty: 1, startBalance: 100000, currency: 'USD',
+      dailyLossPct, maxDrawdownPct: null,
     },
     costs: { enabled: true, brokerId: null, ...defaultCostsFor(symbol), fillModel: 'nextOpen' },
     prop: null,

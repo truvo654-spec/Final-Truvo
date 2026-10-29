@@ -78,7 +78,9 @@ export function positionChecks({book,entry,feed,plan,snapshot,scenario,scenarioK
     check('Recorded strategy',entry&&book ? entry.strategy===book.name:null,entry?`${entry.strategy||'Not recorded'} → ${book?.name||'No playbook'}`:'No recorded trade selected.'),
     check('Playbook instrument',book ? book.symbols?.length ? book.symbols.some(s=>resolveSymbol(s)===spec.symbol) : book.markets?.length ? book.markets.includes(marketGroupOf(spec) as PortfolioAssetClass):null : null,book?.symbols?.length?`Allowed: ${book.symbols.join(', ')}. Selected: ${spec.symbol}.`:'Uses the selected playbook market list when no symbol list is recorded.'),
     check('Playbook timeframe',book ? feed.tf===demoTimeframe(book):null,`Executable template: ${book?demoTimeframe(book):'Unknown'}; demo: ${feed.tf}.`),
-    check('Risk per trade',Number.isFinite(book?.riskPerTrade)&&book!.riskPerTrade!>0&&Number.isFinite(riskPct) ? riskPct!<=book!.riskPerTrade!+1e-8:null,`Initial stop risk ${riskPct===undefined?'Unknown':riskPct.toFixed(2)+'%'}; current playbook limit ${book?.riskPerTrade??'Unknown'}%. Fees are separate.`),
+    book?.tradingRules?.enabled.maxRisk === false
+      ? { label: 'Risk per trade', state: 'Not applicable', detail: 'This limit is not selected for this playbook.' }
+      : check('Risk per trade',Number.isFinite(book?.riskPerTrade)&&book!.riskPerTrade!>0&&Number.isFinite(riskPct) ? riskPct!<=book!.riskPerTrade!+1e-8:null,`Initial stop risk ${riskPct===undefined?'Unknown':riskPct.toFixed(2)+'%'}; current playbook limit ${book?.riskPerTrade??'Unknown'}%. Fees are separate.`),
     check('Minimum quantity',p||plan?(p?.size??plan!.quantity)>=spec.minSize:null,`Minimum ${spec.minSize} ${spec.sizeUnit}; size rounds to increments of ${spec.sizeStep}.`),
     check('Planned reward / risk',Number.isFinite(book?.benchmarkRR)&&book!.benchmarkRR>0&&Number.isFinite(rr) ? rr!+1e-8>=book!.benchmarkRR:null,`Planned ${rr===undefined?'Unknown':rr.toFixed(2)+'R'}; playbook minimum ${book?.benchmarkRR??'Unknown'}R.`),
   ];

@@ -13,6 +13,7 @@ import { DemoReplay } from '../../backtest/DemoReplay';
 import { DEFAULT_PLAYBOOKS } from '../../../data/journalPlaybooks';
 
 const trade = (patch: Partial<JournalEntry> = {}): JournalEntry => ({ id:'test', date:'2026-10-02', symbol:'TEST', assetClass:'Stocks', direction:'BUY', entryPrice:10, exitPrice:12, size:1, pnl:20, rMultiple:null, outcome:'win', tradingStatus:'closed', commission:2, strategy:'Breakout', tags:[], setupNotes:'', emotionBefore:null, emotionAfter:null, followedPlan:null, checklistDone:[], mistakes:[], lessons:'', rating:null, source:'manual', accountCurrency:'USD', ...patch });
+const ruleDefaults = { maxRisk: 1, maxDailyLoss: 3, maxTrades: 3, stopAfterLosses: 2, customRules: [] };
 
 test('Date range validation preserves invalid and reversed dates as errors', () => {
   assert.ok(validDate('2024-02-29')); assert.ok(!validDate('2026-02-29'));
@@ -71,7 +72,7 @@ test('Curve order is deterministic for missing timestamps and chronological with
   assert.deepEqual(daySummary([b,trade({id:'c'}),a]).curve.map(p=>p.id),['a','b','c']);
 });
 test('Day window labels missing answers and costs honestly and keeps linked review actions', () => {
-  const html=renderToStaticMarkup(createElement(JournalDayReview,{date:'2026-10-02',entries:[trade({commission:undefined})],currency:'USD',from:'2026-10-01',to:'2026-10-31',note:'',onNote:()=>{},onDay:()=>{},onClose:()=>{},onTrade:()=>{},onEditRules:()=>{},brokerName:id=>id,checklistLength:3,playbookNames:['Breakout'],rules:{maxRisk:1,maxDailyLoss:3,maxTrades:3,stopAfterLosses:2}}));
+  const html=renderToStaticMarkup(createElement(JournalDayReview,{date:'2026-10-02',entries:[trade({commission:undefined})],currency:'USD',from:'2026-10-01',to:'2026-10-31',note:'',onNote:()=>{},onDay:()=>{},onClose:()=>{},onTrade:()=>{},onEditRules:()=>{},brokerName:id=>id,checklistLength:3,playbookNames:['Breakout'],playbooks:DEFAULT_PLAYBOOKS,ruleDefaults}));
   const text=html.replace(/<[^>]*>/g,'');
   assert.match(text,/Not answered/); assert.match(text,/unknown costs/); assert.match(text,/not an automatic compliance grade/);
   assert.match(html,/aria-label="Daily reflection"/); assert.match(html,/aria-label="Review TEST trade test"/);
@@ -79,9 +80,28 @@ test('Day window labels missing answers and costs honestly and keeps linked revi
 });
 test('Empty and planned-only daily rules do not claim compliance', () => {
   for (const entries of [[],[trade({tradingStatus:'planned'})]]) {
-    const text=renderToStaticMarkup(createElement(RulesMonitor,{entries,rules:{maxRisk:1,maxDailyLoss:3,maxTrades:3,stopAfterLosses:2},onEdit:()=>{}})).replace(/<[^>]*>/g,'');
+    const text=renderToStaticMarkup(createElement(RulesMonitor,{entries,playbooks:DEFAULT_PLAYBOOKS,defaults:ruleDefaults,onEdit:()=>{}})).replace(/<[^>]*>/g,'');
     assert.doesNotMatch(text,/Kept/); assert.match(text,/Unknown/);
   }
+});
+test('Personal rule monitoring uses each playbook selection and its own trade limit', () => {
+  const playbooks = DEFAULT_PLAYBOOKS.slice(0, 2).map((book, index) => ({
+    ...book,
+    tradingRules: {
+      values: { maxRisk: 1, maxDailyLoss: 3, maxTrades: 1, stopAfterLosses: 2 },
+      enabled: { maxRisk: true, maxDailyLoss: true, maxTrades: index === 0, stopAfterLosses: true },
+      customRules: [],
+    },
+  }));
+  const entries = [
+    trade({ id: 'breakout-one' }),
+    trade({ id: 'breakout-two' }),
+    trade({ id: 'swing-one', strategy: 'Swing' }),
+  ];
+  const text = renderToStaticMarkup(createElement(RulesMonitor, { entries, playbooks, defaults: ruleDefaults, onEdit: () => {} })).replace(/<[^>]*>/g, '');
+  assert.match(text, /Max trades per day · Breakout/);
+  assert.match(text, /Max trades per day · Breakout[\s\S]*1 day/);
+  assert.doesNotMatch(text, /Max trades per day · Swing/);
 });
 test('Net ROI is net P&L as percent of recorded account equity, including fees and breakeven', () => {
   assert.equal(netRoiOf(trade({pnl:150,commission:7,equityAtEntry:10000})),1.43);
@@ -93,7 +113,7 @@ test('ROI never invents capital, unrealized results or a currency conversion', (
   assert.equal(netRoiOf(trade({accountCurrency:'EUR',pnl:12,commission:2,equityAtEntry:1000})),1);
 });
 test('Daily table has separate side, percentage ROI, playbook strategy and demo replay columns', () => {
-  const html=renderToStaticMarkup(createElement(JournalDayReview,{date:'2026-10-02',entries:[trade({pnl:150,commission:7,equityAtEntry:10000}),trade({id:'sell',direction:'SELL',strategy:'Legacy setup'})],currency:'USD',from:'2026-10-01',to:'2026-10-31',note:'',onNote:()=>{},onDay:()=>{},onClose:()=>{},onTrade:()=>{},onReplay:()=>{},onEditRules:()=>{},brokerName:id=>id,checklistLength:3,playbookNames:['Breakout'],rules:{maxRisk:1,maxDailyLoss:3,maxTrades:3,stopAfterLosses:2}}));
+  const html=renderToStaticMarkup(createElement(JournalDayReview,{date:'2026-10-02',entries:[trade({pnl:150,commission:7,equityAtEntry:10000}),trade({id:'sell',direction:'SELL',strategy:'Legacy setup'})],currency:'USD',from:'2026-10-01',to:'2026-10-31',note:'',onNote:()=>{},onDay:()=>{},onClose:()=>{},onTrade:()=>{},onReplay:()=>{},onEditRules:()=>{},brokerName:id=>id,checklistLength:3,playbookNames:['Breakout'],playbooks:DEFAULT_PLAYBOOKS,ruleDefaults}));
   assert.match(html,/Buy \/ Sell/); assert.match(html,/Net ROI \(%\)/); assert.match(html,/Strategy/); assert.match(html,/Replay/);
   assert.match(html,/\+1\.43%/); assert.match(html,/>BUY<\/span>/); assert.match(html,/>SELL<\/span>/);
   assert.match(html,/Breakout/); assert.match(html,/Recorded strategy · not linked/);

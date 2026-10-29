@@ -33,11 +33,13 @@ import { StrategyHealthCard } from '../backtest/PlaybookBacktestPanel';
 import { loadExpected, saveExpected, PlaybookExpectedStats } from '../../backtest/store';
 import { TradingStatusBadge, ReviewStateBadge, reviewStateOf, tradingStatusOf } from './tradingStatus';
 import { currencyOf, eligible, incompleteFields, metrics, netOf, resultOf, realizedR } from './journalMath';
-import { journalSandbox, useJournalState } from './journalStorage';
+import { journalSandbox, saveJournalValues, useJournalState } from './journalStorage';
 import { JournalReviewDrawer } from './JournalReviewDrawer';
 import { JournalDateRange } from './JournalDateRange';
 import { JournalDayReview } from './JournalDayReview';
 import { JournalReplayAvailability } from './JournalReplayAvailability';
+import { createPlaybookTradingRules, isPlaybookTradingRules, resolvePlaybookTradingRules, updatePlaybookTradingRulesFromDefaults, type GlobalTradingRules } from '../../data/tradingRules';
+import { SharedTradingRules } from './SharedTradingRules';
 
 type JournalTab = 'overview' | 'entries' | 'insights' | 'playbook' | 'backtest' | 'review';
 
@@ -115,13 +117,26 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [checklist, setChecklist] = useJournalState<JournalChecklistItem[]>('checklist', DEFAULT_CHECKLIST);
   const [newItem, setNewItem] = useState('');
   const [playbooks, setPlaybooks] = useJournalState<JournalPlaybook[]>('playbooks', DEFAULT_PLAYBOOKS);
-  const setVersionedPlaybooks:React.Dispatch<React.SetStateAction<JournalPlaybook[]>> = update=>setPlaybooks(previous=>{
-    const next=typeof update==='function'?update(previous):update;
-    return next.map(pb=>{const old=previous.find(p=>p.id===pb.id);if(!old || JSON.stringify(old.rules)===JSON.stringify(pb.rules))return pb;
-      return {...pb,rulesEffectiveAt:new Date().toISOString(),ruleHistory:[...(old.ruleHistory || []),{version:(old.ruleHistory?.length || 0)+1,effectiveAt:old.rulesEffectiveAt || null,rules:old.rules}]};});
-  });
   const [recordings, setRecordings] = useState<Record<string, string>>({}); // entry id → replay video (object URL)
-  const [rules, setRules] = useJournalState('TradingJournalPage-rules', { maxRisk: 1, maxDailyLoss: 3, maxTrades: 3, stopAfterLosses: 2 });
+  const [rules, setRules, rulesStorageFailed] = useJournalState('TradingJournalPage-rules', { maxRisk: 1, maxDailyLoss: 3, maxTrades: 3, stopAfterLosses: 2 });
+  const [customRules, setCustomRules, customRulesStorageFailed] = useJournalState<GlobalTradingRules['customRules']>('TradingJournalPage-customRules', []);
+  const ruleDefaults = useMemo<GlobalTradingRules>(() => ({ ...rules, customRules: customRulesStorageFailed ? [] : customRules }), [rules, customRules, customRulesStorageFailed]);
+  const setVersionedPlaybooks: React.Dispatch<React.SetStateAction<JournalPlaybook[]>> = update => setPlaybooks(previous => {
+    const next = typeof update === 'function' ? update(previous) : update;
+    return next.map(playbook => {
+      const old = previous.find(item => item.id === playbook.id);
+      const migrated = isPlaybookTradingRules(playbook.tradingRules) ? playbook : { ...playbook, tradingRules: createPlaybookTradingRules(ruleDefaults, playbook) };
+      if (!old || JSON.stringify(old.rules) === JSON.stringify(migrated.rules)) return migrated;
+      return { ...migrated, rulesEffectiveAt: new Date().toISOString(), ruleHistory: [...(old.ruleHistory || []), { version: (old.ruleHistory?.length || 0) + 1, effectiveAt: old.rulesEffectiveAt || null, rules: old.rules }] };
+    });
+  });
+  useEffect(() => {
+    if (playbooks.some(playbook => !isPlaybookTradingRules(playbook.tradingRules))) {
+      setVersionedPlaybooks(previous => previous.map(playbook => isPlaybookTradingRules(playbook.tradingRules)
+        ? playbook
+        : { ...playbook, tradingRules: createPlaybookTradingRules(ruleDefaults, playbook) }));
+    }
+  }, [playbooks, ruleDefaults]);
   const [expected, setExpected] = useState<Record<string, PlaybookExpectedStats>>(() => loadExpected());
   const [btIntent, setBtIntent] = useState<BacktestIntent | null>(null);
   const goBacktest = (intent: BacktestIntent) => { setBtIntent(intent); setSelectedId(null); setTab('backtest'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -719,9 +734,9 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                 onSelect={date => date ? openDay(date) : setSelectedDay(null)}
               />
 
-              <TiltMonitor entries={scoped} rules={rules} />
+              <TiltMonitor entries={scoped} playbooks={playbooks} defaults={ruleDefaults} />
               <DisciplineCard entries={scoped} checklistLength={checklist.length} />
-              <RulesMonitor entries={scoped} rules={rules} onEdit={() => setTab('playbook')} />
+              <RulesMonitor entries={scoped} playbooks={playbooks} defaults={ruleDefaults} onEdit={() => setTab('playbook')} />
               <StrategyHealthCard playbooks={playbooks} entries={scoped} expected={expected} onOpen={() => goBacktest({ view: 'home' })} />
 
               <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
@@ -902,6 +917,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onOpenEntry={id=>openEntry(id,scoped.filter(e=>e.strategy===entries.find(x=>x.id===id)?.strategy).map(e=>e.id))}
           onShowTrades={(ids, label) => { setLogPreset({ ids, label }); setTab('entries'); }}
           onToast={onShowToast}
+          globalRules={ruleDefaults}
           houseChecklist={checklist}
           recordings={recordings}
           onSetRecording={(id, blob) => setRecordings((r) => {
@@ -944,33 +960,39 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           </div>
 
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-            <h4 className="flex items-center gap-1.5 text-sm font-bold mb-1"><ShieldCheck className="w-4 h-4 text-[#5338ec]" /> Trading rules<JournalHelp label="Trading rules" /></h4>
-            <p className="text-xs text-[#474556] mb-4">Your hard limits. Write them when you're calm, not mid-trade.</p>
-            <div className="space-y-3.5">
-              {([
-                ['maxRisk', 'Max risk per trade', '% of account'],
-                ['maxDailyLoss', 'Max daily loss', '% of account'],
-                ['maxTrades', 'Max trades per day', 'trades'],
-                ['stopAfterLosses', 'Stop after consecutive losses', 'losses'],
-              ] as const).map(([key, label, unit]) => (
-                <div key={key} className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-semibold">{label}<JournalHelp label={label} /></span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      value={rules[key]}
-                      onChange={(e) => setRules((r) => ({ ...r, [key]: Number(e.target.value) }))}
-                      className="w-20 border border-slate-200 rounded-xl px-3 py-1.5 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30"
-                    />
-                    <span className="text-[11px] text-[#94a3b8] w-20">{unit}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => onShowToast('Trading rules saved')} className="mt-5 w-full bg-[#0b1c30] hover:bg-slate-800 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
-              Save rules
-            </button>
+            <SharedTradingRules
+              rules={ruleDefaults}
+              storageFailed={rulesStorageFailed || customRulesStorageFailed}
+              onSave={nextDefaults => {
+                if (rulesStorageFailed || customRulesStorageFailed || !saveJournalValues([
+                  ['TradingJournalPage-rules', {
+                    maxRisk: nextDefaults.maxRisk,
+                    maxDailyLoss: nextDefaults.maxDailyLoss,
+                    maxTrades: nextDefaults.maxTrades,
+                    stopAfterLosses: nextDefaults.stopAfterLosses,
+                  }],
+                  ['TradingJournalPage-customRules', nextDefaults.customRules],
+                ])) return false;
+                setRules({
+                  maxRisk: nextDefaults.maxRisk,
+                  maxDailyLoss: nextDefaults.maxDailyLoss,
+                  maxTrades: nextDefaults.maxTrades,
+                  stopAfterLosses: nextDefaults.stopAfterLosses,
+                });
+                setCustomRules(nextDefaults.customRules);
+                setVersionedPlaybooks(previous => previous.map(playbook => {
+                  const current = resolvePlaybookTradingRules(playbook, ruleDefaults);
+                  const tradingRules = updatePlaybookTradingRulesFromDefaults(current, ruleDefaults, nextDefaults);
+                  return {
+                    ...playbook,
+                    tradingRules,
+                    riskPerTrade: tradingRules.enabled.maxRisk ? tradingRules.values.maxRisk : undefined,
+                    maxTradesPerDay: tradingRules.enabled.maxTrades ? tradingRules.values.maxTrades : undefined,
+                  };
+                }));
+                return true;
+              }}
+            />
           </div>
         </div>
           )}
@@ -1104,7 +1126,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           </section>
         </div>
       )}
-      {tab === 'overview' && selectedDay && dayReviewOpen && <JournalDayReview suspended={!!selected || !!apiReplayId} date={selectedDay} entries={dayEntries} currency={currency} from={rangeFrom} to={rangeTo} note={dailyNotes[selectedDay] || ''} onNote={value => setDailyNotes(d => ({ ...d, [selectedDay]: value }))} onDay={openDay} onClose={() => { setDayReviewOpen(false); setSelectedDay(null); }} onTrade={id => openEntry(id, dayEntries.map(e => e.id))} onReplay={setApiReplayId} onEditRules={() => { setDayReviewOpen(false); setTab('playbook'); }} brokerName={brokerName} checklistLength={checklist.length} playbookNames={playbooks.map(p => p.name)} rules={rules}/>}
+      {tab === 'overview' && selectedDay && dayReviewOpen && <JournalDayReview suspended={!!selected || !!apiReplayId} date={selectedDay} entries={dayEntries} currency={currency} from={rangeFrom} to={rangeTo} note={dailyNotes[selectedDay] || ''} onNote={value => setDailyNotes(d => ({ ...d, [selectedDay]: value }))} onDay={openDay} onClose={() => { setDayReviewOpen(false); setSelectedDay(null); }} onTrade={id => openEntry(id, dayEntries.map(e => e.id))} onReplay={setApiReplayId} onEditRules={() => { setDayReviewOpen(false); setTab('playbook'); }} brokerName={brokerName} checklistLength={checklist.length} playbookNames={playbooks.map(p => p.name)} playbooks={playbooks} ruleDefaults={ruleDefaults}/>}
       {apiReplayId && (() => { const trade = entries.find(e => e.id === apiReplayId); return trade ? <JournalReplayAvailability entry={trade} entries={scoped} playbooks={playbooks} onClose={() => setApiReplayId(null)}/> : null; })()}
       {wizardOpen && (
         <JournalEntryWizard

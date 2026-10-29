@@ -2,6 +2,8 @@
 // A playbook's name matches JournalEntry.strategy, which is how its stats are computed.
 import { PortfolioAssetClass } from '../types';
 import type { InstrumentPatternSetup } from './instrumentPatterns';
+import type { Condition } from '../backtest/types';
+import type { PlaybookTradingRules } from './tradingRules';
 
 export type PlaybookGrade = 'A+' | 'A' | 'B+' | 'B' | 'C';
 export type PlaybookStatus = 'draft' | 'active' | 'testing' | 'archived';
@@ -11,6 +13,8 @@ export interface JournalPlaybook {
   coachOrigin?: { scenarioId: string; sourcePlaybookId?: string; evidenceTradeIds: string[] };
   /** Backtestable technical scenario recipe used to prefill an automated test. */
   technicalRecipeId?: string;
+  /** Explicit entry conditions shared by backtests and sample instrument scans. */
+  technicalEntryConditions?: Condition[];
   ruleHistory?: { version:number; effectiveAt:string | null; rules:{id:string;title:string;detail:string}[] }[];
   rulesEffectiveAt?: string;
   id: string;
@@ -23,6 +27,8 @@ export interface JournalPlaybook {
   window: { start: number; end: number; label: string } | null;
   benchmarkRR: number; // minimum planned reward:risk
   thesis: string;
+  /** Optional context for this playbook, separate from executable rules. */
+  strategyNotes?: string;
   rules: { id: string; title: string; detail: string }[];
   entryTrigger: string;
   stopRule: string;
@@ -30,6 +36,7 @@ export interface JournalPlaybook {
   tags: string[];
   createdAt: string;
   /** Rules: risk limits and no-trade conditions specific to this setup. */
+  tradingRules?: PlaybookTradingRules;
   riskPerTrade?: number; // % of account
   maxTradesPerDay?: number;
   avoid?: string[];

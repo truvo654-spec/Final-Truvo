@@ -5,7 +5,9 @@ import { JournalEntry } from '../../types';
 import { daySummary } from './journalDay';
 import { addDays, UNASSIGNED } from './journalOverview';
 import { costsKnown, eligible, incompleteFields, netOf, netRoiOf, realizedR, statusOf, timestampMs } from './journalMath';
-import { DisciplineCard, JournalRules, RulesMonitor } from './JournalMonitors';
+import { DisciplineCard, RulesMonitor } from './JournalMonitors';
+import type { GlobalTradingRules } from '../../data/tradingRules';
+import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { formatMoney } from './JournalCurrency';
 import { ReviewStateBadge, reviewStateOf, TradingStatusBadge } from './tradingStatus';
 import { useDialogFocus } from './useDialogFocus';
@@ -15,13 +17,13 @@ interface Props {
   note: string; onNote: (value: string) => void; onDay: (date: string) => void; onClose: () => void;
   onTrade: (id: string) => void; onEditRules: () => void; brokerName: (id: string) => string;
   onReplay?: (id: string) => void;
-  checklistLength: number; playbookNames: string[]; rules: JournalRules;
+  checklistLength: number; playbookNames: string[]; playbooks: JournalPlaybook[]; ruleDefaults: GlobalTradingRules;
   suspended?: boolean;
 }
 function HoverHint({ label, description }: { label: string; description: string }) {
   return <span title={description} aria-label={`Hover for details about ${label}`} className="inline-flex cursor-help text-slate-400 align-middle"><Info size={11} aria-hidden="true" /></span>;
 }
-export function JournalDayReview({ date, entries, currency, from, to, note, onNote, onDay, onClose, onTrade, onReplay, onEditRules, brokerName, checklistLength, playbookNames, rules, suspended = false }: Props) {
+export function JournalDayReview({ date, entries, currency, from, to, note, onNote, onDay, onClose, onTrade, onReplay, onEditRules, brokerName, checklistLength, playbookNames, playbooks, ruleDefaults, suspended = false }: Props) {
   const ref = useDialogFocus(onClose);
   const lastFocus = useRef<HTMLElement | null>(null);
   const wasSuspended = useRef(suspended);
@@ -129,7 +131,7 @@ export function JournalDayReview({ date, entries, currency, from, to, note, onNo
             ['Initial stop history', entries.length ? `${stops} / ${entries.length} recorded` : 'No trades'],
           ].map(([label,value]) => <div key={label} className="flex justify-between gap-3 text-xs py-2 border-b border-slate-100"><span>{label}</span><span className="font-semibold text-right">{value}</span></div>)}<p className="text-[10px] text-slate-500 mt-3">{currentStops} current stop(s). A current stop does not prove a stop was set at entry. {entries.filter(e => incompleteFields(e).length > 0).length} trade(s) have incomplete information.</p></section>
           <div title="Discipline combines plan adherence, checklist completion and mistake-free evidence using the weights shown. Unknown evidence is excluded, not treated as a failure."><DisciplineCard entries={entries} checklistLength={checklistLength}/></div>
-          <div title="Personal rules are checked only against recorded evidence in this day. Missing risk, equity or timestamp data remains unknown."><RulesMonitor entries={entries} rules={rules} onEdit={onEditRules}/></div>
+          <div title="Personal rules are checked only against recorded evidence in this day. Missing risk, equity or timestamp data remains unknown."><RulesMonitor entries={entries} playbooks={playbooks} defaults={ruleDefaults} onEdit={onEditRules}/></div>
         </aside>
       </div>
     </div>

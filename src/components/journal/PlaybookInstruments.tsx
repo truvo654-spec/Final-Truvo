@@ -6,24 +6,69 @@ import { DATA_END } from '../../backtest/config';
 import { JournalHelp } from './JournalHelp';
 import { useDialogFocus } from './useDialogFocus';
 import { InstrumentPatternForm } from './InstrumentPatternForm';
+import { PLAYBOOK_CONDITIONS_PATTERN, playbookConditionPattern } from './playbookConditionPattern';
+import { validatePlaybookConditions } from '../../backtest/playbookConditions';
 import { canonicalInstrument, INSTRUMENT_MARKETS, instrumentMarket, playbookInstrumentSelection, knownInstrument, newInstrumentPattern, PATTERN_LABELS, PLAYBOOK_INSTRUMENTS, playbookPattern, suggestPlaybookInstruments, type InstrumentPattern, type InstrumentPatternSetup, type InstrumentSuggestion } from './instrumentMatching';
 
 type Selection = ReturnType<typeof playbookInstrumentSelection> & Pick<JournalPlaybook, 'instrumentPatterns' | 'instrumentPatternId' | 'instrumentTimeframe'>;
 const secondary = 'inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:border-[#B8ABFB] hover:text-[#5338ec] focus-visible:outline-2 focus-visible:outline-[#5338ec] disabled:opacity-40';
 
 export const PlaybookInstruments: React.FC<{
-  playbook: JournalPlaybook; entries: JournalEntry[]; onSave: (selection: Selection) => void;
-}> = ({ playbook, entries, onSave }) => {
+  playbook: JournalPlaybook; entries: JournalEntry[]; onSave: (selection: Selection) => void; inlineSelect?: boolean;
+}> = ({ playbook, entries, onSave, inlineSelect = false }) => {
   const [mode, setMode] = useState<'browse' | 'suggestions' | null>(null);
+  const [query, setQuery] = useState('');
+  const selected = (playbook.symbols || []).map(canonicalInstrument);
+  const inlineCandidates = useMemo(() => {
+    const journalSymbols = entries
+      .filter(entry => !knownInstrument(entry.symbol))
+      .map(entry => ({ symbol: canonicalInstrument(entry.symbol), name: 'From your journal', market: entry.assetClass }));
+    const customSymbols = selected
+      .filter(symbol => !knownInstrument(symbol))
+      .flatMap(symbol => {
+        const market = playbook.instrumentMarkets?.[symbol];
+        return market ? [{ symbol, name: 'Custom instrument', market }] : [];
+      });
+    const catalog = [...PLAYBOOK_INSTRUMENTS, ...journalSymbols, ...customSymbols];
+    return [...new Map(catalog
+      .filter(instrument => playbook.markets.includes(instrument.market))
+      .filter(instrument => `${instrument.symbol} ${instrument.name}`.toLowerCase().includes(query.trim().toLowerCase()))
+      .map(instrument => [canonicalInstrument(instrument.symbol), instrument] as const)).values()];
+  }, [entries, playbook.instrumentMarkets, playbook.markets, query, selected]);
+  const toggleInline = (instrument: typeof inlineCandidates[number]) => {
+    const symbol = canonicalInstrument(instrument.symbol);
+    const symbols = selected.includes(symbol) ? selected.filter(item => item !== symbol) : [...selected, symbol];
+    const assignments = { ...playbook.instrumentMarkets };
+    if (symbols.includes(symbol) && !knownInstrument(symbol)) assignments[symbol] = instrument.market;
+    else if (!symbols.includes(symbol)) delete assignments[symbol];
+    onSave({
+      ...playbookInstrumentSelection(playbook, symbols, assignments),
+      instrumentPatterns: playbook.instrumentPatterns,
+      instrumentPatternId: playbook.instrumentPatternId,
+      instrumentTimeframe: playbook.instrumentTimeframe,
+    });
+  };
   return <section aria-label="Playbook instruments" className="rounded-xl border border-slate-200 px-3 py-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Instruments<JournalHelp label="Playbook instruments" text="Browse Forex, Indices, Commodity, Crypto and Stocks. Saving an instrument adds its market type to the playbook. AI suggestions compare generated sample candles with a preset or your named setup rules. Review the fit, source, date and reasons before adding a candidate. Selections and patterns stay local and apply only when saved." /></h4>
-      <div className="flex flex-wrap items-center gap-2"><button type="button" onClick={() => setMode('suggestions')} className={`${secondary} !border-[#E2DCFF] !bg-[#FAF8FF] !text-[#5338ec]`}><Sparkles size={13} />AI suggestions</button><button type="button" onClick={() => setMode('browse')} className={secondary}><PencilLine size={13} />Edit instruments</button></div>
+      <div className="flex flex-wrap items-center gap-2"><button type="button" onClick={() => setMode('suggestions')} className={`${secondary} !border-[#E2DCFF] !bg-[#FAF8FF] !text-[#5338ec]`}><Sparkles size={13} />AI suggestions</button>{!inlineSelect && <button type="button" onClick={() => setMode('browse')} className={secondary}><PencilLine size={13} />Edit instruments</button>}</div>
     </div>
-    <div className="mt-3 flex flex-wrap gap-2">{(playbook.symbols || []).map(symbol => {
+    {inlineSelect && <div className="mt-3">
+      <label className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 focus-within:border-[#5338ec] focus-within:ring-2 focus-within:ring-[#5338ec]/15">
+        <Search size={14} className="shrink-0 text-slate-400" />
+        <input aria-label="Search instruments" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search instruments" className="min-w-0 flex-1 bg-transparent text-xs outline-none" />
+      </label>
+      <div role="group" aria-label="Choose instruments" className="mt-2 flex max-h-32 flex-wrap gap-2 overflow-y-auto">
+        {inlineCandidates.map(instrument => <button key={instrument.symbol} type="button" aria-pressed={selected.includes(canonicalInstrument(instrument.symbol))} onClick={() => toggleInline(instrument)} className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${selected.includes(canonicalInstrument(instrument.symbol)) ? 'border-[#5338ec] bg-[#F0EDFF] text-[#5338ec]' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>{instrument.symbol}</button>)}
+        {!inlineCandidates.length && <p className="text-xs text-slate-500">{playbook.markets.length ? 'No matching instruments in the selected markets.' : 'Choose a strategy market to see instruments.'}</p>}
+      </div>
+      <p className="mt-2 text-[10px] text-slate-500" aria-live="polite">Selected: {selected.length ? selected.join(', ') : 'None'}</p>
+    </div>}
+    {!inlineSelect && <div className="mt-3 flex flex-wrap gap-2">{(playbook.symbols || []).map(symbol => {
       const count = entries.filter(e => e.strategy === playbook.name && canonicalInstrument(e.symbol) === canonicalInstrument(symbol)).length;
       return <span key={symbol} className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700">{symbol}<span className="text-[10px] font-normal text-slate-400" title="Linked journal trades in the current scope">{count}</span></span>;
     })}{!playbook.symbols?.length && <p className="text-xs text-slate-500">Choose the instruments you want to track for this setup.</p>}</div>
+    }
     {mode && <InstrumentEditor key={`${playbook.id}-${mode}`} playbook={playbook} entries={entries} initialMode={mode} onClose={() => setMode(null)} onSave={selection => { onSave(selection); setMode(null); }} />}
   </section>;
 };
@@ -43,8 +88,10 @@ const InstrumentEditor: React.FC<{
   })));
   const [query, setQuery] = useState('');
   const [patterns, setPatterns] = useState<InstrumentPatternSetup[]>(() => playbook.instrumentPatterns || []);
-  const [patternId, setPatternId] = useState(() => playbook.instrumentPatternId && (Object.hasOwn(PATTERN_LABELS, playbook.instrumentPatternId) || playbook.instrumentPatterns?.some(p => p.id === playbook.instrumentPatternId)) ? playbook.instrumentPatternId : playbookPattern(playbook));
-  const activePattern = patterns.find(p => p.id === patternId);
+  const playbookSetup = useMemo(() => playbookConditionPattern(playbook), [playbook]);
+  const conditionError = playbook.technicalEntryConditions ? validatePlaybookConditions(playbook.technicalEntryConditions) : null;
+  const [patternId, setPatternId] = useState(() => playbook.instrumentPatternId && (Object.hasOwn(PATTERN_LABELS, playbook.instrumentPatternId) || playbook.instrumentPatterns?.some(p => p.id === playbook.instrumentPatternId) || (playbook.instrumentPatternId === PLAYBOOK_CONDITIONS_PATTERN && playbookSetup)) ? playbook.instrumentPatternId : playbookSetup ? PLAYBOOK_CONDITIONS_PATTERN : playbookPattern(playbook));
+  const activePattern = patternId === PLAYBOOK_CONDITIONS_PATTERN ? playbookSetup : patterns.find(p => p.id === patternId);
   const pattern = activePattern?.pattern || patternId as InstrumentPattern;
   const [patternForm, setPatternForm] = useState<InstrumentPatternSetup | null>(null);
   const patternSelect = useRef<HTMLSelectElement>(null);
@@ -101,9 +148,10 @@ const InstrumentEditor: React.FC<{
         </section> : <section aria-label="Pattern matching" className="space-y-4">
           {patternForm ? <InstrumentPatternForm key={patternForm.id || 'new'} initial={patternForm} patterns={patterns} onCancel={finishPatternEdit} onApply={setup => { setPatterns(current => [...current.filter(p => p.id !== setup.id), setup]); setPatternId(setup.id); finishPatternEdit(); }} /> : <>
           <div className="rounded-xl border border-[#DED5FF] bg-[#FAF8FF] p-4"><div className="flex items-center gap-2 text-xs font-semibold text-[#5338ec]"><Sparkles size={14} />Pattern matching · generated sample data</div><p className="mt-2 text-xs leading-relaxed text-slate-600">Matches completed candles to a preset or your own technical rules, using the tools and parameters you choose. Scores describe pattern fit, not win probability. This local rules-based scan uses sample candles through {DATA_END}; it is not a live market scan.</p></div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"><label className="min-w-0 text-xs font-semibold">Setup pattern<select ref={patternSelect} aria-label="Setup pattern" disabled={!!patternForm} value={patternId} onChange={e => setPatternId(e.target.value)} className="mt-1.5 h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-xs disabled:opacity-50"><optgroup label="Presets">{Object.entries(PATTERN_LABELS).filter(([id]) => id !== 'custom').map(([id,label]) => <option key={id} value={id}>{label}</option>)}</optgroup>{patterns.length > 0 && <optgroup label="Your setup patterns">{patterns.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}</select></label><label className="text-xs font-semibold">Candle timeframe<select aria-label="Candle timeframe" value={timeframe} onChange={e => setTimeframe(e.target.value as typeof timeframe)} className="mt-1.5 block h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs"><option value="1h">1 hour</option><option value="4h">4 hours</option><option value="1D">Daily</option></select></label></div>
-          <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2"><button type="button" disabled={!!patternForm} onClick={() => setPatternForm(newInstrumentPattern(pattern))} className={secondary}><Plus size={13} />Set up pattern</button>{activePattern && <><button type="button" disabled={!!patternForm} onClick={() => setPatternForm({ ...activePattern })} className={secondary}><PencilLine size={13} />Edit pattern</button><button type="button" disabled={!!patternForm} onClick={() => { setPatterns(current => current.filter(p => p.id !== patternId)); setPatternId(pattern); patternSelect.current?.focus(); }} className="px-1 text-xs text-slate-500 hover:text-rose-600 disabled:opacity-40">Remove pattern</button></>}</div><button type="button" disabled={busy || !!patternForm} onClick={runScan} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white disabled:opacity-50">{busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}{busy ? 'Scanning…' : suggestions ? 'Scan again' : 'Find pattern matches'}</button></div>
-          {activePattern && !patternForm && <p className="rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">{activePattern.pattern === 'custom' ? `${activePattern.patternType} · ${activePattern.matchMode === 'any' ? 'Any' : 'All'} of ${activePattern.technicalRules?.length || 0} rules` : PATTERN_LABELS[activePattern.pattern]} · {activePattern.lookbackBars} candles · fit ≥ {activePattern.minFit}{activePattern.pattern !== 'custom' && <> · EMA direction: {activePattern.direction} · volume ≥ {activePattern.minVolumeRatio}×</>}{activePattern.pattern === 'breakout' ? ` · breakout ≥ ${activePattern.minBreakoutAtr} ATR` : ''}<br />{activePattern.pattern === 'custom' ? 'Fit is the percentage of technical rules passed. Rules and parameters are editable in Edit pattern.' : 'Volume and breakout rules set to 0 are skipped.'}</p>}
+          {conditionError && <p role="alert" className="text-xs text-rose-700">Playbook entry conditions are incomplete: {conditionError} Fix them in Technical conditions to scan them. Other patterns remain available.</p>}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"><label className="min-w-0 text-xs font-semibold">Setup pattern<select ref={patternSelect} aria-label="Setup pattern" disabled={!!patternForm} value={patternId} onChange={e => setPatternId(e.target.value)} className="mt-1.5 h-9 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-2 text-xs disabled:opacity-50">{playbookSetup && <option value={PLAYBOOK_CONDITIONS_PATTERN}>Playbook entry conditions</option>}<optgroup label="Presets">{Object.entries(PATTERN_LABELS).filter(([id]) => id !== 'custom').map(([id,label]) => <option key={id} value={id}>{label}</option>)}</optgroup>{patterns.length > 0 && <optgroup label="Your setup patterns">{patterns.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>}</select></label><label className="text-xs font-semibold">Candle timeframe<select aria-label="Candle timeframe" value={timeframe} onChange={e => setTimeframe(e.target.value as typeof timeframe)} className="mt-1.5 block h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs"><option value="1h">1 hour</option><option value="4h">4 hours</option><option value="1D">Daily</option></select></label></div>
+          <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2"><button type="button" disabled={!!patternForm} onClick={() => setPatternForm(newInstrumentPattern(pattern))} className={secondary}><Plus size={13} />Set up pattern</button>{activePattern && patternId !== PLAYBOOK_CONDITIONS_PATTERN && <><button type="button" disabled={!!patternForm} onClick={() => setPatternForm({ ...activePattern })} className={secondary}><PencilLine size={13} />Edit pattern</button><button type="button" disabled={!!patternForm} onClick={() => { setPatterns(current => current.filter(p => p.id !== patternId)); setPatternId(pattern); patternSelect.current?.focus(); }} className="px-1 text-xs text-slate-500 hover:text-rose-600 disabled:opacity-40">Remove pattern</button></>}</div><button type="button" disabled={busy || !!patternForm} onClick={runScan} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white disabled:opacity-50">{busy ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}{busy ? 'Scanning…' : suggestions ? 'Scan again' : 'Find pattern matches'}</button></div>
+          {activePattern && !patternForm && <p className="rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">{activePattern.pattern === 'custom' ? `${activePattern.patternType} · ${activePattern.matchMode === 'any' ? 'Any' : 'All'} of ${activePattern.technicalRules?.length || 0} rules` : PATTERN_LABELS[activePattern.pattern]} · {activePattern.lookbackBars} candles · fit ≥ {activePattern.minFit}{activePattern.pattern !== 'custom' && <> · EMA direction: {activePattern.direction} · volume ≥ {activePattern.minVolumeRatio}×</>}{activePattern.pattern === 'breakout' ? ` · breakout ≥ ${activePattern.minBreakoutAtr} ATR` : ''}<br />{patternId === PLAYBOOK_CONDITIONS_PATTERN ? 'Uses the playbook’s long entry conditions. Edit them in Technical conditions; results may differ from backtests due to timeframe and limited sample history.' : activePattern.pattern === 'custom' ? 'Fit is the percentage of technical rules passed. Rules and parameters are editable in Edit pattern.' : 'Volume and breakout rules set to 0 are skipped.'}</p>}
           {scanError && <p role="alert" className="text-xs text-rose-700">{scanError}</p>}
           <div aria-live="polite">{suggestions === null ? <p className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500">Choose a market and pattern, then scan its covered sample instruments.</p> : <>
             <p className="mb-3 text-[11px] text-slate-500">{suggestions.length} {activePattern ? 'matching' : 'covered'} {market} instruments · latest {activePattern?.lookbackBars || 120} completed {timeframe} candles.</p>

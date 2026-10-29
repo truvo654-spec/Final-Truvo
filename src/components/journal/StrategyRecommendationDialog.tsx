@@ -1,24 +1,25 @@
 import React, { useState } from 'react';
 import { Search, Sparkles, X } from 'lucide-react';
-import type { JournalPlaybook } from '../../data/journalPlaybooks';
+import type { JournalPlaybook, PlaybookStatus } from '../../data/journalPlaybooks';
 import type { JournalEntry, PortfolioAssetClass } from '../../types';
 import { RECOMMENDATION_MARKETS, type PlaybookRecommendation } from './playbookRecommendations';
 import { recommendationQuickDraft } from './quickPlaybook';
 import { PlaybookSetupDialog } from './PlaybookSetupDialog';
 import { useDialogFocus } from './useDialogFocus';
+import type { GlobalTradingRules } from './JournalMonitors';
 
 interface Props {
   recommendations: PlaybookRecommendation[];
   blankDraft: JournalPlaybook;
   entries: JournalEntry[];
+  globalRules: GlobalTradingRules;
   existingNames: string[];
   createdAt: string;
   onClose: () => void;
-  onCustomize: (draft: JournalPlaybook) => void;
-  onCreate: (draft: JournalPlaybook) => string | null;
+  onCreate: (draft: JournalPlaybook, status: PlaybookStatus) => string | null;
 }
 
-export const StrategyRecommendationDialog: React.FC<Props> = ({ recommendations, blankDraft, entries, existingNames, createdAt, onClose, onCustomize, onCreate }) => {
+export const StrategyRecommendationDialog: React.FC<Props> = ({ recommendations, blankDraft, entries, globalRules, existingNames, createdAt, onClose, onCreate }) => {
   const [draft, setDraft] = useState(blankDraft);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasSetup, setHasSetup] = useState(false);
@@ -106,9 +107,9 @@ export const StrategyRecommendationDialog: React.FC<Props> = ({ recommendations,
     {setupOpen && <PlaybookSetupDialog
       draft={draft}
       entries={entries}
+      globalRules={globalRules}
       onChange={next => { setDraft(next); setEdited(true); }}
       onBack={backToRecommendations}
-      onCustomize={onCustomize}
       onCreate={onCreate}
     />}
   </>;

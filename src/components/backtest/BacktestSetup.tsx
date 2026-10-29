@@ -384,7 +384,9 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
                           </div>
                         </div>
                         <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-                          {book.technicalRecipeId
+                          {book.technicalEntryConditions
+                            ? 'The simulation entry conditions below come from this playbook’s customized technical conditions.'
+                            : book.technicalRecipeId
                             ? 'The simulation rules below are transferred from this playbook’s saved technical recipe.'
                             : 'No technical recipe is saved. The simulation uses a starter rule set matched to the playbook name and style; discretionary notes are shown for context but are not simulated.'}
                         </p>

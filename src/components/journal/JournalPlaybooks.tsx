@@ -6,6 +6,7 @@ import { Sparkles } from 'lucide-react';
 import { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
 import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, ReviewDecision, ScenarioStatus, PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
 import { PlaybookInstruments } from './PlaybookInstruments';
+import { PlaybookEditorFields } from './PlaybookEditorFields';
 import { filterPlaybookInventory } from './playbookInventory';
 import { instrumentMarket } from './instrumentMatching';
 import { PlaybookAnalytics } from './PlaybookAnalytics';
@@ -17,13 +18,16 @@ import { JOURNAL_TODAY } from '../../data/journalData';
 import { TradingStatusBadge, tradingStatusOf } from './tradingStatus';
 import { buildPlaybookRecommendations } from './playbookRecommendations';
 import { StrategyRecommendationDialog } from './StrategyRecommendationDialog';
+import { playbookConditions, validatePlaybookConditions } from '../../backtest/playbookConditions';
+import { describeCondition } from '../../backtest/rules';
+import type { GlobalTradingRules } from './JournalMonitors';
+import { createPlaybookTradingRules, describeCustomTradingRule, isPlaybookTradingRules, resolvePlaybookTradingRules } from '../../data/tradingRules';
 
 // Strategy playbooks (light theme, after the uploaded concept): library with market/status filters,
 // search and sort; detail with thesis, a live pre-trade rules check, entry/stop/target, edge metrics
 // and best executions; create, import template, edit, export.
 
 const MARKETS: PortfolioAssetClass[] = ['Forex', 'Indices', 'Commodity', 'Crypto', 'Stocks'];
-const GRADES: PlaybookGrade[] = ['A+', 'A', 'B+', 'B', 'C'];
 const GRADE_RANK: Record<PlaybookGrade, number> = { 'A+': 5, A: 4, 'B+': 3, B: 2, C: 1 };
 const GRADE_STYLE: Record<PlaybookGrade, string> = {
   'A+': 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -116,6 +120,7 @@ interface Props {
   onShowTrades: (ids: string[], label: string) => void;
   onToast: (msg: string) => void;
   houseRules: React.ReactNode;
+  globalRules: GlobalTradingRules;
   houseChecklist: JournalChecklistItem[];
   recordings: Record<string, string>;
   onSetRecording: (entryId: string, blob: Blob | null) => void;
@@ -130,7 +135,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -181,6 +186,15 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const sel = playbooks.find((p) => p.id === selId) && list.some((p) => p.id === selId) ? playbooks.find((p) => p.id === selId)! : list[0];
   const s = sel ? stats.get(sel.id)! : null;
   const selTrades = sel ? entries.filter((e) => e.strategy === sel.name) : [];
+  const selectedTradingRules = sel ? resolvePlaybookTradingRules(sel, globalRules) : null;
+  const playbookChecks = sel ? [
+    ...sel.rules,
+    ...(selectedTradingRules?.customRules.filter(rule => rule.enabled) ?? []).map(({ id, rule }) => ({
+      id: `personal-${id}`,
+      title: typeof rule === 'string' ? rule : rule.name,
+      detail: typeof rule === 'string' ? 'Personal reminder' : describeCustomTradingRule(rule),
+    })),
+  ] : [];
 
   const nextId = () => `PB-${pad(Math.max(0, ...playbooks.map((p) => Number(p.id.replace(/\D/g, '')) || 0)) + 1).padStart(3, '0')}`;
 
@@ -193,12 +207,27 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     const name = draft.name.trim();
     if (!name) return 'Give the playbook a name';
     if (playbooks.some((p) => p.id !== draft.id && p.name.trim().toLowerCase() === name.toLowerCase())) return 'A playbook with that name already exists';
+    if (draft.technicalEntryConditions) {
+      const error = validatePlaybookConditions(draft.technicalEntryConditions);
+      if (error) return error;
+    }
     const outsideMarket = (draft.symbols || []).find(symbol => {
       const market = instrumentMarket(symbol, draft);
       return market && !draft.markets.includes(market);
     });
     if (outsideMarket) return `${outsideMarket} is outside the selected market types. Edit instruments or update Markets before saving.`;
-    const clean: JournalPlaybook = { ...draft, name, status: statusOverride ?? draft.status, avoid: (draft.avoid || []).map((a) => a.trim()).filter(Boolean), rules: draft.rules.filter((r) => r.title.trim()).map((r, i) => ({ ...r, id: `r${i + 1}` })) };
+    const tradingRules = draft.tradingRules ?? createPlaybookTradingRules(globalRules, draft);
+    if (!isPlaybookTradingRules(tradingRules)) return 'Review the playbook trading rules and correct any invalid values.';
+    const clean: JournalPlaybook = {
+      ...draft,
+      name,
+      status: statusOverride ?? draft.status,
+      tradingRules,
+      riskPerTrade: tradingRules.enabled.maxRisk ? tradingRules.values.maxRisk : undefined,
+      maxTradesPerDay: tradingRules.enabled.maxTrades ? tradingRules.values.maxTrades : undefined,
+      avoid: (draft.avoid || []).map((a) => a.trim()).filter(Boolean),
+      rules: draft.rules.filter((r) => r.title.trim()).map((r, i) => ({ ...r, id: `r${i + 1}` })),
+    };
     if (newPlaybook) {
       clean.id = nextId();
       setPlaybooks((prev) => [...prev, clean]);
@@ -225,10 +254,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const lbl = 'text-[10px] font-bold tracking-wider uppercase text-slate-500';
 
   const checked = sel ? checks[sel.id] || [] : [];
-  const met = sel ? sel.rules.filter((r) => checked.includes(r.id)).length : 0;
+  const met = playbookChecks.filter((r) => checked.includes(r.id)).length;
   const houseChecked = sel ? (houseChecks[sel.id] || []).filter((id) => houseChecklist.some((c) => c.id === id)) : [];
   const houseMet = houseChecked.length;
-  const totalChecks = (sel ? sel.rules.length : 0) + houseChecklist.length;
+  const totalChecks = playbookChecks.length + houseChecklist.length;
   const metAll = met + houseMet;
   const allMet = totalChecks > 0 && metAll === totalChecks;
   // Checklist is guidance, not a gate: show how complete the setup is and let the trader decide.
@@ -238,12 +267,12 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     : pct >= 40 ? { label: 'Partial setup', cls: 'text-amber-700', bar: 'bg-amber-400' }
     : metAll > 0 ? { label: 'Light setup', cls: 'text-slate-600', bar: 'bg-slate-400' }
     : { label: 'Nothing ticked yet', cls: 'text-slate-500', bar: 'bg-slate-300' };
-  // rules: days on which this playbook was traded more often than its daily limit
+  // Days on which this playbook was traded more often than its selected daily limit.
   const overDays = (() => {
-    if (!sel || sel.maxTradesPerDay === undefined) return 0;
+    if (!sel || !selectedTradingRules?.enabled.maxTrades) return 0;
     const byDay = new Map<string, number>();
     selTrades.forEach((e) => byDay.set(e.date, (byDay.get(e.date) || 0) + 1));
-    return Array.from(byDay.values()).filter((n) => n > sel.maxTradesPerDay!).length;
+    return Array.from(byDay.values()).filter((n) => n > selectedTradingRules.values.maxTrades).length;
   })();
   const checklistPct = selTrades.length && houseChecklist.length
     ? Math.round((selTrades.reduce((a, e) => a + e.checklistDone.filter((id) => houseChecklist.some((c) => c.id === id)).length, 0) / (selTrades.length * houseChecklist.length)) * 100)
@@ -342,94 +371,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         <h3 className="text-lg font-bold text-[#0b1c30]">{isNew ? 'New playbook' : `Edit ${editing.name}`}<JournalHelp label="Playbook editor" /></h3>
         <button type="button" onClick={() => setEditing(null)} className="text-xs font-semibold text-[#474556] hover:underline">Cancel</button>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <label className="block"><span className={lbl}>Name<JournalHelp label="Name" /></span>
-          <input aria-label="Name" className={`${input} mt-1`} value={editing.name} disabled={!isNew && selTrades.length > 0} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="e.g. London Breakout" />
-          {!isNew && selTrades.length > 0 && <span className="text-[10px] text-slate-400">Locked: {selTrades.length} journal entries use this name.</span>}
-        </label>
-        <label className="block"><span className={lbl}>Style<JournalHelp label="Style" /></span>
-          <input aria-label="Style" className={`${input} mt-1`} value={editing.style} onChange={(e) => setEditing({ ...editing, style: e.target.value })} placeholder="Momentum, Mean reversion..." />
-        </label>
-        <label className="block"><span className={lbl}>Grade<JournalHelp label="Grade" /></span>
-          <select aria-label="Grade" className={`${input} mt-1`} value={editing.grade} onChange={(e) => setEditing({ ...editing, grade: e.target.value as PlaybookGrade })}>{GRADES.map((g) => <option key={g}>{g}</option>)}</select>
-          {!isNew && stats.get(editing.id) && <span className="text-[10px] text-slate-500">Data suggests {suggestGrade(stats.get(editing.id)!).grade}. Hover a grade badge to see the criteria.</span>}
-        </label>
-        <label className="block"><span className={lbl}>Status<JournalHelp label="Status" /></span>
-          <select aria-label="Status" className={`${input} mt-1`} value={editing.status} onChange={(e) => setEditing({ ...editing, status: e.target.value as PlaybookStatus })}>
-            {(['draft', 'active', 'testing', 'archived'] as const).map((st) => <option key={st} value={st}>{STATUS_LABEL[st]}</option>)}
-          </select>
-        </label>
-      </div>
-      <div>
-        <span className={lbl}>Markets<JournalHelp label="Markets" /></span>
-        <div className="flex flex-wrap gap-3 mt-1">
-          {MARKETS.map((m) => (
-            <label key={m} className="flex items-center gap-1.5 text-sm cursor-pointer">
-              <input type="checkbox" checked={editing.markets.includes(m)} onChange={() => setEditing({ ...editing, markets: editing.markets.includes(m) ? editing.markets.filter((x) => x !== m) : [...editing.markets, m] })} />{m}
-            </label>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
-        <label className="flex items-center gap-2 text-sm col-span-2 sm:col-span-1">
-          <input type="checkbox" aria-label="Session window" checked={!!editing.window} onChange={(e) => setEditing({ ...editing, window: e.target.checked ? { start: 7, end: 12, label: 'London' } : null })} /> Session window<JournalHelp label="Session window" />
-        </label>
-        {editing.window && (
-          <>
-            <label className="block"><span className={lbl}>From (UTC)<JournalHelp label="From (UTC)" /></span>
-              <select aria-label="From (UTC)" className={`${input} mt-1`} value={editing.window.start} onChange={(e) => setEditing({ ...editing, window: { ...editing.window!, start: Number(e.target.value) } })}>{Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{pad(h)}:00</option>)}</select>
-            </label>
-            <label className="block"><span className={lbl}>To (UTC)<JournalHelp label="To (UTC)" /></span>
-              <select aria-label="To (UTC)" className={`${input} mt-1`} value={editing.window.end} onChange={(e) => setEditing({ ...editing, window: { ...editing.window!, end: Number(e.target.value) } })}>{Array.from({ length: 24 }, (_, h) => h + 1).map((h) => <option key={h} value={h}>{pad(h)}:00</option>)}</select>
-            </label>
-            <label className="block"><span className={lbl}>Label</span>
-              <input className={`${input} mt-1`} value={editing.window.label} onChange={(e) => setEditing({ ...editing, window: { ...editing.window!, label: e.target.value } })} />
-            </label>
-          </>
-        )}
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <label className="block"><span className={lbl}>Min reward:risk (1:x)<JournalHelp label="Min reward:risk (1:x)" /></span>
-          <input aria-label="Min reward:risk (1:x)" type="number" min={0.5} step={0.1} className={`${input} mt-1`} value={editing.benchmarkRR} onChange={(e) => setEditing({ ...editing, benchmarkRR: Number(e.target.value) })} />
-        </label>
-        <label className="block"><span className={lbl}>Risk per trade (% of account)<JournalHelp label="Risk per trade (% of account)" /></span>
-          <input aria-label="Risk per trade (% of account)" type="number" min={0} step={0.1} className={`${input} mt-1`} value={editing.riskPerTrade ?? ''} placeholder="House limit" onChange={(e) => setEditing({ ...editing, riskPerTrade: e.target.value === '' ? undefined : Number(e.target.value) })} />
-        </label>
-        <label className="block"><span className={lbl}>Max trades per day<JournalHelp label="Max trades per day" /></span>
-          <input aria-label="Max trades per day" type="number" min={1} step={1} className={`${input} mt-1`} value={editing.maxTradesPerDay ?? ''} placeholder="House limit" onChange={(e) => setEditing({ ...editing, maxTradesPerDay: e.target.value === '' ? undefined : Number(e.target.value) })} />
-        </label>
-      </div>
-      <label className="block"><span className={lbl}>Do not trade when (one per line)<JournalHelp label="Do not trade when (one per line)" /></span>
-        <textarea aria-label="Do not trade when (one per line)" rows={3} className={`${input} mt-1`} value={(editing.avoid || []).join('\n')} onChange={(e) => setEditing({ ...editing, avoid: e.target.value.split('\n') })} placeholder="e.g. Within 15 minutes of a tier-1 release" />
-      </label>
-      <label className="block"><span className={lbl}>Thesis<JournalHelp label="Thesis" /></span>
-        <textarea aria-label="Thesis" rows={3} className={`${input} mt-1`} value={editing.thesis} onChange={(e) => setEditing({ ...editing, thesis: e.target.value })} placeholder="Why this setup works and when it does not." />
-      </label>
-      <div>
-        <span className={lbl}>Execution rules<JournalHelp label="Execution rules" /></span>
-        <div className="space-y-2 mt-1">
-          {editing.rules.map((r, i) => (
-            <div key={i} className="grid grid-cols-[24px_1fr_2fr_auto] gap-2 items-center">
-              <span className="text-xs font-bold text-slate-400">{i + 1}.</span>
-              <input className={input} value={r.title} placeholder="Rule" onChange={(e) => setEditing({ ...editing, rules: editing.rules.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} />
-              <input className={input} value={r.detail} placeholder="What must be true" onChange={(e) => setEditing({ ...editing, rules: editing.rules.map((x, j) => (j === i ? { ...x, detail: e.target.value } : x)) })} />
-              <button type="button" aria-label={`Remove rule ${i + 1}`} onClick={() => setEditing({ ...editing, rules: editing.rules.filter((_, j) => j !== i) })} className="text-xs text-slate-400 hover:text-rose-600 px-2">Remove</button>
-            </div>
-          ))}
-          <button type="button" onClick={() => setEditing({ ...editing, rules: [...editing.rules, { id: `r${editing.rules.length + 1}`, title: '', detail: '' }] })} className="text-xs font-semibold text-[#5338ec] hover:underline">Add rule</button>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {([['entryTrigger', 'Entry trigger'], ['stopRule', 'Stop / invalidation'], ['targetRule', 'Profit taking']] as const).map(([k, l]) => (
-          <label key={k} className="block"><span className={lbl}>{l}<JournalHelp label={l} /></span>
-            <textarea aria-label={l} rows={3} className={`${input} mt-1`} value={editing[k]} onChange={(e) => setEditing({ ...editing, [k]: e.target.value })} />
-          </label>
-        ))}
-      </div>
-      <PlaybookInstruments playbook={editing} entries={entries} onSave={selection => setEditing(current => current ? { ...current, ...selection } : current)} />
-      <label className="block"><span className={lbl}>Tags (comma separated)<JournalHelp label="Tags (comma separated)" /></span>
-        <input aria-label="Tags (comma separated)" className={`${input} mt-1`} value={editing.tags.join(', ')} onChange={(e) => setEditing({ ...editing, tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean) })} />
-      </label>
+      <PlaybookEditorFields editing={editing} setEditing={update => setEditing(current => current ? typeof update === 'function' ? update(current) : update : current)} entries={entries} globalRules={globalRules} isNew={isNew} tradesCount={selTrades.length} suggestedGrade={stats.get(editing.id) ? suggestGrade(stats.get(editing.id)!).grade : undefined} />
       <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
         {editing.status === 'draft' && <button type="button" onClick={() => save('active')} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Create playbook</button>}
         <button type="button" onClick={() => save(editing.status === 'draft' ? 'draft' : undefined)} className={editing.status === 'draft' ? btn : 'h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white'}>{editing.status === 'draft' ? 'Save draft' : isNew ? 'Create playbook' : 'Save changes'}</button>
@@ -487,17 +429,12 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         recommendations={recommendations}
         blankDraft={{ ...blank(), markets: [], symbols: [] }}
         entries={allJournalEntries}
+        globalRules={globalRules}
         existingNames={playbooks.map(playbook => playbook.name)}
         createdAt={JOURNAL_TODAY}
         onClose={() => setRecommendationOpen(false)}
-        onCustomize={draft => {
-          setRecommendationOpen(false);
-          setEditing(draft);
-          setIsNew(true);
-          window.requestAnimationFrame(() => document.getElementById('playbook-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-        }}
-        onCreate={draft => {
-          const error = persistPlaybook(draft, true, 'active');
+        onCreate={(draft, statusOverride) => {
+          const error = persistPlaybook(draft, true, statusOverride);
           if (!error) setRecommendationOpen(false);
           return error;
         }}
@@ -613,7 +550,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
               {/* Step tabs: Setup → Rules → Checklist → Execution → Review */}
               <nav className="grid grid-cols-3 md:grid-cols-6 gap-1 rounded-xl bg-slate-100 p-1" role="tablist" aria-label="Playbook steps">
                 {STEPS.map(([id, label], i) => {
-                  const badge = id === 'checklist' ? `${metAll}/${totalChecks}` : id === 'review' ? (s.n ? `${s.n} trades` : '') : id === 'rules' ? `${sel.rules.length + (sel.avoid?.length || 0)}` : id === 'scenarios' ? `${openScenarios(sel).length} open` : '';
+                  const tradingRuleCount = selectedTradingRules
+                    ? Object.values(selectedTradingRules.enabled).filter(Boolean).length
+                    : 0;
+                  const badge = id === 'checklist' ? `${metAll}/${totalChecks}` : id === 'review' ? (s.n ? `${s.n} trades` : '') : id === 'rules' ? `${playbookChecks.length + (sel.avoid?.length || 0) + tradingRuleCount}` : id === 'scenarios' ? `${openScenarios(sel).length} open` : '';
                   return (
                     <div key={id} className="relative min-w-0"><button type="button" role="tab" aria-selected={step === id} onClick={() => setStep(id)}
                       className={`w-full rounded-lg pl-2 pr-7 py-2 text-left ${step === id ? 'bg-white shadow-sm' : 'hover:bg-white/60'}`}>
@@ -644,6 +584,11 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
 
               {step === 'rules' && (
                 <div className="space-y-4">
+                  {playbookConditions(sel).length > 0 && <section className="rounded-xl border border-[#DED5FF] bg-[#FAF8FF] p-3" aria-label="Saved technical conditions">
+                    <h4 className="text-sm font-bold text-[#0b1c30]">Technical entry conditions</h4>
+                    <p className="mt-1 text-[11px] text-slate-500">All conditions must pass. Used for backtests and available in the sample-data scanner.</p>
+                    <ol className="mt-2 space-y-1">{playbookConditions(sel).map(condition => <li key={condition.id} className="text-xs text-[#474556]">{describeCondition(condition)}</li>)}</ol>
+                  </section>}
                   <div>
                     <h4 className="text-sm font-bold text-[#0b1c30] mb-2">Setup rules: what must be true<JournalHelp label="Setup rules: what must be true" /></h4>
                     <ol className="space-y-2">
@@ -656,13 +601,24 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                       {sel.rules.length === 0 && <li className="text-sm text-slate-400">No setup rules yet.</li>}
                     </ol>
                   </div>
+                  {selectedTradingRules && <section className="rounded-xl border border-slate-200 p-3" aria-label="Trading rules for this strategy">
+                    <h4 className="text-sm font-bold text-[#0b1c30]">Trading rules for this strategy</h4>
+                    <p className="mt-1 text-[11px] text-slate-500">Selected built-in limits are checked only when journal evidence supports it. Added rules are reminders.</p>
+                    <ul className="mt-2 space-y-1.5">
+                      {selectedTradingRules.enabled.maxRisk && <li className="text-xs text-[#0b1c30]">Max risk per trade: {selectedTradingRules.values.maxRisk}% of account <span className="text-[10px] text-slate-500">· evidence-dependent</span></li>}
+                      {selectedTradingRules.enabled.maxDailyLoss && <li className="text-xs text-[#0b1c30]">Max daily loss: {selectedTradingRules.values.maxDailyLoss}% of account <span className="text-[10px] text-slate-500">· evidence-dependent</span></li>}
+                      {selectedTradingRules.enabled.maxTrades && <li className="text-xs text-[#0b1c30]">Max trades per day: {selectedTradingRules.values.maxTrades}{overDays ? <span className="text-rose-600"> · exceeded on {overDays} day{overDays === 1 ? '' : 's'}</span> : <span className="text-[10px] text-slate-500"> · evidence-dependent</span>}</li>}
+                      {selectedTradingRules.enabled.stopAfterLosses && <li className="text-xs text-[#0b1c30]">Stop after {selectedTradingRules.values.stopAfterLosses} consecutive losses <span className="text-[10px] text-slate-500">· evidence-dependent</span></li>}
+                      {selectedTradingRules.customRules.filter(rule => rule.enabled).map(item => <li key={item.id} className="text-xs text-[#0b1c30]">{describeCustomTradingRule(item.rule)} <span className="text-[10px] text-slate-500">· reminder only</span></li>)}
+                      {!Object.values(selectedTradingRules.enabled).some(Boolean) && !selectedTradingRules.customRules.some(rule => rule.enabled) && <li className="text-xs text-slate-500">No trading rules selected for this playbook.</li>}
+                    </ul>
+                    <button type="button" onClick={startEdit} className="mt-3 text-xs font-semibold text-[#5338ec] hover:underline">Customize these rules</button>
+                  </section>}
+                  {sel.strategyNotes?.trim() && <section className="rounded-xl border border-slate-200 bg-slate-50 p-3" aria-label="Strategy notes">
+                    <h4 className="text-sm font-bold text-[#0b1c30]">Strategy notes</h4>
+                    <p className="mt-1 whitespace-pre-wrap text-xs text-[#474556]">{sel.strategyNotes}</p>
+                  </section>}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="rounded-xl border border-slate-200 px-3 py-2.5"><p className={lbl}>Risk per trade<JournalHelp label="Risk per trade" /></p><p className="text-sm font-bold text-[#0b1c30] mt-0.5">{sel.riskPerTrade !== undefined ? `${sel.riskPerTrade}% of account` : 'House limit'}</p></div>
-                    <div className="rounded-xl border border-slate-200 px-3 py-2.5">
-                      <p className={lbl}>Max trades per day<JournalHelp label="Max trades per day" /></p>
-                      <p className="text-sm font-bold text-[#0b1c30] mt-0.5">{sel.maxTradesPerDay ?? 'House limit'}</p>
-                      {sel.maxTradesPerDay !== undefined && <p className={`text-[11px] mt-0.5 ${overDays ? 'text-rose-600' : 'text-emerald-600'}`}>{overDays ? `Broken on ${overDays} day${overDays === 1 ? '' : 's'} in the journal` : 'Never broken in the journal'}</p>}
-                    </div>
                     <div className="rounded-xl border border-slate-200 px-3 py-2.5"><p className={lbl}>Min reward:risk<JournalHelp label="Min reward:risk" /></p><p className="text-sm font-bold text-[#0b1c30] mt-0.5">1:{sel.benchmarkRR}</p></div>
                   </div>
                   <div className="rounded-xl border border-rose-200 bg-rose-50/40 p-3">
@@ -803,9 +759,9 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                     </div>
                   </div>
                   <div>
-                    <p className={`${lbl} mb-1.5`}>Setup conditions ({met}/{sel.rules.length})</p>
+                    <p className={`${lbl} mb-1.5`}>Strategy rules and reminders ({met}/{playbookChecks.length})</p>
                     <div className="space-y-2">
-                      {sel.rules.map((r, i) => {
+                      {playbookChecks.map((r, i) => {
                         const on = checked.includes(r.id);
                         return (
                           <label key={r.id} className={`flex gap-3 items-start rounded-xl border px-3 py-2.5 cursor-pointer ${on ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 hover:bg-slate-50'}`}>
@@ -814,6 +770,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                           </label>
                         );
                       })}
+                      {playbookChecks.length === 0 && <p className="text-xs text-slate-400">No strategy rules or reminders selected.</p>}
                     </div>
                   </div>
                   <div>
@@ -1033,7 +990,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
       {/* House rules (global checklist + risk limits) */}
       <div>
         <h3 className="text-sm font-bold text-[#0b1c30] mb-1">House rules<JournalHelp label="House rules" /></h3>
-        <p className="text-xs text-[#474556] mb-3">Apply to every playbook: the pre-trade checklist in each new entry and your hard risk limits.</p>
+        <p className="text-xs text-[#474556] mb-3">Apply to every playbook: the pre-trade checklist in each new entry. Trading limits are customized in each playbook.</p>
         {houseRules}
       </div>
     </div>
