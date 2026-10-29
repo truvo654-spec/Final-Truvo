@@ -1078,7 +1078,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         </div>
       )}
 
-      {selected && <JournalReviewDrawer entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
+      {selected && <JournalReviewDrawer playbooks={playbooks} entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
       {reviewQueueOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0b1c30]/40 p-3 sm:p-6" role="presentation" onMouseDown={() => setReviewQueueOpen(false)}>
           <section

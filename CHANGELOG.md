@@ -1,3 +1,10 @@
+## 2.47.1 — Assign a saved playbook during trade review
+
+- Add a selection-only Playbook dropdown to trade review, sourced from saved playbooks.
+- Save the selected playbook with the journal entry and show its rules immediately in the review.
+- Reset plan and rule answers when changing playbook so evidence from a different setup is not reused.
+- Preserve unavailable legacy assignments and currently assigned archived playbooks without making other archived playbooks selectable.
+
 ## 2.47.0 — Playbook execution comparison
 
 - Preserve the original Analytics panel and shared Create/Edit dialog.

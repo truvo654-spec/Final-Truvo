@@ -6,10 +6,17 @@ import { JOURNAL_EMOTIONS, JOURNAL_MISTAKES } from '../../data/journalData';
 import { costsKnown, currencyOf, eligible, incompleteFields, rawNet, realizedR, resultOf, timestampMs } from './journalMath';
 import { ReviewStateBadge, TradingStatusBadge, reviewStateOf, tradingStatusOf } from './tradingStatus';
 
-interface Props { entry: JournalEntry; cohort: string[]; playbook?: JournalPlaybook; checklist?:JournalChecklistItem[]; onSelect:(id:string)=>void; onClose:()=>void; onSave:(e:JournalEntry)=>void; onDelete:(id:string)=>void; onReplay:()=>void }
-export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,checklist=[],onSelect,onClose,onSave,onDelete,onReplay}) => {
+interface Props { entry: JournalEntry; cohort: string[]; playbook?: JournalPlaybook; playbooks?: JournalPlaybook[]; checklist?:JournalChecklistItem[]; onSelect:(id:string)=>void; onClose:()=>void; onSave:(e:JournalEntry)=>void; onDelete:(id:string)=>void; onReplay:()=>void }
+export function changeReviewPlaybook(entry: JournalEntry, strategy: string): JournalEntry {
+  if (entry.strategy === strategy) return entry;
+  return { ...entry, strategy, followedPlan: null, ruleEvidence: undefined, scenarioId: undefined, reviewState: 'needs_review' };
+}
+export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook:originalPlaybook,playbooks=originalPlaybook?[originalPlaybook]:[],checklist=[],onSelect,onClose,onSave,onDelete,onReplay}) => {
   const dialog = useRef<HTMLDivElement>(null);
   const [draft,setDraft] = useState(entry);
+  const playbook = playbooks.find(book => book.name === draft.strategy);
+  const selectablePlaybooks = playbooks.filter(book => book.status !== 'archived' || book.name === entry.strategy);
+  const hasCurrentPlaybook = selectablePlaybooks.some(book => book.name === draft.strategy);
   const [error,setError] = useState('');
   const errorNode = useRef<HTMLParagraphElement>(null);
   useEffect(()=>{if(error){errorNode.current?.focus();errorNode.current?.scrollIntoView({block:'nearest'});}},[error]);
@@ -73,6 +80,18 @@ export const JournalReviewDrawer: React.FC<Props> = ({entry,cohort,playbook,chec
           <div className="flex flex-wrap gap-2"><TradingStatusBadge status={tradingStatusOf(draft)}/><ReviewStateBadge state={reviewStateOf(draft)}/><span className="text-xs">{draft.date} · {draft.direction} · {draft.strategy} · {currency}</span></div>
           <p className="font-mono font-bold">{eligible(draft)?`${money(rawNet(draft))} net · ${resultOf(draft)}`:'Realized net result unavailable'} · {realizedR(draft)==null?'R unknown':`${realizedR(draft)!.toFixed(2)}R`}</p>
           <p className="text-xs text-slate-500">{draft.accountId || 'Legacy demo account'} · {draft.size} {draft.quantityUnit || 'quantity units not recorded'} · entry {draft.entryPrice} · exit {draft.exitPrice ?? 'unknown'} · stop {draft.stopPrice ?? 'unknown'} · planned R {draft.plannedR ?? 'unknown'}</p>
+          <label className="block text-xs font-semibold">Playbook
+            <select aria-label="Trade playbook" className={field} value={draft.strategy} disabled={!selectablePlaybooks.length} onChange={ev => {
+              const strategy = ev.target.value;
+              if (!selectablePlaybooks.some(book => book.name === strategy)) return;
+              setDraft(current => changeReviewPlaybook(current, strategy));
+              setError('');
+            }}>
+              {!hasCurrentPlaybook && <option value={draft.strategy} disabled>{draft.strategy ? `${draft.strategy} (not in saved playbooks)` : 'Select a saved playbook'}</option>}
+              {selectablePlaybooks.map(book => <option key={book.id} value={book.name}>{book.name}{book.status === 'archived' ? ' (Archived)' : book.status === 'draft' ? ' (Draft)' : book.status === 'testing' ? ' (Testing)' : ''}</option>)}
+            </select>
+            <span className="mt-1 block text-[11px] font-normal text-slate-500">{!selectablePlaybooks.length ? 'Create a playbook in the Playbook tab to select it here.' : 'Choose from your saved playbooks. Changing playbook resets plan adherence and rule answers; save the review to apply.'}</span>
+          </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="text-xs font-semibold">Trading status<JournalHelp label="Trading status" /><select aria-label="Trading status" className={field} value={tradingStatusOf(draft)} onChange={ev=>patch({tradingStatus:ev.target.value as TradingStatus,...(ev.target.value==='closed' && tradingStatusOf(draft)!=='closed' && draft.pnlKnown!==true?{pnlKnown:false}:{})})}><option value="planned">Planned</option><option value="open">Open</option><option value="closed">Closed</option></select></label>
             <label className="text-xs font-semibold">Reported gross P&amp;L<JournalHelp label="Reported gross P&L" /><input aria-label="Reported gross P&L" className={field} type="number" step="any" value={draft.pnlKnown===false?'':draft.pnl} onChange={ev=>patch({pnlKnown:ev.target.value!=='',pnl:ev.target.value===''?0:Number(ev.target.value)})}/></label>
