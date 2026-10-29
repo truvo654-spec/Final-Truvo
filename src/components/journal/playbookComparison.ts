@@ -4,7 +4,12 @@ import type { BacktestRun } from '../../backtest/store';
 import type { BacktestTrade } from '../../backtest/types';
 import { eligible, netOf, realizedR, timestampMs, currencyOf } from './journalMath';
 import { symbolSpec } from '../../backtest/marketData';
+import { instrumentMarket } from './instrumentMatching';
 import { instrumentKey, playbookFingerprint } from './playbookExecution';
+
+export function comparisonMarket(playbook: JournalPlaybook, symbol: string, entries: JournalEntry[] = []): string {
+  return instrumentMarket(symbol,playbook) ?? entries.find(entry=>instrumentKey(entry.symbol)===instrumentKey(symbol))?.assetClass ?? 'Unassigned';
+}
 
 export const executionPrice = (price:number|null|undefined,symbol:string) => price==null ? '—' : price.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:symbolSpec(symbol)?.priceDp ?? 6});
 
@@ -13,11 +18,13 @@ export interface ExecutionPoint { id: string; at: number; entryAt: number; net: 
 export function comparisonStats(points: ExecutionPoint[], balance: number) {
   const sorted = [...points].sort((a,b)=>a.at-b.at || a.id.localeCompare(b.id));
   let cumulative = 0, peak = balance, drawdown = 0, drawdownPct = 0;
-  const curve = sorted.map(point => {
+  const curve = sorted.map((point,index) => {
     cumulative += point.net;
-    const equity = balance + cumulative; peak = Math.max(peak,equity);
-    drawdown = Math.max(drawdown,peak-equity);
-    if(peak > 0) drawdownPct = Math.max(drawdownPct,(peak-equity)/peak*100);
+    if(index===sorted.length-1 || sorted[index+1].at!==point.at) {
+      const equity = balance + cumulative; peak = Math.max(peak,equity);
+      drawdown = Math.max(drawdown,peak-equity);
+      if(peak > 0) drawdownPct = Math.max(drawdownPct,(peak-equity)/peak*100);
+    }
     return {...point,cumulative};
   });
   const wins = sorted.filter(p=>p.net > 0.005).length;
@@ -38,7 +45,7 @@ export function comparePlaybook(playbook: JournalPlaybook, entries: JournalEntry
     const current=(run:BacktestRun)=>run.playbookFingerprint===playbookFingerprint(playbook) && run.settings.risk.startBalance===scope.balance;
     const run=candidates.find(r=>covers(r)&&current(r)) ?? candidates.find(covers) ?? candidates[0];
     const simulated=(run?.output.result.trades ?? []).filter(t=>t.entryTime>=start && t.entryTime<end && (t.exitTime<end || t.exitReason==='end of test'&&t.exitTime===end)).map((trade):ExecutionPoint=>({id:`${run!.id}:${trade.id}`,at:trade.exitTime,entryAt:trade.entryTime,net:trade.net,r:trade.r,trade,run,symbol}));
-    return {symbol,run,partial:!!run&&!covers(run),stale:!!run?.playbookFingerprint&&run.playbookFingerprint!==playbookFingerprint(playbook),balanceChanged:!!run&&run.settings.risk.startBalance!==scope.balance,journal:comparisonStats(journal.filter(p=>instrumentKey(p.symbol)===instrumentKey(symbol)),scope.balance),simulated:comparisonStats(simulated,scope.balance)};
+    return {symbol,market:comparisonMarket(playbook,symbol,entries),run,partial:!!run&&!covers(run),stale:!!run?.playbookFingerprint&&run.playbookFingerprint!==playbookFingerprint(playbook),balanceChanged:!!run&&run.settings.risk.startBalance!==scope.balance,journal:comparisonStats(journal.filter(p=>instrumentKey(p.symbol)===instrumentKey(symbol)),scope.balance),simulated:comparisonStats(simulated,scope.balance)};
   });
   return {history,rows,journal:comparisonStats(journal,scope.balance),simulated:comparisonStats(rows.flatMap(row=>row.simulated.points),scope.balance)};
 }

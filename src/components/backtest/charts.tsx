@@ -1,5 +1,6 @@
+import {LinkedPerformancePanes,LINKED_PANE_HEIGHT,candleTimePosition,candlePositionTime,candleIndexAt,type LinkedPanel} from './linkedPerformance';
 // Lightweight SVG charts for the Backtesting screens: equity / drawdown lines, bar breakdowns and candles.
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Bar } from '../../backtest/types';
 
 const GRID = '#E2E8F0';
@@ -163,7 +164,7 @@ export const BarBreakdown: React.FC<{ buckets: { label: string; value: number; n
 };
 
 export interface PriceLine { price: number; color: string; label: string; dashed?: boolean }
-export interface Marker { index: number; price: number; kind: 'buy' | 'sell' | 'exit'; color?: string; label?: string }
+export interface Marker { index: number; price: number; kind: 'buy' | 'sell' | 'exit'; color?: string; label?: string; id?: string; showLabel?: boolean; time?: number; timeLabel?: string }
 
 export const CandleChart: React.FC<{
   bars: Bar[];
@@ -174,21 +175,39 @@ export const CandleChart: React.FC<{
   dp: number;
   lines?: PriceLine[];
   markers?: Marker[];
+  onMarkerClick?: (marker: Marker) => void;
   drawings?: number[];
   onPick?: (price: number) => void;
   label: string;
   hidePriceAxis?: boolean;
+  showTimeAxis?: boolean;
+  responsive?: boolean;
+  /** Additional panes share the candle time scale, visible window and cursor. */
+  linkedPanels?:LinkedPanel[];
+  timelineEnd?:number;
   interactive?: boolean;
   tooltipDetail?: (time: number) => React.ReactNode;
   pnl?: { series: LineSeries[]; detail: (time: number) => React.ReactNode; currency?: string };
-}> = ({ bars, from, to, height = 320, dp, lines = [], markers = [], drawings = [], onPick, label, hidePriceAxis, pnl, interactive = Boolean(pnl), tooltipDetail }) => {
-  const W = 760, H = height, M = { t: pnl ? 30 : 10, r: hidePriceAxis ? 8 : pnl ? 72 : 64, b: pnl ? 28 : 10, l: pnl ? 76 : 8 };
+}> = ({ bars, from, to, height = 320, dp, lines = [], markers = [], onMarkerClick, drawings = [], onPick, label, hidePriceAxis, showTimeAxis = false, responsive = false, linkedPanels = [], timelineEnd, pnl, interactive = Boolean(pnl), tooltipDetail }) => {
+  const [responsiveWidth,setResponsiveWidth]=useState(760);
+  const W = responsive ? responsiveWidth : 760, H = height, M = { t: pnl ? 30 : 10, r: hidePriceAxis ? 8 : pnl ? 72 : 64, b: pnl || showTimeAxis ? 28 : 10, l: pnl ? 76 : 8 };
   const vis = bars.slice(Math.max(0, from), Math.max(from, to));
   const ref = useRef<SVGSVGElement>(null);
   const [hoverTime, setHoverTime] = useState<number|null>(null);
+  useEffect(()=>{
+    const node=ref.current?.parentElement;
+    if(!responsive||!node)return;
+    const update=()=>setResponsiveWidth(Math.max(280,Math.round(node.getBoundingClientRect().width)));
+    update();
+    if(typeof ResizeObserver==='undefined')return;
+    const observer=new ResizeObserver(update);observer.observe(node);return()=>observer.disconnect();
+  },[responsive,vis.length>0]);
+  useEffect(()=>setHoverTime(null),[bars,from,to,timelineEnd]);
   if (!vis.length) return <div className="h-40 grid place-items-center text-xs text-slate-500">No bars to show.</div>;
   let lo = Math.min(...vis.map((b) => b.l)), hi = Math.max(...vis.map((b) => b.h));
   lines.forEach((l) => { if (Number.isFinite(l.price)) { lo = Math.min(lo, l.price); hi = Math.max(hi, l.price); } });
+  const visibleMarkers=markers.filter(m=>m.index>=from&&m.index<to&&Number.isFinite(m.price));
+  for(const marker of visibleMarkers){lo=Math.min(lo,marker.price);hi=Math.max(hi,marker.price);}
   const pad = (hi - lo) * 0.06 || hi * 0.001; lo -= pad; hi += pad;
   const sy = (p: number) => M.t + (1 - (p - lo) / (hi - lo)) * (H - M.t - M.b);
   const bw = (W - M.l - M.r) / vis.length;
@@ -196,10 +215,14 @@ export const CandleChart: React.FC<{
   const click = (e: React.MouseEvent) => {
     if (!onPick) return;
     const r = ref.current?.getBoundingClientRect(); if (!r) return;
-    const y = ((e.clientY - r.top) / r.height) * H;
+    const y = ((e.clientY - r.top) / r.height) * (H+linkedPanels.length*LINKED_PANE_HEIGHT+(linkedPanels.length?16:0));
+    if(y>H-M.b)return;
     onPick(lo + (1 - (y - M.t) / (H - M.t - M.b)) * (hi - lo));
   };
   const last = vis[vis.length - 1];
+  const linkedEnd=timelineEnd??bars[to]?.t??last.t+(last.t-(vis.at(-2)?.t??last.t-60000));
+  const svgHeight=H+linkedPanels.length*LINKED_PANE_HEIGHT+(linkedPanels.length?16:0);
+  const timeX=(at:number)=>M.l+candleTimePosition(bars,from,to,at,linkedEnd)*(W-M.l-M.r);
   const times = new Map<number,number>(vis.map((bar, i) => [bar.t, from+i] as const));
   const overlays = pnl?.series.map(s=>({...s,points:s.points.filter(p=>times.has(p.x)&&Number.isFinite(p.y))})) ?? [];
   const values = overlays.flatMap(s=>s.points.map(p=>p.y));
@@ -207,17 +230,18 @@ export const CandleChart: React.FC<{
   const pnlY = (v:number) => M.t+(1-(v-minPnl+pnlPad)/(maxPnl-minPnl+2*pnlPad))*(H-M.t-M.b);
   const pnlCurrency = pnl?.currency ?? 'USD';
   const money = (v:number) => new Intl.NumberFormat('en-US',{style:'currency',currency:pnlCurrency,maximumFractionDigits:2,notation:Math.abs(v)>=10000?'compact':'standard'}).format(v);
-  const hovered = vis.find(b=>b.t===hoverTime);
+  const hovered = hoverTime===null?undefined:linkedPanels.length?bars[Math.max(from,Math.min(to-1,candleIndexAt(bars,hoverTime)))]:vis.find(b=>b.t===hoverTime);
   return (
     <div className="relative">
-    <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className={`w-full h-auto select-none ${onPick || interactive ? 'cursor-crosshair' : ''}`} role="img" aria-label={label} onClick={click}
-      tabIndex={interactive?0:undefined} onFocus={()=>interactive&&setHoverTime(last.t)} onBlur={()=>setHoverTime(null)}
-      onKeyDown={e=>{if(!interactive||!['ArrowLeft','ArrowRight','Home','End','Escape'].includes(e.key))return;e.preventDefault();if(e.key==='Escape'){setHoverTime(null);return;}const i=hovered?vis.indexOf(hovered):vis.length-1;setHoverTime(vis[e.key==='Home'?0:e.key==='End'?vis.length-1:Math.max(0,Math.min(vis.length-1,i+(e.key==='ArrowLeft'?-1:1)))].t);}}
-      onMouseLeave={()=>setHoverTime(null)} onMouseMove={e=>{if(!interactive)return;const r=ref.current?.getBoundingClientRect();if(!r)return;const i=Math.floor((((e.clientX-r.left)/r.width)*W-M.l)/bw);setHoverTime(vis[Math.max(0,Math.min(vis.length-1,i))].t);}}>
+    <svg ref={ref} viewBox={`0 0 ${W} ${svgHeight}`} className={`w-full h-auto select-none ${onPick || interactive ? 'cursor-crosshair' : ''}`} role={onMarkerClick?"group":"img"} aria-label={label} onClick={click}
+      tabIndex={interactive?0:undefined} onFocus={event=>{if(interactive&&event.target===event.currentTarget&&hoverTime===null)setHoverTime(linkedPanels.length?linkedEnd-1:last.t);}} onBlur={()=>setHoverTime(null)}
+      onKeyDown={e=>{if(!interactive||!['ArrowLeft','ArrowRight','Home','End','Escape'].includes(e.key))return;e.preventDefault();if(e.key==='Escape'){setHoverTime(null);return;}const i=hovered?vis.indexOf(hovered):vis.length-1;setHoverTime(e.key==='End'&&linkedPanels.length?linkedEnd-1:vis[e.key==='Home'?0:e.key==='End'?vis.length-1:Math.max(0,Math.min(vis.length-1,i+(e.key==='ArrowLeft'?-1:1)))].t);}}
+      onMouseLeave={()=>setHoverTime(null)} onMouseMove={e=>{if(!interactive)return;const r=ref.current?.getBoundingClientRect();if(!r)return;const position=(((e.clientX-r.left)/r.width)*W-M.l)/(W-M.l-M.r);if(linkedPanels.length){setHoverTime(Math.min(linkedEnd-1,candlePositionTime(bars,from,to,Math.max(0,Math.min(1,position)),linkedEnd)));return;}const i=Math.floor(position*vis.length);setHoverTime(vis[Math.max(0,Math.min(vis.length-1,i))].t);}}>
       {pnl&&<><text x={M.l} y={14} fill={ACCENT} fontSize="11">Net P&amp;L · {pnlCurrency} (left)</text><text x={W-M.r} y={14} textAnchor="end" fill={AXIS} fontSize="11">Price (right)</text>
         {niceTicks(minPnl-pnlPad,maxPnl+pnlPad).map(v=><text key={v} x={M.l-8} y={pnlY(v)+3} textAnchor="end" fill={ACCENT} fontSize="10">{money(v)}</text>)}
         {[vis[0],...(vis.length>1?[last]:[])].map((b,i)=><text key={b.t} x={sx(times.get(b.t)!)} y={H-6} textAnchor={i?'end':'start'} fill={AXIS} fontSize="10">{new Date(b.t).toISOString().slice(5,16).replace('T',' ')} UTC</text>)}
       </>}
+      {showTimeAxis&&!pnl&&[vis[0],...(vis.length>1||linkedPanels.length?[last]:[])].map((bar,index)=><text key={`${bar.t}:${index}`} x={index&&linkedPanels.length?W-M.r:sx(times.get(bar.t)!)} y={svgHeight-6} textAnchor={index?'end':'start'} fill={AXIS} fontSize="11">{new Date(index&&linkedPanels.length?linkedEnd-1:bar.t).toISOString().slice(5,16).replace('T',' ')} UTC</text>)}
       {!hidePriceAxis && niceTicks(lo, hi, 5).map((t) => (
         <g key={t}><line x1={M.l} x2={W - M.r} y1={sy(t)} y2={sy(t)} stroke={GRID} strokeDasharray="3 4" />
           <text x={W - M.r + 6} y={sy(t) + 3} fontSize="10" fill={AXIS}>{t.toFixed(dp)}</text></g>
@@ -245,9 +269,9 @@ export const CandleChart: React.FC<{
         </g>
       ))}
       {markers.filter((m) => m.index >= from && m.index < to).map((m, k) => (
-        <g key={`m${k}`}>
-          <circle cx={sx(m.index)} cy={sy(m.price)} r={5} fill={m.color || (m.kind === 'buy' ? UP : m.kind === 'sell' ? DOWN : '#0b1c30')} stroke="#fff" strokeWidth={1.5} />
-          <text x={sx(m.index)} y={sy(m.price) + (m.kind === 'sell' ? -9 : 15)} textAnchor="middle" fontSize="9" fontWeight={700} fill={m.color || (m.kind === 'buy' ? UP : m.kind === 'sell' ? DOWN : '#0b1c30')}>{m.label || (m.kind === 'buy' ? 'BUY' : m.kind === 'sell' ? 'SELL' : 'EXIT')}</text>
+        <g key={`m${k}`} role={onMarkerClick?'button':undefined} tabIndex={onMarkerClick?0:undefined} aria-label={onMarkerClick?`${m.label||m.kind} at ${m.price.toFixed(dp)} · ${m.timeLabel??(new Date(m.time??bars[m.index].t).toISOString().slice(0,16)+' UTC')}`:undefined} className={onMarkerClick?'cursor-pointer focus:outline-none focus:stroke-slate-950':undefined} onFocus={onMarkerClick?()=>setHoverTime(m.time??bars[m.index].t):undefined} onClick={onMarkerClick?event=>{event.stopPropagation();setHoverTime(m.time??bars[m.index].t);onMarkerClick(m);}:undefined} onKeyDown={onMarkerClick?event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();onMarkerClick(m);}}:undefined}>
+          <circle cx={linkedPanels.length&&m.time!==undefined?timeX(m.time):sx(m.index)} cy={sy(m.price)} r={5} fill={m.color || (m.kind === 'buy' ? UP : m.kind === 'sell' ? DOWN : '#0b1c30')} stroke="#fff" strokeWidth={1.5} />
+          {m.showLabel!==false&&<text x={linkedPanels.length&&m.time!==undefined?timeX(m.time):sx(m.index)} y={sy(m.price) + (m.kind === 'sell' ? -9 : 15)} textAnchor="middle" fontSize="9" fontWeight={700} fill={m.color || (m.kind === 'buy' ? UP : m.kind === 'sell' ? DOWN : '#0b1c30')}>{m.label || (m.kind === 'buy' ? 'BUY' : m.kind === 'sell' ? 'SELL' : 'EXIT')}</text>}
         </g>
       ))}
       {!hidePriceAxis && (
@@ -256,9 +280,10 @@ export const CandleChart: React.FC<{
           <text x={W - M.r + 6} y={sy(last.c) + 3} fontSize="9" fill="#fff" fontWeight={700}>{last.c.toFixed(dp)}</text>
         </g>
       )}
-      {hovered&&interactive&&<line x1={sx(times.get(hovered.t)!)} x2={sx(times.get(hovered.t)!)} y1={M.t} y2={H-M.b} stroke={AXIS} strokeDasharray="3 3"/>}
+      {linkedPanels.length>0&&<LinkedPerformancePanes panels={linkedPanels} top={H} left={M.l} right={M.r} width={W} start={vis[0].t} end={linkedEnd} x={timeX} hoverTime={hoverTime}/>}
+      {hovered&&interactive&&<line aria-label="Shared time cursor" x1={linkedPanels.length?timeX(hoverTime!):sx(times.get(hovered.t)!)} x2={linkedPanels.length?timeX(hoverTime!):sx(times.get(hovered.t)!)} y1={M.t} y2={svgHeight-(linkedPanels.length?20:M.b)} stroke={AXIS} strokeDasharray="3 3"/>}
     </svg>
-    {hovered&&interactive&&<div role="status" className="pointer-events-none absolute top-6 left-2 right-2 sm:right-auto rounded-lg bg-[#0b1c30] text-white text-[11px] p-3 shadow-lg"><p>{new Date(hovered.t).toISOString().slice(0,16).replace('T',' ')} UTC</p><p>O {hovered.o.toFixed(dp)} · H {hovered.h.toFixed(dp)} · L {hovered.l.toFixed(dp)} · C {hovered.c.toFixed(dp)}</p><p>Volume {hovered.v.toLocaleString()}</p>{tooltipDetail?.(hovered.t)}{pnl?.detail(hovered.t)}</div>}
+    {hovered&&interactive&&<div role="status" className="pointer-events-none absolute top-6 left-2 right-2 sm:right-auto rounded-lg bg-[#0b1c30] text-white text-[11px] p-3 shadow-lg"><p>{new Date(hoverTime??hovered.t).toISOString().slice(0,16).replace('T',' ')} UTC</p><p>O {hovered.o.toFixed(dp)} · H {hovered.h.toFixed(dp)} · L {hovered.l.toFixed(dp)} · C {hovered.c.toFixed(dp)}</p><p>Volume {hovered.v.toLocaleString()}</p>{tooltipDetail?.(hoverTime??hovered.t)}{pnl?.detail(hovered.t)}</div>}
     {pnl&&<div className="flex flex-wrap gap-4 text-[11px] mt-2"><span>Candles · price</span>{overlays.map(s=><span key={s.name} className="flex items-center gap-1"><span className="w-4 border-t-2" style={{borderColor:s.color,borderStyle:s.dashed?'dashed':'solid'}}/>{s.name} · net P&amp;L</span>)}<span className="text-slate-500">Independent scales · hover or focus chart and use ← / →</span></div>}
     </div>
   );

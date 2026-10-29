@@ -1,3 +1,63 @@
+## 2.51.0 — Journal-first chart with matching navigation
+
+- Open the execution workspace in Journal by default, with Journal first in the source selector.
+- Share timeframe/custom interval controls, zoom, Full period and earlier/later browsing across Journal and Backtest.
+- Focus recorded trades on their actual entry/exit interval and show recorded entry, exit, stop and target levels when available.
+- Keep journal fills, closed P&L and drawdown synchronized through every view change, with responsive rendering and a shared tooltip.
+- Add explicitly labeled demo candles behind recorded journal fills for the preview, on a stable price scale anchored to the earliest recorded entry.
+- Keep actual journal outcomes separate from the illustrative price path, with recorded-only fallback when demo candles are unavailable.
+
+## 2.50.2 — Remove repeated chart instrument label
+
+- Show the instrument once in its selector, removing the repeated symbol beside the chart timeframe.
+- Keep the custom timeframe, linked chart and zoom controls available.
+
+## 2.50.1 — Remove repeated comparison views
+
+- Remove the duplicate comparison charts and aggregate summary cards beneath the linked price/P&L/drawdown chart.
+- Keep a single compact Performance by instrument table for journal-versus-backtest comparisons and trade drill-downs.
+- Preserve the original Analytics panel, linked chart, filters and execution history.
+
+## 2.50.0 — Synchronize price, closed P&L and drawdown
+
+- Place cumulative closed P&L and drawdown in visible panes directly below the price chart, sharing one time axis and cursor.
+- Apply timeframe changes, zoom, browsing and trade focus to all three panes together.
+- Plot backtest fills and closed-result steps on the same exact timestamp scale, including within-candle closes.
+- Carry existing cumulative results and drawdown peaks into a zoomed window without reading future closes.
+- Use the same linked layout for recorded journal fills, preserving the distinction from generated market candles.
+- Remove the separate, independently scaled P&L/drawdown mini charts.
+
+## 2.49.1 — Custom chart timeframes
+
+- Add a grouped chart timeframe selector with Auto, minute/hour intervals, and calendar week/month intervals.
+- Support custom intervals aggregated from the existing 5-minute feed; keep backtest settings and trade results unchanged.
+- Keep manual timeframes when selecting trades and instruments; Full period restores the automatic overview.
+- Limit the visible window to readable candle counts, with earlier/later navigation for detailed intervals.
+
+## 2.49.0 — Price-first trade review
+
+- Make a single-instrument price chart the primary view, reusing the existing candle renderer and backtest price feed.
+- Add clickable backtest entry/exit markers, trade-focused zoom, stop/target levels, and a selected-trade summary.
+- Separate recorded journal fill prices from generated market candles rather than implying a real historical feed is connected.
+- Keep instrument P&L, drawdown and recent trades beside the price context; put detailed cross-instrument comparisons behind one expandable section.
+- Preserve the original Analytics panel and Run backtest workflow.
+
+## 2.48.0 — Market and instrument P&L / drawdown explorer
+
+- Rename simulated-result generation to Run backtest.
+- Add shared market filters alongside the existing instrument and date selections.
+- Add Overall, By market and By instrument views with source toggles and interactive legends.
+- Link stepped cumulative closed P&L and underwater drawdown charts with a shared cursor, keyboard inspection, pinned snapshots and zoom controls.
+- Show drawdown in percent or account currency, with closed-trade drill-downs and explicit reference-balance assumptions.
+- Aggregate simultaneous closes before calculating chart drawdown to avoid artificial intratimestamp ordering effects.
+
+## 2.47.2 — Keep instrument comparison in sync with playbook edits
+
+- Automatically include newly saved playbook instruments in the performance table, chart, and execution filters.
+- Remove instruments deselected in the playbook while preserving manual comparison opt-outs and journal-only selections.
+- Persist the playbook instrument baseline with comparison preferences so synchronization also works after reopening the page.
+- Reset an execution filter whose instrument was removed and keep display labels consistent across aliases.
+
 ## 2.47.1 — Assign a saved playbook during trade review
 
 - Add a selection-only Playbook dropdown to trade review, sourced from saved playbooks.
