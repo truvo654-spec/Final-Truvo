@@ -29,6 +29,7 @@ export interface JournalPlaybook {
   thesis: string;
   /** Optional context for this playbook, separate from executable rules. */
   strategyNotes?: string;
+  houseChecklistIds?: string[];
   rules: { id: string; title: string; detail: string }[];
   entryTrigger: string;
   stopRule: string;

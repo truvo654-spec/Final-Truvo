@@ -912,6 +912,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         <JournalPlaybooks
           entries={scoped}
           allJournalEntries={entries}
+          comparisonEntries={calEntries}
           playbooks={playbooks}
           setPlaybooks={setVersionedPlaybooks}
           onOpenEntry={id=>openEntry(id,scoped.filter(e=>e.strategy===entries.find(x=>x.id===id)?.strategy).map(e=>e.id))}
@@ -927,7 +928,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             return next;
           })}
           expected={expected}
-          onBacktest={(id) => goBacktest({ view: 'setup', playbookId: id })}
+          onBacktest={(id, symbol) => goBacktest({ view: 'setup', playbookId: id, symbol })}
           onWhatIf={id => goBacktest({ view: 'whatif', playbookId: id })}
           houseRules={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

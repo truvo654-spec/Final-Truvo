@@ -30,6 +30,7 @@ function write(key: string, value: unknown): boolean {
 export interface RunSummary { trades: number; net: number; netPct: number; winRate: number; avgR: number; pf: number | null; maxDDPct: number }
 
 export interface BacktestRun {
+  playbookFingerprint?: string;
   id: string;
   name: string;
   mode: 'automated';

@@ -95,6 +95,7 @@ test('Recommendation cards expose creation actions while setup controls remain i
     blankDraft,
     entries: [],
     globalRules,
+    houseChecklist: [],
     existingNames: [],
     createdAt: '2026-10-28',
     onClose: () => {},
@@ -112,6 +113,7 @@ test('Recommendation cards expose creation actions while setup controls remain i
     draft: blankDraft,
     entries: [],
     globalRules,
+    houseChecklist: [{ id: "check-1", label: "Defined stop loss before entry" }],
     onChange: () => {},
     onBack: () => {},
     onCreate: () => null,
@@ -126,6 +128,7 @@ test('Recommendation cards expose creation actions while setup controls remain i
   assert.equal((setup.match(/aria-label="Playbook instruments"/g) ?? []).length, 1);
   assert.match(setup, /Strategy markets/);
   assert.match(setup, /Customize details/);
+  assert.doesNotMatch(setup, /Defined stop loss before entry|<legend[^>]*>Pre-trade checklist/);
   assert.match(setup, /Create playbook/);
   assert.match(setup, /Back to recommendations/);
 });

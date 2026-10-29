@@ -1,8 +1,9 @@
+import { PlaybookChecklistSelector } from './PlaybookChecklistSelector';
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { JournalPlaybook, PlaybookGrade, PlaybookStatus } from '../../data/journalPlaybooks';
 import { PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
-import type { JournalEntry, PortfolioAssetClass } from '../../types';
+import type { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
 import { JournalHelp } from './JournalHelp';
 import { PlaybookInstruments } from './PlaybookInstruments';
 import { PlaybookTechnicalConditions } from './PlaybookTechnicalConditions';
@@ -35,9 +36,10 @@ interface Props {
   suggestedGrade?: PlaybookGrade;
   includeSetupFields?: boolean;
   grouped?: boolean;
+  houseChecklist?: JournalChecklistItem[];
 }
 
-export const PlaybookEditorFields: React.FC<Props> = ({ editing, setEditing, entries, globalRules, isNew, tradesCount = 0, suggestedGrade, includeSetupFields = true, grouped = false }) => (
+export const PlaybookEditorFields: React.FC<Props> = ({ editing, setEditing, entries, globalRules, isNew, tradesCount = 0, suggestedGrade, includeSetupFields = true, grouped = false, houseChecklist }) => (
   <>
     <FieldGroup title="Strategy profile" grouped={grouped}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -98,6 +100,9 @@ export const PlaybookEditorFields: React.FC<Props> = ({ editing, setEditing, ent
         <textarea aria-label="Do not trade when (one per line)" rows={3} className={`${input} mt-1`} value={(editing.avoid || []).join('\n')} onChange={(e) => setEditing({ ...editing, avoid: e.target.value.split('\n') })} placeholder="e.g. Within 15 minutes of a tier-1 release" />
       </label>
     </FieldGroup>
+    {houseChecklist && <FieldGroup title="Pre-trade checklist" grouped={grouped}>
+      <PlaybookChecklistSelector playbook={editing} checklist={houseChecklist} onChange={setEditing} />
+    </FieldGroup>}
     <FieldGroup title="Thesis and execution rules" grouped={grouped}>
       <label className="block"><span className={lbl}>Thesis<JournalHelp label="Thesis" /></span>
         <textarea aria-label="Thesis" rows={3} className={`${input} mt-1`} value={editing.thesis} onChange={(e) => setEditing({ ...editing, thesis: e.target.value })} placeholder="Why this setup works and when it does not." />

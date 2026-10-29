@@ -1,3 +1,12 @@
+## 2.47.0 — Playbook execution comparison
+
+- Preserve the original Analytics panel and shared Create/Edit dialog.
+- Add shared UTC date range, multi-instrument selection, and reference balance controls.
+- Generate and save simulated trades for selected instruments using the existing engine and generated sample prices.
+- Compare journal and simulated P&L, win rate, average R, profit factor, and reference-balance drawdown by instrument.
+- Drill from metrics and chart points into execution lists and simulated entry/exit details, including costs and adverse/favorable excursion.
+- Keep incomplete journal data, unavailable sample prices, stale setup snapshots, and partial date coverage explicit.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.

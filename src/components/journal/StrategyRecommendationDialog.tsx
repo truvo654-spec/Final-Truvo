@@ -1,3 +1,4 @@
+import type { JournalChecklistItem } from '../../types';
 import React, { useState } from 'react';
 import { Search, Sparkles, X } from 'lucide-react';
 import type { JournalPlaybook, PlaybookStatus } from '../../data/journalPlaybooks';
@@ -13,13 +14,14 @@ interface Props {
   blankDraft: JournalPlaybook;
   entries: JournalEntry[];
   globalRules: GlobalTradingRules;
+  houseChecklist: JournalChecklistItem[];
   existingNames: string[];
   createdAt: string;
   onClose: () => void;
   onCreate: (draft: JournalPlaybook, status: PlaybookStatus) => string | null;
 }
 
-export const StrategyRecommendationDialog: React.FC<Props> = ({ recommendations, blankDraft, entries, globalRules, existingNames, createdAt, onClose, onCreate }) => {
+export const StrategyRecommendationDialog: React.FC<Props> = ({ recommendations, blankDraft, entries, globalRules, houseChecklist, existingNames, createdAt, onClose, onCreate }) => {
   const [draft, setDraft] = useState(blankDraft);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasSetup, setHasSetup] = useState(false);
@@ -108,6 +110,7 @@ export const StrategyRecommendationDialog: React.FC<Props> = ({ recommendations,
       draft={draft}
       entries={entries}
       globalRules={globalRules}
+      houseChecklist={houseChecklist}
       onChange={next => { setDraft(next); setEdited(true); }}
       onBack={backToRecommendations}
       onCreate={onCreate}

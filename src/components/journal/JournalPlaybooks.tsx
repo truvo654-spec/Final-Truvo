@@ -1,3 +1,5 @@
+import { PlaybookSetupDialog } from './PlaybookSetupDialog';
+import { PlaybookExecutionWorkspace } from './PlaybookExecutionWorkspace';
 import { JournalHelp } from './JournalHelp';
 import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
@@ -114,6 +116,7 @@ const windowText = (pb: JournalPlaybook) => (pb.window ? `${pb.window.label} (${
 interface Props {
   entries: JournalEntry[];
   allJournalEntries?: JournalEntry[];
+  comparisonEntries?: JournalEntry[];
   playbooks: JournalPlaybook[];
   setPlaybooks: (fn: (prev: JournalPlaybook[]) => JournalPlaybook[]) => void;
   onOpenEntry: (id: string) => void;
@@ -126,7 +129,7 @@ interface Props {
   onSetRecording: (entryId: string, blob: Blob | null) => void;
   /** Saved backtest expectations by playbook id. */
   expected?: Record<string, PlaybookExpectedStats>;
-  onBacktest?: (playbookId: string) => void;
+  onBacktest?: (playbookId: string, symbol?: string) => void;
   onWhatIf?: (playbookId: string) => void;
 }
 
@@ -135,7 +138,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, comparisonEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -143,23 +146,14 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const [sort, setSort] = useState<SortKey>('pf');
   const [query, setQuery] = useState('');
   const [selId, setSelId] = useState<string>(playbooks[0]?.id || '');
-  const [checks, setChecks] = useState<Record<string, string[]>>({});
   const [editing, setEditing] = useState<JournalPlaybook | null>(null);
-  const [isNew, setIsNew] = useState(false);
 
   const [recommendationOpen, setRecommendationOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [step, setStep] = useState<Step>('setup');
   const [replayId, setReplayId] = useState<string | null>(null);
 
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [gradeTip, setGradeTip] = useState<{ id: string; x: number; y: number } | null>(null);
-  const [houseChecks, setHouseChecks] = useState<Record<string, string[]>>({});
-  const [reviewNote, setReviewNote] = useState('');
-  const [reviewDecision, setReviewDecision] = useState<ReviewDecision>('keep');
-  const [scFilter, setScFilter] = useState<'open' | 'all'>('open');
-  const [scDraft, setScDraft] = useState<PlaybookScenario | null>(null);
-  const [activeSc, setActiveSc] = useState<Record<string, string>>({});
   const recommendations = useMemo(
     () => buildPlaybookRecommendations(allJournalEntries, playbooks, JOURNAL_TODAY),
     [allJournalEntries, playbooks],
@@ -186,23 +180,13 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const sel = playbooks.find((p) => p.id === selId) && list.some((p) => p.id === selId) ? playbooks.find((p) => p.id === selId)! : list[0];
   const s = sel ? stats.get(sel.id)! : null;
   const selTrades = sel ? entries.filter((e) => e.strategy === sel.name) : [];
-  const selectedTradingRules = sel ? resolvePlaybookTradingRules(sel, globalRules) : null;
-  const playbookChecks = sel ? [
-    ...sel.rules,
-    ...(selectedTradingRules?.customRules.filter(rule => rule.enabled) ?? []).map(({ id, rule }) => ({
-      id: `personal-${id}`,
-      title: typeof rule === 'string' ? rule : rule.name,
-      detail: typeof rule === 'string' ? 'Personal reminder' : describeCustomTradingRule(rule),
-    })),
-  ] : [];
-
   const nextId = () => `PB-${pad(Math.max(0, ...playbooks.map((p) => Number(p.id.replace(/\D/g, '')) || 0)) + 1).padStart(3, '0')}`;
 
   const startNew = () => {
     setRecommendationOpen(true);
     setConfirmDelete(false);
   };
-  const startEdit = () => { if (sel) { setEditing(JSON.parse(JSON.stringify(sel))); setIsNew(false); setConfirmDelete(false); } };
+  const startEdit = () => { if (sel) { setEditing(JSON.parse(JSON.stringify(sel))); setConfirmDelete(false); } };
   const persistPlaybook = (draft: JournalPlaybook, newPlaybook: boolean, statusOverride?: PlaybookStatus): string | null => {
     const name = draft.name.trim();
     if (!name) return 'Give the playbook a name';
@@ -237,61 +221,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     onToast(statusOverride === 'archived' ? `Archived "${name}"` : newPlaybook ? `Created "${name}"` : `Saved "${name}"`);
     return null;
   };
-  const save = (statusOverride?: PlaybookStatus) => {
-    if (!editing) return;
-    const error = persistPlaybook(editing, isNew, statusOverride);
-    if (error) onToast(error);
-  };
-  const remove = () => {
-    if (!sel) return;
-    setPlaybooks((prev) => prev.filter((p) => p.id !== sel.id));
-    setEditing(null); setConfirmDelete(false);
-    onToast(`Deleted "${sel.name}"`);
-  };
   const chip = (on: boolean) => `h-8 px-3 rounded-lg text-xs font-semibold border ${on ? 'bg-[#EEF0FE] border-[#5338ec]/40 text-[#5338ec]' : 'bg-white border-slate-200 text-[#474556] hover:bg-slate-50'}`;
   const btn = 'h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-[#0b1c30]';
-  const input = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#5338ec]/30';
-  const lbl = 'text-[10px] font-bold tracking-wider uppercase text-slate-500';
-
-  const checked = sel ? checks[sel.id] || [] : [];
-  const met = playbookChecks.filter((r) => checked.includes(r.id)).length;
-  const houseChecked = sel ? (houseChecks[sel.id] || []).filter((id) => houseChecklist.some((c) => c.id === id)) : [];
-  const houseMet = houseChecked.length;
-  const totalChecks = playbookChecks.length + houseChecklist.length;
-  const metAll = met + houseMet;
-  const allMet = totalChecks > 0 && metAll === totalChecks;
-  // Checklist is guidance, not a gate: show how complete the setup is and let the trader decide.
-  const pct = totalChecks ? Math.round((metAll / totalChecks) * 100) : 0;
-  const quality = allMet ? { label: 'Full setup', cls: 'text-emerald-700', bar: 'bg-emerald-500' }
-    : pct >= 70 ? { label: 'Strong setup', cls: 'text-emerald-700', bar: 'bg-emerald-400' }
-    : pct >= 40 ? { label: 'Partial setup', cls: 'text-amber-700', bar: 'bg-amber-400' }
-    : metAll > 0 ? { label: 'Light setup', cls: 'text-slate-600', bar: 'bg-slate-400' }
-    : { label: 'Nothing ticked yet', cls: 'text-slate-500', bar: 'bg-slate-300' };
-  // Days on which this playbook was traded more often than its selected daily limit.
-  const overDays = (() => {
-    if (!sel || !selectedTradingRules?.enabled.maxTrades) return 0;
-    const byDay = new Map<string, number>();
-    selTrades.forEach((e) => byDay.set(e.date, (byDay.get(e.date) || 0) + 1));
-    return Array.from(byDay.values()).filter((n) => n > selectedTradingRules.values.maxTrades).length;
-  })();
-  const checklistPct = selTrades.length && houseChecklist.length
-    ? Math.round((selTrades.reduce((a, e) => a + e.checklistDone.filter((id) => houseChecklist.some((c) => c.id === id)).length, 0) / (selTrades.length * houseChecklist.length)) * 100)
-    : null;
-  const ordered = [...selTrades].sort((a, b) => (a.entryTime || a.date).localeCompare(b.entryTime || b.date));
-  const rCurve = (() => { let c = 0; return ordered.map(realizedR).filter((r):r is number=>r!==null).map(r=>(c+=r)); })();
-  const split = (on: boolean) => { const l = selTrades.filter((e) => eligible(e) && e.followedPlan === on); return { n: l.length, avg: l.length ? l.reduce((a, e) => a + netOf(e), 0) / l.length : 0 }; };
-  const planSplit = { on: split(true), off: split(false) };
-  const topMistakes = (() => { const m = new Map<string, number>(); selTrades.forEach((e) => e.mistakes.forEach((x) => m.set(x, (m.get(x) || 0) + 1))); return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4); })();
-  const addReview = () => {
-    if (!sel || !reviewNote.trim()) return;
-    const statusFor: Partial<Record<ReviewDecision, PlaybookStatus>> = { keep: 'active', pause: 'testing', retire: 'archived' };
-    const rv = { id: `rv${Date.now()}`, date: JOURNAL_TODAY, note: reviewNote.trim(), decision: reviewDecision };
-    setPlaybooks((prev) => prev.map((p) => (p.id === sel.id ? { ...p, reviews: [...(p.reviews || []), rv], status: statusFor[reviewDecision] ?? p.status } : p)));
-    setReviewNote('');
-    if (statusFor[reviewDecision] && statusFor[reviewDecision] !== sel.status) setStatus('all');
-    onToast(`Review saved${statusFor[reviewDecision] && statusFor[reviewDecision] !== sel.status ? `; status set to ${STATUS_LABEL[statusFor[reviewDecision]!]}` : ''}`);
-  };
-
   const showTip = (id: string) => (e: React.MouseEvent | React.FocusEvent) => {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setGradeTip({ id, x: Math.max(8,Math.min(r.left, window.innerWidth - 330)), y: Math.max(8,Math.min(r.bottom + 6, window.innerHeight - 470)) });
@@ -335,91 +266,9 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   })();
 
   // ── scenarios (trade hypotheses) ──
-  const startScenario = (p: JournalPlaybook) => {
-    const until = new Date(Date.parse(`${JOURNAL_TODAY}T00:00:00Z`) + 3 * 86400000).toISOString().slice(0, 10);
-    setScDraft({ id: '', symbol: (p.symbols || [])[0] || '', bias: 'long', hypothesis: '', trigger: '', validUntil: until, status: 'watching', createdAt: JOURNAL_TODAY });
-  };
-  const saveScenario = () => {
-    if (!sel || !scDraft) return;
-    if (!scDraft.symbol.trim() || !scDraft.hypothesis.trim()) { onToast('Add a symbol and your hypothesis'); return; }
-    const sc = { ...scDraft, symbol: scDraft.symbol.trim().toUpperCase() };
-    const isNewSc = !sc.id;
-    if (isNewSc) sc.id = `sc${Date.now()}`;
-    setPlaybooks((prev) => prev.map((p) => (p.id === sel.id ? {
-      ...p,
-      scenarios: isNewSc ? [...(p.scenarios || []), sc] : (p.scenarios || []).map((x) => (x.id === sc.id ? sc : x)),
-      symbols: (p.symbols || []).includes(sc.symbol) ? p.symbols : [...(p.symbols || []), sc.symbol],
-    } : p)));
-    setScDraft(null);
-    onToast(isNewSc ? `Scenario added: ${sc.symbol} ${sc.bias}` : 'Scenario updated');
-  };
-  const setScStatus = (id: string, st: ScenarioStatus) => {
-    if (!sel) return;
-    setPlaybooks((prev) => prev.map((p) => (p.id === sel.id ? { ...p, scenarios: (p.scenarios || []).map((x) => (x.id === id ? { ...x, status: st } : x)) } : p)));
-  };
-  const deleteScenario = (id: string) => {
-    if (!sel) return;
-    setPlaybooks((prev) => prev.map((p) => (p.id === sel.id ? { ...p, scenarios: (p.scenarios || []).filter((x) => x.id !== id) } : p)));
-    if (activeSc[sel.id] === id) setActiveSc((a) => ({ ...a, [sel.id]: '' }));
-  };
-  const curSc = sel ? (sel.scenarios || []).find((x) => x.id === activeSc[sel.id]) : undefined;
+  const form = editing && <PlaybookSetupDialog mode="edit" draft={editing} entries={allJournalEntries} globalRules={globalRules} houseChecklist={houseChecklist} lockName={allJournalEntries.some(e => e.strategy === editing.name)} onChange={update => setEditing(current => current ? typeof update === 'function' ? update(current) : update : current)} onBack={() => setEditing(null)} onCreate={(draft, status) => persistPlaybook(draft, false, status)} />;
 
-  // ── Edit / create form ──
-  const form = editing && (
-    <section id="playbook-editor" className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-4 scroll-mt-24" aria-label={isNew ? 'New playbook' : 'Edit playbook'}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-[#0b1c30]">{isNew ? 'New playbook' : `Edit ${editing.name}`}<JournalHelp label="Playbook editor" /></h3>
-        <button type="button" onClick={() => setEditing(null)} className="text-xs font-semibold text-[#474556] hover:underline">Cancel</button>
-      </div>
-      <PlaybookEditorFields editing={editing} setEditing={update => setEditing(current => current ? typeof update === 'function' ? update(current) : update : current)} entries={entries} globalRules={globalRules} isNew={isNew} tradesCount={selTrades.length} suggestedGrade={stats.get(editing.id) ? suggestGrade(stats.get(editing.id)!).grade : undefined} />
-      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
-        {editing.status === 'draft' && <button type="button" onClick={() => save('active')} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Create playbook</button>}
-        <button type="button" onClick={() => save(editing.status === 'draft' ? 'draft' : undefined)} className={editing.status === 'draft' ? btn : 'h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white'}>{editing.status === 'draft' ? 'Save draft' : isNew ? 'Create playbook' : 'Save changes'}</button>
-        {editing.status !== 'draft' && <button type="button" onClick={() => save('draft')} className={btn}>Save draft</button>}
-        <button type="button" onClick={() => setEditing(null)} className={btn}>Cancel</button>
-        {!isNew && (
-          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-            {selTrades.length === 0 && (confirmDelete ? (
-              <span className="flex items-center gap-2 text-xs text-rose-700">Delete this playbook?
-                <button type="button" onClick={remove} className="h-8 px-3 rounded-lg bg-rose-600 text-white font-semibold">Delete</button>
-                <button type="button" onClick={() => setConfirmDelete(false)} className="font-semibold text-[#474556] hover:underline">Keep</button>
-              </span>
-            ) : <button type="button" onClick={() => setConfirmDelete(true)} className="text-xs font-semibold text-rose-600 hover:underline">Delete playbook</button>)}
-            <button
-              type="button"
-              aria-label={editing.status === 'archived' ? 'Playbook archived' : 'Archive playbook'}
-              disabled={editing.status === 'archived'}
-              onClick={() => save('archived')}
-              className={`h-9 px-4 rounded-lg border text-xs font-semibold ${editing.status === 'archived' ? 'border-slate-200 bg-slate-50 text-slate-400' : 'border-[#5338ec] text-[#5338ec] hover:bg-[#F7F5FF]'}`}
-            >
-              {editing.status === 'archived' ? 'Archived' : 'Archive'}
-            </button>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-
-  // ── level bar for a trade (stop / entry / exit on one scale) ──
-  const levelBar = (e: JournalEntry) => {
-    const pts = [e.entryPrice, e.exitPrice, e.stopPrice, e.takeProfit].filter((x): x is number => typeof x === 'number');
-    const lo = Math.min(...pts), hi = Math.max(...pts), span = hi - lo || 1;
-    const pos = (v: number) => `${((v - lo) / span) * 100}%`;
-    const win = netOf(e) >= 0;
-    return (
-      <div className="relative h-10 mt-3 mb-5 mx-2" aria-hidden="true">
-        <div className="absolute top-1/2 left-0 right-0 h-px bg-slate-200" />
-        {e.exitPrice !== null && (
-          <div className={`absolute top-1/2 h-2 -mt-1 rounded ${win ? 'bg-emerald-400/60' : 'bg-rose-400/60'}`} style={{ left: pos(Math.min(e.entryPrice, e.exitPrice)), width: `${(Math.abs(e.exitPrice - e.entryPrice) / span) * 100}%` }} />
-        )}
-        {e.stopPrice !== undefined && <span className="absolute top-0 bottom-0 w-0.5 bg-rose-500" style={{ left: pos(e.stopPrice) }}><span className="absolute top-full mt-0.5 -translate-x-1/2 text-[9px] font-mono text-rose-600 whitespace-nowrap">SL</span></span>}
-        <span className="absolute top-0 bottom-0 w-0.5 bg-[#0b1c30]" style={{ left: pos(e.entryPrice) }}><span className="absolute top-full mt-0.5 -translate-x-1/2 text-[9px] font-mono text-[#0b1c30] whitespace-nowrap">In</span></span>
-        {e.exitPrice !== null && <span className={`absolute top-0 bottom-0 w-0.5 ${win ? 'bg-emerald-600' : 'bg-rose-600'}`} style={{ left: pos(e.exitPrice) }}><span className={`absolute top-full mt-0.5 -translate-x-1/2 text-[9px] font-mono whitespace-nowrap ${win ? 'text-emerald-700' : 'text-rose-700'}`}>Out</span></span>}
-      </div>
-    );
-  };
-
-  const statusCount = (st: 'all' | PlaybookStatus) => matchingInventory.filter((p) => st === 'all' || p.status === st).length;
+  const statusCount = (st: 'all' | PlaybookStatus) => matchingInventory.filter(p => st === 'all' || p.status === st).length;
   const marketCount = (m: 'all' | PortfolioAssetClass) => inStatus.filter((p) => m === 'all' || p.markets.includes(m)).length;
 
   return (
@@ -430,6 +279,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         blankDraft={{ ...blank(), markets: [], symbols: [] }}
         entries={allJournalEntries}
         globalRules={globalRules}
+        houseChecklist={houseChecklist}
         existingNames={playbooks.map(playbook => playbook.name)}
         createdAt={JOURNAL_TODAY}
         onClose={() => setRecommendationOpen(false)}
@@ -498,11 +348,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                       <span className="ml-auto font-mono shrink-0">{st.n ? `${st.winRate.toFixed(0)}% · PF ${fmtPf(st.pf)}` : 'no trades'}</span>
                     </span>
                   </button>
-                  {open.length > 0 && (
-                    <button type="button" onClick={() => { setSelId(p.id); setEditing(null); setStep('scenarios'); }} className="block w-full text-left px-3 pb-2 -mt-1 text-[10px] font-semibold text-[#5338ec] hover:underline">
-                      {open.length} open scenario{open.length === 1 ? '' : 's'}
-                    </button>
-                  )}
+
                 </li>
               );
             })}
@@ -512,7 +358,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
 
         {/* Detail / editor */}
         <div className="min-w-0">
-          {editing ? form : sel && s ? (
+          {form}
+          {sel && s ? (
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-5" aria-label={`${sel.name} playbook`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -529,457 +376,22 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {onWhatIf && <button type="button" onClick={() => onWhatIf(sel.id)} className={btn}>Optimize in What-if</button>}
-                  {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className={btn} title="Test these rules on past prices">Backtest this playbook</button>}
+
+                  {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className="h-9 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]" title="Test these rules on past prices">Backtest this playbook</button>}
 
                   <button type="button" onClick={startEdit} className={btn}>Edit playbook</button>
                 </div>
               </div>
 
-              {/* Analytics: always visible above the steps */}
               <div className="rounded-xl border border-[#5338ec]/20 bg-[#FBFAFF] p-3">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-sm font-bold text-[#0b1c30]">Analytics<JournalHelp label="Analytics" /> <span className="font-normal text-[11px] text-slate-500">· win rate, profit factor, avg W/L, target and scenarios</span></h4>
-                  <button type="button" aria-expanded={showAnalytics} onClick={() => setShowAnalytics((v) => !v)} className="text-xs font-semibold text-[#5338ec] hover:underline">{showAnalytics ? 'Hide' : 'Show'}</button>
+                  <button type="button" aria-expanded={showAnalytics} onClick={() => setShowAnalytics(v => !v)} className="text-xs font-semibold text-[#5338ec] hover:underline">{showAnalytics ? 'Hide' : 'Show'}</button>
                 </div>
                 {showAnalytics && <PlaybookAnalytics playbook={sel} playbooks={playbooks} entries={entries} onShowTrades={onShowTrades} />}
               </div>
 
-              {onBacktest && <PlaybookBacktestPanel playbook={sel} entries={entries} expected={expected[sel.id]} onBacktest={() => onBacktest(sel.id)} />}
-
-              {/* Step tabs: Setup → Rules → Checklist → Execution → Review */}
-              <nav className="grid grid-cols-3 md:grid-cols-6 gap-1 rounded-xl bg-slate-100 p-1" role="tablist" aria-label="Playbook steps">
-                {STEPS.map(([id, label], i) => {
-                  const tradingRuleCount = selectedTradingRules
-                    ? Object.values(selectedTradingRules.enabled).filter(Boolean).length
-                    : 0;
-                  const badge = id === 'checklist' ? `${metAll}/${totalChecks}` : id === 'review' ? (s.n ? `${s.n} trades` : '') : id === 'rules' ? `${playbookChecks.length + (sel.avoid?.length || 0) + tradingRuleCount}` : id === 'scenarios' ? `${openScenarios(sel).length} open` : '';
-                  return (
-                    <div key={id} className="relative min-w-0"><button type="button" role="tab" aria-selected={step === id} onClick={() => setStep(id)}
-                      className={`w-full rounded-lg pl-2 pr-7 py-2 text-left ${step === id ? 'bg-white shadow-sm' : 'hover:bg-white/60'}`}>
-                      <span className={`block text-[10px] font-bold ${step === id ? 'text-[#5338ec]' : 'text-slate-400'}`}>STEP {i + 1}</span>
-                      <span className={`block text-xs font-bold ${step === id ? 'text-[#0b1c30]' : 'text-[#474556]'}`}>{label}</span>
-                      {badge && <span className="block text-[10px] text-slate-500 font-mono">{badge}</span>}
-                    </button><span className="absolute right-0 top-1"><JournalHelp label={id === 'review' ? 'Playbook review' : label.replace(/^\d+\.\s*/, '')} /></span></div>
-                  );
-                })}
-              </nav>
-
-              {step === 'setup' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {[['Grade · style', `${sel.grade} · ${sel.style || '—'}`], ['Markets', sel.markets.join(', ')], ['Session', sel.window ? `${pad(sel.window.start)}:00–${pad(sel.window.end)}:00 UTC` : 'Any time'], ['Min reward:risk', `1:${sel.benchmarkRR}`]].map(([l, v]) => (
-                      <div key={l} className="rounded-xl border border-slate-200 px-3 py-2.5"><p className={lbl}>{l}<JournalHelp label={l} /></p><p className="text-sm font-bold text-[#0b1c30] mt-0.5">{v}</p></div>
-                    ))}
-                  </div>
-                  <PlaybookInstruments key={sel.id} playbook={sel} entries={entries} onSave={selection => { setPlaybooks(previous => previous.map(book => book.id === sel.id ? { ...book, ...selection } : book)); onToast('Playbook instruments saved locally'); }} />
-                  <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
-                    <p className={`${lbl} text-[#5338ec]`}>Setup thesis: why it works<JournalHelp label="Thesis" /></p>
-                    <p className="text-sm leading-relaxed text-[#0b1c30] mt-1.5">{sel.thesis || <span className="text-slate-400">No thesis written yet. Use Edit playbook to add one.</span>}</p>
-                    {sel.tags.length > 0 && <div className="flex flex-wrap gap-1.5 mt-3">{sel.tags.map((t) => <span key={t} className="px-2 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-semibold text-slate-600">#{t.replace(/\s+/g, '_')}</span>)}</div>}
-                  </div>
-                  <button type="button" onClick={() => setStep('rules')} className="text-xs font-semibold text-[#5338ec] hover:underline">Next: rules →</button>
-                </div>
-              )}
-
-              {step === 'rules' && (
-                <div className="space-y-4">
-                  {playbookConditions(sel).length > 0 && <section className="rounded-xl border border-[#DED5FF] bg-[#FAF8FF] p-3" aria-label="Saved technical conditions">
-                    <h4 className="text-sm font-bold text-[#0b1c30]">Technical entry conditions</h4>
-                    <p className="mt-1 text-[11px] text-slate-500">All conditions must pass. Used for backtests and available in the sample-data scanner.</p>
-                    <ol className="mt-2 space-y-1">{playbookConditions(sel).map(condition => <li key={condition.id} className="text-xs text-[#474556]">{describeCondition(condition)}</li>)}</ol>
-                  </section>}
-                  <div>
-                    <h4 className="text-sm font-bold text-[#0b1c30] mb-2">Setup rules: what must be true<JournalHelp label="Setup rules: what must be true" /></h4>
-                    <ol className="space-y-2">
-                      {sel.rules.map((r, i) => (
-                        <li key={r.id} className="rounded-xl border border-slate-200 px-3 py-2.5">
-                          <span className="block text-sm font-semibold text-[#0b1c30]">{i + 1}. {r.title}</span>
-                          <span className="block text-xs text-[#474556]">{r.detail}</span>
-                        </li>
-                      ))}
-                      {sel.rules.length === 0 && <li className="text-sm text-slate-400">No setup rules yet.</li>}
-                    </ol>
-                  </div>
-                  {selectedTradingRules && <section className="rounded-xl border border-slate-200 p-3" aria-label="Trading rules for this strategy">
-                    <h4 className="text-sm font-bold text-[#0b1c30]">Trading rules for this strategy</h4>
-                    <p className="mt-1 text-[11px] text-slate-500">Selected built-in limits are checked only when journal evidence supports it. Added rules are reminders.</p>
-                    <ul className="mt-2 space-y-1.5">
-                      {selectedTradingRules.enabled.maxRisk && <li className="text-xs text-[#0b1c30]">Max risk per trade: {selectedTradingRules.values.maxRisk}% of account <span className="text-[10px] text-slate-500">· evidence-dependent</span></li>}
-                      {selectedTradingRules.enabled.maxDailyLoss && <li className="text-xs text-[#0b1c30]">Max daily loss: {selectedTradingRules.values.maxDailyLoss}% of account <span className="text-[10px] text-slate-500">· evidence-dependent</span></li>}
-                      {selectedTradingRules.enabled.maxTrades && <li className="text-xs text-[#0b1c30]">Max trades per day: {selectedTradingRules.values.maxTrades}{overDays ? <span className="text-rose-600"> · exceeded on {overDays} day{overDays === 1 ? '' : 's'}</span> : <span className="text-[10px] text-slate-500"> · evidence-dependent</span>}</li>}
-                      {selectedTradingRules.enabled.stopAfterLosses && <li className="text-xs text-[#0b1c30]">Stop after {selectedTradingRules.values.stopAfterLosses} consecutive losses <span className="text-[10px] text-slate-500">· evidence-dependent</span></li>}
-                      {selectedTradingRules.customRules.filter(rule => rule.enabled).map(item => <li key={item.id} className="text-xs text-[#0b1c30]">{describeCustomTradingRule(item.rule)} <span className="text-[10px] text-slate-500">· reminder only</span></li>)}
-                      {!Object.values(selectedTradingRules.enabled).some(Boolean) && !selectedTradingRules.customRules.some(rule => rule.enabled) && <li className="text-xs text-slate-500">No trading rules selected for this playbook.</li>}
-                    </ul>
-                    <button type="button" onClick={startEdit} className="mt-3 text-xs font-semibold text-[#5338ec] hover:underline">Customize these rules</button>
-                  </section>}
-                  {sel.strategyNotes?.trim() && <section className="rounded-xl border border-slate-200 bg-slate-50 p-3" aria-label="Strategy notes">
-                    <h4 className="text-sm font-bold text-[#0b1c30]">Strategy notes</h4>
-                    <p className="mt-1 whitespace-pre-wrap text-xs text-[#474556]">{sel.strategyNotes}</p>
-                  </section>}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="rounded-xl border border-slate-200 px-3 py-2.5"><p className={lbl}>Min reward:risk<JournalHelp label="Min reward:risk" /></p><p className="text-sm font-bold text-[#0b1c30] mt-0.5">1:{sel.benchmarkRR}</p></div>
-                  </div>
-                  <div className="rounded-xl border border-rose-200 bg-rose-50/40 p-3">
-                    <p className={`${lbl} text-rose-600`}>Do not trade when</p>
-                    <ul className="mt-1.5 space-y-1">
-                      {(sel.avoid || []).map((a) => <li key={a} className="text-xs text-[#0b1c30]">✕ {a}</li>)}
-                      {!(sel.avoid || []).length && <li className="text-xs text-slate-400">No no-trade conditions yet. Add them in Edit playbook.</li>}
-                    </ul>
-                  </div>
-                  <button type="button" onClick={() => setStep('scenarios')} className="text-xs font-semibold text-[#5338ec] hover:underline">Next: scenarios →</button>
-                </div>
-              )}
-
-              {step === 'scenarios' && (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h4 className="text-sm font-bold text-[#0b1c30]">Scenarios: your trade hypotheses<JournalHelp label="Scenarios: your trade hypotheses" /></h4>
-                      <p className="text-[11px] text-slate-500">Write the idea before the market moves: "If ... then ...", the trigger, and the levels. When it triggers, check it and log the trade.</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 rounded-lg border border-slate-200 overflow-hidden text-[11px] font-semibold">
-                        {(['open', 'all'] as const).map((f) => <button key={f} type="button" aria-pressed={scFilter === f} onClick={() => setScFilter(f)} className={`px-2.5 ${scFilter === f ? 'bg-[#0b1c30] text-white' : 'bg-white text-[#474556]'}`}>{f === 'open' ? 'Open' : 'All'}</button>)}
-                      </div>
-                      {!scDraft && <button type="button" onClick={() => startScenario(sel)} className="h-8 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">New scenario</button>}
-                    </div>
-                  </div>
-
-                  {scDraft && (() => {
-                    const rr = plannedRR(scDraft);
-                    const setN = (k: 'entry' | 'stop' | 'target', v: string) => setScDraft({ ...scDraft, [k]: v === '' ? undefined : Number(v) });
-                    const levelErr = scDraft.entry !== undefined && scDraft.stop !== undefined && (scDraft.bias === 'long' ? scDraft.stop >= scDraft.entry : scDraft.stop <= scDraft.entry);
-                    return (
-                      <div className="rounded-xl border border-[#5338ec]/30 bg-[#F8F7FF] p-4 space-y-3" aria-label="Scenario form">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          <label className="block"><span className={lbl}>Symbol<JournalHelp label="Symbol" /></span>
-                            <input aria-label="Symbol" list="pb-symbols" className={`${input} mt-1 bg-white`} value={scDraft.symbol} onChange={(e) => setScDraft({ ...scDraft, symbol: e.target.value })} placeholder="e.g. EUR/USD" />
-                            <datalist id="pb-symbols">{(sel.symbols || []).map((sy) => <option key={sy} value={sy} />)}</datalist>
-                          </label>
-                          <div><span className={lbl}>Bias</span>
-                            <div className="flex mt-1 h-[38px] rounded-lg border border-slate-200 overflow-hidden bg-white">
-                              {(['long', 'short'] as const).map((b) => <button key={b} type="button" aria-pressed={scDraft.bias === b} onClick={() => setScDraft({ ...scDraft, bias: b })} className={`flex-1 text-xs font-bold ${scDraft.bias === b ? (b === 'long' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white') : 'text-[#474556]'}`}>{b === 'long' ? 'LONG' : 'SHORT'}</button>)}
-                            </div>
-                          </div>
-                          <label className="block"><span className={lbl}>Valid until<JournalHelp label="Valid until" /></span>
-                            <input aria-label="Valid until" type="date" className={`${input} mt-1 bg-white`} value={scDraft.validUntil} onChange={(e) => setScDraft({ ...scDraft, validUntil: e.target.value })} />
-                          </label>
-                          <label className="block"><span className={lbl}>Status<JournalHelp label="Scenario status" /></span>
-                            <select aria-label="Scenario status" className={`${input} mt-1 bg-white`} value={scDraft.status} onChange={(e) => setScDraft({ ...scDraft, status: e.target.value as ScenarioStatus })}>
-                              {(Object.keys(SC_LABEL) as ScenarioStatus[]).map((st) => <option key={st} value={st}>{SC_LABEL[st]}</option>)}
-                            </select>
-                          </label>
-                        </div>
-                        <label className="block"><span className={lbl}>Hypothesis<JournalHelp label="Hypothesis" /></span>
-                          <textarea aria-label="Hypothesis" rows={2} className={`${input} mt-1 bg-white`} value={scDraft.hypothesis} onChange={(e) => setScDraft({ ...scDraft, hypothesis: e.target.value })} placeholder="If price does X at level Y, then I expect Z because..." />
-                        </label>
-                        <label className="block"><span className={lbl}>Trigger: what confirms it<JournalHelp label="Trigger: what confirms it" /></span>
-                          <input aria-label="Trigger: what confirms it" className={`${input} mt-1 bg-white`} value={scDraft.trigger} onChange={(e) => setScDraft({ ...scDraft, trigger: e.target.value })} placeholder="e.g. 15m close above the range high with volume" />
-                        </label>
-                        <div className="grid grid-cols-3 gap-3">
-                          {([['entry', 'Entry'], ['stop', 'Stop'], ['target', 'Target']] as const).map(([k, l]) => (
-                            <label key={k} className="block"><span className={lbl}>{l}<JournalHelp label={l} /></span>
-                              <input aria-label={l} type="number" step="any" className={`${input} mt-1 bg-white font-mono`} value={scDraft[k] ?? ''} onChange={(e) => setN(k, e.target.value)} />
-                            </label>
-                          ))}
-                        </div>
-                        <p className={`text-[11px] ${levelErr ? 'text-rose-600' : rr !== null && rr < sel.benchmarkRR ? 'text-amber-600' : 'text-slate-500'}`}>
-                          {levelErr ? `Stop must be ${scDraft.bias === 'long' ? 'below' : 'above'} the entry for a ${scDraft.bias}.` : rr === null ? 'Add entry, stop and target to see the planned reward:risk.' : `Planned reward:risk 1:${rr.toFixed(2)}${rr < sel.benchmarkRR ? `, below this playbook's 1:${sel.benchmarkRR} minimum` : ' meets the playbook minimum'}.`}
-                        </p>
-                        <div className="flex gap-2">
-                          <button type="button" disabled={levelErr} onClick={saveScenario} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 text-xs font-semibold text-white">{scDraft.id ? 'Save scenario' : 'Add scenario'}</button>
-                          <button type="button" onClick={() => setScDraft(null)} className={btn}>Cancel</button>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  <div className="space-y-2">
-                    {(sel.scenarios || []).filter((x) => scFilter === 'all' || x.status === 'watching' || x.status === 'triggered').map((sc) => {
-                      const rr = plannedRR(sc);
-                      const expired = sc.validUntil < JOURNAL_TODAY && (sc.status === 'watching');
-                      return (
-                        <div key={sc.id} className="rounded-xl border border-slate-200 p-3">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-bold text-[#0b1c30]">{sc.symbol}</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${sc.bias === 'long' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{sc.bias === 'long' ? 'LONG' : 'SHORT'}</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${SC_STYLE[sc.status]}`}>{SC_LABEL[sc.status]}</span>
-                            {expired && <span className="px-1.5 py-0.5 rounded bg-amber-50 text-[10px] font-bold text-amber-700">Expired {sc.validUntil}</span>}
-                            {!expired && <span className="text-[10px] text-slate-400">Valid until<JournalHelp label="Valid until" /> {sc.validUntil}</span>}
-                            <span className="ml-auto flex gap-3 text-[11px] font-semibold">
-                              <button type="button" onClick={() => setScDraft({ ...sc })} className="text-[#474556] hover:underline">Edit</button>
-                              <button type="button" onClick={() => deleteScenario(sc.id)} className="text-rose-600 hover:underline">Delete</button>
-                            </span>
-                          </div>
-                          <p className="text-sm text-[#0b1c30] mt-1.5">{sc.hypothesis}</p>
-                          {sc.trigger && <p className="text-xs text-[#474556] mt-1"><span className="font-semibold">Trigger:</span> {sc.trigger}</p>}
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px] font-mono">
-                            <span>Entry <b>{sc.entry ?? '—'}</b></span><span className="text-rose-600">Stop <b>{sc.stop ?? '—'}</b></span><span className="text-emerald-600">Target <b>{sc.target ?? '—'}</b></span>
-                            {rr !== null && <span className={rr < sel.benchmarkRR ? 'text-amber-600' : 'text-[#0b1c30]'}>R:R 1:{rr.toFixed(2)}</span>}
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-3">
-                            {(sc.status === 'watching' || sc.status === 'triggered') && (
-                              <button type="button" onClick={() => { setActiveSc((a) => ({ ...a, [sel.id]: sc.id })); setStep('checklist'); }} className="h-8 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Check setup</button>
-                            )}
-                            {sc.status === 'watching' && <button type="button" onClick={() => setScStatus(sc.id, 'triggered')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Mark triggered</button>}
-                            {sc.status === 'watching' && <button type="button" onClick={() => setScStatus(sc.id, 'invalidated')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Invalidated</button>}
-                            {sc.status === 'triggered' && <button type="button" onClick={() => setScStatus(sc.id, 'closed')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Mark closed</button>}
-                            {(sc.status === 'invalidated' || sc.status === 'closed') && <button type="button" onClick={() => setScStatus(sc.id, 'watching')} className="h-8 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-[#474556] hover:bg-slate-50">Reopen</button>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {!(sel.scenarios || []).some((x) => scFilter === 'all' || x.status === 'watching' || x.status === 'triggered') && !scDraft && (
-                      <p className="text-sm text-slate-500 border border-dashed border-slate-200 rounded-xl p-4 text-center">No {scFilter === 'open' ? 'open ' : ''}scenarios. Add one when you see this setup forming on a chart.</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {step === 'checklist' && (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
-                    <span className={lbl}>Checking</span>
-                    <select aria-label="Scenario to check" value={curSc?.id || ''} onChange={(e) => setActiveSc((a) => ({ ...a, [sel.id]: e.target.value }))} className="h-8 border border-slate-200 rounded-lg px-2 text-xs font-semibold bg-white max-w-full">
-                      <option value="">No scenario (general check)</option>
-                      {openScenarios(sel).map((x) => <option key={x.id} value={x.id}>{x.symbol} {x.bias === 'long' ? 'long' : 'short'}: {x.hypothesis.slice(0, 60)}{x.hypothesis.length > 60 ? '…' : ''}</option>)}
-                    </select>
-                    {curSc && <span className="text-[11px] font-mono text-slate-500">Entry {curSc.entry ?? '—'} · Stop {curSc.stop ?? '—'} · Target {curSc.target ?? '—'}</span>}
-                  </div>
-                  <div className="rounded-xl border border-slate-200 px-4 py-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                    <span className={`text-sm font-bold ${quality.cls}`}>{metAll} of {totalChecks} ticked · {quality.label}</span>
-                    <span className="text-[11px] text-[#474556]">Tick what applies to check this setup against your rules. This checklist is a preparation aid, not a journal trade.</span>
-                    {(checked.length > 0 || houseChecked.length > 0) && <button type="button" onClick={() => { setChecks((c) => ({ ...c, [sel.id]: [] })); setHouseChecks((c) => ({ ...c, [sel.id]: [] })); }} className="ml-auto text-xs font-semibold text-[#474556] hover:underline">Reset</button>}
-                    </div>
-                    <div className="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={totalChecks} aria-valuenow={metAll} aria-label="Checklist completion">
-                      <div className={`h-full rounded-full ${quality.bar}`} style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                  <div>
-                    <p className={`${lbl} mb-1.5`}>Strategy rules and reminders ({met}/{playbookChecks.length})</p>
-                    <div className="space-y-2">
-                      {playbookChecks.map((r, i) => {
-                        const on = checked.includes(r.id);
-                        return (
-                          <label key={r.id} className={`flex gap-3 items-start rounded-xl border px-3 py-2.5 cursor-pointer ${on ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                            <input type="checkbox" className="mt-0.5" checked={on} onChange={() => setChecks((c) => ({ ...c, [sel.id]: on ? checked.filter((x) => x !== r.id) : [...checked, r.id] }))} />
-                            <span><span className="block text-sm font-semibold text-[#0b1c30]">{i + 1}. {r.title}</span><span className="block text-xs text-[#474556]">{r.detail}</span></span>
-                          </label>
-                        );
-                      })}
-                      {playbookChecks.length === 0 && <p className="text-xs text-slate-400">No strategy rules or reminders selected.</p>}
-                    </div>
-                  </div>
-                  <div>
-                    <p className={`${lbl} mb-1.5`}>House pre-trade checklist ({houseMet}/{houseChecklist.length})</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {houseChecklist.map((c) => {
-                        const on = houseChecked.includes(c.id);
-                        return (
-                          <label key={c.id} className={`flex gap-2.5 items-center rounded-xl border px-3 py-2 cursor-pointer text-xs ${on ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                            <input type="checkbox" checked={on} onChange={() => setHouseChecks((x) => ({ ...x, [sel.id]: on ? houseChecked.filter((y) => y !== c.id) : [...houseChecked, c.id] }))} />
-                            <span className="text-[#0b1c30]">{c.label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  {(sel.avoid || []).length > 0 && <p className="text-[11px] text-rose-600">Also check you are not in a no-trade condition: {(sel.avoid || []).join(' · ')}.</p>}
-                </div>
-              )}
-
-              {step === 'execution' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {[['Entry trigger', sel.entryTrigger, 'text-[#5338ec]'], ['Stop / invalidation', sel.stopRule, 'text-rose-600'], ['Profit taking', sel.targetRule, 'text-emerald-600']].map(([l, v, c]) => (
-                      <div key={l} className="rounded-xl border border-slate-200 p-3">
-                        <p className={`${lbl} ${c}`}>{l}</p>
-                        <p className="text-xs text-[#0b1c30] mt-1.5 leading-relaxed">{v || <span className="text-slate-400">Not set</span>}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    <div className="rounded-xl border border-slate-200 px-3 py-2.5"><p className={lbl}>Plan followed<JournalHelp label="Plan followed" /></p><p className={`text-sm font-bold font-mono mt-0.5 ${s.n && s.followed / s.n >= 0.8 ? 'text-emerald-600' : 'text-amber-600'}`}>{s.n ? `${Math.round((s.followed / s.n) * 100)}% (${s.followed}/${s.n})` : '—'}</p></div>
-                    <div className="rounded-xl border border-slate-200 px-3 py-2.5"><p className={lbl}>Checklist completion</p><p className="text-sm font-bold font-mono mt-0.5 text-[#0b1c30]">{checklistPct === null ? '—' : `${checklistPct}% of items ticked`}</p></div>
-                    <div className="rounded-xl border border-slate-200 px-3 py-2.5"><p className={lbl}>Avg hold time</p><p className="text-sm font-bold font-mono mt-0.5 text-[#0b1c30]">{s.avgHold === null ? '—' : s.avgHold < 60 ? `${Math.round(s.avgHold)}m` : `${Math.floor(s.avgHold / 60)}h ${pad(Math.round(s.avgHold % 60))}m`}</p></div>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-bold text-[#0b1c30]">Recent executions<JournalHelp label="Recent executions" /></h4>
-                      {selTrades.length > 0 && <button type="button" onClick={() => onShowTrades(selTrades.map((e) => e.id), `${sel.name} playbook`)} className="text-xs font-semibold text-[#5338ec] hover:underline">All {selTrades.length} in Trade Log</button>}
-                    </div>
-                    {selTrades.length === 0 ? (
-                      <p className="text-sm text-slate-500 border border-dashed border-slate-200 rounded-xl p-4 text-center">No trades with this playbook yet. Matching executions will appear here after they are added to the journal.</p>
-                    ) : (
-                      <div className="rounded-xl border border-slate-200 divide-y divide-slate-100">
-                        {[...selTrades].sort((a, b) => (b.entryTime || b.date).localeCompare(a.entryTime || a.date)).slice(0, 6).map((e) => (
-                          <div key={e.id} className="flex items-center gap-2 pr-2 hover:bg-slate-50">
-                          <button type="button" onClick={() => onOpenEntry(e.id)} className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2 text-xs text-left">
-                            <span className="font-mono text-slate-500 w-32 shrink-0">{(e.entryTime || e.date).replace('T', ' ').slice(0, 16)}</span>
-                            <span className="font-bold text-[#0b1c30] w-20 shrink-0">{e.symbol}</span>
-                            <span className={`text-[10px] font-bold w-10 ${e.direction === 'BUY' ? 'text-emerald-700' : 'text-rose-700'}`}>{e.direction === 'BUY' ? 'LONG' : 'SHORT'}</span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${e.followedPlan===true ? 'bg-emerald-50 text-emerald-700' : e.followedPlan===false?'bg-rose-50 text-rose-700':'bg-slate-100 text-slate-600'}`}>{e.followedPlan===true ? 'On plan' : e.followedPlan===false?'Off plan':'Plan unknown'}</span>
-                            {e.mistakes[0] && <span className="text-[10px] text-rose-600 truncate">{e.mistakes[0]}</span>}
-                            <span className={`ml-auto font-mono font-bold ${tone(netOf(e))}`}>{money(netOf(e), 2)}</span>
-                          </button>
-                          <button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} onClick={() => setReplayId(e.id)} className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold ${recordings[e.id] ? 'bg-emerald-50 text-emerald-700' : 'text-[#5338ec] hover:bg-[#EEF0FE]'}`}>▶ Replay</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {step === 'review' && (
-                <div className="space-y-5">
-                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                    {[
-                      ['Trades', String(s.n), ''],
-                      ['Win rate', s.n ? `${s.winRate.toFixed(1)}%` : '—', ''],
-                      ['Profit factor', fmtPf(s.pf), 'text-emerald-600'],
-                      ['Expectancy', s.n ? money(s.expectancy, 2) : '—', tone(s.expectancy)],
-                      ['Average R', s.avgR === null ? '—' : `${s.avgR >= 0 ? '+' : ''}${s.avgR.toFixed(2)}R`, s.avgR === null ? '' : tone(s.avgR)],
-                      ['Net P&L', s.n ? money(s.net, 2) : '—', tone(s.net)],
-                    ].map(([l, v, c]) => (
-                      <div key={l} className="rounded-xl border border-slate-200 px-2.5 py-2"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{l}</p><p className={`text-sm font-bold font-mono mt-0.5 ${c || 'text-[#0b1c30]'}`}>{v}</p></div>
-                    ))}
-                  </div>
-
-                  {selTrades.some((e) => recordings[e.id]) && (
-                    <div>
-                      <h4 className="text-sm font-bold text-[#0b1c30] mb-2">Your execution replays<JournalHelp label="Your execution replays" /></h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {selTrades.filter((e) => recordings[e.id]).map((e) => (
-                          <div key={e.id} className="rounded-xl border border-slate-200 p-2">
-                            <video src={recordings[e.id]} controls className="w-full rounded-lg bg-black aspect-video" />
-                            <div className="flex items-center justify-between mt-1.5 px-1 text-[11px]">
-                              <span className="font-semibold text-[#0b1c30]">{e.symbol} · {(e.entryTime || e.date).slice(0, 10)}</span>
-                              <span className={`font-mono font-bold ${tone(netOf(e))}`}>{money(netOf(e), 2)}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {rCurve.length > 1 && (
-                    <div className="rounded-xl border border-slate-200 p-3">
-                      <p className={lbl}>Cumulative R, trade by trade</p>
-                      <svg viewBox="0 0 600 120" className="w-full h-auto mt-2" role="img" aria-label={`Cumulative R over ${rCurve.length} trades, ending at ${rCurve[rCurve.length - 1].toFixed(1)}R`}>
-                        {(() => {
-                          const lo = Math.min(0, ...rCurve), hi = Math.max(0, ...rCurve), sp = hi - lo || 1;
-                          const x = (i: number) => 8 + (i / (rCurve.length - 1)) * 584;
-                          const y = (v: number) => 8 + (1 - (v - lo) / sp) * 104;
-                          return (
-                            <>
-                              <line x1={8} x2={592} y1={y(0)} y2={y(0)} stroke="#cbd5e1" strokeDasharray="3 4" />
-                              <text x={4} y={y(0) - 3} fontSize="9" fill="#64748b">0R</text>
-                              <path d={rCurve.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')} fill="none" stroke="#5338ec" strokeWidth={2} strokeLinejoin="round" />
-                              <circle cx={x(rCurve.length - 1)} cy={y(rCurve[rCurve.length - 1])} r={3.5} fill="#5338ec" />
-                              <text x={584} y={y(rCurve[rCurve.length - 1]) < 26 ? y(rCurve[rCurve.length - 1]) + 18 : y(rCurve[rCurve.length - 1]) - 8} textAnchor="end" fontSize="10" fontWeight={700} fill="#0b1c30">{rCurve[rCurve.length - 1] >= 0 ? '+' : ''}{rCurve[rCurve.length - 1].toFixed(1)}R</text>
-                            </>
-                          );
-                        })()}
-                      </svg>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="rounded-xl border border-slate-200 p-3">
-                      <p className={lbl}>Followed plan vs broke plan</p>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <div className="rounded-lg bg-emerald-50 px-3 py-2"><p className="text-[10px] font-semibold text-emerald-700">On plan ({planSplit.on.n})</p><p className="text-sm font-bold font-mono text-emerald-700">{planSplit.on.n ? `${money(planSplit.on.avg, 2)}/trade` : '—'}</p></div>
-                        <div className="rounded-lg bg-rose-50 px-3 py-2"><p className="text-[10px] font-semibold text-rose-700">Off plan ({planSplit.off.n})</p><p className="text-sm font-bold font-mono text-rose-700">{planSplit.off.n ? `${money(planSplit.off.avg, 2)}/trade` : '—'}</p></div>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 p-3">
-                      <p className={lbl}>Most common mistakes<JournalHelp label="Most common mistakes" /></p>
-                      <ul className="mt-2 space-y-1">
-                        {topMistakes.map(([m, c]) => <li key={m} className="flex justify-between text-xs"><span className="text-[#0b1c30]">{m}</span><span className="font-mono text-rose-600">{c}×</span></li>)}
-                        {topMistakes.length === 0 && <li className="text-xs text-slate-400">No mistakes logged for this playbook.</li>}
-                      </ul>
-                    </div>
-                  </div>
-
-                  {selTrades.length > 0 && (
-                    <div className="rounded-xl border border-slate-200 overflow-hidden">
-                      <p className={`${lbl} px-3 pt-3`}>By instrument</p>
-                      <table className="w-full text-xs mt-1">
-                        <thead className="text-slate-500"><tr><th className="text-left font-semibold px-3 py-1.5">Symbol<JournalHelp label="Symbol" /></th><th className="text-right font-semibold px-3 py-1.5">Trades<JournalHelp label="Trades" /></th><th className="text-right font-semibold px-3 py-1.5">Win %</th><th className="text-right font-semibold px-3 py-1.5">Avg R<JournalHelp label="Avg R" /></th><th className="text-right font-semibold px-3 py-1.5">Net</th></tr></thead>
-                        <tbody>
-                          {Array.from(new Set<string>(selTrades.map((e) => e.symbol))).map((sy) => ({ sy, st: statsFor(selTrades.filter((e) => e.symbol === sy)) })).sort((a, b) => b.st.net - a.st.net).map(({ sy, st }) => (
-                            <tr key={sy} className="border-t border-slate-100 font-mono">
-                              <td className="px-3 py-1.5 font-sans font-semibold text-[#0b1c30]">{sy}{!(sel.symbols || []).includes(sy) && <span className="ml-1 text-[9px] font-bold text-amber-600">not in list</span>}</td>
-                              <td className="px-3 py-1.5 text-right">{st.n}</td>
-                              <td className="px-3 py-1.5 text-right">{st.winRate.toFixed(0)}%</td>
-                              <td className={`px-3 py-1.5 text-right ${st.avgR === null ? 'text-slate-400' : tone(st.avgR)}`}>{st.avgR === null ? '—' : `${st.avgR >= 0 ? '+' : ''}${st.avgR.toFixed(2)}R`}</td>
-                              <td className={`px-3 py-1.5 text-right font-bold ${tone(st.net)}`}>{money(st.net, 2)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-
-                  {selTrades.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-bold text-[#0b1c30] mb-2">Best executions<JournalHelp label="Best executions" /> <span className="font-normal text-[11px] text-slate-500">· replay each trade</span></h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {[...selTrades].sort((a, b) => netOf(b) - netOf(a)).slice(0, 2).map((e) => (
-                          <div key={e.id} className="rounded-xl border border-slate-200 p-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="text-sm font-bold text-[#0b1c30]">{e.symbol} <span className={`text-[10px] font-bold ${e.direction === 'BUY' ? 'text-emerald-700' : 'text-rose-700'}`}>{e.direction === 'BUY' ? 'LONG' : 'SHORT'}</span> <TradingStatusBadge status={tradingStatusOf(e)} /></p>
-                                <p className="text-[11px] text-slate-500 font-mono">{(e.entryTime || e.date).replace('T', ' ').slice(0, 16)} UTC</p>
-                              </div>
-                              <div className="text-right">
-                                <p className={`text-base font-bold font-mono ${tone(netOf(e))}`}>{money(netOf(e), 2)}</p>
-                                {e.rMultiple !== null && <p className={`text-[11px] font-mono ${tone(e.rMultiple)}`}>{e.rMultiple >= 0 ? '+' : ''}{e.rMultiple.toFixed(1)}R</p>}
-                              </div>
-                            </div>
-                            {levelBar(e)}
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="flex flex-wrap gap-1">{e.tags.slice(0, 2).map((t) => <span key={t} className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-600">#{t.replace(/\s+/g, '_')}</span>)}</span>
-                              <span className="flex gap-3">
-                                <button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} onClick={() => setReplayId(e.id)} className={`text-xs font-semibold hover:underline whitespace-nowrap ${recordings[e.id] ? 'text-emerald-700' : 'text-[#5338ec]'}`}>▶ Replay</button>
-                                <button type="button" onClick={() => onOpenEntry(e.id)} className="text-xs font-semibold text-[#5338ec] hover:underline whitespace-nowrap">View trade</button>
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <h4 className="text-sm font-bold text-[#0b1c30] mb-2">Review log<JournalHelp label="Review log" /></h4>
-                    <div className="rounded-xl border border-slate-200 p-3 space-y-2">
-                      <textarea rows={2} value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} placeholder="What did the numbers tell you? What will you change?" className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" aria-label="Review note" />
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[11px] font-semibold text-slate-500">Decision</span>
-                        {(['keep', 'adjust', 'pause', 'retire'] as const).map((d) => (
-                          <button key={d} type="button" aria-pressed={reviewDecision === d} onClick={() => setReviewDecision(d)} className={chip(reviewDecision === d)}>{DECISION_LABEL[d]}</button>
-                        ))}
-                        <button type="button" disabled={!reviewNote.trim()} onClick={addReview} className="ml-auto h-8 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] disabled:opacity-40 text-xs font-semibold text-white">Save review</button>
-                      </div>
-                      <p className="text-[10px] text-slate-400">Keep sets the playbook to Active, Pause to Testing, Retire to Archived. Adjust leaves the status as is.</p>
-                    </div>
-                    <ul className="mt-2 space-y-2">
-                      {[...(sel.reviews || [])].reverse().map((rv) => (
-                        <li key={rv.id} className="rounded-xl border border-slate-200 px-3 py-2">
-                          <div className="flex items-center gap-2 text-[11px]"><span className="font-mono text-slate-500">{rv.date}</span><span className={`px-1.5 py-0.5 rounded font-bold ${DECISION_STYLE[rv.decision]}`}>{DECISION_LABEL[rv.decision]}</span></div>
-                          <p className="text-xs text-[#0b1c30] mt-1">{rv.note}</p>
-                        </li>
-                      ))}
-                      {!(sel.reviews || []).length && <li className="text-xs text-slate-400">No reviews yet. Review each playbook every week or two.</li>}
-                    </ul>
-                  </div>
-                </div>
-              )}
+              <PlaybookExecutionWorkspace key={sel.id} playbook={sel} entries={entries} allEntries={allJournalEntries} comparisonEntries={comparisonEntries} globalRules={globalRules} onOpenEntry={onOpenEntry} onShowTrades={onShowTrades} onReplay={setReplayId} onTest={onBacktest ? symbol => onBacktest(sel.id, symbol) : undefined} />
             </section>
           ) : (
             <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-10 text-center text-sm text-slate-500">Select a playbook, or create one.</div>
