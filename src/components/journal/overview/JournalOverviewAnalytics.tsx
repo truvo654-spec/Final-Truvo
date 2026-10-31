@@ -5,10 +5,11 @@ import { aggregateOverview, formatOverviewValue, type PnlBasis } from './overvie
 import { statusOf } from '../journalMath';
 import { ChartCard, CoverageRadar, RiskPortfolioComparisonChart, TimeSeriesChart, TradeScatter } from './OverviewCharts';
 
-/** Additional views of the existing Overview cohort; no independent filters or storage. */
-export function JournalOverviewAnalytics({ entries, currency, basis, onDay, onTrade }: {
+/** Trading charts use the Overview cohort; the optional balance widget keeps its own broker scope. */
+export function JournalOverviewAnalytics({ entries, currency, basis, onDay, onTrade, accountBalance }: {
   entries: JournalEntry[]; currency: string; basis: PnlBasis;
   onDay: (date: string) => void; onTrade: (id: string) => void;
+  accountBalance?: React.ReactNode;
 }) {
   const data = useMemo(() => aggregateOverview(entries, basis), [entries, basis]);
   const [hoverDate, setHoverDate] = useState<string | null>(null);
@@ -77,6 +78,7 @@ export function JournalOverviewAnalytics({ entries, currency, basis, onDay, onTr
           <div><dt className="text-slate-500">Average {basis} loss<JournalHelp label="Average win / loss" /></dt><dd className="mt-1 font-mono">{format(data.avgLoss)}</dd></div>
         </dl>
       </ChartCard>
+      {accountBalance && <div className="min-w-0">{accountBalance}</div>}
     </div>
   </section>;
 }

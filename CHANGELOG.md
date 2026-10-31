@@ -1,3 +1,23 @@
+## 2.51.4 — Connected-broker balance preview
+
+- Remove manual balance setup from the Overview widget and replace the account selector with a connected-broker filter.
+- Add generated balance, deposit and withdrawal histories, with exact per-broker totals.
+- Add a clearly labelled four-broker sample comparison without changing real broker connections or journal records.
+
+## 2.51.3 — Compact account balance widget
+
+- Place Account balance after Trading costs & daily context in the automatically arranged Overview chart grid.
+- Compact the chart and controls while keeping balance setup, funding, data tables and detailed scope information available.
+
+## 2.51.2 — Account balance in Overview
+
+- Add an account balance chart with editable starting balances and deposits/withdrawals for each account and currency.
+- Reconstruct balances from recorded UTC closing dates and net realized results, keeping funding separate and missing evidence unknown.
+
+## 2.51.1 — Reorder Insights sections
+
+- Move the Cross analysis matrix below the Detailed session & time breakdown section.
+
 ## 2.51.0 — Journal-first chart with matching navigation
 
 - Open the execution workspace in Journal by default, with Journal first in the source selector.

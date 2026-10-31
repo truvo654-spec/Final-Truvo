@@ -40,6 +40,7 @@ import { JournalDayReview } from './JournalDayReview';
 import { JournalReplayAvailability } from './JournalReplayAvailability';
 import { createPlaybookTradingRules, isPlaybookTradingRules, resolvePlaybookTradingRules, updatePlaybookTradingRulesFromDefaults, type GlobalTradingRules } from '../../data/tradingRules';
 import { SharedTradingRules } from './SharedTradingRules';
+import { JournalAccountBalance } from './JournalAccountBalance';
 
 type JournalTab = 'overview' | 'entries' | 'insights' | 'playbook' | 'backtest' | 'review';
 
@@ -714,7 +715,19 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                   </table>
                 </div>
               )}
-              <JournalOverviewAnalytics entries={scoped} currency={currency} basis={pnlMode} onTrade={id=>openEntry(id,scoped.map(e=>e.id))} onDay={openDay}/>
+              <JournalOverviewAnalytics
+                entries={scoped}
+                currency={currency}
+                basis={pnlMode}
+                onTrade={id => openEntry(id, scoped.map(e => e.id))}
+                onDay={openDay}
+                accountBalance={<JournalAccountBalance
+                  key={currency}
+                  brokers={brokers ?? []}
+                  currency={currency}
+                  range={rangeMode === 'all' ? null : { from: rangeFrom, to: rangeTo }}
+                />}
+              />
             </div>
 
             <aside className="space-y-5">

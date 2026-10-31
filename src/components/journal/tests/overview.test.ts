@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { JournalOverviewAnalytics } from '../overview/JournalOverviewAnalytics';
+import { JournalAccountBalance } from '../JournalAccountBalance';
 import type { JournalEntry } from '../../../types';
 import { metrics } from '../journalMath';
 import { aggregateOverview, formatOverviewValue, scatterPoints } from '../overview/overviewAnalytics';
@@ -108,6 +109,20 @@ test('Overview renders seven additional cards without duplicate filters, calenda
   assert.ok(!html.includes('<select'));assert.ok(!html.includes('aria-label="Review queue"'));assert.ok(!html.includes('Journal calendar'));assert.ok(!html.includes('Cumulative P&amp;L'));
   assert.ok(html.includes('cashback and points stay separate'));assert.ok(!html.includes('NaN'));
   assert.ok(html.includes('Margin % vs portfolio USD'));assert.ok(html.includes('Open P&amp;L ROI vs USD'));
+});
+test('Account balance follows trading costs in the automatic widget grid without duplicates', () => {
+  const accountBalance = createElement(JournalAccountBalance, {
+    brokers: [{ id: 'hfm', name: 'HFM', connected: true }],
+    currency: 'USD', range: { from: '2026-10-01', to: '2026-10-31' },
+  });
+  const html = renderToStaticMarkup(createElement(JournalOverviewAnalytics, { entries: [trade()], currency: 'USD', basis: 'net', onDay: () => {}, onTrade: () => {}, accountBalance }));
+  assert.equal((html.match(/<article /g) || []).length, 8);
+  assert.equal((html.match(/aria-label="Overview account balance"/g) || []).length, 1);
+  assert.doesNotMatch(html, /col-start-|row-start-/);
+  assert.ok(html.indexOf('Trading costs &amp; daily context') < html.indexOf('aria-label="Overview account balance"'));
+  assert.match(html, /viewBox="0 0 500 220"/);
+  assert.match(html, /w-full h-40/);
+  assert.match(html, /Balance details/);
 });
 test('Flat and empty chart rendering has no invalid SVG coordinates or invented results',()=>{
   for(const entries of [[],[trade({pnl:0,entryTime:'2026-10-01T01:00Z',exitTime:'2026-10-01T02:00Z'})]]){

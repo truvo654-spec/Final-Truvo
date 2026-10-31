@@ -630,68 +630,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
               )}
             </section>
 
-            {/* Cross analysis matrix */}
-            <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cross analysis matrix">
-              <h4 className="text-sm font-bold">Cross analysis matrix<JournalHelp label="Cross analysis matrix" /></h4>
-              <p className="text-[11px] text-slate-500 mb-3">Closed performance only. Each cell is net P&amp;L, trades and win rate for that pair. Click a cell to see its trades. Open-position chart toggles do not change realized statistics or CSV exports.</p>
-              {matrixAccessible ? <>
-              <div className="flex flex-wrap gap-1.5 mb-3" role="tablist" aria-label="Compare by">
-                {DIMS.map(([id, label]) => (
-                  <button key={id} type="button" role="tab" aria-selected={dim === id} onClick={() => setDim(id)}
-                    className={`px-3 h-8 rounded-lg text-xs font-semibold border ${dim === id ? 'bg-[#EEF0FE] border-[#5338ec]/40 text-[#5338ec]' : 'bg-white border-slate-200 text-[#474556] hover:bg-slate-50'}`}>{label}</button>
-                ))}
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs border-separate" style={{ borderSpacing: 4 }}>
-                  <thead>
-                    <tr className="text-[10px] uppercase tracking-wider text-slate-500">
-                      <th className="text-left font-bold px-2 py-1 whitespace-nowrap">{DIMS.find((d) => d[0] === dim)![1]} \ {unit}</th>
-                      {matrixCols.map((c) => <th key={c.key} className="font-bold px-2 py-1 whitespace-nowrap">{view === 'time' ? c.label : c.label.split(' ')[0]}</th>)}
-                      <th className="font-bold px-2 py-1">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {matrix.map((row) => (
-                      <tr key={row.k}>
-                        <td className="px-2 py-1 font-semibold text-[#0b1c30] whitespace-nowrap">
-                          <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: row.s.net >= 0 ? '#10b981' : '#f43f5e' }} />{row.k}
-                        </td>
-                        {row.cells.map((c) => {
-                          const a = c.s.n ? 0.08 + 0.32 * (Math.abs(c.s.net) / cellMax) : 0;
-                          return (
-                            <td key={c.key} className="p-0">
-                              {c.s.n ? (
-                                <button type="button" onClick={() => setDrill({ label: `${row.k} · ${matrixCols.find((m) => m.key === c.key)!.label}`, ids: c.list.map((e) => e.id), matrix: true })}
-                                  className="w-full min-w-[96px] rounded-lg px-2 py-2 text-center border border-transparent hover:border-[#5338ec]/50"
-                                  style={{ backgroundColor: c.s.net >= 0 ? `rgba(16,185,129,${a})` : `rgba(244,63,94,${a})` }}>
-                                  <span className={`block font-mono font-bold ${tone(c.s.net)}`}>{money(c.s.net, 0)}</span>
-                                  <span className="block text-[10px] text-slate-600">{c.s.n} trade{c.s.n === 1 ? '' : 's'} ({c.s.winRate.toFixed(0)}%)</span>
-                                </button>
-                              ) : <span className="block min-w-[96px] rounded-lg bg-slate-50 px-2 py-3 text-center text-slate-300">—</span>}
-                            </td>
-                          );
-                        })}
-                        <td className="px-2 py-1 text-center whitespace-nowrap">
-                          <span className={`block font-mono font-bold ${tone(row.s.net)}`}>{money(row.s.net, 0)}</span>
-                          <span className="block text-[10px] text-slate-500">{row.s.n} · {row.s.winRate.toFixed(0)}%</span>
-                        </td>
-                      </tr>
-                    ))}
-                    {matrix.length === 0 && <tr><td colSpan={matrixCols.length + 2} className="py-8 text-center text-slate-500">No trades match these filters.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-              </> : (
-                <div className="relative min-h-[280px] overflow-hidden rounded-xl bg-slate-50">
-                  <LockStateContainer
-                    title="Cross analysis matrix · Level 4"
-                    buttonText={isLoggedIn ? 'Unlock with Credits' : 'Sign in to unlock'}
-                    onUnlock={() => isLoggedIn ? setUnlockOpen(true) : onSignIn()}
-                  />
-                </div>
-              )}
-            </section>
-
             {drill && (!drill.matrix || matrixAccessible) && (() => {
               const list = entries.filter((e) => drill.ids.includes(e.id)).sort((a, b) => (b.entryTime || b.date).localeCompare(a.entryTime || a.date));
               const s = stats(list);
@@ -720,8 +658,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                 if (onUnlockCrossAnalysis(duration)) setUnlockOpen(false);
               }}
             />
-
-            {/* Detailed breakdown */}
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Detailed breakdown">
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
@@ -807,6 +743,67 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                 <button type="button" onClick={resetFilters} className="ml-auto h-8 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-[#0b1c30] hover:bg-slate-50">Reset filters</button>
                 <button type="button" onClick={() => onDrill(cur.map((e) => e.id), 'Day & Time report selection')} className="h-8 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Drill down to Trade Log</button>
               </div>
+            </section>
+            {/* Cross analysis matrix */}
+            <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cross analysis matrix">
+              <h4 className="text-sm font-bold">Cross analysis matrix<JournalHelp label="Cross analysis matrix" /></h4>
+              <p className="text-[11px] text-slate-500 mb-3">Closed performance only. Each cell is net P&amp;L, trades and win rate for that pair. Click a cell to see its trades. Open-position chart toggles do not change realized statistics or CSV exports.</p>
+              {matrixAccessible ? <>
+              <div className="flex flex-wrap gap-1.5 mb-3" role="tablist" aria-label="Compare by">
+                {DIMS.map(([id, label]) => (
+                  <button key={id} type="button" role="tab" aria-selected={dim === id} onClick={() => setDim(id)}
+                    className={`px-3 h-8 rounded-lg text-xs font-semibold border ${dim === id ? 'bg-[#EEF0FE] border-[#5338ec]/40 text-[#5338ec]' : 'bg-white border-slate-200 text-[#474556] hover:bg-slate-50'}`}>{label}</button>
+                ))}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-separate" style={{ borderSpacing: 4 }}>
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wider text-slate-500">
+                      <th className="text-left font-bold px-2 py-1 whitespace-nowrap">{DIMS.find((d) => d[0] === dim)![1]} \ {unit}</th>
+                      {matrixCols.map((c) => <th key={c.key} className="font-bold px-2 py-1 whitespace-nowrap">{view === 'time' ? c.label : c.label.split(' ')[0]}</th>)}
+                      <th className="font-bold px-2 py-1">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matrix.map((row) => (
+                      <tr key={row.k}>
+                        <td className="px-2 py-1 font-semibold text-[#0b1c30] whitespace-nowrap">
+                          <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: row.s.net >= 0 ? '#10b981' : '#f43f5e' }} />{row.k}
+                        </td>
+                        {row.cells.map((c) => {
+                          const a = c.s.n ? 0.08 + 0.32 * (Math.abs(c.s.net) / cellMax) : 0;
+                          return (
+                            <td key={c.key} className="p-0">
+                              {c.s.n ? (
+                                <button type="button" onClick={() => setDrill({ label: `${row.k} · ${matrixCols.find((m) => m.key === c.key)!.label}`, ids: c.list.map((e) => e.id), matrix: true })}
+                                  className="w-full min-w-[96px] rounded-lg px-2 py-2 text-center border border-transparent hover:border-[#5338ec]/50"
+                                  style={{ backgroundColor: c.s.net >= 0 ? `rgba(16,185,129,${a})` : `rgba(244,63,94,${a})` }}>
+                                  <span className={`block font-mono font-bold ${tone(c.s.net)}`}>{money(c.s.net, 0)}</span>
+                                  <span className="block text-[10px] text-slate-600">{c.s.n} trade{c.s.n === 1 ? '' : 's'} ({c.s.winRate.toFixed(0)}%)</span>
+                                </button>
+                              ) : <span className="block min-w-[96px] rounded-lg bg-slate-50 px-2 py-3 text-center text-slate-300">—</span>}
+                            </td>
+                          );
+                        })}
+                        <td className="px-2 py-1 text-center whitespace-nowrap">
+                          <span className={`block font-mono font-bold ${tone(row.s.net)}`}>{money(row.s.net, 0)}</span>
+                          <span className="block text-[10px] text-slate-500">{row.s.n} · {row.s.winRate.toFixed(0)}%</span>
+                        </td>
+                      </tr>
+                    ))}
+                    {matrix.length === 0 && <tr><td colSpan={matrixCols.length + 2} className="py-8 text-center text-slate-500">No trades match these filters.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+              </> : (
+                <div className="relative min-h-[280px] overflow-hidden rounded-xl bg-slate-50">
+                  <LockStateContainer
+                    title="Cross analysis matrix · Level 4"
+                    buttonText={isLoggedIn ? 'Unlock with Credits' : 'Sign in to unlock'}
+                    onUnlock={() => isLoggedIn ? setUnlockOpen(true) : onSignIn()}
+                  />
+                </div>
+              )}
             </section>
           </>
         )}
