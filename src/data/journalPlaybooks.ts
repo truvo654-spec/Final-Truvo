@@ -10,6 +10,7 @@ export type PlaybookStatus = 'draft' | 'active' | 'testing' | 'archived';
 export const PLAYBOOK_STATUS_LABELS: Record<PlaybookStatus, string> = { draft: 'Draft', active: 'Active', testing: 'Testing', archived: 'Archived' };
 
 export interface JournalPlaybook {
+  directions?: ('long' | 'short')[];
   coachOrigin?: { scenarioId: string; sourcePlaybookId?: string; evidenceTradeIds: string[] };
   /** Backtestable technical scenario recipe used to prefill an automated test. */
   technicalRecipeId?: string;

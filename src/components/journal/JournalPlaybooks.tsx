@@ -1,3 +1,4 @@
+import { DirectionFilter, BOTH_SIDES, journalSide, type TradeSide } from './DirectionFilter';
 import { PlaybookSetupDialog } from './PlaybookSetupDialog';
 import { PlaybookExecutionWorkspace } from './PlaybookExecutionWorkspace';
 import { JournalHelp } from './JournalHelp';
@@ -152,6 +153,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [replayId, setReplayId] = useState<string | null>(null);
 
+  const [sideOverrides, setSideOverrides] = useState<Record<string, {signature:string; value:TradeSide[]}>>({});
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [gradeTip, setGradeTip] = useState<{ id: string; x: number; y: number } | null>(null);
   const recommendations = useMemo(
@@ -178,6 +180,12 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
       }
     });
   const sel = playbooks.find((p) => p.id === selId) && list.some((p) => p.id === selId) ? playbooks.find((p) => p.id === selId)! : list[0];
+  const savedSides = sel?.directions ?? BOTH_SIDES;
+  const signature = JSON.stringify(savedSides);
+  const sides = sel && sideOverrides[sel.id]?.signature === signature ? sideOverrides[sel.id].value : savedSides;
+  const setSides = (value:TradeSide[]) => { if(sel) setSideOverrides(prev=>({...prev,[sel.id]:{signature,value}})); };
+  const sideEntries = entries.filter(entry=>sides.includes(journalSide(entry.direction)));
+
   const s = sel ? stats.get(sel.id)! : null;
   const selTrades = sel ? entries.filter((e) => e.strategy === sel.name) : [];
   const nextId = () => `PB-${pad(Math.max(0, ...playbooks.map((p) => Number(p.id.replace(/\D/g, '')) || 0)) + 1).padStart(3, '0')}`;
@@ -191,6 +199,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     const name = draft.name.trim();
     if (!name) return 'Give the playbook a name';
     if (playbooks.some((p) => p.id !== draft.id && p.name.trim().toLowerCase() === name.toLowerCase())) return 'A playbook with that name already exists';
+    if (draft.directions && !draft.directions.length) { onToast('Select Long or Short for this playbook.'); return; }
     if (draft.technicalEntryConditions) {
       const error = validatePlaybookConditions(draft.technicalEntryConditions);
       if (error) return error;
@@ -388,10 +397,12 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                   <h4 className="text-sm font-bold text-[#0b1c30]">Analytics<JournalHelp label="Analytics" /> <span className="font-normal text-[11px] text-slate-500">· win rate, profit factor, avg W/L, target and scenarios</span></h4>
                   <button type="button" aria-expanded={showAnalytics} onClick={() => setShowAnalytics(v => !v)} className="text-xs font-semibold text-[#5338ec] hover:underline">{showAnalytics ? 'Hide' : 'Show'}</button>
                 </div>
-                {showAnalytics && <PlaybookAnalytics playbook={sel} playbooks={playbooks} entries={entries} onShowTrades={onShowTrades} />}
+                <DirectionFilter label="Trade direction" value={sides} onChange={setSides} />
+                <p className="mb-3 text-[11px] text-slate-500">Applies to analytics, comparison, charts and executions.</p>
+                {showAnalytics && <PlaybookAnalytics playbook={sel} playbooks={playbooks} entries={sideEntries} onShowTrades={onShowTrades} />}
               </div>
 
-              <PlaybookExecutionWorkspace key={sel.id} playbook={sel} entries={entries} allEntries={allJournalEntries} comparisonEntries={comparisonEntries} globalRules={globalRules} onOpenEntry={onOpenEntry} onShowTrades={onShowTrades} onReplay={setReplayId} onTest={onBacktest ? symbol => onBacktest(sel.id, symbol) : undefined} />
+              <PlaybookExecutionWorkspace directions={sides} key={sel.id} playbook={sel} entries={entries} allEntries={allJournalEntries} comparisonEntries={comparisonEntries} globalRules={globalRules} onOpenEntry={onOpenEntry} onShowTrades={onShowTrades} onReplay={setReplayId} onTest={onBacktest ? symbol => onBacktest(sel.id, symbol) : undefined} />
             </section>
           ) : (
             <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-10 text-center text-sm text-slate-500">Select a playbook, or create one.</div>

@@ -47,3 +47,28 @@ test('Simulation maps selected instrument, technical rules, target, timeframe an
  assert.throws(()=>simulationSettings(custom,{...short,balance:0},'NAS100'),/balance/);
  assert.throws(()=>simulationSettings(custom,{...short,from:'2020-01-01'},'NAS100'),/date range/);
 });
+
+test('Direction selection filters journal history, simulated trades and recalculated totals',()=>{
+ const template=JOURNAL_ENTRIES.find(e=>eligible(e))!;
+ const base={...template,strategy:book.name,symbol:'NAS100',date:'2026-08-01',entryTime:'2026-08-01T10:00:00Z',exitTime:'2026-08-01T12:00:00Z',accountCurrency:'USD',commission:0};
+ const entries=[{...base,id:'long',direction:'BUY' as const,pnl:100},{...base,id:'short',direction:'SELL' as const,pnl:-40}];
+ const run=makeRun('sides','2026-07-01','2026-09-30',[trade(1,'2026-08-01',100),{...trade(2,'2026-08-02',-40),direction:'short'}]);
+ for(const side of ['long','short'] as const){
+  const result=comparePlaybook(book,entries,[run],{...scope,directions:[side]});
+  assert.equal(result.history.length,1);assert.equal(result.history[0].id,side);
+  assert.equal(result.journal.count,1);assert.equal(result.simulated.count,1);
+  assert.equal(result.journal.net,side==='long'?100:-40);
+  assert.equal(result.simulated.net,result.journal.net);
+ }
+ const empty=comparePlaybook(book,entries,[run],{...scope,directions:[]});
+ assert.equal(empty.history.length,0);assert.equal(empty.simulated.count,0);
+});
+
+test('Saved direction initializes backtests and interactive direction overrides simulation settings',()=>{
+ const saved={...book,directions:['short'] as ('long'|'short')[]};
+ assert.equal(defaultSettings({playbook:saved}).rules.direction,'short');
+ assert.equal(simulationSettings(saved,scope,'NAS100').rules.direction,'short');
+ assert.equal(simulationSettings(saved,{...scope,directions:['long']},'NAS100').rules.direction,'long');
+ assert.throws(()=>simulationSettings(saved,{...scope,directions:[]},'NAS100'),/Select Long or Short/);
+ assert.notEqual(playbookFingerprint(saved),playbookFingerprint({...saved,directions:['long']}));
+});

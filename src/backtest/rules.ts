@@ -254,6 +254,7 @@ export function defaultSettings(opts: { playbook?: JournalPlaybook | null; journ
     ? pbRules.enabled.maxDailyLoss ? pbRules.values.maxDailyLoss : null
     : jr?.maxDailyLoss ?? 3;
   const rules: StrategyRules = { ...tpl.rules, maxTradesPerDay };
+  if (pb?.directions?.length) rules.direction = pb.directions.length === 2 ? 'both' : pb.directions[0];
   if (pb?.technicalEntryConditions) rules.entry = deepClone(pb.technicalEntryConditions);
   const symbol = symbolForPlaybook(pb, opts.mostTraded);
   return {

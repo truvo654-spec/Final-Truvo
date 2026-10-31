@@ -17,8 +17,11 @@ export function simulationSettings(playbook: JournalPlaybook, scope: ComparisonS
   if(!resolved) throw new Error(`Sample prices are unavailable for ${symbol}.`);
   if(!['USD','EUR','GBP'].includes(scope.currency)) throw new Error('Sample simulation supports USD, EUR and GBP.');
   const book=globalRules ? {...playbook,tradingRules:resolvePlaybookTradingRules(playbook,globalRules)} : playbook;
+  const sides=scope.directions ?? playbook.directions ?? ['long','short'];
+  if(!sides.length) throw new Error('Select Long or Short before running a backtest.');
+  const direction = sides.length === 2 ? 'both' as const : sides[0];
   const settings=defaultSettings({playbook:book});
-  return {...settings,name:`${playbook.name} · ${symbol} simulation`,symbol:resolved,from:scope.from,to:scope.to,timeframe:playbook.instrumentTimeframe ?? settings.timeframe,rules:{...settings.rules,exits:{...settings.rules.exits,targetR:playbook.benchmarkRR}},risk:{...settings.risk,startBalance:scope.balance,currency:scope.currency as Currency},costs:{...settings.costs,...defaultCostsFor(resolved)}};
+  return {...settings,name:`${playbook.name} · ${symbol} simulation`,symbol:resolved,from:scope.from,to:scope.to,timeframe:playbook.instrumentTimeframe ?? settings.timeframe,rules:{...settings.rules,direction,exits:{...settings.rules.exits,targetR:playbook.benchmarkRR}},risk:{...settings.risk,startBalance:scope.balance,currency:scope.currency as Currency},costs:{...settings.costs,...defaultCostsFor(resolved)}};
 }
 export async function generatePlaybookSimulation(playbook: JournalPlaybook, scope: ComparisonScope, symbol: string, options: {globalRules?:GlobalTradingRules; signal?:AbortSignal; onProgress?:(p:number)=>void}={}) {
   const settings=simulationSettings(playbook,scope,symbol,options.globalRules);

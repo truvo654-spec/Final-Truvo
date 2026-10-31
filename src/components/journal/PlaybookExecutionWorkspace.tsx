@@ -1,3 +1,4 @@
+import { BOTH_SIDES, type TradeSide } from './DirectionFilter';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import type { JournalEntry } from '../../types';
@@ -20,9 +21,11 @@ const field='rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs';
 const fmt=(n:number|null,suffix='')=>n===null ? '—' : n===Infinity ? '∞' : n.toFixed(1)+suffix;
 
 export const PlaybookExecutionWorkspace:React.FC<{
+  directions?:TradeSide[];
   playbook:JournalPlaybook; entries:JournalEntry[]; allEntries:JournalEntry[]; comparisonEntries?:JournalEntry[]; globalRules?:GlobalTradingRules;
   onOpenEntry:(id:string)=>void; onShowTrades:(ids:string[],label:string)=>void; onReplay:(id:string)=>void; onTest?:(symbol:string)=>void;
-}> = ({playbook,entries,allEntries,comparisonEntries=entries,globalRules,onOpenEntry,onShowTrades,onReplay,onTest}) => {
+}> = ({directions:controlledDirections,playbook,entries,allEntries,comparisonEntries=entries,globalRules,onOpenEntry,onShowTrades,onReplay,onTest}) => {
+  const directions=controlledDirections ?? playbook.directions ?? BOTH_SIDES;
   const currency=useContext(JournalCurrency);
   const money=(n:number)=>formatMoney(n,currency,2);
   const savedKey=`ms_playbook_comparison_${playbook.id}`;
@@ -59,7 +62,7 @@ export const PlaybookExecutionWorkspace:React.FC<{
   const activeMarkets=marketSelection===null?availableMarkets:marketSelection.filter(market=>availableMarkets.includes(market));
   const validRange=/^\d{4}-\d{2}-\d{2}$/.test(from)&&/^\d{4}-\d{2}-\d{2}$/.test(to)&&Number.isFinite(Date.parse(from))&&Number.isFinite(Date.parse(to))&&from<=to;
   const validBalance=Number.isFinite(balance)&&balance>0;
-  const scope:ComparisonScope={from,to,symbols:selected.filter(s=>available.some(a=>instrumentKey(a)===instrumentKey(s))&&activeMarkets.includes(comparisonMarket(playbook,s,comparisonEntries))),currency,balance:validBalance?balance:100000};
+  const scope:ComparisonScope={directions,from,to,symbols:selected.filter(s=>available.some(a=>instrumentKey(a)===instrumentKey(s))&&activeMarkets.includes(comparisonMarket(playbook,s,comparisonEntries))),currency,balance:validBalance?balance:100000};
   const comparison=comparePlaybook(playbook,comparisonEntries,runs,scope);
   const supported=scope.symbols.filter(s=>!!resolveSymbol(s));
   const unsupported=scope.symbols.filter(s=>!resolveSymbol(s));
@@ -68,7 +71,7 @@ export const PlaybookExecutionWorkspace:React.FC<{
   const simPoints=comparison.simulated.points.filter(p=>effectiveLogSymbol==='all'||instrumentKey(p.symbol)===instrumentKey(effectiveLogSymbol)).sort((a,b)=>b.entryAt-a.entryAt);
   const count=source==='journal'?journalHistory.length:simPoints.length;
   const currentPage=Math.min(page,Math.max(1,Math.ceil(count/10)));
-  const rangeProblem=!validRange?'Choose a valid start and end date.':!validBalance?'Reference balance must be greater than zero.':'';
+  const rangeProblem=!directions.length?'Select Long or Short in Analytics.':!validRange?'Choose a valid start and end date.':!validBalance?'Reference balance must be greater than zero.':'';
   useEffect(()=>()=>abort.current?.abort(),[]);
   useEffect(()=>{
     const before=previousSymbols.current;
@@ -77,7 +80,7 @@ export const PlaybookExecutionWorkspace:React.FC<{
     setMarketSelection(current=>current?.length&&!current.some(market=>availableMarkets.includes(market))?null:current);
     setPage(1);
   },[instrumentSignature,availableSignature]);
-  useEffect(()=>{setPage(1);},[from,to,selection,marketSelection,logSymbol,source]);
+  useEffect(()=>{setPage(1);},[from,to,selection,marketSelection,logSymbol,source,directions]);
   useEffect(()=>{if(validRange&&validBalance){try{localStorage.setItem(savedKey,JSON.stringify({...scope,selection:syncedSelection,playbookSymbols:configuredSymbols,marketSelection}));}catch{}}},[from,to,balance,selection,marketSelection,currency,instrumentSignature,availableSignature]);
   const toggle=(symbol:string)=>{setSelection(current=>{const chosen=current ?? [...(playbook.symbols??[])];return chosen.includes(symbol)?chosen.filter(s=>s!==symbol):[...chosen,symbol];});setLogSymbol('all');};
   const drill=(symbol:string,next:'journal'|'simulated')=>{setLogSymbol(symbol);setSource(next);setPage(1);requestAnimationFrame(()=>{logRef.current?.scrollIntoView({behavior:'smooth',block:'start'});logRef.current?.focus({preventScroll:true});});};

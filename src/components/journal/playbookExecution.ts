@@ -4,7 +4,7 @@ import type { BacktestRun } from '../../backtest/store';
 import { resolveSymbol } from '../../backtest/marketData';
 import { eligible, realizedR, resultOf } from './journalMath';
 export const instrumentKey = (symbol: string) => resolveSymbol(symbol) ?? symbol.trim().toUpperCase();
-export const playbookFingerprint = (p: JournalPlaybook) => JSON.stringify({markets:p.markets, symbols:p.symbols, window:p.window, benchmarkRR:p.benchmarkRR, rules:p.rules, tradingRules:p.tradingRules, technicalEntryConditions:p.technicalEntryConditions, technicalRecipeId:p.technicalRecipeId, entryTrigger:p.entryTrigger, stopRule:p.stopRule, targetRule:p.targetRule, riskPerTrade:p.riskPerTrade, maxTradesPerDay:p.maxTradesPerDay, avoid:p.avoid, houseChecklistIds:p.houseChecklistIds});
+export const playbookFingerprint = (p: JournalPlaybook) => JSON.stringify({directions:p.directions,markets:p.markets, symbols:p.symbols, window:p.window, benchmarkRR:p.benchmarkRR, rules:p.rules, tradingRules:p.tradingRules, technicalEntryConditions:p.technicalEntryConditions, technicalRecipeId:p.technicalRecipeId, entryTrigger:p.entryTrigger, stopRule:p.stopRule, targetRule:p.targetRule, riskPerTrade:p.riskPerTrade, maxTradesPerDay:p.maxTradesPerDay, avoid:p.avoid, houseChecklistIds:p.houseChecklistIds});
 export function executionRows(playbook: JournalPlaybook, entries: JournalEntry[], runs: BacktestRun[]) {
   const latest = [...runs].filter(r => r.playbookId === playbook.id).sort((a,b) => b.lastRun.localeCompare(a.lastRun));
   return [...new Map((playbook.symbols ?? []).map(symbol => [instrumentKey(symbol),symbol])).values()].map(symbol => {

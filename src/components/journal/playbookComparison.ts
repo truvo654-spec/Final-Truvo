@@ -1,3 +1,4 @@
+import { BOTH_SIDES, journalSide, type TradeSide } from './DirectionFilter';
 import type { JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import type { BacktestRun } from '../../backtest/store';
@@ -13,7 +14,7 @@ export function comparisonMarket(playbook: JournalPlaybook, symbol: string, entr
 
 export const executionPrice = (price:number|null|undefined,symbol:string) => price==null ? '—' : price.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:symbolSpec(symbol)?.priceDp ?? 6});
 
-export interface ComparisonScope { from: string; to: string; symbols: string[]; currency: string; balance: number }
+export interface ComparisonScope { directions?:TradeSide[]; from: string; to: string; symbols: string[]; currency: string; balance: number }
 export interface ExecutionPoint { id: string; at: number; entryAt: number; net: number; r: number | null; journal?: JournalEntry; trade?: BacktestTrade; run?: BacktestRun; symbol: string }
 export function comparisonStats(points: ExecutionPoint[], balance: number) {
   const sorted = [...points].sort((a,b)=>a.at-b.at || a.id.localeCompare(b.id));
@@ -36,16 +37,18 @@ export function comparisonStats(points: ExecutionPoint[], balance: number) {
 export function comparePlaybook(playbook: JournalPlaybook, entries: JournalEntry[], runs: BacktestRun[], scope: ComparisonScope) {
   const start=Date.parse(scope.from+'T00:00:00Z'),end=Date.parse(scope.to+'T00:00:00Z')+86400000;
   const selected=new Set(scope.symbols.map(instrumentKey));
-  const history=entries.filter(e=>e.strategy===playbook.name && currencyOf(e)===scope.currency && selected.has(instrumentKey(e.symbol)) && e.date>=scope.from && e.date<=scope.to);
+  const sides=scope.directions ?? playbook.directions ?? BOTH_SIDES;
+  const history=entries.filter(e=>sides.includes(journalSide(e.direction)) && e.strategy===playbook.name && currencyOf(e)===scope.currency && selected.has(instrumentKey(e.symbol)) && e.date>=scope.from && e.date<=scope.to);
   const journal=history.filter(e=>eligible(e) && (!e.exitTime || timestampMs(e.exitTime)<end)).map((e):ExecutionPoint=>({id:e.id,at:timestampMs(e.exitTime || e.entryTime || e.date),entryAt:timestampMs(e.entryTime || e.date),net:netOf(e),r:realizedR(e),journal:e,symbol:e.symbol}));
   const latest=[...runs].filter(run=>run.playbookId===playbook.id && run.output.result.currency===scope.currency && run.from<=scope.to && run.to>=scope.from).sort((a,b)=>b.lastRun.localeCompare(a.lastRun));
   const rows=[...new Map(scope.symbols.map(s=>[instrumentKey(s),s])).values()].map(symbol=>{
     const candidates=latest.filter(run=>instrumentKey(run.symbol)===instrumentKey(symbol));
     const covers=(run:BacktestRun)=>run.from<=scope.from && run.to>=scope.to;
-    const current=(run:BacktestRun)=>run.playbookFingerprint===playbookFingerprint(playbook) && run.settings.risk.startBalance===scope.balance;
+    const directionMatches=(run:BacktestRun)=>run.settings.rules.direction===(sides.length===2?'both':sides[0]);
+    const current=(run:BacktestRun)=>directionMatches(run) && run.playbookFingerprint===playbookFingerprint(playbook) && run.settings.risk.startBalance===scope.balance;
     const run=candidates.find(r=>covers(r)&&current(r)) ?? candidates.find(covers) ?? candidates[0];
-    const simulated=(run?.output.result.trades ?? []).filter(t=>t.entryTime>=start && t.entryTime<end && (t.exitTime<end || t.exitReason==='end of test'&&t.exitTime===end)).map((trade):ExecutionPoint=>({id:`${run!.id}:${trade.id}`,at:trade.exitTime,entryAt:trade.entryTime,net:trade.net,r:trade.r,trade,run,symbol}));
-    return {symbol,market:comparisonMarket(playbook,symbol,entries),run,partial:!!run&&!covers(run),stale:!!run?.playbookFingerprint&&run.playbookFingerprint!==playbookFingerprint(playbook),balanceChanged:!!run&&run.settings.risk.startBalance!==scope.balance,journal:comparisonStats(journal.filter(p=>instrumentKey(p.symbol)===instrumentKey(symbol)),scope.balance),simulated:comparisonStats(simulated,scope.balance)};
+    const simulated=(run?.output.result.trades ?? []).filter(t=>sides.includes(t.direction) && t.entryTime>=start && t.entryTime<end && (t.exitTime<end || t.exitReason==='end of test'&&t.exitTime===end)).map((trade):ExecutionPoint=>({id:`${run!.id}:${trade.id}`,at:trade.exitTime,entryAt:trade.entryTime,net:trade.net,r:trade.r,trade,run,symbol}));
+    return {symbol,market:comparisonMarket(playbook,symbol,entries),run,partial:!!run&&!covers(run),stale:!!run&&(!directionMatches(run)||!!run.playbookFingerprint&&run.playbookFingerprint!==playbookFingerprint(playbook)),balanceChanged:!!run&&run.settings.risk.startBalance!==scope.balance,journal:comparisonStats(journal.filter(p=>instrumentKey(p.symbol)===instrumentKey(symbol)),scope.balance),simulated:comparisonStats(simulated,scope.balance)};
   });
   return {history,rows,journal:comparisonStats(journal,scope.balance),simulated:comparisonStats(rows.flatMap(row=>row.simulated.points),scope.balance)};
 }

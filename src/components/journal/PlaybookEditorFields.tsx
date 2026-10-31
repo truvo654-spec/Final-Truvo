@@ -1,3 +1,4 @@
+import { DirectionFilter, BOTH_SIDES } from './DirectionFilter';
 import { PlaybookChecklistSelector } from './PlaybookChecklistSelector';
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
@@ -54,6 +55,7 @@ export const PlaybookEditorFields: React.FC<Props> = ({ editing, setEditing, ent
           <select aria-label="Grade" className={`${input} mt-1`} value={editing.grade} onChange={(e) => setEditing({ ...editing, grade: e.target.value as PlaybookGrade })}>{GRADES.map((g) => <option key={g}>{g}</option>)}</select>
           {!isNew && suggestedGrade && <span className="text-[10px] text-slate-500">Data suggests {suggestedGrade}. Hover a grade badge to see the criteria.</span>}
         </label>
+        <DirectionFilter value={editing.directions ?? BOTH_SIDES} onChange={directions => setEditing({ ...editing, directions })} />
         <label className="block"><span className={lbl}>Status<JournalHelp label="Status" /></span>
           <select aria-label="Status" className={`${input} mt-1`} value={editing.status} onChange={(e) => setEditing({ ...editing, status: e.target.value as PlaybookStatus })}>
             {(['draft', 'active', 'testing', 'archived'] as const).map((st) => <option key={st} value={st}>{STATUS_LABEL[st]}</option>)}
