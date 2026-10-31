@@ -87,13 +87,13 @@ test('unsupported currencies remain unavailable with no guessed currency convers
 test('compact widget labels generated data and has sample/broker controls but no setup button', () => {
   const html = renderToStaticMarkup(createElement(JournalAccountBalance, { brokers: [hfm, exness, xm], currency: 'USD', range }));
   assert.match(html, /aria-label="Balance chart broker"/);
-  assert.match(html, /All connected brokers/);
+  assert.match(html, /All sample brokers/);
   assert.match(html, /<option value="hfm">HFM<\/option>/);
   assert.match(html, /<option value="exness">Exness<\/option>/);
-  assert.doesNotMatch(html, /<option value="xm">/);
+  assert.match(html, /<option value="xm">XM<\/option>/);
   assert.match(html, /not live or journal/);
   assert.match(html, />Demo</);
-  assert.match(html, /Multi-broker demo/);
+  assert.match(html, />Connected Broker</);
   assert.match(html, /Demo through 2026-10-31/);
   assert.match(html, /Demo deposits and withdrawals series/);
   assert.match(html, /stroke="#f45b69"/);
@@ -102,9 +102,10 @@ test('compact widget labels generated data and has sample/broker controls but no
   assert.doesNotMatch(html, /NaN|Infinity/);
 });
 
-test('widget reports empty connections and currency limits without disabling the sample preview', () => {
+test('widget shows sample details by default without connections and respects currency limits', () => {
   const render = (brokers: BalanceBroker[], currency = 'USD') => renderToStaticMarkup(createElement(JournalAccountBalance, { brokers, currency, range }));
-  assert.match(render([]), /No connected brokers/);
-  assert.match(render([]), /Multi-broker demo/);
+  assert.match(render([]), /Demo through 2026-10-31/);
+  assert.doesNotMatch(render([]), />Connected<|Multi-broker demo/);
+  assert.match(render([]), />Connected Broker</);
   assert.match(render([hfm], 'EUR'), /available in USD only/);
 });

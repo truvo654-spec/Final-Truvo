@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ChartCard } from './overview/OverviewCharts';
 import type { DateRange } from './journalDay';
-import { demoAccountBalanceSeries, SAMPLE_BALANCE_BROKERS, type BalanceBroker, type BalanceDemoScope } from './accountBalance';
+import { demoAccountBalanceSeries, SAMPLE_BALANCE_BROKERS, type BalanceBroker } from './accountBalance';
 
 const PURPLE = '#5338ec';
 const RED = '#f45b69';
@@ -14,12 +14,11 @@ interface Props {
 }
 
 export function JournalAccountBalance({ brokers, currency, range }: Props) {
-  const connected = useMemo(() => [...new Map(brokers.filter(broker => broker.connected).map(broker => [broker.id, broker])).values()]
-    .sort((a, b) => a.name.localeCompare(b.name)), [brokers]);
-  const [scope, setScope] = useState<BalanceDemoScope>('connected');
-  const available = scope === 'sample' ? SAMPLE_BALANCE_BROKERS : connected;
+  const scope = 'sample' as const;
+  const available = SAMPLE_BALANCE_BROKERS;
   const [selected, setSelected] = useState('all');
   const selectedBroker = available.some(broker => broker.id === selected) ? selected : 'all';
+  const brokerLabel = available.find(broker => broker.id === selectedBroker)?.name ?? 'All sample brokers';
   const [activeDate, setActiveDate] = useState<string | null>(null);
   const [table, setTable] = useState(false);
   const [showBalance, setShowBalance] = useState(true);
@@ -42,26 +41,25 @@ export function JournalAccountBalance({ brokers, currency, range }: Props) {
     points[points.length - 1].date,
   ].filter((date, index, dates) => dates.indexOf(date) === index) : [];
   const path = (field: 'balance' | 'funding') => points.map((point, index) => `${index ? 'L' : 'M'}${x(point.date)},${y(point[field])}`).join(' ');
-  const definition = 'Generated demo balances and funding, not live broker balances or realized journal profit/loss. Balance equals the example starting balance plus simulated net results and deposits minus withdrawals. Funding is the net cumulative deposits minus withdrawals. Connected mode filters your connected broker names; Multi-broker demo uses four sample accounts without connecting them. All brokers sums each example account once. USD only; no currency conversion. Demo data stays separate from your journal and saved funding settings.';
-  const emptyMessage = scope === 'connected' && !connected.length ? 'No connected brokers. Choose Multi-broker demo to explore sample accounts.'
-    : data.unsupportedCurrency ? 'Demo account balances are available in USD only. No currency conversion is applied.'
+  const definition = 'Generated demo balances and funding, not live broker balances or realized journal profit/loss. Balance equals the example starting balance plus simulated net results and deposits minus withdrawals. Funding is the net cumulative deposits minus withdrawals. The Connected Broker preview uses four sample accounts without connecting them. All brokers sums each example account once. USD only; no currency conversion. Demo data stays separate from your journal and saved funding settings.';
+  const emptyMessage = data.unsupportedCurrency ? 'Demo account balances are available in USD only. No currency conversion is applied.'
     : 'No demo balance records in this date range.';
 
   return <section aria-label="Overview account balance">
     <ChartCard title="Account balance" definition={definition} action={<span className="shrink-0 rounded-md bg-[#F1EDFF] px-2 py-1 text-[10px] font-bold text-[#5338ec]">Demo</span>}>
-      <div role="group" aria-label="Balance demo scope" className="mb-2 flex flex-wrap gap-1">
-        {([['connected', 'Connected'], ['sample', 'Multi-broker demo']] as const).map(([id, label]) => <button key={id} type="button" aria-pressed={scope === id} onClick={() => { setScope(id); setSelected('all'); setActiveDate(null); }} className={`rounded-lg border px-2 py-1 text-[10px] font-semibold ${scope === id ? 'border-[#CFC5FF] bg-[#F1EDFF] text-[#5338ec]' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>{label}</button>)}
+      <div className="mb-2 flex flex-wrap gap-1">
+        <span className="rounded-lg border border-[#CFC5FF] bg-[#F1EDFF] px-2 py-1 text-[10px] font-semibold text-[#5338ec]">Connected Broker</span>
       </div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <label className="min-w-0 text-[11px] font-semibold text-slate-600">Broker
           <select aria-label="Balance chart broker" value={selectedBroker} onChange={event => { setSelected(event.target.value); setActiveDate(null); }} className="ml-2 max-w-44 appearance-none rounded-lg border border-slate-200 bg-white py-1 pl-2 pr-7">
-            <option value="all">{scope === 'sample' ? 'All sample brokers' : 'All connected brokers'}</option>
+            <option value="all">All sample brokers</option>
             {available.map(broker => <option key={broker.id} value={broker.id}>{broker.name}</option>)}
           </select>
         </label>
         <span aria-label="Combined demo account balance" className="text-sm font-bold font-mono text-slate-900">{format(data.closingBalance)}</span>
       </div>
-      <p className="mb-2 text-[10px] text-slate-500">Generated USD examples · not live or journal P&amp;L{scope === 'sample' ? ' · connections unchanged' : ''}</p>
+      <p className="mb-2 text-[10px] text-slate-500">Generated USD examples · not live or journal P&amp;L · connections unchanged</p>
       {data.points.length > 0 && <p className="mb-2 text-[10px] text-slate-500">Demo through {points.at(-1)?.date} · {data.demoAccountCount} demo account{data.demoAccountCount === 1 ? '' : 's'}</p>}
       {!points.length ? <p role="status" className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center text-xs text-slate-500">{emptyMessage}</p> : <>
         <div role="group" aria-label="Account balance chart series" className="mb-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
@@ -100,7 +98,7 @@ export function JournalAccountBalance({ brokers, currency, range }: Props) {
         <details className="text-[11px] text-slate-500">
           <summary className="cursor-pointer font-semibold text-[#5338ec]">Balance details</summary>
           <div className="mt-2 space-y-2">
-            <p>{range ? `${range.from} to ${range.to}` : 'Full demo history'}. {scope === 'sample' ? 'Sample brokers are for comparison only; this does not connect them to your profile.' : 'Only connected brokers appear in this filter.'} Each broker contributes one generated demo account, not its actual linked balance.</p>
+            <p>{range ? `${range.from} to ${range.to}` : 'Full demo history'}. Sample brokers are for comparison only; this does not connect them to your profile. Each broker contributes one generated demo account, not its actual linked balance.</p>
             {data.sourceFrom && data.sourceTo && <p>Demo coverage: {data.sourceFrom} to {data.sourceTo}. Dates outside this range are not projected.</p>}
             <p>Balances, deposits, withdrawals and net results are generated examples. They are independent of journal trades, saved funding settings and other journal filters, and do not represent your money.</p>
             <ul className="space-y-1">{data.accounts.map(account => <li key={account.broker.id}>{account.broker.name}: starting example balance {format(account.initialBalance)}</li>)}</ul>
@@ -108,7 +106,7 @@ export function JournalAccountBalance({ brokers, currency, range }: Props) {
         </details>
       </div>
       {table && !!points.length && <div className="mt-2 space-y-3">
-        <div className="max-h-56 overflow-auto"><table className="w-full text-xs"><caption className="sr-only">Demo account balance by date</caption><thead><tr><th className="p-2 text-left">Demo date (UTC)</th><th className="p-2 text-right">Combined demo balance</th><th className="p-2 text-right">Net funding</th></tr></thead><tbody>{points.map(point => <tr key={point.date} className="border-t border-slate-100"><td className="p-2">{point.date}</td><td className="p-2 text-right font-mono">{format(point.balance)}</td><td className="p-2 text-right font-mono">{format(point.funding)}</td></tr>)}</tbody></table></div>
+        <div className="max-h-56 overflow-auto"><table className="w-full min-w-[400px] text-xs"><caption className="sr-only">Demo account balance by date</caption><thead><tr><th className="p-2 text-left">Demo date (UTC)</th><th className="p-2 text-left">Broker</th><th className="p-2 text-right">{selectedBroker === 'all' ? 'Combined demo balance' : 'Demo balance'}</th><th className="p-2 text-right">Net funding</th></tr></thead><tbody>{points.map(point => <tr key={point.date} className="border-t border-slate-100"><td className="whitespace-nowrap p-2">{point.date}</td><td className="p-2">{brokerLabel}</td><td className="p-2 text-right font-mono">{format(point.balance)}</td><td className="p-2 text-right font-mono">{format(point.funding)}</td></tr>)}</tbody></table></div>
         <div className="max-h-48 overflow-auto"><table className="w-full text-xs"><caption className="mb-2 text-left font-semibold">Demo deposits / withdrawals</caption><thead><tr><th className="p-2 text-left">Date</th><th className="p-2 text-left">Broker</th><th className="p-2 text-left">Type</th><th className="p-2 text-right">Amount</th></tr></thead><tbody>{data.movements.map(movement => <tr key={movement.id} className="border-t border-slate-100"><td className="p-2">{movement.date}</td><td className="p-2">{movement.broker}</td><td className="p-2">{movement.kind === 'deposit' ? 'Deposit' : 'Withdrawal'}</td><td className="p-2 text-right font-mono">{format(movement.amount)}</td></tr>)}</tbody></table></div>
       </div>}
     </ChartCard>
