@@ -1,3 +1,5 @@
+import { BacktestDashboard } from './BacktestDashboard';
+import type { DashboardEntry } from './dashboardData';
 import { StrategyLab } from './StrategyLab';
 import { labBenchmark, labSettings, labJobs, loadLabDraft, saveLabDraft } from './labTransfer';
 import { resolveSymbol } from '../../backtest/marketData';
@@ -20,7 +22,6 @@ import {
   BacktestRun, claimPoints, loadReplay, loadRuns, loadUsage, PlaybookExpectedStats, ReplaySession, saveReplay, saveRuns, saveUsage, summarize, Usage,loadWhatIfs,saveWhatIfs,WhatIfRun,
 } from '../../backtest/store';
 import { BacktestSettings, JobOutput, Suggestion } from '../../backtest/types';
-import { BacktestHome } from './BacktestHome';
 import { brokerCosts } from './BacktestSetup';
 import { BacktestComparisonResults } from './BacktestComparisonResults';
 import type { BacktestComparisonItem } from './BacktestComparisonResults';
@@ -31,7 +32,7 @@ import { ReplayPanel } from './ReplayPanel';
 import { DemoReplay } from './DemoReplay';
 import { Banner, Modal, btnPrimary, btnSecondary } from './ui';
 
-export type BacktestIntent = { view: 'setup'; symbol?: string; playbookId?: string; comparePlaybookId?: string; benchmarkTradeIds?: string[] } | { view: 'replay'; entryId?: string; playbookId?: string } | { view: 'whatif'; playbookId?: string } | { view: 'home' };
+export type BacktestIntent = { view: 'setup'; symbol?: string; playbookId?: string; comparePlaybookId?: string; benchmarkTradeIds?: string[] } | { view: 'replay'; entryId?: string; playbookId?: string } | { view: 'whatif'; playbookId?: string } | ({ view: 'home' } & DashboardEntry);
 type View = 'home' | 'setup' | 'running' | 'results' | 'comparison' | 'whatif' | 'replay' | 'demo' | 'runs';
 
 interface Props {
@@ -50,6 +51,7 @@ interface Props {
   onUpgrade: () => void;
   onToast: (m: string) => void;
   onOpenTrades: (ids: string[], label: string) => void;
+  onOpenJournal?: (id:string,cohort:string[])=>void;
   expected: Record<string, PlaybookExpectedStats>;
   onSetExpected: (s: PlaybookExpectedStats) => void;
   intent: BacktestIntent | null;
@@ -81,6 +83,9 @@ const addDays = (d: string, n: number) => { const x = new Date(`${d}T00:00:00Z`)
 
 export const BacktestPage: React.FC<Props> = (p) => {
   const { entries, playbooks, setPlaybooks, journalRules, brokers, userTierLevel, sydeCredits, onSpendCredits, onRewardPoints, onToast, expected, onSetExpected } = p;
+  const [dashboardInitial,setDashboardInitial]=useState<DashboardEntry|undefined>(undefined);
+  const [dashboardRevision,setDashboardRevision]=useState(0);
+  const openDashboard=(entry?:DashboardEntry)=>{setDashboardInitial(entry);setDashboardRevision(v=>v+1);setView('home');};
   const [savedLab]=useState(loadLabDraft);
   const [view, setView] = useState<View>('home');
   const [whatIfPlaybookId, setWhatIfPlaybookId] = useState('');
@@ -193,7 +198,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
     if (it.view === 'setup') startSetup(it.playbookId, it.benchmarkTradeIds, it.comparePlaybookId, it.symbol);
     else if (it.view === 'replay') { setBenchmarkEntries([]); setReplayEntry(it.entryId ?? null); setReplayPlaybook(it.playbookId ?? null); setView('replay'); }
     else if (it.view === 'whatif') { setWhatIfPlaybookId(it.playbookId ?? ''); setBenchmarkEntries([]); setView('whatif'); }
-    else { setBenchmarkEntries([]); setView(it.view); }
+    else { openDashboard(it); }
     p.onIntentDone();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.intent]);
@@ -243,14 +248,9 @@ export const BacktestPage: React.FC<Props> = (p) => {
         if (!saveRuns(nextRuns)) onToast('Test finished, but browser storage could not save the results.');
         const u = loadUsage();
         setU(u.used < limit ? { ...u, used: u.used + 1 } : { ...u, prepaid: Math.max(0, u.prepaid - 1) });
-        if (completed.length === 1) {
-          const [item] = completed;
-          setCur({ settings: item.settings, output: item.output, runId: saved[0].id, name: item.settings.name });
-          setView('results');
-        } else {
-          setComparisonResults(completed);
-          setView('comparison');
-        }
+        if(completed.length===1){const item=completed[0];setCur({settings:item.settings,output:item.output,runId:saved[0].id,name:item.settings.name});}
+        else setComparisonResults(completed);
+        openDashboard({resultIds:saved.map(r=>'run:'+r.id),...(benchmarkEntries.length?{journalTradeIds:benchmarkEntries.map(e=>e.id)}:{})});
         setRunStatus(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (e) {
@@ -336,18 +336,19 @@ export const BacktestPage: React.FC<Props> = (p) => {
     setSessions(next); saveReplay(next);
     if (pts) onRewardPoints(pts, 'Finished a replay session');
     else onToast(s.trades.length ? 'Session saved' : 'Session saved. Place at least one trade to earn Points.');
+    openDashboard({resultIds:['practice:'+s.id]});
   };
 
   const savedRunCount=runs.length+whatIfRuns.length;
   const NAV: [View, string, string][] = [
-    ['home', 'Home', 'Backtest'],
+    ['home', 'Dashboard', 'Backtest Dashboard'],
     ['setup', 'Strategy Lab', 'Strategy Lab'],
     ['whatif', 'What-if', 'What-if scenario lab'],
     ['replay', 'Practice', 'Practice'],
     ['demo', 'Demo replay', 'Playback'],
     ['runs', `Saved runs${savedRunCount ? ` (${savedRunCount})` : ''}`, 'Saved runs'],
   ];
-  const navOn = (v: View) => view === v || (v === 'setup' && (view === 'running' || view === 'results' || view === 'comparison'));
+  const navOn = (v: View) => view === v || (v === 'setup' && view === 'running') || (v === 'home' && (view === 'results' || view === 'comparison'));
 
   const curPb = cur ? pb(cur.settings.playbookId) : null;
   const setupRunHint = left > 0
@@ -362,7 +363,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
             const active = navOn(v);
             return (
               <div key={v} className={`relative shrink-0 rounded-lg border transition-colors ${active ? 'border-[#D8D0FF] bg-[#F1EDFF] text-[#5338ec] shadow-xs' : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white'}`}>
-                <button type="button" aria-current={active ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view === 'running') return; if(v==='runs')setWhatIfRuns(loadWhatIfs()); if (v === 'setup') { if (view !== 'setup') { setError(null);setLabRevision(v=>v+1);setView('setup'); } } else setView(v); }}
+                <button type="button" aria-current={active ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view === 'running') return; if(v==='runs')setWhatIfRuns(loadWhatIfs()); if (v === 'setup') { if (view !== 'setup') { setError(null);setLabRevision(v=>v+1);setView('setup'); } } else if(v==='home')openDashboard();else setView(v); }}
                   className="min-h-10 whitespace-nowrap rounded-lg pl-3 pr-10 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec] disabled:cursor-not-allowed disabled:opacity-40 sm:text-[13px]">{label}</button>
                 <span className="absolute right-1 top-1/2 -translate-y-1/2"><JournalHelp label={label} text={getJournalHelp(helpTopic)} /></span>
               </div>
@@ -372,8 +373,10 @@ export const BacktestPage: React.FC<Props> = (p) => {
       </div>
 
       {view === 'home' && (
-        <BacktestHome playbooks={playbooks} entries={entries} expected={expected} runs={runs} usage={usage} limit={limit} credits={sydeCredits} sessions={sessions} tz={tz}
-          onTest={startSetup} onWhatIf={() => setView('whatif')} onReplay={() => { setBenchmarkEntries([]); setReplayEntry(null); setView('replay'); }} onOpenRun={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); setComparisonResults(null); setCur({ settings: r.settings, output: r.output, runId: r.id, name: r.name }); setView('results'); } }} onAllRuns={() => setView('runs')} />
+        <BacktestDashboard key={dashboardRevision} initial={dashboardInitial} entries={entries} allEntries={p.allEntries} playbooks={playbooks} runs={runs} sessions={sessions}
+          onNewTest={startSetup} onOpenJournal={p.onOpenJournal}
+          onInspectRun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));setComparisonResults(null);setCur({settings:r.settings,output:r.output,runId:r.id,name:r.name});setView('results');}}
+          onRerun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));prepareSetup(deepClone(r.settings));}} />
       )}
 
       {view === 'setup' && (
@@ -382,7 +385,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
           <StrategyLab key={labRevision} allEntries={p.allEntries} runs={runs} symbols={labSymbols} onSymbols={setLabSymbols}
             onBooks={chooseLabBooks} onTrades={chooseLabTrades}
             onPractice={(entryId,playbookId)=>{setReplayEntry(entryId??null);setReplayPlaybook(playbookId??null);setView('replay');}}
-            onOpenRun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));setComparisonResults(null);setCur({settings:r.settings,output:r.output,runId:r.id,name:r.name});setView('results');}}
+            onOpenRun={r=>openDashboard({resultIds:['run:'+r.id],...(r.sourceTradeIds?.length?{journalTradeIds:r.sourceTradeIds}:{})})}
             onRerun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));prepareSetup(deepClone(r.settings));}}
             setup={{settings:draft,onChange:updateDraft,playbooks,selectedPlaybookIds,settingsByPlaybook:draftsByPlaybook,onSelectionChange:changeSelection,entries,benchmarkEntries,onClearBenchmark:()=>setBenchmarkEntries([]),brokers,journalRules,tz,onRun,onOpenTrades:p.onOpenTrades,runHint:setupRunHint}} />
         </>
@@ -402,7 +405,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       )}
 
       {view === 'results' && cur && (
-        <BacktestResults settings={cur.settings} output={cur.output} name={cur.name} saved={!!cur.runId} playbook={curPb} entries={entries} benchmarkEntries={benchmarkEntries} expected={curPb ? expected[curPb.id] : undefined} tz={tz}
+        <><button type="button" className={btnSecondary} onClick={()=>openDashboard()}>← Back to Dashboard</button><BacktestResults settings={cur.settings} output={cur.output} name={cur.name} saved={!!cur.runId} playbook={curPb} entries={entries} benchmarkEntries={benchmarkEntries} expected={curPb ? expected[curPb.id] : undefined} tz={tz}
           onOpenTrades={p.onOpenTrades}
           onBackToComparison={comparisonResults?.length ? () => setView('comparison') : undefined}
           onSave={save}
@@ -416,7 +419,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
             setPlaybooks((prev) => prev.map((x) => (x.id === curPb.id ? { ...x, scenarios: [{ id: `sc_${Date.now()}`, symbol: s.symbol, bias: s.rules.direction === 'short' ? 'short' : 'long', hypothesis: text, trigger: s.rules.entry[0] ? describeCondition(s.rules.entry[0]) : 'Playbook entry rules', validUntil: addDays(JOURNAL_TODAY, 1), status: 'watching', createdAt: JOURNAL_TODAY }, ...(x.scenarios || [])] } : x)));
             onToast(`Added to tomorrow's plan in ${curPb.name}`);
           }}
-          onToast={onToast} />
+          onToast={onToast} /></>
       )}
 
       {view === 'comparison' && comparisonResults && (
@@ -441,7 +444,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
 
       {view === 'runs' && (
         <SavedRuns runs={runs} whatIfRuns={whatIfRuns} onDeleteWhatIf={id=>{const next=whatIfRuns.filter(r=>r.id!==id);if(saveWhatIfs(next)){setWhatIfRuns(next);onToast('Saved What-if scenario deleted');}else onToast('Could not delete this saved scenario. Browser storage is unavailable.');}} playbooks={playbooks} tz={tz} onToast={onToast} onNew={() => startSetup()}
-          onOpen={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); setComparisonResults(null); setCur({ settings: r.settings, output: r.output, runId: r.id, name: r.name }); setView('results'); } }}
+          onOpen={id=>{const r=runs.find(r=>r.id===id);if(r)openDashboard({resultIds:['run:'+id],...(r.sourceTradeIds?.length?{journalTradeIds:r.sourceTradeIds}:{})});}}
           onDuplicate={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); prepareSetup({ ...deepClone(r.settings), name: `${r.name} (copy)` }); } }}
           onDelete={(id) => { const next = runs.filter((r) => r.id !== id); setRuns(next); saveRuns(next); onToast('Run deleted'); }} />
       )}
@@ -461,7 +464,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       </Modal>
 
       {(view === 'whatif' || view === 'replay' || view === 'demo' || view === 'runs') && (
-        <button type="button" className="flex items-center gap-1.5 text-xs font-medium text-[#474556] hover:text-[#5338ec]" onClick={() => setView('home')}><ArrowLeft className="w-3.5 h-3.5" /> Backtest home</button>
+        <button type="button" className="flex items-center gap-1.5 text-xs font-medium text-[#474556] hover:text-[#5338ec]" onClick={() => openDashboard()}><ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard</button>
       )}
     </div>
   );

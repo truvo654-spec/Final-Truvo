@@ -19,7 +19,7 @@ const niceTicks = (lo: number, hi: number, n = 4): number[] => {
   return out;
 };
 
-export interface LineSeries { name: string; color: string; dashed?: boolean; points: { x: number; y: number }[] }
+export interface LineSeries { id?: string; name: string; color: string; dashed?: boolean; points: { x: number; y: number }[] }
 
 export const LineChart: React.FC<{
   series: LineSeries[];
@@ -31,7 +31,8 @@ export const LineChart: React.FC<{
   area?: boolean;
   label: string;
   tooltipDetail?: (x: number) => React.ReactNode;
-}> = ({ series, height = 220, yFmt, xFmt, band, hLines = [], area = true, label, tooltipDetail }) => {
+  onPointSelect?: (seriesName:string, x:number) => void;
+}> = ({ series, height = 220, yFmt, xFmt, band, hLines = [], area = true, label, tooltipDetail, onPointSelect }) => {
   const W = 760, H = height, M = { t: 12, r: 14, b: 26, l: 64 };
   const all = series.flatMap((s) => s.points);
   const ref = useRef<SVGSVGElement>(null);
@@ -64,7 +65,7 @@ export const LineChart: React.FC<{
   const xt = niceTicks(x0, x1, 4).length > 1 ? [x0, x0 + (x1 - x0) / 3, x0 + (2 * (x1 - x0)) / 3, x1] : [x0];
   return (
     <div className="relative">
-      <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="w-full h-auto select-none" role="img" aria-label={label} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="w-full h-auto select-none" role={onPointSelect ? "group" : "img"} aria-label={label} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
         {niceTicks(y0, y1).map((t) => (
           <g key={t}>
             <line x1={M.l} x2={W - M.r} y1={sy(t)} y2={sy(t)} stroke={GRID} strokeDasharray={t === 0 ? undefined : '3 4'} />
@@ -85,25 +86,26 @@ export const LineChart: React.FC<{
           <path d={`${path(main.points)}L${sx(main.points[main.points.length - 1].x)},${sy(Math.max(y0, Math.min(y1, main.points[0].y)))}L${sx(main.points[0].x)},${sy(Math.max(y0, Math.min(y1, main.points[0].y)))}Z`} fill={main.color} opacity={0.08} />
         )}
         {series.map((s) => (
-          <g key={s.name}>
+          <g key={s.id ?? s.name}>
             <path d={path(s.points)} fill="none" stroke={s.color} strokeWidth={2} strokeDasharray={s.dashed ? '6 4' : undefined} strokeLinejoin="round" />
-            {s.points.length > 0 && <circle cx={sx(s.points[s.points.length - 1].x)} cy={sy(s.points[s.points.length - 1].y)} r={3.5} fill={s.color} />}
+            {onPointSelect && s.points.map(p=><circle key={p.x} cx={sx(p.x)} cy={sy(p.y)} r={4} fill={s.color} role="button" tabIndex={0} aria-label={s.name+' · '+xFmt(p.x)+': '+yFmt(p.y)} onClick={()=>onPointSelect(s.id ?? s.name,p.x)} onFocus={()=>setHover(main.points.findIndex(q=>q.x===p.x)>=0?main.points.findIndex(q=>q.x===p.x):null)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onPointSelect(s.id ?? s.name,p.x);}}} className="cursor-pointer focus:stroke-slate-900 focus:stroke-2"/>)}
+            {s.points.length > 0 && <circle cx={sx(s.points[s.points.length - 1].x)} cy={sy(s.points[s.points.length - 1].y)} r={3.5} fill={s.color} pointerEvents={onPointSelect ? "none" : undefined} />}
           </g>
         ))}
-        {hp && <line x1={sx(hp.x)} x2={sx(hp.x)} y1={M.t} y2={H - M.b} stroke="#94a3b8" strokeDasharray="3 3" />}
-        {hp && series.map((s) => { const p = nearest(s, hp.x); return <circle key={s.name} cx={sx(p.x)} cy={sy(p.y)} r={4} fill="#fff" stroke={s.color} strokeWidth={2} />; })}
+        {hp && <line x1={sx(hp.x)} x2={sx(hp.x)} y1={M.t} y2={H - M.b} stroke="#94a3b8" strokeDasharray="3 3" pointerEvents="none" />}
+        {hp && series.map((s) => { const p = nearest(s, hp.x); return <circle key={s.id ?? s.name} cx={sx(p.x)} cy={sy(p.y)} r={4} fill="#fff" stroke={s.color} strokeWidth={2} pointerEvents="none" />; })}
       </svg>
       {hp && (
         <div role="status" className="pointer-events-none absolute top-2 z-10 bg-[#0b1c30] text-white rounded-lg px-3 py-2 text-[11px] shadow-lg whitespace-nowrap"
           style={{ left: `${(sx(hp.x) / W) * 100}%`, transform: sx(hp.x) / W > 0.6 ? 'translateX(calc(-100% - 10px))' : 'translateX(10px)' }}>
           <p className="font-semibold mb-0.5">{xFmt(hp.x)}</p>
           {tooltipDetail?.(hp.x)}
-          {series.map((s) => <p key={s.name} className="tabular-nums"><span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: s.color }} />{s.name}: {yFmt(nearest(s, hp.x).y)}</p>)}
+          {series.map((s) => <p key={s.id ?? s.name} className="tabular-nums"><span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: s.color }} />{s.name}: {yFmt(nearest(s, hp.x).y)}</p>)}
         </div>
       )}
       {(series.length > 1 || band) && (
         <div className="flex flex-wrap gap-4 mt-1 text-[11px] text-[#474556]">
-          {series.map((s) => <span key={s.name} className="flex items-center gap-1.5"><span className="inline-block w-4 border-t-2" style={{ borderColor: s.color, borderStyle: s.dashed ? 'dashed' : 'solid' }} />{s.name}</span>)}
+          {series.map((s) => <span key={s.id ?? s.name} className="flex items-center gap-1.5"><span className="inline-block w-4 border-t-2" style={{ borderColor: s.color, borderStyle: s.dashed ? 'dashed' : 'solid' }} />{s.name}</span>)}
           {band && <span className="flex items-center gap-1.5"><span className="inline-block w-4 h-2.5 rounded-sm" style={{ background: band.color, opacity: 0.25 }} />{band.label}</span>}
         </div>
       )}
@@ -260,7 +262,7 @@ export const CandleChart: React.FC<{
         );
       })}
       {drawings.map((p, k) => <line key={`d${k}`} x1={M.l} x2={W - M.r} y1={sy(p)} y2={sy(p)} stroke="#0ea5e9" strokeWidth={1.2} />)}
-      {overlays.map(s=><g key={s.name}><path d={s.points.map((p,i)=>`${i?'L':'M'}${sx(times.get(p.x)!)},${pnlY(p.y)}`).join('')} fill="none" stroke={s.color} strokeWidth={2.2} strokeDasharray={s.dashed?'6 4':undefined}/>{s.points.length>0&&<circle cx={sx(times.get(s.points.at(-1)!.x)!)} cy={pnlY(s.points.at(-1)!.y)} r={3} fill={s.color}/>}</g>)}
+      {overlays.map(s=><g key={s.id ?? s.name}><path d={s.points.map((p,i)=>`${i?'L':'M'}${sx(times.get(p.x)!)},${pnlY(p.y)}`).join('')} fill="none" stroke={s.color} strokeWidth={2.2} strokeDasharray={s.dashed?'6 4':undefined}/>{s.points.length>0&&<circle cx={sx(times.get(s.points.at(-1)!.x)!)} cy={pnlY(s.points.at(-1)!.y)} r={3} fill={s.color}/>}</g>)}
       {lines.filter((l) => Number.isFinite(l.price)).map((l) => (
         <g key={l.label}>
           <line x1={M.l} x2={W - M.r} y1={sy(l.price)} y2={sy(l.price)} stroke={l.color} strokeWidth={1.2} strokeDasharray={l.dashed ? '5 4' : undefined} />
@@ -284,7 +286,7 @@ export const CandleChart: React.FC<{
       {hovered&&interactive&&<line aria-label="Shared time cursor" x1={linkedPanels.length?timeX(hoverTime!):sx(times.get(hovered.t)!)} x2={linkedPanels.length?timeX(hoverTime!):sx(times.get(hovered.t)!)} y1={M.t} y2={svgHeight-(linkedPanels.length?20:M.b)} stroke={AXIS} strokeDasharray="3 3"/>}
     </svg>
     {hovered&&interactive&&<div role="status" className="pointer-events-none absolute top-6 left-2 right-2 sm:right-auto rounded-lg bg-[#0b1c30] text-white text-[11px] p-3 shadow-lg"><p>{new Date(hoverTime??hovered.t).toISOString().slice(0,16).replace('T',' ')} UTC</p><p>O {hovered.o.toFixed(dp)} · H {hovered.h.toFixed(dp)} · L {hovered.l.toFixed(dp)} · C {hovered.c.toFixed(dp)}</p><p>Volume {hovered.v.toLocaleString()}</p>{tooltipDetail?.(hoverTime??hovered.t)}{pnl?.detail(hovered.t)}</div>}
-    {pnl&&<div className="flex flex-wrap gap-4 text-[11px] mt-2"><span>Candles · price</span>{overlays.map(s=><span key={s.name} className="flex items-center gap-1"><span className="w-4 border-t-2" style={{borderColor:s.color,borderStyle:s.dashed?'dashed':'solid'}}/>{s.name} · net P&amp;L</span>)}<span className="text-slate-500">Independent scales · hover or focus chart and use ← / →</span></div>}
+    {pnl&&<div className="flex flex-wrap gap-4 text-[11px] mt-2"><span>Candles · price</span>{overlays.map(s=><span key={s.id ?? s.name} className="flex items-center gap-1"><span className="w-4 border-t-2" style={{borderColor:s.color,borderStyle:s.dashed?'dashed':'solid'}}/>{s.name} · net P&amp;L</span>)}<span className="text-slate-500">Independent scales · hover or focus chart and use ← / →</span></div>}
     </div>
   );
 };

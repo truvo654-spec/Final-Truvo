@@ -85,9 +85,10 @@ interface Props {
   onReplay?: (id: string) => void;
   onReplayLog?: (id:string) => void;
   onBacktestTrades?: (ids: string[]) => void;
+  onCompareResults?: (ids:string[])=>void;
 }
 
-export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay, onReplayLog, onBacktestTrades }) => {
+export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, onOpen, onToast, preset, onClearPreset, onReplay, onReplayLog, onBacktestTrades, onCompareResults }) => {
   const money = useMoney();
   const tradingPlain = (n:number,dp=2)=>money(Math.abs(n),dp).replace(/^\+/, '');
 
@@ -618,6 +619,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
             ))}
             <button type="button" aria-label="Next page" disabled={curPage >= pages} onClick={() => setPage(curPage + 1)} className="w-7 h-7 rounded-md border border-slate-200 bg-white disabled:opacity-40">›</button>
           </div>
+          {hasSel && onCompareResults && <button type="button" className={btn} onClick={()=>onCompareResults(sel)}>Compare results</button>}
           {hasSel && onBacktestTrades && (
             <button
               type="button"

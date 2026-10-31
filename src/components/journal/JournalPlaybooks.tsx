@@ -131,6 +131,7 @@ interface Props {
   /** Saved backtest expectations by playbook id. */
   expected?: Record<string, PlaybookExpectedStats>;
   onBacktest?: (playbookId: string, symbol?: string) => void;
+  onViewResults?: (playbookId:string)=>void;
   onWhatIf?: (playbookId: string) => void;
 }
 
@@ -139,7 +140,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, comparisonEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onWhatIf }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, comparisonEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onViewResults, onWhatIf }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -386,6 +387,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                 </div>
                 <div className="flex flex-wrap gap-2">
 
+                  {onViewResults && <button type="button" className={btn} onClick={()=>onViewResults(sel.id)}>View results</button>}
                   {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className="h-9 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]" title="Test these rules on past prices">Backtest this playbook</button>}
 
                   <button type="button" onClick={startEdit} className={btn}>Edit playbook</button>

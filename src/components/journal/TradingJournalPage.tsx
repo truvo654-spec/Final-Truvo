@@ -781,6 +781,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onReplay={(id) => goBacktest({ view: 'replay', entryId: id })}
           onReplayLog={setApiReplayId}
           onBacktestTrades={(ids) => goBacktest({ view: 'setup', benchmarkTradeIds: ids })}
+          onCompareResults={ids=>goBacktest({view:'home',journalTradeIds:ids})}
         />
       )}
 
@@ -898,6 +899,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {/* ───── BACKTEST ───── */}
       {tab === 'backtest' && (
         <BacktestPage
+          onOpenJournal={openEntry}
           entries={scoped}
           allEntries={entries}
           playbooks={playbooks}
@@ -942,6 +944,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           })}
           expected={expected}
           onBacktest={(id, symbol) => goBacktest({ view: 'setup', playbookId: id, symbol })}
+          onViewResults={id=>goBacktest({view:'home',playbookId:id})}
           onWhatIf={id => goBacktest({ view: 'whatif', playbookId: id })}
           houseRules={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

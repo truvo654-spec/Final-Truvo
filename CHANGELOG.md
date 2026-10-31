@@ -1,3 +1,26 @@
+## 2.55.0 — Simpler light dashboard
+
+- Rework the dashboard around Overview and Trade Log, with a compact result selector and collapsed shared filters.
+- Add five summary cards, a larger performance chart, Long/Short and risk summaries, and a yearly calendar inspired by the supplied reference layout.
+- Keep comparisons in a separate view and open calendar/chart trade drill-downs in the local Trade Log.
+- Use white cards, neutral borders and restrained purple, green and red accents.
+
+## 2.54.1 — Interactive bubble comparisons
+
+- Make bubble comparison the dashboard’s default performance view, with win rate, profit factor, trade-count size and result-type color.
+- Compare playbooks, markets, instruments or saved results; customize axes, bubble size and color, with shared date, direction and market filters.
+- Distinguish tests started from journal trades from playbook tests, recorded journal benchmarks and practice.
+- Inspect the exact trade cohort behind each bubble; preserve independent saved runs, missing-R coverage, privacy and infinite profit factors.
+- Retain cumulative performance and drawdown views.
+
+## 2.54.0 — Backtest Dashboard
+
+- Replace Backtest Home with a results dashboard for saved tests, completed practice sessions and journal benchmarks.
+- Add shared date, instrument, playbook, direction, currency and timezone filters; compare independent sources without pooling balances or overlapping runs.
+- Add headline metrics, performance/drawdown curves, a monthly calendar, side breakdowns, advanced statistics and trade drill-down.
+- Add saved setup review, privacy, display units and persistent dashboard scope.
+- Connect Playbook View results, Trade Log Compare results, saved tests and completed simulations to the dashboard.
+
 ## 2.53.5 — Simpler Lab setup
 
 - Collapse playbook details and advanced controls under Advanced customization.
