@@ -1,3 +1,35 @@
+## 2.53.5 — Simpler Lab setup
+
+- Collapse playbook details and advanced controls under Advanced customization.
+- Place date and currency settings before instruments; add searchable symbol, name and alias selection.
+
+## 2.53.4 — Preview selected trades in place
+
+- View selected trades now opens a local popup showing only the current Lab benchmark.
+- Preserve the setup and active journal tab when opening or closing the preview.
+
+## 2.53.3 — Start at source selection
+
+- Open Strategy Lab at Choose your starting point while retaining saved source selections.
+- Enter setup review only after the user continues or applies selected journal trades.
+
+## 2.53.2 — Focused Lab steps
+
+- Separate source selection from setup review; keep only the active step visible.
+- Add Continue, Change selection and clickable progress steps while preserving selected sources.
+
+## 2.53.1 — Full-width Lab source widgets
+
+- Show My playbooks and My journal trades in separate full-width cards with independent search and selection counts.
+- Keep both sources visible above the shared test setup; retain linked-playbook transfer and benchmark selections.
+
+## 2.53.0 — Strategy Lab
+
+- Replace Test a playbook with Strategy Lab: choose saved playbooks or journal trades, check a prefilled setup, then run or practice.
+- Add independent multi-instrument tests, explicit suggested-rule consent, benchmark transfer and browser draft persistence.
+- Add recent completed tests with View results and Run again, reusing existing results and practice tools.
+- Preserve source trade IDs and test assumptions; support one-day tests and consistent date input updates.
+
 ## 2.51.4 — Connected-broker balance preview
 
 - Remove manual balance setup from the Overview widget and replace the account selector with a connected-broker filter.

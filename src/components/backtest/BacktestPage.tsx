@@ -1,3 +1,6 @@
+import { StrategyLab } from './StrategyLab';
+import { labBenchmark, labSettings, labJobs, loadLabDraft, saveLabDraft } from './labTransfer';
+import { resolveSymbol } from '../../backtest/marketData';
 import { playbookFingerprint } from '../journal/playbookExecution';
 import { JournalHelp, getJournalHelp } from '../journal/JournalHelp';
 // Backtest tab of the Trading Journal: routes between Home, Setup, Results, What-if, Replay and Saved runs,
@@ -18,7 +21,7 @@ import {
 } from '../../backtest/store';
 import { BacktestSettings, JobOutput, Suggestion } from '../../backtest/types';
 import { BacktestHome } from './BacktestHome';
-import { BacktestSetup, brokerCosts } from './BacktestSetup';
+import { brokerCosts } from './BacktestSetup';
 import { BacktestComparisonResults } from './BacktestComparisonResults';
 import type { BacktestComparisonItem } from './BacktestComparisonResults';
 import { BacktestResults } from './BacktestResults';
@@ -67,7 +70,7 @@ const withSharedSetup = (settings: BacktestSettings, shared: BacktestSettings): 
   symbol: shared.symbol,
   from: shared.from,
   to: shared.to,
-  risk: { ...shared.risk },
+  risk: { ...settings.risk, startBalance: shared.risk.startBalance, currency: shared.risk.currency },
   costs: { ...shared.costs },
   weekdays: [...shared.weekdays],
   news: shared.news,
@@ -78,14 +81,17 @@ const addDays = (d: string, n: number) => { const x = new Date(`${d}T00:00:00Z`)
 
 export const BacktestPage: React.FC<Props> = (p) => {
   const { entries, playbooks, setPlaybooks, journalRules, brokers, userTierLevel, sydeCredits, onSpendCredits, onRewardPoints, onToast, expected, onSetExpected } = p;
+  const [savedLab]=useState(loadLabDraft);
   const [view, setView] = useState<View>('home');
   const [whatIfPlaybookId, setWhatIfPlaybookId] = useState('');
-  const [draft, setDraft] = useState<BacktestSettings>(() => defaultSettings({ journalRules }));
-  const [draftsByPlaybook, setDraftsByPlaybook] = useState<Record<string, BacktestSettings>>({});
-  const [selectedPlaybookIds, setSelectedPlaybookIds] = useState<string[]>([]);
+  const [draft, setDraft] = useState<BacktestSettings>(() => savedLab?.settings ?? defaultSettings({ journalRules }));
+  const [labSymbols,setLabSymbols]=useState<string[]>(savedLab?.symbols ?? []);
+  const [labRevision,setLabRevision]=useState(0);
+  const [draftsByPlaybook, setDraftsByPlaybook] = useState<Record<string, BacktestSettings>>(savedLab?.byBook ?? {});
+  const [selectedPlaybookIds, setSelectedPlaybookIds] = useState<string[]>(savedLab?.bookIds.filter(id=>playbooks.some(b=>b.id===id&&b.status!=='archived')) ?? []);
   const [cur, setCur] = useState<Current | null>(null);
   const [comparisonResults, setComparisonResults] = useState<BacktestComparisonItem[] | null>(null);
-  const [benchmarkEntries, setBenchmarkEntries] = useState<JournalEntry[]>([]);
+  const [benchmarkEntries, setBenchmarkEntries] = useState<JournalEntry[]>(p.allEntries.filter(e=>savedLab?.tradeIds.includes(e.id)));
   const [runs, setRuns] = useState<BacktestRun[]>(() => loadRuns());
   const [whatIfRuns,setWhatIfRuns]=useState<WhatIfRun[]>(()=>loadWhatIfs());
   const [usage, setUsage] = useState<Usage>(() => loadUsage());
@@ -97,9 +103,30 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const [replayEntry, setReplayEntry] = useState<string | null>(null);
   const [replayPlaybook, setReplayPlaybook] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
+  useEffect(()=>{if(view==='setup')saveLabDraft({settings:draft,byBook:draftsByPlaybook,bookIds:selectedPlaybookIds,symbols:labSymbols,tradeIds:benchmarkEntries.map(e=>e.id)});},[view,draft,draftsByPlaybook,selectedPlaybookIds,labSymbols,benchmarkEntries]);
   const limit = runLimitFor(userTierLevel);
   const tz = userTz;
 
+  const chooseLabBooks = (ids:string[]) => {
+    const books=playbooks.filter(b=>ids.includes(b.id)&&b.status!=='archived');
+    const next=Object.fromEntries(books.map(b=>[b.id, draftsByPlaybook[b.id] ?? labSettings(b,entries,journalRules)]));
+    setSelectedPlaybookIds(books.map(b=>b.id)); setDraftsByPlaybook(next);
+    if(books[0]) { setDraft(next[books[0].id]); if(!labSymbols.length) setLabSymbols([next[books[0].id].symbol]); }
+    setComparisonResults(null);
+  };
+  const chooseLabTrades = (ids:string[], extraIds:string[] = []) => {
+    const context=labBenchmark(p.allEntries,ids,playbooks);
+    context.books=[...new Map([...context.books,...playbooks.filter(b=>extraIds.includes(b.id)&&b.status!=='archived')].map(b=>[b.id,b])).values()];
+    const next=Object.fromEntries(context.books.map(b=>{
+      const st=labSettings(b,context.trades,journalRules);
+      if(context.from)st.from=context.from;if(context.to)st.to=context.to;
+      if(context.currencies.length===1&&['USD','EUR','GBP'].includes(context.currencies[0]))st.risk.currency=context.currencies[0] as typeof st.risk.currency;
+      return [b.id,st];
+    }));
+    setBenchmarkEntries(context.trades);setSelectedPlaybookIds(context.books.map(b=>b.id));setDraftsByPlaybook(next);setLabSymbols(context.symbols);
+    if(context.books[0])setDraft(next[context.books[0].id]);
+    setComparisonResults(null);setError(null);
+  };
   const changeSelection = (ids: string[]) => {
     const activeIds = [...new Set(ids)].filter((id) => playbooks.some((x) => x.id === id && x.status !== 'archived'));
     setSelectedPlaybookIds(activeIds);
@@ -121,6 +148,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
   };
 
   const updateDraft = (next: BacktestSettings) => {
+    if(next.symbol!==draft.symbol)setLabSymbols([next.symbol]);
     setDraft(next);
     const nextDrafts = { ...draftsByPlaybook };
     selectedPlaybookIds.forEach((id) => {
@@ -135,6 +163,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
     const book = playbooks.find((x) => x.id === settings.playbookId && x.status !== 'archived') || null;
     const prepared = { ...settings, playbookId: book?.id ?? null };
     setDraft(prepared);
+    setLabSymbols([prepared.symbol]);setLabRevision(v=>v+1);
     setSelectedPlaybookIds(book ? [book.id] : []);
     setDraftsByPlaybook(book ? { [book.id]: prepared } : {});
     setComparisonResults(null);
@@ -143,27 +172,17 @@ export const BacktestPage: React.FC<Props> = (p) => {
   };
 
   const startSetup = (playbookId?: string, benchmarkTradeIds?: string[], comparePlaybookId?: string, symbol?: string) => {
-    const imported = benchmarkTradeIds?.length ? p.allEntries.filter((e) => benchmarkTradeIds.includes(e.id)) : [];
-    const strategyNames = [...new Set(imported.map((e) => e.strategy).filter(Boolean))];
-    const linkedBook = strategyNames.length === 1 ? playbooks.find((x) => x.name === strategyNames[0] && x.status !== 'archived') : undefined;
-    const requestedId = playbookId ?? linkedBook?.id;
-    const journalCounts = new Map<string, number>();
-    entries.forEach((e) => journalCounts.set(e.strategy, (journalCounts.get(e.strategy) || 0) + 1));
-    const requested = playbooks.find((x) => x.id === requestedId && x.status !== 'archived');
-    const pb = requested || (!requestedId
-      ? playbooks.filter((x) => x.status !== 'archived').sort((a, b) => (journalCounts.get(b.name) || 0) - (journalCounts.get(a.name) || 0))[0] || null
-      : null);
-    const settings = defaultsForPlaybook(pb, entries, journalRules);
-    if (symbol) { settings.symbol = symbol; settings.costs = { ...settings.costs, ...defaultCostsFor(symbol) }; }
-    const comparison = playbooks.find(x => x.id === comparePlaybookId && x.id !== pb?.id && x.status !== 'archived');
-    const comparisonSettings = comparison ? withSharedSetup(defaultsForPlaybook(comparison, entries, journalRules), settings) : null;
-    setBenchmarkEntries(imported);
-    setDraft(settings);
-    setSelectedPlaybookIds(pb ? [pb.id, ...(comparison ? [comparison.id] : [])] : []);
-    setDraftsByPlaybook(pb ? { [pb.id]: settings, ...(comparisonSettings && comparison ? { [comparison.id]: comparisonSettings } : {}) } : {});
-    setComparisonResults(null);
-    setError(null);
-    setView('setup');
+    if(benchmarkTradeIds?.length) {
+      chooseLabTrades(benchmarkTradeIds,[playbookId,comparePlaybookId].filter((id):id is string=>!!id));setLabRevision(v=>v+1);setView('setup');return;
+    }
+    const requested=playbooks.find(b=>b.id===playbookId&&b.status!=='archived');
+    const books=[requested,playbooks.find(b=>b.id===comparePlaybookId&&b.id!==requested?.id&&b.status!=='archived')].filter((b):b is JournalPlaybook=>!!b);
+    const next=Object.fromEntries(books.map(book=>[book.id,labSettings(book,entries,journalRules)]));
+    if(symbol&&requested){const st=next[requested.id];st.symbol=resolveSymbol(symbol)??symbol;st.costs={...st.costs,...defaultCostsFor(st.symbol)};}
+    const first=books[0]?next[books[0].id]:defaultSettings({journalRules});
+    setBenchmarkEntries([]);setDraft(first);setSelectedPlaybookIds(books.map(b=>b.id));setDraftsByPlaybook(next);
+    setLabSymbols(books.length?[first.symbol]:[]);setLabRevision(v=>v+1);
+    setComparisonResults(null);setError(null);setView('setup');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -183,10 +202,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const left = Math.max(0, limit - usage.used) + usage.prepaid;
 
   const start = () => {
-    const settingsList = selectedPlaybookIds
-      .map((id) => draftsByPlaybook[id])
-      .filter((settings): settings is BacktestSettings => !!settings)
-      .map((settings) => deepClone(settings));
+    const settingsList = labJobs(selectedPlaybookIds.flatMap(id=>draftsByPlaybook[id]?[draftsByPlaybook[id]]:[]),labSymbols);
     if (!settingsList.length) return;
     setError(null);
     setProgress(0);
@@ -211,6 +227,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
         const now = new Date().toISOString();
         const saved = completed.map((item, index): BacktestRun => ({
           id: `run_${Date.now().toString(36)}_${index}`, name: item.settings.name, mode: 'automated', status: 'done',
+          sourceTradeIds: benchmarkEntries.map(e=>e.id), dataSource:'generated', timezone:tz,
           playbookId: item.settings.playbookId, symbol: item.settings.symbol, timeframe: item.settings.timeframe,
           from: item.settings.from, to: item.settings.to, createdAt: now, lastRun: now, settings: item.settings,
           summary: summarize(item.output), output: item.output,
@@ -267,7 +284,8 @@ export const BacktestPage: React.FC<Props> = (p) => {
       costs: { ...first.settings.costs, ...(broker ? brokerCosts(broker, symbol) : defaultCostsFor(symbol)) },
     };
     const nextDrafts = { ...draftsByPlaybook };
-    const ids = items.map(({ settings }) => settings.playbookId).filter((id): id is string => !!id);
+    const ids = [...new Set(items.map(({ settings }) => settings.playbookId).filter((id): id is string => !!id))];
+    setLabSymbols([symbol]);
     items.forEach(({ settings }) => {
       if (settings.playbookId) nextDrafts[settings.playbookId] = withSharedSetup(settings, shared);
     });
@@ -323,7 +341,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const savedRunCount=runs.length+whatIfRuns.length;
   const NAV: [View, string, string][] = [
     ['home', 'Home', 'Backtest'],
-    ['setup', 'Test a playbook', 'Market, dates, risk and costs'],
+    ['setup', 'Strategy Lab', 'Strategy Lab'],
     ['whatif', 'What-if', 'What-if scenario lab'],
     ['replay', 'Practice', 'Practice'],
     ['demo', 'Demo replay', 'Playback'],
@@ -333,7 +351,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
 
   const curPb = cur ? pb(cur.settings.playbookId) : null;
   const setupRunHint = left > 0
-    ? selectedPlaybookIds.length > 1 ? `Uses 1 test run for this ${selectedPlaybookIds.length}-playbook comparison. Usually takes a few seconds per playbook.` : `Uses 1 of your ${left} remaining test run${left === 1 ? '' : 's'} this month. Usually takes a few seconds.`
+    ? selectedPlaybookIds.length * labSymbols.length > 1 ? `Uses 1 test run for this ${selectedPlaybookIds.length * labSymbols.length}-result comparison. Usually takes a few seconds per playbook.` : `Uses 1 of your ${left} remaining test run${left === 1 ? '' : 's'} this month. Usually takes a few seconds.`
     : `You've used this month's test runs. Run this ${selectedPlaybookIds.length > 1 ? 'comparison' : 'test'} for ${EXTRA_RUN_CREDITS} Syde Credits.`;
 
   return (
@@ -344,7 +362,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
             const active = navOn(v);
             return (
               <div key={v} className={`relative shrink-0 rounded-lg border transition-colors ${active ? 'border-[#D8D0FF] bg-[#F1EDFF] text-[#5338ec] shadow-xs' : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white'}`}>
-                <button type="button" aria-current={active ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view === 'running') return; if(v==='runs')setWhatIfRuns(loadWhatIfs()); if (v === 'setup') { if (view !== 'setup') startSetup(); } else setView(v); }}
+                <button type="button" aria-current={active ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view === 'running') return; if(v==='runs')setWhatIfRuns(loadWhatIfs()); if (v === 'setup') { if (view !== 'setup') { setError(null);setLabRevision(v=>v+1);setView('setup'); } } else setView(v); }}
                   className="min-h-10 whitespace-nowrap rounded-lg pl-3 pr-10 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec] disabled:cursor-not-allowed disabled:opacity-40 sm:text-[13px]">{label}</button>
                 <span className="absolute right-1 top-1/2 -translate-y-1/2"><JournalHelp label={label} text={getJournalHelp(helpTopic)} /></span>
               </div>
@@ -361,9 +379,12 @@ export const BacktestPage: React.FC<Props> = (p) => {
       {view === 'setup' && (
         <>
           {error && <Banner tone="bad" icon={<XCircle className="w-4 h-4" />}><b>The backtest didn't run.</b> {error}</Banner>}
-          <BacktestSetup settings={draft} onChange={updateDraft} playbooks={playbooks} selectedPlaybookIds={selectedPlaybookIds} settingsByPlaybook={draftsByPlaybook} onSelectionChange={changeSelection} entries={entries} benchmarkEntries={benchmarkEntries} onClearBenchmark={() => setBenchmarkEntries([])} brokers={brokers} journalRules={journalRules} tz={tz} onRun={onRun}
-            onOpenTrades={p.onOpenTrades}
-            runHint={setupRunHint} />
+          <StrategyLab key={labRevision} allEntries={p.allEntries} runs={runs} symbols={labSymbols} onSymbols={setLabSymbols}
+            onBooks={chooseLabBooks} onTrades={chooseLabTrades}
+            onPractice={(entryId,playbookId)=>{setReplayEntry(entryId??null);setReplayPlaybook(playbookId??null);setView('replay');}}
+            onOpenRun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));setComparisonResults(null);setCur({settings:r.settings,output:r.output,runId:r.id,name:r.name});setView('results');}}
+            onRerun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));prepareSetup(deepClone(r.settings));}}
+            setup={{settings:draft,onChange:updateDraft,playbooks,selectedPlaybookIds,settingsByPlaybook:draftsByPlaybook,onSelectionChange:changeSelection,entries,benchmarkEntries,onClearBenchmark:()=>setBenchmarkEntries([]),brokers,journalRules,tz,onRun,onOpenTrades:p.onOpenTrades,runHint:setupRunHint}} />
         </>
       )}
 
@@ -402,7 +423,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
         <BacktestComparisonResults items={comparisonResults} playbooks={playbooks} entries={entries} benchmarkEntries={benchmarkEntries} tz={tz} onOpenTrades={p.onOpenTrades}
           onEditSetup={() => setView('setup')}
           onChangeInstrument={editComparisonInstrument}
-          onViewResult={(item) => { setCur({ settings: item.settings, output: item.output, runId: null, name: item.settings.name }); setView('results'); }} />
+          onViewResult={(item) => { const saved=runs.find(r=>r.playbookId===item.settings.playbookId&&r.symbol===item.settings.symbol&&r.from===item.settings.from&&r.to===item.settings.to&&r.output===item.output);setCur({ settings: item.settings, output: item.output, runId: saved?.id ?? null, name: item.settings.name }); setView('results'); }} />
       )}
 
       {view === 'whatif' && (

@@ -124,14 +124,14 @@ export const Drawer: React.FC<{ open: boolean; onClose: () => void; title: strin
   );
 };
 
-export const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ open, onClose, title, children }) => {
+export const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; children: React.ReactNode; width?: string }> = ({ open, onClose, title, children, width = 'max-w-md' }) => {
   const ref = useRef<HTMLDivElement>(null);
   useEscape(open, onClose, ref);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" role="presentation">
       <div className="absolute inset-0 bg-slate-900/40" onClick={onClose} />
-      <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
+      <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className={`relative w-full ${width} bg-white rounded-2xl shadow-2xl p-6`}>
         <button type="button" onClick={onClose} aria-label="Close" className="absolute right-3 top-3 p-1.5 rounded-lg hover:bg-slate-100 text-slate-500"><X className="w-4 h-4" /></button>
         {children}
       </div>

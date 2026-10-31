@@ -20,6 +20,7 @@ import { JournalTradeBenchmark } from './JournalTradeBenchmark';
 type PresetId = '3' | '6' | '12' | '24' | 'max';
 
 interface Props {
+  embedded?: boolean;
   settings: BacktestSettings;
   onChange: (s: BacktestSettings) => void;
   playbooks: JournalPlaybook[];
@@ -91,7 +92,7 @@ const Fold: React.FC<{ title: string; summary: string; open: boolean; onToggle: 
   </div>
 );
 
-export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbooks, selectedPlaybookIds, settingsByPlaybook, onSelectionChange, entries, benchmarkEntries, onClearBenchmark, brokers, journalRules, onRun, onOpenTrades, runHint, tz }) => {
+export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, onChange, playbooks, selectedPlaybookIds, settingsByPlaybook, onSelectionChange, entries, benchmarkEntries, onClearBenchmark, brokers, journalRules, onRun, onOpenTrades, runHint, tz }) => {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const toggle = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
@@ -145,11 +146,11 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
   const matchesDaily = s.risk.dailyLossPct === journalRules.maxDailyLoss;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 pb-28">
-      <section aria-label="MarketSyde AI test guidance" className="rounded-2xl border border-[#5338ec]/25 bg-[#F5F2FF] p-4">
+    <div className={`max-w-5xl mx-auto space-y-4 ${embedded ? '' : 'pb-28'}`}>
+      {!embedded && <section aria-label="MarketSyde AI test guidance" className="rounded-2xl border border-[#5338ec]/25 bg-[#F5F2FF] p-4">
         <p className="flex items-center gap-2 text-sm font-bold text-[#5338ec]"><Sparkles size={16} aria-hidden />MarketSyde AI · compare before you commit</p>
         <p className="text-xs text-slate-600 mt-2">Test a playbook to evaluate small rule changes, or select several playbooks to compare their results on the same market and dates. The recommender will highlight a qualifying candidate, explain its trade-offs, and open an editable setup for your next test.</p>
-      </section>
+      </section>}
       {/* STEP 1 */}
       <Step n={1} title="Market, dates, risk and costs" sub="Choose your instrument and date range, then set account risk and costs. Each playbook keeps its own timeframe.">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -442,7 +443,7 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
       </Step>
 
       {/* Sticky run bar */}
-      <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      {!embedded && <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="max-w-[1360px] mx-auto px-4 sm:px-8 md:px-14 py-3 flex flex-wrap items-center gap-3">
           <div className="flex-1 min-w-[14rem]">
             <p className="text-xs font-semibold text-[#0b1c30] truncate">{selectedSetups.length > 1
@@ -456,7 +457,7 @@ export const BacktestSetup: React.FC<Props> = ({ settings: s, onChange, playbook
           </div>
           <button type="button" className={`${btnPrimary} h-11 px-6 text-base`} disabled={problems.length > 0 || !selectedSetups.length} onClick={onRun}><Play className="w-4 h-4" /> {selectedSetups.length > 1 ? `Run comparison (${selectedSetups.length})` : 'Run backtest'}</button>
         </div>
-      </div>
+      </div>}
     </div>
   );
 };

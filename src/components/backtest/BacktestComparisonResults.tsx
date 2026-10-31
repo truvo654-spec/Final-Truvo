@@ -16,7 +16,7 @@ import { MarketSydeRecommender, RecommendationBadge } from './MarketSydeRecommen
 
 const SCENARIO_COLORS = [ACCENT, UP, DOWN, '#0284c7', '#d97706', '#7c3aed', '#0f766e', '#ea580c'];
 const CHART_WINDOW = 85;
-const scenarioId = (item: BacktestComparisonItem, index: number) => item.settings.playbookId ?? `scenario-${index}`;
+const scenarioId = (item: BacktestComparisonItem, index: number) => `${item.settings.playbookId ?? 'scenario'}:${item.settings.symbol}:${index}`;
 
 export interface BacktestComparisonItem {
   settings: BacktestSettings;

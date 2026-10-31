@@ -166,7 +166,7 @@ export function validateSettings(s: BacktestSettings): Problem[] {
   if (!SUPPORTED_TIMEFRAMES.includes(s.timeframe)) out.push({ field: 'timeframe', message: `${s.timeframe} bars need a tick data feed. Choose 5m or higher.` });
   const from = parseDay(s.from), to = parseDay(s.to);
   if (!s.from || !s.to || Number.isNaN(from) || Number.isNaN(to)) out.push({ field: 'dates', message: 'Choose a start and end date.' });
-  else if (from >= to) out.push({ field: 'dates', message: 'The end date must be after the start date.' });
+  else if (from > to) out.push({ field: 'dates', message: 'The end date must be on or after the start date.' });
   else if (from < parseDay(DATA_START) || to > parseDay(DATA_END)) out.push({ field: 'dates', message: `Price data covers ${DATA_START} to ${DATA_END}.` });
   if (!s.rules.entry.length) out.push({ field: 'rules', message: 'Add at least one entry rule.' });
   s.rules.entry.forEach((c) => [c.left, c.right].forEach((o) => {
