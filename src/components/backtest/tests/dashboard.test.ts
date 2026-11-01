@@ -41,10 +41,10 @@ test('overlapping saved runs keep distinct trade IDs and independent balances',(
  assert.notEqual(sources[0].rows[0].id,sources[1].rows[0].id);
  assert.equal(dashboardStats(sources[0].rows,sources[0].balance).net,100);assert.equal(dashboardStats(sources[1].rows,sources[1].balance).net,200);
 });
-test('simulation win rate matches saved run summary including engine breakeven',()=>{
+test('dashboard outcomes use configurable account-currency breakeven, independent of engine R tolerance',()=>{
  const a=run('a',[trade(1,100),trade(2,-50,'short'),trade(3,0.1)]),scope=initialDashboardScope([a],[]);
  const source=dashboardSources([a],[],[],[book],scope)[0],m=dashboardStats(source.rows,source.balance);
- assert.equal(m.winRate,a.summary.winRate*100);assert.equal(m.count,a.summary.trades);assert.equal(m.net,a.summary.net);
+ assert.equal(m.winRate,2/3*100);assert.equal(dashboardStats(source.rows.map(r=>({...r,beThreshold:.1})),source.balance).winRate,1/3*100);assert.equal(m.count,a.summary.trades);assert.equal(m.net,a.summary.net);
 });
 test('practice uses actual recorded price timestamps and excludes old undated fills',()=>{
  const session:ReplaySession={id:'p',source:'journal',symbol:'EUR/USD',label:'Practice',startedAt:'2026-10-31',finishedAt:'2026-10-31',trades:[{dir:'long',entry:1,exit:2,size:1,net:100,r:1,entryBar:1,exitBar:2,tags:[],entryTime:'2026-09-01T10:00:00Z',exitTime:'2026-09-01T12:00:00Z'},{dir:'short',entry:2,exit:1,size:1,net:100,r:1,entryBar:1,exitBar:2,tags:[]}],net:200,notes:'',tags:[],pointsAwarded:false};

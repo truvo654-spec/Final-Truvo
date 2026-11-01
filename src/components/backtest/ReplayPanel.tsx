@@ -1,3 +1,4 @@
+import {useActiveTime} from './useActiveTime';
 import { JournalHelp } from '../journal/JournalHelp';
 // Manual replay: bars appear one at a time with the future hidden. Place orders, manage the trade,
 // tag it, take notes, and finish the session for Points.
@@ -81,6 +82,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
   const [finished, setFinished] = useState(false);
   const [sessionId, setSessionId] = useState('');
   const [minCursor, setMinCursor] = useState(0);
+  const activeMs=useActiveTime(!!data&&!finished,sessionId);
   const sessionStartedAt = useRef<string | null>(null);
   const stateRef = useRef({ pending, pos, cursor, data, trades });
   stateRef.current = { pending, pos, cursor, data, trades };
@@ -357,7 +359,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
     const finishedAt = new Date().toISOString();
     onFinish({
       id: sessionId, source: data.source, symbol: data.symbol, label: data.label,
-      startedAt: sessionStartedAt.current ?? finishedAt, finishedAt,
+      startedAt: sessionStartedAt.current ?? finishedAt, finishedAt,activeMs:activeMs(),startBalance:startingBalance,currency:'USD',
       trades: all, net: all.reduce((a, t) => a + t.net, 0), notes, tags, pointsAwarded: false,
       journalTradeId: data.trade?.id, marketDate: new Date(data.bars[data.start]?.t ?? Date.now()).toISOString().slice(0, 10), timeframe: data.tf,
     });

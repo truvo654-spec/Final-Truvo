@@ -899,6 +899,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       {/* ───── BACKTEST ───── */}
       {tab === 'backtest' && (
         <BacktestPage
+          onChangeEntries={setEntries}
           onOpenJournal={openEntry}
           entries={scoped}
           allEntries={entries}

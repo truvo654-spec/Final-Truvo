@@ -32,7 +32,8 @@ export const LineChart: React.FC<{
   label: string;
   tooltipDetail?: (x: number) => React.ReactNode;
   onPointSelect?: (seriesName:string, x:number) => void;
-}> = ({ series, height = 220, yFmt, xFmt, band, hLines = [], area = true, label, tooltipDetail, onPointSelect }) => {
+  selectFromPlot?: boolean;
+}> = ({ series, height = 220, yFmt, xFmt, band, hLines = [], area = true, label, tooltipDetail, onPointSelect, selectFromPlot=false }) => {
   const W = 760, H = height, M = { t: 12, r: 14, b: 26, l: 64 };
   const all = series.flatMap((s) => s.points);
   const ref = useRef<SVGSVGElement>(null);
@@ -63,9 +64,17 @@ export const LineChart: React.FC<{
   const hp = hover !== null ? main.points[hover] : null;
   const nearest = (s: LineSeries, x: number) => s.points.reduce((a, p) => (Math.abs(p.x - x) < Math.abs(a.x - x) ? p : a), s.points[0]);
   const xt = niceTicks(x0, x1, 4).length > 1 ? [x0, x0 + (x1 - x0) / 3, x0 + (2 * (x1 - x0)) / 3, x1] : [x0];
+  const selectPlot=(e:React.MouseEvent<SVGSVGElement>)=>{
+    if(!selectFromPlot||!onPointSelect)return;
+    const box=e.currentTarget.getBoundingClientRect(),x=(e.clientX-box.left)/box.width*W,y=(e.clientY-box.top)/box.height*H;
+    if(x<M.l||x>W-M.r||y<M.t||y>H-M.b)return;
+    let best:{id:string;x:number;dx:number;dy:number}|null=null;
+    for(const s of series)for(const p of s.points){const dx=Math.abs(sx(p.x)-x),dy=Math.abs(sy(p.y)-y);if(!best||dx<best.dx-.01||Math.abs(dx-best.dx)<=.01&&dy<best.dy)best={id:s.id??s.name,x:p.x,dx,dy};}
+    if(best)onPointSelect(best.id,best.x);
+  };
   return (
     <div className="relative">
-      <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="w-full h-auto select-none" role={onPointSelect ? "group" : "img"} aria-label={label} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className={`w-full h-auto select-none ${selectFromPlot?'cursor-pointer':''}`} role={onPointSelect ? "group" : "img"} aria-label={label} onClick={selectPlot} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
         {niceTicks(y0, y1).map((t) => (
           <g key={t}>
             <line x1={M.l} x2={W - M.r} y1={sy(t)} y2={sy(t)} stroke={GRID} strokeDasharray={t === 0 ? undefined : '3 4'} />
@@ -88,7 +97,7 @@ export const LineChart: React.FC<{
         {series.map((s) => (
           <g key={s.id ?? s.name}>
             <path d={path(s.points)} fill="none" stroke={s.color} strokeWidth={2} strokeDasharray={s.dashed ? '6 4' : undefined} strokeLinejoin="round" />
-            {onPointSelect && s.points.map(p=><circle key={p.x} cx={sx(p.x)} cy={sy(p.y)} r={4} fill={s.color} role="button" tabIndex={0} aria-label={s.name+' · '+xFmt(p.x)+': '+yFmt(p.y)} onClick={()=>onPointSelect(s.id ?? s.name,p.x)} onFocus={()=>setHover(main.points.findIndex(q=>q.x===p.x)>=0?main.points.findIndex(q=>q.x===p.x):null)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onPointSelect(s.id ?? s.name,p.x);}}} className="cursor-pointer focus:stroke-slate-900 focus:stroke-2"/>)}
+            {onPointSelect && s.points.map(p=><circle key={p.x} cx={sx(p.x)} cy={sy(p.y)} r={4} fill={s.color} role="button" tabIndex={0} aria-label={s.name+' · '+xFmt(p.x)+': '+yFmt(p.y)} onClick={e=>{e.stopPropagation();onPointSelect(s.id ?? s.name,p.x);}} onFocus={()=>setHover(main.points.findIndex(q=>q.x===p.x)>=0?main.points.findIndex(q=>q.x===p.x):null)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onPointSelect(s.id ?? s.name,p.x);}}} className="cursor-pointer focus:stroke-slate-900 focus:stroke-2"/>)}
             {s.points.length > 0 && <circle cx={sx(s.points[s.points.length - 1].x)} cy={sy(s.points[s.points.length - 1].y)} r={3.5} fill={s.color} pointerEvents={onPointSelect ? "none" : undefined} />}
           </g>
         ))}

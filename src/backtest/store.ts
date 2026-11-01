@@ -30,6 +30,7 @@ function write(key: string, value: unknown): boolean {
 export interface RunSummary { trades: number; net: number; netPct: number; winRate: number; avgR: number; pf: number | null; maxDDPct: number }
 
 export interface BacktestRun {
+  activeMs?:number;activityId?:string;
   sourceTradeIds?: string[];
   dataSource?: 'generated';
   timezone?: string;
@@ -81,6 +82,7 @@ export const saveUsage = (u: Usage) => write(KEYS.usage, u);
 
 export interface PracticeTrade { dir: 'long' | 'short'; entry: number; exit: number; size: number; net: number; r: number | null; entryBar: number; exitBar: number; tags: string[]; entryTime?: string; exitTime?: string }
 export interface ReplaySession {
+  activeMs?:number;startBalance?:number;currency?:string;
   id: string; source: 'random' | 'similar' | 'journal'; symbol: string; label: string; startedAt: string; finishedAt: string | null;
   trades: PracticeTrade[]; net: number; notes: string; tags: string[]; pointsAwarded: boolean; journalTradeId?: string; marketDate?: string; timeframe?: string;
 }

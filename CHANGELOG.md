@@ -1,3 +1,30 @@
+## 2.56.3 — Focus the MVP on one result
+
+- Remove Compare results, Share and the separate multi-source Choose results flow from the dashboard. Defer comparison and snapshot sharing for a later release.
+- Use one Test result dropdown for every saved test, completed practice session and journal source; show one result at a time.
+- Keep Overview, Trade Log, View setup, Edit and interactive result popups.
+
+## 2.56.2 — Rich result popup
+
+- Match the supplied result-detail reference in light mode, with a dated net P&L header, zero-baseline cumulative chart, gross P&L, commission, volume and outcome statistics.
+- Add entry/exit fills, ROI, realized R, playbook and in-place trade review; keep calendar and chart exploration inside the popup.
+- Save notes per selected source and trade cohort in this browser; preserve missing values rather than assuming zero, and keep instrument quantities separate.
+
+## 2.56.1 — Explore results in place
+
+- Open chart points, bubbles and yearly calendar periods in a local result popup without switching to Trade Log or scrolling the dashboard.
+- Let users click the chart plot area to select the nearest result date; preserve keyboard access to each point.
+- Inspect trade details within the same popup, with Back to trades and preserved result/filter context.
+
+## 2.56.0 — One Edit button, instant dashboard customization
+
+- Use one Edit button at the top right for instant widget choices and Trade Log columns; preserve a light overview without Simple/Advanced modes. Keep additional filters collapsed.
+- Add account-currency breakeven outcomes, trade/day outcome pills, average win/loss bar, Sharpe/Sortino/Calmar, mean drawdown episodes and day streaks, with denominator and missing-data tooltips.
+- Add compatible tick/point/pip display units; duration, state, review, outcome, tag, mistake and local entry-time filters. Open journal trades remain inspectable without entering realized performance metrics.
+- Add Trade Log dates, fills, ROI, status and insights; select rows to annotate, review, assign a playbook, export CSV or reversibly exclude results. Journal edits use the existing journal state; simulation settings stay immutable.
+- Add read-only SVG snapshots with Privacy applied and optional analysis reference balances.
+- Align Saved runs count with saved tests; distinguish What-if and practice saves. Record active foreground time for new Lab and Practice saves; do not infer missing historical time or execution scores.
+
 ## 2.55.0 — Simpler light dashboard
 
 - Rework the dashboard around Overview and Trade Log, with a compact result selector and collapsed shared filters.

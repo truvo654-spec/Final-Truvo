@@ -1,3 +1,4 @@
+import {useActiveTime} from './useActiveTime';
 import { BacktestDashboard } from './BacktestDashboard';
 import type { DashboardEntry } from './dashboardData';
 import { StrategyLab } from './StrategyLab';
@@ -51,6 +52,7 @@ interface Props {
   onUpgrade: () => void;
   onToast: (m: string) => void;
   onOpenTrades: (ids: string[], label: string) => void;
+  onChangeEntries?:(update:(entries:JournalEntry[])=>JournalEntry[])=>void;
   onOpenJournal?: (id:string,cohort:string[])=>void;
   expected: Record<string, PlaybookExpectedStats>;
   onSetExpected: (s: PlaybookExpectedStats) => void;
@@ -206,6 +208,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const setU = (u: Usage) => { setUsage(u); saveUsage(u); };
   const left = Math.max(0, limit - usage.used) + usage.prepaid;
 
+  const labActiveMs=useActiveTime(view==='setup'||view==='running',String(labRevision));
   const start = () => {
     const settingsList = labJobs(selectedPlaybookIds.flatMap(id=>draftsByPlaybook[id]?[draftsByPlaybook[id]]:[]),labSymbols);
     if (!settingsList.length) return;
@@ -230,9 +233,10 @@ export const BacktestPage: React.FC<Props> = (p) => {
           completed.push({ settings: activeSettings, output });
         }
         const now = new Date().toISOString();
+        const activityId='lab_'+Date.now().toString(36),activeMs=labActiveMs();
         const saved = completed.map((item, index): BacktestRun => ({
           id: `run_${Date.now().toString(36)}_${index}`, name: item.settings.name, mode: 'automated', status: 'done',
-          sourceTradeIds: benchmarkEntries.map(e=>e.id), dataSource:'generated', timezone:tz,
+          activityId,activeMs,sourceTradeIds: benchmarkEntries.map(e=>e.id), dataSource:'generated', timezone:tz,
           playbookId: item.settings.playbookId, symbol: item.settings.symbol, timeframe: item.settings.timeframe,
           from: item.settings.from, to: item.settings.to, createdAt: now, lastRun: now, settings: item.settings,
           summary: summarize(item.output), output: item.output,
@@ -339,7 +343,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
     openDashboard({resultIds:['practice:'+s.id]});
   };
 
-  const savedRunCount=runs.length+whatIfRuns.length;
+  const savedRunCount=runs.length;
   const NAV: [View, string, string][] = [
     ['home', 'Dashboard', 'Backtest Dashboard'],
     ['setup', 'Strategy Lab', 'Strategy Lab'],
@@ -374,7 +378,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
 
       {view === 'home' && (
         <BacktestDashboard key={dashboardRevision} initial={dashboardInitial} entries={entries} allEntries={p.allEntries} playbooks={playbooks} runs={runs} sessions={sessions}
-          onNewTest={startSetup} onOpenJournal={p.onOpenJournal}
+          onNewTest={startSetup} onChangeEntries={p.onChangeEntries} onOpenJournal={p.onOpenJournal}
           onInspectRun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));setComparisonResults(null);setCur({settings:r.settings,output:r.output,runId:r.id,name:r.name});setView('results');}}
           onRerun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));prepareSetup(deepClone(r.settings));}} />
       )}

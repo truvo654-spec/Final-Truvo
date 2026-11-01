@@ -1,5 +1,6 @@
+import {closedRow,displayRowValue} from './dashboardAnalytics';
 import {instrumentKey} from '../journal/playbookExecution';
-import {dashboardMarket,dashboardStats,type DashboardRow,type DashboardSource} from './dashboardData';
+import {dashboardMarket,dashboardStats,type DashboardRow,type DashboardUnit,type DashboardSource} from './dashboardData';
 
 export type ComparisonDimension='playbook'|'market'|'instrument'|'result';
 export type ComparisonOrigin='playbook-test'|'journal-test'|'journal'|'practice';
@@ -15,21 +16,21 @@ export function comparisonBubbles(groups:{source:DashboardSource;rows:DashboardR
   return groups.flatMap(({source,rows})=>{
     const kind=comparisonOrigin(source);if(origin!=='all'&&origin!==kind)return [];
     const buckets=new Map<string,DashboardRow[]>();
-    for(const row of rows){const key=dimension==='playbook'?(row.bookId||row.strategy||'Unassigned'):dimension==='market'?dashboardMarket(row):dimension==='instrument'?instrumentKey(row.symbol):source.id;buckets.set(key,[...(buckets.get(key)??[]),row]);}
+    for(const row of rows.filter(closedRow)){const key=dimension==='playbook'?(row.bookId||row.strategy||'Unassigned'):dimension==='market'?dashboardMarket(row):dimension==='instrument'?instrumentKey(row.symbol):source.id;buckets.set(key,[...(buckets.get(key)??[]),row]);}
     return [...buckets].map(([key,list])=>{
       const playbook=category(list,r=>r.strategy||'Unassigned'),market=category(list,dashboardMarket),instrument=category(list,r=>r.symbol);
       return {id:JSON.stringify([source.id,dimension,key]),name:dimension==='playbook'?playbook:dimension==='market'?market:dimension==='instrument'?instrument:source.name,source,rows:list,origin:kind,playbook,market,instrument,stats:dashboardStats(list,source.balance)};
     });
   });
 }
-export function comparisonValue(bubble:ComparisonBubble,metric:ComparisonMetric,unit:'money'|'r'|'percent'):number|null {
+export function comparisonValue(bubble:ComparisonBubble,metric:ComparisonMetric,unit:DashboardUnit):number|null {
   const m=bubble.stats;
   if(metric==='trades')return m.count;
   if(metric==='winRate'||metric==='pf'||metric==='payoff'||metric==='avgR')return m[metric];
   if(unit==='percent'&&!bubble.source.balance)return null;
   const rows=unit==='r'?bubble.rows.filter(r=>r.r!==null):bubble.rows;
   if(!rows.length)return null;
-  const value=(r:DashboardRow)=>unit==='r'?r.r!:unit==='percent'?100*r.net/bubble.source.balance!:r.net;
+  const value=(r:DashboardRow)=>displayRowValue(r,unit,bubble.source.balance)??0;
   const net=rows.reduce((s,r)=>s+value(r),0);
   if(metric==='net')return net;
   if(metric==='expectancy')return net/rows.length;
@@ -37,7 +38,7 @@ export function comparisonValue(bubble:ComparisonBubble,metric:ComparisonMetric,
   const closes=new Map<number,number>();rows.forEach(r=>closes.set(r.at,(closes.get(r.at)??0)+value(r)));
   let total=0,peak=0,dd=0;[...closes].sort(([a],[b])=>a-b).forEach(([,v])=>{total+=v;peak=Math.max(peak,total);dd=Math.max(dd,peak-total);});return dd;
 }
-export function comparisonSize(bubble:ComparisonBubble,size:ComparisonSize,unit:'money'|'r'|'percent'):number|null {
+export function comparisonSize(bubble:ComparisonBubble,size:ComparisonSize,unit:DashboardUnit):number|null {
   if(size==='r')return bubble.stats.rCoverage?Math.abs(bubble.rows.reduce((n,r)=>n+(r.r??0),0)):null;
   const v=comparisonValue(bubble,size,unit);return v===null?null:Math.abs(v);
 }
