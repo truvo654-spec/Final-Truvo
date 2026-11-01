@@ -312,7 +312,7 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
       </Step>
 
       {/* STEP 2 */}
-      <Step n={2} title="What to test" sub="Select one or more playbooks. Compare them under the same market and account conditions." right={<span className="text-[11px] text-slate-500 tabular-nums">{selectedSetups.length} selected</span>}>
+      {!embedded && <Step n={2} title="What to test" sub="Select one or more playbooks. Compare them under the same market and account conditions." right={<span className="text-[11px] text-slate-500 tabular-nums">{selectedSetups.length} selected</span>}>
         {selectedSetups.length > 0 && (
           <div className="flex flex-wrap items-center gap-4 bg-[#FBFAFF] border border-[#5338ec]/20 rounded-2xl px-5 py-4">
             <Sparkles className="w-5 h-5 text-[#5338ec] shrink-0" aria-hidden />
@@ -440,7 +440,7 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
             {choosable.length ? 'Select at least one playbook to build the test hypothesis from its saved data.' : 'Create or reactivate a playbook to build a test hypothesis.'}
           </div>
         )}
-      </Step>
+      </Step>}
 
       {/* Sticky run bar */}
       {!embedded && <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>

@@ -1,3 +1,4 @@
+import {BACKTEST_TRAINING_ENABLED} from '../../backtest/config';
 import { JournalHelp, getJournalHelp } from './JournalHelp';
 import { useMoney, formatMoney, JournalCurrency } from './JournalCurrency';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -146,7 +147,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     const draft = existing || createCoachDraft(scenario, crypto.randomUUID(), playbooks.map(p => p.name));
     if (!existing) setVersionedPlaybooks(previous => [...previous, draft]);
     onShowToast(existing ? `Using saved experiment: ${draft.name}` : `Testing draft saved: ${draft.name}`);
-    if (action === 'practice') goBacktest({ view: 'replay', playbookId: draft.id });
+    if (action === 'practice'&&BACKTEST_TRAINING_ENABLED) goBacktest({ view: 'replay', playbookId: draft.id });
     if (action === 'test') goBacktest({ view: 'setup', playbookId: draft.id, comparePlaybookId: scenario.sourcePlaybookId, benchmarkTradeIds: scenario.evidenceIds });
   };
   const setExpectedFor = (st: PlaybookExpectedStats) => setExpected((m) => { const next = { ...m, [st.playbookId]: st }; saveExpected(next); return next; });
@@ -778,7 +779,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onToast={onShowToast}
           preset={logPreset}
           onClearPreset={() => setLogPreset(null)}
-          onReplay={(id) => goBacktest({ view: 'replay', entryId: id })}
+          onReplay={BACKTEST_TRAINING_ENABLED?(id)=>goBacktest({view:'replay',entryId:id}):undefined}
           onReplayLog={setApiReplayId}
           onBacktestTrades={(ids) => goBacktest({ view: 'setup', benchmarkTradeIds: ids })}
           onCompareResults={ids=>goBacktest({view:'home',journalTradeIds:ids})}
@@ -1095,7 +1096,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         </div>
       )}
 
-      {selected && <JournalReviewDrawer playbooks={playbooks} entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={()=>goBacktest({view:'replay',entryId:selected.id})}/>}
+      {selected && <JournalReviewDrawer playbooks={playbooks} entry={selected} cohort={reviewCohort} checklist={checklist} playbook={playbooks.find(p=>p.name===selected.strategy)} onSelect={setSelectedId} onClose={()=>setSelectedId(null)} onSave={upd=>{setEntries(prev=>prev.map(e=>e.id===upd.id?upd:e));onShowToast('Review saved locally');}} onDelete={id=>{setEntries(prev=>prev.filter(e=>e.id!==id));setSelectedId(null);onShowToast('Entry deleted locally');}} onReplay={BACKTEST_TRAINING_ENABLED?()=>goBacktest({view:'replay',entryId:selected.id}):undefined}/>}
       {reviewQueueOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#0b1c30]/40 p-3 sm:p-6" role="presentation" onMouseDown={() => setReviewQueueOpen(false)}>
           <section

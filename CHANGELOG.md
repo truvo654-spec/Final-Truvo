@@ -1,3 +1,60 @@
+## 2.60.1 — Defer standalone training workspaces
+
+- Reduce Backtest navigation to Dashboard, Strategy Lab, What-if and Saved runs. Hide Practice myself and standalone Practice / Demo replay routes for this MVP.
+- Hide blind-practice entry points in Trade Log, trade review, AI Coach and the monthly run-limit dialog; update help text and route legacy practice intents safely to Strategy Lab.
+- Preserve training components and stored sessions behind BACKTEST_TRAINING_ENABLED for a future release. Keep contextual result and journal trade replays available.
+
+## 2.60.0 — Replay timeframe and live playback performance
+
+- Default the replay chart to the saved test timeframe and offer supported larger candle groupings without altering its strategy or saved result. Group revealed candles only, preserving playback time.
+- Reconstruct the original engine position for candle-by-candle P&L, trade drawdown and maximum drawdown, including partial exits, managed stops and account-currency costs. Keep final saved P&L distinct.
+- Add linked P&L/drawdown panes and 1× / 2× / 4× playback speed; keep controls and the timeline above the chart.
+
+## 2.59.0 — Clear saving and instant trade replay
+
+- Make automatic saving explicit with Saved to Saved runs, a direct View saved runs action and a retry action if storage fails.
+- Open saved runs in the same local result popup. Reuse Demo replay’s candle chart and basic playback controls for each saved test trade, using the original engine series instead of a new demo price path.
+- Keep replay read-only with Play, Next candle, Restart and a timeline; show further trade details on demand and return to the same list position.
+
+## 2.58.2 — Keep test results in Strategy Lab
+
+- Open completed test results in a local popup instead of navigating to Dashboard. Reuse the existing chart, statistics, trade list, notes and in-place trade details.
+- Switch among this run’s results in the popup; closing returns to the same setup. Keep completed tests available in Saved runs.
+- Reopen the latest completed batch from Strategy Lab without running it again, including after reload.
+- Show progress in a popup and retain the setup, selections and reviewed rules while running or cancelling.
+
+## 2.58.1 — Make the test action actionable
+
+- Replace the silently disabled Run button with Review rules to run when suggested rules need approval.
+- Guide users through selected playbooks in one popup sequence, then enable Run test. Keep Cancel and individual rule editing available.
+- Remember reviewed entry rules in the test draft across cancellation, navigation and reload; require another review if those entries change.
+- Explain other setup blockers beside the action.
+
+## 2.58.0 — Load selections and run
+
+- Replace duplicate date, market, instrument, account and advanced setup forms with three prefilled summary rows and optional focused Edit popups.
+- Transfer supported instruments from selected playbooks; retain journal-selected dates, instruments and currency and each playbook’s independent rules and risk.
+- Keep changes in test copies, with Cancel / Apply and validation. Preserve other saved settings.
+
+## 2.57.0 — Focused test rule editing
+
+- Open Review rules / Edit rules in a focused entry-condition popup using the Playbook editor design, with Cancel and Apply to test.
+- Keep each edit isolated to its selected test copy; preserve saved Playbooks, other tests, exits, risk, instruments and dates.
+- Replace repeated warnings and long playbook setup panels with compact summaries, review status and hover/focus/tap help. Keep additional account settings under More test settings.
+
+## 2.56.6 — Continue directly from checked trades
+
+- Make both Check your setup controls apply checked journal trades and open setup in one click. Remove the separate Use selected trades step that left Continue disabled.
+- Show the checked trade count immediately and explain when no playbook or trade is selected. Clearing checked trades preserves selected playbook settings.
+
+## 2.56.5 — Remove duplicate recent-test list
+
+- Remove Your discoveries / Recent lab tests from Strategy Lab. Previous results remain available in Saved runs.
+
+## 2.56.4 — Keep Strategy Lab steps numbered
+
+- Keep step 1 visible in the Strategy Lab progress indicator when moving to setup, matching the numbered steps 2 and 3.
+
 ## 2.56.3 — Focus the MVP on one result
 
 - Remove Compare results, Share and the separate multi-source Choose results flow from the dashboard. Defer comparison and snapshot sharing for a later release.

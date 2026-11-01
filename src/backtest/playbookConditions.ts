@@ -18,23 +18,23 @@ export function playbookConditions(playbook: JournalPlaybook): Condition[] {
   }));
 }
 
-function validOperand(value: Operand): boolean {
+function validOperand(value: Operand, maxPeriod = MAX_CONDITION_PERIOD): boolean {
   if (!value || typeof value !== 'object') return false;
   if (value.kind === 'value') return Number.isFinite(value.value);
   if (value.kind === 'price') return ['open', 'high', 'low', 'close'].includes(value.field);
   if (value.kind !== 'ind' || !value.ind || !Object.hasOwn(IND_LABEL, value.ind.type)) return false;
-  if (Object.hasOwn(IND_DEFAULT_PERIOD, value.ind.type) && (!Number.isInteger(value.ind.period) || value.ind.period! < 2 || value.ind.period! > MAX_CONDITION_PERIOD)) return false;
+  if (Object.hasOwn(IND_DEFAULT_PERIOD, value.ind.type) && (!Number.isInteger(value.ind.period) || value.ind.period! < 2 || value.ind.period! > maxPeriod)) return false;
   if (['SESSION_HIGH', 'SESSION_LOW'].includes(value.ind.type) && !['asia', 'london', 'ny'].includes(value.ind.session || '')) return false;
   return true;
 }
 
-export function validatePlaybookConditions(conditions: Condition[]): string | null {
+export function validatePlaybookConditions(conditions: Condition[], maxPeriod = MAX_CONDITION_PERIOD): string | null {
   if (!conditions.length || conditions.length > MAX_PLAYBOOK_CONDITIONS) return `Add between 1 and ${MAX_PLAYBOOK_CONDITIONS} technical conditions, or restore the default.`;
   const ids = new Set<string>();
   for (const [index, condition] of conditions.entries()) {
     if (!condition.id || ids.has(condition.id)) return `Condition ${index + 1} needs a unique ID.`;
     ids.add(condition.id);
-    if (!['gt', 'lt', 'crossAbove', 'crossBelow'].includes(condition.op) || !validOperand(condition.left) || !validOperand(condition.right)) return `Condition ${index + 1} needs valid tools, numbers and periods (2–${MAX_CONDITION_PERIOD}).`;
+    if (!['gt', 'lt', 'crossAbove', 'crossBelow'].includes(condition.op) || !validOperand(condition.left, maxPeriod) || !validOperand(condition.right, maxPeriod)) return `Condition ${index + 1} needs valid tools, numbers and periods (2–${maxPeriod}).`;
   }
   return null;
 }

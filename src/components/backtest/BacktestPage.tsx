@@ -2,7 +2,8 @@ import {useActiveTime} from './useActiveTime';
 import { BacktestDashboard } from './BacktestDashboard';
 import type { DashboardEntry } from './dashboardData';
 import { StrategyLab } from './StrategyLab';
-import { labBenchmark, labSettings, labJobs, loadLabDraft, saveLabDraft } from './labTransfer';
+import { LabResultsDialog } from './LabResultsDialog';
+import { labBenchmark, labSettings, labJobs, updateLabEntryRules, labBookSymbols, mergeLabSetup, loadLabDraft, saveLabDraft } from './labTransfer';
 import { resolveSymbol } from '../../backtest/marketData';
 import { playbookFingerprint } from '../journal/playbookExecution';
 import { JournalHelp, getJournalHelp } from '../journal/JournalHelp';
@@ -13,7 +14,7 @@ import { ArrowLeft, Coins, Loader2, XCircle, PlayCircle, Sparkles } from 'lucide
 import type { Broker, JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { JOURNAL_TODAY } from '../../data/journalData';
-import { EXTRA_RUN_CREDITS, runLimitFor } from '../../backtest/config';
+import { BACKTEST_TRAINING_ENABLED, EXTRA_RUN_CREDITS, runLimitFor } from '../../backtest/config';
 import { applyPatch } from '../../backtest/job';
 import { runBacktest, CancelledError } from '../../backtest/service';
 import { defaultSettings, deepClone, describeCondition, defaultCostsFor, JournalRules } from '../../backtest/rules';
@@ -93,11 +94,18 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const [whatIfPlaybookId, setWhatIfPlaybookId] = useState('');
   const [draft, setDraft] = useState<BacktestSettings>(() => savedLab?.settings ?? defaultSettings({ journalRules }));
   const [labSymbols,setLabSymbols]=useState<string[]>(savedLab?.symbols ?? []);
+  const [reviewedLabRules,setReviewedLabRules]=useState<Record<string,string>>(savedLab?.reviewedRules ?? {});
   const [labRevision,setLabRevision]=useState(0);
   const [draftsByPlaybook, setDraftsByPlaybook] = useState<Record<string, BacktestSettings>>(savedLab?.byBook ?? {});
   const [selectedPlaybookIds, setSelectedPlaybookIds] = useState<string[]>(savedLab?.bookIds.filter(id=>playbooks.some(b=>b.id===id&&b.status!=='archived')) ?? []);
   const [cur, setCur] = useState<Current | null>(null);
   const [comparisonResults, setComparisonResults] = useState<BacktestComparisonItem[] | null>(null);
+  const [labResults,setLabResults]=useState<{runs:BacktestRun[];saved:boolean}|null>(()=>{
+    const saved=loadRuns(),latest=saved.find(r=>r.mode==='automated'&&r.activityId);
+    return latest?{runs:saved.filter(r=>r.activityId===latest.activityId),saved:true}:null;
+  });
+  const [showLabResults,setShowLabResults]=useState(false);
+  const [inspectedSavedRun,setInspectedSavedRun]=useState<BacktestRun|null>(null);
   const [benchmarkEntries, setBenchmarkEntries] = useState<JournalEntry[]>(p.allEntries.filter(e=>savedLab?.tradeIds.includes(e.id)));
   const [runs, setRuns] = useState<BacktestRun[]>(() => loadRuns());
   const [whatIfRuns,setWhatIfRuns]=useState<WhatIfRun[]>(()=>loadWhatIfs());
@@ -110,7 +118,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const [replayEntry, setReplayEntry] = useState<string | null>(null);
   const [replayPlaybook, setReplayPlaybook] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
-  useEffect(()=>{if(view==='setup')saveLabDraft({settings:draft,byBook:draftsByPlaybook,bookIds:selectedPlaybookIds,symbols:labSymbols,tradeIds:benchmarkEntries.map(e=>e.id)});},[view,draft,draftsByPlaybook,selectedPlaybookIds,labSymbols,benchmarkEntries]);
+  useEffect(()=>{if(view==='setup')saveLabDraft({reviewedRules:reviewedLabRules,settings:draft,byBook:draftsByPlaybook,bookIds:selectedPlaybookIds,symbols:labSymbols,tradeIds:benchmarkEntries.map(e=>e.id)});},[view,draft,draftsByPlaybook,selectedPlaybookIds,labSymbols,benchmarkEntries,reviewedLabRules]);
   const limit = runLimitFor(userTierLevel);
   const tz = userTz;
 
@@ -118,7 +126,8 @@ export const BacktestPage: React.FC<Props> = (p) => {
     const books=playbooks.filter(b=>ids.includes(b.id)&&b.status!=='archived');
     const next=Object.fromEntries(books.map(b=>[b.id, draftsByPlaybook[b.id] ?? labSettings(b,entries,journalRules)]));
     setSelectedPlaybookIds(books.map(b=>b.id)); setDraftsByPlaybook(next);
-    if(books[0]) { setDraft(next[books[0].id]); if(!labSymbols.length) setLabSymbols([next[books[0].id].symbol]); }
+    setLabSymbols(labBookSymbols(books,next));
+    if(books[0]) setDraft(next[books[0].id]);
     setComparisonResults(null);
   };
   const chooseLabTrades = (ids:string[], extraIds:string[] = []) => {
@@ -198,7 +207,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
     if (!p.intent) return;
     const it = p.intent;
     if (it.view === 'setup') startSetup(it.playbookId, it.benchmarkTradeIds, it.comparePlaybookId, it.symbol);
-    else if (it.view === 'replay') { setBenchmarkEntries([]); setReplayEntry(it.entryId ?? null); setReplayPlaybook(it.playbookId ?? null); setView('replay'); }
+    else if (it.view === 'replay') { if(BACKTEST_TRAINING_ENABLED){setBenchmarkEntries([]);setReplayEntry(it.entryId??null);setReplayPlaybook(it.playbookId??null);setView('replay');}else{startSetup(it.playbookId,it.entryId?[it.entryId]:undefined);onToast('Practice is unavailable in this version. Your selection is ready in Strategy Lab.');} }
     else if (it.view === 'whatif') { setWhatIfPlaybookId(it.playbookId ?? ''); setBenchmarkEntries([]); setView('whatif'); }
     else { openDashboard(it); }
     p.onIntentDone();
@@ -213,6 +222,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
     const settingsList = labJobs(selectedPlaybookIds.flatMap(id=>draftsByPlaybook[id]?[draftsByPlaybook[id]]:[]),labSymbols);
     if (!settingsList.length) return;
     setError(null);
+    setShowLabResults(false);
     setProgress(0);
     setRunStatus({ index: 1, total: settingsList.length, name: settingsList[0].name });
     setComparisonResults(null);
@@ -249,14 +259,16 @@ export const BacktestPage: React.FC<Props> = (p) => {
         });
         const nextRuns = [...saved, ...loadRuns()].slice(0, 30);
         setRuns(nextRuns);
-        if (!saveRuns(nextRuns)) onToast('Test finished, but browser storage could not save the results.');
+        const savedToBrowser=saveRuns(nextRuns);
+        if (!savedToBrowser) onToast('Test finished, but browser storage could not save the results.');
         const u = loadUsage();
         setU(u.used < limit ? { ...u, used: u.used + 1 } : { ...u, prepaid: Math.max(0, u.prepaid - 1) });
         if(completed.length===1){const item=completed[0];setCur({settings:item.settings,output:item.output,runId:saved[0].id,name:item.settings.name});}
         else setComparisonResults(completed);
-        openDashboard({resultIds:saved.map(r=>'run:'+r.id),...(benchmarkEntries.length?{journalTradeIds:benchmarkEntries.map(e=>e.id)}:{})});
+        setLabResults({runs:saved,saved:savedToBrowser});
+        setShowLabResults(true);
+        setView('setup');
         setRunStatus(null);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch (e) {
         const error = e instanceof Error ? e : new Error(String(e));
         setRunStatus(null);
@@ -363,7 +375,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
     <div className="mt-5 space-y-5">
       <div className="w-fit max-w-full min-w-0 rounded-2xl border border-slate-200 bg-white p-2 sm:p-2.5">
         <nav aria-label="Backtest sections" className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-xl bg-slate-50 p-1 scrollbar-none">
-          {NAV.map(([v, label, helpTopic]) => {
+          {NAV.filter(([v])=>BACKTEST_TRAINING_ENABLED||(v!=='replay'&&v!=='demo')).map(([v, label, helpTopic]) => {
             const active = navOn(v);
             return (
               <div key={v} className={`relative shrink-0 rounded-lg border transition-colors ${active ? 'border-[#D8D0FF] bg-[#F1EDFF] text-[#5338ec] shadow-xs' : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white'}`}>
@@ -383,30 +395,36 @@ export const BacktestPage: React.FC<Props> = (p) => {
           onRerun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));prepareSetup(deepClone(r.settings));}} />
       )}
 
-      {view === 'setup' && (
+      {(view === 'setup'||view === 'running') && (
         <>
           {error && <Banner tone="bad" icon={<XCircle className="w-4 h-4" />}><b>The backtest didn't run.</b> {error}</Banner>}
-          <StrategyLab key={labRevision} allEntries={p.allEntries} runs={runs} symbols={labSymbols} onSymbols={setLabSymbols}
+          <StrategyLab key={labRevision} reviewedRules={reviewedLabRules} allEntries={p.allEntries} symbols={labSymbols}
+            onViewResults={labResults?()=>setShowLabResults(true):undefined}
             onBooks={chooseLabBooks} onTrades={chooseLabTrades}
+            onSetup={(updates,symbols,base)=>{const next=mergeLabSetup(draftsByPlaybook,selectedPlaybookIds,updates);setDraftsByPlaybook(next);setLabSymbols(symbols);setDraft(next[draft.playbookId??'']??next[selectedPlaybookIds[0]]??base);setComparisonResults(null);}}
+            onEntryRules={(id,entry)=>{const next=updateLabEntryRules(draftsByPlaybook,id,entry);setDraftsByPlaybook(next);if(next[id])setReviewedLabRules(prev=>({...prev,[id]:JSON.stringify(next[id].rules.entry)}));if(draft.playbookId===id&&next[id])setDraft({...draft,rules:next[id].rules});}}
             onPractice={(entryId,playbookId)=>{setReplayEntry(entryId??null);setReplayPlaybook(playbookId??null);setView('replay');}}
-            onOpenRun={r=>openDashboard({resultIds:['run:'+r.id],...(r.sourceTradeIds?.length?{journalTradeIds:r.sourceTradeIds}:{})})}
-            onRerun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));prepareSetup(deepClone(r.settings));}}
             setup={{settings:draft,onChange:updateDraft,playbooks,selectedPlaybookIds,settingsByPlaybook:draftsByPlaybook,onSelectionChange:changeSelection,entries,benchmarkEntries,onClearBenchmark:()=>setBenchmarkEntries([]),brokers,journalRules,tz,onRun,onOpenTrades:p.onOpenTrades,runHint:setupRunHint}} />
         </>
       )}
 
       {view === 'running' && (
-        <section className="bg-white border border-[#e2e8f0] rounded-2xl p-8 text-center max-w-xl mx-auto" aria-live="polite" aria-busy="true">
+        <Modal open onClose={()=>abort.current?.abort()} title="Running test" width="max-w-xl"><section className="bg-white p-3 text-center" aria-live="polite" aria-busy="true">
           <Loader2 className="w-8 h-8 text-[#5338ec] mx-auto animate-spin motion-reduce:animate-none" aria-hidden />
-          <p className="text-base font-bold text-[#0b1c30] mt-3">{runStatus && runStatus.total > 1 ? `Running ${runStatus.index} of ${runStatus.total}: ${runStatus.name}` : `Testing ${runStatus?.name ?? 'your playbook'} on ${draft.symbol}`}</p>
+          <h3 className="text-base font-bold text-[#0b1c30] mt-3">{runStatus && runStatus.total > 1 ? `Running ${runStatus.index} of ${runStatus.total}: ${runStatus.name}` : `Testing ${runStatus?.name ?? 'your playbook'} on ${draft.symbol}`}</h3>
           <p className="text-xs text-slate-500 mt-1">{draft.from} to {draft.to}, one bar at a time. Each playbook keeps its own rules, timeframe and session{progress > 0.8 ? '; now checking small rule changes for the verdict.' : '.'}</p>
           <div className="h-2 rounded-full bg-slate-100 mt-5 overflow-hidden" role="progressbar" aria-label="Backtest progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
             <div className="h-full bg-[#5338ec] rounded-full transition-[width] duration-200" style={{ width: `${Math.round(progress * 100)}%` }} />
           </div>
           <p className="text-xs font-semibold text-[#0b1c30] mt-2 tabular-nums">{Math.round(progress * 100)}%</p>
           <button type="button" className={`${btnSecondary} mt-4`} onClick={() => abort.current?.abort()}>Cancel</button>
-        </section>
+        </section></Modal>
       )}
+
+      {labResults&&showLabResults&&<LabResultsDialog runs={labResults.runs} saved={labResults.saved} playbooks={playbooks} onClose={()=>setShowLabResults(false)}
+        onSave={()=>{const ids=new Set(labResults.runs.map(r=>r.id));const next=[...labResults.runs,...loadRuns().filter(r=>!ids.has(r.id))].slice(0,30);const saved=saveRuns(next);setRuns(next);setLabResults({...labResults,saved});}}
+        onViewSavedRuns={()=>{setShowLabResults(false);setWhatIfRuns(loadWhatIfs());setView('runs');}}/>}
+      {inspectedSavedRun&&<LabResultsDialog runs={[inspectedSavedRun]} saved playbooks={playbooks} closeLabel="Back to saved runs" onClose={()=>setInspectedSavedRun(null)}/>}
 
       {view === 'results' && cur && (
         <><button type="button" className={btnSecondary} onClick={()=>openDashboard()}>← Back to Dashboard</button><BacktestResults settings={cur.settings} output={cur.output} name={cur.name} saved={!!cur.runId} playbook={curPb} entries={entries} benchmarkEntries={benchmarkEntries} expected={curPb ? expected[curPb.id] : undefined} tz={tz}
@@ -440,15 +458,15 @@ export const BacktestPage: React.FC<Props> = (p) => {
           onAddRule={(kind, label, patch) => { if (patch) p.onUpdateRules(patch); else p.onAddChecklist(label); onToast(kind === 'rule' ? 'Added to your trading rules' : 'Added to your pre-trade checklist'); }} />
       )}
 
-      {view === 'replay' && (
+      {BACKTEST_TRAINING_ENABLED && view === 'replay' && (
         <ReplayPanel entries={p.allEntries} playbooks={playbooks} sessions={sessions} tz={tz} initialEntryId={replayEntry} initialPlaybookId={replayPlaybook} onFinish={finishSession} onToast={onToast} />
       )}
 
-      {view === 'demo' && <DemoReplay entries={p.allEntries} playbooks={playbooks}/>}
+      {BACKTEST_TRAINING_ENABLED && view === 'demo' && <DemoReplay entries={p.allEntries} playbooks={playbooks}/>}
 
       {view === 'runs' && (
         <SavedRuns runs={runs} whatIfRuns={whatIfRuns} onDeleteWhatIf={id=>{const next=whatIfRuns.filter(r=>r.id!==id);if(saveWhatIfs(next)){setWhatIfRuns(next);onToast('Saved What-if scenario deleted');}else onToast('Could not delete this saved scenario. Browser storage is unavailable.');}} playbooks={playbooks} tz={tz} onToast={onToast} onNew={() => startSetup()}
-          onOpen={id=>{const r=runs.find(r=>r.id===id);if(r)openDashboard({resultIds:['run:'+id],...(r.sourceTradeIds?.length?{journalTradeIds:r.sourceTradeIds}:{})});}}
+          onOpen={id=>{const r=runs.find(r=>r.id===id);if(r)setInspectedSavedRun(r);}}
           onDuplicate={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); prepareSetup({ ...deepClone(r.settings), name: `${r.name} (copy)` }); } }}
           onDelete={(id) => { const next = runs.filter((r) => r.id !== id); setRuns(next); saveRuns(next); onToast('Run deleted'); }} />
       )}
@@ -456,14 +474,14 @@ export const BacktestPage: React.FC<Props> = (p) => {
       <Modal open={gate} onClose={() => setGate(false)} title="Monthly test runs used">
         <Sparkles className="w-7 h-7 text-[#5338ec] mb-3" aria-hidden />
         <h3 className="text-lg font-bold text-[#0b1c30]">You've used this month's {limit} test runs</h3>
-        <p className="text-sm text-[#474556] mt-1.5">Your plan includes {limit} automated backtests a month. This {selectedPlaybookIds.length > 1 ? 'comparison' : 'playbook test'} counts as one run, or you can practise for free.</p>
+        <p className="text-sm text-[#474556] mt-1.5">Your plan includes {limit} automated backtests a month. This {selectedPlaybookIds.length > 1 ? 'comparison' : 'playbook test'} counts as one run.{BACKTEST_TRAINING_ENABLED?' You can also practise for free.':''}</p>
         <div className="mt-5 space-y-2">
           <button type="button" className={`${btnPrimary} w-full h-11`} disabled={sydeCredits < EXTRA_RUN_CREDITS} onClick={buyRun}>
           <Coins className="w-4 h-4" /> Spend {EXTRA_RUN_CREDITS} Syde Credits for this {selectedPlaybookIds.length > 1 ? 'comparison' : 'run'}
           </button>
           <p className="text-[11px] text-center text-slate-500 tabular-nums">You have {sydeCredits.toLocaleString('en-US')} credits{sydeCredits < EXTRA_RUN_CREDITS ? `; you need ${EXTRA_RUN_CREDITS - sydeCredits} more` : ''}.</p>
           <button type="button" className={`${btnSecondary} w-full h-10`} onClick={() => { setGate(false); p.onUpgrade(); }}>See plans with more runs</button>
-          <button type="button" className="w-full h-10 inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-[#5338ec] hover:underline" onClick={() => { setGate(false); setReplayEntry(null); setView('replay'); }}><PlayCircle className="w-4 h-4" /> Use manual replay instead (free)</button>
+          {BACKTEST_TRAINING_ENABLED&&<button type="button" className="w-full h-10 inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-[#5338ec] hover:underline" onClick={() => { setGate(false); setReplayEntry(null); setView('replay'); }}><PlayCircle className="w-4 h-4" /> Use manual replay instead (free)</button>}
         </div>
       </Modal>
 

@@ -66,7 +66,7 @@ export function buildCoachReport(entries: JournalEntry[], playbooks: JournalPlay
     draft.thesis = `${draft.thesis}\nCoach experiment: ${change} Historical groups describe observed trades; this experiment has not been tested on new candles.`;
     draft.tags = [...new Set([...draft.tags, 'AI Coach experiment'])];
     draft.symbols = [...new Set(retained.map(e => e.symbol))];
-    scenarios.push({ id, kind: 'journal', title, why, change, nextStep: 'Rehearse this rule in Practice, then compare a fresh test against your original setup.', sourcePlaybookId: source?.id, draft, evidenceIds: [...retained, ...later].map(e => e.id), training: metrics(retained), validation: cut ? metrics(later) : null });
+    scenarios.push({ id, kind: 'journal', title, why, change, nextStep: 'Review this rule in your playbook, then compare a fresh test against your original setup.', sourcePlaybookId: source?.id, draft, evidenceIds: [...retained, ...later].map(e => e.id), training: metrics(retained), validation: cut ? metrics(later) : null });
   };
   if (lead && !selected) addJournal('focus', `Focus on ${lead.name}`, `This setup ranks first for ${COACH_GOALS[goal].toLowerCase()} among training groups with at least five closes${goal === 'expectancy' ? ' and five recorded R values' : ''}.`, `Only enter when the ${lead.name} playbook trigger and every required rule are confirmed.`, e => normalize(e.strategy) === normalize(lead.name));
   const planYes = training.filter(e => e.followedPlan === true);

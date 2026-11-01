@@ -86,7 +86,8 @@ test('coach renders evidence, untested alternatives, comparison and saved-draft 
   const html = renderToStaticMarkup(createElement(JournalAICoach, { entries: history(), history: history(), playbooks: DEFAULT_PLAYBOOKS, currency: 'USD', today: '2026-10-14', rangeLabel: 'All time', onEvidence: () => {}, onScenario: () => {}, onImport: () => {}, onToast: () => {} }));
   assert.match(html, /Compare the evidence/);
   assert.match(html, /Strategy library · untested/);
-  assert.match(html, /Save &amp; practice/);
+  assert.doesNotMatch(html, /Save &amp; practice/);
+  assert.match(html, /Test &amp; compare/);
   assert.match(html, /Save &amp; compare/);
   assert.match(html, /not a trained neural model/);
   assert.doesNotMatch(html, /NaN|Guaranteed|Predicted profit/);

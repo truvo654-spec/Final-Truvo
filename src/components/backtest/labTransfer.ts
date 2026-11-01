@@ -1,6 +1,7 @@
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import type { JournalEntry } from '../../types';
-import type { BacktestSettings } from '../../backtest/types';
+import type { BacktestSettings, Condition } from '../../backtest/types';
+import {playbookConditions,validatePlaybookConditions} from '../../backtest/playbookConditions';
 import { defaultSettings, defaultCostsFor, deepClone } from '../../backtest/rules';
 import type { JournalRules } from '../../backtest/rules';
 import { resolveSymbol } from '../../backtest/marketData';
@@ -39,7 +40,29 @@ export function labJobs(settings: BacktestSettings[], symbols: string[]) {
   })));
 }
 
-export interface LabDraft { settings:BacktestSettings; byBook:Record<string,BacktestSettings>; bookIds:string[]; symbols:string[]; tradeIds:string[] }
+/** Selected playbooks supply their supported instruments; never substitute an unrelated symbol. */
+export function labBookSymbols(books:JournalPlaybook[],settings:Record<string,BacktestSettings>){
+ return [...new Set(books.flatMap(book=>(book.symbols?.length?book.symbols:[settings[book.id]?.symbol]).flatMap(symbol=>{const mapped=symbol?resolveSymbol(symbol):null;return mapped?[mapped]:[];})))];
+}
+
+/** Apply an optional editor snapshot only to existing, selected test copies. */
+export function mergeLabSetup(drafts:Record<string,BacktestSettings>,selectedIds:string[],updates:Record<string,BacktestSettings>){
+ const next={...drafts};for(const id of selectedIds)if(drafts[id]&&updates[id])next[id]=deepClone(updates[id]);return next;
+}
+
+/** Edit only this test's entries; keep saved Playbooks and shared/per-book settings intact. */
+export function updateLabEntryRules(drafts:Record<string,BacktestSettings>,bookId:string,entry:Condition[]){
+ const current=drafts[bookId];if(!current)return drafts;
+ const error=validatePlaybookConditions(entry,500);if(error)throw new Error(error);
+ return {...drafts,[bookId]:{...current,rules:{...current.rules,entry:deepClone(entry)}}};
+}
+
+/** Approval belongs to the exact test entries, not merely to a selected playbook. */
+export function labRulesNeedReview(book:JournalPlaybook,settings:BacktestSettings|undefined,reviewed:Record<string,string>){
+ return !playbookConditions(book).length&&(!settings||reviewed[book.id]!==JSON.stringify(settings.rules.entry));
+}
+
+export interface LabDraft { reviewedRules?:Record<string,string>; settings:BacktestSettings; byBook:Record<string,BacktestSettings>; bookIds:string[]; symbols:string[]; tradeIds:string[] }
 const LAB_DRAFT='ms_strategy_lab_draft_v1';
 export function loadLabDraft():LabDraft|null {
   try { const value=JSON.parse(localStorage.getItem(LAB_DRAFT)||'null');

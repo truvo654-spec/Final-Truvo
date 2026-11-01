@@ -1,5 +1,8 @@
 // Every configurable value of the Backtesting module lives here.
 
+/** Deferred from this MVP; retain the standalone training workspaces for a future release. */
+export const BACKTEST_TRAINING_ENABLED:boolean=false;
+
 /** Automated (AI) backtests included per month, by member level. Levels above the table get the last value. */
 export const PLAN_RUN_LIMITS: Record<number, number> = { 1: 3, 2: 5, 3: 10, 4: 30 };
 export const runLimitFor = (tierLevel: number): number => {

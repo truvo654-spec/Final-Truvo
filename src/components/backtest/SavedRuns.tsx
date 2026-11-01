@@ -130,7 +130,7 @@ export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDupl
       {runs.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-sm font-semibold text-[#0b1c30]">No saved runs yet</p>
-          <p className="text-xs text-slate-500 mt-1 mb-4">Run a backtest and press Save to keep it here. Saved runs can be compared and set as a playbook's expected results.</p>
+          <p className="text-xs text-slate-500 mt-1 mb-4">Completed backtests save here automatically in this browser. Open a run to review its results and replay a trade.</p>
           <button type="button" className={btnPrimary} onClick={onNew}>Start a backtest</button>
         </div>
       ) : (
