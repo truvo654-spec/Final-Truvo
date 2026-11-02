@@ -1,3 +1,29 @@
+## 2.68.1 — Simpler AI suggestions, 1 minute charts
+
+- What-if MarketSyde AI shows a short list of suggestions that beat your current setup; picking one opens it on the chart with its details.
+- What-if chart timeframes add 1 minute (estimated from the 5-minute demo feed).
+
+## 2.68.0 — MarketSyde AI ideas by tool
+
+- MarketSyde AI also explores technical filters (RSI, EMA 50/200, ADX, VWAP) on generated demo candles.
+- New "Best idea from each tool" grid: take profit, breakeven, stop size, technical filter, session timing, daily guardrails and mistake tags, each with net, win-rate and drawdown change and holdout.
+- Compare / See on chart scrolls to the candle chart, opens a scenario details panel and switches the P&L and drawdown panes to that scenario.
+- Remove the Performance picker from Candles & scenario comparison; the panes follow the scenario you open.
+
+## 2.67.1 — Calendar icon and 1m replay
+
+- Restore the date range as a calendar icon beside Filters on the Trading Journal (removed from the scope toolbar).
+- Insights trading status shows Open and Closed only.
+- Trade replay adds a 1m view: an estimated split of the saved feed's candles that keeps each candle's open, high, low and close.
+
+## 2.67.0 — What-if price chart, R setups and breakdown popup
+
+- What-if results add a market price chart with entries and exits, a linked Original vs What-if P&L pane, running totals at the timeline cursor, and a Play button that replays results over time.
+- Quick What-if setups are R-based and technical: change target, move stop to breakeven, tighten stop, technical filter. The default is take profit at 2R.
+- Insights: clicking a Day & Time bar opens the detailed session & time breakdown in a popup; the table is removed from the main page. The trade popup shows a group summary.
+- Strategy Lab results are labelled as a sample simulation on generated demo prices.
+- Backtest Dashboard's second view is named Simulated Trade Log.
+
 ## 2.66.3 — Simpler timing highlights
 
 - Remove Peak Win Rate and its insufficient-trades placeholder from every Insights grouping: Days, Month, Trade time and Duration. Remove the unused ranking and help text.
