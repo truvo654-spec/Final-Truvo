@@ -33,6 +33,31 @@ export function replayCandleGroups(bars:Bar[],cursor:number,timeframe:Timeframe)
  return grouped;
 }
 
+/** Illustrative 1-minute candles inside each feed candle: deterministic, and they keep the parent's open, high, low and close. */
+export function splitReplayCandles(bars:Bar[],parentMs:number,childMs=60000):Bar[]{
+ const n=Math.max(1,Math.round(parentMs/childMs));if(n<=1)return bars.map(b=>({...b}));
+ const out:Bar[]=[];
+ for(const bar of bars){
+  let seed=Math.floor(bar.t/childMs)%2147483647||1;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+  let ih=Math.floor(rnd()*n),il=Math.floor(rnd()*n);if(il===ih)il=(ih+1+Math.floor(rnd()*(n-1)))%n;
+  const keys=[[0,bar.o],[ih+1,bar.h],[il+1,bar.l],[n,bar.c]].sort((a,b)=>a[0]-b[0]);
+  const path:number[]=[];
+  for(let k=0;k<=n;k++){
+   let j=0;while(j<keys.length-2&&keys[j+1][0]<k)j++;
+   const [x0,y0]=keys[j],[x1,y1]=keys[j+1];const f=x1===x0?1:(k-x0)/(x1-x0);
+   const base=y0+(y1-y0)*f,noise=(rnd()-.5)*(bar.h-bar.l)*.15*(k===0||k===n||k===ih+1||k===il+1?0:1);
+   path.push(Math.min(bar.h,Math.max(bar.l,base+noise)));
+  }
+  path[ih+1]=bar.h;path[il+1]=bar.l;path[0]=bar.o;path[n]=bar.c;
+  for(let k=0;k<n;k++){
+   const o=k===0?bar.o:path[k],c=path[k+1];
+   let h=Math.max(o,c),l=Math.min(o,c);if(k===ih)h=bar.h;if(k===il)l=bar.l;
+   out.push({t:bar.t+k*childMs,o,h,l,c,v:bar.v/n});
+  }
+ }
+ return out;
+}
+
 export interface ReplayPerformancePoint {at:number;net:number;drawdown:number;maxDrawdown:number;stop:number|null;remaining:number}
 /** Reconstruct the saved engine position, including partials and costs, on its native candles. */
 export function replayTradePerformance(settings:BacktestSettings,series:Series,trade:BacktestTrade,data=resultTradeReplay(series,trade,settings.costs.fillModel==='sameClose')):ReplayPerformancePoint[]|null{

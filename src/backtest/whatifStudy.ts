@@ -4,7 +4,28 @@ import type { WhatIfOutput, WhatIfRule, WhatIfTrade } from './whatif';
 import { describeWhatIf } from './whatif';
 import {projectWhatIfRow} from './whatifResults';
 import { compareParameters, parameterRules, splitWhatIfHistory } from './whatifOptimizer';
-import { recommendSetup, type RecommendationGoal } from './recommender';
+import { recommendSetup, type RecommendationGoal, type RecommendationMetrics } from './recommender';
+import { ind, price, val } from './rules';
+
+/** Technical filters MarketSyde AI also explores on generated demo candles. Fixed ids keep scenarios stable. */
+export const AI_TECHNICAL_RULES: WhatIfRule[] = [
+  {kind:'technical',label:'RSI 14 above 50',timeframe:'15m',conditions:[{id:'ai-rsi50',left:ind('RSI',14),op:'gt',right:val(50)}]},
+  {kind:'technical',label:'Price above EMA 50',timeframe:'15m',conditions:[{id:'ai-ema50',left:price('close'),op:'gt',right:ind('EMA',50)}]},
+  {kind:'technical',label:'Price above EMA 200',timeframe:'1h',conditions:[{id:'ai-ema200',left:price('close'),op:'gt',right:ind('EMA',200)}]},
+  {kind:'technical',label:'ADX 14 above 25',timeframe:'15m',conditions:[{id:'ai-adx25',left:ind('ADX',14),op:'gt',right:val(25)}]},
+  {kind:'technical',label:'Price above VWAP',timeframe:'15m',conditions:[{id:'ai-vwap',left:price('close'),op:'gt',right:ind('VWAP')}]},
+];
+
+export const IDEA_CATEGORIES:{id:string;label:string;kinds:WhatIfRule['kind'][];hint:string}[]=[
+  {id:'target',label:'Take profit (R)',kinds:['target'],hint:'Exit at a different multiple of initial risk.'},
+  {id:'breakeven',label:'Breakeven (R)',kinds:['breakeven'],hint:'Move the stop to entry once the trade reaches a set R.'},
+  {id:'stop',label:'Stop size (R)',kinds:['stop'],hint:'Risk a smaller part of 1R.'},
+  {id:'technical',label:'Technical filter',kinds:['technical'],hint:'Only take trades that pass an indicator check on demo candles.'},
+  {id:'session',label:'Session timing',kinds:['hours'],hint:'Only trade inside one UTC window.'},
+  {id:'discipline',label:'Daily guardrails',kinds:['lossesPerDay','dailyLoss'],hint:'Stop after a loss count or loss amount each day.'},
+  {id:'mistakes',label:'Mistake tags',kinds:['mistakes'],hint:'Skip trades carrying a recorded mistake tag.'},
+];
+export interface WhatIfIdea {id:string;category:string;label:string;hint:string;name:string;improving:boolean;estimated:boolean;metrics:RecommendationMetrics;baseline:RecommendationMetrics;holdout:{baseline:RecommendationMetrics;candidate:RecommendationMetrics}|null;tested:number}
 
 export const whatIfBounds = (rule: WhatIfRule): [number,number,number] => rule.kind === 'stop' ? [0.5,1,0.25] : rule.kind === 'dailyLoss' ? [100,500,100] : rule.kind === 'hours' ? [2,10,2] : rule.kind === 'lossesPerDay' ? [1,4,1] : [0.5,3,0.5];
 
@@ -31,14 +52,26 @@ export function buildWhatIfStudy(entries:JournalEntry[],rule:WhatIfRule,bounds:[
   try {rangeRules=parameterRules(rule,...bounds);} catch(e){error=e instanceof Error?e.message:'Unable to compare these parameters.';}
   const rangeIds=new Set(rangeRules.map(r=>JSON.stringify(r)));
   const rules=[...rangeRules,...aiWhatIfRules(entries)].filter((r,i,all)=>all.findIndex(x=>JSON.stringify(x)===JSON.stringify(r))===i);
-  const allRows=compareParameters(entries,rules,priceData).map(row=>viewIds?projectWhatIfRow(row,entries,viewIds):row);
+  const technicalPool=AI_TECHNICAL_RULES.filter(r=>!rules.some(x=>JSON.stringify(x)===JSON.stringify(r)));
+  // AI technical filters read the generated feed directly; the user's own technical rule keeps its prepared data.
+  const allRows=[...compareParameters(entries,rules,priceData),...(technicalPool.length?compareParameters(entries,technicalPool):[])].map(row=>viewIds?projectWhatIfRow(row,entries,viewIds):row);
   const baseline=allRows[0].training.actual;
   const recommendation=recommendSetup(allRows.map(row=>({id:row.id,name:describeWhatIf(row.rule),metrics:row.training.whatIf,estimated:row.output.estimated,
     validation:row.validation?{baseline:row.validation.actual,candidate:row.validation.whatIf}:null})),baseline,goal);
   const aiRow=allRows.find(row=>row.id===recommendation.candidate?.id)??null;
   // Include an AI rule from outside the user's sweep so the two setups stay inspectable.
   const rows=allRows.filter(row=>rangeIds.has(row.id)||row.id===aiRow?.id);
-  return {rows,aiRow,baseline,recommendation,error,tested:allRows.length};
+  const score=(m:RecommendationMetrics)=>goal==='drawdown'?-m.maxDD:goal==='win'?m.winRate:m.netPnl;
+  const minTrades=Math.max(1,Math.ceil(baseline.trades*0.5));
+  const ideas:WhatIfIdea[]=IDEA_CATEGORIES.flatMap(cat=>{
+    const pool=allRows.filter(row=>cat.kinds.includes(row.rule.kind)&&row.training.whatIf.trades>=minTrades);
+    if(!pool.length)return [];
+    const best=[...pool].sort((a,b)=>score(b.training.whatIf)-score(a.training.whatIf)||a.id.localeCompare(b.id))[0];
+    const m=best.training.whatIf,improving=score(m)>score(baseline)+1e-8&&(goal==='net'||m.netPnl>=baseline.netPnl-1e-8);
+    return [{id:best.id,category:cat.id,label:cat.label,hint:cat.hint,name:describeWhatIf(best.rule),improving,estimated:best.output.estimated,metrics:m,baseline,
+      holdout:best.validation?{baseline:best.validation.actual,candidate:best.validation.whatIf}:null,tested:pool.length}];
+  });
+  return {rows,allRows,aiRow,baseline,recommendation,ideas,error,tested:allRows.length};
 }
 
 /** Match by stable trade identity and include trades changed by either scenario. */
