@@ -10,7 +10,7 @@ export const Card: React.FC<{ title?: React.ReactNode; sub?: React.ReactNode; ri
   <section className={`bg-white border border-[#e2e8f0] rounded-2xl p-5 min-w-0 ${className}`} aria-label={label ?? (typeof title === 'string' ? title : undefined)}>
     {(title || right) && (
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           {title && <h3 className="text-sm font-bold text-[#0b1c30]">{title}{typeof title === 'string' && <JournalHelp label={title} />}</h3>}
           {sub && <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>}
         </div>
@@ -29,11 +29,11 @@ export const SectionToggle: React.FC<{ title: string; open: boolean; controls: s
 );
 
 /** Keep the body mounted so hiding a section preserves its inputs and chart state. */
-export const CollapsibleCard: React.FC<{ title: string; summary: React.ReactNode; sub?: React.ReactNode; defaultOpen?: boolean; className?: string; children: React.ReactNode }> = ({ title, summary, sub, defaultOpen = true, className, children }) => {
+export const CollapsibleCard: React.FC<{ title: string; summary: React.ReactNode; sub?: React.ReactNode; right?: React.ReactNode; defaultOpen?: boolean; className?: string; children: React.ReactNode }> = ({ title, summary, sub, right, defaultOpen = true, className, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   const bodyId = useId();
   return <Card title={title} sub={open ? sub : summary} className={className}
-    right={<SectionToggle title={title} open={open} controls={bodyId} onToggle={() => setOpen(v => !v)} />}>
+    right={<div className="flex flex-wrap items-center gap-2">{right}<SectionToggle title={title} open={open} controls={bodyId} onToggle={() => setOpen(v => !v)} /></div>}>
     <div id={bodyId} hidden={!open}>{children}</div>
   </Card>;
 };

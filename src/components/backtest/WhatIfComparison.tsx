@@ -34,8 +34,6 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
   const [equityWindow,setEquityWindow]=useState<TimeWindow|null>(null);
   const [interval,setInterval]=useState<'auto'|PriceChartInterval>('auto');
   const [performanceId,setPerformanceId]=useState('setup');
-  const [equityScope, setEquityScope] = useState('benchmark');
-  const [chartView, setChartView] = useState('combined');
   useEffect(() => { setVisible(null); }, [rule.kind]);
 
   const rank = (row: typeof comparison.rows[number]) => score === 'drawdown' ? -row.training.whatIf.maxDD : score === 'win' ? row.training.whatIf.winRate : row.training.whatIf.netPnl;
@@ -45,8 +43,6 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
   const symbols = Array.from(new Set<string>(entries.map(e => e.symbol))).sort();
   const [chartSymbol,setChartSymbol]=useState('');
   const instrument=(fixedScope&&symbols.includes(chartSymbol)?chartSymbol:'')||selectedSymbols.map(selected=>symbols.find(symbol=>symbol===selected||(!!resolveSymbol(selected)&&resolveSymbol(selected)===resolveSymbol(symbol)))).find(Boolean)||symbols[0]||'';
-  const canonical = resolveSymbol(instrument);
-  const matchesSymbol = (symbol: string) => canonical ? resolveSymbol(symbol) === canonical : symbol === instrument;
   const actualTrades = comparison.rows[0]?.output.trades ?? [];
   const timestamps=actualTrades.flatMap(t=>[t.entryTime,t.exitTime]).filter(Number.isFinite);
   const scopeStart=Math.floor((timestamps.length?Math.min(...timestamps):0)/dayMs)*dayMs;
@@ -56,15 +52,14 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
   useEffect(()=>{setChartWindow(null);setEquityWindow(null);},[instrument,scopeStart,scopeEnd,tf]);
   const bars=useMemo(()=>executionPriceBars(instrument,startDate,endDate,tf),[instrument,startDate,endDate,tf]);
   const origin = [{x:scopeStart,y:0}];
-  const scopedTrades = (trades: typeof actualTrades) => equityScope === 'benchmark' ? trades : trades.filter(t => matchesSymbol(t.symbol));
-  const actualCurve = [...origin,...whatIfPerformance(scopedTrades(actualTrades),true).nodes.map(n=>({x:n.at,y:n.cumulative}))];
+  const actualCurve = [...origin,...whatIfPerformance(actualTrades,true).nodes.map(n=>({x:n.at,y:n.cumulative}))];
   const portfolioSeries = [{ name: 'Actual', color: '#94a3b8', dashed: true, points: actualCurve }, ...selected.map((row, i) => {
-    return { name: (row.id === JSON.stringify(rule) ? 'Your setup · ' : '') + describeWhatIf(row.rule) + (row.id === recommendation.candidate?.id ? (recommendation.status === 'exploratory' ? ' · AI exploration' : ' · MarketSyde AI') : ''), color: row.id === recommendation.candidate?.id ? '#5338ec' : row.id === JSON.stringify(rule) ? '#0284c7' : COLORS[(i + 1) % COLORS.length], points: [...origin,...whatIfPerformance(scopedTrades(row.output.trades),false).nodes.map(n=>({x:n.at,y:n.cumulative}))] };
+    return { name: (row.id === JSON.stringify(rule) ? 'Your setup · ' : '') + describeWhatIf(row.rule) + (row.id === recommendation.candidate?.id ? (recommendation.status === 'exploratory' ? ' · AI exploration' : ' · MarketSyde AI') : ''), color: row.id === recommendation.candidate?.id ? '#5338ec' : row.id === JSON.stringify(rule) ? '#0284c7' : COLORS[(i + 1) % COLORS.length], points: [...origin,...whatIfPerformance(row.output.trades,false).nodes.map(n=>({x:n.at,y:n.cumulative}))] };
   })];
   const performanceChoices=selected.filter(row=>row.id!==JSON.stringify(rule));
   const performanceKey=performanceId==='actual'||performanceId==='setup'||performanceChoices.some(row=>row.id===performanceId)?performanceId:'setup';
   const performanceRow=performanceChoices.find(row=>row.id===performanceKey)??comparison.rows[0];
-  const performance=whatIfPerformance(scopedTrades(performanceRow?.output.trades??[]),performanceKey==='actual');
+  const performance=whatIfPerformance(performanceRow?.output.trades??[],performanceKey==='actual');
   const performanceName=performanceKey==='actual'?'Original':performanceKey==='setup'?'Your setup':describeWhatIf(performanceRow.rule);
   const compact=(value:number)=>new Intl.NumberFormat('en-US',{notation:'compact',maximumFractionDigits:1}).format(Math.abs(value)<1e-9?0:value);
   const panels:LinkedPanel[]=[
@@ -74,7 +69,7 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
   const fallbackRange:[number,number]=[interval==='auto'?0:Math.max(0,bars.length-200),bars.length];
   const to=Math.max(0,Math.min(bars.length,(chartWindow??fallbackRange)[1])),from=Math.max(0,Math.min(to-1,(chartWindow??fallbackRange)[0]));
   const scope:TimeWindow=[scopeStart,scopeEnd],equityRange=clampTimeWindow(equityWindow??scope,scope);
-  const candleView=chartView==='combined'&&bars.length>0;
+  const candleView=bars.length>0;
   const windowEnd=priceWindowEnd(bars,to,tf,scopeEnd);
   const minimum=Math.min(scopeEnd-scopeStart,Math.abs(shiftPriceInterval((equityRange[0]+equityRange[1])/2,tf,8)-(equityRange[0]+equityRange[1])/2));
   const zoom=(factor:number)=>{
@@ -92,8 +87,6 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
     <CollapsibleCard title="Candles & scenario comparison" summary={`${instrument || 'No instrument'} · ${tf} · ${performanceName}`} sub="Explore price, closed P&L and drawdown on one timeline.">
       <div className="flex flex-wrap items-end gap-3 mb-3">
         <Field label={fixedScope?'Candle instrument':'Candle instrument · linked to setup'} htmlFor="wi-chart-symbol"><select id="wi-chart-symbol" className={inputBase} value={instrument} onChange={e => fixedScope?setChartSymbol(e.target.value):onInstrument(e.target.value)}>{instrumentOptions.map(s => <option key={s}>{s}</option>)}</select></Field>
-        <Field label="Equity scope" htmlFor="wi-equity-scope"><select id="wi-equity-scope" className={inputBase} value={equityScope} onChange={e => setEquityScope(e.target.value)}><option value="benchmark">All filtered benchmark trades</option><option value="instrument">Selected instrument only</option></select></Field>
-        <Field label="Chart view" htmlFor="wi-chart-view"><select id="wi-chart-view" className={inputBase} value={chartView} onChange={e => setChartView(e.target.value)}><option value="combined">Candles + performance</option><option value="equity">Equity only · compare scenarios</option></select></Field>
         <Field label="Performance" htmlFor="wi-performance"><select id="wi-performance" className={inputBase+' max-w-full'} value={performanceKey} onChange={e=>setPerformanceId(e.target.value)}><option value="setup">Your setup</option><option value="actual">Original</option>{performanceChoices.map(row=><option key={row.id} value={row.id}>{describeWhatIf(row.rule)}</option>)}</select></Field>
       </div>
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3"><ChartTimeframeSelect value={interval} autoInterval={autoTf} onChange={value=>{setInterval(value);setChartWindow(null);setEquityWindow(null);}}/><div className="flex flex-wrap gap-1">
@@ -101,10 +94,10 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
         <button type="button" className={btnSecondary} aria-label="Zoom out What-if chart" disabled={candleView?to-from>=Math.min(200,bars.length):equityRange[1]-equityRange[0]>=scopeEnd-scopeStart} onClick={()=>zoom(2)}>−</button>
         <button type="button" className={btnSecondary} onClick={fullPeriod}>Full period</button>
       </div></div>
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500"><span>{performanceName} · {equityScope==='benchmark'?'All filtered trades':instrument} · {currency}{candleView?` · ${to-from} of ${bars.length.toLocaleString()} candles`:''}</span><div className="flex gap-1"><button type="button" className={btnSecondary} aria-label="Earlier What-if period" disabled={candleView?from<=0:equityRange[0]<=scopeStart} onClick={()=>browse(-1)}>←</button><button type="button" className={btnSecondary} aria-label="Later What-if period" disabled={candleView?to>=bars.length:equityRange[1]>=scopeEnd} onClick={()=>browse(1)}>→</button></div></div>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500"><span>{performanceName} · Selected result · {currency}{candleView?` · ${to-from} of ${bars.length.toLocaleString()} candles`:''}</span><div className="flex gap-1"><button type="button" className={btnSecondary} aria-label="Earlier What-if period" disabled={candleView?from<=0:equityRange[0]<=scopeStart} onClick={()=>browse(-1)}>←</button><button type="button" className={btnSecondary} aria-label="Later What-if period" disabled={candleView?to>=bars.length:equityRange[1]>=scopeEnd} onClick={()=>browse(1)}>→</button></div></div>
       {candleView ? <><CandleChart label={`${instrument} demo candles with linked What-if performance`} bars={bars} from={from} to={to} height={260} dp={symbolSpec(instrument)?.priceDp ?? 2} responsive showTimeAxis interactive timelineEnd={windowEnd} linkedPanels={panels} tooltipDetail={hoverDetail}/>
         <label className="block text-[11px] text-slate-500 mt-3">Chart timeline<JournalHelp label="Chart timeline" /><input type="range" aria-label="What-if candle timeline" min={to-from} max={bars.length} value={to} onChange={e=>{const end=Number(e.target.value);setChartWindow([end-(to-from),end]);}} className="w-full accent-[#5338ec]" /></label></> : <>
-        {chartView === 'combined' && <p role="status" className="text-xs text-slate-500 mb-3">No demo candles for this instrument and date range. Showing full-history equity.</p>}
+        <p role="status" className="text-xs text-slate-500 mb-3">No demo candles for this instrument and date range. Showing full-history equity.</p>
         <LineChart label="Actual and What-if full-history equity" height={260} area={false} yFmt={money} xFmt={x=>new Date(x).toISOString().slice(5,tf.endsWith('m')||tf.endsWith('h')?16:10).replace('T',' ')} series={windowWhatIfSeries(portfolioSeries,equityRange[0],equityRange[1]-1)} timeline={[equityRange[0],equityRange[1]-1]} timeTicks={recordedTimeTicks(equityRange[0],equityRange[1],tf)} linkedPanels={panels} tooltipDetail={hoverDetail}/>
       </>}
       <p className="mt-2 text-[11px] text-slate-500">One timeline · hover any pane or use ← / → · zoom and browse together.</p>

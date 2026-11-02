@@ -1,3 +1,8 @@
+## 2.66.1 — Simpler What-if analysis controls
+
+- Show candles and linked performance together, using the selected result. Remove the duplicate Chart view and Equity scope controls; retain the no-candles performance fallback.
+- Add Show / Hide to Trades that changed, open by default. Preserve the trade review action and comparison state when collapsed.
+
 ## 2.66.0 — What-if dates and aligned demo data
 
 - Reuse the journal calendar in What-if with one shared entry-date range, two calendar months, 7 / 30 / 90-day presets ending on the latest selected trade, and All selected data. Keep checked trade IDs and the active rule when filtering; remove duplicate date inputs from Change.

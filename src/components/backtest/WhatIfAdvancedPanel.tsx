@@ -323,7 +323,7 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ priceData,initialTechnica
               </div>
             </CollapsibleCard>
 
-            <Card title={`Trades that changed (${comparisonTrades.length})`} sub="Trades changed by either your setup or MarketSyde AI, matched by trade ID. Green highlights the highest net result for each trade; ties share it." right={comparisonTrades.length > 0 ? <button type="button" className={btnSecondary} onClick={() => onReviewTrades ? onReviewTrades(comparisonTrades.map(({user})=>user), `Your setup: ${describeWhatIf(rule)}`) : onOpenTrades(comparisonTrades.map(({user}) => user.id), `What-if: your setup vs MarketSyde AI`)}>{fixedScope ? "View trades" : "Open in Trade Log"} <ArrowRight className="w-3.5 h-3.5" /></button> : undefined}>
+            <CollapsibleCard summary={comparisonTrades.length ? `${comparisonTrades.length} trade${comparisonTrades.length === 1 ? "" : "s"} changed` : "No trades changed."} title={`Trades that changed (${comparisonTrades.length})`} sub="Trades changed by either your setup or MarketSyde AI, matched by trade ID. Green highlights the highest net result for each trade; ties share it." right={comparisonTrades.length > 0 ? <button type="button" className={btnSecondary} onClick={() => onReviewTrades ? onReviewTrades(comparisonTrades.map(({user})=>user), `Your setup: ${describeWhatIf(rule)}`) : onOpenTrades(comparisonTrades.map(({user}) => user.id), `What-if: your setup vs MarketSyde AI`)}>{fixedScope ? "View trades" : "Open in Trade Log"} <ArrowRight className="w-3.5 h-3.5" /></button> : undefined}>
               {comparisonTrades.length === 0 ? <p className="text-xs text-slate-500 flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Neither available setup changed these trades.</p> : (
                 <div className="overflow-x-auto -mx-5 px-5">
                   <table className="w-full min-w-[1000px] text-xs tabular-nums">
@@ -349,7 +349,7 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ priceData,initialTechnica
                   {comparisonTrades.length > 15 && <p className="text-[11px] text-slate-500 mt-2">+{comparisonTrades.length - 15} more. Use the trade review button to see all.</p>}
                 </div>
               )}
-            </Card>
+            </CollapsibleCard>
           </>)}
         </div>
       </div>
