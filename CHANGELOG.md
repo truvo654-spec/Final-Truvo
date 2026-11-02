@@ -1,3 +1,28 @@
+## 2.70.1 — Back and next in playbook rule review
+
+- Keep the selected review order available while moving Back or Apply & next across multiple playbooks. Retain each playbook’s edits when revisiting it.
+- Disable Back on the first step, validate before applying, and finish the review on the last playbook. Saved Playbooks remain unchanged.
+
+## 2.70.0 — Focused trade list filters
+
+- Add instant Search, Market and optional Instrument filters to Playbook history and both execution lists. Keep all five market categories available; map generated index and commodity instruments to their underlying market.
+- Add the same filters to Strategy Lab journal selection while preserving checked trades across market changes. Playbook history totals and list counts follow matching records.
+- Keep the Dashboard trade table and Result details popup simple, using their existing page scope without extra filter bars.
+
+## 2.69.1 — Playbook history in one place
+
+- Remove the duplicate inline trade-history section. Keep recorded history, trade review and replay in the View results popup.
+
+## 2.69.0 — Recorded Playbook history and instant testing
+
+- Put recorded trade history first in Playbook. View results opens the same history in a popup; trade review returns to that popup.
+- Load selected Playbook settings into What-if with a concise setup summary; any-time sessions retain their full-day window. Expose the existing technical condition editor directly in Choose one change.
+- Add Run test / Update simulation with progress and error feedback in the Backtest chart. Add saved-candle Replay to simulated executions.
+
+## 2.68.2 — Focused journal import access
+
+- Show Import / link only on Overview and Trade Log. Keep the existing import popup and workflow.
+
 ## 2.68.1 — Simpler AI suggestions, 1 minute charts
 
 - What-if MarketSyde AI shows a short list of suggestions that beat your current setup; picking one opens it on the chart with its details.

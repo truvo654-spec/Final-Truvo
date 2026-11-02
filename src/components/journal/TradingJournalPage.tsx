@@ -448,13 +448,15 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
       <div className="mb-6 flex flex-wrap items-end justify-center gap-x-3 gap-y-2">
         <div className="min-w-0"><FolderTabs tabs={tabs} activeTab={tab} onChange={setTab} /></div>
-        <button
-          type="button"
-          onClick={() => setWizardOpen(true)}
-          className="mb-1 shrink-0 rounded-xl bg-[#5338ec] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#4326d8]"
-        >
-          Import / link
-        </button>
+        {(tab === 'overview' || tab === 'entries') && (
+          <button
+            type="button"
+            onClick={() => setWizardOpen(true)}
+            className="mb-1 shrink-0 rounded-xl bg-[#5338ec] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#4326d8]"
+          >
+            Import / link
+          </button>
+        )}
       </div>
       {journalSandbox && <p role="status" className="text-xs text-purple-700 mb-3">Isolated journal test workspace — separate from your journal records.</p>}
       {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
@@ -826,7 +828,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           })}
           expected={expected}
           onBacktest={(id, symbol) => goBacktest({ view: 'setup', playbookId: id, symbol })}
-          onViewResults={id=>goBacktest({view:'home',playbookId:id})}
+          reviewOpen={!!selected}
           onWhatIf={id => goBacktest({ view: 'whatif', playbookId: id })}
           houseRules={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

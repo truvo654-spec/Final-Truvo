@@ -1,3 +1,6 @@
+import {startRuleReview,moveRuleReview,type LabRuleReview} from './labRuleReview';
+import {TradeListFilters} from '../journal/TradeListFilters';
+import {EMPTY_TRADE_FILTER,filterTradeList,journalTradeRecord} from '../journal/tradeListFiltering';
 import React, {useState, useRef} from 'react';
 import {FlaskConical, Check, ChevronRight, Play} from 'lucide-react';
 import type {JournalEntry} from '../../types';
@@ -34,22 +37,22 @@ export function StrategyLab({setup:s,allEntries,reviewedRules,symbols,onSetup,on
   const goStep=(next:'choose'|'setup')=>{setStep(next);requestAnimationFrame(()=>{headerRef.current?.scrollIntoView({behavior:'smooth',block:'start'});headerRef.current?.focus({preventScroll:true});});};
   const [showSelectedTrades,setShowSelectedTrades]=useState(false);
   const [bookQuery,setBookQuery]=useState('');
-  const [tradeQuery,setTradeQuery]=useState('');
+  const [tradeFilters,setTradeFilters]=useState({...EMPTY_TRADE_FILTER});
   const [selectedTrades,setSelectedTrades]=useState<string[]>(s.benchmarkEntries.map(e=>e.id));
   const [requestedMode,setMode]=useState<'auto'|'practice'>('auto');
   const mode=BACKTEST_TRAINING_ENABLED?requestedMode:'auto';
   const [templates,setTemplates]=useState<string[]>([]);
   const [ruleBookId,setRuleBookId]=useState<string|null>(null);
-  const [reviewQueue,setReviewQueue]=useState<string[]>([]);
-  const [reviewTotal,setReviewTotal]=useState(0);
-  const closeRules=()=>{setRuleBookId(null);setReviewQueue([]);};
-  const ruleBook=s.playbooks.find(b=>b.id===ruleBookId&&s.selectedPlaybookIds.includes(b.id));
+  const [review,setReview]=useState<LabRuleReview|null>(null);
+  const closeRules=()=>{setRuleBookId(null);setReview(null);};
+  const activeRuleBookId=review?.ids[review.index]??ruleBookId;
+  const ruleBook=s.playbooks.find(b=>b.id===activeRuleBookId&&s.selectedPlaybookIds.includes(b.id));
   const [customRules,setCustomRules]=useState<string[]>([]);
   const chosen=s.playbooks.filter(b=>s.selectedPlaybookIds.includes(b.id));
   const active=s.playbooks.filter(b=>b.status!=='archived');
 
   const books=active.filter(b=>[b.name,...b.symbols??[]].join(' ').toLowerCase().includes(bookQuery.toLowerCase()));
-  const trades=allEntries.filter(e=>[e.symbol,e.strategy,e.date].join(' ').toLowerCase().includes(tradeQuery.toLowerCase()));
+  const trades=filterTradeList(allEntries,tradeFilters,journalTradeRecord);
   const currencies=[...new Set(s.benchmarkEntries.map(currencyOf))];
   const missing=chosen.filter(b=>labRulesNeedReview(b,s.settingsByPlaybook[b.id],reviewedRules));
   const jobs=labJobs(s.selectedPlaybookIds.flatMap(id=>s.settingsByPlaybook[id]?[s.settingsByPlaybook[id]]:[]),symbols);
@@ -72,10 +75,10 @@ export function StrategyLab({setup:s,allEntries,reviewedRules,symbols,onSetup,on
   const ready=validSetup&&!missing.length;
   const practiceReady=s.benchmarkEntries.length===1||chosen.length===1;
   const choose=(ids:string[])=>{setCustomRules([]);setTemplates([]);onBooks(ids);};
-  const run=()=>{if(mode==='practice')onPractice(s.benchmarkEntries.length===1?s.benchmarkEntries[0].id:undefined,chosen.length===1?chosen[0].id:undefined);else if(validSetup&&missing.length){const ids=missing.map(b=>b.id);setReviewQueue(ids);setReviewTotal(ids.length);setRuleBookId(ids[0]);}else if(ready)s.onRun();};
+  const run=()=>{if(mode==='practice')onPractice(s.benchmarkEntries.length===1?s.benchmarkEntries[0].id:undefined,chosen.length===1?chosen[0].id:undefined);else if(validSetup&&missing.length){setRuleBookId(null);setReview(startRuleReview(missing.map(b=>b.id)));}else if(ready)s.onRun();};
   const patch=(value:Partial<typeof s.settings>)=>s.onChange({...s.settings,...value});
   return <div className="w-full min-w-0 space-y-5 pb-6">
-    {ruleBook&&s.settingsByPlaybook[ruleBook.id]&&<LabEntryRulesDialog key={ruleBook.id} book={ruleBook} settings={s.settingsByPlaybook[ruleBook.id]} suggested={!playbookConditions(ruleBook).length&&missing.some(b=>b.id===ruleBook.id)} onClose={closeRules} reviewProgress={reviewQueue.length?{current:reviewTotal-reviewQueue.length+1,total:reviewTotal}:undefined} onApply={entry=>{const current=s.settingsByPlaybook[ruleBook.id];onEntryRules(ruleBook.id,entry);setTemplates(ids=>[...new Set([...ids,ruleBook.id])]);if(JSON.stringify(entry)!==JSON.stringify(current.rules.entry))setCustomRules(ids=>[...new Set([...ids,ruleBook.id])]);const next=reviewQueue.slice(1);setReviewQueue(next);setRuleBookId(next[0]??null);}}/>}
+    {ruleBook&&s.settingsByPlaybook[ruleBook.id]&&<LabEntryRulesDialog key={ruleBook.id} book={ruleBook} settings={s.settingsByPlaybook[ruleBook.id]} suggested={!playbookConditions(ruleBook).length&&missing.some(b=>b.id===ruleBook.id)} onClose={closeRules} initialEntry={review?.drafts[ruleBook.id]} reviewProgress={review?{current:review.index+1,total:review.ids.length}:undefined} onBack={review?entry=>setReview(moveRuleReview(review,entry,-1)):undefined} onApply={entry=>{const current=s.settingsByPlaybook[ruleBook.id];onEntryRules(ruleBook.id,entry);setTemplates(ids=>[...new Set([...ids,ruleBook.id])]);if(JSON.stringify(entry)!==JSON.stringify(current.rules.entry))setCustomRules(ids=>[...new Set([...ids,ruleBook.id])]);if(review)setReview(moveRuleReview(review,entry,1));else closeRules();}}/>}
     <Modal open={showSelectedTrades} onClose={()=>setShowSelectedTrades(false)} title="Selected journal trades" width="max-w-3xl">
       <h3 className="pr-8 text-lg font-bold text-[#0b1c30]">Selected journal trades</h3>
       <p className="mt-1 text-xs text-slate-500">{s.benchmarkEntries.length} trade{s.benchmarkEntries.length===1?'':'s'} linked to this setup. This is the journal benchmark you chose.</p>
@@ -106,9 +109,9 @@ export function StrategyLab({setup:s,allEntries,reviewedRules,symbols,onSetup,on
 
     <section aria-label="My journal trades" className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
       <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">My journal trades</h3><p className="mt-1 text-xs text-slate-500">Choose recorded trades to compare. Check your setup loads these trades and their linked playbooks.</p></div><span className="rounded-full bg-[#F1EDFF] px-3 py-1 text-xs font-semibold text-[#5338ec]">{selectedTrades.length} selected</span></div>
-      <input aria-label="Search lab journal trades" placeholder="Find a trade, instrument or playbook…" className={`${inputCls} mt-4`} value={tradeQuery} onChange={e=>setTradeQuery(e.target.value)}/>
+      <TradeListFilters value={tradeFilters} onChange={setTradeFilters} records={allEntries.map(journalTradeRecord)} count={trades.length}/>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs"><label className="flex items-center gap-2"><input type="checkbox" checked={!!trades.length&&trades.every(e=>selectedTrades.includes(e.id))} onChange={e=>setSelectedTrades(e.target.checked?[...new Set([...selectedTrades,...trades.map(t=>t.id)])]:selectedTrades.filter(id=>!trades.some(t=>t.id===id)))}/>All {trades.length} matching trades</label><button className="text-[#5338ec]" onClick={()=>{setSelectedTrades([]);s.onClearBenchmark();}}>Clear selection</button></div>
-        <div className="mt-2 max-h-80 overflow-auto rounded-xl border border-slate-200">{trades.map(e=><label key={e.id} className="flex cursor-pointer items-center gap-3 border-b border-slate-100 p-3 text-xs last:border-0 hover:bg-slate-50"><input type="checkbox" checked={selectedTrades.includes(e.id)} onChange={()=>setSelectedTrades(selectedTrades.includes(e.id)?selectedTrades.filter(id=>id!==e.id):[...selectedTrades,e.id])}/><span className="flex-1"><b>{e.symbol}</b> · {e.direction==='BUY'?'Long':'Short'}<span className="mt-1 block text-slate-500">{e.date} · {e.strategy||'No linked playbook'} · {currencyOf(e)}</span></span></label>)}{!trades.length&&<p className="p-4 text-sm text-slate-500">No matching journal trades. Choose a playbook or change your search.</p>}</div>
+        <div className="mt-2 max-h-80 overflow-auto rounded-xl border border-slate-200">{trades.map(e=><label key={e.id} className="flex cursor-pointer items-center gap-3 border-b border-slate-100 p-3 text-xs last:border-0 hover:bg-slate-50"><input type="checkbox" checked={selectedTrades.includes(e.id)} onChange={()=>setSelectedTrades(selectedTrades.includes(e.id)?selectedTrades.filter(id=>id!==e.id):[...selectedTrades,e.id])}/><span className="flex-1"><b>{e.symbol}</b> · {e.direction==='BUY'?'Long':'Short'}<span className="mt-1 block text-slate-500">{e.date} · {e.strategy||'No linked playbook'} · {currencyOf(e)}</span></span></label>)}{!trades.length&&<p className="p-4 text-sm text-slate-500">No matching journal trades. Change or clear these filters.</p>}</div>
         <p className="mt-2 text-[11px] text-slate-500">Your checked trades load when you click Check your setup. Your journal stays unchanged.</p>
 
     </section>

@@ -58,6 +58,6 @@ export function quickWhatIfDefaults(book:JournalPlaybook|undefined,run:BacktestR
  const losses=pb?.enabled.stopAfterLosses?pb.values.stopAfterLosses:rules.stopAfterLosses;
  const dailyPct=run?.settings.risk.dailyLossPct;
  return {n:Number.isFinite(losses)&&losses>0?Math.round(losses):2,usd:dailyPct&&run?Math.round(run.settings.risk.startBalance*dailyPct/100):300,
- start:run?.settings.session.start??book?.window?.start??7,end:run?.settings.session.end??book?.window?.end??16,
+ start:run?.settings.session.start??book?.window?.start??(book?0:7),end:run?.settings.session.end??book?.window?.end??(book?24:16),
  target:run?.settings.rules.exits.targetR??book?.benchmarkRR??2,be:run?.settings.rules.exits.breakevenAtR??1,stop:0.75};
 }

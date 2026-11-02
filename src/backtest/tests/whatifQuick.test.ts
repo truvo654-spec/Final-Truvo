@@ -94,3 +94,12 @@ test('market filtering covers every supported market and keeps exact checked tra
  assert.equal(whatIfMarket({...trade,symbol:'MGC',assetClass:'Commodity',whatIfRecordedNet:100}),'Futures');
  assert.equal(whatIfMarket({...trade,symbol:'MNQ',assetClass:'Indices',whatIfRecordedNet:100}),'Futures');
 });
+
+test('Playbook handoff loads any-time sessions and the saved target without mutating the book',()=>{
+ const anyTime={...book,window:null,benchmarkRR:3.5},before=JSON.stringify(anyTime);
+ const loaded=quickWhatIfDefaults(anyTime,undefined,rules);
+ assert.deepEqual([loaded.start,loaded.end,loaded.target],[0,24,3.5]);
+ assert.equal(JSON.stringify(anyTime),before);
+ const html=renderToStaticMarkup(React.createElement(WhatIfPanel,{initialPlaybookId:anyTime.id,entries:[],allEntries:[trade],playbooks:[anyTime],journalRules:rules,tz:'UTC',onToast:()=>{},onOpenTrades:()=>{},onAddRule:()=>{}}));
+ assert.match(html,/Setup loaded/);assert.match(html,/Any time/);assert.match(html,/Target 3.5R/);assert.match(html,/Technical tools/);
+});

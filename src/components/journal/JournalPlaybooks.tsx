@@ -1,5 +1,6 @@
 import { DirectionFilter, BOTH_SIDES, journalSide, type TradeSide } from './DirectionFilter';
 import { PlaybookSetupDialog } from './PlaybookSetupDialog';
+import { PlaybookHistoryDialog, playbookTradeHistory } from './PlaybookTradeHistory';
 import { PlaybookExecutionWorkspace } from './PlaybookExecutionWorkspace';
 import { JournalHelp } from './JournalHelp';
 import { useMoney, formatMoney } from './JournalCurrency';
@@ -131,7 +132,7 @@ interface Props {
   /** Saved backtest expectations by playbook id. */
   expected?: Record<string, PlaybookExpectedStats>;
   onBacktest?: (playbookId: string, symbol?: string) => void;
-  onViewResults?: (playbookId:string)=>void;
+  reviewOpen?: boolean;
   onWhatIf?: (playbookId: string) => void;
 }
 
@@ -140,7 +141,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, comparisonEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, onViewResults, onWhatIf }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, comparisonEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, reviewOpen = false, onWhatIf }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -155,6 +156,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const [replayId, setReplayId] = useState<string | null>(null);
 
   const [sideOverrides, setSideOverrides] = useState<Record<string, {signature:string; value:TradeSide[]}>>({});
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [gradeTip, setGradeTip] = useState<{ id: string; x: number; y: number } | null>(null);
   const recommendations = useMemo(
@@ -187,6 +189,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const setSides = (value:TradeSide[]) => { if(sel) setSideOverrides(prev=>({...prev,[sel.id]:{signature,value}})); };
   const sideEntries = entries.filter(entry=>sides.includes(journalSide(entry.direction)));
 
+  const history = sel ? playbookTradeHistory(entries, sel, sides) : [];
   const s = sel ? stats.get(sel.id)! : null;
   const selTrades = sel ? entries.filter((e) => e.strategy === sel.name) : [];
   const nextId = () => `PB-${pad(Math.max(0, ...playbooks.map((p) => Number(p.id.replace(/\D/g, '')) || 0)) + 1).padStart(3, '0')}`;
@@ -300,6 +303,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         }}
       />}
       {replayId&&(()=>{const trade=allJournalEntries.find(e=>e.id===replayId)??entries.find(e=>e.id===replayId);return trade?<JournalReplayAvailability entry={trade} entries={allJournalEntries} playbooks={playbooks} returnLabel="Return to playbook" recording={recordings[trade.id]} onAttachRecording={blob=>onSetRecording(trade.id,blob)} onRemoveRecording={()=>onSetRecording(trade.id,null)} onClose={()=>setReplayId(null)}/>:null;})()}
+      {historyOpen && sel && <PlaybookHistoryDialog key={sel.id} name={sel.name} entries={history} onTrade={onOpenEntry} onReplay={setReplayId} onClose={()=>setHistoryOpen(false)} suspended={reviewOpen || !!replayId} />}
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -387,7 +391,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                 </div>
                 <div className="flex flex-wrap gap-2">
 
-                  {onViewResults && <button type="button" className={btn} onClick={()=>onViewResults(sel.id)}>View results</button>}
+                  <button type="button" className={btn} onClick={()=>setHistoryOpen(true)}>View results</button>
                   {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className="h-9 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]" title="Test these rules on past prices">Backtest this playbook</button>}
                   {onWhatIf&&<button type="button" onClick={()=>onWhatIf(sel.id)} className={btn}>Try a What-if</button>}
 
