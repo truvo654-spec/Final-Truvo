@@ -72,10 +72,11 @@ function RangeDialog({ initial, initialAll, today, entries, onApply, onClose,con
   </div>;
 }
 
-export function JournalDateRange({ from, to, label, today, entries, onApply,context='journal' }: { context?:'journal'|'whatif';from: string; to: string; label: string; today: string; entries: JournalEntry[]; onApply: (range: DateRange, all: boolean) => void }) {
+export function JournalDateRange({ from, to, label, today, entries, onApply,context='journal',iconOnly=false }: { iconOnly?:boolean;context?:'journal'|'whatif';from: string; to: string; label: string; today: string; entries: JournalEntry[]; onApply: (range: DateRange, all: boolean) => void }) {
   const [open, setOpen] = useState(false);
   const all=context==='whatif'?!from&&!to:label==='All time';
   const initial = { from: !all && validDate(from) ? from : [...entries.map(e => e.date), today].sort()[0], to: !all && validDate(to) ? to : [...entries.map(e => e.date), today].sort().at(-1)! };
   const dialog=open?<RangeDialog context={context} initial={initial} initialAll={all} today={today} entries={entries} onClose={() => setOpen(false)} onApply={(range, all) => { onApply(range, all); setOpen(false); }}/>:null;
+  if(iconOnly)return <><button type="button" data-keep-button-icons title={'Date range: '+label} aria-label={'Date range: '+label} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)} className={`flex h-9 w-9 items-center justify-center rounded-xl border transition focus-visible:outline-2 focus-visible:outline-[#5338ec] ${open?'border-[#5338ec] bg-[#f1f0fe] text-[#5338ec]':'border-[#CCC6FB] text-[#474556] hover:border-[#5338ec]'}`}><CalendarDays className="h-4 w-4" aria-hidden/></button>{dialog}</>;
   return <><span className="relative inline-flex min-w-0"><button className={button+' inline-flex max-w-full items-center gap-2 h-9 !pr-10'} aria-label={'Date range: '+label} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><CalendarDays size={15} className="shrink-0 text-[#5338ec]"/><span className="truncate">{label}</span></button><span className="absolute right-1 top-1/2 -translate-y-1/2"><>{context==='whatif'?<InfoTooltip label="Date range" description="Filter the trades already selected for What-if. Both dates are included, using recorded entry days in UTC. All selected data restores those same trades; it never adds other journal records."/>:<JournalHelp label="Date range" />}</></span></span>{context==='whatif'&&dialog?createPortal(dialog,document.body):dialog}</>;
 }

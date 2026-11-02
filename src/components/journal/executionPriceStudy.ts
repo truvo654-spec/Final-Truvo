@@ -1,6 +1,7 @@
 import type {JournalEntry} from '../../types';
 import type {Bar,Timeframe} from '../../backtest/types';
 import {SUPPORTED_TIMEFRAMES} from '../../backtest/types';
+import {splitReplayCandles} from '../../backtest/resultTradeReplay';
 import {marketData,resolveSymbol,sliceSeries,symbolSpec} from '../../backtest/marketData';
 import {eligible,netOf,realizedR,timestampMs} from './journalMath';
 import {instrumentKey} from './playbookExecution';
@@ -13,13 +14,13 @@ export const priceTimeframe=(from:string,to:string):Timeframe=>{
 export type PriceChartInterval = `${number}${'m'|'h'|'D'|'W'|'M'}`;
 export type PriceIntervalUnit = 'm'|'h'|'D'|'W'|'M';
 export const PRICE_INTERVAL_GROUPS:{label:string;options:{value:PriceChartInterval;label:string}[]}[]=[
-  {label:'Minutes',options:[5,10,15,30,45].map(n=>({value:`${n}m`,label:`${n} minutes`}))},
+  {label:'Minutes',options:[{value:'1m',label:'1 minute · estimated'},...[5,10,15,30,45].map(n=>({value:`${n}m` as PriceChartInterval,label:`${n} minutes`}))]},
   {label:'Hours',options:[1,2,3,4].map(n=>({value:`${n}h`,label:`${n} ${n===1?'hour':'hours'}`}))},
   {label:'Days, weeks and months',options:[{value:'1D',label:'1 day'},{value:'1W',label:'1 week'},{value:'1M',label:'1 month'},{value:'3M',label:'3 months'},{value:'6M',label:'6 months'},{value:'12M',label:'12 months'}]},
 ];
 const UNIT_LIMITS:Record<PriceIntervalUnit,number>={m:1440,h:24,D:365,W:52,M:12};
 export function customPriceInterval(count:number,unit:PriceIntervalUnit):PriceChartInterval|null {
-  if(!Number.isInteger(count)||count<1||count>UNIT_LIMITS[unit]||(unit==='m'&&count%5!==0))return null;
+  if(!Number.isInteger(count)||count<1||count>UNIT_LIMITS[unit]||(unit==='m'&&count!==1&&count%5!==0))return null;
   return `${count}${unit}`;
 }
 function intervalParts(interval:PriceChartInterval) {
@@ -52,6 +53,11 @@ export function executionPriceBars(symbol:string,from:string,to:string,tf:PriceC
   const resolved=resolveSymbol(symbol),parts=intervalParts(tf);if(!resolved||!parts)return [];
   const start=Date.parse(from+'T00:00:00Z'),end=Date.parse(to+'T00:00:00Z')+86400000;
   if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end)return [];
+  if(tf==='1m'){
+    // The demo feed's finest candle is 5m; 1m candles are an estimated split that keeps each 5m open, high, low and close.
+    const data=sliceSeries(marketData.seriesSync(resolved,'5m'),start,end);
+    return splitReplayCandles(Array.from({length:data.length},(_,i)=>({t:data.t[i],o:data.o[i],h:data.h[i],l:data.l[i],c:data.c[i],v:data.v[i]})),300000);
+  }
   if(SUPPORTED_TIMEFRAMES.includes(tf as Timeframe)){
     const data=sliceSeries(marketData.seriesSync(resolved,tf as Timeframe),start,end);
     return Array.from({length:data.length},(_,i)=>({t:data.t[i],o:data.o[i],h:data.h[i],l:data.l[i],c:data.c[i],v:data.v[i]}));

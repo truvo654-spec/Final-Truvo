@@ -98,6 +98,89 @@ interface InsightsDrillDialogProps {
   onOpenTrade: (entry: JournalEntry) => void;
 }
 
+interface BreakdownRow { key: string; label: string; s: Stats; ids: string[] }
+const InsightsBreakdownDialog: React.FC<{
+  label: string; splitLabel: string; summary: Stats; ids: string[]; rows: BreakdownRow[]; peak: boolean; leak: boolean;
+  formatMoney: (amount: number) => string; onClose: () => void; onOpenGroup: (label: string, ids: string[]) => void; onOpenAll: () => void;
+}> = ({ label, splitLabel, summary, ids, rows, peak, leak, formatMoney, onClose, onOpenGroup, onOpenAll }) => {
+  const ref = useDialogFocus(onClose);
+  const titleId = useId();
+  const cells = (s: Stats) => [
+    [String(s.n), 'font-mono'],
+    [`${s.winRate.toFixed(1)}%`, 'font-mono text-emerald-600'],
+    [`${s.lossRate.toFixed(1)}%`, 'font-mono text-rose-600'],
+    [`${s.beRate.toFixed(1)}%`, 'font-mono text-slate-500'],
+    [formatMoney(s.net), `font-mono font-bold ${tone(s.net)}`],
+    [formatMoney(s.gross), 'font-mono text-[#474556]'],
+    [fmtPf(s.pf), 'font-mono'],
+    [s.avgR === null ? '—' : `${s.avgR > 0 ? '+' : ''}${s.avgR.toFixed(2)}R`, `font-mono ${s.avgR === null ? 'text-slate-400' : tone(s.avgR)}`],
+    [s.cb ? `+$${s.cb.toFixed(2)}` : '—', 'font-mono text-emerald-600'],
+    [s.pts ? `+${s.pts}` : '—', 'font-mono text-violet-600'],
+  ];
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white p-5 text-[#0b1c30] shadow-2xl outline-none">
+        <header className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 id={titleId} className="text-sm font-bold">Detailed session &amp; time breakdown · {label}<JournalHelp label="Detailed session & time breakdown" /></h2>
+            <p className="mt-1 text-xs text-slate-600">
+              {summary.wins} wins / {summary.losses} losses / {summary.be} breakeven · split by {splitLabel}
+              {peak && <span className="ml-2 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold">Peak</span>}
+              {leak && <span className="ml-2 px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-bold">Leak</span>}
+            </p>
+            <dl className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs" aria-label="Group summary">
+              {([
+                ['Trades', String(summary.n), ''],
+                ['Net P&L', formatMoney(summary.net), summary.net >= 0 ? 'text-emerald-700' : 'text-rose-700'],
+                ['Win rate', summary.n ? `${summary.winRate.toFixed(0)}%` : '—', ''],
+                ['Profit factor', fmtPf(summary.pf), ''],
+                ['Avg R', summary.avgR === null ? '—' : summary.avgR.toFixed(2), ''],
+              ] as [string, string, string][]).map(([k, v, t]) => (
+                <div key={k} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <dt className="text-[10px] uppercase tracking-wide text-slate-500">{k}</dt>
+                  <dd className={`mt-0.5 font-mono font-semibold ${t || 'text-[#0b1c30]'}`}>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <button type="button" onClick={onClose} className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50">Close</button>
+        </header>
+        <p className="mt-4 text-[11px] text-slate-500">Click a {splitLabel} to see its closed trades.</p>
+        <div className="mt-2 min-h-0 flex-1 overflow-auto rounded-xl border border-slate-200">
+          <table className="w-full text-xs">
+            <caption className="sr-only">Closed results for {label}, split by {splitLabel}</caption>
+            <thead className="sticky top-0 bg-slate-50 text-slate-500">
+              <tr>{[splitLabel[0].toUpperCase() + splitLabel.slice(1), 'Trades', 'Win %', 'Loss %', 'BE %', 'Net P&L', 'Gross P&L', 'PF', 'Avg R', 'Cashback', 'Points'].map((h, i) => (
+                <th key={h} className={`px-3 py-2 font-semibold whitespace-nowrap ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
+              ))}</tr>
+            </thead>
+            <tbody>
+              {rows.map(r => (
+                <tr key={r.key} className="border-t border-slate-100">
+                  <td className="px-3 py-2 whitespace-nowrap"><button type="button" onClick={() => onOpenGroup(`${label} · ${r.label}`, r.ids)} className="font-semibold text-[#0b1c30] hover:text-[#5338ec] hover:underline">{r.label}</button></td>
+                  {cells(r.s).map(([v, c], i) => <td key={i} className={`px-3 py-2 text-right ${c}`}>{v}</td>)}
+                </tr>
+              ))}
+              {!rows.length && <tr><td colSpan={11} className="py-8 text-center text-slate-500">No closed trades in this group.</td></tr>}
+            </tbody>
+            {rows.length > 0 && (
+              <tfoot className="bg-slate-50 border-t-2 border-slate-200 font-semibold">
+                <tr>
+                  <td className="px-3 py-2"><button type="button" onClick={() => onOpenGroup(label, ids)} className="hover:text-[#5338ec] hover:underline">Σ {label}</button></td>
+                  {cells(summary).map(([v, c], i) => <td key={i} className={`px-3 py-2 text-right ${c}`}>{v}</td>)}
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button type="button" onClick={onOpenAll} className="rounded-lg bg-[#5338ec] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4326d8]">Open all in Trade Log</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const InsightsDrillDialog: React.FC<InsightsDrillDialogProps> = ({
   label, entries, summary, formatMoney, formatEntryTime, onClose, onOpenAll, onOpenTrade,
 }) => {
@@ -109,9 +192,21 @@ export const InsightsDrillDialog: React.FC<InsightsDrillDialogProps> = ({
         <header className="flex items-start justify-between gap-3">
           <div>
             <h2 id={titleId} className="text-sm font-bold">Closed trade results · {label}</h2>
-            <p className="mt-1 text-xs text-slate-600">
-              {summary.n} trades · {summary.wins} wins / {summary.losses} losses / {summary.be} breakeven · Net P&amp;L <strong className={summary.net >= 0 ? 'text-emerald-700' : 'text-rose-700'}>{formatMoney(summary.net)}</strong>
-            </p>
+            <p className="mt-1 text-xs text-slate-600">{summary.wins} wins / {summary.losses} losses / {summary.be} breakeven</p>
+            <dl className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs" aria-label="Group summary">
+              {([
+                ['Trades', String(summary.n), ''],
+                ['Net P&L', formatMoney(summary.net), summary.net >= 0 ? 'text-emerald-700' : 'text-rose-700'],
+                ['Win rate', summary.n ? `${summary.winRate.toFixed(0)}%` : '—', ''],
+                ['Profit factor', fmtPf(summary.pf), ''],
+                ['Avg R', summary.avgR === null ? '—' : summary.avgR.toFixed(2), ''],
+              ] as [string, string, string][]).map(([k, v, tone]) => (
+                <div key={k} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <dt className="text-[10px] uppercase tracking-wide text-slate-500">{k}</dt>
+                  <dd className={`mt-0.5 font-mono font-semibold ${tone || 'text-[#0b1c30]'}`}>{v}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
           <button type="button" onClick={onClose} className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50">Close</button>
         </header>
@@ -214,6 +309,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
   const [expanded, setExpanded] = useState<string[]>([]);
   const [rowFilter, setRowFilter] = useJournalState('JournalInsights-rowFilter', '');
   const [drill, setDrill] = useState<{ label: string; ids: string[]; matrix?: boolean } | null>(null);
+  const [breakdownKey, setBreakdownKey] = useState<string | null>(null);
   useEffect(() => {
     if (!matrixAccessible) setDrill(current => current?.matrix ? null : current);
   }, [matrixAccessible]);
@@ -398,7 +494,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
               <label htmlFor="ins-tz" className="font-semibold text-slate-500">Timezone<JournalHelp label="Timezone" /></label>
               <span className="font-mono text-[#0b1c30]">{offsetLabel(offNow)}</span>
             </div>
-            <select aria-label="Timezone" id="ins-tz" value={tz} onChange={(e) => { setTz(e.target.value); setHover(null); setDrill(null); }} className="mt-2 w-full h-9 border border-slate-200 rounded-lg px-2 text-xs font-semibold bg-white text-[#0b1c30]">
+            <select aria-label="Timezone" id="ins-tz" value={tz} onChange={(e) => { setTz(e.target.value); setHover(null); setDrill(null); setBreakdownKey(null); }} className="mt-2 w-full h-9 border border-slate-200 rounded-lg px-2 text-xs font-semibold bg-white text-[#0b1c30]">
               {TIMEZONES.map((z) => <option key={z.id} value={z.id}>{z.label} ({offsetLabel(tzOffset(z.id, `${JOURNAL_TODAY}T12:00:00`))})</option>)}
             </select>
             <p className="text-[10px] text-slate-400 mt-1.5">Days, months and trade times are shown in this zone. Daylight saving is applied automatically.</p>
@@ -412,7 +508,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex h-9 rounded-lg border border-slate-200 bg-white overflow-hidden" role="tablist" aria-label="Group by">
                 {([['days', 'Days'], ['month', 'Month'], ['time', 'Trade time'], ['duration', 'Duration']] as const).map(([id, label]) => (
-                  <button key={id} type="button" role="tab" aria-selected={view === id} onClick={() => { setView(id); setHover(null); setDrill(null); }}
+                  <button key={id} type="button" role="tab" aria-selected={view === id} onClick={() => { setView(id); setHover(null); setDrill(null); setBreakdownKey(null); }}
                     className={`px-3 text-xs font-semibold ${view === id ? 'bg-[#0b1c30] text-white' : 'text-[#474556] hover:bg-slate-50'}`}>{label}</button>
                 ))}
               </div>
@@ -429,7 +525,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
             </p>
             <div className="flex flex-wrap items-center gap-2 text-[11px] mb-1" aria-label="Trading status summary">
               <span className="font-semibold text-[#474556]">Trading status:</span>
-              {(['planned', 'open', 'closed'] as const).map((status) => (
+              {(['open', 'closed'] as const).map((status) => (
                 <span key={status} className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">
                   {TRADING_STATUS_LABEL[status]} {entries.filter((e) => tradingStatusOf(e) === status).length} recorded in journal scope
                 </span>
@@ -482,7 +578,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
                   <h4 className="text-sm font-bold">{view === 'days' ? 'Day of week' : view === 'month' ? 'Monthly' : view === 'time' ? 'Time of day' : 'Hold time'} distribution<JournalHelp label="Distribution" /></h4>
-                  <p className="text-[11px] text-slate-500">{metric === 'net' ? 'Bars show realized net profit or loss: green for profit, red for loss.' : metric === 'avgR' ? 'Bars show average realized R: green for positive, red for negative.' : 'Bars show the selected distribution metric.'} Click a bar or press Enter to see every closed trade in that group.</p>
+                  <p className="text-[11px] text-slate-500">{metric === 'net' ? 'Bars show realized net profit or loss: green for profit, red for loss.' : metric === 'avgR' ? 'Bars show average realized R: green for positive, red for negative.' : 'Bars show the selected distribution metric.'} Click a bar or press Enter to open its detailed session & time breakdown.</p>
                 </div>
                 <div className="flex h-8 rounded-lg border border-slate-200 overflow-hidden" role="group" aria-label="Metric">
                   {([['net', 'Net P&L'], ['winRate', 'Win rate %'], ['trades', 'Trades'], ['avgR', 'Avg R']] as const).map(([id, label]) => (
@@ -506,7 +602,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
                     const inner = Math.min(46, bw * 0.6);
                     const fill = metric === 'net' || metric === 'avgR' ? (v >= 0 ? '#10b981' : '#f43f5e') : '#5338ec';
                     return (
-                      <g key={b.key} role="button" tabIndex={0} aria-haspopup="dialog" aria-label={`${b.label}: ${b.s.n} closed trades, net ${money(b.s.net)}; open trade results`} onFocus={()=>setFocusedBucket(i)} onBlur={()=>setFocusedBucket(null)} onKeyDown={ev=>{if(ev.key==='Escape'){setFocusedBucket(-1);setHover(null);}if((ev.key==='Enter'||ev.key===' ')&&b.s.n){ev.preventDefault();setDrill({label:b.label,ids:b.list.map(e=>e.id)});}}} onMouseEnter={() => setHover(i)} onClick={() => b.s.n && setDrill({ label: b.label, ids: b.list.map((e) => e.id) })} style={{ cursor: b.s.n ? 'pointer' : 'default' }}>
+                      <g key={b.key} role="button" tabIndex={0} aria-haspopup="dialog" aria-label={`${b.label}: ${b.s.n} closed trades, net ${money(b.s.net)}; open session & time breakdown`} onFocus={()=>setFocusedBucket(i)} onBlur={()=>setFocusedBucket(null)} onKeyDown={ev=>{if(ev.key==='Escape'){setFocusedBucket(-1);setHover(null);}if((ev.key==='Enter'||ev.key===' ')&&b.s.n){ev.preventDefault();setBreakdownKey(b.key);}}} onMouseEnter={() => setHover(i)} onClick={() => { if (b.s.n) setBreakdownKey(b.key); }} style={{ cursor: b.s.n ? 'pointer' : 'default' }}>
                         <rect x={x} y={M.t} width={bw} height={H - M.t - M.b} fill={hover === i ? '#f1f5f9' : 'transparent'} />
                         {b.s.n > 0 && <rect x={x + (bw - inner) / 2} y={Math.min(yS(v), yS(0))} width={inner} height={Math.max(1.5, Math.abs(yS(v) - yS(0)))} rx={4} fill={fill} />}
                         <text x={x + bw / 2} y={H - 14} textAnchor="middle" fontSize="10" fill={b.s.n ? '#334155' : '#94a3b8'} fontWeight={b === best || b === worst ? 700 : 400}>
@@ -517,17 +613,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
                     );
                   })}
                 </svg>
-                {hover !== null && buckets[hover] && (() => {
-                  const b = buckets[hover];
-                  const left = ((M.l + hover * bw + bw / 2) / W) * 100;
-                  return (
-                    <div className="pointer-events-none absolute top-2 z-10 bg-[#0b1c30] text-white rounded-lg px-3 py-2 text-[11px] shadow-lg max-w-[85%] break-words" style={{ left: `${left}%`, transform: left > 60 ? 'translateX(calc(-100% - 8px))' : 'translateX(8px)' }} role="status">
-                      <p className="font-semibold">{b.label}</p>
-                      <p className="font-mono">{b.s.n} trades · net {money(b.s.net)}</p>
-                      <p className="font-mono text-slate-300">Win {b.s.n?`${b.s.winRate.toFixed(0)}%`:'—'} · PF {fmtPf(b.s.pf)} · Avg R {b.s.avgR === null ? '—' : b.s.avgR.toFixed(2)}</p>
-                    </div>
-                  );
-                })()}
               </div>
               {best && best.s.n > 0 && (
                 <p className="text-[11px] text-slate-500 mt-2">
@@ -567,88 +652,25 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
                 if (onUnlockCrossAnalysis(duration)) setUnlockOpen(false);
               }}
             />
-            <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Detailed breakdown">
-              <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-                <div>
-                  <h4 className="text-sm font-bold">Detailed session &amp; time breakdown<JournalHelp label="Detailed session & time breakdown" /></h4>
-                  <p className="text-[11px] text-slate-500">Expand a row to split it by {view === 'time' ? 'weekday' : 'session'}. Click a row label to drill down.</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input value={rowFilter} onChange={(e) => setRowFilter(e.target.value)} placeholder="Filter window or day..." aria-label="Filter rows" className="h-9 w-48 border border-slate-200 rounded-lg px-3 text-xs" />
-                  <button type="button" className={btn} onClick={() => setExpanded(expanded.length ? [] : shownRows.map((b) => b.key))}>{expanded.length ? 'Collapse all' : 'Expand all'}</button>
-                </div>
-              </div>
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                <table className="w-full text-xs">
-                  <thead className="bg-slate-50 text-slate-500">
-                    <tr>
-                      {['Window', 'Trades', 'Win %', 'Loss %', 'BE %', 'Net P&L', 'Gross P&L', 'PF', 'Avg R', 'Cashback', 'Points'].map((h, i) => (
-                        <th key={h} className={`px-3 py-2 font-semibold whitespace-nowrap ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {shownRows.map((b) => {
-                      const open = expanded.includes(b.key);
-                      const isBest = b === best && b.s.net > 0;
-                      const isLeak = b === worst && b.s.net < 0;
-                      const row = (label: React.ReactNode, s: Stats, sub: boolean, ids: string[], key: string) => (
-                        <tr key={key} className={`border-t border-slate-100 ${sub ? 'bg-slate-50/60' : ''} ${isBest && !sub ? 'bg-emerald-50/40' : ''} ${isLeak && !sub ? 'bg-rose-50/40' : ''}`}>
-                          <td className={`px-3 py-2 whitespace-nowrap ${sub ? 'pl-9 text-[#474556]' : 'font-semibold text-[#0b1c30]'}`}>{label}</td>
-                          <td className="px-3 py-2 text-right font-mono">{s.n}</td>
-                          <td className="px-3 py-2 text-right font-mono text-emerald-600">{s.winRate.toFixed(1)}%</td>
-                          <td className="px-3 py-2 text-right font-mono text-rose-600">{s.lossRate.toFixed(1)}%</td>
-                          <td className="px-3 py-2 text-right font-mono text-slate-500">{s.beRate.toFixed(1)}%</td>
-                          <td className={`px-3 py-2 text-right font-mono font-bold ${tone(s.net)}`}>{money(s.net)}</td>
-                          <td className="px-3 py-2 text-right font-mono text-[#474556]">{money(s.gross)}</td>
-                          <td className="px-3 py-2 text-right font-mono">{fmtPf(s.pf)}</td>
-                          <td className={`px-3 py-2 text-right font-mono ${s.avgR === null ? 'text-slate-400' : tone(s.avgR)}`}>{s.avgR === null ? '—' : `${s.avgR > 0 ? '+' : ''}${s.avgR.toFixed(2)}R`}</td>
-                          <td className="px-3 py-2 text-right font-mono text-emerald-600">{s.cb ? `+$${s.cb.toFixed(2)}` : '—'}</td>
-                          <td className="px-3 py-2 text-right font-mono text-violet-600">{s.pts ? `+${s.pts}` : '—'}</td>
-                        </tr>
-                      );
-                      return (
-                        <React.Fragment key={b.key}>
-                          {row(
-                            <span className="inline-flex items-center gap-2">
-                              <button type="button" aria-expanded={open} aria-label={`${open ? 'Collapse' : 'Expand'} ${b.label}`} onClick={() => setExpanded((x) => (open ? x.filter((k) => k !== b.key) : [...x, b.key]))} className="w-5 h-5 rounded border border-slate-200 text-[10px] text-slate-500 hover:bg-slate-100">{open ? '−' : '+'}</button>
-                              <button type="button" onClick={() => setDrill({ label: b.label, ids: b.list.map((e) => e.id) })} className="hover:text-[#5338ec] hover:underline">{b.label}</button>
-                              {isBest && <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold">Peak</span>}
-                              {isLeak && <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-bold">Leak</span>}
-                            </span>, b.s, false, b.list.map((e) => e.id), b.key)}
-                          {open && subOf(b.list).map((x) => row(
-                            <button type="button" onClick={() => setDrill({ label: `${b.label} · ${x.label}`, ids: x.list.map((e) => e.id) })} className="hover:text-[#5338ec] hover:underline">{x.label}</button>,
-                            stats(x.list), true, x.list.map((e) => e.id), `${b.key}-${x.key}`))}
-                        </React.Fragment>
-                      );
-                    })}
-                    {shownRows.length === 0 && <tr><td colSpan={11} className="py-8 text-center text-slate-500">No rows match.</td></tr>}
-                  </tbody>
-                  {shownRows.length > 0 && (
-                    <tfoot className="bg-slate-50 border-t-2 border-slate-200 font-semibold">
-                      <tr>
-                        <td className="px-3 py-2">Σ Total</td>
-                        <td className="px-3 py-2 text-right font-mono">{total.n}</td>
-                        <td className="px-3 py-2 text-right font-mono text-emerald-600">{total.winRate.toFixed(1)}%</td>
-                        <td className="px-3 py-2 text-right font-mono text-rose-600">{total.lossRate.toFixed(1)}%</td>
-                        <td className="px-3 py-2 text-right font-mono text-slate-500">{total.beRate.toFixed(1)}%</td>
-                        <td className={`px-3 py-2 text-right font-mono font-bold ${tone(total.net)}`}>{money(total.net)}</td>
-                        <td className="px-3 py-2 text-right font-mono">{money(total.gross)}</td>
-                        <td className="px-3 py-2 text-right font-mono">{fmtPf(total.pf)}</td>
-                        <td className="px-3 py-2 text-right font-mono">{total.avgR === null ? '—' : `${total.avgR.toFixed(2)}R`}</td>
-                        <td className="px-3 py-2 text-right font-mono text-emerald-600">+${total.cb.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right font-mono text-violet-600">+{total.pts}</td>
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 mt-3 text-[11px] text-slate-500">
-                <span>Displaying {shownRows.length} {unit} rows · {total.n} closed trades aggregated</span>
-                <button type="button" onClick={resetFilters} className="ml-auto h-8 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-[#0b1c30] hover:bg-slate-50">Reset filters</button>
-                <button type="button" onClick={() => onDrill(cur.map((e) => e.id), 'Day & Time report selection')} className="h-8 px-3 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Drill down to Trade Log</button>
-              </div>
-            </section>
+            {breakdownKey && (() => {
+              const b = buckets.find(x => x.key === breakdownKey);
+              if (!b || !b.s.n) return null;
+              return (
+                <InsightsBreakdownDialog
+                  label={b.label}
+                  splitLabel={view === 'time' ? 'weekday' : 'session'}
+                  summary={b.s}
+                  ids={b.list.map(e => e.id)}
+                  rows={subOf(b.list).map(x => ({ key: x.key, label: x.label, s: stats(x.list), ids: x.list.map(e => e.id) }))}
+                  peak={b === best && b.s.net > 0}
+                  leak={b === worst && b.s.net < 0}
+                  formatMoney={value => money(value)}
+                  onClose={() => setBreakdownKey(null)}
+                  onOpenGroup={(groupLabel, groupIds) => { setBreakdownKey(null); setDrill({ label: groupLabel, ids: groupIds }); }}
+                  onOpenAll={() => { setBreakdownKey(null); onDrill(b.list.map(e => e.id), b.label); }}
+                />
+              );
+            })()}
             {/* Cross analysis matrix */}
             <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5" aria-label="Cross analysis matrix">
               <h4 className="text-sm font-bold">Cross analysis matrix<JournalHelp label="Cross analysis matrix" /></h4>
