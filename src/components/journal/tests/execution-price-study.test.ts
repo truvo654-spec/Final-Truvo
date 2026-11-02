@@ -43,8 +43,13 @@ test('Custom intervals aggregate existing OHLCV without inventing finer price da
  assert.ok(ten.length>0&&ten.length<base.length);
  assert.deepEqual(ten[0],{t:base[0].t,o:base[0].o,h:Math.max(base[0].h,base[1].h),l:Math.min(base[0].l,base[1].l),c:base[1].c,v:base[0].v+base[1].v});
  assert.equal(customPriceInterval(20,'m'),'20m');assert.equal(customPriceInterval(2,'h'),'2h');
- for(const count of [0,1,3,7,2.5,1445,NaN])assert.equal(customPriceInterval(count,'m'),null);
- assert.equal(customPriceInterval(13,'M'),null);assert.deepEqual(executionPriceBars('NAS100','2026-08-03','2026-08-04','1m'),[]);
+ for(const count of [0,3,7,2.5,1445,NaN])assert.equal(customPriceInterval(count,'m'),null);
+ assert.equal(customPriceInterval(1,'m'),'1m');assert.equal(customPriceInterval(13,'M'),null);
+ // 1m is an estimated split of the 5m feed: every five 1m candles rebuild their 5m candle exactly.
+ const minute=executionPriceBars('NAS100','2026-08-03','2026-08-04','1m');
+ assert.equal(minute.length,base.length*5);
+ const five=minute.slice(0,5);
+ assert.deepEqual({t:five[0].t,o:five[0].o,h:Math.max(...five.map(b=>b.h)),l:Math.min(...five.map(b=>b.l)),c:five[4].c},{t:base[0].t,o:base[0].o,h:base[0].h,l:base[0].l,c:base[0].c});
 });
 
 test('Calendar candles use UTC weeks and real month lengths with correctly mapped trades',()=>{
