@@ -3,6 +3,8 @@ import {ArrowRight,Check} from 'lucide-react';
 import type {JournalEntry} from '../../types';
 import type {JournalPlaybook} from '../../data/journalPlaybooks';
 import type {JournalRules} from '../../backtest/rules';
+import {ind,price,val} from '../../backtest/rules';
+import type {TechnicalWhatIfRule} from '../../backtest/whatifTechnical';
 import type {BacktestRun,WhatIfRun} from '../../backtest/store';
 import {loadWhatIfs,saveWhatIfs} from '../../backtest/store';
 import {makeSavedWhatIf,savedWhatIfKey,whatIfSaveKey} from '../../backtest/savedWhatIf';
@@ -29,10 +31,15 @@ interface Props{
  onSaveScenario?:(run:WhatIfRun)=>boolean;onViewSaved?:()=>void;
 }
 const choices:{kind:WhatIfRule['kind'];title:string;hint:string}[]=[
- {kind:'lossesPerDay',title:'Stop after daily losses',hint:'Use your saved loss limit.'},
- {kind:'hours',title:'Trade only during my session',hint:'Use the session from your setup.'},
- {kind:'mistakes',title:'Skip tagged mistakes',hint:'Start with your most common mistakes.'},
- {kind:'target',title:'Change my target',hint:'Try a different reward for each unit of risk.'},
+ {kind:'target',title:'Change my target',hint:'Take profit at a different R multiple.'},
+ {kind:'breakeven',title:'Move stop to breakeven',hint:'Protect the trade once it reaches a set R.'},
+ {kind:'stop',title:'Tighten my stop',hint:'Risk a smaller part of 1R on each trade.'},
+ {kind:'technical',title:'Add a technical filter',hint:'Keep only trades that pass an indicator check.'},
+];
+const TECH_PRESETS:TechnicalWhatIfRule[]=[
+ {kind:'technical',label:'RSI 14 above 50',timeframe:'15m',conditions:[{id:'wi-rsi',left:ind('RSI',14),op:'gt',right:val(50)}]},
+ {kind:'technical',label:'Price above EMA 50',timeframe:'15m',conditions:[{id:'wi-ema',left:price('close'),op:'gt',right:ind('EMA',50)}]},
+ {kind:'technical',label:'ADX 14 above 25',timeframe:'15m',conditions:[{id:'wi-adx',left:ind('ADX',14),op:'gt',right:val(25)}]},
 ];
 const emptyFilters={from:'',to:'',symbol:'',side:'',market:'',tradeIds:null as string[]|null};
 type SourceKind='log'|'book'|'run';
@@ -55,7 +62,8 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
  const activeBooks=playbooks.filter(b=>b.status!=='archived');
  const defaults=quickWhatIfDefaults(source.book,source.run,journalRules);
  const [params,setParams]=useState({...defaults,tags:[] as string[]});
- const [kind,setKind]=useState<WhatIfRule['kind']>('lossesPerDay');
+ const [kind,setKind]=useState<WhatIfRule['kind']>('target');
+ const [techId,setTechId]=useState('setup');
  const [dialog,setDialog]=useState<'source'|'result'|'trades'|null>(null);
  const [returnToResult,setReturnToResult]=useState(false);
  const [changedOnly,setChangedOnly]=useState(false);
@@ -74,11 +82,14 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
  const [savedKeys,setSavedKeys]=useState(()=>loadWhatIfs().map(savedWhatIfKey));
  const cohortKey=picked.map(e=>e.id).join('|');
  useEffect(()=>{
-  setComparisonRule(null);setSelectedAlternative(null);setResultGroupId('all');setAdvancedVisited(false);setKind(current=>choices.some(c=>c.kind===current)?current:'lossesPerDay');
+  setComparisonRule(null);setSelectedAlternative(null);setResultGroupId('all');setAdvancedVisited(false);setKind(current=>choices.some(c=>c.kind===current)?current:'target');
   const counts=new Map<string,number>();source.entries.forEach(e=>e.mistakes.forEach(t=>counts.set(t,(counts.get(t)??0)+1)));
   setParams({...quickWhatIfDefaults(source.book,source.run,journalRules),tags:[...counts].sort((a,b)=>b[1]-a[1]).slice(0,2).map(([tag])=>tag)});
  },[scope.key,source.book,source.run,journalRules]);
- const rule:WhatIfRule=kind==='lossesPerDay'?{kind,n:params.n}:kind==='hours'?{kind,start:params.start,end:params.end}:kind==='mistakes'?{kind,tags:params.tags}:kind==='target'?{kind,r:params.target}:kind==='breakeven'?{kind,r:params.be}:kind==='stop'?{kind,mult:params.stop}:{kind:'dailyLoss',usd:params.usd};
+ const playbookTech:TechnicalWhatIfRule|undefined=(()=>{const t=source.run?{kind:'technical' as const,label:source.run.name,timeframe:source.run.settings.timeframe,conditions:source.run.settings.rules.entry}:source.book&&playbookConditions(source.book).length?technicalSetupFromBook(source.book):undefined;return t&&t.conditions.length?t:undefined;})();
+ const techOptions=[...(playbookTech?[{id:'setup',rule:playbookTech}]:[]),...TECH_PRESETS.map((r,i)=>({id:'preset'+i,rule:r}))];
+ const techRule=(techOptions.find(o=>o.id===techId)??techOptions[0]).rule;
+ const rule:WhatIfRule=kind==='technical'?techRule:kind==='lossesPerDay'?{kind,n:params.n}:kind==='hours'?{kind,start:params.start,end:params.end}:kind==='mistakes'?{kind,tags:params.tags}:kind==='target'?{kind,r:params.target}:kind==='breakeven'?{kind,r:params.be}:kind==='stop'?{kind,mult:params.stop}:{kind:'dailyLoss',usd:params.usd};
  const comparisonChoice=comparisonRule??rule;
  const changeSetupParams=(next:React.SetStateAction<typeof params>)=>{setComparisonRule(null);setParams(next);};
  const acceptComparisonRule=(next:WhatIfRule)=>{setComparisonRule(next);setSelectedAlternative(null);setKind(next.kind);if(next.kind!=='technical')setParams(p=>({...p,...(next.kind==='target'?{target:next.r}:next.kind==='breakeven'?{be:next.r}:next.kind==='stop'?{stop:next.mult}:next.kind==='dailyLoss'?{usd:next.usd}:next.kind==='lossesPerDay'?{n:next.n}:next.kind==='hours'?{start:next.start,end:next.end}:{tags:next.tags})}));};
@@ -94,7 +105,7 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
  const row=rows.find(r=>r.id===selectedAlternative)??rows[0];
  const visibleRow=visibleRows.find(r=>r.id===row.id)??visibleRows[0];
  const out=visibleRow.output;
- const valid=kind==='mistakes'?params.tags.length>0:kind==='hours'?Number.isFinite(params.start)&&Number.isFinite(params.end)&&params.start!==params.end:kind==='lossesPerDay'?Number.isInteger(params.n)&&params.n>0:kind==='target'?Number.isFinite(params.target)&&params.target>0:kind==='breakeven'?Number.isFinite(params.be)&&params.be>0:kind==='stop'?params.stop>0&&params.stop<=1:Number.isFinite(params.usd)&&params.usd>0;
+ const valid=kind==='technical'?techRule.conditions.length>0:kind==='mistakes'?params.tags.length>0:kind==='hours'?Number.isFinite(params.start)&&Number.isFinite(params.end)&&params.start!==params.end:kind==='lossesPerDay'?Number.isInteger(params.n)&&params.n>0:kind==='target'?Number.isFinite(params.target)&&params.target>0:kind==='breakeven'?Number.isFinite(params.be)&&params.be>0:kind==='stop'?params.stop>0&&params.stop<=1:Number.isFinite(params.usd)&&params.usd>0;
  const tags=[...new Set(picked.flatMap(e=>[...e.mistakes,...e.tags]))].sort();
  const currency=source.currency;
  const money=(n:number)=>Number.isFinite(n)?formatMoney(n,currency,2):'—';
@@ -120,7 +131,7 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
  const reviewScope=useMemo(()=>({...initialDashboardScope(source.run?[source.run]:[],[]),currency,timezone:tz,privacy:false}),[source.run,currency,tz]);
  const reviewSource=useMemo(()=>dashboardSources(source.run?[source.run]:[],[],picked,playbooks,reviewScope).find(s=>s.id===(source.run?'run:'+source.run.id:'journal')),[source.run,picked,playbooks,reviewScope]);
  const reviewTrade=(trade:WhatIfTrade)=>{const detail=reviewSource?.rows.find(r=>source.run?trade.id==='whatif:'+source.run.id+':'+r.trade?.id:r.journal?.id===trade.id);if(detail)setTradeDetail({row:detail,trade});};
- const initialTechnicalSetup=source.run?{kind:'technical' as const,label:source.run.name,timeframe:source.run.settings.timeframe,conditions:source.run.settings.rules.entry}:source.book&&playbookConditions(source.book).length?technicalSetupFromBook(source.book):undefined;
+ const initialTechnicalSetup=playbookTech;
  return <JournalCurrency.Provider value={currency as React.ContextType<typeof JournalCurrency>}><div className="space-y-5 min-w-0">
   <Card title="What if I changed one thing?" sub="Use your saved trades. Try one change. See the difference." right={dateControl}>
    <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Choose What-if source">{([{id:'log',label:'Trade Log'},{id:'book',label:'Playbook'},{id:'run',label:'Saved tests'}] as const).map(s=><button type="button" key={s.id} className={btnSecondary+(sourceKind(scope.key)===s.id?' border-[#5338ec] bg-[#F6F3FF] text-[#5338ec]':'')} aria-pressed={sourceKind(scope.key)===s.id} disabled={s.id==='book'?!activeBooks.length:s.id==='run'?!runs.length:false} onClick={()=>chooseSource(s.id)}>{s.label}</button>)}</div>
@@ -139,6 +150,9 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
     {kind==='hours'&&<><span className="text-sm font-semibold">Trading session · UTC</span><label className="text-xs">From<select aria-label="Session start UTC" className={inputCls} value={params.start} onChange={e=>changeSetupParams(p=>({...p,start:Number(e.target.value)}))}>{Array.from({length:24},(_,h)=><option key={h} value={h}>{String(h).padStart(2,'0')}:00</option>)}</select></label><label className="text-xs">To<select aria-label="Session end UTC" className={inputCls} value={params.end} onChange={e=>changeSetupParams(p=>({...p,end:Number(e.target.value)}))}>{Array.from({length:24},(_,i)=>i+1).map(h=><option key={h} value={h}>{h===24?'24:00':String(h).padStart(2,'0')+':00'}</option>)}</select></label><span className="text-xs text-slate-500">{source.book||source.run?'Loaded from your setup':'Suggested session · editable'}</span></>}
     {kind==='mistakes'&&(tags.length?<div className="flex flex-wrap gap-2">{tags.map(t=><button key={t} className={btnSecondary} aria-pressed={params.tags.includes(t)} onClick={()=>changeSetupParams(p=>({...p,tags:p.tags.includes(t)?p.tags.filter(x=>x!==t):[...p.tags,t]}))}>{params.tags.includes(t)&&<Check size={14}/>} {t}</button>)}</div>:<p className="text-sm text-slate-500">These trades have no mistake tags. Choose another change.</p>)}
     {kind==='target'&&<><span className="text-sm">Take profit at</span><Segmented label="Target presets" value={String(params.target)} onChange={v=>changeSetupParams(p=>({...p,target:Number(v)}))} options={[...new Set([1,1.5,2,3,defaults.target])].sort((a,b)=>a-b).map(n=>({id:String(n),label:n+'R'}))}/><label className="text-xs">Custom R<input aria-label="Custom target R" type="number" min="0.1" step="0.1" className={inputCls+' max-w-24'} value={params.target} onChange={e=>changeSetupParams(p=>({...p,target:Number(e.target.value)}))}/></label></>}
+    {kind==='breakeven'&&<><span className="text-sm">Move stop to breakeven at</span><Segmented label="Breakeven presets" value={String(params.be)} onChange={v=>changeSetupParams(p=>({...p,be:Number(v)}))} options={[...new Set([0.5,1,1.5,2,defaults.be])].sort((a,b)=>a-b).map(n=>({id:String(n),label:n+'R'}))}/><label className="text-xs">Custom R<input aria-label="Custom breakeven R" type="number" min="0.1" step="0.1" className={inputCls+' max-w-24'} value={params.be} onChange={e=>changeSetupParams(p=>({...p,be:Number(e.target.value)}))}/></label></>}
+    {kind==='stop'&&<><span className="text-sm">Stop at</span><Segmented label="Stop presets" value={String(params.stop)} onChange={v=>changeSetupParams(p=>({...p,stop:Number(v)}))} options={[0.5,0.75,0.9].map(n=>({id:String(n),label:n+'R'}))}/><span className="text-sm">instead of 1R</span><span className="text-xs text-slate-500">A tighter stop risks less but may stop out more trades</span></>}
+    {kind==='technical'&&<><span className="text-sm">Only take trades where</span><select aria-label="Technical filter" className={inputCls+' max-w-xs'} value={techOptions.some(o=>o.id===techId)?techId:techOptions[0].id} onChange={e=>{setComparisonRule(null);setTechId(e.target.value);}}>{techOptions.map(o=><option key={o.id} value={o.id}>{o.id==='setup'?'Your setup · '+o.rule.label:o.rule.label}</option>)}</select><span className="text-xs text-slate-500">{techRule.timeframe} demo candles · more conditions in Advanced analysis</span></>}
    </div>
    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-slate-500">{kind==='technical'?'Technical conditions use generated demo candles.':estimate?'Estimated using reconstructed price paths.':'Compare the same trades with one rule changed.'}</p><button className={btnPrimary} disabled={!picked.length||!valid} onClick={()=>{setComparisonRule(structuredClone(comparisonChoice));setSelectedAlternative(null);setResultGroupId('all');setAdvancedOpen(false);setAdvancedVisited(false);setDialog('result');}}>See results<ArrowRight size={16}/></button></div>
    {!picked.length&&<p role="status" className="mt-3 text-sm text-slate-500">{dateEntries.length>0&&(scope.from||scope.to)?<>No selected trades in this date range. <button className="font-semibold text-[#5338ec]" onClick={()=>setScope(current=>applyWhatIfDateRange(current,dateBounds,true))}>Reset date range</button></>:<>No eligible trades in this selection. <button className="font-semibold text-[#5338ec]" onClick={changeSource}>Choose your data</button></>}</p>}
@@ -170,7 +184,7 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
    </>}
    {(dialog==='result'||(dialog==='trades'&&returnToResult))&&<div hidden={dialog!=='result'}>
     <div className="sticky top-0 z-30 mb-4 bg-white"><WhatIfResultPicker dateControl={dateControl} groups={resultGroups} value={resultGroup.id} onChange={id=>{setResultGroupId(id);setReviewRows(null);}}/></div>
-    <div hidden={advancedOpen}><WhatIfResults onAdvanced={()=>analysisMode(true)} rows={visibleRows} selected={visibleRow} onSelect={setSelectedAlternative} currency={currency} summary={resultGroup.label+' · '+out.trades.length+' trade'+(out.trades.length===1?'':'s')+' · '+currency+' · '+(resultGroup.market||scope.market||'All markets')+' · '+(scope.from||resultGroup.from)+' → '+(scope.to||resultGroup.to)} simulation={!!source.run} saved={saved} onSave={save} onTrades={()=>showTrades(true,false)} onClose={()=>setDialog(null)} onViewSaved={onViewSaved?()=>{setDialog(null);onViewSaved();}:undefined}/></div>
+    <div hidden={advancedOpen}><WhatIfResults onAdvanced={()=>analysisMode(true)} entries={picked} rows={visibleRows} selected={visibleRow} onSelect={setSelectedAlternative} currency={currency} summary={resultGroup.label+' · '+out.trades.length+' trade'+(out.trades.length===1?'':'s')+' · '+currency+' · '+(resultGroup.market||scope.market||'All markets')+' · '+(scope.from||resultGroup.from)+' → '+(scope.to||resultGroup.to)} simulation={!!source.run} saved={saved} onSave={save} onTrades={()=>showTrades(true,false)} onClose={()=>setDialog(null)} onViewSaved={onViewSaved?()=>{setDialog(null);onViewSaved();}:undefined}/></div>
     {advancedVisited&&<section hidden={!advancedOpen} aria-label="Advanced What-if analysis">
      <header className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#CCC6FB] bg-white pb-4 pr-7"><div><h2 className="text-lg font-bold">Advanced analysis</h2><p className="mt-1 text-xs text-slate-500">{resultGroup.label} · {out.trades.length} trades · {currency} · {resultGroup.market||scope.market||'All markets'}</p></div><button type="button" className={btnSecondary} onClick={()=>analysisMode(false)}>Back to results</button></header>
      <WhatIfAdvancedPanel key={scope.key+'|'+cohortKey} priceData={priceData} controlledRule={row.rule} onRuleChange={acceptComparisonRule} resultTradeIds={resultGroup.id==='all'?undefined:resultGroup.tradeIds} resultLabel={resultGroup.label} initialTechnicalSetup={initialTechnicalSetup} fixedScope benchmarkLabel={(source.run?'Sample simulation · ':'Journal · ')+source.label} benchmarkScope={context.scope} initialValues={params} initialRule={row.rule} entries={picked} allEntries={picked} playbooks={[]} journalRules={journalRules} tz={tz} onToast={onToast} onAddRule={onAddRule} onOpenTrades={onOpenTrades} onReviewTrades={(trades,label)=>{setReviewRows(trades);setReviewLabel(label);setChangedOnly(false);setReturnToResult(true);setDialog('trades');}} onSaveScenario={onSaveScenario} onViewSaved={onViewSaved?()=>{setDialog(null);onViewSaved();}:undefined}/>

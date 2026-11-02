@@ -4,14 +4,16 @@ import type {WhatIfStudyRow} from '../../backtest/savedWhatIf';
 import {describeWhatIf} from '../../backtest/whatif';
 import {formatMoney} from '../journal/JournalCurrency';
 import {LineChart} from './charts';
+import {WhatIfPriceChart} from './WhatIfPriceChart';
+import type {JournalEntry} from '../../types';
 import {Pill,btnPrimary,btnSecondary} from './ui';
 
 interface Props{
  rows:WhatIfStudyRow[];selected:WhatIfStudyRow;onSelect:(id:string)=>void;currency:string;summary:string;simulation:boolean;
- saved:boolean;onSave:()=>void;onTrades:()=>void;onClose:()=>void;onViewSaved?:()=>void;onAdvanced?:()=>void;
+ entries?:JournalEntry[];saved:boolean;onSave:()=>void;onTrades:()=>void;onClose:()=>void;onViewSaved?:()=>void;onAdvanced?:()=>void;
 }
 /** One comparison popup: exact chosen setup first, then values of the same rule. */
-export function WhatIfResults({rows,selected,onSelect,currency,summary,simulation,saved,onSave,onTrades,onClose,onViewSaved,onAdvanced}:Props){
+export function WhatIfResults({rows,selected,onSelect,currency,summary,simulation,entries=[],saved,onSave,onTrades,onClose,onViewSaved,onAdvanced}:Props){
  const out=selected.output,choice=rows[0],isChoice=selected.id===choice.id;
  const money=(n:number)=>Number.isFinite(n)?formatMoney(n,currency,2):'—';
  const describe=(row:WhatIfStudyRow)=>row.rule.kind==='dailyLoss'?`Stop after ${money(row.rule.usd).replace(/^\+/,'')} daily loss`:describeWhatIf(row.rule);
@@ -27,6 +29,7 @@ export function WhatIfResults({rows,selected,onSelect,currency,summary,simulatio
   </div>
   <p className="mt-3 text-lg font-semibold" role="status">{Math.abs(out.saved)<0.005?'No change in net result':`${money(Math.abs(out.saved)).replace(/^\+/,'')} ${out.saved>0?'more':'less'} net P&L`}</p>
   <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[['Net P&L',money(out.actual.netPnl),money(out.whatIf.netPnl)],['Win rate',pct(out.actual.winRate),pct(out.whatIf.winRate)],['Profit factor',factor(out.actual.profitFactor),factor(out.whatIf.profitFactor)],['Max drawdown',money(-out.actual.maxDD),money(-out.whatIf.maxDD)]].map(([label,a,b])=><div key={label} className="rounded-xl border border-[#CCC6FB] p-3"><p className="text-xs text-slate-500">{label}</p><p className="mt-2 text-sm text-slate-500">Original {a}</p><p className="mt-1 text-lg font-bold">What-if {b}</p></div>)}</div>
+  <WhatIfPriceChart trades={out.trades} entries={entries} simulation={simulation} money={money} scenario={(isChoice?'Your choice':'Alternative')+' · '+describe(selected)} onTrades={onTrades}/>
   {rows.length>1&&<section className="mt-5" aria-label="Compare values of this rule"><h3 className="text-sm font-bold">{selected.rule.kind==='technical'?'Compare conditions':'Try another value'}</h3><p className="mt-1 text-xs text-slate-500">{selected.rule.kind==='technical'?'Same trades. Compare the full set with individual conditions.':'Same trades, same rule. Click a value to update the result.'}</p><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{rows.map((row,index)=><button type="button" key={row.id} aria-pressed={selected.id===row.id} onClick={()=>onSelect(row.id)} className={'rounded-xl border p-3 text-left '+(selected.id===row.id?'border-[#5338ec] bg-[#F6F3FF]':'border-[#CCC6FB] bg-white hover:bg-slate-50')}><span className="block text-[10px] font-semibold text-[#5338ec]">{index===0?'Your choice':'Alternative'}</span><span className="mt-1 block text-xs font-semibold">{describe(row)}</span><span className="mt-2 block text-sm font-bold">{money(row.output.whatIf.netPnl)}</span><span className="mt-1 block text-[11px] text-slate-500">{money(row.output.saved)} vs original</span></button>)}</div></section>}
   <div className="mt-4"><LineChart label="Original and selected What-if cumulative net P&L" height={230} area={false} yFmt={money} xFmt={t=>new Date(t).toISOString().slice(0,10)} series={[{name:'Original',color:'#94a3b8',points:curve(true)},{name:isChoice?'Your choice':'Selected alternative',color:'#5338ec',points:curve(false)}]} onPointSelect={onTrades}/></div>
   <p className="mt-2 text-xs text-slate-500">{changed} changed or skipped · {out.lossesAvoided} losses avoided or reduced · {out.winsForfeited} wins reduced or skipped</p>

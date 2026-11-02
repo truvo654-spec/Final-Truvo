@@ -34,6 +34,8 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
   const [equityWindow,setEquityWindow]=useState<TimeWindow|null>(null);
   const [interval,setInterval]=useState<'auto'|PriceChartInterval>('auto');
   const [performanceId,setPerformanceId]=useState('setup');
+  const [focusId,setFocusId]=useState<string|null>(null);
+  const chartRef=React.useRef<HTMLDivElement>(null);
   useEffect(() => { setVisible(null); }, [rule.kind]);
 
   const rank = (row: typeof comparison.rows[number]) => score === 'drawdown' ? -row.training.whatIf.maxDD : score === 'win' ? row.training.whatIf.winRate : row.training.whatIf.netPnl;
@@ -81,13 +83,26 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
   const hoverDetail=(at:number)=>{const node=curveAt(performance.nodes,at);return <p>{performanceName} · Closed P&amp;L {money(node?.cumulative??0)} · drawdown {money(-(node?.drawdown??0))}</p>;};
   const first = comparison.rows[0];
   const rowSource=(row:WhatIfStudyRow):WhatIfSnapshot['source']=>row.id===JSON.stringify(rule)?'user':row.id===model.aiRow?.id?'ai':'parameter';
+  const focusScenario=(id:string)=>{model.pin(id);setImprovedOnly(false);setVisible([...new Set([JSON.stringify(rule),id])]);setPerformanceId(id===JSON.stringify(rule)?'setup':id);setFocusId(id);window.setTimeout(()=>chartRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),60);};
+  const focusRow=focusId?comparison.rows.find(row=>row.id===focusId)??null:null;
+  const pctPts=(a:number,b:number)=>`${((a-b)*100)>=0?'+':''}${((a-b)*100).toFixed(1)} pts`;
   return <div className="space-y-5">
     <MarketSydeRecommender collapsible estimateLabel={model.aiRow?.rule.kind==='technical'?'Demo price check':'Estimated price path'} recommendation={recommendation} baseline={recommendationBaseline} baselineName={benchmarkLabel?benchmarkLabel+" on the training days":"actual journal history on the training days"} goal={recommendationGoal} onGoal={setRecommendationGoal} money={money}
-      evidence={`Selection uses the first 70% of entry days. The remaining days are checked independently; crossing trades stay in full-history results only. AI explores ${model.tested} supported setups across guardrails, session, tags and price-dependent rules, including your parameter range.`} action="Compare AI scenario" onUse={id => {setImprovedOnly(false);setVisible([...new Set([JSON.stringify(rule),id])]);}} />
-    <CollapsibleCard title="Candles & scenario comparison" summary={`${instrument || 'No instrument'} · ${tf} · ${performanceName}`} sub="Explore price, closed P&L and drawdown on one timeline.">
+      evidence={`Selection uses the first 70% of entry days. The remaining days are checked independently; crossing trades stay in full-history results only. AI explores ${model.tested} supported setups across guardrails, session, tags and price-dependent rules, including your parameter range.`} action="Compare AI scenario" onUse={focusScenario} ideas={model.ideas} selectedId={focusId} />
+    <div ref={chartRef} className="scroll-mt-24"><CollapsibleCard title="Candles & scenario comparison" summary={`${instrument || 'No instrument'} · ${tf} · ${performanceName}`} sub="Explore price, closed P&L and drawdown on one timeline.">
+      {focusRow&&<section aria-label="Selected scenario details" className="mb-4 rounded-xl border border-[#5338ec]/30 bg-[#F6F3FF] p-4">
+        <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-[10px] font-bold uppercase tracking-wide text-[#5338ec]">{focusRow.id===recommendation.candidate?.id?'MarketSyde AI scenario':'Scenario details'}</p><h4 className="mt-1 text-sm font-bold">{describeWhatIf(focusRow.rule)}</h4><p className="mt-1 text-[11px] text-slate-500">Same {entries.length} trades · candles, P&amp;L and drawdown below now follow this scenario{focusRow.output.estimated?' · estimated price path':''}.</p></div><button type="button" className={btnSecondary} onClick={()=>{setFocusId(null);setPerformanceId('setup');}}>Back to your setup</button></div>
+        <dl className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">{([
+          ['Net P&L',money(focusRow.output.whatIf.netPnl),`${money(focusRow.output.saved)} vs original`],
+          ['Win rate',`${(focusRow.output.whatIf.winRate*100).toFixed(1)}%`,pctPts(focusRow.output.whatIf.winRate,focusRow.output.actual.winRate)],
+          ['Max drawdown',money(-focusRow.output.whatIf.maxDD),`original ${money(-focusRow.output.actual.maxDD)}`],
+          ['Trades changed',`${focusRow.output.changed} changed · ${focusRow.output.skipped} skipped`,`${focusRow.output.lossesAvoided} losses avoided · ${focusRow.output.winsForfeited} wins reduced`],
+          ['Holdout',focusRow.validation?money(focusRow.validation.whatIf.netPnl-focusRow.validation.actual.netPnl):'—',focusRow.validation?`${focusRow.validationCount} holdout trades`:'not enough days'],
+        ] as [string,string,string][]).map(([k,v,sub])=><div key={k} className="rounded-lg bg-white p-2.5"><dt className="text-[10px] text-slate-500">{k}</dt><dd className="mt-0.5 font-semibold">{v}</dd><p className="mt-0.5 text-[10px] text-slate-500">{sub}</p></div>)}</dl>
+      </section>}
       <div className="flex flex-wrap items-end gap-3 mb-3">
         <Field label={fixedScope?'Candle instrument':'Candle instrument · linked to setup'} htmlFor="wi-chart-symbol"><select id="wi-chart-symbol" className={inputBase} value={instrument} onChange={e => fixedScope?setChartSymbol(e.target.value):onInstrument(e.target.value)}>{instrumentOptions.map(s => <option key={s}>{s}</option>)}</select></Field>
-        <Field label="Performance" htmlFor="wi-performance"><select id="wi-performance" className={inputBase+' max-w-full'} value={performanceKey} onChange={e=>setPerformanceId(e.target.value)}><option value="setup">Your setup</option><option value="actual">Original</option>{performanceChoices.map(row=><option key={row.id} value={row.id}>{describeWhatIf(row.rule)}</option>)}</select></Field>
+
       </div>
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3"><ChartTimeframeSelect value={interval} autoInterval={autoTf} onChange={value=>{setInterval(value);setChartWindow(null);setEquityWindow(null);}}/><div className="flex flex-wrap gap-1">
         <button type="button" className={btnSecondary} aria-label="Zoom in What-if chart" disabled={candleView?to-from<=8:equityRange[1]-equityRange[0]<=minimum} onClick={()=>zoom(0.5)}>+</button>
@@ -103,7 +118,7 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
       <p className="mt-2 text-[11px] text-slate-500">One timeline · hover any pane or use ← / → · zoom and browse together.</p>
       <div className="mt-3 grid grid-cols-3 gap-2" aria-label="What-if chart summary">{[['Closed trades',String(performance.count)],['Net P&L',money(performance.net)],['Max drawdown',money(-performance.maxDD)]].map(([label,value])=><div key={label} className="rounded-lg bg-slate-50 p-3"><p className="text-[10px] text-slate-500">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div>)}</div>
       <p className="text-[11px] text-slate-500 mt-3">{performanceName} · Full selected period. Drawdown uses exact close times in {currency}; no account balance is assumed. Chart timeframe changes the view only. Demo candles are illustrative and do not drive What-if calculations.</p>
-    </CollapsibleCard>
+    </CollapsibleCard></div>
     <CollapsibleCard title="Parameter optimization" summary={comparison.error ? 'Check parameter range' : `${comparison.rows.length} setups compared · ${entries.length} trades`} sub="Sweep one parameter on the same trades. Select rows to compare up to six scenarios on the main chart.">
       <div className="flex flex-wrap items-end gap-3 mb-4">
         {rule.kind==='technical'?<p className="text-xs text-slate-500">Compare all {rule.conditions.length} conditions together with each condition individually · {rule.timeframe} · demo prices.</p>:rule.kind !== 'mistakes' ? bounds.map((value, i) => <Field key={i} label={['Minimum', 'Maximum', 'Step'][i]} htmlFor={`wi-bound-${i}`}><input id={`wi-bound-${i}`} type="number" min="0.01" step={rule.kind === 'lossesPerDay' || rule.kind === 'hours' ? 1 : 0.25} value={value} onChange={e => { setBounds(b => b.map((v, j) => i === j ? Number(e.target.value) : v)); setVisible(null); }} className={`${inputBase} w-24`} /></Field>) : <p className="text-xs text-slate-500">Compare the selected tag set with each individual tag.</p>}

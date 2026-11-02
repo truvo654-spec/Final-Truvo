@@ -11,6 +11,9 @@ export function useWhatIfStudy(entries:JournalEntry[],rule:WhatIfRule,viewIds?:r
   const bounds=range.kind===rule.kind?range.bounds:whatIfBounds(rule);
   const setBounds=(next:((previous:number[])=>number[])|number[])=>setRange({kind:rule.kind,bounds:(typeof next==='function'?next(bounds):next) as [number,number,number]});
   const study=useMemo(()=>buildWhatIfStudy(entries,rule,bounds,goal,viewIds,priceData),[entries,JSON.stringify(rule),JSON.stringify(bounds),goal,JSON.stringify(viewIds),priceData]);
-  return {...study,bounds,setBounds,goal,setGoal};
+  const [pinned,setPinned]=useState<string[]>([]);
+  const rows=[...study.rows,...study.allRows.filter(row=>pinned.includes(row.id)&&!study.rows.some(r=>r.id===row.id))];
+  const pin=(id:string)=>setPinned(list=>list.includes(id)?list:[...list,id]);
+  return {...study,rows,pin,bounds,setBounds,goal,setGoal};
 }
 export type WhatIfStudyModel=ReturnType<typeof useWhatIfStudy>;
