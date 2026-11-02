@@ -47,6 +47,6 @@ export const ScenarioOutcomeComparison:React.FC<{user:WhatIfOutput;ai:WhatIfOutp
     <p className="text-[11px] text-slate-500 mt-3">Green highlights mark the best historical value for each metric; ties share the highlight. Higher gains and performance, smaller losses and drawdown are better. Trade counts are context. Each metric uses its own scale. Risk shows closed-result risk, not planned position exposure.</p>
     <div className="mt-3 space-y-1 text-[11px]"><p><b className="text-[#0284c7]">Your setup:</b> {userName}</p><p><b className="text-[#5338ec]">MarketSyde AI:</b> {aiName}</p></div>
     {ai&&<p className={`text-xs font-semibold mt-3 ${ai.whatIf.netPnl-user.whatIf.netPnl>=0?'text-emerald-700':'text-rose-700'}`}>AI vs your setup: {money(ai.whatIf.netPnl-user.whatIf.netPnl)} net Δ</p>}
-    {(user.estimated||ai?.estimated)&&<p className="text-[11px] text-amber-700 mt-2">Price-dependent results use reconstructed paths. Full-history results include the training and holdout trades.</p>}
+    {(user.estimated||ai?.estimated)&&<p className="text-[11px] text-amber-700 mt-2">Price-dependent comparisons are estimates. Full-history results include the training and holdout trades.</p>}
   </Card>;
 };

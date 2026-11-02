@@ -1,6 +1,8 @@
 import type { JournalEntry } from '../types';
+import type {WhatIfDemoData} from './whatifDemoData';
 import type { WhatIfOutput, WhatIfRule, WhatIfTrade } from './whatif';
 import { describeWhatIf } from './whatif';
+import {projectWhatIfRow} from './whatifResults';
 import { compareParameters, parameterRules, splitWhatIfHistory } from './whatifOptimizer';
 import { recommendSetup, type RecommendationGoal } from './recommender';
 
@@ -24,12 +26,12 @@ export function aiWhatIfRules(entries: JournalEntry[]): WhatIfRule[] {
   ];
 }
 
-export function buildWhatIfStudy(entries:JournalEntry[],rule:WhatIfRule,bounds:[number,number,number],goal:RecommendationGoal) {
+export function buildWhatIfStudy(entries:JournalEntry[],rule:WhatIfRule,bounds:[number,number,number],goal:RecommendationGoal,viewIds?:readonly string[],priceData?:WhatIfDemoData) {
   let rangeRules:WhatIfRule[]=[rule], error='';
   try {rangeRules=parameterRules(rule,...bounds);} catch(e){error=e instanceof Error?e.message:'Unable to compare these parameters.';}
   const rangeIds=new Set(rangeRules.map(r=>JSON.stringify(r)));
   const rules=[...rangeRules,...aiWhatIfRules(entries)].filter((r,i,all)=>all.findIndex(x=>JSON.stringify(x)===JSON.stringify(r))===i);
-  const allRows=compareParameters(entries,rules);
+  const allRows=compareParameters(entries,rules,priceData).map(row=>viewIds?projectWhatIfRow(row,entries,viewIds):row);
   const baseline=allRows[0].training.actual;
   const recommendation=recommendSetup(allRows.map(row=>({id:row.id,name:describeWhatIf(row.rule),metrics:row.training.whatIf,estimated:row.output.estimated,
     validation:row.validation?{baseline:row.validation.actual,candidate:row.validation.whatIf}:null})),baseline,goal);

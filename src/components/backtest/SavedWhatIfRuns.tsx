@@ -6,6 +6,8 @@ import {formatMoney} from '../journal/JournalCurrency';
 import {dateOnly,pct,rr,num} from '../../backtest/format';
 import {Card,Pill,btnSecondary} from './ui';
 import {LineChart} from './charts';
+import {WhatIfResultPicker} from './WhatIfResultPicker';
+import type {WhatIfResultGroup} from '../../backtest/whatifResults';
 import {bestValues,BestValueBadge,bestValueClass} from './comparisonHighlights';
 
 export const savedWhatIfName=(run:WhatIfRun)=>run.name||describeWhatIf(run.rule);
@@ -13,11 +15,17 @@ const currencyMoney=(run:WhatIfRun,value:number)=>run.snapshot?formatMoney(value
 
 export const SavedWhatIfRuns:React.FC<{runs:WhatIfRun[];tz:string;onDelete:(id:string)=>void}>=({runs,tz,onDelete})=>{
   const [openId,setOpenId]=useState<string|null>(null);
+  const [resultGroupId,setResultGroupId]=useState('all');
+  const openSaved=(run:WhatIfRun)=>{setOpenId(run.id);setResultGroupId(run.snapshot?.selectedBreakdown??'all');};
   const [confirm,setConfirm]=useState<string|null>(null);
   const run=runs.find(r=>r.id===openId);
   if(run){
     const snapshot=run.snapshot;
-    const output=snapshot?.output;
+    const full=snapshot?.output;
+    const selectedGroup=snapshot?.breakdowns?.find(g=>g.id===resultGroupId);
+    const output=selectedGroup?.output??full;
+    const dates=full?.trades.map(t=>new Date(t.entryTime).toISOString().slice(0,10)).sort()??[];
+    const groups:WhatIfResultGroup[]=[{id:'all',label:'All selected trades',market:'',from:dates[0]??'',to:dates.at(-1)??'',tradeIds:full?.trades.map(t=>t.id)??[]},...(snapshot?.breakdowns??[])];
     const money=(value:number)=>currencyMoney(run,value);
     const ruleText=run.rule.kind==='dailyLoss'?`Stop after ${money(run.rule.usd)} net loss in a day`:describeWhatIf(run.rule);
     const curve=(actual:boolean)=>{
@@ -35,14 +43,16 @@ export const SavedWhatIfRuns:React.FC<{runs:WhatIfRun[];tz:string;onDelete:(id:s
     ]:[];
     return <div className="space-y-5">
       <button type="button" className={btnSecondary} onClick={()=>setOpenId(null)}><ArrowLeft className="w-4 h-4"/> Back to saved What-if runs</button>
+      {!!snapshot?.breakdowns?.length&&<WhatIfResultPicker groups={groups} value={selectedGroup?.id??'all'} onChange={setResultGroupId}/>}
       <Card title={savedWhatIfName(run)} sub={`Saved ${dateOnly(Date.parse(run.createdAt),tz)} · Frozen What-if test`}>
         <p className="text-sm font-semibold">{ruleText}</p>
-        {snapshot?<><div className="flex flex-wrap gap-2 my-3"><Pill>{snapshot.source==='ai'?'MarketSyde AI':snapshot.source==='user'?'Your setup':'Parameter scenario'}</Pill><Pill>{snapshot.currency}</Pill>{output?.estimated&&<Pill tone="warn">Estimated price path</Pill>}</div>
-          <p className="text-xs text-slate-500">{snapshot.benchmark} · {run.trades} benchmark trades. This snapshot keeps the original results; newer journal records and edits do not recalculate it.</p>
+        {snapshot?<><div className="flex flex-wrap gap-2 my-3"><Pill>{snapshot.source==='ai'?'MarketSyde AI':snapshot.source==='user'?'Your setup':'Parameter scenario'}</Pill><Pill>{snapshot.currency}</Pill>{output?.estimated&&<Pill tone="warn">{run.rule.kind==='technical'?'Demo price check':'Estimated price path'}</Pill>}</div>
+          <p className="text-xs text-slate-500">{snapshot.benchmark} · {run.trades} benchmark trades.{selectedGroup?' Showing '+selectedGroup.label+' · '+output!.trades.length+' trades.':''} This snapshot keeps the original results; newer journal records and edits do not recalculate it.</p>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2 mt-4 text-xs">{Object.entries(snapshot.scope).map(([key,value])=><div key={key}><dt className="font-semibold text-slate-500">{key}</dt><dd>{value}</dd></div>)}</dl>
+          {snapshot.demoData&&<p className="mt-3 text-xs text-slate-500">Generated demo prices · {snapshot.demoData.instruments.map(i=>i.symbols.join('/')+' · '+i.timeframe).join(', ')} · frozen with this comparison.</p>}
           <p className="text-xs text-slate-500 mt-4">Recommendation goal: {snapshot.goal==='net'?'Improve net result':snapshot.goal==='drawdown'?'Reduce drawdown':'Improve win rate'}. Training: {snapshot.training.trades.length} trades · Holdout: {snapshot.validation?.trades.length||0} trades{snapshot.crossingCount?` · ${snapshot.crossingCount} crossing trades included only in full history`:''}.</p>
           <p className="text-xs mt-2">Training net Δ: {money(snapshot.training.saved)} · Holdout net Δ: {snapshot.validation?money(snapshot.validation.saved):'Unavailable'}. Selection uses training results; full-history totals include holdout trades.</p>
-          {output?.estimated&&<p className="text-xs text-amber-700 mt-2">Price-dependent results use reconstructed paths, not recorded candles.</p>}
+          {output?.estimated&&<p className="text-xs text-amber-700 mt-2">{run.rule.kind==='technical'?'Technical checks use completed illustrative demo candles, not verified historical prices. Unavailable checks leave trades unchanged.':'Price-dependent results use reconstructed paths, not recorded candles.'}</p>}
         </>:<p className="text-xs text-slate-500 mt-3">Legacy checklist save: only the rule, trade count and net totals were recorded. Currency, filters, trade ledger and holdout evidence are unavailable.</p>}
       </Card>
       <Card title="Actual vs saved scenario" sub="Green highlights the better historical metric; lower drawdown is better. Trade counts stay neutral.">
@@ -59,11 +69,11 @@ export const SavedWhatIfRuns:React.FC<{runs:WhatIfRun[];tz:string;onDelete:(id:s
   }
   return <Card title="Saved What-if runs" sub="Save the displayed result from What-if. Your selected rule, trades and results are stored in this browser.">
     {!runs.length?<p className="text-xs text-slate-500 py-3">No saved What-if scenarios yet.</p>:<div className="overflow-x-auto -mx-5 px-5"><table className="w-full min-w-[850px] text-xs tabular-nums"><thead><tr className="border-b text-slate-500 text-left">{['Scenario','Source / currency','Benchmark','Trades','Net','Δ actual','Drawdown','Saved','Actions'].map(label=><th key={label} className="py-2 px-2">{label}</th>)}</tr></thead><tbody>{runs.map(r=><tr key={r.id} className="border-b border-slate-100">
-      <td className="py-3 px-2"><button type="button" className="text-left font-bold text-[#5338ec] hover:underline" onClick={()=>setOpenId(r.id)}>{savedWhatIfName(r)}</button>{r.snapshot?.output.estimated&&<p className="text-[10px] text-amber-700">Estimated price path</p>}</td>
+      <td className="py-3 px-2"><button type="button" className="text-left font-bold text-[#5338ec] hover:underline" onClick={()=>openSaved(r)}>{savedWhatIfName(r)}</button>{r.snapshot?.output.estimated&&<p className="text-[10px] text-amber-700">{r.rule.kind==='technical'?'Demo price check':'Estimated price path'}</p>}</td>
       <td className="px-2">{r.snapshot?`${r.snapshot.source==='ai'?'MarketSyde AI':r.snapshot.source==='user'?'Your setup':'Parameter'} · ${r.snapshot.currency}`:'Legacy checklist'}</td>
       <td className="px-2">{r.snapshot?.benchmark||'Not recorded'}</td><td className="px-2">{r.snapshot?.output.whatIf.trades??r.trades}</td>
       <td className={`px-2 whitespace-nowrap font-bold ${r.whatIfNet>=0?'text-emerald-700':'text-rose-600'}`}>{currencyMoney(r,r.whatIfNet)}</td><td className="px-2 whitespace-nowrap">{currencyMoney(r,r.saved)}</td><td className="px-2 whitespace-nowrap">{r.snapshot?currencyMoney(r,-r.snapshot.output.whatIf.maxDD):'—'}</td><td className="px-2 whitespace-nowrap">{dateOnly(Date.parse(r.createdAt),tz)}</td>
-      <td className="px-2"><div className="flex items-center gap-1"><button type="button" title="Open saved scenario report" aria-label={`Open ${savedWhatIfName(r)}`} onClick={()=>setOpenId(r.id)} className="p-2 rounded hover:bg-slate-100"><Eye className="w-4 h-4"/></button>{confirm===r.id?<><button type="button" className="text-rose-600 font-bold" onClick={()=>{onDelete(r.id);setConfirm(null);}}>Delete</button><button type="button" onClick={()=>setConfirm(null)}>Keep</button></>:<button type="button" title="Delete saved scenario" aria-label={`Delete ${savedWhatIfName(r)}`} onClick={()=>setConfirm(r.id)} className="p-2 rounded text-slate-400 hover:text-rose-600"><Trash2 className="w-4 h-4"/></button>}</div></td>
+      <td className="px-2"><div className="flex items-center gap-1"><button type="button" title="Open saved scenario report" aria-label={`Open ${savedWhatIfName(r)}`} onClick={()=>openSaved(r)} className="p-2 rounded hover:bg-slate-100"><Eye className="w-4 h-4"/></button>{confirm===r.id?<><button type="button" className="text-rose-600 font-bold" onClick={()=>{onDelete(r.id);setConfirm(null);}}>Delete</button><button type="button" onClick={()=>setConfirm(null)}>Keep</button></>:<button type="button" title="Delete saved scenario" aria-label={`Delete ${savedWhatIfName(r)}`} onClick={()=>setConfirm(r.id)} className="p-2 rounded text-slate-400 hover:text-rose-600"><Trash2 className="w-4 h-4"/></button>}</div></td>
     </tr>)}</tbody></table></div>}
   </Card>;
 };

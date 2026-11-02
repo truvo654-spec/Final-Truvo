@@ -1,4 +1,5 @@
 import type { JournalEntry } from '../types';
+import type {WhatIfDemoData} from './whatifDemoData';
 import { runWhatIf, toMs, type WhatIfRule } from './whatif';
 import type { JournalPlaybook } from '../data/journalPlaybooks';
 import { currencyOf } from '../components/journal/journalMath';
@@ -26,6 +27,7 @@ export function playbookWhatIfSetup(playbook: JournalPlaybook, scenarioId = '') 
 
 /** A bounded, reproducible sweep over one parameter; never silently clips a range. */
 export function parameterRules(rule: WhatIfRule, min: number, max: number, step: number): WhatIfRule[] {
+  if(rule.kind==='technical')return [rule,...rule.conditions.map((condition,i)=>({...rule,label:rule.label+' · condition '+(i+1),conditions:[condition]}))].filter((item,i,all)=>all.findIndex(x=>JSON.stringify(x.conditions)===JSON.stringify(item.conditions))===i);
   if (rule.kind === 'mistakes') {
     if (rule.tags.length > 12) throw new Error('Choose up to 12 tags to compare at a time.');
     return [rule, ...rule.tags.map(tag => ({ kind: 'mistakes' as const, tags: [tag] }))]
@@ -61,11 +63,11 @@ export function splitWhatIfHistory(entries: JournalEntry[]) {
   return { sorted, train, validation, crossingCount: sorted.length - train.length - validation.length };
 }
 
-export function compareParameters(entries: JournalEntry[], rules: WhatIfRule[]) {
+export function compareParameters(entries: JournalEntry[], rules: WhatIfRule[],priceData?:WhatIfDemoData) {
   const { sorted, train, validation, crossingCount } = splitWhatIfHistory(entries);
   return rules.map(rule => ({
-    id: JSON.stringify(rule), rule, output: runWhatIf(sorted, rule),
-    training: runWhatIf(train, rule), validation: validation.length ? runWhatIf(validation, rule) : null,
+    id: JSON.stringify(rule), rule, output: runWhatIf(sorted, rule,1,priceData),
+    training: runWhatIf(train, rule,1,priceData), validation: validation.length ? runWhatIf(validation, rule,1,priceData) : null,
     trainingCount: train.length, validationCount: validation.length,
     crossingCount,
   }));

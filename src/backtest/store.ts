@@ -93,6 +93,9 @@ export const saveReplay = (list: ReplaySession[]) => write(KEYS.replay, list.sli
 
 export interface WhatIfSnapshot {
   version: 1;
+  breakdowns?:import('./whatifResults').WhatIfBreakdown[];
+  selectedBreakdown?:string;
+  demoData?:import('./whatifDemoData').WhatIfDemoMetadata;
   currency: string;
   source: 'user' | 'ai' | 'parameter';
   benchmark: string;

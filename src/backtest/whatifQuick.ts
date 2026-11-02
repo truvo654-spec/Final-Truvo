@@ -27,11 +27,12 @@ export function quickWhatIfAlternatives(rule:WhatIfRule):WhatIfRule[]{
    alternatives=[duration-2,duration-1,duration+1].filter(h=>h>0&&h<=24).map(h=>({kind:rule.kind,start:rule.start,end:rule.start+h===24?24:(rule.start+h)%24}));break;
   }
   case 'mistakes':alternatives=rule.tags.slice(0,3).map(tag=>({kind:rule.kind,tags:[tag]}));break;
+  case 'technical':alternatives=rule.conditions.slice(0,3).map((condition,i)=>({...rule,label:rule.label+' · condition '+(i+1),conditions:[condition]}));break;
   case 'dailyLoss':alternatives=[0.5,0.75,1.25].map(scale=>({kind:rule.kind,usd:Math.max(1,Math.round(rule.usd*scale*100)/100)}));break;
   case 'stop':alternatives=[0.5,0.75,0.9].map(mult=>({kind:rule.kind,mult}));break;
  }
  const seen=new Set<string>();
- return [rule,...alternatives].filter(r=>{const key=JSON.stringify(r);if(seen.has(key))return false;seen.add(key);return true;}).slice(0,4).map(r=>structuredClone(r));
+ return [rule,...alternatives].filter(r=>{const key=JSON.stringify(r.kind==='technical'?{kind:r.kind,timeframe:r.timeframe,conditions:r.conditions}:r);if(seen.has(key))return false;seen.add(key);return true;}).slice(0,4).map(r=>structuredClone(r));
 }
 
 /** Adapt a saved ledger for one-rule analysis; never write simulated trades into the journal. */
@@ -46,7 +47,7 @@ export function whatIfRunEntries(run:BacktestRun):WhatIfEntry[]{
 export function quickWhatIfSource(key:string,selection:JournalEntry[],history:JournalEntry[],books:JournalPlaybook[],runs:BacktestRun[],currency:string):{entries:WhatIfEntry[];currency:string;book:JournalPlaybook|undefined;run:BacktestRun|undefined;label:string;excluded:number}{
  const run=key.startsWith('run:')?runs.find(r=>r.id===key.slice(4)):undefined;
  const book=key.startsWith('book:')?books.find(b=>b.id===key.slice(5)):undefined;
- const rows=run?whatIfRunEntries(run):key==='selection'?selection:key==='history'?history:book?history.filter(e=>e.strategy===book.name&&(!book.directions?.length||book.directions.includes(e.direction==='BUY'?'long':'short'))):[];
+ const rows=run?whatIfRunEntries(run).map(e=>({...e,strategy:books.find(b=>b.id===run.playbookId)?.name??e.strategy})):key==='selection'?selection:key==='history'?history:book?history.filter(e=>e.strategy===book.name&&(!book.directions?.length||book.directions.includes(e.direction==='BUY'?'long':'short'))):[];
  const unit=run?.settings.risk.currency??currency;
  const entries=rows.filter(e=>currencyOf(e)===unit&&eligible(e));
  const linked=book??(run?books.find(b=>b.id===run.playbookId):books.find(b=>entries.length>0&&entries.every(e=>e.strategy===b.name)));

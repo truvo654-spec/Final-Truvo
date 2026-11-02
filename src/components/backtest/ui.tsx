@@ -108,6 +108,8 @@ function useEscape(open: boolean, onClose: () => void, ref: React.RefObject<HTML
     const focusables = () => (ref.current ? Array.from(ref.current.querySelectorAll<HTMLElement>('button:not([disabled]), input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')).filter(el=>el.getClientRects().length>0) : []);
     const t = window.setTimeout(() => ref.current?.querySelector<HTMLElement>('button, input, select, textarea, [tabindex]')?.focus(), 30);
     const onKey = (e: KeyboardEvent) => {
+      const dialogs=document.querySelectorAll('[role="dialog"][aria-modal="true"]');
+      if(dialogs.length&&dialogs[dialogs.length-1]!==ref.current)return;
       if (e.key === 'Escape') onClose();
       if (e.key === 'Tab' && ref.current) {
         const f = focusables() as HTMLElement[];

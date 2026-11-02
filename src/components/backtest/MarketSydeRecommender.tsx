@@ -9,8 +9,8 @@ export const RecommendationBadge: React.FC<{ exploratory?: boolean }> = ({ explo
 export const MarketSydeRecommender: React.FC<{
   recommendation: SetupRecommendation; baseline: RecommendationMetrics; baselineName: string;
   goal: RecommendationGoal; onGoal: (goal: RecommendationGoal) => void;
-  money: (value: number) => string; evidence: string; onUse?: (id: string) => void; action?: string; collapsible?: boolean;
-}> = ({ recommendation: r, baseline, baselineName, goal, onGoal, money, evidence, onUse, action = 'Try this setup', collapsible = false }) => {
+  money: (value: number) => string; evidence: string; onUse?: (id: string) => void; action?: string; collapsible?: boolean; estimateLabel?: string;
+}> = ({ recommendation: r, baseline, baselineName, goal, onGoal, money, evidence, onUse, action = 'Try this setup', collapsible = false, estimateLabel='Estimated price path' }) => {
   const [open, setOpen] = useState(true);
   const bodyId = useId();
   const candidate = r.candidate;
@@ -25,7 +25,7 @@ export const MarketSydeRecommender: React.FC<{
       <label className="text-[11px] font-semibold text-slate-600">Recommendation goal<JournalHelp label="Recommendation goal" /><select aria-label="Recommendation goal" className={`${inputBase} block mt-1`} value={goal} onChange={e => onGoal(e.target.value as RecommendationGoal)}><option value="net">Improve net result</option><option value="drawdown">Reduce drawdown</option><option value="win">Improve win rate</option></select></label>
     </div>
     <div className="mt-4 rounded-xl border border-white bg-white/80 p-4">
-      {candidate ? <><div className="flex flex-wrap items-center gap-2"><RecommendationBadge exploratory={r.status === 'exploratory'} /><p className="font-bold text-[#0b1c30]">{candidate.name}</p>{candidate.estimated && <Pill tone="warn">Estimated price path</Pill>}</div>
+      {candidate ? <><div className="flex flex-wrap items-center gap-2"><RecommendationBadge exploratory={r.status === 'exploratory'} /><p className="font-bold text-[#0b1c30]">{candidate.name}</p>{candidate.estimated && <Pill tone="warn">{estimateLabel}</Pill>}</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 text-xs tabular-nums">
           <div><p className="text-slate-500">Selection net Δ</p><p className={`text-lg font-bold ${delta >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{money(delta)}</p></div>
           <div><p className="text-slate-500">Drawdown Δ</p><p className="font-bold mt-1">{money(candidate.metrics.maxDD - baseline.maxDD)}</p></div>

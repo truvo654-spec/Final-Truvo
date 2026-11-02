@@ -1,7 +1,7 @@
 import type {WhatIfRun,WhatIfSnapshot} from './store';
-import type {buildWhatIfStudy} from './whatifStudy';
+import type {compareParameters} from './whatifOptimizer';
 
-export type WhatIfStudyRow=ReturnType<typeof buildWhatIfStudy>['rows'][number];
+export type WhatIfStudyRow=ReturnType<typeof compareParameters>[number];
 export type WhatIfSaveContext=Omit<WhatIfSnapshot,'version'|'output'|'training'|'validation'|'crossingCount'>;
 
 /** A save is evidence from this exact test, never a recipe that reruns on newer history. */

@@ -78,7 +78,7 @@ test('switching and saving an alternative preserves its exact rule, evidence and
  assert.deepEqual(saved.rule,{kind:'lossesPerDay',n:1});assert.equal(saved.whatIfNet,-100);
  assert.equal(saved.snapshot?.scope.Market,'Forex');assert.equal(JSON.stringify(history),before);assert.equal(original.n,2);
  const html=renderToStaticMarkup(React.createElement(WhatIfResults,{rows,selected:alternative,onSelect:()=>{},currency:'USD',summary:'Selected Trade Log · 2 trades · Forex',simulation:false,saved:false,onSave:()=>{},onTrades:()=>{},onClose:()=>{},onAdvanced:()=>{}}));
- assert.match(html,/Viewing an alternative/);assert.match(html,/Your choice/);assert.match(html,/Same trades, same rule/);assert.match(html,/Small sample/);assert.match(html,/Save result/);
+ assert.match(html,/Viewing an alternative/);assert.match(html,/Your choice/);assert.match(html,/Same trades, same rule/);assert.match(html,/Small sample/);assert.match(html,/Save comparison/);
  assert.match(html,/Advanced analysis/);
  assert.doesNotMatch(html,/Best|Recommendation goal|Rule to change|What-if data source/);
 });

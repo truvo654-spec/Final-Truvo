@@ -1,6 +1,6 @@
 import { JournalHelp } from '../journal/JournalHelp';
 // What-if on your real journal trades: pick trades with the journal's filters, change one rule, compare.
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, ChevronDown, Info, ListPlus, TrendingDown, TrendingUp } from 'lucide-react';
 import type { JournalEntry } from '../../types';
 import { currencyOf, eligible, resultOf, timestampMs } from '../journal/journalMath';
@@ -22,14 +22,24 @@ import { describeWhatIf as describeRule, ESTIMATED_RULES, runWhatIf, WhatIfRule,
 import { dateOnly, money, num, pct, rr, tone, utcWindow } from '../../backtest/format';
 import { loadWhatIfs, saveWhatIfs } from '../../backtest/store';
 import { Card, CollapsibleCard, Field, Hint, Pill, Segmented, btnPrimary, btnSecondary, inputBase, inputCls } from './ui';
+import {WhatIfTechnicalSetup,DEFAULT_TECHNICAL_SETUP} from './WhatIfTechnicalSetup';
+import type {TechnicalWhatIfRule} from '../../backtest/whatifTechnical';
+
+import type {WhatIfDemoData} from '../../backtest/whatifDemoData';
 
 interface Props {
+  priceData?:WhatIfDemoData;
+  initialTechnicalSetup?:TechnicalWhatIfRule;
   fixedScope?: boolean;
   benchmarkLabel?: string;
   benchmarkScope?: Record<string,string>;
   initialValues?: {n:number;usd:number;start:number;end:number;be:number;target:number;stop:number;tags:string[]};
   onReviewTrades?: (trades:WhatIfTrade[],label:string)=>void;
   initialRule?: WhatIfRule;
+  controlledRule?:WhatIfRule;
+  onRuleChange?:(rule:WhatIfRule)=>void;
+  resultTradeIds?:string[];
+  resultLabel?:string;
   entries: JournalEntry[];
   allEntries: JournalEntry[];
   initialPlaybookId?: string;
@@ -44,6 +54,9 @@ interface Props {
 }
 
 type Kind = WhatIfRule['kind'];
+type RuleValues={n:number;usd:number;start:number;end:number;tags:string[];be:number;target:number;stop:number};
+const valuesOf=(r?:WhatIfRule):Partial<RuleValues>=>!r||r.kind==='technical'?{}:r.kind==='target'?{target:r.r}:r.kind==='breakeven'?{be:r.r}:r.kind==='stop'?{stop:r.mult}:r.kind==='dailyLoss'?{usd:r.usd}:r.kind==='lossesPerDay'?{n:r.n}:r.kind==='hours'?{start:r.start,end:r.end}:{tags:r.tags};
+const ruleOf=(kind:Kind,p:RuleValues,technical:TechnicalWhatIfRule):WhatIfRule=>kind==='technical'?technical:kind==='lossesPerDay'?{kind,n:p.n}:kind==='dailyLoss'?{kind,usd:p.usd}:kind==='hours'?{kind,start:p.start,end:p.end}:kind==='mistakes'?{kind,tags:p.tags}:kind==='breakeven'?{kind,r:p.be}:kind==='target'?{kind,r:p.target}:{kind,mult:p.stop};
 const RULES: { kind: Kind; title: string; hint: string }[] = [
   { kind: 'lossesPerDay', title: 'Stop after N losses a day', hint: 'Skip every trade taken after the Nth losing trade of that day.' },
   { kind: 'dailyLoss', title: 'Max daily loss', hint: 'Skip trades once the day is down this much.' },
@@ -75,7 +88,7 @@ const MultiPick: React.FC<{ label: string; options: string[]; value: string[]; o
   );
 };
 
-export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchmarkLabel, benchmarkScope, initialValues, onReviewTrades, initialRule, entries, allEntries, initialPlaybookId = '', playbooks, tz, onOpenTrades, onAddRule,onToast,onSaveScenario,onViewSaved }) => {
+export const WhatIfAdvancedPanel: React.FC<Props> = ({ priceData,initialTechnicalSetup,fixedScope=false, benchmarkLabel, benchmarkScope, initialValues, onReviewTrades, initialRule, controlledRule,onRuleChange,resultTradeIds,resultLabel, entries, allEntries, initialPlaybookId = '', playbooks, tz, onOpenTrades, onAddRule,onToast,onSaveScenario,onViewSaved }) => {
   const currency=React.useContext(JournalCurrency);
   const money=(n:number,_currency?:unknown,dp=2,_signed=true)=>Number.isFinite(n)?formatMoney(n,currency,Math.max(2,dp)):'—';
   const describeWhatIf=(r:WhatIfRule)=>r.kind==='dailyLoss'?`Stop after ${money(r.usd)} net loss in a day`:describeRule(r);
@@ -84,7 +97,9 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
   const [syms, setSyms] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [result, setResult] = useState<'all' | 'wins' | 'losses'>('all');
-  const [kind, setKind] = useState<Kind>('target');
+  const [kind, setKind] = useState<Kind>(initialRule?.kind??'target');
+  const [technicalRule,setTechnicalRule]=useState<TechnicalWhatIfRule>(()=>structuredClone(initialRule?.kind==='technical'?initialRule:initialTechnicalSetup??DEFAULT_TECHNICAL_SETUP));
+  const previousKind=useRef<Kind>('lossesPerDay');
   const [benchmark, setBenchmark] = useState(initialPlaybookId ? 'playbook' : 'selection');
   const [market, setMarket] = useState('all');
   const [setupMarkets, setSetupMarkets] = useState<string[]>([]);
@@ -104,7 +119,7 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
     entries.forEach((e) => e.mistakes.forEach((m) => c.set(m, (c.get(m) || 0) + 1)));
     return Array.from(c.entries()).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([m]) => m);
   }, [entries]);
-  const [params, setParams] = useState({ n: 1, usd: 300, start: 7, end: 16, tags: topMistakes, be: 1, target: 2, stop: 0.75, ...initialValues });
+  const [params, setParams] = useState({ n: 1, usd: 300, start: 7, end: 16, tags: topMistakes, be: 1, target: 2, stop: 0.75, ...initialValues,...valuesOf(initialRule) });
 
   const allTags = useMemo(() => Array.from(new Set(dataset.flatMap((e) => [...e.mistakes, ...e.tags]))).sort(), [dataset]);
   const symbols = useMemo(() => Array.from(new Set(dataset.filter(e => market === 'all' || (market === 'playbook' ? setupMarkets.includes(e.assetClass) : e.assetClass === market)).map((e) => e.symbol))).sort(), [dataset, market, setupMarkets]);
@@ -125,17 +140,19 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
       && (result === 'all' || (result === 'wins' ? resultOf(e)==='win' : resultOf(e)==='loss')));
   }, [dataset, range, pbs, syms, tags, result, market, setupMarkets, direction, fromDate, toDate, sessionOnly, params.start, params.end, kind]);
 
-  const rule: WhatIfRule = kind === 'lossesPerDay' ? { kind, n: params.n } : kind === 'dailyLoss' ? { kind, usd: params.usd } : kind === 'hours' ? { kind, start: params.start, end: params.end }
-    : kind === 'mistakes' ? { kind, tags: params.tags } : kind === 'breakeven' ? { kind, r: params.be } : kind === 'target' ? { kind, r: params.target } : { kind, mult: params.stop };
-  const study=useWhatIfStudy(picked,rule);
+  const rule=controlledRule??ruleOf(kind,params,technicalRule);
+  const visibleEntries=useMemo(()=>resultTradeIds?picked.filter(e=>resultTradeIds.includes(e.id)):picked,[picked,JSON.stringify(resultTradeIds)]);
+  const study=useWhatIfStudy(picked,rule,resultTradeIds,priceData);
+  const changeParams=(next:RuleValues|((previous:RuleValues)=>RuleValues))=>{const value=typeof next==='function'?next(params):next;setParams(value);onRuleChange?.(ruleOf(kind,value,technicalRule));};
+  const chooseKind=(next:Kind)=>{setKind(next);onRuleChange?.(ruleOf(next,params,technicalRule));};
   const out=study.rows[0].output;
   const aiOut=study.aiRow?.output??null;
   const aiName=study.aiRow?describeWhatIf(study.aiRow.rule):'No qualifying AI scenario';
   const comparisonTrades=compareWhatIfLedgers(out,aiOut);
   const [savedKeys,setSavedKeys]=useState(()=>loadWhatIfs().map(savedWhatIfKey).filter((key):key is string=>key!==null));
   const saveContext=(source:WhatIfSnapshot['source']):WhatIfSaveContext=>({currency,source,goal:study.goal,
-    benchmark:benchmarkLabel??(benchmark==='history'?'All journal history':benchmark==='playbook'?`${transfer?.name||'Selected playbook'} trade history`:benchmark.startsWith('account:')?`Account ${benchmark.slice(8)}`:'Current journal selection'),
-    scope:{'Market type':market==='playbook'?setupMarkets.join(', '):market,'Symbols':syms.join(', ')||'All','Direction':direction==='all'?'Long + short':direction==='BUY'?'Long':'Short','Playbook setup':transfer?.name||'Custom setup','Playbook scenario':scenarioId||'Base setup','Date range':range==='all'?'All time':`Last ${range} days (ending on latest benchmark trade)`,'From entry date':fromDate||'Any','To entry date':toDate||'Any','Session (UTC)':sessionOnly?`${params.start}:00–${params.end}:00`:'Any','Playbook filter':pbs.join(', ')||'All','Tags filter':tags.join(', ')||'All','Outcome filter':result,...benchmarkScope}});
+    demoData:priceData?.metadata,benchmark:benchmarkLabel??(benchmark==='history'?'All journal history':benchmark==='playbook'?`${transfer?.name||'Selected playbook'} trade history`:benchmark.startsWith('account:')?`Account ${benchmark.slice(8)}`:'Current journal selection'),
+    scope:{'Market type':market==='playbook'?setupMarkets.join(', '):market,'Symbols':syms.join(', ')||'All','Direction':direction==='all'?'Long + short':direction==='BUY'?'Long':'Short','Playbook setup':transfer?.name||'Custom setup','Playbook scenario':scenarioId||'Base setup','Date range':range==='all'?'All time':`Last ${range} days (ending on latest benchmark trade)`,'From entry date':fromDate||'Any','To entry date':toDate||'Any','Session (UTC)':sessionOnly?`${params.start}:00–${params.end}:00`:'Any','Playbook filter':pbs.join(', ')||'All','Tags filter':tags.join(', ')||'All','Outcome filter':result,...benchmarkScope,...(resultLabel?{'Result':resultLabel,'Trade IDs':visibleEntries.map(e=>e.id).sort().join(','),'Daily limits':'Evaluated across the full selected comparison'}:{})}});
   const isScenarioSaved=(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>savedKeys.includes(whatIfSaveKey(row.rule,saveContext(source),row.output));
   const saveScenario=(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>{
     if(isScenarioSaved(row,source))return;
@@ -145,12 +162,11 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
     if(saved){setSavedKeys(loadWhatIfs().map(savedWhatIfKey).filter((key):key is string=>key!==null));onToast('Scenario and results saved to Saved runs');}
     else onToast('Could not save this scenario. Browser storage is full or unavailable.');
   };
-  const selectRule = (r: WhatIfRule) => {
-    setKind(r.kind);
-    setParams(p => ({ ...p, ...(r.kind === 'target' ? { target: r.r } : r.kind === 'breakeven' ? { be: r.r } : r.kind === 'stop' ? { stop: r.mult } : r.kind === 'dailyLoss' ? { usd: r.usd } : r.kind === 'lossesPerDay' ? { n: r.n } : r.kind === 'hours' ? { start: r.start, end: r.end } : { tags: r.tags }) }));
-  };
+  const applyRule=(r:WhatIfRule)=>{setKind(r.kind);if(r.kind==='technical')setTechnicalRule(structuredClone(r));else setParams(p=>({...p,...valuesOf(r)}));};
+  const selectRule=(r:WhatIfRule)=>{applyRule(r);onRuleChange?.(r);};
+  useEffect(()=>{if(controlledRule)applyRule(controlledRule);},[JSON.stringify(controlledRule)]);
   useEffect(() => {
-    if(fixedScope){if(initialRule)selectRule(initialRule);return;}
+    if(fixedScope){if(initialRule)applyRule(initialRule);return;}
     if (!transfer) {
       setKind('target'); setParams(p => ({ ...p, target: 2, start: 7, end: 16 }));
       setSessionOnly(false); setMarket('all'); setSetupMarkets([]); setSyms([]); setDirection('all');
@@ -163,14 +179,14 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
   }, [transfer, scenarioId]);
 
   const changed = out.trades.filter((t) => t.status !== 'same');
-  const headline = !picked.length ? 'No journal trades match these filters.'
-    : !changed.length ? `${describeWhatIf(rule)} would not have changed any of these ${picked.length} trades.`
-    : `${describeWhatIf(rule)} would have ${out.saved >= 0 ? 'added' : 'cost'} ${money(Math.abs(out.saved), 'USD', 0, false)} on these ${picked.length} trades${out.skipped ? ` (${out.skipped} skipped` : ''}${out.changed ? `${out.skipped ? ', ' : ' ('}${out.changed} changed` : ''}${out.skipped || out.changed ? ')' : ''}.`;
+  const headline = !visibleEntries.length ? 'No journal trades match these filters.'
+    : !changed.length ? `${describeWhatIf(rule)} would not have changed any of these ${visibleEntries.length} trades.`
+    : `${describeWhatIf(rule)} would have ${out.saved >= 0 ? 'added' : 'cost'} ${money(Math.abs(out.saved), 'USD', 0, false)} on these ${visibleEntries.length} trades${out.skipped ? ` (${out.skipped} skipped` : ''}${out.changed ? `${out.skipped ? ', ' : ' ('}${out.changed} changed` : ''}${out.skipped || out.changed ? ')' : ''}.`;
 
   const ruleText = describeWhatIf(rule);
   const add = () => {
     const list = loadWhatIfs();
-    saveWhatIfs([{ id: `wi_${Date.now().toString(36)}`, createdAt: new Date().toISOString(), rule, trades: picked.length, actualNet: out.actual.netPnl, whatIfNet: out.whatIf.netPnl, saved: out.saved }, ...list]);
+    saveWhatIfs([{ id: `wi_${Date.now().toString(36)}`, createdAt: new Date().toISOString(), rule, trades: visibleEntries.length, actualNet: out.actual.netPnl, whatIfNet: out.whatIf.netPnl, saved: out.saved }, ...list]);
     onAddRule('checklist', ruleText);
   };
 
@@ -200,7 +216,7 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
           </div>
           {transfer && <div className="text-[11px] text-slate-500 mt-2 space-y-1"><p>{transfer.name}: benchmark {transfer.benchmarkRR}R · {transfer.window?.label || 'Any session'} · risk {transfer.riskPerTrade ?? '—'}% · max {transfer.maxTradesPerDay ?? '—'} trades/day</p><p>Target R, instrument scope, direction and UTC session transfer automatically. A priced scenario uses its own planned R. Change the benchmark above to compare against other journal history.</p><p>Reference stop: {transfer.stopRule} · Target: {transfer.targetRule}</p><p>Written entry rules, partial exits, trailing stops and percentage position sizing are reference context; this test changes one supported rule on recorded trades.</p></div>}
         </div>
-        <div className="flex flex-wrap items-end gap-3 mt-4"><Field label="From entry date" htmlFor="wi-from"><input id="wi-from" type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className={inputBase} /></Field><Field label="To entry date" htmlFor="wi-to"><input id="wi-to" type="date" value={toDate} min={fromDate || undefined} onChange={e => setToDate(e.target.value)} className={inputBase} /></Field><label className="flex gap-2 items-center h-9 text-xs"><input type="checkbox" checked={sessionOnly} onChange={e => setSessionOnly(e.target.checked)} />Filter to setup session (UTC)<JournalHelp label="Filter to setup session (UTC)" /></label>{sessionOnly && <><input type="number" aria-label="Setup session start UTC" min={0} max={23} value={params.start} onChange={e => setParams(p => ({...p,start:Math.max(0,Math.min(23,Number(e.target.value)))}))} className={`${inputBase} w-20`} /><span className="text-xs">to</span><input type="number" aria-label="Setup session end UTC" min={0} max={24} value={params.end} onChange={e => setParams(p => ({...p,end:Math.max(0,Math.min(24,Number(e.target.value)))}))} className={`${inputBase} w-20`} /></>}</div>
+        <div className="flex flex-wrap items-end gap-3 mt-4"><Field label="From entry date" htmlFor="wi-from"><input id="wi-from" type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className={inputBase} /></Field><Field label="To entry date" htmlFor="wi-to"><input id="wi-to" type="date" value={toDate} min={fromDate || undefined} onChange={e => setToDate(e.target.value)} className={inputBase} /></Field><label className="flex gap-2 items-center h-9 text-xs"><input type="checkbox" checked={sessionOnly} onChange={e => setSessionOnly(e.target.checked)} />Filter to setup session (UTC)<JournalHelp label="Filter to setup session (UTC)" /></label>{sessionOnly && <><input type="number" aria-label="Setup session start UTC" min={0} max={23} value={params.start} onChange={e => changeParams(p => ({...p,start:Math.max(0,Math.min(23,Number(e.target.value)))}))} className={`${inputBase} w-20`} /><span className="text-xs">to</span><input type="number" aria-label="Setup session end UTC" min={0} max={24} value={params.end} onChange={e => changeParams(p => ({...p,end:Math.max(0,Math.min(24,Number(e.target.value)))}))} className={`${inputBase} w-20`} /></>}</div>
         <p className="text-[11px] text-slate-500 mt-3">History stays linked to your journal, including imported and newly recorded trades. Benchmark counts show eligible closed trades before setup filters. {currency} only · {benchmark === 'selection' ? 'Current selection follows the journal account, dates and filters.' : 'This benchmark uses its own date scope below.'} Relative ranges end on the benchmark’s latest trade. {dataset.filter(e => !eligible(e)).length} records excluded for open status or unknown P&amp;L / fees. {kind === 'hours' && sessionOnly ? 'The hours rule’s parameter range replaces the setup session filter during comparison.' : ''}</p>
       </Card>
       <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Which trades to test">
@@ -208,19 +224,19 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
         <MultiPick label="Playbook" options={names} value={pbs} onChange={setPbs} />
         <MultiPick label="Tags" options={allTags} value={tags} onChange={setTags} />
         <Segmented label="Result" value={result} onChange={setResult} options={[{ id: 'all', label: 'All results' }, { id: 'wins', label: 'Wins' }, { id: 'losses', label: 'Losses' }]} />
-        <span className="ml-auto text-xs text-[#474556] tabular-nums">Testing <b className="text-[#0b1c30]">{picked.length}</b> filtered trades</span>
+        <span className="ml-auto text-xs text-[#474556] tabular-nums">Testing <b className="text-[#0b1c30]">{visibleEntries.length}</b> filtered trades</span>
       </div></>}
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-5 items-start">
         <div className="space-y-5 min-w-0">
-        <Card title="Scenario parameter" sub="Choose a rule, then compare its parameter range below.">
+        <CollapsibleCard title="Scenario parameter" summary={kind==='technical'?'Technical setup is active':describeWhatIf(rule)} sub="Choose one rule to compare.">
           <div className="space-y-2" role="radiogroup" aria-label="Rule to change">
             {RULES.map((r) => {
               const on = kind === r.kind;
               return (
                 <div key={r.kind} className={`rounded-xl border p-3 ${on ? 'border-[#5338ec] bg-[#FBFAFF]' : 'border-slate-200'}`}>
                   <label className="flex items-start gap-2 cursor-pointer">
-                    <input type="radio" name="whatif-rule" checked={on} onChange={() => setKind(r.kind)} className="mt-0.5" />
+                    <input type="radio" name="whatif-rule" checked={on} onChange={() => chooseKind(r.kind)} className="mt-0.5" />
                     <span className="flex-1">
                       <span className="text-xs font-bold text-[#0b1c30]">{r.title}</span>
                       {ESTIMATED_RULES.includes(r.kind) && <Pill tone="warn" className="ml-1.5" title="Journal trades have no recorded price path, so this uses a path rebuilt from entry, stop, exit and times.">Estimate</Pill>}
@@ -229,51 +245,53 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
                   </label>
                   {on && (
                     <div className="mt-2.5 pl-6 flex flex-wrap items-center gap-2 text-xs">
-                      {r.kind === 'lossesPerDay' && (<><input type="number" min={1} max={10} aria-label="Losses per day" value={params.n} onChange={(e) => setParams({ ...params, n: Math.max(1, Number(e.target.value)) })} className={`${inputBase} w-20`} /> losses</>)}
-                      {r.kind === 'dailyLoss' && (<>{currency}<input type="number" min={10} step={50} aria-label={`Max daily loss in ${currency}`} value={params.usd} onChange={(e) => setParams({ ...params, usd: Math.max(1, Number(e.target.value)) })} className={`${inputBase} w-28`} /></>)}
+                      {r.kind === 'lossesPerDay' && (<><input type="number" min={1} max={10} aria-label="Losses per day" value={params.n} onChange={(e) => changeParams({ ...params, n: Math.max(1, Number(e.target.value)) })} className={`${inputBase} w-20`} /> losses</>)}
+                      {r.kind === 'dailyLoss' && (<>{currency}<input type="number" min={10} step={50} aria-label={`Max daily loss in ${currency}`} value={params.usd} onChange={(e) => changeParams({ ...params, usd: Math.max(1, Number(e.target.value)) })} className={`${inputBase} w-28`} /></>)}
                       {r.kind === 'hours' && (<>
-                        <select aria-label="From hour UTC" value={params.start} onChange={(e) => setParams({ ...params, start: Number(e.target.value) })} className={`${inputBase} w-auto`}>{Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}</select>
+                        <select aria-label="From hour UTC" value={params.start} onChange={(e) => changeParams({ ...params, start: Number(e.target.value) })} className={`${inputBase} w-auto`}>{Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}</select>
                         to
-                        <select aria-label="To hour UTC" value={params.end} onChange={(e) => setParams({ ...params, end: Number(e.target.value) })} className={`${inputBase} w-auto`}>{Array.from({ length: 24 }, (_, h) => <option key={h} value={h + 1}>{String((h + 1) % 24).padStart(2, '0')}:00</option>)}</select>
+                        <select aria-label="To hour UTC" value={params.end} onChange={(e) => changeParams({ ...params, end: Number(e.target.value) })} className={`${inputBase} w-auto`}>{Array.from({ length: 24 }, (_, h) => <option key={h} value={h + 1}>{String((h + 1) % 24).padStart(2, '0')}:00</option>)}</select>
                         <span className="basis-full text-[11px] text-slate-500">{utcWindow(params.start, params.end, tz)}</span>
                       </>)}
                       {r.kind === 'mistakes' && (
                         <div className="flex flex-wrap gap-1.5">
-                          {allTags.map((t) => { const sel = params.tags.includes(t); return <button key={t} type="button" aria-pressed={sel} onClick={() => setParams({ ...params, tags: sel ? params.tags.filter((x) => x !== t) : [...params.tags, t] })} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold border ${sel ? 'bg-rose-50 border-rose-300 text-rose-700' : 'bg-white border-slate-200 text-[#474556]'}`}>{t}</button>; })}
+                          {allTags.map((t) => { const sel = params.tags.includes(t); return <button key={t} type="button" aria-pressed={sel} onClick={() => changeParams({ ...params, tags: sel ? params.tags.filter((x) => x !== t) : [...params.tags, t] })} className={`h-7 px-2.5 rounded-full text-[11px] font-semibold border ${sel ? 'bg-rose-50 border-rose-300 text-rose-700' : 'bg-white border-slate-200 text-[#474556]'}`}>{t}</button>; })}
                         </div>
                       )}
-                      {r.kind === 'breakeven' && (<>at <input type="number" min={0.25} step={0.25} aria-label="Breakeven at R" value={params.be} onChange={(e) => setParams({ ...params, be: Number(e.target.value) })} className={`${inputBase} w-20`} /> R</>)}
-                      {r.kind === 'target' && (<><input type="number" min={0.1} step={0.1} aria-label="Target R" value={params.target} onChange={e => setParams(p => ({ ...p, target: Math.max(0.1,Number(e.target.value)) }))} className={`${inputBase} w-24`} />R</>)}
-                      {r.kind === 'stop' && (<Segmented size="sm" label="Stop size" value={String(params.stop)} onChange={(v) => setParams({ ...params, stop: Number(v) })} options={['0.5', '0.75', '0.9'].map((x) => ({ id: x, label: `${x}R` }))} />)}
+                      {r.kind === 'breakeven' && (<>at <input type="number" min={0.25} step={0.25} aria-label="Breakeven at R" value={params.be} onChange={(e) => changeParams({ ...params, be: Number(e.target.value) })} className={`${inputBase} w-20`} /> R</>)}
+                      {r.kind === 'target' && (<><input type="number" min={0.1} step={0.1} aria-label="Target R" value={params.target} onChange={e => changeParams(p => ({ ...p, target: Math.max(0.1,Number(e.target.value)) }))} className={`${inputBase} w-24`} />R</>)}
+                      {r.kind === 'stop' && (<Segmented size="sm" label="Stop size" value={String(params.stop)} onChange={(v) => changeParams({ ...params, stop: Number(v) })} options={['0.5', '0.75', '0.9'].map((x) => ({ id: x, label: `${x}R` }))} />)}
                     </div>
                   )}
                 </div>
               );
             })}
           </div>
-        </Card>
-        {picked.length>0&&<ScenarioOutcomeComparison user={out} ai={aiOut} aiName={aiName} userName={describeWhatIf(rule)}/>}
+        </CollapsibleCard>
+        <WhatIfTechnicalSetup initial={initialTechnicalSetup} applied={kind==='technical'?technicalRule:undefined} onUse={next=>{if(kind!=='technical')previousKind.current=kind;selectRule(next);}} onClear={()=>chooseKind(previousKind.current)}/>
+        {visibleEntries.length>0&&<ScenarioOutcomeComparison user={out} ai={aiOut} aiName={aiName} userName={describeWhatIf(rule)}/>}
         </div>
 
         <div className="space-y-5 min-w-0">
-          {picked.length > 0 && <WhatIfComparison benchmarkLabel={benchmarkLabel} fixedScope={fixedScope} entries={picked} selectedSymbols={syms} instrumentOptions={symbols} onInstrument={symbol=>setSyms([symbol])} rule={rule} model={study} onSelect={selectRule} onSave={saveScenario} isSaved={isScenarioSaved}/>}
+          {visibleEntries.length > 0 && <WhatIfComparison benchmarkLabel={benchmarkLabel} fixedScope={fixedScope} entries={visibleEntries} selectedSymbols={syms} instrumentOptions={[...new Set(visibleEntries.map(e=>e.symbol))]} onInstrument={symbol=>setSyms([symbol])} rule={rule} model={study} onSelect={selectRule} onSave={saveScenario} isSaved={isScenarioSaved}/>}
           <CollapsibleCard title="Result summary" summary={headline} className={out.saved > 0 ? 'border-emerald-200' : out.saved < 0 ? 'border-rose-200' : ''}>
            <div aria-live="polite">
             <p className="text-lg font-bold text-[#0b1c30] mt-0.5 flex items-start gap-2">
               {out.saved > 0 ? <TrendingUp className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /> : out.saved < 0 ? <TrendingDown className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" /> : null}{headline}
             </p>
-            {picked.length > 0 && <p className="text-xs text-[#474556] mt-1">{out.lossesAvoided} losing trade{out.lossesAvoided === 1 ? '' : 's'} avoided or reduced · {out.winsForfeited} winning trade{out.winsForfeited === 1 ? '' : 's'} given up or cut.{out.estimated ? ' This rule is an estimate based on rebuilt price paths.' : ''}</p>}
+            {visibleEntries.length > 0 && <p className="text-xs text-[#474556] mt-1">{out.lossesAvoided} losing trade{out.lossesAvoided === 1 ? '' : 's'} avoided or reduced · {out.winsForfeited} winning trade{out.winsForfeited === 1 ? '' : 's'} given up or cut.{out.estimated ? rule.kind==='technical'?' Technical conditions use illustrative demo prices.':' This rule is an estimate based on rebuilt price paths.' : ''}</p>}
+            {rule.kind==='technical'&&<p className="mt-2 text-xs text-amber-700">{out.trades.filter(t=>t.note.startsWith('Technical check unavailable')).length} trades could not be checked and stay unchanged.</p>}
             <div className="flex flex-wrap gap-2 mt-3">
-              {picked.length>0&&<SaveScenarioButton name="your scenario" saved={isScenarioSaved(study.rows[0],'user')} onSave={()=>saveScenario(study.rows[0],'user')} label/>}
+              {visibleEntries.length>0&&<SaveScenarioButton name="your scenario" saved={isScenarioSaved(study.rows[0],'user')} onSave={()=>saveScenario(study.rows[0],'user')} label/>}
               {onViewSaved&&<button type="button" className={btnSecondary} onClick={onViewSaved}>View Saved runs <ArrowRight className="w-3.5 h-3.5"/></button>}
-              <button type="button" className={btnPrimary} disabled={!picked.length} onClick={add}><ListPlus className="w-4 h-4" /> Add this as a rule in my checklist</button>
+              <button type="button" className={btnPrimary} disabled={!visibleEntries.length} onClick={add}><ListPlus className="w-4 h-4" /> Add this as a rule in my checklist</button>
             </div>
            </div>
           </CollapsibleCard>
 
-          {picked.length > 0 && (<>
-            <CollapsibleCard title="Actual vs what-if" summary={`Net ${money(out.actual.netPnl)} → ${money(out.whatIf.netPnl)} · ${picked.length} trades`} sub="Full filtered history: actual trades, your selected rule and the independently selected MarketSyde AI scenario.">
-              <p className="text-[11px] text-[#5338ec] mb-3">MarketSyde AI: {aiName}{aiOut?.estimated?' · Estimated price path':''}. Selection uses training results; totals below also include holdout trades.</p>
+          {visibleEntries.length > 0 && (<>
+            <CollapsibleCard title="Actual vs what-if" summary={`Net ${money(out.actual.netPnl)} → ${money(out.whatIf.netPnl)} · ${visibleEntries.length} trades`} sub="Full filtered history: actual trades, your selected rule and the independently selected MarketSyde AI scenario.">
+              <p className="text-[11px] text-[#5338ec] mb-3">MarketSyde AI: {aiName}{aiOut?.estimated?study.aiRow?.rule.kind==='technical'?' · Demo price check':' · Estimated price path':''}. Selection uses training results; totals below also include holdout trades.</p>
               <p className="text-[11px] text-slate-500 mb-3">Green = best historical value per measure, shared for ties. Lower drawdown is better; trade counts are context.</p>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-xs tabular-nums">
@@ -335,7 +353,7 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
           </>)}
         </div>
       </div>
-      {!picked.length && <Card title="Choose a trade benchmark"><p className="text-xs text-slate-500">No eligible trades match this benchmark and setup. Choose all journal history or another account, or broaden the market, symbol, date or session filters.</p></Card>}
+      {!visibleEntries.length && <Card title="Choose a trade benchmark"><p className="text-xs text-slate-500">No eligible trades match this benchmark and setup. Choose all journal history or another account, or broaden the market, symbol, date or session filters.</p></Card>}
     </div>
   );
 };

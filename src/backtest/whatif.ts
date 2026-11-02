@@ -2,10 +2,14 @@
 // Rules that only need the trade list (losses per day, daily loss, hours, mistake tags) are exact.
 // Rules that depend on price movement inside a trade (stop, target, breakeven) use a path rebuilt
 // from the trade's entry, stop, exit and times, and are labelled as estimates.
+// Technical entry checks use completed illustrative demo candles and retain unknown checks unchanged.
 import type { JournalEntry } from '../types';
 import { computeMetrics, Metrics } from './metrics';
 import { hashSeed, normal, rng } from './rng';
 import { eligible, netOf, realizedR, timestampMs, metrics as journalMetrics } from '../components/journal/journalMath';
+import type {Condition,Timeframe} from './types';
+import {technicalTradeChecks} from './whatifTechnical';
+import {demoWhatIfFeed,type WhatIfDemoData} from './whatifDemoData';
 
 export type WhatIfRule =
   | { kind: 'stop'; mult: number }
@@ -14,14 +18,15 @@ export type WhatIfRule =
   | { kind: 'lossesPerDay'; n: number }
   | { kind: 'dailyLoss'; usd: number }
   | { kind: 'hours'; start: number; end: number }
-  | { kind: 'mistakes'; tags: string[] };
+  | { kind: 'mistakes'; tags: string[] }
+  | { kind: 'technical'; label: string; timeframe: Timeframe; conditions: Condition[] };
 
 /** Transient saved-test adapter: keep the engine ledger's precision without changing journal rounding. */
 export type WhatIfEntry = JournalEntry & { whatIfRecordedNet?: number };
 const recordedNet=(e:WhatIfEntry)=>Number.isFinite(e.whatIfRecordedNet)?e.whatIfRecordedNet!:netOf(e);
 const recordedR=(e:WhatIfEntry)=>Number.isFinite(e.whatIfRecordedNet)&&e.initialRisk&&e.initialRisk>0?recordedNet(e)/e.initialRisk:realizedR(e);
 
-export const ESTIMATED_RULES: WhatIfRule['kind'][] = ['stop', 'target', 'breakeven'];
+export const ESTIMATED_RULES: WhatIfRule['kind'][] = ['stop', 'target', 'breakeven','technical'];
 
 export interface WhatIfTrade {
   id: string; symbol: string; strategy: string; direction: 'BUY' | 'SELL'; entryTime: number; exitTime: number;
@@ -75,9 +80,9 @@ export function pathOf(e: JournalEntry, steps = 48, end = recordedR(e) ?? 0): nu
   return dev.map((d, k) => (k / steps) * end + f * d);
 }
 
-export function runWhatIf(entries: WhatIfEntry[], rule: WhatIfRule, startBalance = 1): WhatIfOutput {
+export function runWhatIf(entries: WhatIfEntry[], rule: WhatIfRule, startBalance = 1,priceData?:WhatIfDemoData): WhatIfOutput {
   journalMetrics(entries); // refuses to combine currencies without a conversion policy
-  const sources = new Map(entries.map(e => [e.id, e]));
+  const technical=rule.kind==='technical'?technicalTradeChecks(entries,rule,priceData?demoWhatIfFeed(priceData):undefined):null;
   const closed = entries.filter((e) => eligible(e))
     .map((e) => ({ e, t0: toMs(e.entryTime, e.date), t1: toMs(e.exitTime, e.date, 13) }))
     .sort((a, b) => a.t0 - b.t0);
@@ -105,6 +110,11 @@ export function runWhatIf(entries: WhatIfEntry[], rule: WhatIfRule, startBalance
       return t;
     };
     switch (rule.kind) {
+      case 'technical':{
+        const check=technical?.get(e.id);
+        if(check?.match===false)return record(skip('Skipped: '+check.reason));
+        return record({...base,note:check?.match===true?check.reason:'Technical check unavailable: '+(check?.reason??'No price evidence')+'; trade unchanged'});
+      }
       case 'lossesPerDay':
         if ((dayLosses.get(day) || 0) >= rule.n) return record(skip(`Skipped: already ${rule.n} loss${rule.n === 1 ? '' : 'es'} that day`));
         return record(base);
@@ -140,9 +150,16 @@ export function runWhatIf(entries: WhatIfEntry[], rule: WhatIfRule, startBalance
     }
   });
 
+  return summarizeWhatIfOutput(entries,out,ESTIMATED_RULES.includes(rule.kind),startBalance);
+}
+
+/** Summarize an existing decision ledger without rerunning daily guardrails on a subgroup. */
+export function summarizeWhatIfOutput(entries:WhatIfEntry[],out:WhatIfTrade[],estimated:boolean,startBalance=1):WhatIfOutput {
+  journalMetrics(entries);
+  const sources=new Map(entries.map(e=>[e.id,e]));
   const mt = (sel: 'actual' | 'new') => out.filter((t) => sel === 'actual' || t.status !== 'skipped').map((t) => ({ entryTime: t.entryTime, exitTime: t.exitTime, net: sel === 'actual' ? t.actualNet : t.newNet, r: sel === 'actual' ? t.actualR : t.newR }));
-  const rs = closed[0]?.t0;
-  const re = closed.length ? Math.max(...closed.map((c) => Math.max(c.t1, c.t0))) + 1 : undefined;
+  const rs = out.length?Math.min(...out.map(t=>t.entryTime)):undefined;
+  const re = out.length?Math.max(...out.map(t=>t.exitTime))+1:undefined;
   // Engine time-series calculations are retained, but journal-facing definitions are shared.
   // The internal numerical anchor is not evidence of an account balance.
   const sharedMetrics=(sel:'actual'|'new'):Metrics=>{
@@ -173,7 +190,7 @@ export function runWhatIf(entries: WhatIfEntry[], rule: WhatIfRule, startBalance
     lossesAvoided: diff.filter((t) => t.actualNet < 0 && t.newNet > t.actualNet).length,
     winsForfeited: diff.filter((t) => t.actualNet > 0 && t.newNet < t.actualNet).length,
     saved: whatIf.netPnl - actual.netPnl,
-    estimated: ESTIMATED_RULES.includes(rule.kind),
+    estimated,
   };
 }
 
@@ -186,5 +203,6 @@ export function describeWhatIf(rule: WhatIfRule): string {
     case 'dailyLoss': return `Stop trading after losing $${rule.usd} in a day`;
     case 'hours': return `Only trade ${String(rule.start).padStart(2, '0')}:00–${String(rule.end).padStart(2, '0')}:00 UTC`;
     case 'mistakes': return `Skip trades tagged ${rule.tags.map((t) => `"${t}"`).join(', ') || '(none chosen)'}`;
+    case 'technical': return `Only enter with ${rule.label} · ${rule.timeframe} · demo prices`;
   }
 }

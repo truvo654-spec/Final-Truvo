@@ -1,3 +1,22 @@
+## 2.66.0 — What-if dates and aligned demo data
+
+- Reuse the journal calendar in What-if with one shared entry-date range, two calendar months, 7 / 30 / 90-day presets ending on the latest selected trade, and All selected data. Keep checked trade IDs and the active rule when filtering; remove duplicate date inputs from Change.
+- Prepare generated demo candles for the selected instruments, inherited Playbook or saved-test timeframes, and indicator warmup. Applied technical conditions use that exact data snapshot; unavailable candles stay explicit and never substitute another instrument.
+- Load aligned demo data automatically without an extra status / refresh row. Remove the duplicate Change button; source buttons, View trades and the date picker remain. Preserve the deterministic historical seed and freeze data provenance in saved comparisons. No external provider or live-market connection is used.
+
+## 2.65.0 — What-if result breakdowns
+
+- Add a shared result picker for all selected trades and existing market / playbook / instrument groups. Recalculate displayed metrics and curves from the original decision ledger; daily stop decisions stay shared across the comparison.
+- Keep one active rule across basic results and advanced analysis, including technical conditions and parameter alternatives. Preserve the chosen breakdown while reviewing trades in a popup.
+- Reuse Strategy Lab trade details and original saved-test replay; save the full comparison and frozen breakdowns together for reopening in Saved runs. Keep journal and independent saved-test sources separate.
+
+## 2.64.0 — Simple technical What-if setups
+
+- Add Show / Hide to Scenario parameter and a separate Technical tools card, both open by default. Reuse the Playbook indicator, period, comparison and number controls directly in the sidebar, with Add condition and Compare conditions.
+- Remove the Playbook/preset chooser and long descriptions. Keep technical details in hover help; compare two indicators or price values in a focused popup. Apply only to the comparison copy.
+- Compare the same original trade ledger against completed demo-candle entry checks, mirroring short rules. Unavailable checks keep trades unchanged and are counted; demo-price labels remain visible in saved reports.
+- Preserve full technical conditions and timeframe in saved What-if snapshots. Compare multi-condition setups with individual conditions and keep nested popup focus/Escape handling on the active dialog.
+
 ## 2.63.0 — Linked What-if chart performance
 
 - Reuse the Playbook timeframe presets, calendar-aware aggregation and custom intervals in advanced What-if charts. Add shared zoom, period browsing and Full period controls.
