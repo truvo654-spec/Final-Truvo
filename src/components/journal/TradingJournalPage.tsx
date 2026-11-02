@@ -782,6 +782,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onReplay={BACKTEST_TRAINING_ENABLED?(id)=>goBacktest({view:'replay',entryId:id}):undefined}
           onReplayLog={setApiReplayId}
           onBacktestTrades={(ids) => goBacktest({ view: 'setup', benchmarkTradeIds: ids })}
+          onWhatIfTrades={ids=>goBacktest({view:'whatif',benchmarkTradeIds:ids})}
           onCompareResults={ids=>goBacktest({view:'home',journalTradeIds:ids})}
         />
       )}

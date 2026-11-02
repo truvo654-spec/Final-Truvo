@@ -231,10 +231,12 @@ export function sessionFromWindow(w: JournalPlaybook['window']): BacktestSetting
 
 export interface JournalRules { maxRisk: number; maxDailyLoss: number; maxTrades: number; stopAfterLosses: number }
 
-export const presetRange = (months: number | 'max'): { from: string; to: string } => {
+export const presetRange = (months: number | 'max' | '1d' | '1w'): { from: string; to: string } => {
   if (months === 'max') return { from: DATA_START, to: DATA_END };
   const end = new Date(parseDay(DATA_END));
-  const start = new Date(end); start.setUTCMonth(start.getUTCMonth() - months);
+  const start = new Date(end);
+  if (months === '1d' || months === '1w') start.setUTCDate(start.getUTCDate() - (months === '1d' ? 0 : 6));
+  else start.setUTCMonth(start.getUTCMonth() - months);
   const from = start.toISOString().slice(0, 10);
   return { from: from < DATA_START ? DATA_START : from, to: DATA_END };
 };

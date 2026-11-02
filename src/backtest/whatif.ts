@@ -16,6 +16,11 @@ export type WhatIfRule =
   | { kind: 'hours'; start: number; end: number }
   | { kind: 'mistakes'; tags: string[] };
 
+/** Transient saved-test adapter: keep the engine ledger's precision without changing journal rounding. */
+export type WhatIfEntry = JournalEntry & { whatIfRecordedNet?: number };
+const recordedNet=(e:WhatIfEntry)=>Number.isFinite(e.whatIfRecordedNet)?e.whatIfRecordedNet!:netOf(e);
+const recordedR=(e:WhatIfEntry)=>Number.isFinite(e.whatIfRecordedNet)&&e.initialRisk&&e.initialRisk>0?recordedNet(e)/e.initialRisk:realizedR(e);
+
 export const ESTIMATED_RULES: WhatIfRule['kind'][] = ['stop', 'target', 'breakeven'];
 
 export interface WhatIfTrade {
@@ -50,8 +55,7 @@ export function riskOf(e: JournalEntry, fallback: number): number {
  * final result. The path never touches the original stop or target before the exit unless that is how
  * the trade ended. Seeded by the trade id, so it is the same every time.
  */
-export function pathOf(e: JournalEntry, steps = 48): number[] {
-  const end = realizedR(e) ?? 0;
+export function pathOf(e: JournalEntry, steps = 48, end = recordedR(e) ?? 0): number[] {
   const r = rng(hashSeed(e.id));
   const tpR = e.takeProfit && e.stopPrice ? Math.abs(e.takeProfit - e.entryPrice) / Math.max(1e-9, Math.abs(e.entryPrice - e.stopPrice)) : null;
   const sigma = 0.75 / Math.sqrt(steps);
@@ -71,7 +75,7 @@ export function pathOf(e: JournalEntry, steps = 48): number[] {
   return dev.map((d, k) => (k / steps) * end + f * d);
 }
 
-export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalance = 1): WhatIfOutput {
+export function runWhatIf(entries: WhatIfEntry[], rule: WhatIfRule, startBalance = 1): WhatIfOutput {
   journalMetrics(entries); // refuses to combine currencies without a conversion policy
   const sources = new Map(entries.map(e => [e.id, e]));
   const closed = entries.filter((e) => eligible(e))
@@ -91,10 +95,10 @@ export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalanc
     const risk = riskOf(e, NaN);
     const base: WhatIfTrade = {
       id: e.id, symbol: e.symbol, strategy: e.strategy, direction: e.direction, entryTime: t0, exitTime: Math.max(t1, t0),
-      actualNet: netOf(e), actualR: realizedR(e), newNet: netOf(e), newR: realizedR(e), status: 'same', note: '', mistakes: e.mistakes,
+      actualNet: recordedNet(e), actualR: recordedR(e), newNet: recordedNet(e), newR: recordedR(e), status: 'same', note: '', mistakes: e.mistakes,
     };
     const skip = (note: string): WhatIfTrade => ({ ...base, newNet: 0, newR: null, status: 'skipped', note });
-    const change = (rr: number, note: string): WhatIfTrade => (Math.abs(rr - (realizedR(e) ?? 0)) < 0.005 ? base : { ...base, newNet: Math.round(rr * risk * 100) / 100, newR: rr, status: 'changed', note });
+    const change = (rr: number, note: string): WhatIfTrade => (Math.abs(rr - (recordedR(e) ?? 0)) < 0.005 ? base : { ...base, newNet: Math.round(rr * risk * 100) / 100, newR: rr, status: 'changed', note });
     const day = e.date;
     const record = (t: WhatIfTrade) => {
       if (t.status !== 'skipped') pending.push({trade:t, day});
@@ -141,7 +145,19 @@ export function runWhatIf(entries: JournalEntry[], rule: WhatIfRule, startBalanc
   const re = closed.length ? Math.max(...closed.map((c) => Math.max(c.t1, c.t0))) + 1 : undefined;
   // Engine time-series calculations are retained, but journal-facing definitions are shared.
   // The internal numerical anchor is not evidence of an account balance.
-  const sharedMetrics=(sel:'actual'|'new')=>{
+  const sharedMetrics=(sel:'actual'|'new'):Metrics=>{
+    if(entries.length&&entries.every(e=>Number.isFinite(e.whatIfRecordedNet))){
+      const ledger=out.filter(t=>sel==='actual'||t.status!=='skipped');
+      const values=ledger.map(t=>sel==='actual'?t.actualNet:t.newNet);
+      const wins=values.filter(v=>v>0.005),losses=values.filter(v=>v< -0.005);
+      const positive=values.filter(v=>v>0).reduce((a,b)=>a+b,0),negative=-values.filter(v=>v<0).reduce((a,b)=>a+b,0);
+      const daily=new Map<string,number>();ledger.forEach((t,i)=>{const day=sources.get(t.id)!.date;daily.set(day,(daily.get(day)??0)+values[i]);});
+      let equity=0,peak=0,drawdown=0;[...daily].sort(([a],[b])=>a.localeCompare(b)).forEach(([,v])=>{equity+=v;peak=Math.max(peak,equity);drawdown=Math.max(drawdown,peak-equity);});
+      const net=values.reduce((a,b)=>a+b,0),n=values.length;
+      return {...computeMetrics(mt(sel),startBalance,rs,re),trades:n,wins:wins.length,losses:losses.length,breakevens:n-wins.length-losses.length,
+        winRate:n?wins.length/n:NaN,lossRate:n?losses.length/n:NaN,avgWin:wins.length?wins.reduce((a,b)=>a+b,0)/wins.length:0,avgLoss:losses.length?losses.reduce((a,b)=>a+b,0)/losses.length:0,
+        netPnl:net,profitFactor:negative>0?positive/negative:positive>0?Infinity:null,expectancy:n?net/n:NaN,maxDD:drawdown,netPct:NaN,maxDDPct:NaN,endBalance:NaN};
+    }
     const selected=out.filter(t=>sel==='actual' || t.status!=='skipped');
     const m=journalMetrics(selected.map(t=>{const source=sources.get(t.id)!;return {...source,pnl:sel==='actual'?t.actualNet:t.newNet,commission:0,initialRisk:null,rMultiple:sel==='actual'?t.actualR:t.newR};}));
     return {...computeMetrics(mt(sel),startBalance,rs,re),trades:m.n,wins:m.wins,losses:m.losses,breakevens:m.be,winRate:m.winRate==null?NaN:m.winRate/100,profitFactor:m.pf,avgR:m.avgR ?? NaN,expectancy:m.expectancy ?? NaN,netPnl:m.total,maxDD:m.drawdown,maxDDPct:NaN,netPct:NaN,endBalance:NaN};

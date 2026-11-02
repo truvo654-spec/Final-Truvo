@@ -6,7 +6,7 @@ import {aiWhatIfRules,buildWhatIfStudy,compareWhatIfLedgers} from '../whatifStud
 import {autoMap,convertRows,parseCsv,SAMPLE_CSV} from '../../components/journal/journalIngest';
 import {runWhatIf} from '../whatif';
 import {ScenarioOutcomeComparison} from '../../components/backtest/ScenarioOutcomeComparison';
-import {WhatIfPanel} from '../../components/backtest/WhatIfPanel';
+import {WhatIfAdvancedPanel as WhatIfPanel} from '../../components/backtest/WhatIfAdvancedPanel';
 
 function history(){
   const [headers,...csvRows]=parseCsv(SAMPLE_CSV);

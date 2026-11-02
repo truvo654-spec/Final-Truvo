@@ -1,3 +1,43 @@
+## 2.62.2 — Select trades in the comparison popup
+
+- Add individual checkboxes, Select all and a selection count to the What-if source trade popup. Apply with Use selected trades; Cancel or close preserves the previous selection.
+- Keep the current source, currency and filters, and allow previously unchecked matching trades to be selected again. Result and advanced evidence reviews retain their comparison details.
+
+## 2.62.1 — Advanced analysis inside results
+
+- Restore the complete advanced What-if workspace through Advanced analysis inside the combined results popup: AI suggestions, parameter optimization, candle comparisons and detailed metrics.
+- Transfer the selected evidence, rule and other loaded setup values into advanced analysis. Preserve its settings when returning to the summary or reviewing trades, and keep advanced trade review inside the popup.
+
+## 2.62.0 — One What-if results flow
+
+- Replace Explore alternatives and See result with one See results action. Open the exact selected setup first and compare a few values of that same rule inside one popup.
+- Click an alternative to update the metrics, comparison chart and changed-trade review immediately. Preserve the main setup and selected evidence; save the exact currently displayed alternative to Saved runs.
+- Keep estimate and small-sample labels. Remove repeated rule configuration, cross-rule AI suggestions and optimization controls from the basic results flow.
+
+## 2.61.4 — Short test-period presets
+
+- Add 1 day, 1 week and 1 month presets to Edit test period. Day and week ranges include exactly 1 and 7 UTC dates, ending on the available sample data.
+
+## 2.61.3 — Simplify Yearly calendar controls
+
+- Remove the Trades metric option from Yearly calendar. Keep Win rate and P&L.
+
+## 2.61.2 — Simplify What-if market choices
+
+- Remove Futures from the What-if market filter and reset an open Futures selection to All markets.
+
+## 2.61.1 — Choose What-if evidence directly
+
+- Add visible Trade Log, Playbook and Saved tests source buttons. Select individual trades or all matching records inside the data popup, with an explicit selection count and Apply / Cancel behavior.
+- Add Forex, Indices, Commodity, Crypto, Stocks and Futures market filters. Keep instrument choices linked to the selected market and retain market scope in saved comparisons.
+
+## 2.61.0 — Instant What-if workflow
+
+- Replace the long setup page with a loaded data summary, four common rule changes and a See result action. Review results, selected trades and changed trades in focused popups.
+- Transfer selected Trade Log IDs, Playbook direction/session/target and saved Strategy Lab ledgers without writing simulated trades into the journal. Keep original and simulated sources labelled and currency scoped.
+- Move AI recommendations and parameter exploration into Explore alternatives. Keep chart instrument selection independent from the comparison cohort.
+- Save frozen What-if comparisons to Saved runs; retain visible estimate labels for reconstructed price paths.
+
 ## 2.60.1 — Defer standalone training workspaces
 
 - Reduce Backtest navigation to Dashboard, Strategy Lab, What-if and Saved runs. Hide Practice myself and standalone Practice / Demo replay routes for this MVP.

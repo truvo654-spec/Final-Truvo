@@ -88,14 +88,15 @@ function useEscape(open: boolean, onClose: () => void, ref: React.RefObject<HTML
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
-    const focusables = () => (ref.current ? Array.from(ref.current.querySelectorAll<HTMLElement>('button:not([disabled]), input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')) : []);
+    const focusables = () => (ref.current ? Array.from(ref.current.querySelectorAll<HTMLElement>('button:not([disabled]), input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')).filter(el=>el.getClientRects().length>0) : []);
     const t = window.setTimeout(() => ref.current?.querySelector<HTMLElement>('button, input, select, textarea, [tabindex]')?.focus(), 30);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
       if (e.key === 'Tab' && ref.current) {
         const f = focusables() as HTMLElement[];
         if (!f.length) return;
-        if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+        if (!f.includes(document.activeElement as HTMLElement)) { e.preventDefault(); f[e.shiftKey?f.length-1:0].focus(); }
+        else if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
         else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
       }
     };

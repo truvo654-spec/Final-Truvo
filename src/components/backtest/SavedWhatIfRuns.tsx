@@ -57,7 +57,7 @@ export const SavedWhatIfRuns:React.FC<{runs:WhatIfRun[];tz:string;onDelete:(id:s
       </>}
     </div>;
   }
-  return <Card title="Saved What-if runs" sub="Save any tested scenario using its save icon in What-if. Results and parameters are stored in this browser.">
+  return <Card title="Saved What-if runs" sub="Save the displayed result from What-if. Your selected rule, trades and results are stored in this browser.">
     {!runs.length?<p className="text-xs text-slate-500 py-3">No saved What-if scenarios yet.</p>:<div className="overflow-x-auto -mx-5 px-5"><table className="w-full min-w-[850px] text-xs tabular-nums"><thead><tr className="border-b text-slate-500 text-left">{['Scenario','Source / currency','Benchmark','Trades','Net','Δ actual','Drawdown','Saved','Actions'].map(label=><th key={label} className="py-2 px-2">{label}</th>)}</tr></thead><tbody>{runs.map(r=><tr key={r.id} className="border-b border-slate-100">
       <td className="py-3 px-2"><button type="button" className="text-left font-bold text-[#5338ec] hover:underline" onClick={()=>setOpenId(r.id)}>{savedWhatIfName(r)}</button>{r.snapshot?.output.estimated&&<p className="text-[10px] text-amber-700">Estimated price path</p>}</td>
       <td className="px-2">{r.snapshot?`${r.snapshot.source==='ai'?'MarketSyde AI':r.snapshot.source==='user'?'Your setup':'Parameter'} · ${r.snapshot.currency}`:'Legacy checklist'}</td>

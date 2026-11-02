@@ -389,6 +389,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
 
                   {onViewResults && <button type="button" className={btn} onClick={()=>onViewResults(sel.id)}>View results</button>}
                   {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className="h-9 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]" title="Test these rules on past prices">Backtest this playbook</button>}
+                  {onWhatIf&&<button type="button" onClick={()=>onWhatIf(sel.id)} className={btn}>Try a What-if</button>}
 
                   <button type="button" onClick={startEdit} className={btn}>Edit playbook</button>
                 </div>

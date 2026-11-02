@@ -19,7 +19,7 @@ export function playbookWhatIfSetup(playbook: JournalPlaybook, scenarioId = '') 
     (idea.bias === 'long' ? idea.stop < idea.entry && idea.target > idea.entry : idea.stop > idea.entry && idea.target < idea.entry);
   const target = priced ? Math.abs(idea!.target! - idea!.entry!) / Math.abs(idea!.entry! - idea!.stop!) : playbook.benchmarkRR;
   return { target: Math.max(0.1, Math.round(target * 100) / 100), symbols: idea ? [idea.symbol] : [...(playbook.symbols || [])],
-    direction: idea ? idea.bias === 'long' ? 'BUY' : 'SELL' : 'all',
+    direction: idea ? idea.bias === 'long' ? 'BUY' : 'SELL' : playbook.directions?.length===1 ? playbook.directions[0]==='long'?'BUY':'SELL' : 'all',
     start: playbook.window?.start ?? 0, end: playbook.window?.end ?? 24, sessionOnly: !!playbook.window,
     markets: [...playbook.markets], market: playbook.markets.length === 1 ? playbook.markets[0] : playbook.markets.length ? 'playbook' : 'all' };
 }

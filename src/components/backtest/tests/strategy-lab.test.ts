@@ -5,10 +5,18 @@ import {validatePlaybookConditions} from '../../../backtest/playbookConditions';
 import {cond,ind,val} from '../../../backtest/rules';
 import {DEFAULT_PLAYBOOKS} from '../../../data/journalPlaybooks';
 import {JOURNAL_ENTRIES} from '../../../data/journalData';
-import {defaultSettings} from '../../../backtest/rules';
+import {defaultSettings,presetRange} from '../../../backtest/rules';
+import {DATA_END} from '../../../backtest/config';
 const book={...DEFAULT_PLAYBOOKS[0],instrumentTimeframe:'1h' as const,directions:['short'] as ('long'|'short')[],benchmarkRR:3};
 const rules={maxRisk:1,maxDailyLoss:3,maxTrades:3} as any;
 const trade={...JOURNAL_ENTRIES[0],id:'a',strategy:book.name,symbol:'NAS100',date:'2023-01-02',accountCurrency:'EUR'};
+test('short period presets use inclusive UTC days ending on available sample data',()=>{
+ const day=presetRange('1d'),week=presetRange('1w'),month=presetRange(1);
+ assert.deepEqual(day,{from:DATA_END,to:DATA_END});
+ assert.equal((Date.parse(week.to)-Date.parse(week.from))/86400000+1,7);
+ assert.equal(week.to,DATA_END);assert.equal(month.to,DATA_END);
+ assert.equal(month.from,'2026-09-07');
+});
 test('journal transfer preserves exact IDs, dates, currencies and source data without clamping',()=>{
  const entries=[trade,{...trade,id:'b',symbol:'UNKNOWN',date:'2026-11-01',accountCurrency:'USD'},{...trade,id:'outside'}];
  const before=JSON.stringify(entries);const r=labBenchmark(entries,['a','b'],[book]);
