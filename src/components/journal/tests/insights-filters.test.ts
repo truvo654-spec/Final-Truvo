@@ -5,7 +5,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import type { JournalEntry, UserProfile } from '../../../types';
 import { INITIAL_USER } from '../../../data/mockData';
 import { InsightsDrillDialog, JournalInsights } from '../JournalInsights';
-import { JOURNAL_MARKET_TYPES } from '../journalOverview';
 import { JournalOpenInsightsChart, openInsightGroups } from '../JournalOpenInsightsChart';
 
 const trade=(patch:Partial<JournalEntry>={}):JournalEntry=>({id:'isolated',date:'2026-10-01',symbol:'TEST',assetClass:'Stocks',direction:'BUY',entryPrice:10,exitPrice:12,size:1,pnl:20,rMultiple:null,outcome:'win',tradingStatus:'closed',commission:0,strategy:'Breakout',tags:[],setupNotes:'',emotionBefore:null,emotionAfter:null,followedPlan:null,checklistDone:[],mistakes:[],lessons:'',rating:null,source:'manual',accountCurrency:'USD',...patch});
@@ -19,7 +18,7 @@ function render(entries:JournalEntry[],saved:Record<string,unknown>={},user:User
     return name in saved?JSON.stringify(saved[name]):null;
   }}});
   try {
-    const html=renderToStaticMarkup(createElement(JournalInsights,{entries,brokers:[],overview:null,onDrill:()=>{},onToast:()=>{},user,isLoggedIn,onSignIn:()=>{},onUnlockCrossAnalysis:()=>false}));
+    const html=renderToStaticMarkup(createElement(JournalInsights,{entries,brokers:[],onDrill:()=>{},onToast:()=>{},user,isLoggedIn,onSignIn:()=>{},onUnlockCrossAnalysis:()=>false}));
     return {html,text:html.replace(/<[^>]*>/g,''),read};
   } finally {
     if(original)Object.defineProperty(globalThis,'localStorage',original);
@@ -42,10 +41,15 @@ test('Cross analysis renders its controls only for included or actively unlocked
   const expired=section(render(entries,{}, {...INITIAL_USER,tierLevel:1,journalCrossAnalysisUntil:Date.now()-1}).html);
   assert.match(expired,/Unlock with Credits/);
 });
-test('Insights keeps all five journal market choices even in an empty cohort',()=>{
-  assert.deepEqual(JOURNAL_MARKET_TYPES,['Forex','Crypto','Stocks','Commodity','Indices']);
-  assert.ok(render([]).text.includes('Market type (5/5)'));
+test('Insights opens Day & Time even with a saved Overview preference',()=>{
+  const result=render([],{'JournalInsights-report':'overview'});
+  assert.match(result.html,/aria-label="Group by"/);
+  assert.match(result.html,/aria-label="Distribution"/);
+  assert.doesNotMatch(result.html,/aria-label="Reports"|aria-label="Report subrange"/);
+  assert.doesNotMatch(result.text,/Market type \(\d+\/\d+\)|Playbook \(\d+\/\d+\)|Benchmark vs prev period/);
+  assert.ok(!result.read.some(key=>key.endsWith('JournalInsights-report')));
 });
+
 test('Retired report Broker filters neither render nor invisibly exclude trades',()=>{
   const result=render([trade({brokerId:'exness'}),trade({id:'b',brokerId:'hfm'})],{'JournalInsights-brokerOff':['exness','hfm']});
   assert.ok(result.text.includes('2 eligible closed trades'));
@@ -53,13 +57,19 @@ test('Retired report Broker filters neither render nor invisibly exclude trades'
   assert.doesNotMatch(result.text,/Broker \(\d+\/\d+\)/);
   assert.match(result.html,/role="tab"[^>]*>Broker</);
 });
-test('Insights uses the supplied shared cohort and preserves report market exclusions',()=>{
-  const result=render([trade({assetClass:'Forex'}),trade({id:'b',assetClass:'Indices'})],{'JournalInsights-assetOff':['Indices']});
-  assert.ok(result.text.includes('Market type (4/5)'));
-  assert.ok(result.text.includes('1 eligible closed trades'));
+test('Retired report filters cannot silently narrow the shared journal cohort',()=>{
+  const result=render([trade({assetClass:'Forex',date:'2020-01-01'}),trade({id:'b',assetClass:'Indices',strategy:'Custom',date:'2026-10-01'})],{
+    'JournalInsights-assetOff':['Indices'], 'JournalInsights-stratOff':['Breakout'],
+    'JournalInsights-range':'last30', 'JournalInsights-bench':true,
+  });
+  assert.match(result.text,/2 eligible closed trades/);
+  assert.match(result.text,/2 match Day &amp; Time report filters/);
+  assert.doesNotMatch(result.text,/Previous period|Prev net|vs prev/);
+  for(const key of ['assetOff','stratOff','range','bench']) assert.ok(!result.read.some(name=>name.endsWith('JournalInsights-'+key)));
 });
 
 const entryDay = (entry: JournalEntry) => ({key:entry.date,label:entry.date,order:Number(entry.date.replaceAll('-',''))});
+
 test('Open Insights groups reported snapshots without counting closed or planned trades',()=>{
   const entries=[trade({id:'profit',tradingStatus:'open',pnl:80}),trade({id:'loss',tradingStatus:'open',pnl:-30}),trade({id:'plan',tradingStatus:'planned',pnl:999}),trade({id:'closed',pnl:999})];
   const groups=openInsightGroups(entries,entryDay);
@@ -88,9 +98,9 @@ test('Open Insights preserves unknown P&L, zero and mixed-currency evidence',()=
   assert.doesNotMatch(html,/NaN|Infinity/);
 });
 test('Insights chart scope toggles share filters but do not change closed performance',()=>{
-  const entries=[trade({id:'closed',pnl:15}),trade({id:'visible',symbol:'OPEN-EUR',tradingStatus:'open',assetClass:'Forex',pnl:-125,equityAtEntry:25000}),trade({id:'excluded',symbol:'HIDDEN-INDEX',tradingStatus:'open',assetClass:'Indices',pnl:900})];
+  const entries=[trade({id:'closed',pnl:15}),trade({id:'visible',symbol:'OPEN-EUR',tradingStatus:'open',assetClass:'Forex',pnl:-125,equityAtEntry:25000}),trade({id:'excluded',symbol:'HIDDEN-INDEX',entryTime:'2026-10-01T23:00:00Z',tradingStatus:'open',assetClass:'Indices',pnl:900})];
   for(const scope of ['open','unrealized']) {
-    const {text,html}=render(entries,{'JournalInsights-chartScope':scope,'JournalInsights-assetOff':['Indices']});
+    const {text,html}=render(entries,{'JournalInsights-chartScope':scope,'JournalInsights-sessOff':['late']});
     assert.match(text,/1 eligible closed trades/);
     assert.match(text,/1 open positions/);
     assert.match(text,/OPEN-EUR/);
@@ -144,14 +154,15 @@ test('Distribution popup lists all selected trades with realized profit, loss, a
   assert.match(html,/Open all in Trade Log/);
   assert.doesNotMatch(html,/more\. Open in Trade Log/);
 });
-test('Open Insights respects report subranges, session filters, and missing exit times',()=>{
+test('Open Insights uses the full shared scope while respecting session filters and missing exit times',()=>{
   const entries=[trade({id:'recent',symbol:'RECENT',date:'2026-10-01',entryTime:'2026-10-01T08:00:00Z',tradingStatus:'open'}),
     trade({id:'old',symbol:'OLD',date:'2026-01-01',tradingStatus:'open'}),
     trade({id:'late',symbol:'LATE',date:'2026-10-01',entryTime:'2026-10-01T23:00:00Z',tradingStatus:'open'})];
   const {text}=render(entries,{'JournalInsights-chartScope':'open','JournalInsights-range':'last30','JournalInsights-sessOff':['late'],'JournalInsights-view':'duration'});
-  assert.match(text,/1 open positions/);
+  assert.match(text,/2 open positions/);
   assert.match(text,/RECENT/);
-  assert.doesNotMatch(text,/OLD|LATE/);
+  assert.match(text,/OLD/);
+  assert.doesNotMatch(text,/LATE/);
   assert.match(text,/Still open/);
   assert.match(text,/Open hold time is unavailable/);
 });
@@ -160,15 +171,18 @@ test('Open Insights renders an honest empty scope and tolerates an invalid saved
   assert.match(render([trade()],{'JournalInsights-chartScope':'invalid'}).text,/Bars show realized net profit or loss/);
 });
 
-test('recent Insights subranges follow the supplied Trade Log dates instead of a fixed demo date',()=>{
+test('Day & Time includes older supplied records despite a retired saved subrange',()=>{
   const result=render([trade({date:'2020-04-10'}),trade({id:'b',date:'2020-04-01'}),trade({id:'old',date:'2020-01-01'})],{'JournalInsights-range':'last30'});
-  assert.ok(result.text.includes('2 eligible closed trades'));
-  assert.ok(result.text.includes('3 Trade Log records connected.'));
+  assert.match(result.text,/3 eligible closed trades/);
+  assert.match(result.text,/3 Trade Log records connected/);
 });
-test('custom playbooks and saved filter recovery remain visible in Insights',()=>{
-  const result=render([trade({strategy:'My custom setup'})],{'JournalInsights-assetOff':['Stocks']});
-  assert.ok(result.text.includes('Playbook (1/1)'));
-  assert.ok(result.text.includes('Reset Insights filters'));
-  assert.ok(result.text.includes('1 Trade Log records connected.'));
-  assert.ok(result.text.includes('0 match Day &amp; Time report filters.'));
+
+test('Custom playbooks remain available in analysis while visible session filters can be reset',()=>{
+  const result=render([trade({strategy:'My custom setup',entryTime:'2026-10-01T23:00:00Z'})],{'JournalInsights-sessOff':['late']});
+  assert.match(result.text,/Reset Insights filters/);
+  assert.match(result.text,/1 Trade Log records connected/);
+  assert.match(result.text,/0 match Day &amp; Time report filters/);
+  const restored=render([trade({strategy:'My custom setup'})]);
+  assert.match(restored.text,/My custom setup/);
+  assert.match(restored.text,/1 eligible closed trades/);
 });

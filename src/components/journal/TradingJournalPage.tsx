@@ -2,7 +2,7 @@ import {BACKTEST_TRAINING_ENABLED} from '../../backtest/config';
 import { JournalHelp, getJournalHelp } from './JournalHelp';
 import { useMoney, formatMoney, JournalCurrency } from './JournalCurrency';
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, BookOpen, ChevronRight, Clock, Flame, Lock, PlayCircle, ShieldCheck, SlidersHorizontal, Target, Trash2, TrendingUp, X } from 'lucide-react';
+import { AlertTriangle, BookOpen, ChevronRight, Clock, Flame, PlayCircle, ShieldCheck, SlidersHorizontal, Target, Trash2, TrendingUp, X } from 'lucide-react';
 import { Broker, JournalEntry, JournalChecklistItem, JournalWeeklyReview, UserProfile } from '../../types';
 import type { UnlockDurationOption } from '../analysis/toolUnlockPricing';
 import {
@@ -12,7 +12,6 @@ import {
   DEFAULT_CHECKLIST,
   JOURNAL_TODAY,
   JOURNAL_STRATEGIES,
-  JOURNAL_EMOTIONS,
 } from '../../data/journalData';
 import { FolderTabs, FolderTabItem } from '../common/FolderTabs';
 import { JournalEntryWizard } from './JournalEntryWizard';
@@ -76,7 +75,6 @@ function isoDaysAgo(n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const FILTER_HELP: Record<string, string> = {
   Playbook: 'Include or exclude journal entries by their recorded playbook or strategy.',
   'Market type': 'Include or exclude entries by asset class, such as Forex, Crypto or Indices.',
@@ -159,7 +157,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   const [rvLesson, setRvLesson] = useState('');
   const [rvFocus, setRvFocus] = useState('');
 
-  const hasAdvanced = isLoggedIn && userTierLevel >= 3;
 
   // Overview toolbar + calendar state
   const [pnlMode, setPnlMode] = useJournalState<PnlMode>('TradingJournalPage-pnlMode', 'net');
@@ -381,35 +378,17 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   }, [entries]);
 
 
-  const insights = useMemo(() => {
-    const entries = scoped.filter(e=>eligible(e));
-    const followed = entries.filter((e) => e.followedPlan === true).map(netOf);
-    const broke = entries.filter((e) => e.followedPlan === false).map(netOf);
-    const byStrategy = [...new Set(entries.map(e=>e.strategy).filter(Boolean))].map((s) => {
-      const list = entries.filter((e) => e.strategy === s);
-      return {
-        name: s,
-        count: list.length,
-        winRate: list.length ? Math.round((list.filter((e) => resultOf(e) === 'win').length / list.length) * 100) : 0,
-        pnl: list.reduce((a, e) => a + netOf(e), 0),
-      };
-    }).filter((s) => s.count > 0);
-    const byEmotion = JOURNAL_EMOTIONS.map((em) => {
-      const list = entries.filter((e) => e.emotionBefore === em);
-      return { name: em, count: list.length, avgPnl: avg(list.map(netOf)) };
-    }).filter((e) => e.count > 0);
-    const byDay = WEEKDAYS.map((d, i) => {
-      const list = entries.filter((e) => new Date(`${e.date}T00:00:00Z`).getUTCDay() === i);
-      return { name: d, pnl: list.reduce((a, e) => a + netOf(e), 0), count: list.length };
-    });
-    const mistakeMap: Record<string, number> = {};
-    entries.forEach((e) => e.mistakes.forEach((m) => (mistakeMap[m] = (mistakeMap[m] || 0) + 1)));
-    const mistakes = Object.entries(mistakeMap).sort((a, b) => b[1] - a[1]);
-    return { followedAvg: avg(followed), brokeAvg: avg(broke), followedN: followed.length, brokeN: broke.length, byStrategy, byEmotion, byDay, mistakes };
-  }, [scoped]);
+
 
   const weekStart = isoDaysAgo((new Date(`${JOURNAL_TODAY}T00:00:00Z`).getUTCDay()+6)%7);
   const weekEnd = new Date(Date.parse(`${weekStart}T00:00:00Z`)+6*86400000).toISOString().slice(0,10);
+  const insights = useMemo(() => {
+    const realized = scoped.filter(e => eligible(e));
+    const followed = realized.filter(e => e.followedPlan === true).map(netOf);
+    const broke = realized.filter(e => e.followedPlan === false).map(netOf);
+    return { followedAvg: avg(followed), brokeAvg: avg(broke), followedN: followed.length, brokeN: broke.length };
+  }, [scoped]);
+
   const weekEntries = calEntries.filter((e) => e.date >= weekStart && e.date <= weekEnd);
   const weekPnl = metrics(weekEntries).total;
 
@@ -449,8 +428,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     </button><button type="button" aria-label={`Replay ${e.symbol} trade ${e.id}`} title="Replay log" onClick={()=>setApiReplayId(e.id)} className="absolute right-3 top-3 rounded-lg border border-purple-200 bg-purple-50 p-2 text-[#5338ec] hover:bg-purple-100"><PlayCircle size={18}/></button></div>
   );
 
-  const maxAbsDay = Math.max(1, ...insights.byDay.map((d) => Math.abs(d.pnl)));
-  const maxAbsEmotion = Math.max(1, ...insights.byEmotion.map((d) => Math.abs(d.avgPnl)));
 
   return (
     <JournalCurrency.Provider value={currency}><div className="w-full max-w-[1360px] mx-auto px-4 sm:px-8 md:px-14 py-8 sm:py-10 pb-24">
@@ -799,102 +776,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onToast={onShowToast}
           onDrill={(ids, label) => { setLogPreset({ ids, label }); setTab('entries'); }}
           onWhatIf={() => goBacktest({ view: 'whatif' })}
-          overview={(
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <section className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5">
-            <h3 className="font-bold text-sm">Realized results · {rangeLabel} · {currency}</h3>
-            {(()=>{const m=metrics(scoped);return <><p className="text-xs mt-2">{m.n} eligible / {m.count} recorded · expectancy {m.expectancy==null?'—':money(m.expectancy)} per closed trade · daily closed-result drawdown {money(m.drawdown)} · costs {money(m.fees)}</p><p className="text-xs mt-2">Initial monetary-risk coverage {m.riskCount}/{m.n}; reported/derived R coverage {m.rCount}/{m.n}. Drawdown is a currency amount, not account-equity drawdown. Cohorts are descriptive, not causal.</p><details className="mt-3"><summary className="text-xs cursor-pointer">Daily net results table</summary><table className="text-xs w-full"><thead><tr><th className="text-left">Entry date UTC</th><th className="text-right">Net result<JournalHelp label="Net result" /></th></tr></thead><tbody>{m.daily.map(([d,v])=><tr key={d}><td><button className="text-[#5338ec] underline" onClick={()=>{setLogPreset({ids:m.list.filter(e=>e.date===d).map(e=>e.id),label:`Daily net ${d}`});setTab('entries');}}>{d}</button></td><td className="text-right">{money(v)}</td></tr>)}</tbody></table></details></>;})()}
-          </section>
-          <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-            <h4 className="text-sm font-bold mb-4">Plan adherence<JournalHelp label="Plan adherence" /></h4>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-emerald-50 rounded-xl p-4">
-                <p className="text-[11px] font-semibold text-emerald-700 mb-1">Followed plan ({insights.followedN})</p>
-                <p className="text-lg font-bold text-emerald-600 font-mono">{insights.followedN?money(insights.followedAvg):'Unknown'}</p>
-                <p className="text-[10px] text-emerald-700">avg per trade</p>
-              </div>
-              <div className="bg-rose-50 rounded-xl p-4">
-                <p className="text-[11px] font-semibold text-rose-700 mb-1">Broke plan ({insights.brokeN})</p>
-                <p className="text-lg font-bold text-rose-600 font-mono">{insights.brokeN?money(insights.brokeAvg):'Unknown'}</p>
-                <p className="text-[10px] text-rose-700">avg per trade</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-            <h4 className="text-sm font-bold mb-4">By strategy<JournalHelp label="By strategy" /></h4>
-            <div className="space-y-3">
-
-              {insights.byStrategy.map((s) => (
-                <div key={s.name} className="flex items-center justify-between text-xs">
-                  <span className="font-semibold w-28 shrink-0">{s.name}</span>
-                  <span className="text-[#474556] w-16 shrink-0">{s.winRate}% win</span>
-                  <span className="text-[#94a3b8] w-12 shrink-0">{s.count} trades</span>
-                  <span className={`font-bold font-mono ml-auto ${s.pnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{money(s.pnl)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
-            <h4 className="text-sm font-bold mb-4">P&amp;L by weekday<JournalHelp label="P&L by weekday" /></h4>
-            <div className="flex items-end gap-2 h-32">
-              {insights.byDay.map((d) => (
-                <div key={d.name} className="flex-1 flex flex-col items-center justify-end h-full gap-1">
-                  <div
-                    className={`w-full rounded-t-md ${d.pnl >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`}
-                    style={{ height: `${Math.max(4, (Math.abs(d.pnl) / maxAbsDay) * 100)}%`, opacity: d.count ? 1 : 0.25 }}
-                    title={`${d.name}: ${money(d.pnl)}`}
-                  />
-                  <span className="text-[10px] text-[#94a3b8] font-semibold">{d.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5 relative overflow-hidden">
-            <h4 className="text-sm font-bold mb-4">Emotion vs. result<JournalHelp label="Emotion vs. result" /></h4>
-            <div className={`space-y-3 ${hasAdvanced ? '' : 'blur-[3px] select-none'}`}>
-              {insights.byEmotion.map((em) => (
-                <div key={em.name} className="flex items-center gap-3 text-xs">
-                  <span className="w-20 font-semibold shrink-0">{em.name}</span>
-                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${em.avgPnl >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`} style={{ width: `${Math.max(6, (Math.abs(em.avgPnl) / maxAbsEmotion) * 100)}%` }} />
-                  </div>
-                  <span className={`w-16 text-right font-mono font-bold ${em.avgPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{money(em.avgPnl)}</span>
-                </div>
-              ))}
-            </div>
-            {!hasAdvanced && (
-              <div className="absolute inset-0 bg-white/40 flex items-center justify-center">
-                <button onClick={onUpgradePrompt} className="flex items-center gap-1.5 bg-[#5338ec] hover:bg-[#4326d8] text-white text-xs font-semibold px-4 py-2 rounded-xl">
-                  <Lock className="w-3.5 h-3.5" /> Unlock on Intermediate
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5 relative overflow-hidden">
-            <h4 className="text-sm font-bold mb-4">Most common mistakes<JournalHelp label="Most common mistakes" /></h4>
-            <div className={`space-y-3 ${hasAdvanced ? '' : 'blur-[3px] select-none'}`}>
-              {insights.mistakes.length === 0 && <p className="text-xs text-[#474556]">No mistakes logged yet.</p>}
-              {insights.mistakes.map(([name, count]) => (
-                <div key={name} className="flex items-center justify-between text-xs">
-                  <span className="font-semibold">{name}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 font-bold">{count}×</span>
-                </div>
-              ))}
-            </div>
-            {!hasAdvanced && (
-              <div className="absolute inset-0 bg-white/40 flex items-center justify-center">
-                <button onClick={onUpgradePrompt} className="flex items-center gap-1.5 bg-[#5338ec] hover:bg-[#4326d8] text-white text-xs font-semibold px-4 py-2 rounded-xl">
-                  <Lock className="w-3.5 h-3.5" /> Unlock on Intermediate
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-          )}
         />
       )}
 

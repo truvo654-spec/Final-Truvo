@@ -4,8 +4,8 @@ import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
 import React, { useEffect, useId, useMemo, useState } from 'react';
 import { Broker, JournalEntry, UserProfile } from '../../types';
-import { JOURNAL_STRATEGIES, JOURNAL_TODAY } from '../../data/journalData';
-import { JOURNAL_MARKET_TYPES, UNASSIGNED, addDays, entryCashback, entryPoints, shortDate } from './journalOverview';
+import { JOURNAL_TODAY } from '../../data/journalData';
+import { UNASSIGNED, entryCashback, entryPoints } from './journalOverview';
 import { TRADING_STATUS_LABEL, tradingStatusOf } from './tradingStatus';
 import { JournalOpenInsightsChart, type InsightChartScope } from './JournalOpenInsightsChart';
 import { useDialogFocus } from './useDialogFocus';
@@ -13,11 +13,10 @@ import { LockStateContainer } from '../common/LockStateContainer';
 import { ToolCreditUnlockModal, type UnlockDurationOption } from '../analysis/ToolCreditUnlockModal';
 import { CROSS_ANALYSIS_TOOL, hasCrossAnalysisAccess } from './crossAnalysisAccess';
 
-// Insights › reports. "Day & Time" follows the uploaded concept (light theme): view tabs, benchmark,
+// Insights opens directly to Day & Time using the shared journal scope: view tabs,
 // insight cards, distribution chart, cross-analysis matrix, detailed breakdown with drill-down.
 // Entry times are stored in UTC and shown in the time zone the user picks (saved per browser).
 
-type Report = 'overview' | 'daytime';
 type View = 'days' | 'month' | 'time' | 'duration';
 type Metric = 'net' | 'winRate' | 'trades' | 'avgR';
 type Dim = 'broker' | 'playbook' | 'symbol' | 'tag' | 'session' | 'duration' | 'size' | 'r';
@@ -154,7 +153,6 @@ export const InsightsDrillDialog: React.FC<InsightsDrillDialogProps> = ({
 interface Props {
   entries: JournalEntry[];
   brokers: Broker[];
-  overview: React.ReactNode;
   onDrill: (ids: string[], label: string) => void;
   onToast: (msg: string) => void;
   user: UserProfile;
@@ -165,7 +163,7 @@ interface Props {
   onWhatIf?: () => void;
 }
 
-export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, onDrill, onToast, onWhatIf, user, isLoggedIn, onSignIn, onUnlockCrossAnalysis }) => {
+export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, onToast, onWhatIf, user, isLoggedIn, onSignIn, onUnlockCrossAnalysis }) => {
   const money = useMoney();
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [, refreshAccess] = useState(0);
@@ -191,7 +189,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const brokerMap = useMemo(() => new Map(brokers.map((b) => [b.id, b] as const)), [brokers]);
   const brokerName = (id: string) => (id === UNASSIGNED ? 'Unassigned' : brokerMap.get(id)?.name || id);
 
-  const [report, setReport] = useJournalState<Report>('JournalInsights-report', 'daytime');
   const [tz, setTzState] = useState<string>(() => {
     try { const saved=localStorage.getItem('ms-journal-tz');return TIMEZONES.some(z=>z.id===saved)?saved!:'UTC'; } catch { return 'UTC'; }
   });
@@ -206,16 +203,11 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const loc = (e: JournalEntry) => (e.entryTime ? zoned(e.entryTime, tz) : { date: e.date, hour: null as number | null, minute: '00', weekday: new Date(`${e.date}T00:00:00Z`).getUTCDay() });
   const [view, setView] = useJournalState<View>('JournalInsights-view', 'days');
   const [resolution, setResolution] = useJournalState('JournalInsights-resolution', 2);
-  const [range, setRange] = useJournalState<'last30' | 'last90' | 'all'>('JournalInsights-range', 'all');
-  const [bench, setBench] = useJournalState('JournalInsights-bench', false);
   const [metric, setMetric] = useJournalState<Metric>('JournalInsights-metric-v2', 'net');
   const [savedChartScope, setChartScope] = useJournalState<InsightChartScope>('JournalInsights-chartScope', 'closed');
   const chartScope = savedChartScope === 'open' || savedChartScope === 'unrealized' ? 'open' : 'closed';
   const [dim, setDim] = useJournalState<Dim>('JournalInsights-dim', 'playbook');
   const [sessOff, setSessOff] = useJournalState<SessionId[]>('JournalInsights-sessOff', []);
-  const [assetOff, setAssetOff] = useJournalState<string[]>('JournalInsights-assetOff', []);
-  const [stratOff, setStratOff] = useJournalState<string[]>('JournalInsights-stratOff', []);
-  const [openMenu, setOpenMenu] = useState<null | 'asset' | 'strategy'>(null);
   const [mouseHover, setHover] = useState<number | null>(null);
   const [focusedBucket,setFocusedBucket] = useState<number|null>(null);
   const hover=focusedBucket===-1?null:focusedBucket ?? mouseHover;
@@ -251,24 +243,10 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
     };
   };
 
-  // ── date range + benchmark window ──
-  const reportEnd=entries.reduce((latest,e)=>e.date>latest?e.date:latest,entries.length?'0000-01-01':JOURNAL_TODAY);
-  const days = range === 'last30' ? 30 : range === 'last90' ? 90 : 0;
-  const from = days ? addDays(reportEnd, -(days - 1)) : '0000-01-01';
-  const prevFrom = days ? addDays(reportEnd, -(2 * days - 1)) : '';
-  const prevTo = days ? addDays(reportEnd, -days) : '';
-  const benchOn = bench && days > 0;
-
-  const passReportFilters = (e: JournalEntry) =>
-    !assetOff.includes(e.assetClass) && !stratOff.includes(e.strategy) && !sessOff.includes(sessionOf(e));
-  const passFilters = (e: JournalEntry) => eligible(e) && passReportFilters(e);
-  const openCur = entries.filter(e => tradingStatusOf(e) === 'open' && passReportFilters(e) && e.date >= from && (range === 'all' || e.date <= reportEnd));
-  const cur = useMemo(() => entries.filter((e) => passFilters(e) && e.date >= from && (range === 'all' || e.date <= reportEnd)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [entries, assetOff, stratOff, sessOff, from]);
-  const prev = useMemo(() => (benchOn ? entries.filter((e) => passFilters(e) && e.date >= prevFrom && e.date <= prevTo) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [entries, assetOff, stratOff, sessOff, benchOn, prevFrom, prevTo]);
+  // Shared journal filters apply upstream; only the visible session filter narrows this report.
+  const passReportFilters = (e: JournalEntry) => !sessOff.includes(sessionOf(e));
+  const openCur = entries.filter(e => tradingStatusOf(e) === 'open' && passReportFilters(e));
+  const cur = useMemo(() => entries.filter(e => eligible(e) && !sessOff.includes(sessionOf(e))), [entries, sessOff]);
 
   // ── buckets for the current view ──
   const bucketOf = (e: JournalEntry): { key: string; label: string; order: number } => {
@@ -287,18 +265,15 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   };
 
   const buckets = useMemo(() => {
-    const m = new Map<string, { key: string; label: string; order: number; list: JournalEntry[]; prevList: JournalEntry[] }>();
-    if (view === 'days') [1, 2, 3, 4, 5].forEach((d) => m.set(`w${d}`, { key: `w${d}`, label: DAY_NAMES[d], order: d - 1, list: [], prevList: [] }));
-    cur.forEach((e) => { const b = bucketOf(e); if (!m.has(b.key)) m.set(b.key, { ...b, list: [], prevList: [] }); m.get(b.key)!.list.push(e); });
-    prev.forEach((e) => { const b = bucketOf(e); if (m.has(b.key)) m.get(b.key)!.prevList.push(e); });
-    return Array.from(m.values()).sort((a, b) => a.order - b.order).map((b) => ({ ...b, s: stats(b.list), ps: stats(b.prevList) }));
+    const m = new Map<string, { key: string; label: string; order: number; list: JournalEntry[] }>();
+    if (view === 'days') [1, 2, 3, 4, 5].forEach((d) => m.set(`w${d}`, { key: `w${d}`, label: DAY_NAMES[d], order: d - 1, list: [] }));
+    cur.forEach((e) => { const b = bucketOf(e); if (!m.has(b.key)) m.set(b.key, { ...b, list: [] }); m.get(b.key)!.list.push(e); });
+    return Array.from(m.values()).sort((a, b) => a.order - b.order).map((b) => ({ ...b, s: stats(b.list) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cur, prev, view, resolution, brokerMap, tz]);
+  }, [cur, view, resolution, brokerMap, tz]);
 
   const total = useMemo(() => stats(cur), // eslint-disable-next-line react-hooks/exhaustive-deps
     [cur, brokerMap]);
-  const prevTotal = useMemo(() => stats(prev), // eslint-disable-next-line react-hooks/exhaustive-deps
-    [prev, brokerMap]);
 
   // ── insight cards ──
   const withData = buckets.filter((b) => b.s.n > 0);
@@ -306,8 +281,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const losingBuckets=withData.filter(b=>b.s.net<0);
   const worst = losingBuckets.length ? losingBuckets.reduce((a,b)=>b.s.net<a.s.net?b:a) : null;
   const busiest = withData.length ? withData.reduce((a, b) => (b.s.n > a.s.n ? b : a)) : null;
-  const wrPool = withData.filter((b) => b.s.n >= 3);
-  const peakWr = wrPool.length ? wrPool.reduce((a, b) => (b.s.winRate > a.s.winRate ? b : a)) : null;
   const unit = view === 'days' ? 'day' : view === 'month' ? 'month' : view === 'time' ? 'time window' : 'hold time';
 
   // best session inside a bucket (for card sub-titles)
@@ -321,7 +294,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const metricVal = (s: Stats) => (metric === 'net' ? s.net : metric === 'winRate' ? s.winRate : metric === 'trades' ? s.n : s.avgR ?? 0);
   const fmtMetric = (v: number) => (metric === 'net' ? money(v, 0) : metric === 'winRate' ? `${v.toFixed(0)}%` : metric === 'trades' ? `${v}` : `${v > 0 ? '+' : ''}${v.toFixed(2)}R`);
   const W = 760, H = 240, M = { t: 16, r: 12, b: 34, l: 56 };
-  const vals = buckets.flatMap((b) => [metricVal(b.s), ...(benchOn ? [metricVal(b.ps)] : [])]);
+  const vals = buckets.map((b) => metricVal(b.s));
   const vMax = Math.max(0, ...vals), vMin = Math.min(0, ...vals);
   const span = vMax - vMin || 1;
   const yS = (v: number) => M.t + (1 - (v - vMin) / span) * (H - M.t - M.b);
@@ -366,10 +339,10 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
   const shownRows = buckets.filter((b) => b.s.n > 0 && b.label.toLowerCase().includes(rowFilter.trim().toLowerCase()));
 
   const exportCsv = () => {
-    const head = ['Window', 'Trades', 'Win %', 'Loss %', 'BE %', 'Net P&L', 'Gross P&L', 'Profit factor', 'Avg R', 'Cashback (est.)', 'Points (est.)', ...(benchOn ? ['Prev net', 'Change'] : [])];
-    const line = (label: string, s: Stats, ps?: Stats) => [label, s.n, s.winRate, s.lossRate, s.beRate, s.net, s.gross, s.pf ?? '', s.avgR ?? '', s.cb, s.pts, ...(benchOn && ps ? [ps.net, Math.round((s.net - ps.net) * 100) / 100] : [])];
+    const head = ['Window', 'Trades', 'Win %', 'Loss %', 'BE %', 'Net P&L', 'Gross P&L', 'Profit factor', 'Avg R', 'Cashback (est.)', 'Points (est.)'];
+    const line = (label: string, s: Stats) => [label, s.n, s.winRate, s.lossRate, s.beRate, s.net, s.gross, s.pf ?? '', s.avgR ?? '', s.cb, s.pts];
     const rows: (string | number)[][] = [];
-    shownRows.forEach((b) => { rows.push(line(b.label, b.s, b.ps)); subOf(b.list).forEach((x) => rows.push(line(`  ${x.label}`, stats(x.list)))); });
+    shownRows.forEach((b) => { rows.push(line(b.label, b.s)); subOf(b.list).forEach((x) => rows.push(line(`  ${x.label}`, stats(x.list)))); });
     const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
     const blob = new Blob([[head, ...rows].map((r) => r.map(esc).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -379,45 +352,15 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
     onToast(`Exported ${rows.length} rows to CSV`);
   };
 
-  const resetFilters = () => { setAssetOff([]); setStratOff([]); setSessOff([]); setRowFilter(''); setRange('all'); setBench(false); setDrill(null); };
-  const activeFilters = assetOff.length + stratOff.length + sessOff.length;
+  const resetFilters = () => { setSessOff([]); setRowFilter(''); setDrill(null); };
+  const activeFilters = sessOff.length;
 
   // ── small UI helpers ──
   const btn = 'h-9 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-[#0b1c30]';
-  const menu = (id: 'asset' | 'strategy', title: string, opts: { id: string; label: string; color?: string }[], off: string[], set: (v: string[]) => void) => (
-    <div className="relative">
-      <button type="button" aria-expanded={openMenu === id} onClick={() => setOpenMenu(openMenu === id ? null : id)} className={`${btn} ${off.length ? 'border-[#5338ec] text-[#5338ec]' : ''}`}>
-        {title} ({opts.length - off.length}/{opts.length})
-      </button>
-      {openMenu === id && (
-        <div className="absolute z-30 mt-2 w-56 rounded-xl bg-white border border-slate-200 shadow-xl p-2 max-h-72 overflow-y-auto">
-          {opts.map((o) => (
-            <label key={o.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 text-xs text-[#0b1c30] cursor-pointer">
-              <input type="checkbox" checked={!off.includes(o.id)} onChange={() => set(off.includes(o.id) ? off.filter((x) => x !== o.id) : [...off, o.id])} style={o.color ? { accentColor: o.color } : undefined} />
-              <span className="flex-1">{o.label}</span>
-              <span className="text-[10px] font-mono text-slate-400">{entries.filter((e) => (id === 'asset' ? e.assetClass : e.strategy) === o.id).length}</span>
-            </label>
-          ))}
-          <div className="flex justify-between px-2 pt-1.5">
-            <button type="button" onClick={() => set([])} className="text-[11px] font-semibold text-[#5338ec] hover:underline">Select all</button>
-            <button type="button" onClick={() => set(opts.map((o) => o.id))} className="text-[11px] font-semibold text-slate-500 hover:underline">Clear</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-  const assetOpts = JOURNAL_MARKET_TYPES.map((id) => ({ id, label: id }));
-  const stratOpts = [...new Set<string>(entries.map(e=>e.strategy).filter(Boolean))].sort().map(id=>({id,label:id}));
-
-  const delta = (a: number, b: number, fmt: (n: number) => string) => {
-    const d = a - b;
-    return <span className={`text-[10px] font-semibold ${tone(d)}`}>{d === 0 ? 'no change' : `${fmt(d)} vs prev`}</span>;
-  };
-
   const Card: React.FC<{ kicker: string; badge: string; badgeTone: string; title: string; sub: string; left: [string, React.ReactNode]; right: [string, React.ReactNode]; foot?: React.ReactNode }> = ({ kicker, badge, badgeTone, title, sub, left, right, foot }) => (
     <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4 flex flex-col">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[10px] font-bold tracking-wider uppercase text-slate-500">{kicker}<JournalHelp label={kicker} text={kicker.startsWith('Peak') ? 'Highest observed win rate among windows with at least three eligible trades. Small windows can be extreme; inspect count, net result and average R together.' : kicker.startsWith('Most') ? 'The window with the largest eligible closed-trade count. Activity alone does not establish profit or quality. Inspect its source trades for context.' : kicker.startsWith('Leak') ? 'The window with the lowest observed net result among losing windows. Check sample size and risk per trade before changing a schedule.' : 'The highest observed net-result window in this filtered report. Counts, risk and position size affect this ranking; open its source trades to inspect the evidence.'} /></p>
+        <p className="text-[10px] font-bold tracking-wider uppercase text-slate-500">{kicker}<JournalHelp label={kicker} text={kicker.startsWith('Most') ? 'The window with the largest eligible closed-trade count. Activity alone does not establish profit or quality. Inspect its source trades for context.' : kicker.startsWith('Leak') ? 'The window with the lowest observed net result among losing windows. Check sample size and risk per trade before changing a schedule.' : 'The highest observed net-result window in this filtered report. Counts, risk and position size affect this ranking; open its source trades to inspect the evidence.'} /></p>
         <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeTone}`}>{badge}</span>
       </div>
       <p className="text-lg font-bold text-[#0b1c30] mt-2 leading-tight">{title}</p>
@@ -434,14 +377,8 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5 items-start">
-      {/* Report nav + session filter */}
+      {/* Session filter and related action */}
       <aside className="space-y-4 lg:sticky lg:top-24">
-        <nav className="bg-white border border-[#e2e8f0] rounded-2xl p-2" aria-label="Reports">
-          {([['overview', 'Overview'], ['daytime', 'Day & Time']] as const).map(([id, label]) => (
-            <div key={id} className="flex items-center"><button type="button" aria-current={report === id ? 'page' : undefined} onClick={() => setReport(id)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold ${report === id ? 'bg-[#EEF0FE] text-[#5338ec]' : 'text-[#474556] hover:bg-slate-50'}`}>{label}</button><JournalHelp label={id === 'overview' ? 'Insights' : 'Day & Time'} /></div>
-          ))}
-        </nav>
         {onWhatIf && (
           <button type="button" onClick={onWhatIf} className="w-full text-left bg-[#FBFAFF] border border-[#5338ec]/20 rounded-2xl p-4 hover:border-[#5338ec]">
             <p className="text-xs font-bold text-[#0b1c30]">What if you had followed one rule?</p>
@@ -449,7 +386,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
             <p className="text-[11px] font-semibold text-[#5338ec] mt-1.5">Try a what-if →</p>
           </button>
         )}
-        {report === 'daytime' && (
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
             <p className="text-[10px] font-bold tracking-wider uppercase text-slate-500 mb-2">Session filter<JournalHelp label="Session filter" /></p>
             {SESSIONS.map((s) => (
@@ -467,13 +403,11 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
             </select>
             <p className="text-[10px] text-slate-400 mt-1.5">Days, months and trade times are shown in this zone. Daylight saving is applied automatically.</p>
           </div>
-        )}
       </aside>
 
-      <div className="min-w-0 space-y-5">
-        <section aria-label="Insights data connection" className="rounded-xl border border-purple-200 bg-purple-50/50 p-3 text-xs"><p><strong>{entries.length} Trade Log records connected.</strong> {entries.filter(e=>eligible(e)).length} have eligible closed net results; {cur.length} match Day &amp; Time report filters.</p>{(activeFilters>0||range!=='all'||rowFilter)&&<div className="mt-2 flex flex-wrap items-center justify-between gap-2"><p className="text-slate-500">Saved report filters can narrow these results independently of the journal filters.</p><button type="button" className="font-semibold text-purple-700" onClick={()=>{setRange('all');setAssetOff([]);setStratOff([]);setSessOff([]);setRowFilter('');setDrill(null);}}>Reset Insights filters</button></div>}{!cur.length&&entries.length>0&&<p className="mt-2 text-slate-600">{entries.some(e=>eligible(e))?'No closed results match the report filters. Reset Insights filters to restore this journal scope.':'Recorded trades are open/planned or missing realized P&L or costs. They remain in Trade Log; closed net calculations exclude them.'}</p>}</section>
-        {report === 'overview' ? overview : (
-          <>
+      <div className="min-w-0 space-y-5" role="region" aria-label="Day & Time">
+        <h2 className="text-lg font-bold text-[#0b1c30]">Day &amp; Time<JournalHelp label="Day & Time" /></h2>
+        <section aria-label="Insights data connection" className="rounded-xl border border-purple-200 bg-purple-50/50 p-3 text-xs"><p><strong>{entries.length} Trade Log records connected.</strong> {entries.filter(e=>eligible(e)).length} have eligible closed net results; {cur.length} match Day &amp; Time report filters.</p>{(activeFilters>0||rowFilter)&&<div className="mt-2 flex flex-wrap items-center justify-between gap-2"><p className="text-slate-500">Session filters narrow the shared journal selection.</p><button type="button" className="font-semibold text-purple-700" onClick={resetFilters}>Reset Insights filters</button></div>}{!cur.length&&entries.length>0&&<p className="mt-2 text-slate-600">{entries.some(e=>eligible(e))?'No closed results match the report filters. Reset Insights filters to restore this journal scope.':'Recorded trades are open/planned or missing realized P&L or costs. They remain in Trade Log; closed net calculations exclude them.'}</p>}</section>
             {/* Toolbar */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex h-9 rounded-lg border border-slate-200 bg-white overflow-hidden" role="tablist" aria-label="Group by">
@@ -487,20 +421,10 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                   <option value={1}>Hourly</option><option value={2}>2-hour</option><option value={4}>4-hour</option>
                 </select>
               )}
-              <select aria-label="Report subrange" value={range} onChange={(e) => setRange(e.target.value as typeof range)} className="h-9 text-xs font-semibold border border-slate-200 rounded-lg px-3 bg-white">
-                <option value="last30">Last 30 days within scope</option><option value="last90">Last 90 days within scope</option><option value="all">Entire journal scope</option>
-              </select>
-              {menu('asset', 'Market type', assetOpts, assetOff, setAssetOff)}
-              {menu('strategy', 'Playbook', stratOpts, stratOff, setStratOff)}
-              <label className={`${btn} flex items-center gap-2 cursor-pointer ${days ? '' : 'opacity-50 cursor-not-allowed'}`} title={days ? '' : 'Pick Last 30 or 90 days to compare with the period before'}>
-                <input type="checkbox" checked={benchOn} disabled={!days} onChange={(e) => setBench(e.target.checked)} />
-                Benchmark vs prev period<JournalHelp label="Benchmark vs prev period" />
-              </label>
               <button type="button" onClick={exportCsv} className={`${btn} ml-auto`}>Export CSV</button>
             </div>
             <p className="text-[11px] text-slate-500 -mt-2">
-              {total.n} eligible closed trades · {range === 'all' ? 'entire journal scope' : `${shortDate(from)} – ${shortDate(reportEnd, true)} within journal scope`}
-              {benchOn && <> · compared with {shortDate(prevFrom)} – {shortDate(prevTo, true)} ({prevTotal.n} trades)</>}
+              {total.n} eligible closed trades · entire journal scope
               {activeFilters > 0 && <> · {activeFilters} filter{activeFilters === 1 ? '' : 's'} off</>}
             </p>
             <div className="flex flex-wrap items-center gap-2 text-[11px] mb-1" aria-label="Trading status summary">
@@ -513,35 +437,29 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
             </div>
 
             {/* Insight cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {best && best.s.net > 0 ? (() => { const ts = topSession(best.list, 1); return (
                 <Card kicker={`Best ${unit}`} badge="Rank #1" badgeTone="bg-emerald-50 text-emerald-700" title={best.label}
                   sub={ts ? `Strongest in ${ts.s.label} (${money(ts.st.net, 0)})` : ''}
                   left={['Net P&L', <span className="text-emerald-600">{money(best.s.net)}</span>]}
                   right={['Win rate / PF', `${best.s.winRate.toFixed(0)}% · ${fmtPf(best.s.pf)}`]}
-                  foot={benchOn ? delta(best.s.net, best.ps.net, (d) => money(d, 0)) : undefined} />
+                  />
               ); })() : <Card kicker={`Best ${unit}`} badge="—" badgeTone="bg-slate-100 text-slate-500" title="No profitable window" sub="" left={['Net P&L', '—']} right={['', '']} />}
               {worst && worst.s.net < 0 ? (() => { const ts = topSession(worst.list, -1); return (
                 <Card kicker={`Leak ${unit}`} badge="Risk" badgeTone="bg-rose-50 text-rose-700" title={worst.label}
                   sub={ts ? `Weakest in ${ts.s.label} (${money(ts.st.net, 0)})` : ''}
                   left={['Net P&L', <span className="text-rose-600">{money(worst.s.net)}</span>]}
                   right={['Win rate / PF', `${worst.s.winRate.toFixed(0)}% · ${fmtPf(worst.s.pf)}`]}
-                  foot={benchOn ? delta(worst.s.net, worst.ps.net, (d) => money(d, 0)) : undefined} />
+                  />
               ); })() : <Card kicker={`Leak ${unit}`} badge="None" badgeTone="bg-slate-100 text-slate-600" title="No losing window" sub={withData.length?'Observed windows are net positive or breakeven.':'No eligible results in this scope.'} left={['Net P&L', '—']} right={['', '']} />}
               {busiest ? (
                 <Card kicker={`Most active ${unit}`} badge="Volume" badgeTone="bg-sky-50 text-sky-700" title={busiest.label}
                   sub={`${busiest.s.n} trades · ${total.n ? Math.round((busiest.s.n / total.n) * 1000) / 10 : 0}% of volume`}
                   left={['Avg hold time', <span className="text-[#0b1c30]">{busiest.s.avgDur === null ? '—' : fmtDur(busiest.s.avgDur)}</span>]}
                   right={['Net P&L', <span className={tone(busiest.s.net)}>{money(busiest.s.net, 0)}</span>]}
-                  foot={benchOn ? delta(busiest.s.n, busiest.ps.n, (d) => `${d > 0 ? '+' : ''}${d} trades`) : undefined} />
+                  />
               ) : <Card kicker="Most active" badge="—" badgeTone="bg-slate-100 text-slate-500" title="No trades" sub="" left={['', '']} right={['', '']} />}
-              {peakWr ? (
-                <Card kicker="Peak win rate" badge="Edge" badgeTone="bg-violet-50 text-violet-700" title={peakWr.label}
-                  sub={`${peakWr.s.wins} wins / ${peakWr.s.losses} losses${peakWr.s.be ? ` / ${peakWr.s.be} BE` : ''}`}
-                  left={['Win rate', <span className="text-emerald-600">{peakWr.s.winRate.toFixed(1)}%</span>]}
-                  right={['Avg R', peakWr.s.avgR === null ? '—' : `${peakWr.s.avgR > 0 ? '+' : ''}${peakWr.s.avgR.toFixed(2)}R`]}
-                  foot={benchOn ? delta(peakWr.s.winRate, peakWr.ps.winRate, (d) => `${d > 0 ? '+' : ''}${d.toFixed(1)} pts`) : undefined} />
-              ) : <Card kicker="Peak win rate" badge="—" badgeTone="bg-slate-100 text-slate-500" title="Not enough trades" sub="Needs 3+ trades in a window." left={['', '']} right={['', '']} />}
+
             </div>
 
             {/* Distribution chart */}
@@ -573,12 +491,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                   ))}
                 </div>
               </div>
-              {benchOn && (
-                <div className="flex gap-4 text-[11px] text-[#474556] mb-1">
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#5338ec]" />This period</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm border-2 border-slate-400" />Previous period</span>
-                </div>
-              )}
               <div className="relative">
                 <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto select-none" role="img" aria-label={`${metric} by ${unit}`} onMouseLeave={() => setHover(null)}>
                   {ticks.map((t) => (
@@ -593,12 +505,10 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                     const x = M.l + i * bw;
                     const inner = Math.min(46, bw * 0.6);
                     const fill = metric === 'net' || metric === 'avgR' ? (v >= 0 ? '#10b981' : '#f43f5e') : '#5338ec';
-                    const pv = metricVal(b.ps);
                     return (
                       <g key={b.key} role="button" tabIndex={0} aria-haspopup="dialog" aria-label={`${b.label}: ${b.s.n} closed trades, net ${money(b.s.net)}; open trade results`} onFocus={()=>setFocusedBucket(i)} onBlur={()=>setFocusedBucket(null)} onKeyDown={ev=>{if(ev.key==='Escape'){setFocusedBucket(-1);setHover(null);}if((ev.key==='Enter'||ev.key===' ')&&b.s.n){ev.preventDefault();setDrill({label:b.label,ids:b.list.map(e=>e.id)});}}} onMouseEnter={() => setHover(i)} onClick={() => b.s.n && setDrill({ label: b.label, ids: b.list.map((e) => e.id) })} style={{ cursor: b.s.n ? 'pointer' : 'default' }}>
                         <rect x={x} y={M.t} width={bw} height={H - M.t - M.b} fill={hover === i ? '#f1f5f9' : 'transparent'} />
                         {b.s.n > 0 && <rect x={x + (bw - inner) / 2} y={Math.min(yS(v), yS(0))} width={inner} height={Math.max(1.5, Math.abs(yS(v) - yS(0)))} rx={4} fill={fill} />}
-                        {benchOn && b.ps.n > 0 && <rect x={x + (bw - inner) / 2 - 3} y={Math.min(yS(pv), yS(0))} width={inner + 6} height={Math.max(1.5, Math.abs(yS(pv) - yS(0)))} rx={4} fill="none" stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 3" />}
                         <text x={x + bw / 2} y={H - 14} textAnchor="middle" fontSize="10" fill={b.s.n ? '#334155' : '#94a3b8'} fontWeight={b === best || b === worst ? 700 : 400}>
                           {view === 'days' ? b.label.slice(0, 3) : view === 'month' ? b.label.slice(0, 3) : b.label.split('–')[0]}
                         </text>
@@ -615,7 +525,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                       <p className="font-semibold">{b.label}</p>
                       <p className="font-mono">{b.s.n} trades · net {money(b.s.net)}</p>
                       <p className="font-mono text-slate-300">Win {b.s.n?`${b.s.winRate.toFixed(0)}%`:'—'} · PF {fmtPf(b.s.pf)} · Avg R {b.s.avgR === null ? '—' : b.s.avgR.toFixed(2)}</p>
-                      {benchOn && <p className="font-mono text-slate-300">Prev: {b.ps.n} trades · net {money(b.ps.net)}</p>}
                     </div>
                   );
                 })()}
@@ -673,7 +582,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                 <table className="w-full text-xs">
                   <thead className="bg-slate-50 text-slate-500">
                     <tr>
-                      {['Window', 'Trades', 'Win %', 'Loss %', 'BE %', 'Net P&L', 'Gross P&L', 'PF', 'Avg R', 'Cashback', 'Points', ...(benchOn ? ['Prev net', 'Change'] : [])].map((h, i) => (
+                      {['Window', 'Trades', 'Win %', 'Loss %', 'BE %', 'Net P&L', 'Gross P&L', 'PF', 'Avg R', 'Cashback', 'Points'].map((h, i) => (
                         <th key={h} className={`px-3 py-2 font-semibold whitespace-nowrap ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
                       ))}
                     </tr>
@@ -683,7 +592,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                       const open = expanded.includes(b.key);
                       const isBest = b === best && b.s.net > 0;
                       const isLeak = b === worst && b.s.net < 0;
-                      const row = (label: React.ReactNode, s: Stats, sub: boolean, ids: string[], key: string, ps?: Stats) => (
+                      const row = (label: React.ReactNode, s: Stats, sub: boolean, ids: string[], key: string) => (
                         <tr key={key} className={`border-t border-slate-100 ${sub ? 'bg-slate-50/60' : ''} ${isBest && !sub ? 'bg-emerald-50/40' : ''} ${isLeak && !sub ? 'bg-rose-50/40' : ''}`}>
                           <td className={`px-3 py-2 whitespace-nowrap ${sub ? 'pl-9 text-[#474556]' : 'font-semibold text-[#0b1c30]'}`}>{label}</td>
                           <td className="px-3 py-2 text-right font-mono">{s.n}</td>
@@ -696,8 +605,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                           <td className={`px-3 py-2 text-right font-mono ${s.avgR === null ? 'text-slate-400' : tone(s.avgR)}`}>{s.avgR === null ? '—' : `${s.avgR > 0 ? '+' : ''}${s.avgR.toFixed(2)}R`}</td>
                           <td className="px-3 py-2 text-right font-mono text-emerald-600">{s.cb ? `+$${s.cb.toFixed(2)}` : '—'}</td>
                           <td className="px-3 py-2 text-right font-mono text-violet-600">{s.pts ? `+${s.pts}` : '—'}</td>
-                          {benchOn && <td className="px-3 py-2 text-right font-mono text-slate-500">{ps ? money(ps.net) : ''}</td>}
-                          {benchOn && <td className={`px-3 py-2 text-right font-mono ${ps ? tone(s.net - ps.net) : ''}`}>{ps ? money(Math.round((s.net - ps.net) * 100) / 100) : ''}</td>}
                         </tr>
                       );
                       return (
@@ -708,14 +615,14 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                               <button type="button" onClick={() => setDrill({ label: b.label, ids: b.list.map((e) => e.id) })} className="hover:text-[#5338ec] hover:underline">{b.label}</button>
                               {isBest && <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold">Peak</span>}
                               {isLeak && <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] font-bold">Leak</span>}
-                            </span>, b.s, false, b.list.map((e) => e.id), b.key, b.ps)}
+                            </span>, b.s, false, b.list.map((e) => e.id), b.key)}
                           {open && subOf(b.list).map((x) => row(
                             <button type="button" onClick={() => setDrill({ label: `${b.label} · ${x.label}`, ids: x.list.map((e) => e.id) })} className="hover:text-[#5338ec] hover:underline">{x.label}</button>,
                             stats(x.list), true, x.list.map((e) => e.id), `${b.key}-${x.key}`))}
                         </React.Fragment>
                       );
                     })}
-                    {shownRows.length === 0 && <tr><td colSpan={13} className="py-8 text-center text-slate-500">No rows match.</td></tr>}
+                    {shownRows.length === 0 && <tr><td colSpan={11} className="py-8 text-center text-slate-500">No rows match.</td></tr>}
                   </tbody>
                   {shownRows.length > 0 && (
                     <tfoot className="bg-slate-50 border-t-2 border-slate-200 font-semibold">
@@ -731,8 +638,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                         <td className="px-3 py-2 text-right font-mono">{total.avgR === null ? '—' : `${total.avgR.toFixed(2)}R`}</td>
                         <td className="px-3 py-2 text-right font-mono text-emerald-600">+${total.cb.toFixed(2)}</td>
                         <td className="px-3 py-2 text-right font-mono text-violet-600">+{total.pts}</td>
-                        {benchOn && <td className="px-3 py-2 text-right font-mono text-slate-500">{money(prevTotal.net)}</td>}
-                        {benchOn && <td className={`px-3 py-2 text-right font-mono ${tone(total.net - prevTotal.net)}`}>{money(Math.round((total.net - prevTotal.net) * 100) / 100)}</td>}
                       </tr>
                     </tfoot>
                   )}
@@ -805,8 +710,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, overview, o
                 </div>
               )}
             </section>
-          </>
-        )}
       </div>
     </div>
   );

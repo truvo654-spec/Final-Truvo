@@ -1,3 +1,13 @@
+## 2.66.3 — Simpler timing highlights
+
+- Remove Peak Win Rate and its insufficient-trades placeholder from every Insights grouping: Days, Month, Trade time and Duration. Remove the unused ranking and help text.
+- Balance the remaining Best, Leak and Most active highlights in three columns on wider screens.
+
+## 2.66.2 — Day & Time Insights only
+
+- Open Insights directly to Day & Time. Remove its Overview report and Reports navigation.
+- Remove report-specific subrange, market, Playbook and previous-period benchmark controls. Use the shared journal selection without applying retired saved report filters; retain session, timezone, grouping, trade review and export tools.
+
 ## 2.66.1 — Simpler What-if analysis controls
 
 - Show candles and linked performance together, using the selected result. Remove the duplicate Chart view and Equity scope controls; retain the no-candles performance fallback.
