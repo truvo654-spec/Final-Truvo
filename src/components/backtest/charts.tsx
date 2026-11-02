@@ -33,15 +33,21 @@ export const LineChart: React.FC<{
   tooltipDetail?: (x: number) => React.ReactNode;
   onPointSelect?: (seriesName:string, x:number) => void;
   selectFromPlot?: boolean;
-}> = ({ series, height = 220, yFmt, xFmt, band, hLines = [], area = true, label, tooltipDetail, onPointSelect, selectFromPlot=false }) => {
+  linkedPanels?: LinkedPanel[];
+  timeline?: [number,number];
+  timeTicks?: number[];
+}> = ({ series, height = 220, yFmt, xFmt, band, hLines = [], area = true, label, tooltipDetail, onPointSelect, selectFromPlot=false, linkedPanels=[], timeline, timeTicks }) => {
   const W = 760, H = height, M = { t: 12, r: 14, b: 26, l: 64 };
   const all = series.flatMap((s) => s.points);
   const ref = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
+  const [hoverTime,setHoverTime]=useState<number|null>(null);
+  const linked=linkedPanels.length>0,svgHeight=H+linkedPanels.length*LINKED_PANE_HEIGHT+(linked?16:0);
+  useEffect(()=>setHoverTime(null),[timeline?.[0],timeline?.[1]]);
   const geo = useMemo(() => {
     const xs = all.map((p) => p.x).concat(band ? band.points.map((p) => p.x) : []);
     const ys = all.map((p) => p.y).concat(band ? band.points.flatMap((p) => [p.lo, p.hi]) : []).concat(hLines.map((h) => h.y));
-    const x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const x0 = timeline?.[0]??Math.min(...xs), x1 = timeline?.[1]??Math.max(...xs);
     let y0 = Math.min(...ys), y1 = Math.max(...ys);
     if (y0 === y1) { y0 -= 1; y1 += 1; }
     const pad = (y1 - y0) * 0.08; y0 -= pad; y1 += pad;
@@ -49,24 +55,25 @@ export const LineChart: React.FC<{
     const sy = (y: number) => M.t + (1 - (y - y0) / (y1 - y0)) * (H - M.t - M.b);
     return { x0, x1, y0, y1, sx, sy };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [series, band, hLines, H]);
+  }, [series, band, hLines, H,timeline?.[0],timeline?.[1]]);
   if (!all.length) return <p className="text-xs text-slate-500 py-8 text-center">Nothing to chart yet.</p>;
   const { x0, x1, y0, y1, sx, sy } = geo;
-  const path = (pts: { x: number; y: number }[]) => pts.map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join('');
+  const path = (pts: { x: number; y: number }[]) => pts.map((p, i) => linked&&i?`H${sx(p.x).toFixed(1)}V${sy(p.y).toFixed(1)}`:`${i ? 'L' : 'M'}${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join('');
   const main = series[0];
   const onMove = (e: React.MouseEvent) => {
     const r = ref.current?.getBoundingClientRect(); if (!r) return;
     const x = x0 + ((((e.clientX - r.left) / r.width) * W - M.l) / (W - M.l - M.r)) * (x1 - x0);
+    if(linked){setHoverTime(Math.max(x0,Math.min(x1,x)));return;}
     let best = 0, bd = Infinity;
     main.points.forEach((p, i) => { const d = Math.abs(p.x - x); if (d < bd) { bd = d; best = i; } });
     setHover(best);
   };
-  const hp = hover !== null ? main.points[hover] : null;
-  const nearest = (s: LineSeries, x: number) => s.points.reduce((a, p) => (Math.abs(p.x - x) < Math.abs(a.x - x) ? p : a), s.points[0]);
-  const xt = niceTicks(x0, x1, 4).length > 1 ? [x0, x0 + (x1 - x0) / 3, x0 + (2 * (x1 - x0)) / 3, x1] : [x0];
+  const hp = linked?(hoverTime!==null?{x:hoverTime,y:0}:null):hover !== null ? main.points[hover] : null;
+  const nearest = (s: LineSeries, x: number) => linked?{x,y:s.points.filter(p=>p.x<=x).at(-1)?.y??0}:s.points.reduce((a, p) => (Math.abs(p.x - x) < Math.abs(a.x - x) ? p : a), s.points[0]);
+  const xt = timeTicks?.length?timeTicks:niceTicks(x0, x1, 4).length > 1 ? [x0, x0 + (x1 - x0) / 3, x0 + (2 * (x1 - x0)) / 3, x1] : [x0];
   const selectPlot=(e:React.MouseEvent<SVGSVGElement>)=>{
     if(!selectFromPlot||!onPointSelect)return;
-    const box=e.currentTarget.getBoundingClientRect(),x=(e.clientX-box.left)/box.width*W,y=(e.clientY-box.top)/box.height*H;
+    const box=e.currentTarget.getBoundingClientRect(),x=(e.clientX-box.left)/box.width*W,y=(e.clientY-box.top)/box.height*svgHeight;
     if(x<M.l||x>W-M.r||y<M.t||y>H-M.b)return;
     let best:{id:string;x:number;dx:number;dy:number}|null=null;
     for(const s of series)for(const p of s.points){const dx=Math.abs(sx(p.x)-x),dy=Math.abs(sy(p.y)-y);if(!best||dx<best.dx-.01||Math.abs(dx-best.dx)<=.01&&dy<best.dy)best={id:s.id??s.name,x:p.x,dx,dy};}
@@ -74,14 +81,15 @@ export const LineChart: React.FC<{
   };
   return (
     <div className="relative">
-      <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className={`w-full h-auto select-none ${selectFromPlot?'cursor-pointer':''}`} role={onPointSelect ? "group" : "img"} aria-label={label} onClick={selectPlot} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <svg ref={ref} viewBox={`0 0 ${W} ${svgHeight}`} className={`w-full h-auto select-none ${selectFromPlot?'cursor-pointer':linked?'cursor-crosshair':''}`} role={onPointSelect ? "group" : "img"} aria-label={label} onClick={selectPlot} onMouseMove={onMove} onMouseLeave={() => {setHover(null);setHoverTime(null);}}
+        tabIndex={linked?0:undefined} onFocus={linked?()=>setHoverTime(x1):undefined} onBlur={linked?()=>setHoverTime(null):undefined} onKeyDown={linked?e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const times=[...new Set(all.map(p=>p.x))].filter(t=>t>=x0&&t<=x1).sort((a,b)=>a-b),at=hoverTime??x1;setHoverTime(e.key==='Home'?x0:e.key==='End'?x1:e.key==='ArrowLeft'?(times.filter(t=>t<at).at(-1)??x0):(times.find(t=>t>at)??x1));}:undefined}>
         {niceTicks(y0, y1).map((t) => (
           <g key={t}>
             <line x1={M.l} x2={W - M.r} y1={sy(t)} y2={sy(t)} stroke={GRID} strokeDasharray={t === 0 ? undefined : '3 4'} />
             <text x={M.l - 8} y={sy(t) + 3} textAnchor="end" fontSize="10" fill={AXIS} className="tabular-nums">{yFmt(t)}</text>
           </g>
         ))}
-        {xt.map((t, i) => <text key={i} x={sx(t)} y={H - 8} textAnchor={i === 0 ? 'start' : i === xt.length - 1 ? 'end' : 'middle'} fontSize="10" fill={AXIS}>{xFmt(t)}</text>)}
+        {xt.map((t, i) => <text key={i} x={sx(t)} y={svgHeight - 8} textAnchor={i === 0 ? 'start' : i === xt.length - 1 ? 'end' : 'middle'} fontSize="10" fill={AXIS}>{xFmt(t)}</text>)}
         {band && band.points.length > 1 && (
           <path d={`${band.points.map((p, i) => `${i ? 'L' : 'M'}${sx(p.x)},${sy(p.hi)}`).join('')}${[...band.points].reverse().map((p) => `L${sx(p.x)},${sy(p.lo)}`).join('')}Z`} fill={band.color} opacity={0.14} />
         )}
@@ -101,7 +109,8 @@ export const LineChart: React.FC<{
             {s.points.length > 0 && <circle cx={sx(s.points[s.points.length - 1].x)} cy={sy(s.points[s.points.length - 1].y)} r={3.5} fill={s.color} pointerEvents={onPointSelect ? "none" : undefined} />}
           </g>
         ))}
-        {hp && <line x1={sx(hp.x)} x2={sx(hp.x)} y1={M.t} y2={H - M.b} stroke="#94a3b8" strokeDasharray="3 3" pointerEvents="none" />}
+        {linked&&<LinkedPerformancePanes panels={linkedPanels} top={H} left={M.l} right={M.r} width={W} start={x0} end={x1} x={sx} hoverTime={hoverTime}/>}
+        {hp && <line aria-label={linked?'Shared time cursor':undefined} x1={sx(hp.x)} x2={sx(hp.x)} y1={M.t} y2={svgHeight - M.b} stroke="#94a3b8" strokeDasharray="3 3" pointerEvents="none" />}
         {hp && series.map((s) => { const p = nearest(s, hp.x); return <circle key={s.id ?? s.name} cx={sx(p.x)} cy={sy(p.y)} r={4} fill="#fff" stroke={s.color} strokeWidth={2} pointerEvents="none" />; })}
       </svg>
       {hp && (

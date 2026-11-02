@@ -1,3 +1,18 @@
+## 2.63.0 — Linked What-if chart performance
+
+- Reuse the Playbook timeframe presets, calendar-aware aggregation and custom intervals in advanced What-if charts. Add shared zoom, period browsing and Full period controls.
+- Link cumulative closed P&L and monetary drawdown to the price/equity chart cursor and visible window. Choose Original, Your setup or a plotted alternative for the panels and full-period summary cards.
+- Keep exact exit timestamps, group simultaneous closes, exclude skipped scenario trades and preserve earlier P&L when zooming. View settings do not change the comparison cohort or simulation rules.
+
+## 2.62.4 — Show analysis sections by default
+
+- Start all five What-if advanced analysis sections expanded. Keep individual Show / Hide controls and preserve settings when a section is hidden.
+
+## 2.62.3 — Show only the analysis details you need
+
+- Add individual Show / Hide controls to the five What-if advanced analysis sections. Keep Result summary and Actual vs what-if open; start MarketSyde AI, candle comparison and parameter optimization collapsed with short summaries.
+- Keep hidden sections mounted so inputs, chart choices, optimization settings and results survive hiding, returning to results and trade review within the popup.
+
 ## 2.62.2 — Select trades in the comparison popup
 
 - Add individual checkboxes, Select all and a selection count to the What-if source trade popup. Apply with Use selected trades; Cancel or close preserves the previous selection.

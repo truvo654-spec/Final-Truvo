@@ -1,8 +1,8 @@
 import { InfoTooltip } from '../common/InfoTooltip';
 import { JournalHelp, getJournalHelp } from '../journal/JournalHelp';
 // Small shared building blocks for the Backtesting screens (match the journal's card style).
-import React, { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
 
 export const ACCENT = '#5338ec';
 
@@ -20,6 +20,23 @@ export const Card: React.FC<{ title?: React.ReactNode; sub?: React.ReactNode; ri
     {children}
   </section>
 );
+
+export const SectionToggle: React.FC<{ title: string; open: boolean; controls: string; onToggle: () => void }> = ({ title, open, controls, onToggle }) => (
+  <button type="button" aria-label={`${open ? 'Hide' : 'Show'} ${title}`} aria-expanded={open} aria-controls={controls} onClick={onToggle}
+    className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-[#5338ec] hover:bg-[#F6F3FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec]">
+    {open ? 'Hide' : 'Show'}{open ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
+  </button>
+);
+
+/** Keep the body mounted so hiding a section preserves its inputs and chart state. */
+export const CollapsibleCard: React.FC<{ title: string; summary: React.ReactNode; sub?: React.ReactNode; defaultOpen?: boolean; className?: string; children: React.ReactNode }> = ({ title, summary, sub, defaultOpen = true, className, children }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  const bodyId = useId();
+  return <Card title={title} sub={open ? sub : summary} className={className}
+    right={<SectionToggle title={title} open={open} controls={bodyId} onToggle={() => setOpen(v => !v)} />}>
+    <div id={bodyId} hidden={!open}>{children}</div>
+  </Card>;
+};
 
 /** A label whose meaning shows on hover (dotted underline marks that it has a description). */
 export const Hint: React.FC<{ text: string; children: React.ReactNode; className?: string }> = ({ text, children, className = '' }) => (

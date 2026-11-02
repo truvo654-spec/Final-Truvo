@@ -3,16 +3,20 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { JournalEntry } from '../../types';
 import type { WhatIfRule } from '../../backtest/whatif';
 import { describeWhatIf as describeRule } from '../../backtest/whatif';
-import { dayMs, marketData, resolveSymbol, symbolSpec } from '../../backtest/marketData';
-import type { Bar } from '../../backtest/types';
+import { dayMs, resolveSymbol, symbolSpec } from '../../backtest/marketData';
 import { JournalCurrency, formatMoney } from '../journal/JournalCurrency';
 import { CandleChart, LineChart } from './charts';
-import { Card, Field, Pill, inputBase, btnSecondary } from './ui';
+import { CollapsibleCard, Field, Pill, inputBase, btnSecondary } from './ui';
 import { MarketSydeRecommender, RecommendationBadge } from './MarketSydeRecommender';
 import type { WhatIfStudyModel } from './useWhatIfStudy';
 import type {WhatIfStudyRow} from '../../backtest/savedWhatIf';
 import type {WhatIfSnapshot} from '../../backtest/store';
 import {SaveScenarioButton} from './SaveScenarioButton';
+import {ChartTimeframeSelect} from './ChartTimeframeSelect';
+import {executionPriceBars,selectedPriceInterval,priceWindowEnd,shiftPriceInterval,clampTimeWindow,resizeTimeWindow,shiftTimeWindow,recordedTimeTicks,type PriceChartInterval,type TimeWindow} from '../journal/executionPriceStudy';
+import {curveAt} from '../journal/executionChartData';
+import type {LinkedPanel} from './linkedPerformance';
+import {whatIfPerformance,windowWhatIfSeries} from './whatIfChart';
 
 const COLORS = ['#5338ec', '#059669', '#0284c7', '#d97706', '#db2777', '#7c3aed'];
 export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:boolean; entries: JournalEntry[]; selectedSymbols:string[]; instrumentOptions:string[]; onInstrument:(symbol:string)=>void; rule: WhatIfRule; model:WhatIfStudyModel; onSelect: (rule: WhatIfRule) => void; onSave:(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>void; isSaved:(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>boolean }> = ({ benchmarkLabel, fixedScope=false, entries, selectedSymbols,instrumentOptions,onInstrument,rule, model, onSelect,onSave,isSaved }) => {
@@ -26,7 +30,10 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
   const [improvedOnly, setImprovedOnly] = useState(false);
   const [visible, setVisible] = useState<string[] | null>(null);
 
-  const [chartEnd, setChartEnd] = useState<number | null>(null);
+  const [chartWindow,setChartWindow]=useState<[number,number]|null>(null);
+  const [equityWindow,setEquityWindow]=useState<TimeWindow|null>(null);
+  const [interval,setInterval]=useState<'auto'|PriceChartInterval>('auto');
+  const [performanceId,setPerformanceId]=useState('setup');
   const [equityScope, setEquityScope] = useState('benchmark');
   const [chartView, setChartView] = useState('combined');
   useEffect(() => { setVisible(null); }, [rule.kind]);
@@ -38,59 +45,73 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
   const symbols = Array.from(new Set<string>(entries.map(e => e.symbol))).sort();
   const [chartSymbol,setChartSymbol]=useState('');
   const instrument=(fixedScope&&symbols.includes(chartSymbol)?chartSymbol:'')||selectedSymbols.map(selected=>symbols.find(symbol=>symbol===selected||(!!resolveSymbol(selected)&&resolveSymbol(selected)===resolveSymbol(symbol)))).find(Boolean)||symbols[0]||'';
-  useEffect(()=>{setChartEnd(null);},[instrument,entries]);
   const canonical = resolveSymbol(instrument);
   const matchesSymbol = (symbol: string) => canonical ? resolveSymbol(symbol) === canonical : symbol === instrument;
   const actualTrades = comparison.rows[0]?.output.trades ?? [];
-  const bars = useMemo((): Bar[] => {
-    if (!canonical || !entries.length) return [];
-    const timestamps = actualTrades.flatMap(t => [t.entryTime, t.exitTime]);
-    if (!timestamps.length) return [];
-    const start = Math.floor(Math.min(...timestamps) / dayMs) * dayMs;
-    const end = Math.floor(Math.max(...timestamps) / dayMs) * dayMs + dayMs;
-    const s = marketData.seriesSync(canonical, '1D');
-    const result: Bar[] = [];
-    for (let i = 0; i < s.length; i++) if (s.t[i] >= start && s.t[i] < end) result.push({ t: s.t[i], o: s.o[i], h: s.h[i], l: s.l[i], c: s.c[i], v: s.v[i] });
-    return result;
-  }, [canonical, actualTrades, entries]);
-  const origin = actualTrades.length ? [{ x: Math.min(...actualTrades.map(t => t.entryTime)), y: 0 }] : [];
+  const timestamps=actualTrades.flatMap(t=>[t.entryTime,t.exitTime]).filter(Number.isFinite);
+  const scopeStart=Math.floor((timestamps.length?Math.min(...timestamps):0)/dayMs)*dayMs;
+  const scopeEnd=Math.floor((timestamps.length?Math.max(...timestamps):0)/dayMs)*dayMs+dayMs;
+  const startDate=new Date(scopeStart).toISOString().slice(0,10),endDate=new Date(scopeEnd-dayMs).toISOString().slice(0,10);
+  const autoTf=selectedPriceInterval('auto',startDate,endDate),tf=selectedPriceInterval(interval,startDate,endDate);
+  useEffect(()=>{setChartWindow(null);setEquityWindow(null);},[instrument,scopeStart,scopeEnd,tf]);
+  const bars=useMemo(()=>executionPriceBars(instrument,startDate,endDate,tf),[instrument,startDate,endDate,tf]);
+  const origin = [{x:scopeStart,y:0}];
   const scopedTrades = (trades: typeof actualTrades) => equityScope === 'benchmark' ? trades : trades.filter(t => matchesSymbol(t.symbol));
-  const actualCurve = (() => { let total = 0; return [...origin, ...[...scopedTrades(actualTrades)].sort((a,b) => a.exitTime-b.exitTime).map(t => ({ x: t.exitTime, y: total += t.actualNet }))]; })();
+  const actualCurve = [...origin,...whatIfPerformance(scopedTrades(actualTrades),true).nodes.map(n=>({x:n.at,y:n.cumulative}))];
   const portfolioSeries = [{ name: 'Actual', color: '#94a3b8', dashed: true, points: actualCurve }, ...selected.map((row, i) => {
-    let total = 0;
-    return { name: (row.id === JSON.stringify(rule) ? 'Your setup · ' : '') + describeWhatIf(row.rule) + (row.id === recommendation.candidate?.id ? (recommendation.status === 'exploratory' ? ' · AI exploration' : ' · MarketSyde AI') : ''), color: row.id === recommendation.candidate?.id ? '#5338ec' : row.id === JSON.stringify(rule) ? '#0284c7' : COLORS[(i + 1) % COLORS.length], points: [...origin, ...[...scopedTrades(row.output.trades)].sort((a,b) => a.exitTime-b.exitTime).map(t => ({ x: t.exitTime, y: total += t.newNet }))] };
+    return { name: (row.id === JSON.stringify(rule) ? 'Your setup · ' : '') + describeWhatIf(row.rule) + (row.id === recommendation.candidate?.id ? (recommendation.status === 'exploratory' ? ' · AI exploration' : ' · MarketSyde AI') : ''), color: row.id === recommendation.candidate?.id ? '#5338ec' : row.id === JSON.stringify(rule) ? '#0284c7' : COLORS[(i + 1) % COLORS.length], points: [...origin,...whatIfPerformance(scopedTrades(row.output.trades),false).nodes.map(n=>({x:n.at,y:n.cumulative}))] };
   })];
-  const dailyPoints = (trades: typeof actualTrades, actual: boolean) => {
-    const sorted = [...scopedTrades(trades)].sort((a,b) => a.exitTime-b.exitTime);
-    let index = 0, total = 0;
-    return bars.map(bar => {
-      while (index < sorted.length && sorted[index].exitTime < bar.t + dayMs) { total += actual ? sorted[index].actualNet : sorted[index].newNet; index++; }
-      return { x: bar.t, y: total };
-    });
+  const performanceChoices=selected.filter(row=>row.id!==JSON.stringify(rule));
+  const performanceKey=performanceId==='actual'||performanceId==='setup'||performanceChoices.some(row=>row.id===performanceId)?performanceId:'setup';
+  const performanceRow=performanceChoices.find(row=>row.id===performanceKey)??comparison.rows[0];
+  const performance=whatIfPerformance(scopedTrades(performanceRow?.output.trades??[]),performanceKey==='actual');
+  const performanceName=performanceKey==='actual'?'Original':performanceKey==='setup'?'Your setup':describeWhatIf(performanceRow.rule);
+  const compact=(value:number)=>new Intl.NumberFormat('en-US',{notation:'compact',maximumFractionDigits:1}).format(Math.abs(value)<1e-9?0:value);
+  const panels:LinkedPanel[]=[
+    {id:'pnl',label:'Cumulative closed P&L',color:'#5338ec',points:performance.nodes.map(n=>({at:n.at,value:n.cumulative})),format:money,axisFormat:compact},
+    {id:'drawdown',label:'Drawdown from peak',color:'#e11d48',points:performance.nodes.map(n=>({at:n.at,value:n.drawdown})),format:v=>money(-v),axisFormat:v=>compact(-v),underwater:true},
+  ];
+  const fallbackRange:[number,number]=[interval==='auto'?0:Math.max(0,bars.length-200),bars.length];
+  const to=Math.max(0,Math.min(bars.length,(chartWindow??fallbackRange)[1])),from=Math.max(0,Math.min(to-1,(chartWindow??fallbackRange)[0]));
+  const scope:TimeWindow=[scopeStart,scopeEnd],equityRange=clampTimeWindow(equityWindow??scope,scope);
+  const candleView=chartView==='combined'&&bars.length>0;
+  const windowEnd=priceWindowEnd(bars,to,tf,scopeEnd);
+  const minimum=Math.min(scopeEnd-scopeStart,Math.abs(shiftPriceInterval((equityRange[0]+equityRange[1])/2,tf,8)-(equityRange[0]+equityRange[1])/2));
+  const zoom=(factor:number)=>{
+    if(!candleView){setEquityWindow(resizeTimeWindow(equityRange,scope,factor,minimum));return;}
+    const size=Math.min(bars.length,Math.max(8,Math.min(200,Math.round((to-from)*factor)))),lo=Math.max(0,Math.min(bars.length-size,Math.round((from+to-size)/2)));setChartWindow([lo,lo+size]);
   };
-  const candleSeries = [{ name: 'Actual', color: '#94a3b8', dashed: true, points: dailyPoints(actualTrades, true) }, ...selected.map((row, i) => ({ name: (row.id === JSON.stringify(rule) ? 'Your setup · ' : '') + describeWhatIf(row.rule) + (row.id === recommendation.candidate?.id ? (recommendation.status === 'exploratory' ? ' · AI exploration' : ' · MarketSyde AI') : ''), color: row.id === recommendation.candidate?.id ? '#5338ec' : row.id === JSON.stringify(rule) ? '#0284c7' : COLORS[(i + 1) % COLORS.length], points: dailyPoints(row.output.trades, false) }))];
-  const to = Math.max(Math.min(chartEnd ?? bars.length, bars.length), Math.min(70, bars.length));
-  const from = Math.max(0, to - 70);
+  const browse=(direction:number)=>{if(!candleView){setEquityWindow(shiftTimeWindow(equityRange,scope,direction));return;}const size=to-from,lo=Math.max(0,Math.min(bars.length-size,from+direction*Math.max(1,Math.round(size/2))));setChartWindow([lo,lo+size]);};
+  const fullPeriod=()=>{setInterval('auto');setChartWindow(null);setEquityWindow(null);};
+  const hoverDetail=(at:number)=>{const node=curveAt(performance.nodes,at);return <p>{performanceName} · Closed P&amp;L {money(node?.cumulative??0)} · drawdown {money(-(node?.drawdown??0))}</p>;};
   const first = comparison.rows[0];
   const rowSource=(row:WhatIfStudyRow):WhatIfSnapshot['source']=>row.id===JSON.stringify(rule)?'user':row.id===model.aiRow?.id?'ai':'parameter';
   return <div className="space-y-5">
-    <MarketSydeRecommender recommendation={recommendation} baseline={recommendationBaseline} baselineName={benchmarkLabel?benchmarkLabel+" on the training days":"actual journal history on the training days"} goal={recommendationGoal} onGoal={setRecommendationGoal} money={money}
+    <MarketSydeRecommender collapsible recommendation={recommendation} baseline={recommendationBaseline} baselineName={benchmarkLabel?benchmarkLabel+" on the training days":"actual journal history on the training days"} goal={recommendationGoal} onGoal={setRecommendationGoal} money={money}
       evidence={`Selection uses the first 70% of entry days. The remaining days are checked independently; crossing trades stay in full-history results only. AI explores ${model.tested} supported setups across guardrails, session, tags and price-dependent rules, including your parameter range.`} action="Compare AI scenario" onUse={id => {setImprovedOnly(false);setVisible([...new Set([JSON.stringify(rule),id])]);}} />
-    <Card title="Candles & scenario comparison" sub="Compare actual and What-if equity alongside market candles on one timeline.">
+    <CollapsibleCard title="Candles & scenario comparison" summary={`${instrument || 'No instrument'} · ${tf} · ${performanceName}`} sub="Explore price, closed P&L and drawdown on one timeline.">
       <div className="flex flex-wrap items-end gap-3 mb-3">
         <Field label={fixedScope?'Candle instrument':'Candle instrument · linked to setup'} htmlFor="wi-chart-symbol"><select id="wi-chart-symbol" className={inputBase} value={instrument} onChange={e => fixedScope?setChartSymbol(e.target.value):onInstrument(e.target.value)}>{instrumentOptions.map(s => <option key={s}>{s}</option>)}</select></Field>
         <Field label="Equity scope" htmlFor="wi-equity-scope"><select id="wi-equity-scope" className={inputBase} value={equityScope} onChange={e => setEquityScope(e.target.value)}><option value="benchmark">All filtered benchmark trades</option><option value="instrument">Selected instrument only</option></select></Field>
-        <Field label="Chart view" htmlFor="wi-chart-view"><select id="wi-chart-view" className={inputBase} value={chartView} onChange={e => setChartView(e.target.value)}><option value="combined">Candles + equity</option><option value="equity">Equity only · full history</option></select></Field>
+        <Field label="Chart view" htmlFor="wi-chart-view"><select id="wi-chart-view" className={inputBase} value={chartView} onChange={e => setChartView(e.target.value)}><option value="combined">Candles + performance</option><option value="equity">Equity only · compare scenarios</option></select></Field>
+        <Field label="Performance" htmlFor="wi-performance"><select id="wi-performance" className={inputBase+' max-w-full'} value={performanceKey} onChange={e=>setPerformanceId(e.target.value)}><option value="setup">Your setup</option><option value="actual">Original</option>{performanceChoices.map(row=><option key={row.id} value={row.id}>{describeWhatIf(row.rule)}</option>)}</select></Field>
       </div>
-      <p className="text-[11px] text-slate-500 mb-3">{fixedScope?'Chart instrument changes only the chart view.':'Changing the candle instrument updates the scenario lab symbol filter.'} {equityScope === 'benchmark' ? 'Lines include all filtered benchmark trades across instruments.' : `Lines include only ${instrument || 'the selected instrument'} trades.`} {chartView === 'combined' && bars.length ? `Candles show ${instrument || 'the selected instrument'} prices on an independent right axis; equity uses ${currency} on the left.` : `Cumulative realized net P&L in ${currency}, ordered by recorded exit time.`}</p>
-      {chartView === 'combined' && bars.length ? <><CandleChart label={`${instrument} demo candles and ${equityScope === 'benchmark' ? 'benchmark' : 'instrument'} scenario equity`} bars={bars} from={from} to={to} height={380} dp={symbolSpec(instrument)?.priceDp ?? 2} pnl={{ currency, series: candleSeries, detail: time => <div>{candleSeries.map(s => <p key={s.name}>{s.name}: {money(s.points.find(p => p.x === time)?.y ?? NaN)}</p>)}</div> }} />
-        <label className="block text-[11px] text-slate-500 mt-3">Chart timeline<JournalHelp label="Chart timeline" /><input type="range" aria-label="What-if candle timeline" min={Math.min(70,bars.length)} max={bars.length} value={to} onChange={e => setChartEnd(Number(e.target.value))} className="w-full accent-[#5338ec]" /></label></> : <>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3"><ChartTimeframeSelect value={interval} autoInterval={autoTf} onChange={value=>{setInterval(value);setChartWindow(null);setEquityWindow(null);}}/><div className="flex flex-wrap gap-1">
+        <button type="button" className={btnSecondary} aria-label="Zoom in What-if chart" disabled={candleView?to-from<=8:equityRange[1]-equityRange[0]<=minimum} onClick={()=>zoom(0.5)}>+</button>
+        <button type="button" className={btnSecondary} aria-label="Zoom out What-if chart" disabled={candleView?to-from>=Math.min(200,bars.length):equityRange[1]-equityRange[0]>=scopeEnd-scopeStart} onClick={()=>zoom(2)}>−</button>
+        <button type="button" className={btnSecondary} onClick={fullPeriod}>Full period</button>
+      </div></div>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500"><span>{performanceName} · {equityScope==='benchmark'?'All filtered trades':instrument} · {currency}{candleView?` · ${to-from} of ${bars.length.toLocaleString()} candles`:''}</span><div className="flex gap-1"><button type="button" className={btnSecondary} aria-label="Earlier What-if period" disabled={candleView?from<=0:equityRange[0]<=scopeStart} onClick={()=>browse(-1)}>←</button><button type="button" className={btnSecondary} aria-label="Later What-if period" disabled={candleView?to>=bars.length:equityRange[1]>=scopeEnd} onClick={()=>browse(1)}>→</button></div></div>
+      {candleView ? <><CandleChart label={`${instrument} demo candles with linked What-if performance`} bars={bars} from={from} to={to} height={260} dp={symbolSpec(instrument)?.priceDp ?? 2} responsive showTimeAxis interactive timelineEnd={windowEnd} linkedPanels={panels} tooltipDetail={hoverDetail}/>
+        <label className="block text-[11px] text-slate-500 mt-3">Chart timeline<JournalHelp label="Chart timeline" /><input type="range" aria-label="What-if candle timeline" min={to-from} max={bars.length} value={to} onChange={e=>{const end=Number(e.target.value);setChartWindow([end-(to-from),end]);}} className="w-full accent-[#5338ec]" /></label></> : <>
         {chartView === 'combined' && <p role="status" className="text-xs text-slate-500 mb-3">No demo candles for this instrument and date range. Showing full-history equity.</p>}
-        <LineChart label="Actual and What-if full-history equity" height={340} area={false} yFmt={money} xFmt={x => new Date(x).toISOString().slice(0,10)} series={portfolioSeries} />
+        <LineChart label="Actual and What-if full-history equity" height={260} area={false} yFmt={money} xFmt={x=>new Date(x).toISOString().slice(5,tf.endsWith('m')||tf.endsWith('h')?16:10).replace('T',' ')} series={windowWhatIfSeries(portfolioSeries,equityRange[0],equityRange[1]-1)} timeline={[equityRange[0],equityRange[1]-1]} timeTicks={recordedTimeTicks(equityRange[0],equityRange[1],tf)} linkedPanels={panels} tooltipDetail={hoverDetail}/>
       </>}
-      <p className="text-[11px] text-slate-500 mt-3">Generated demo candles are context only and do not drive What-if calculations. Combined view shows cumulative realized net P&amp;L at each candle’s day end. Candle coverage: Oct 1, 2024 – Oct 7, 2026. Use Equity only for all exit dates beyond this coverage.</p>
-    </Card>
-    <Card title="Parameter optimization" sub="Sweep one parameter on the same trades. Select rows to compare up to six scenarios on the main chart.">
+      <p className="mt-2 text-[11px] text-slate-500">One timeline · hover any pane or use ← / → · zoom and browse together.</p>
+      <div className="mt-3 grid grid-cols-3 gap-2" aria-label="What-if chart summary">{[['Closed trades',String(performance.count)],['Net P&L',money(performance.net)],['Max drawdown',money(-performance.maxDD)]].map(([label,value])=><div key={label} className="rounded-lg bg-slate-50 p-3"><p className="text-[10px] text-slate-500">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div>)}</div>
+      <p className="text-[11px] text-slate-500 mt-3">{performanceName} · Full selected period. Drawdown uses exact close times in {currency}; no account balance is assumed. Chart timeframe changes the view only. Demo candles are illustrative and do not drive What-if calculations.</p>
+    </CollapsibleCard>
+    <CollapsibleCard title="Parameter optimization" summary={comparison.error ? 'Check parameter range' : `${comparison.rows.length} setups compared · ${entries.length} trades`} sub="Sweep one parameter on the same trades. Select rows to compare up to six scenarios on the main chart.">
       <div className="flex flex-wrap items-end gap-3 mb-4">
         {rule.kind !== 'mistakes' ? bounds.map((value, i) => <Field key={i} label={['Minimum', 'Maximum', 'Step'][i]} htmlFor={`wi-bound-${i}`}><input id={`wi-bound-${i}`} type="number" min="0.01" step={rule.kind === 'lossesPerDay' || rule.kind === 'hours' ? 1 : 0.25} value={value} onChange={e => { setBounds(b => b.map((v, j) => i === j ? Number(e.target.value) : v)); setVisible(null); }} className={`${inputBase} w-24`} /></Field>) : <p className="text-xs text-slate-500">Compare the selected tag set with each individual tag.</p>}
         <Field label="Rank by training result" htmlFor="wi-rank"><select id="wi-rank" className={inputBase} value={score} onChange={e => setScore(e.target.value)}><option value="net">Highest net P&amp;L</option><option value="drawdown">Lowest drawdown</option><option value="win">Highest win rate</option></select></Field>
@@ -106,6 +127,6 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
         {shown.map(row => <tr key={row.id} className={`border-b border-slate-100 ${row.id === recommendation.candidate?.id ? 'bg-[#F1EDFF]' : ''} ${JSON.stringify(rule) === row.id ? 'bg-[#FBFAFF]' : ''}`}><td className="py-3 pr-3"><label className="flex items-start gap-2"><input type="checkbox" aria-label={`Chart ${describeWhatIf(row.rule)}`} checked={selected.some(r => r.id === row.id)} disabled={!selected.some(r => r.id === row.id) && selected.length >= 6} onChange={() => setVisible(selected.some(r => r.id === row.id) ? selected.filter(r => r.id !== row.id).map(r => r.id) : [...selected.map(r => r.id), row.id])} /><span>{describeWhatIf(row.rule)}{row.id === recommendation.candidate?.id && <span className="block mt-1"><RecommendationBadge exploratory={recommendation.status === 'exploratory'} /></span>}{row.output.estimated && <span className="block text-[10px] text-amber-600">Estimated price path</span>}</span></label></td><td className="text-right font-bold">{money(row.output.whatIf.netPnl)}</td><td className={`text-right ${row.output.saved > 0 ? 'text-emerald-600' : row.output.saved < 0 ? 'text-rose-600' : ''}`}>{money(row.output.saved)}</td><td className="text-right">{Number.isFinite(row.output.whatIf.winRate) ? `${(row.output.whatIf.winRate*100).toFixed(1)}%` : '—'}</td><td className="text-right">{money(row.output.whatIf.maxDD)}</td><td className="text-right">{row.output.whatIf.trades} / {row.output.skipped}</td><td className="text-right">{money(row.training.saved)}</td><td className="text-right">{money(row.validation?.saved ?? NaN)}</td><td className="pl-3"><div className="flex items-center gap-1"><SaveScenarioButton name={describeWhatIf(row.rule)} saved={isSaved(row,rowSource(row))} onSave={()=>onSave(row,rowSource(row))}/><button className={btnSecondary} type="button" onClick={() => onSelect(row.rule)}>Use setup</button></div></td></tr>)}
       </tbody></table></div>
       {!shown.length && !comparison.error && <p role="status" className="text-xs text-slate-500 mt-3">No scenarios match this comparison filter.</p>}
-    </Card>
+    </CollapsibleCard>
   </div>;
 };

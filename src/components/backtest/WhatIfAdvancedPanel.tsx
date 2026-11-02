@@ -21,7 +21,7 @@ import type { JournalRules } from '../../backtest/rules';
 import { describeWhatIf as describeRule, ESTIMATED_RULES, runWhatIf, WhatIfRule, type WhatIfTrade } from '../../backtest/whatif';
 import { dateOnly, money, num, pct, rr, tone, utcWindow } from '../../backtest/format';
 import { loadWhatIfs, saveWhatIfs } from '../../backtest/store';
-import { Card, Field, Hint, Pill, Segmented, btnPrimary, btnSecondary, inputBase, inputCls } from './ui';
+import { Card, CollapsibleCard, Field, Hint, Pill, Segmented, btnPrimary, btnSecondary, inputBase, inputCls } from './ui';
 
 interface Props {
   fixedScope?: boolean;
@@ -257,8 +257,8 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
 
         <div className="space-y-5 min-w-0">
           {picked.length > 0 && <WhatIfComparison benchmarkLabel={benchmarkLabel} fixedScope={fixedScope} entries={picked} selectedSymbols={syms} instrumentOptions={symbols} onInstrument={symbol=>setSyms([symbol])} rule={rule} model={study} onSelect={selectRule} onSave={saveScenario} isSaved={isScenarioSaved}/>}
-          <section className={`rounded-2xl border p-5 ${out.saved > 0 ? 'border-emerald-200 bg-emerald-50' : out.saved < 0 ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'}`} aria-live="polite">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Result<JournalHelp label="Result" /></p>
+          <CollapsibleCard title="Result summary" summary={headline} className={out.saved > 0 ? 'border-emerald-200' : out.saved < 0 ? 'border-rose-200' : ''}>
+           <div aria-live="polite">
             <p className="text-lg font-bold text-[#0b1c30] mt-0.5 flex items-start gap-2">
               {out.saved > 0 ? <TrendingUp className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /> : out.saved < 0 ? <TrendingDown className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" /> : null}{headline}
             </p>
@@ -268,10 +268,11 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
               {onViewSaved&&<button type="button" className={btnSecondary} onClick={onViewSaved}>View Saved runs <ArrowRight className="w-3.5 h-3.5"/></button>}
               <button type="button" className={btnPrimary} disabled={!picked.length} onClick={add}><ListPlus className="w-4 h-4" /> Add this as a rule in my checklist</button>
             </div>
-          </section>
+           </div>
+          </CollapsibleCard>
 
           {picked.length > 0 && (<>
-            <Card title="Actual vs what-if" sub="Full filtered history: actual trades, your selected rule and the independently selected MarketSyde AI scenario.">
+            <CollapsibleCard title="Actual vs what-if" summary={`Net ${money(out.actual.netPnl)} → ${money(out.whatIf.netPnl)} · ${picked.length} trades`} sub="Full filtered history: actual trades, your selected rule and the independently selected MarketSyde AI scenario.">
               <p className="text-[11px] text-[#5338ec] mb-3">MarketSyde AI: {aiName}{aiOut?.estimated?' · Estimated price path':''}. Selection uses training results; totals below also include holdout trades.</p>
               <p className="text-[11px] text-slate-500 mb-3">Green = best historical value per measure, shared for ties. Lower drawdown is better; trade counts are context.</p>
               <div className="overflow-x-auto">
@@ -302,7 +303,7 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ fixedScope=false, benchma
                   </tbody>
                 </table>
               </div>
-            </Card>
+            </CollapsibleCard>
 
             <Card title={`Trades that changed (${comparisonTrades.length})`} sub="Trades changed by either your setup or MarketSyde AI, matched by trade ID. Green highlights the highest net result for each trade; ties share it." right={comparisonTrades.length > 0 ? <button type="button" className={btnSecondary} onClick={() => onReviewTrades ? onReviewTrades(comparisonTrades.map(({user})=>user), `Your setup: ${describeWhatIf(rule)}`) : onOpenTrades(comparisonTrades.map(({user}) => user.id), `What-if: your setup vs MarketSyde AI`)}>{fixedScope ? "View trades" : "Open in Trade Log"} <ArrowRight className="w-3.5 h-3.5" /></button> : undefined}>
               {comparisonTrades.length === 0 ? <p className="text-xs text-slate-500 flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Neither available setup changed these trades.</p> : (
