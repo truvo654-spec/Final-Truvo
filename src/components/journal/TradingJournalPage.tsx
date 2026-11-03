@@ -769,7 +769,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onReplay={BACKTEST_TRAINING_ENABLED?(id)=>goBacktest({view:'replay',entryId:id}):undefined}
           onReplayLog={setApiReplayId}
           onBacktestTrades={(ids) => goBacktest({ view: 'setup', benchmarkTradeIds: ids })}
-          onWhatIfTrades={ids=>goBacktest({view:'whatif',benchmarkTradeIds:ids})}
           onCompareResults={ids=>goBacktest({view:'home',journalTradeIds:ids})}
         />
       )}
@@ -785,7 +784,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           brokers={brokers || []}
           onToast={onShowToast}
           onDrill={(ids, label) => { setLogPreset({ ids, label }); setTab('entries'); }}
-          onWhatIf={() => goBacktest({ view: 'whatif' })}
         />
       )}
 
@@ -799,8 +797,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           playbooks={playbooks}
           setPlaybooks={setVersionedPlaybooks}
           journalRules={rules}
-          onUpdateRules={(p) => setRules((r) => ({ ...r, ...p }))}
-          onAddChecklist={(label) => setChecklist((prev) => (prev.some((c) => c.label === label) ? prev : [...prev, { id: `chk_${Date.now()}`, label }]))}
           brokers={brokers || []}
           userTierLevel={isLoggedIn ? userTierLevel : 1}
           sydeCredits={sydeCredits}
@@ -839,7 +835,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           expected={expected}
           onBacktest={(id, symbol) => goBacktest({ view: 'setup', playbookId: id, symbol })}
           reviewOpen={!!selected}
-          onWhatIf={id => goBacktest({ view: 'whatif', playbookId: id })}
           brokers={brokers}
           onConnectBroker={onConnectBroker}
           onBrowseBrokers={onBrowseBrokers}

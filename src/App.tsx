@@ -1786,7 +1786,8 @@ export default function App() {
             brokers={brokers}
             onConnectBroker={(broker) => {
               setSelectedBrokerForConnect(broker);
-              setIsConnectModalOpen(true);
+              setConnectReturnTab('trading-journal');
+              setActiveTab('connect-to-truvo');
             }}
             onBrowseBrokers={() => setActiveTab('brokers')}
             onStartTrade={() => setActiveTab('signals')}
@@ -2025,6 +2026,8 @@ export default function App() {
                 ? 'Back to Trading Signal'
                 : connectReturnTab === 'signals'
                 ? 'Back to Signals'
+                : connectReturnTab === 'trading-journal'
+                ? 'Back to Strategy Book'
                 : 'Back to Brokers'
             }
             onNavigateToCashback={() => setActiveTab('cashback-overview')}

@@ -5,7 +5,7 @@ import type {DemoFeed} from '../../backtest/demoReplay';
 import {playbookPositionDraft,parsePositionDraft,positionPath,type PositionDraft,type TestPosition,type PositionPath} from '../../backtest/positionReplay';
 import {Card,Field,inputCls} from './ui';
 
-type Draft={stop:string;target:string;breakeven:string;maxBars:string};
+type Draft={stop:string;target:string};
 const colors=['#059669','#f97316','#db2777','#0891b2','#7c3aed'];
 export function useReplayComparisons(feed:DemoFeed,books:JournalPlaybook[],base:PositionDraft,active:{position:TestPosition;start:number}|null,cursor:number,manualExit:number|null,logPath:PositionPath|null,aiPosition:TestPosition|null,aiPath:PositionPath|null,sampleAI:boolean,onSampleAI:(value:boolean)=>void,aiTargets:number[],onTarget:(r:number)=>void,aiAlternatives:{id:string;name:string;position:TestPosition;path:PositionPath}[]){
   const [resultScope,setResultScope]=useState<'current'|'final'>('current');
@@ -24,18 +24,16 @@ export function useReplayComparisons(feed:DemoFeed,books:JournalPlaybook[],base:
     const next:Record<string,Draft>={};
     for(const book of books){
       const d=playbookPositionDraft(feed,book,80,base.direction),sign=base.direction==='BUY'?1:-1,entry=Number(base.entry);
-      next[book.id]={stop:String(entry-sign*Math.abs(Number(d.entry)-Number(d.stop))),target:String(entry+sign*Math.abs(Number(d.target)-Number(d.entry))),breakeven:'',maxBars:''};
+      next[book.id]={stop:String(entry-sign*Math.abs(Number(d.entry)-Number(d.stop))),target:String(entry+sign*Math.abs(Number(d.target)-Number(d.entry)))};
     }
     setDrafts(next);
   },[feed,books,base.entry,base.direction]);
   const rows=books.filter(b=>selected.includes(b.id)).map(b=>{
     const d=drafts[b.id],parsed=d?parsePositionDraft({...base,stop:d.stop,target:d.target}):{position:null,error:'Loading setup'};
-    const be=d?.breakeven.trim()?Number(d.breakeven):null,max=d?.maxBars.trim()?Number(d.maxBars):null;
-    const error=parsed.error||(be!==null&&(!Number.isFinite(be)||be<=0)?'Breakeven R must be positive.':null)||(max!==null&&(!Number.isInteger(max)||max<1)?'Maximum bars must be a positive integer.':null);
+    const error=parsed.error;
     const position=active&&parsed.position?{...active.position,stop:parsed.position.stop,target:parsed.position.target}:null;
-    const exit=active&&max!==null?Math.min(manualExit??Infinity,active.start+max):manualExit;
-    const path=active&&position&&!error?positionPath(feed.bars,position,active.start,cursor,exit,be):null;
-    const finalPath=active&&position&&!error?positionPath(feed.bars,position,active.start,feed.bars.length,Math.min(exit??Infinity,feed.bars.length-1),be):null;
+    const path=active&&position&&!error?positionPath(feed.bars,position,active.start,cursor,manualExit):null;
+    const finalPath=active&&position&&!error?positionPath(feed.bars,position,active.start,feed.bars.length,Math.min(manualExit??Infinity,feed.bars.length-1)):null;
     return {id:b.id,name:b.name,color:colors[books.indexOf(b)%colors.length],position,path,finalPath,error};
   });
   const series=rows.filter(r=>r.path).map(r=>({name:r.name,color:r.color,points:r.path!.points.map(p=>({x:p.time,y:p.managedNet}))}));
@@ -46,7 +44,7 @@ export function useReplayComparisons(feed:DemoFeed,books:JournalPlaybook[],base:
   </div>;
   const sourceRows=[...(showLog?[{id:'log',name:'Trade Log · read-only',path:logPath,position:active?.position,finalPath:active?positionPath(feed.bars,active.position,active.start,feed.bars.length,manualExit??feed.bars.length-1):null}]:[]),...rows,...(showAI?(sampleAI?aiAlternatives.map(r=>({...r,finalPath:active?positionPath(feed.bars,r.position,active.start,feed.bars.length,manualExit??feed.bars.length-1):null})):[{id:'ai',name:'MarketSyde AI',path:aiPath,position:aiPosition,finalPath:active&&aiPosition?positionPath(feed.bars,aiPosition,active.start,feed.bars.length,manualExit??feed.bars.length-1):null}]):[])];
   const tableRows=sourceRows.map(r=>({...r,path:resultScope==='final'?r.finalPath:r.path}));
-  const editor=<Card title="Edit selected strategy book setups" sub="Choose overlays above the chart. Strategy Book edits update results immediately; the Trade Log stays read-only.">{rows.map(r=><div key={r.id} className="mt-3 rounded-xl border p-3"><p className="text-sm font-semibold" style={{color:r.color}}>{r.name}</p><div className="grid grid-cols-2 gap-3 mt-2">{(['stop','target'] as const).map(key=><Field key={key} label={`${key} price`}><input aria-label={`${r.name} ${key} price`} type="number" step="any" className={inputCls} value={drafts[r.id]?.[key]??''} onChange={e=>setDrafts(s=>({...s,[r.id]:{...s[r.id],[key]:e.target.value}}))}/></Field>)}</div><details className="text-xs mt-3"><summary className="cursor-pointer text-purple-700">Advanced edit · What-if exits</summary><div className="grid grid-cols-2 gap-3 mt-2">{([['breakeven','Move stop to breakeven at R'],['maxBars','Close after bars']] as const).map(([key,label])=><Field key={key} label={label}><input aria-label={`${r.name} ${label}`} type="number" step={key==='maxBars'?1:'any'} className={inputCls} value={drafts[r.id]?.[key]??''} onChange={e=>setDrafts(s=>({...s,[r.id]:{...s[r.id],[key]:e.target.value}}))}/></Field>)}</div><p className="mt-2 text-slate-500">Blank disables the rule. Breakeven activates after a revealed candle closes at the threshold, then applies from the next candle. Entry, size and costs stay shared.</p></details>{r.error&&<p role="alert" className="text-xs text-amber-700 mt-2">{r.error}</p>}</div>)}</Card>;
+  const editor=<Card title="Edit selected strategy book setups" sub="Choose overlays above the chart. Strategy Book edits update results immediately; the Trade Log stays read-only.">{rows.map(r=><div key={r.id} className="mt-3 rounded-xl border p-3"><p className="text-sm font-semibold" style={{color:r.color}}>{r.name}</p><div className="grid grid-cols-2 gap-3 mt-2">{(['stop','target'] as const).map(key=><Field key={key} label={`${key} price`}><input aria-label={`${r.name} ${key} price`} type="number" step="any" className={inputCls} value={drafts[r.id]?.[key]??''} onChange={e=>setDrafts(s=>({...s,[r.id]:{...s[r.id],[key]:e.target.value}}))}/></Field>)}</div>{r.error&&<p role="alert" className="text-xs text-amber-700 mt-2">{r.error}</p>}</div>)}</Card>;
   const results=<Card title={resultScope==='final'?'Final comparative results':'Comparative results'} sub={resultScope==='final'?'Full chart scope: any remaining position closes at the final candle. Calculated instantly; playback and chart cursor stay unchanged. Generated-price estimates.':'Results at the replay cursor. Shared entry, size and costs; historical net remains separate.'}><div className="flex gap-2 text-xs" role="group" aria-label="Result scope"><button type="button" aria-pressed={resultScope==='current'} onClick={()=>setResultScope('current')} className="rounded-lg border px-3 py-2 font-semibold">At replay cursor</button><button type="button" aria-pressed={resultScope==='final'} onClick={()=>setResultScope('final')} className="rounded-lg border px-3 py-2 font-semibold">Final results</button></div><div className="overflow-auto mt-4"><table className="w-full text-xs text-left"><thead><tr><th className="p-2">Setup<JournalHelp label="Setup" /></th><th className="p-2">Stop / target</th><th className="p-2">Replay net</th><th className="p-2">Exit<JournalHelp label="Exit" /></th></tr></thead><tbody>{tableRows.map(r=><tr key={r.id} className="border-t"><th className="p-2">{r.name}</th><td className="p-2">{r.position?`${r.position.stop??'—'} / ${r.position.target??'—'}`:'Unavailable'}</td><td className="p-2">{r.path?.points.length?`$${r.path.points.at(-1)!.managedNet.toFixed(2)}`:'Unavailable'}</td><td className="p-2">{r.path?.exit?.reason??(r.path?.points.length?'Open':'Start replay')}</td></tr>)}</tbody></table></div></Card>;
   return {showLog,showAI,rows,series,controls,editor,results,showFinal:()=>setResultScope('final')};
 }

@@ -254,11 +254,9 @@ interface Props {
   isLoggedIn: boolean;
   onSignIn: () => void;
   onUnlockCrossAnalysis: (duration: UnlockDurationOption) => boolean;
-  /** Open Backtest → What-if on these trades. */
-  onWhatIf?: () => void;
 }
 
-export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, onToast, onWhatIf, user, isLoggedIn, onSignIn, onUnlockCrossAnalysis }) => {
+export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, onToast, user, isLoggedIn, onSignIn, onUnlockCrossAnalysis }) => {
   const money = useMoney();
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [, refreshAccess] = useState(0);
@@ -475,13 +473,6 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
     <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5 items-start">
       {/* Session filter and related action */}
       <aside className="space-y-4 lg:sticky lg:top-24">
-        {onWhatIf && (
-          <button type="button" onClick={onWhatIf} className="w-full text-left bg-[#FBFAFF] border border-[#5338ec]/20 rounded-2xl p-4 hover:border-[#5338ec]">
-            <p className="text-xs font-bold text-[#0b1c30]">What if you had followed one rule?</p>
-            <p className="text-[11px] text-[#474556] mt-0.5">Test "stop after 2 losses a day" and other rules on these trades.</p>
-            <p className="text-[11px] font-semibold text-[#5338ec] mt-1.5">Try a what-if →</p>
-          </button>
-        )}
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
             <p className="text-[10px] font-bold tracking-wider uppercase text-slate-500 mb-2">Session filter<JournalHelp label="Session filter" /></p>
             {SESSIONS.map((s) => (

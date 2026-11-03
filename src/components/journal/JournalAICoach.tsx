@@ -8,7 +8,6 @@ import { buildCoachReport, COACH_GOALS, type CoachGoal, type CoachScenario } fro
 import { useJournalState } from './journalStorage';
 import { formatMoney } from './JournalCurrency';
 import { metrics } from './journalMath';
-import { JournalScenarioLab } from './JournalScenarioLab';
 import { buildCoachScenarioStudy, coachPeriod } from './coachScenarios';
 
 const panel = 'rounded-2xl border border-slate-200 bg-white p-5';
@@ -63,7 +62,6 @@ export function JournalAICoach({ entries, history, playbooks, currency, today, r
       <label className="text-xs font-semibold">Build around<JournalHelp label="Build around" /><select aria-label="Build around" value={validBookId} onChange={e => setBookId(e.target.value)} className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-normal"><option value="">Find a pattern across my strategy books</option>{activeBooks.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
     </section>
 
-    <JournalScenarioLab history={history} currency={currency} today={today} goal={safeGoal} playbookName={source?.name} onEvidence={onEvidence} onToast={onToast}/>
     <details className={panel}><summary className="cursor-pointer text-sm font-semibold">Strategy Book experiments & strategy alternatives<JournalHelp label="Strategy Book experiments & strategy alternatives" /></summary><div className="mt-5 space-y-5">
     <label className="block text-xs font-semibold">Strategy Book evidence scope<JournalHelp label="Strategy Book evidence scope" /><select aria-label="Strategy Book evidence scope" value={scope} onChange={e => setScope(e.target.value as 'view' | 'history')} className="ml-3 h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-normal"><option value="history">All dates · current account & filters</option><option value="view">Current journal date range · {rangeLabel}</option></select></label>
 

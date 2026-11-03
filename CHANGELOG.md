@@ -1,3 +1,15 @@
+## 2.72.11 - Remove What-if from Trading Journal
+
+- Remove What-if entry points from Trade Log, Insights, Strategy Books, Backtest and saved-run replay transfer while preserving saved scenario data.
+
+## 2.72.10 - Connected-account Strategy Book CTA
+
+- Show Start a trade for users with a connected broker; otherwise direct them to the compatible broker onboarding flow.
+
+## 2.72.9 - Market-aware Strategy Book actions
+
+- Route broker connections through the existing onboarding page with a compatible broker preselected.
+
 ## 2.72.8 - Strategy Book empty-state actions
 
 - Add a Strategy Book analytics call to action when no completed trades are available: connect a broker, or open the Signal Terminal when an account is already connected.

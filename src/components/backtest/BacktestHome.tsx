@@ -22,7 +22,6 @@ interface Props {
   sessions: ReplaySession[];
   tz: string;
   onTest: (playbookId?: string) => void;
-  onWhatIf: () => void;
   onReplay: () => void;
   onOpenRun: (id: string) => void;
   onAllRuns: () => void;
@@ -30,11 +29,10 @@ interface Props {
 
 const MODES = [
   { key: 'test', title: 'Compare strategy books on past prices', text: 'Choose one or more strategy books to test on the same market and dates. Each keeps its own rules, timeframe and session.', cta: 'Start a backtest', time: 'One run per comparison' },
-  { key: 'whatif', title: 'What if I followed one rule?', text: 'Change one rule on your real journal trades, like "stop after 2 losses a day", and see what it would have changed.', cta: 'Try a what-if', time: 'Instant · free' },
   { key: 'replay', title: 'Practice on past charts', text: 'Trade bar by bar with the future hidden. Replay your own losing trades blind and earn Points.', cta: 'Start practising', time: 'Free · earns Points' },
 ] as const;
 
-export const BacktestHome: React.FC<Props> = ({ playbooks, entries, expected, runs, usage, limit, credits, sessions, tz, onTest, onWhatIf, onReplay, onOpenRun, onAllRuns }) => {
+export const BacktestHome: React.FC<Props> = ({ playbooks, entries, expected, runs, usage, limit, credits, sessions, tz, onTest, onReplay, onOpenRun, onAllRuns }) => {
   const rows = useMemo(() => playbooks.filter((p) => p.status !== 'archived').map((p) => {
     const live = liveStats(entries, p.name);
     const exp = expected[p.id];
@@ -44,14 +42,14 @@ export const BacktestHome: React.FC<Props> = ({ playbooks, entries, expected, ru
   const weekAgo = Date.now() - 7 * 86400000;
   const week = sessions.filter((s) => s.finishedAt && Date.parse(s.finishedAt) >= weekAgo);
   const left = Math.max(0, limit - usage.used) + usage.prepaid;
-  const act = { test: () => onTest(), whatif: onWhatIf, replay: onReplay };
+  const act = { test: () => onTest(), replay: onReplay };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {MODES.map(({ key, title, text, cta, time }, i) => (
           <button key={key} type="button" onClick={act[key]} className="group text-left bg-white border border-[#e2e8f0] rounded-2xl p-5 hover:border-[#5338ec] hover:shadow-sm transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec]">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-[#5338ec] mb-1.5">{['Backtest', 'What-if', 'Practice'][i]}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#5338ec] mb-1.5">{['Backtest', 'Practice'][i]}</p>
             <p className="text-base font-bold text-[#0b1c30] mb-1">{title}</p>
             <p className="text-xs text-[#474556] leading-relaxed mb-4">{text}</p>
             <span className="flex items-center justify-between text-xs">
@@ -98,7 +96,7 @@ export const BacktestHome: React.FC<Props> = ({ playbooks, entries, expected, ru
             </div>
             <p className="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5"><Coins className="w-3.5 h-3.5" /> Need more? Spend {EXTRA_RUN_CREDITS} Syde Credits per extra run. You have {credits.toLocaleString('en-US')}.</p>
             {usage.prepaid > 0 && <p className="text-[11px] text-emerald-700 mt-1">{usage.prepaid} extra run{usage.prepaid === 1 ? '' : 's'} already paid for.</p>}
-            {left <= 0 && <p className="text-[11px] text-slate-500 mt-1">What-if and practice replay stay free.</p>}
+            {left <= 0 && <p className="text-[11px] text-slate-500 mt-1">Practice replay stays free.</p>}
           </Card>
           <Card title="Practice" sub="Replay sessions finished in the last 7 days.">
             <div className="flex items-end gap-6">

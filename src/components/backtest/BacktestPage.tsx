@@ -11,7 +11,7 @@ import { labBenchmark, labSettings, labJobs, updateLabEntryRules, labBookSymbols
 import { resolveSymbol } from '../../backtest/marketData';
 import { playbookFingerprint } from '../journal/playbookExecution';
 import { JournalHelp, getJournalHelp } from '../journal/JournalHelp';
-// Backtest tab of the Trading Journal: routes between Home, Setup, Results, What-if, Replay and Saved runs,
+// Backtest tab of the Trading Journal: routes between Dashboard, Strategy Lab, Results, Practice and Saved runs,
 // and owns the run queue, usage limits, credits and points.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Coins, Loader2, XCircle, PlayCircle, Sparkles } from 'lucide-react';
@@ -25,7 +25,7 @@ import { defaultSettings, deepClone, describeCondition, defaultCostsFor, validat
 import { expectedFromRun } from '../../backtest/gap';
 import { userTz } from '../../backtest/format';
 import {
-  BacktestRun, claimPoints, loadReplay, loadRuns, loadUsage, PlaybookExpectedStats, ReplaySession, saveReplay, saveRuns, saveUsage, retainRuns, summarize, Usage,loadWhatIfs,saveWhatIfs,WhatIfRun,
+  BacktestRun, claimPoints, loadReplay, loadRuns, loadUsage, PlaybookExpectedStats, ReplaySession, saveReplay, saveRuns, saveUsage, retainRuns, summarize, Usage,
 } from '../../backtest/store';
 import { BacktestSettings, JobOutput, Suggestion } from '../../backtest/types';
 import { brokerCosts } from './BacktestSetup';
@@ -33,13 +33,12 @@ import { BacktestComparisonResults } from './BacktestComparisonResults';
 import type { BacktestComparisonItem } from './BacktestComparisonResults';
 import { BacktestResults } from './BacktestResults';
 import { SavedRuns } from './SavedRuns';
-import { WhatIfPanel } from './WhatIfPanel';
 import { ReplayPanel } from './ReplayPanel';
 import { DemoReplay } from './DemoReplay';
 import { Banner, Modal, btnPrimary, btnSecondary } from './ui';
 
-export type BacktestIntent = { view: 'setup'; symbol?: string; playbookId?: string; comparePlaybookId?: string; benchmarkTradeIds?: string[] } | { view: 'replay'; entryId?: string; playbookId?: string } | { view: 'whatif'; playbookId?: string; benchmarkTradeIds?:string[] } | ({ view: 'home' } & DashboardEntry);
-type View = 'home' | 'setup' | 'running' | 'results' | 'comparison' | 'whatif' | 'replay' | 'demo' | 'runs';
+export type BacktestIntent = { view: 'setup'; symbol?: string; playbookId?: string; comparePlaybookId?: string; benchmarkTradeIds?: string[] } | { view: 'replay'; entryId?: string; playbookId?: string } | ({ view: 'home' } & DashboardEntry);
+type View = 'home' | 'setup' | 'running' | 'results' | 'comparison' | 'replay' | 'demo' | 'runs';
 
 interface Props {
   entries: JournalEntry[];
@@ -47,8 +46,6 @@ interface Props {
   playbooks: JournalPlaybook[];
   setPlaybooks: (fn: (prev: JournalPlaybook[]) => JournalPlaybook[]) => void;
   journalRules: JournalRules;
-  onUpdateRules: (p: Partial<JournalRules>) => void;
-  onAddChecklist: (label: string) => void;
   brokers: Broker[];
   userTierLevel: number;
   sydeCredits: number;
@@ -95,10 +92,6 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const openDashboard=(entry?:DashboardEntry)=>{setDashboardInitial(entry);setDashboardRevision(v=>v+1);setView('home');};
   const [savedLab]=useState(loadLabDraft);
   const [view, setView] = useState<View>('home');
-  const [whatIfPlaybookId, setWhatIfPlaybookId] = useState('');
-  const [whatIfTradeIds,setWhatIfTradeIds]=useState<string[]|null>(null);
-  const [whatIfRun,setWhatIfRun]=useState<BacktestRun|null>(null);
-  const openRunWhatIf=(run:BacktestRun)=>{setWhatIfRun(run);setWhatIfPlaybookId('');setShowLabResults(false);setInspectedSavedRun(null);setView('whatif');};
   const [draft, setDraft] = useState<BacktestSettings>(() => savedLab?.settings ?? defaultSettings({ journalRules }));
   const [labSymbols,setLabSymbols]=useState<string[]>(savedLab?.symbols ?? []);
   const [reviewedLabRules,setReviewedLabRules]=useState<Record<string,string>>(savedLab?.reviewedRules ?? {});
@@ -115,7 +108,6 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const [inspectedSavedRun,setInspectedSavedRun]=useState<BacktestRun|null>(null);
   const [benchmarkEntries, setBenchmarkEntries] = useState<JournalEntry[]>(p.allEntries.filter(e=>savedLab?.tradeIds.includes(e.id)));
   const [runs, setRuns] = useState<BacktestRun[]>(() => loadRuns());
-  const [whatIfRuns,setWhatIfRuns]=useState<WhatIfRun[]>(()=>loadWhatIfs());
   const [usage, setUsage] = useState<Usage>(() => loadUsage());
   const [sessions, setSessions] = useState<ReplaySession[]>(() => loadReplay());
   const [progress, setProgress] = useState(0);
@@ -223,7 +215,6 @@ export const BacktestPage: React.FC<Props> = (p) => {
     const it = p.intent;
     if (it.view === 'setup') startSetup(it.playbookId, it.benchmarkTradeIds, it.comparePlaybookId, it.symbol);
     else if (it.view === 'replay') { if(BACKTEST_TRAINING_ENABLED){setBenchmarkEntries([]);setReplayEntry(it.entryId??null);setReplayPlaybook(it.playbookId??null);setView('replay');}else{startSetup(it.playbookId,it.entryId?[it.entryId]:undefined);onToast('Practice is unavailable in this version. Your selection is ready in Strategy Lab.');} }
-    else if (it.view === 'whatif') { setWhatIfTradeIds(it.benchmarkTradeIds??null);setWhatIfRun(null);setWhatIfPlaybookId(it.playbookId ?? ''); setBenchmarkEntries([]); setView('whatif'); }
     else { openDashboard(it); }
     p.onIntentDone();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -429,7 +420,6 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const NAV: [View, string, string][] = [
     ['home', 'Dashboard', 'Backtest Dashboard'],
     ['setup', 'Strategy Lab', 'Strategy Lab'],
-    ['whatif', 'What-if', 'What-if scenario lab'],
     ['replay', 'Practice', 'Practice'],
     ['demo', 'Demo replay', 'Playback'],
     ['runs', `Saved runs${savedRunCount ? ` (${savedRunCount})` : ''}`, 'Saved runs'],
@@ -450,7 +440,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
             const active = navOn(v);
             return (
               <div key={v} className={`relative shrink-0 rounded-lg border transition-colors ${active ? 'border-[#D8D0FF] bg-[#F1EDFF] text-[#5338ec] shadow-xs' : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white'}`}>
-                <button type="button" aria-current={active ? 'page' : undefined} disabled={dashboardBusy || (view === 'running' && v !== 'setup')} onClick={() => { if (view === 'running'||dashboardBusy) return; if(v==='runs')setWhatIfRuns(loadWhatIfs()); if (v === 'setup') { if (view !== 'setup') { setError(null);setLabRevision(v=>v+1);setView('setup'); } } else if(v==='home')openDashboard();else setView(v); }}
+                <button type="button" aria-current={active ? 'page' : undefined} disabled={dashboardBusy || (view === 'running' && v !== 'setup')} onClick={() => { if (view === 'running'||dashboardBusy) return; if (v === 'setup') { if (view !== 'setup') { setError(null);setLabRevision(v=>v+1);setView('setup'); } } else if(v==='home')openDashboard();else setView(v); }}
                   className="min-h-10 whitespace-nowrap rounded-lg pl-3 pr-10 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec] disabled:cursor-not-allowed disabled:opacity-40 sm:text-[13px]">{label}</button>
                 <span className="absolute right-1 top-1/2 -translate-y-1/2"><JournalHelp label={label} text={getJournalHelp(helpTopic)} /></span>
               </div>
@@ -495,10 +485,10 @@ export const BacktestPage: React.FC<Props> = (p) => {
         </section></Modal>
       )}
 
-      {labResults&&showLabResults&&<LabResultsDialog onWhatIf={openRunWhatIf} runs={labResults.runs} saved={labResults.saved} playbooks={playbooks} onClose={()=>setShowLabResults(false)}
+      {labResults&&showLabResults&&<LabResultsDialog runs={labResults.runs} saved={labResults.saved} playbooks={playbooks} onClose={()=>setShowLabResults(false)}
         onSave={()=>{const ids=new Set(labResults.runs.map(r=>r.id));const next=retainRuns([...labResults.runs,...loadRuns().filter(r=>!ids.has(r.id))]);const saved=saveRuns(next);setRuns(next);setLabResults({...labResults,saved});}}
-        onViewSavedRuns={()=>{setShowLabResults(false);setWhatIfRuns(loadWhatIfs());setView('runs');}}/>}
-      {inspectedSavedRun&&<LabResultsDialog onWhatIf={openRunWhatIf} runs={[inspectedSavedRun]} saved playbooks={playbooks} closeLabel="Back to saved runs" onClose={()=>setInspectedSavedRun(null)}/>}
+        onViewSavedRuns={()=>{setShowLabResults(false);setView('runs');}}/>}
+      {inspectedSavedRun&&<LabResultsDialog runs={[inspectedSavedRun]} saved playbooks={playbooks} closeLabel="Back to saved runs" onClose={()=>setInspectedSavedRun(null)}/>}
 
       {view === 'results' && cur && (
         <><button type="button" className={btnSecondary} onClick={()=>openDashboard()}>← Back to Dashboard</button><BacktestResults settings={cur.settings} output={cur.output} name={cur.name} saved={!!cur.runId} playbook={curPb} entries={entries} benchmarkEntries={benchmarkEntries} expected={curPb ? expected[curPb.id] : undefined} tz={tz}
@@ -525,13 +515,6 @@ export const BacktestPage: React.FC<Props> = (p) => {
           onViewResult={(item) => { const saved=runs.find(r=>r.playbookId===item.settings.playbookId&&r.symbol===item.settings.symbol&&r.from===item.settings.from&&r.to===item.settings.to&&r.output===item.output);setCur({ settings: item.settings, output: item.output, runId: saved?.id ?? null, name: item.settings.name }); setView('results'); }} />
       )}
 
-      {view === 'whatif' && (
-        <WhatIfPanel key={whatIfRun?.id||whatIfPlaybookId || whatIfTradeIds?.join('|') || 'custom'} initialRunId={whatIfRun?.id} runs={whatIfRun&&!runs.some(r=>r.id===whatIfRun.id)?[whatIfRun,...runs]:runs} initialPlaybookId={whatIfPlaybookId} entries={whatIfTradeIds?p.allEntries.filter(e=>whatIfTradeIds.includes(e.id)):entries} allEntries={p.allEntries} playbooks={playbooks} journalRules={journalRules} tz={tz} onToast={onToast} onOpenTrades={p.onOpenTrades}
-          onSaveScenario={run=>{const next=[run,...loadWhatIfs()].slice(0,50);if(!saveWhatIfs(next))return false;setWhatIfRuns(next);return true;}}
-          onViewSaved={()=>{setWhatIfRuns(loadWhatIfs());setView('runs');}}
-          onAddRule={(kind, label, patch) => { if (patch) p.onUpdateRules(patch); else p.onAddChecklist(label); onToast(kind === 'rule' ? 'Added to your trading rules' : 'Added to your pre-trade checklist'); }} />
-      )}
-
       {BACKTEST_TRAINING_ENABLED && view === 'replay' && (
         <ReplayPanel entries={p.allEntries} playbooks={playbooks} sessions={sessions} tz={tz} initialEntryId={replayEntry} initialPlaybookId={replayPlaybook} onFinish={finishSession} onToast={onToast} />
       )}
@@ -539,7 +522,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       {BACKTEST_TRAINING_ENABLED && view === 'demo' && <DemoReplay entries={p.allEntries} playbooks={playbooks}/>}
 
       {view === 'runs' && (
-        <SavedRuns runs={runs} whatIfRuns={whatIfRuns} onDeleteWhatIf={id=>{const next=whatIfRuns.filter(r=>r.id!==id);if(saveWhatIfs(next)){setWhatIfRuns(next);onToast('Saved What-if scenario deleted');}else onToast('Could not delete this saved scenario. Browser storage is unavailable.');}} playbooks={playbooks} tz={tz} onToast={onToast} onNew={() => startSetup()}
+        <SavedRuns runs={runs} playbooks={playbooks} tz={tz} onToast={onToast} onNew={() => startSetup()}
           onOpen={id=>{const r=runs.find(r=>r.id===id);if(r)setInspectedSavedRun(r);}}
           onDuplicate={(id) => { const r = runs.find((x) => x.id === id); if (r) { setBenchmarkEntries([]); prepareSetup({ ...deepClone(r.settings), name: `${r.name} (copy)` }); } }}
           onDelete={(id) => { const next = runs.filter((r) => r.id !== id); setRuns(next); saveRuns(next); onToast('Run deleted'); }} />
@@ -562,7 +545,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
         </div>
       </Modal>
 
-      {(view === 'whatif' || view === 'replay' || view === 'demo' || view === 'runs') && (
+      {(view === 'replay' || view === 'demo' || view === 'runs') && (
         <button type="button" className="flex items-center gap-1.5 text-xs font-medium text-[#474556] hover:text-[#5338ec]" onClick={() => openDashboard()}><ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard</button>
       )}
     </div>

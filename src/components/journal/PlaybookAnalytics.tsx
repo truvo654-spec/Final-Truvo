@@ -135,7 +135,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
             <p className="mt-1 text-xs text-slate-600">
               {hasConnectedBroker
                 ? 'Your broker is connected. Open the Signal Terminal to choose a market and start trading.'
-                : 'Connect a broker to choose a market and start trading with this strategy book.'}
+                : 'Connect a broker that supports this strategy book’s markets to start trading.'}
             </p>
           </div>
           {hasConnectedBroker

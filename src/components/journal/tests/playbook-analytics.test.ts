@@ -15,7 +15,7 @@ test('Playbook analytics omits the Scenario management panel',()=>{
  assert.match(html,/Results in R vs target/);
 });
 
-test('Empty Strategy Book analytics offers broker connection or trading based on account status',()=>{
+test('Empty Strategy Book analytics offers broker connection or trading based on connection status',()=>{
  const playbook=DEFAULT_PLAYBOOKS[0];
  const render=(hasConnectedBroker:boolean)=>renderToStaticMarkup(createElement(PlaybookAnalytics,{
  playbook,

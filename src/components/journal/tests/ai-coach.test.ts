@@ -76,7 +76,7 @@ test('saved experiments are independent, uniquely named and transfer executable 
   assert.equal(draft.status, 'testing');
   assert.equal(draft.coachOrigin?.sourcePlaybookId, 'PB-001');
   assert.ok(defaultSettings({ playbook: draft }).rules.entry.length > 0);
-  assert.ok(relatedReplaySetups([draft], history(), [], []).some(s => s.id === 'playbook:coach-1' && s.playbookId === draft.id));
+  assert.ok(relatedReplaySetups([draft], history(), []).some(s => s.id === 'playbook:coach-1' && s.playbookId === draft.id));
   draft.rules[0].title = 'Edited locally';
   assert.notEqual(draft.rules[0].title, scenario.draft.rules[0].title);
   assert.equal(JSON.stringify(DEFAULT_PLAYBOOKS), originals);

@@ -1,6 +1,6 @@
 import type {JournalEntry} from '../types';
 import type {JournalPlaybook} from '../data/journalPlaybooks';
-import type {BacktestRun,WhatIfRun} from './store';
+import type {BacktestRun} from './store';
 import type {Timeframe,Bar} from './types';
 import type {WhatIfRule} from './whatif';
 import {defaultSettings} from './rules';
@@ -14,7 +14,7 @@ export interface RelatedReplaySetup {
   id:string;name:string;symbols:string[];playbookId?:string;timeframe?:Timeframe;direction?:'BUY'|'SELL';
   targetR?:number;stopAtr?:number;stopFraction?:number;riskPercent?:number;equity?:number;
   session?:{start:number;end:number};maxTrades?:number;lossesPerDay?:number;dailyLoss?:number;breakevenR?:number;
-  prices?:{entry:number;stop:number;target:number};rule?:WhatIfRule;notes:string[];
+  prices?:{entry:number;stop:number;target:number};notes:string[];
 }
 const supportedSymbols=(symbols:string[])=>[...new Set(symbols.map(resolveSymbol).filter((v):v is string=>!!v))];
 export function replayRuleFields(rule:WhatIfRule,currency='USD'):Partial<RelatedReplaySetup>{
@@ -28,7 +28,7 @@ export function replayRuleFields(rule:WhatIfRule,currency='USD'):Partial<Related
     case 'mistakes':return {notes:[`Avoid tags: ${rule.tags.join(', ')}. Review these manually; replay does not infer mistake tags.`]};
   }
 }
-export function relatedReplaySetups(playbooks:JournalPlaybook[],entries:JournalEntry[],whatIfs:WhatIfRun[],runs:BacktestRun[]):RelatedReplaySetup[]{
+export function relatedReplaySetups(playbooks:JournalPlaybook[],entries:JournalEntry[],runs:BacktestRun[]):RelatedReplaySetup[]{
   const options:RelatedReplaySetup[]=[];
   for(const book of playbooks.filter(p=>p.status!=='archived')){
     const settings=defaultSettings({playbook:book});
@@ -48,13 +48,6 @@ export function relatedReplaySetups(playbooks:JournalPlaybook[],entries:JournalE
         targetR:valid?Math.abs(scenario.target!-scenario.entry!)/Math.abs(scenario.entry!-scenario.stop!):base.targetR,
         notes:[...base.notes,`Scenario status ${scenario.status}; valid until ${scenario.validUntil}. Review its written trigger manually.`,...(valid?[]:['Incomplete or invalid price levels were not transferred.'])]});
     }
-  }
-  for(const run of whatIfs){
-    const snapshot=run.snapshot;
-    const fields=replayRuleFields(run.rule,snapshot?.currency||'Unknown');
-    options.push({id:`whatif:${run.id}`,name:`Saved What-if · ${run.name||run.rule.kind}`,
-      symbols:supportedSymbols(snapshot?.output.trades.map(t=>t.symbol)||[]),rule:run.rule,...fields,
-      notes:[...(fields.notes||[]),'Transfers supported rule parameters, not saved P&L or executions. Replay uses its own candles and position sizing.',...(!snapshot?['Legacy save: benchmark, currency and original trades were not recorded.']:[])]});
   }
   for(const run of runs){
     const s=run.settings,usd=s.risk.currency==='USD',stop=s.rules.exits.stop;

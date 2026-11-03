@@ -2,8 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { Copy, Eye, GitCompare, Share2, Trash2, ArrowLeft } from 'lucide-react';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
-import type { BacktestRun,WhatIfRun } from '../../backtest/store';
-import {SavedWhatIfRuns} from './SavedWhatIfRuns';
+import type { BacktestRun } from '../../backtest/store';
 import { computeMetrics, Metrics } from '../../backtest/metrics';
 import { describeRules } from '../../backtest/rules';
 import { dateOnly, money, num, pct, rr } from '../../backtest/format';
@@ -21,8 +20,6 @@ interface Props {
   onDelete: (id: string) => void;
   onToast: (m: string) => void;
   onNew: () => void;
-  whatIfRuns?:WhatIfRun[];
-  onDeleteWhatIf?:(id:string)=>void;
 }
 
 const COLORS = ['#5338ec', '#0ea5e9', '#f59e0b'];
@@ -45,7 +42,7 @@ function settingRows(r: BacktestRun): Record<string, string> {
   };
 }
 
-export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDuplicate, onDelete, onToast, onNew,whatIfRuns=[],onDeleteWhatIf=()=>{} }) => {
+export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDuplicate, onDelete, onToast, onNew }) => {
   const [sel, setSel] = useState<string[]>([]);
   const [comparing, setComparing] = useState(false);
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -121,7 +118,6 @@ export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDupl
 
   return (
     <div className="space-y-5">
-    <SavedWhatIfRuns runs={whatIfRuns} tz={tz} onDelete={onDeleteWhatIf}/>
     <Card title="Saved runs" sub="Tick 2 or 3 runs to compare them side by side." right={
       <div className="flex gap-2">
         <button type="button" className={btnSecondary} disabled={sel.length < 2} title={sel.length < 2 ? 'Tick 2 or 3 runs first' : undefined} onClick={() => setComparing(true)}><GitCompare className="w-3.5 h-3.5" /> Compare {sel.length >= 2 ? `(${sel.length})` : ''}</button>

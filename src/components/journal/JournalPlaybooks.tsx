@@ -14,6 +14,7 @@ import { PlaybookEditorFields } from './PlaybookEditorFields';
 import { filterPlaybookInventory } from './playbookInventory';
 import { instrumentMarket } from './instrumentMatching';
 import { PlaybookAnalytics } from './PlaybookAnalytics';
+import { brokerSupportsPlaybookMarkets } from './playbookBrokerCompatibility';
 import { PlaybookBacktestPanel } from '../backtest/PlaybookBacktestPanel';
 import type { PlaybookExpectedStats } from '../../backtest/store';
 
@@ -133,7 +134,6 @@ interface Props {
   expected?: Record<string, PlaybookExpectedStats>;
   onBacktest?: (playbookId: string, symbol?: string) => void;
   reviewOpen?: boolean;
-  onWhatIf?: (playbookId: string) => void;
   brokers?: Broker[];
   onConnectBroker?: (broker: Broker) => void;
   onBrowseBrokers?: () => void;
@@ -145,7 +145,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, comparisonEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, reviewOpen = false, onWhatIf, brokers = [], onConnectBroker, onBrowseBrokers, onStartTrade }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, comparisonEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, reviewOpen = false, brokers = [], onConnectBroker, onBrowseBrokers, onStartTrade }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -397,8 +397,6 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
 
                   <button type="button" className={btn} onClick={()=>setHistoryOpen(true)}>View results</button>
                   {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className="h-9 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]" title="Test these rules on past prices">Backtest this strategy book</button>}
-                  {onWhatIf&&<button type="button" onClick={()=>onWhatIf(sel.id)} className={btn}>Try a What-if</button>}
-
                   <button type="button" onClick={startEdit} className={btn}>Edit strategy book</button>
                 </div>
               </div>
@@ -417,7 +415,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                   onShowTrades={onShowTrades}
                   hasConnectedBroker={brokers.some(broker => broker.connected)}
                   onConnectBroker={() => {
-                    const broker = brokers.find(item => !item.connected) ?? brokers[0];
+                    const broker = brokers.find(item => !item.connected && brokerSupportsPlaybookMarkets(item, sel));
                     if (broker) onConnectBroker?.(broker);
                     else onBrowseBrokers?.();
                   }}

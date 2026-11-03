@@ -147,7 +147,7 @@ test('linked strategy comparison uses read-only journal sizing and separate edit
   assert.match(html, /<fieldset disabled=""/);
   assert.match(html, /aria-label="Test Position size"[^>]*value="3"/);
   assert.match(html, /aria-label="Test Account equity \(USD, optional\)"[^>]*value="4500"/);
-  assert.match(html, /Advanced edit · What-if exits/);
+  assert.doesNotMatch(html, /What-if exits|Move stop to breakeven at R|Close after bars/);
   assert.doesNotMatch(html, /Demo equity \(USD\)|Position size &amp; setup monitor/);
   assert.match(html, /aria-label="Chart comparison overlays"/); assert.match(html, /Sample AI suggestions/);
 });

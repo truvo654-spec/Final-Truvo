@@ -189,7 +189,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
   };
   useEffect(() => {
     if (!initialPlaybookId) return;
-    const setup = relatedReplaySetups(playbooks, entries, [], []).find(s => s.id === `playbook:${initialPlaybookId}`);
+    const setup = relatedReplaySetups(playbooks, entries, []).find(s => s.id === `playbook:${initialPlaybookId}`);
     if (setup) transferSetup(setup);
   }, [initialPlaybookId]); // eslint-disable-line react-hooks/exhaustive-deps
 

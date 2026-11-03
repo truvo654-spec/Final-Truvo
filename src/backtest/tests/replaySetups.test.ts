@@ -1,38 +1,31 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {relatedReplaySetups,replayRuleFields,applyReplayPositionSetup,replayVisibleAtr,replayJournalAdvice} from '../replaySetups';
+import {relatedReplaySetups,applyReplayPositionSetup,replayVisibleAtr,replayJournalAdvice} from '../replaySetups';
 import {practiceEntryBlock,emptyPracticeGuardrails} from '../practiceGuardrails';
 import {DEFAULT_PLAYBOOKS} from '../../data/journalPlaybooks';
 import type {PositionDraft} from '../positionReplay';
-import type {PracticeTrade,WhatIfRun,BacktestRun} from '../store';
+import type {PracticeTrade,BacktestRun} from '../store';
 import {defaultSettings} from '../rules';
 import {autoMap,convertRows,parseCsv,SAMPLE_CSV} from '../../components/journal/journalIngest';
 
 const imported=()=>{const [headers,...rows]=parseCsv(SAMPLE_CSV);return convertRows(rows,autoMap(headers),[],{currency:'USD',strategy:'Unassigned'}).map(r=>r.entry!);};
 const draft:PositionDraft={direction:'BUY',entry:'100',stop:'90',target:'120',quantity:'10',unit:'shares',multiplier:'1',costs:'3',equity:'10000'};
 test('related setups copy playbook scope and scenario levels without mutating original data',()=>{
-  const before=JSON.stringify(DEFAULT_PLAYBOOKS),options=relatedReplaySetups(DEFAULT_PLAYBOOKS,[],[],[]);
+  const before=JSON.stringify(DEFAULT_PLAYBOOKS),options=relatedReplaySetups(DEFAULT_PLAYBOOKS,[],[]);
   const base=options.find(o=>o.id===`playbook:${DEFAULT_PLAYBOOKS[0].id}`)!;
   assert.equal(base.targetR,2);assert.deepEqual(base.session,{start:12,end:16});assert.equal(base.riskPercent,1);
   const scenario=options.find(o=>o.id.endsWith(':sc1'))!;
   assert.equal(scenario.symbols.length,1);assert.equal(scenario.targetR,3);assert.ok(scenario.prices);
   base.symbols.push('OTHER');assert.equal(JSON.stringify(DEFAULT_PLAYBOOKS),before);
   const broken={...DEFAULT_PLAYBOOKS[0],scenarios:[{...DEFAULT_PLAYBOOKS[0].scenarios![0],stop:20000}]};
-  const invalid=relatedReplaySetups([broken],[],[],[]).find(o=>o.id.endsWith(':sc1'))!;
+  const invalid=relatedReplaySetups([broken],[],[]).find(o=>o.id.endsWith(':sc1'))!;
   assert.equal(invalid.prices,undefined);assert.match(invalid.notes.join(' '),/invalid/);
-});
-test('saved What-if transfers rules but never saved profits, with no implicit monetary conversion',()=>{
-  const save:WhatIfRun={id:'legacy',createdAt:'2026-10-01',rule:{kind:'target',r:3},trades:20,actualNet:100,whatIfNet:999999,saved:0};
-  const copied=relatedReplaySetups([],[],[save],[])[0];assert.equal(copied.targetR,3);assert.equal(copied.equity,undefined);assert.deepEqual(copied.symbols,[]);
-  assert.deepEqual(replayRuleFields({kind:'dailyLoss',usd:50},'USD'),{dailyLoss:50});
-  const euro=replayRuleFields({kind:'dailyLoss',usd:50},'EUR');assert.equal(euro.dailyLoss,undefined);assert.match(euro.notes!.join(''),/does not convert/);
-  assert.deepEqual(replayRuleFields({kind:'hours',start:22,end:2}).session,{start:22,end:2});
 });
 test('saved automated setups preserve percent risk but transfer monetary equity only for USD',()=>{
   const settings=defaultSettings({playbook:DEFAULT_PLAYBOOKS[0]});settings.risk.startBalance=10000;settings.risk.mode='fixedR';settings.risk.fixedR=100;
   const usd={id:'usd',name:'USD setup',settings} as BacktestRun;
   const euro={id:'eur',name:'EUR setup',settings:{...settings,risk:{...settings.risk,currency:'EUR' as const},rules:{...settings.rules,exits:{...settings.rules.exits,stop:{type:'points' as const,value:5}}}}} as BacktestRun;
-  const before=JSON.stringify([usd,euro]),copies=relatedReplaySetups([],[],[],[usd,euro]);
+  const before=JSON.stringify([usd,euro]),copies=relatedReplaySetups([],[],[usd,euro]);
   assert.equal(copies[0].equity,10000);assert.equal(copies[0].riskPercent,1);
   assert.equal(copies[1].equity,undefined);assert.equal(copies[1].riskPercent,undefined);assert.equal(copies[1].stopAtr,undefined);
   assert.match(copies[1].notes.join(' '),/not converted/);assert.equal(JSON.stringify([usd,euro]),before);
