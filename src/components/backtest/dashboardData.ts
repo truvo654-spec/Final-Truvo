@@ -23,6 +23,7 @@ export function dashboardDay(at:number,timezone:string):string {
   const field=(key:string)=>p.find(v=>v.type===key)?.value;
   return `${field('year')}-${field('month')}-${field('day')}`;
 }
+export const newestDashboardRuns=(runs:BacktestRun[])=>[...runs].sort((a,b)=>(b.lastRun||b.createdAt).localeCompare(a.lastRun||a.createdAt)||b.createdAt.localeCompare(a.createdAt));
 export function dashboardSources(runs:BacktestRun[],sessions:ReplaySession[],entries:JournalEntry[],books:JournalPlaybook[],scope:DashboardScope):DashboardSource[] {
   const sourceRows:DashboardSource[]=[];
   for(const run of runs){
@@ -77,11 +78,19 @@ export function dashboardStats(rows:DashboardRow[],balance:number|null){
   return {...stats,pf:stats.pf!==null&&Number.isFinite(stats.pf)?stats.pf:null,winRate:rows.length?wins.length/rows.length*100:null,avgWin,avgLoss,payoff:avgWin!==null&&avgLoss!==null?avgWin/Math.abs(avgLoss):null,dayWin:daily.length?daily.filter(d=>d.net>(rows[0]?.beThreshold??.005)).length/daily.length*100:null,daily:dailyCurve,avgHold:holds.length?holds.reduce((s,r)=>s+Math.max(0,r.at-r.entryAt)/60000,0)/holds.length:null,maxWins,maxLosses,rCoverage:rs.length,drawdownPct:balance!==null?stats.drawdownPct:null};
 }
 export function initialDashboardScope(runs:BacktestRun[],sessions:ReplaySession[],entry?:DashboardEntry,saved?:Partial<DashboardScope>|null):DashboardScope {
-  const latest=[...runs].sort((a,b)=>b.lastRun.localeCompare(a.lastRun))[0];
+  const latest=newestDashboardRuns(runs)[0];
   const latestPractice=[...sessions].filter(s=>s.finishedAt).sort((a,b)=>(b.finishedAt??'').localeCompare(a.finishedAt??''))[0];
   let base:DashboardScope={resultIds:latest?[`run:${latest.id}`]:latestPractice?[`practice:${latestPractice.id}`]:[],journal:false,journalIds:null,books:[],symbols:[],markets:[],sides:['long','short'],from:'',to:'',currency:latest?.output.result.currency??'USD',unit:'money',privacy:false,timezone:'UTC',focus:'',...ADVANCED_DEFAULTS,...saved};
+  if(!entry){
+    const id=latest?`run:${latest.id}`:latestPractice?`practice:${latestPractice.id}`:'';
+    const previous=Array.isArray(base.resultIds)?base.resultIds.filter(id=>runs.some(run=>id===`run:${run.id}`)||sessions.some(s=>s.finishedAt&&id===`practice:${s.id}`)):[];
+    const remembered=previous.includes(base.focus)?base.focus:previous[0];
+    const changed=base.journal||remembered!==id;
+    if(changed)base={...base,...ADVANCED_DEFAULTS,books:[],symbols:[],markets:[],sides:['long','short'],from:'',to:'',unit:'money',currency:latest?.output.result.currency??latestPractice?.currency??'USD'};
+    base={...base,resultIds:id?[id]:[],focus:id,journal:false,journalIds:null};
+  }
   if(entry){
-    const matching=entry.playbookId?runs.filter(r=>r.playbookId===entry.playbookId).sort((a,b)=>b.lastRun.localeCompare(a.lastRun)):[];
+    const matching=entry.playbookId?newestDashboardRuns(runs.filter(r=>r.playbookId===entry.playbookId)):[];
     const ids=entry.resultIds??(entry.playbookId?(matching[0]?[`run:${matching[0].id}`]:[]):[]);
     const selected=runs.find(r=>ids.includes(`run:${r.id}`));
     base={...base,...ADVANCED_DEFAULTS,resultIds:ids,journal:!!entry.playbookId||entry.journalTradeIds!==undefined,journalIds:entry.journalTradeIds??null,books:entry.playbookId?[entry.playbookId]:[],symbols:[],markets:[],sides:['long','short'],from:'',to:'',unit:'money',currency:selected?.output.result.currency??base.currency,focus:ids[0]??'journal'};

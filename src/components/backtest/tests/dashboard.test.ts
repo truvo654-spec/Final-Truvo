@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {dashboardDay,dashboardSources,filterDashboardRows,dashboardStats,initialDashboardScope} from '../dashboardData';
+import {dashboardDay,dashboardSources,filterDashboardRows,dashboardStats,initialDashboardScope,newestDashboardRuns} from '../dashboardData';
 import {DEFAULT_PLAYBOOKS} from '../../../data/journalPlaybooks';
 import {JOURNAL_ENTRIES} from '../../../data/journalData';
 import {defaultSettings} from '../../../backtest/rules';
@@ -15,6 +15,20 @@ const run=(id:string,trades:BacktestTrade[]):BacktestRun=>{
  return {id,name:id,mode:'automated',status:'done',playbookId:book.id,symbol:'MNQ',timeframe:'15m',from:'2026-09-01',to:'2026-09-04',lastRun:id,createdAt:id,settings:defaultSettings({playbook:book}),summary:summarize(output),output,playbookFingerprint:playbookFingerprint(book)};
 };
 const journal=(id:string,net:number,cur='USD')=>({...JOURNAL_ENTRIES[0],id,strategy:book.name,symbol:'NAS100',direction:'BUY' as const,tradingStatus:'closed' as const,outcome:'win' as const,pnl:net,commission:0,pnlKnown:true,initialRisk:undefined,rMultiple:null,accountCurrency:cur,date:'2026-09-01',entryTime:'2026-09-01T22:30:00Z',exitTime:'2026-09-02T00:30:00Z'});
+
+test('dashboard opens the newest saved test instead of a remembered older result',()=>{
+ const older={...run('older',[trade(1,10)]),lastRun:'2026-11-01T12:00:00Z',createdAt:'2026-11-01T12:00:00Z'};
+ const latest={...run('latest',[trade(1,20)]),lastRun:'2026-11-03T12:00:00Z',createdAt:'2026-11-03T12:00:00Z'};
+ const saved={...initialDashboardScope([older],[]),focus:'run:older',symbols:['NVDA'],from:'2027-01-01',privacy:true,timezone:'Asia/Bangkok'};
+ const scope=initialDashboardScope([older,latest],[],undefined,saved);
+ assert.deepEqual(scope.resultIds,['run:latest']);assert.equal(scope.focus,'run:latest');assert.equal(scope.journal,false);
+ assert.deepEqual(scope.symbols,[]);assert.equal(scope.from,'');assert.equal(scope.privacy,true);assert.equal(scope.timezone,'Asia/Bangkok');
+ const sources=dashboardSources([older,latest],[],[],[book],scope);assert.equal(newestDashboardRuns([older,latest])[0].id,'latest');
+ assert.equal(filterDashboardRows(sources.find(s=>s.id===scope.focus)!,scope).length,1);
+ assert.deepEqual([older.id,latest.id],['older','latest']);
+ const explicit=initialDashboardScope([older,latest],[],{resultIds:['run:older']},saved);assert.equal(explicit.focus,'run:older');
+ const journalScope=initialDashboardScope([older,latest],[],{journalTradeIds:['a']},saved);assert.equal(journalScope.focus,'journal');assert.equal(journalScope.journal,true);
+});
 test('one shared scope filters source, instrument aliases, side, dates and currency',()=>{
  const a=run('a',[trade(1,100),trade(2,-40,'short')]);const scope={...initialDashboardScope([a],[]),symbols:['NAS100'],sides:['short' as const],from:'2026-09-02',to:'2026-09-02'};
  const s=dashboardSources([a],[],[],[book],scope)[0],rows=filterDashboardRows(s,scope);

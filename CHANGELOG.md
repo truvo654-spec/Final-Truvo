@@ -1,3 +1,7 @@
+## 2.72.1 - Newest saved test by default
+
+- Open Dashboard on the most recently saved or rerun test and list saved tests newest first. Clear filters belonging to a previous result while preserving privacy and timezone preferences. Explicit result and journal links keep their intended selection.
+
 ## 2.72.0 - Simpler test results
 
 - Match What-if’s light result layout: compact fixed result controls, four key metrics, a full-width performance chart, expandable statistics and a fixed footer. Keep notes, trade pagination, replay, timeframes, speed, live replay metrics and What-if transfer.
