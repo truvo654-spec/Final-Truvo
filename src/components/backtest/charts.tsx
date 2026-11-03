@@ -32,7 +32,7 @@ export const LineChart: React.FC<{
   area?: boolean;
   label: string;
   tooltipDetail?: (x: number) => React.ReactNode;
-  onPointSelect?: (seriesName:string, x:number) => void;
+  onPointSelect?: (seriesName:string, x:number, sourceId?:string) => void;
   selectFromPlot?: boolean;
   linkedPanels?: LinkedPanel[];
   timeline?: [number,number];
@@ -76,9 +76,9 @@ export const LineChart: React.FC<{
     if(!selectFromPlot||!onPointSelect)return;
     const box=e.currentTarget.getBoundingClientRect(),x=(e.clientX-box.left)/box.width*W,y=(e.clientY-box.top)/box.height*svgHeight;
     if(x<M.l||x>W-M.r||y<M.t||y>H-M.b)return;
-    let best:{id:string;x:number;dx:number;dy:number}|null=null;
-    for(const s of series)for(const p of s.points){const dx=Math.abs(sx(p.x)-x),dy=Math.abs(sy(p.y)-y);if(!best||dx<best.dx-.01||Math.abs(dx-best.dx)<=.01&&dy<best.dy)best={id:s.id??s.name,x:p.x,dx,dy};}
-    if(best)onPointSelect(best.id,best.x);
+    let best:{id:string;sourceId?:string;x:number;dx:number;dy:number}|null=null;
+    for(const s of series)for(const p of s.points){const dx=Math.abs(sx(p.x)-x),dy=Math.abs(sy(p.y)-y);if(!best||dx<best.dx-.01||Math.abs(dx-best.dx)<=.01&&dy<best.dy)best={id:s.id??s.name,sourceId:s.id,x:p.x,dx,dy};}
+    if(best)onPointSelect(best.id,best.x,best.sourceId);
   };
   return (
     <div className="relative">
@@ -106,7 +106,7 @@ export const LineChart: React.FC<{
         {series.map((s) => (
           <g key={s.id ?? s.name}>
             <path d={path(s.points)} fill="none" stroke={s.color} strokeWidth={2} strokeDasharray={s.dashed ? '6 4' : undefined} strokeLinejoin="round" />
-            {onPointSelect && s.points.map(p=><circle key={p.x} cx={sx(p.x)} cy={sy(p.y)} r={4} fill={s.color} role="button" tabIndex={0} aria-label={s.name+' · '+xFmt(p.x)+': '+yFmt(p.y)} onClick={e=>{e.stopPropagation();onPointSelect(s.id ?? s.name,p.x);}} onFocus={()=>setHover(main.points.findIndex(q=>q.x===p.x)>=0?main.points.findIndex(q=>q.x===p.x):null)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onPointSelect(s.id ?? s.name,p.x);}}} className="cursor-pointer focus:stroke-slate-900 focus:stroke-2"/>)}
+            {onPointSelect && s.points.map(p=><circle key={p.x} cx={sx(p.x)} cy={sy(p.y)} r={4} fill={s.color} role="button" tabIndex={0} aria-label={s.name+' · '+xFmt(p.x)+': '+yFmt(p.y)} onClick={e=>{e.stopPropagation();onPointSelect(s.id ?? s.name,p.x,s.id);}} onFocus={()=>setHover(main.points.findIndex(q=>q.x===p.x)>=0?main.points.findIndex(q=>q.x===p.x):null)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onPointSelect(s.id ?? s.name,p.x,s.id);}}} className="cursor-pointer focus:stroke-slate-900 focus:stroke-2"/>)}
             {s.points.length > 0 && <circle cx={sx(s.points[s.points.length - 1].x)} cy={sy(s.points[s.points.length - 1].y)} r={3.5} fill={s.color} pointerEvents={onPointSelect ? "none" : undefined} />}
           </g>
         ))}

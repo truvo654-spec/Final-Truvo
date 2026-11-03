@@ -1,3 +1,19 @@
+## 2.72.14 - Streamlined execution review
+
+- Move Strategy Book executions into a popup launched from the price chart.
+- Remove the Backtest Privacy filter and the result note action.
+
+## 2.72.13 - Trade Arena comparison dashboard
+
+- Rename the Backtest dashboard to Trade Arena.
+- Select multiple same-currency saved tests and compare per-test performance lines with combined dashboard metrics and trade log.
+- Keep selected results and filters in sync across overview, charts, filters, and trade log.
+
+## 2.72.12 - Simulated trade log controls
+
+- Show position duration in the dashboard trade log and include it in CSV exports.
+- Allow removing an individual result from the dashboard, with the existing restore action available.
+
 ## 2.72.11 - Remove What-if from Trading Journal
 
 - Remove What-if entry points from Trade Log, Insights, Strategy Books, Backtest and saved-run replay transfer while preserving saved scenario data.

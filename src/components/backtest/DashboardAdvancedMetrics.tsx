@@ -6,7 +6,7 @@ export function DashboardAdvancedMetrics({rows,source,sources,scope,widgets,valu
  const m=advancedStats(rows,source?.balance??null,valueOf,scope.breakeven),time=activeMilliseconds(sources),coverage=coveredMonths(sources,scope);
  const num=(v:number|null)=>v!==null&&Number.isFinite(v)?v.toFixed(2):'—';
  const field=(label:string,value:string,help:string)=><div key={label} className="flex items-start justify-between gap-3 border-b border-slate-100 py-3 text-xs"><dt className="text-slate-500"><Hint text={help}>{label}</Hint></dt><dd className="text-right font-semibold">{value}</dd></div>;
- return <Card title="Testing & statistics" sub="Focused result · optional widgets"><div className="grid grid-cols-1 gap-x-8 md:grid-cols-2"><dl>
+ return <Card title="Testing & statistics" sub="Selected results · optional widgets"><div className="grid grid-cols-1 gap-x-8 md:grid-cols-2"><dl>
  {widgets.includes('avgDrawdown')&&field('Avg drawdown',format(m.avgDrawdown),METRIC_HELP.avgDrawdown)}
  {field('Drawdown / starting balance',m.drawdownStartPct===null?'—':num(m.drawdownStartPct)+'%','Maximum daily closed-result drawdown / saved or explicitly set reference balance × 100. Needs a positive saved/reference balance and closed trades.')}
  {m.drawdownStartPct===null&&<button className="mt-2 text-xs font-semibold text-[#5338ec]" onClick={onSetBalance}>Needs saved balance · set reference</button>}

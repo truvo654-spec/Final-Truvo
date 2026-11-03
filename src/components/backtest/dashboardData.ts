@@ -83,11 +83,10 @@ export function initialDashboardScope(runs:BacktestRun[],sessions:ReplaySession[
   let base:DashboardScope={resultIds:latest?[`run:${latest.id}`]:latestPractice?[`practice:${latestPractice.id}`]:[],journal:false,journalIds:null,books:[],symbols:[],markets:[],sides:['long','short'],from:'',to:'',currency:latest?.output.result.currency??'USD',unit:'money',privacy:false,timezone:'UTC',focus:'',...ADVANCED_DEFAULTS,...saved};
   if(!entry){
     const id=latest?`run:${latest.id}`:latestPractice?`practice:${latestPractice.id}`:'';
-    const previous=Array.isArray(base.resultIds)?base.resultIds.filter(id=>runs.some(run=>id===`run:${run.id}`)||sessions.some(s=>s.finishedAt&&id===`practice:${s.id}`)):[];
-    const remembered=previous.includes(base.focus)?base.focus:previous[0];
-    const changed=base.journal||remembered!==id;
-    if(changed)base={...base,...ADVANCED_DEFAULTS,books:[],symbols:[],markets:[],sides:['long','short'],from:'',to:'',unit:'money',currency:latest?.output.result.currency??latestPractice?.currency??'USD'};
-    base={...base,resultIds:id?[id]:[],focus:id,journal:false,journalIds:null};
+    const previous=Array.isArray(base.resultIds)?base.resultIds.filter(resultId=>runs.some(run=>resultId===`run:${run.id}`)||sessions.some(s=>s.finishedAt&&resultId===`practice:${s.id}`)):[];
+    const journal=!!base.journal;
+    if(previous.length||journal){const focus=previous.includes(base.focus)?base.focus:journal?'journal':previous[0]??'';base={...base,resultIds:previous,journal,focus,journalIds:journal?base.journalIds:null};}
+    else base={...base,resultIds:id?[id]:[],focus:id,journal:false,journalIds:null};
   }
   if(entry){
     const matching=entry.playbookId?newestDashboardRuns(runs.filter(r=>r.playbookId===entry.playbookId)):[];

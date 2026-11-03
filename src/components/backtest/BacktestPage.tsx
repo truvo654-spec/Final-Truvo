@@ -418,7 +418,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
 
   const savedRunCount=runs.length;
   const NAV: [View, string, string][] = [
-    ['home', 'Dashboard', 'Backtest Dashboard'],
+    ['home', 'Trade Arena', 'Trade Arena'],
     ['setup', 'Strategy Lab', 'Strategy Lab'],
     ['replay', 'Practice', 'Practice'],
     ['demo', 'Demo replay', 'Playback'],
@@ -491,7 +491,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       {inspectedSavedRun&&<LabResultsDialog runs={[inspectedSavedRun]} saved playbooks={playbooks} closeLabel="Back to saved runs" onClose={()=>setInspectedSavedRun(null)}/>}
 
       {view === 'results' && cur && (
-        <><button type="button" className={btnSecondary} onClick={()=>openDashboard()}>← Back to Dashboard</button><BacktestResults settings={cur.settings} output={cur.output} name={cur.name} saved={!!cur.runId} playbook={curPb} entries={entries} benchmarkEntries={benchmarkEntries} expected={curPb ? expected[curPb.id] : undefined} tz={tz}
+        <><button type="button" className={btnSecondary} onClick={()=>openDashboard()}>← Back to Trade Arena</button><BacktestResults settings={cur.settings} output={cur.output} name={cur.name} saved={!!cur.runId} playbook={curPb} entries={entries} benchmarkEntries={benchmarkEntries} expected={curPb ? expected[curPb.id] : undefined} tz={tz}
           onOpenTrades={p.onOpenTrades}
           onBackToComparison={comparisonResults?.length ? () => setView('comparison') : undefined}
           onSave={save}
@@ -546,7 +546,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       </Modal>
 
       {(view === 'replay' || view === 'demo' || view === 'runs') && (
-        <button type="button" className="flex items-center gap-1.5 text-xs font-medium text-[#474556] hover:text-[#5338ec]" onClick={() => openDashboard()}><ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard</button>
+        <button type="button" className="flex items-center gap-1.5 text-xs font-medium text-[#474556] hover:text-[#5338ec]" onClick={() => openDashboard()}><ArrowLeft className="w-3.5 h-3.5" /> Back to Trade Arena</button>
       )}
     </div>
   );

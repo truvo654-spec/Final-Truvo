@@ -1,26 +1,23 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {ArrowUpRight,Play,Plus} from 'lucide-react';
+import {ArrowUpRight,Play} from 'lucide-react';
 import type {DashboardRow,DashboardScope,DashboardSource} from './dashboardData';
 import {dashboardStats} from './dashboardData';
 import {closedRow,priceValues,rowOutcome,rowTags,rowRoi} from './dashboardAnalytics';
 import {completeTotal,resultGross,resultCommission,resultVolume,resultCurve} from './dashboardResultDetails';
 import {executionPrice} from '../journal/playbookComparison';
-import {useJournalState} from '../journal/journalStorage';
 import {LineChart} from './charts';
 import {ResultTradeReplay} from './ResultTradeReplay';
 import {Modal,btnSecondary,btnPrimary} from './ui';
 
 export interface DashboardDrill {source:string;period?:string;knownR?:boolean;rowIds?:string[];name?:string}
-export function drillRows(rows:DashboardRow[],selection:DashboardDrill){return rows.filter(r=>closedRow(r)&&r.sourceId===selection.source&&(!selection.period||r.day.startsWith(selection.period))&&(!selection.knownR||r.r!==null)&&(!selection.rowIds||selection.rowIds.includes(r.id)));}
+export function drillRows(rows:DashboardRow[],selection:DashboardDrill){return rows.filter(r=>closedRow(r)&&(selection.source==='comparison'||r.sourceId===selection.source)&&(!selection.period||r.day.startsWith(selection.period))&&(!selection.knownR||r.r!==null)&&(!selection.rowIds||selection.rowIds.includes(r.id)));}
 interface Props {layout?:'standard'|'lab';initialTradeId?:string;selection:DashboardDrill;source?:DashboardSource;rows:DashboardRow[];scope:DashboardScope;format:(n:number|null)=>string;valueOf:(r:DashboardRow)=>number|null;onClose:()=>void;resultPicker?:React.ReactNode;detailPicker?:React.ReactNode;title?:string;closeLabel?:string}
 /** Trade review stays inside this dialog to preserve the selected result context. */
 export function DashboardResultPopup({layout='standard',initialTradeId,selection,source,rows,scope,format,valueOf,onClose,resultPicker,detailPicker,title='Result details',closeLabel}:Props){
- const [detail,setDetail]=useState<DashboardRow|null>(()=>rows.find(r=>r.id===initialTradeId)??null),[noteOpen,setNoteOpen]=useState(false),[page,setPage]=useState(0);
+ const [detail,setDetail]=useState<DashboardRow|null>(()=>rows.find(r=>r.id===initialTradeId)??null),[page,setPage]=useState(0);
  const scrollRef=useRef<HTMLDivElement>(null),tradeListScroll=useRef(0);
  const openTrade=(row:DashboardRow)=>{tradeListScroll.current=scrollRef.current?.scrollTop??0;setDetail(row);};
  useEffect(()=>{if(scrollRef.current)scrollRef.current.scrollTop=detail?0:tradeListScroll.current;},[detail?.id]);
- const [notes,setNotes,noteFailed]=useJournalState<Record<string,string>>('backtest-result-notes',{});
- const noteKey=JSON.stringify([selection.source,selection.period??'',rows.map(r=>r.id).sort()]);
  const m=dashboardStats(rows,source?.balance??null),net=completeTotal(rows,valueOf),curve=resultCurve(rows,valueOf);
  const number=(v:number|null)=>v!==null&&Number.isFinite(v)?v.toFixed(2):'—';
  const money=(v:number|null)=>scope.privacy?'Hidden':v===null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:scope.currency,maximumFractionDigits:2}).format(v);
@@ -35,9 +32,8 @@ export function DashboardResultPopup({layout='standard',initialTradeId,selection
   {resultPicker&&<div className="sticky top-0 z-10 mb-5 border-b border-slate-200 bg-white pb-4 pr-8">{detail?(detailPicker??resultPicker):resultPicker}</div>}
   <header className="flex flex-wrap items-start justify-between gap-3 pr-9">
    <div><p className="text-[10px] font-bold uppercase tracking-wide text-[#5338ec]">{source?.kind??'Result'} · {scope.timezone}</p><div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1"><h3 className="text-lg font-bold">{detail?detail.symbol+' · '+detail.side:periodLabel}</h3><p className={`text-base font-bold ${headerNet!==null&&headerNet<0?'text-rose-600':'text-emerald-600'}`}>{scope.unit==='money'?(detail?.trade?'Saved net P&L':'Net P&L'):'Net result'} {format(headerNet)}</p></div><p className="mt-1 text-xs text-slate-500">{source?.name??selection.name}{selection.knownR?' · known R only':''}</p></div>
-   {detail?(initialTradeId?null:<button className={btnSecondary} onClick={()=>setDetail(null)}>Back to trades</button>):<button className={btnSecondary} onClick={()=>setNoteOpen(v=>!v)} aria-expanded={noteOpen}><Plus size={14}/>{notes[noteKey]?'Edit note':'Add note'}</button>}
+   {detail?(initialTradeId?null:<button className={btnSecondary} onClick={()=>setDetail(null)}>Back to trades</button>):null}
   </header>
-  {!detail&&(noteOpen||notes[noteKey])&&<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">{noteOpen?<><label htmlFor="result-period-note" className="text-xs font-semibold">Note for these results</label><textarea id="result-period-note" maxLength={5000} rows={3} value={notes[noteKey]??''} onChange={e=>setNotes(prev=>({...prev,[noteKey]:e.target.value}))} placeholder="What did you learn from these trades?" className="mt-2 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm focus:outline-[#5338ec]"/><div className="flex items-center justify-between gap-2"><span role="status" className={`text-xs ${noteFailed?'text-rose-600':'text-slate-500'}`}>{noteFailed?'Unable to save this note in your browser.':'Saved in this browser'}</span><button className={btnSecondary} onClick={()=>setNoteOpen(false)}>Done</button></div></>:<p className="whitespace-pre-wrap break-words text-sm text-slate-600">{notes[noteKey]}</p>}</div>}
   {detail?<>
 
    {detail.trade&&detail.run&&!scope.privacy&&<ResultTradeReplay key={detail.id} run={detail.run} trade={detail.trade} timezone={scope.timezone}/>}
