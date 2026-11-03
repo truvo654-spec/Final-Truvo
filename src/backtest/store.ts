@@ -5,6 +5,8 @@ import { computeMetrics } from './metrics';
 import { BacktestSettings, JobOutput } from './types';
 import type { WhatIfOutput, WhatIfRule } from './whatif';
 import type { RecommendationGoal } from './recommender';
+import LZString from 'lz-string';
+const COMPRESSED_RUNS='ms-lz1:';
 
 const KEYS = {
   runs: 'ms_backtest_runs_v1',
@@ -30,6 +32,7 @@ function write(key: string, value: unknown): boolean {
 export interface RunSummary { trades: number; net: number; netPct: number; winRate: number; avgR: number; pf: number | null; maxDDPct: number }
 
 export interface BacktestRun {
+  engineVersion?:number;
   activeMs?:number;activityId?:string;
   sourceTradeIds?: string[];
   dataSource?: 'generated';
@@ -57,14 +60,25 @@ export const summarize = (o: JobOutput): RunSummary => {
   return { trades: m.trades, net: m.netPnl, netPct: m.netPct, winRate: m.winRate, avgR: m.avgR, pf: m.profitFactor, maxDDPct: m.maxDDPct };
 };
 
-export const loadRuns = (): BacktestRun[] => read<BacktestRun[]>(KEYS.runs, []);
+export function loadRuns():BacktestRun[]{
+  try{
+    const raw=localStorage.getItem(KEYS.runs);if(!raw)return [];
+    const value=JSON.parse(raw.startsWith(COMPRESSED_RUNS)?LZString.decompressFromUTF16(raw.slice(COMPRESSED_RUNS.length)):raw);
+    return Array.isArray(value)?value:[];
+  }catch{return [];}
+}
 
-/** Saves the list; if storage is full, drops the oldest runs' trade lists until it fits. */
+/** Keep the latest comparison complete, even when it contains more than 30 results. */
+export function retainRuns(runs:BacktestRun[]) {
+ const activity=runs[0]?.activityId;
+ const latestCount=activity?runs.filter(run=>run.activityId===activity).length:1;
+ return runs.slice(0,Math.max(30,latestCount));
+}
+
+/** Never report success after silently dropping results or truncating trade history. */
 export function saveRuns(runs: BacktestRun[]): boolean {
-  const list = runs.slice(0, 30);
-  if (write(KEYS.runs, list)) return true;
-  const slim = list.map((r, i) => (i < 5 ? r : { ...r, output: { ...r.output, result: { ...r.output.result, trades: r.output.result.trades.slice(0, 200) } } }));
-  return write(KEYS.runs, slim);
+  try{localStorage.setItem(KEYS.runs,COMPRESSED_RUNS+LZString.compressToUTF16(JSON.stringify(retainRuns(runs))));return true;}
+  catch{return false;}
 }
 
 // ── Monthly usage of automated runs ──
@@ -74,7 +88,8 @@ export interface Usage { month: string; used: number; extraPaid: number; prepaid
 export const thisMonth = () => new Date().toISOString().slice(0, 7);
 export function loadUsage(): Usage {
   const u = read<Usage>(KEYS.usage, { month: thisMonth(), used: 0, extraPaid: 0, prepaid: 0 });
-  return u.month === thisMonth() ? { ...u, prepaid: u.prepaid ?? 0 } : { month: thisMonth(), used: 0, extraPaid: 0, prepaid: u.prepaid ?? 0 };
+  const count=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)&&v>=0?Math.floor(v):0;
+  return {month:thisMonth(),used:u?.month===thisMonth()?count(u.used):0,extraPaid:u?.month===thisMonth()?count(u.extraPaid):0,prepaid:count(u?.prepaid)};
 }
 export const saveUsage = (u: Usage) => write(KEYS.usage, u);
 

@@ -1,3 +1,20 @@
+## 2.72.0 - Simpler test results
+
+- Match What-if’s light result layout: compact fixed result controls, four key metrics, a full-width performance chart, expandable statistics and a fixed footer. Keep notes, trade pagination, replay, timeframes, speed, live replay metrics and What-if transfer.
+- Compress complete browser-local test results losslessly, read previous JSON saves, and preserve all results in the latest comparison. Avoid scanning exported HTML artifacts as development entry points.
+
+## 2.71.1 - Reliable test access and short-period charts
+
+- Initialize indicators with completed candles before the selected period, while keeping trades and metrics inside the selected dates. Fixes short tests falsely returning no EMA signals.
+- Save paid run access before charging, reuse unused prepaid runs and identical completed results, and keep access for cancelled, failed, empty or unsaved tests. Validate a captured setup before purchase and persist the credit balance.
+- Preserve comparisons larger than 30 results and complete trade histories. Filter-hidden results offer Clear filters; completed empty tests offer Edit test setup instead of a paid retry loop.
+
+## 2.71.0 - Run directly from an empty performance chart
+
+- Add Run test to the empty Dashboard Performance card. Reuse the selected saved test or playbook’s Strategy Lab draft, review suggested rules when needed, and show real progress and cancellation.
+- Use the existing engine, run allowance and save flow; select completed results on the dashboard without navigating to Strategy Lab or opening a results popup. Keep zero-trade outcomes and failures explicit.
+- Offer Clear filters when recorded results exist but the current scope hides them.
+
 ## 2.70.23 - Clear profit factor empty states
 
 - Show a dash with No losses yet in the Overview profit factor card when eligible gains have no losing denominator. Explain the current-scope ratio in its tooltip while retaining shared calculations.

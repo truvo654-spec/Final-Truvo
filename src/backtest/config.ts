@@ -14,6 +14,8 @@ export const runLimitFor = (tierLevel: number): number => {
 
 /** Syde Credits spent for one extra automated run once the monthly allowance is used. */
 export const EXTRA_RUN_CREDITS = 15;
+/** Version of generated execution results (v2 seeds indicators before the test range). */
+export const BACKTEST_ENGINE_VERSION = 2;
 
 /** Points awarded (once per replay session / saved run). */
 export const POINTS = { replaySession: 10, savedBacktest: 5 };

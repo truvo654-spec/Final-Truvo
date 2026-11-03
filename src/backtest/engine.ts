@@ -165,6 +165,16 @@ export function createRun(settings: BacktestSettings, series: Series, opts: RunO
   const events: RunEvent[] = [];
   let prevO = NaN, prevH = NaN, prevL = NaN, prevC = NaN;
   let curO = NaN, curH = NaN, curL = NaN, curC = NaN;
+  const warmup=series.warmup;
+  if(warmup&&n){
+    if(warmup.symbol!==series.symbol||warmup.tf!==series.tf)throw new Error('Indicator history must match the test instrument and timeframe.');
+    for(let w=0;w<warmup.length;w++){
+      if(warmup.t[w]+tfMs>series.t[0])throw new Error('Indicator history must end before the test starts.');
+      for(const indicator of indList)indicator.update(warmup.t[w],warmup.o[w],warmup.h[w],warmup.l[w],warmup.c[w],warmup.v[w]);
+      if(swingN){recentH.push(warmup.h[w]);recentL.push(warmup.l[w]);if(recentH.length>swingN){recentH.shift();recentL.shift();}}
+      prevO=warmup.o[w];prevH=warmup.h[w];prevL=warmup.l[w];prevC=warmup.c[w];
+    }
+  }
   const diag: RunDiagnostics = {
     bars: n, signals: 0,
     filtered: { session: 0, weekday: 0, news: 0, dayLimit: 0, maxTrades: 0, minSize: 0, expired: 0 },

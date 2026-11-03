@@ -3,12 +3,18 @@
 import { MIN_TRADES } from './config';
 import { createRun, runSync } from './engine';
 import { computeMetrics } from './metrics';
-import { dayMs, marketData, parseDay, sliceSeries } from './marketData';
+import { dayMs, lowerBound, marketData, parseDay, sliceSeries } from './marketData';
 import { deepClone } from './rules';
-import { BacktestSettings, JobOutput, RunResult, SESSIONS, Series, Suggestion, TF_MS } from './types';
+import { BacktestSettings, JobOutput, RunResult, SESSIONS, Series, Suggestion, TF_MS, IND_DEFAULT_PERIOD } from './types';
 
 export function seriesFor(s: BacktestSettings): Series {
-  return sliceSeries(marketData.seriesSync(s.symbol, s.timeframe), parseDay(s.from), parseDay(s.to) + dayMs);
+  const full=marketData.seriesSync(s.symbol,s.timeframe),from=parseDay(s.from);
+  const series=sliceSeries(full,from,parseDay(s.to)+dayMs);
+  const periods=s.rules.entry.flatMap(condition=>[condition.left,condition.right].flatMap(o=>o.kind==='ind'?[o.ind.period??IND_DEFAULT_PERIOD[o.ind.type]??14]:[]));
+  const count=Math.max(3*Math.max(14,...periods,s.rules.exits.stop.type==='swing'?s.rules.exits.stop.lookback:0)+100,Math.ceil(3*dayMs/TF_MS[s.timeframe]));
+  const first=lowerBound(full.t,from),start=Math.max(0,first-count);
+  if(first>start)series.warmup=sliceSeries(full,full.t[start],from);
+  return series;
 }
 
 export function applyPatch(s: BacktestSettings, p: Suggestion['patch']): BacktestSettings {

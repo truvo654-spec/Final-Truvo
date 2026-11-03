@@ -1,3 +1,7 @@
+import {dashboardQuickRun,type DashboardRunRequest,type DashboardRunJob} from './dashboardQuickRun';
+import {availableRuns,purchaseRunAllowance,completedRunUsage,reusableRuns} from '../../backtest/runAccess';
+import {LabEntryRulesDialog} from './LabEntryRulesDialog';
+import {labRulesNeedReview} from './labTransfer';
 import {useActiveTime} from './useActiveTime';
 import { BacktestDashboard } from './BacktestDashboard';
 import type { DashboardEntry } from './dashboardData';
@@ -14,14 +18,14 @@ import { ArrowLeft, Coins, Loader2, XCircle, PlayCircle, Sparkles } from 'lucide
 import type { Broker, JournalEntry } from '../../types';
 import type { JournalPlaybook } from '../../data/journalPlaybooks';
 import { JOURNAL_TODAY } from '../../data/journalData';
-import { BACKTEST_TRAINING_ENABLED, EXTRA_RUN_CREDITS, runLimitFor } from '../../backtest/config';
+import { BACKTEST_TRAINING_ENABLED, BACKTEST_ENGINE_VERSION, EXTRA_RUN_CREDITS, runLimitFor } from '../../backtest/config';
 import { applyPatch } from '../../backtest/job';
 import { runBacktest, CancelledError } from '../../backtest/service';
-import { defaultSettings, deepClone, describeCondition, defaultCostsFor, JournalRules } from '../../backtest/rules';
+import { defaultSettings, deepClone, describeCondition, defaultCostsFor, validateSettings, JournalRules } from '../../backtest/rules';
 import { expectedFromRun } from '../../backtest/gap';
 import { userTz } from '../../backtest/format';
 import {
-  BacktestRun, claimPoints, loadReplay, loadRuns, loadUsage, PlaybookExpectedStats, ReplaySession, saveReplay, saveRuns, saveUsage, summarize, Usage,loadWhatIfs,saveWhatIfs,WhatIfRun,
+  BacktestRun, claimPoints, loadReplay, loadRuns, loadUsage, PlaybookExpectedStats, ReplaySession, saveReplay, saveRuns, saveUsage, retainRuns, summarize, Usage,loadWhatIfs,saveWhatIfs,WhatIfRun,
 } from '../../backtest/store';
 import { BacktestSettings, JobOutput, Suggestion } from '../../backtest/types';
 import { brokerCosts } from './BacktestSetup';
@@ -121,6 +125,13 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const [replayEntry, setReplayEntry] = useState<string | null>(null);
   const [replayPlaybook, setReplayPlaybook] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
+  const inFlight=useRef(false),pendingRun=useRef<DashboardRunJob|undefined>(undefined);
+  const purchasing=useRef(false);
+  const [purchaseError,setPurchaseError]=useState('');
+  const [dashboardBusy,setDashboardBusy]=useState(false),[dashboardError,setDashboardError]=useState(''),[dashboardMessage,setDashboardMessage]=useState('');
+  const [dashboardMessageSource,setDashboardMessageSource]=useState('');
+  const [dashboardReview,setDashboardReview]=useState<{book:JournalPlaybook;job:DashboardRunJob}|null>(null);
+  useEffect(()=>()=>abort.current?.abort(),[]);
   useEffect(()=>{if(view==='setup')saveLabDraft({reviewedRules:reviewedLabRules,settings:draft,byBook:draftsByPlaybook,bookIds:selectedPlaybookIds,symbols:labSymbols,tradeIds:benchmarkEntries.map(e=>e.id)});},[view,draft,draftsByPlaybook,selectedPlaybookIds,labSymbols,benchmarkEntries,reviewedLabRules]);
   const limit = runLimitFor(userTierLevel);
   const tz = userTz;
@@ -185,6 +196,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
     setLabSymbols([prepared.symbol]);setLabRevision(v=>v+1);
     setSelectedPlaybookIds(book ? [book.id] : []);
     setDraftsByPlaybook(book ? { [book.id]: prepared } : {});
+    if(book)setReviewedLabRules(previous=>({...previous,[book.id]:JSON.stringify(prepared.rules.entry)}));
     setComparisonResults(null);
     setError(null);
     setView('setup');
@@ -217,13 +229,17 @@ export const BacktestPage: React.FC<Props> = (p) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.intent]);
 
-  const setU = (u: Usage) => { setUsage(u); saveUsage(u); };
-  const left = Math.max(0, limit - usage.used) + usage.prepaid;
+  const left = availableRuns(usage,limit);
 
   const labActiveMs=useActiveTime(view==='setup'||view==='running',String(labRevision));
-  const start = () => {
-    const settingsList = labJobs(selectedPlaybookIds.flatMap(id=>draftsByPlaybook[id]?[draftsByPlaybook[id]]:[]),labSymbols);
+  const start = (request:DashboardRunJob) => {
+    if(inFlight.current)return;
+    const settingsList = request.settings;
     if (!settingsList.length) return;
+    inFlight.current=true;
+    const dashboard=!!request?.dashboard;
+    const startedAt=performance.now();
+    if(dashboard){setDashboardBusy(true);setDashboardError('');setDashboardMessage('');}
     setError(null);
     setShowLabResults(false);
     setProgress(0);
@@ -231,7 +247,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
     setComparisonResults(null);
     const ctl = new AbortController();
     abort.current = ctl;
-    setView('running');
+    if(!dashboard)setView('running');
     let activeSettings = settingsList[0];
     void (async () => {
       try {
@@ -245,51 +261,102 @@ export const BacktestPage: React.FC<Props> = (p) => {
           });
           completed.push({ settings: activeSettings, output });
         }
+        if(ctl.signal.aborted)throw new CancelledError();
         const now = new Date().toISOString();
-        const activityId='lab_'+Date.now().toString(36),activeMs=labActiveMs();
+        const activityId='lab_'+Date.now().toString(36),activeMs=dashboard?Math.round(performance.now()-startedAt):labActiveMs();
         const saved = completed.map((item, index): BacktestRun => ({
           id: `run_${Date.now().toString(36)}_${index}`, name: item.settings.name, mode: 'automated', status: 'done',
-          activityId,activeMs,sourceTradeIds: benchmarkEntries.map(e=>e.id), dataSource:'generated', timezone:tz,
+          activityId,activeMs,sourceTradeIds: request.tradeIds, dataSource:'generated', engineVersion:BACKTEST_ENGINE_VERSION, timezone:tz,
           playbookId: item.settings.playbookId, symbol: item.settings.symbol, timeframe: item.settings.timeframe,
           from: item.settings.from, to: item.settings.to, createdAt: now, lastRun: now, settings: item.settings,
           summary: summarize(item.output), output: item.output,
-          playbookFingerprint: playbooks.find(book => book.id === item.settings.playbookId) ? playbookFingerprint(playbooks.find(book => book.id === item.settings.playbookId)!) : undefined,
+          playbookFingerprint: request.dashboard?request.fingerprint:playbooks.find(book => book.id === item.settings.playbookId) ? playbookFingerprint(playbooks.find(book => book.id === item.settings.playbookId)!) : undefined,
         }));
-        saved.forEach(run => {
+        const nextRuns = retainRuns([...saved, ...loadRuns()]);
+        setRuns(nextRuns);
+        const savedToBrowser=saveRuns(nextRuns);
+        const count=saved.reduce((total,run)=>total+run.summary.trades,0);
+        if (!savedToBrowser) onToast('Results are available for this visit. Browser storage is full; your test run remains available.');
+        if(!count)onToast('No matching trades. Your test run remains available; edit the period or rules to try again.');
+        const u=loadUsage(),nextUsage=completedRunUsage(u,limit,savedToBrowser,count);
+        if(nextUsage!==u&&!saveUsage(nextUsage))onToast('Results saved, but usage could not be saved. Your extra run remains available.');
+        setUsage(loadUsage());
+        saved.filter(run=>savedToBrowser&&run.summary.trades>0).forEach(run => {
           if (run.playbookId && run.summary.trades > 0) onSetExpected(expectedFromRun(run.playbookId, run.id, run.name, run.symbol, run.output));
           const points = claimPoints('backtest', run.id);
           if (points) onRewardPoints(points, 'Saved a backtest');
         });
-        const nextRuns = [...saved, ...loadRuns()].slice(0, 30);
-        setRuns(nextRuns);
-        const savedToBrowser=saveRuns(nextRuns);
-        if (!savedToBrowser) onToast('Test finished, but browser storage could not save the results.');
-        const u = loadUsage();
-        setU(u.used < limit ? { ...u, used: u.used + 1 } : { ...u, prepaid: Math.max(0, u.prepaid - 1) });
         if(completed.length===1){const item=completed[0];setCur({settings:item.settings,output:item.output,runId:saved[0].id,name:item.settings.name});}
         else setComparisonResults(completed);
         setLabResults({runs:saved,saved:savedToBrowser});
-        setShowLabResults(true);
-        setView('setup');
+        if(dashboard){
+          setDashboardMessageSource('run:'+saved[0].id);
+          setDashboardMessage(count?('Test complete · '+count+' trades · '+(savedToBrowser?'Saved to Saved runs':'Available for this visit')):'No matching trades. Your test run is still available.');
+          openDashboard({resultIds:saved.map(run=>'run:'+run.id)});
+        }else{setShowLabResults(true);setView('setup');}
         setRunStatus(null);
       } catch (e) {
         const error = e instanceof Error ? e : new Error(String(e));
         setRunStatus(null);
-        if (error instanceof CancelledError || error.name === 'CancelledError') { onToast('Backtest cancelled. It did not count toward your runs.'); setView('setup'); return; }
-        setError(`Could not finish ${activeSettings.name}: ${error.message || 'The backtest could not run.'}`);
-        setView('setup');
+        if (error instanceof CancelledError || error.name === 'CancelledError') { onToast('Backtest cancelled. It did not count toward your runs.'); if(dashboard){setDashboardMessageSource('');setDashboardMessage('Test cancelled. Your saved results are unchanged.');}else setView('setup'); return; }
+        if(dashboard)setDashboardError(`Could not finish ${activeSettings.name}: ${error.message || 'The backtest could not run.'}`);
+        else{setError(`Could not finish ${activeSettings.name}: ${error.message || 'The backtest could not run.'}`);setView('setup');}
+      } finally {
+        inFlight.current=false;setDashboardBusy(false);if(abort.current===ctl)abort.current=null;
       }
     })();
   };
 
-  const onRun = () => { if (left > 0) start(); else setGate(true); };
+  const jobError=(job:DashboardRunJob,message:string)=>{if(job.dashboard)setDashboardError(message);else setError(message);};
+  const validJob=(job:DashboardRunJob)=>{
+    const problems=job.settings.flatMap(validateSettings);
+    if(!job.settings.length||problems.length){jobError(job,problems.map(p=>p.message).join(' ')||'Choose a playbook and an instrument before running.');return false;}return true;
+  };
+  const beginRun = (request?:DashboardRunJob) => {
+    if(inFlight.current||purchasing.current)return;
+    const job=structuredClone(request??{settings:labJobs(selectedPlaybookIds.flatMap(id=>draftsByPlaybook[id]?[draftsByPlaybook[id]]:[]),labSymbols),tradeIds:benchmarkEntries.map(e=>e.id),dashboard:false});
+    if(!validJob(job))return;
+    const cached=reusableRuns(job.settings,[...runs,...loadRuns()],job.tradeIds);
+    if(cached){
+      const idSet=new Set(cached.map(r=>r.id)),next=retainRuns([...cached,...runs.filter(r=>!idSet.has(r.id))]);
+      setRuns(next);setLabResults({runs:cached,saved:cached.every(r=>loadRuns().some(saved=>saved.id===r.id))});
+      if(job.dashboard){setDashboardError('');setDashboardMessageSource('run:'+cached[0].id);setDashboardMessage('Showing the saved result for this setup · No extra run used');openDashboard({resultIds:cached.map(r=>'run:'+r.id)});}
+      else{setError(null);setShowLabResults(true);setView('setup');}
+      return;
+    }
+    const current=loadUsage();setUsage(current);setPurchaseError('');
+    if(availableRuns(current,limit)>0){pendingRun.current=undefined;start(job);}else{pendingRun.current=job;setGate(true);}
+  };
+  const onRun = () => beginRun();
+  const runFromDashboard=(request:DashboardRunRequest)=>{
+    if(inFlight.current)return;
+    setDashboardError('');setDashboardMessage('');
+    try{
+      const prepared=dashboardQuickRun(request,playbooks,p.allEntries,journalRules,draftsByPlaybook,draft);
+      const problems=validateSettings(prepared.settings);
+      if(problems.length)throw new Error(problems.map(problem=>problem.message).join(' '));
+      const job:DashboardRunJob={settings:[prepared.settings],tradeIds:prepared.tradeIds,dashboard:true};
+      const book=playbooks.find(book=>book.id===prepared.settings.playbookId);
+      job.fingerprint=request.run?request.run.playbookFingerprint:book?playbookFingerprint(book):undefined;
+      if(!request.run&&book&&labRulesNeedReview(book,prepared.settings,reviewedLabRules))setDashboardReview({book,job});
+      else beginRun(job);
+    }catch(error){setDashboardError(error instanceof Error?error.message:'Unable to load this test setup.');}
+  };
+  const dashboardTestOptions=playbooks.filter(book=>book.status!=='archived').map(book=>{
+    const settings=dashboardQuickRun({bookId:book.id},playbooks,p.allEntries,journalRules,draftsByPlaybook,draft).settings;
+    return {bookId:book.id,name:book.name,summary:settings.symbol+' · '+settings.timeframe+' · '+settings.from+' to '+settings.to};
+  });
 
   const buyRun = () => {
-    if (!onSpendCredits(EXTRA_RUN_CREDITS, 'Extra backtest run')) return;
-    const u = loadUsage();
-    setU({ ...u, extraPaid: u.extraPaid + 1, prepaid: u.prepaid + 1 });
-    setGate(false);
-    setTimeout(start, 0);
+    if(purchasing.current||inFlight.current)return;
+    const job=pendingRun.current;
+    if(!job||!validJob(job)){setGate(false);return;}
+    purchasing.current=true;
+    try{
+      const purchase=purchaseRunAllowance(limit,{load:loadUsage,save:saveUsage,spend:()=>onSpendCredits(EXTRA_RUN_CREDITS,'Extra backtest run')});
+      if(!purchase.ok){setPurchaseError(purchase.error);return;}
+      setUsage(purchase.usage);pendingRun.current=undefined;setGate(false);start(job);
+    }finally{purchasing.current=false;}
   };
 
   const editComparisonInstrument = (symbol: string) => {
@@ -370,7 +437,8 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const navOn = (v: View) => view === v || (v === 'setup' && view === 'running') || (v === 'home' && (view === 'results' || view === 'comparison'));
 
   const curPb = cur ? pb(cur.settings.playbookId) : null;
-  const setupRunHint = left > 0
+  const reusableLab=useMemo(()=>reusableRuns(labJobs(selectedPlaybookIds.flatMap(id=>draftsByPlaybook[id]?[draftsByPlaybook[id]]:[]),labSymbols),runs,benchmarkEntries.map(e=>e.id)),[selectedPlaybookIds,draftsByPlaybook,labSymbols,runs,benchmarkEntries]);
+  const setupRunHint = reusableLab ? 'Saved result ready · opening it uses no test runs or credits.' : left > 0
     ? selectedPlaybookIds.length * labSymbols.length > 1 ? `Uses 1 test run for this ${selectedPlaybookIds.length * labSymbols.length}-result comparison. Usually takes a few seconds per playbook.` : `Uses 1 of your ${left} remaining test run${left === 1 ? '' : 's'} this month. Usually takes a few seconds.`
     : `You've used this month's test runs. Run this ${selectedPlaybookIds.length > 1 ? 'comparison' : 'test'} for ${EXTRA_RUN_CREDITS} Syde Credits.`;
 
@@ -382,7 +450,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
             const active = navOn(v);
             return (
               <div key={v} className={`relative shrink-0 rounded-lg border transition-colors ${active ? 'border-[#D8D0FF] bg-[#F1EDFF] text-[#5338ec] shadow-xs' : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-white'}`}>
-                <button type="button" aria-current={active ? 'page' : undefined} disabled={view === 'running' && v !== 'setup'} onClick={() => { if (view === 'running') return; if(v==='runs')setWhatIfRuns(loadWhatIfs()); if (v === 'setup') { if (view !== 'setup') { setError(null);setLabRevision(v=>v+1);setView('setup'); } } else if(v==='home')openDashboard();else setView(v); }}
+                <button type="button" aria-current={active ? 'page' : undefined} disabled={dashboardBusy || (view === 'running' && v !== 'setup')} onClick={() => { if (view === 'running'||dashboardBusy) return; if(v==='runs')setWhatIfRuns(loadWhatIfs()); if (v === 'setup') { if (view !== 'setup') { setError(null);setLabRevision(v=>v+1);setView('setup'); } } else if(v==='home')openDashboard();else setView(v); }}
                   className="min-h-10 whitespace-nowrap rounded-lg pl-3 pr-10 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec] disabled:cursor-not-allowed disabled:opacity-40 sm:text-[13px]">{label}</button>
                 <span className="absolute right-1 top-1/2 -translate-y-1/2"><JournalHelp label={label} text={getJournalHelp(helpTopic)} /></span>
               </div>
@@ -391,8 +459,11 @@ export const BacktestPage: React.FC<Props> = (p) => {
         </nav>
       </div>
 
+      {usage.prepaid>0&&<p role="status" className="text-xs font-semibold text-emerald-700">{usage.prepaid} paid test run{usage.prepaid===1?'':'s'} available</p>}
+
       {view === 'home' && (
         <BacktestDashboard key={dashboardRevision} initial={dashboardInitial} entries={entries} allEntries={p.allEntries} playbooks={playbooks} runs={runs} sessions={sessions}
+          testOptions={dashboardTestOptions} defaultBookId={draft.playbookId??undefined} onQuickRun={runFromDashboard} running={dashboardBusy} runProgress={progress} runError={dashboardError} runMessage={dashboardMessage} runMessageSource={dashboardMessageSource} onCancelRun={()=>abort.current?.abort()}
           onNewTest={startSetup} onChangeEntries={p.onChangeEntries} onOpenJournal={p.onOpenJournal}
           onInspectRun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));setComparisonResults(null);setCur({settings:r.settings,output:r.output,runId:r.id,name:r.name});setView('results');}}
           onRerun={r=>{setBenchmarkEntries(p.allEntries.filter(e=>r.sourceTradeIds?.includes(e.id)));prepareSetup(deepClone(r.settings));}} />
@@ -401,7 +472,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       {(view === 'setup'||view === 'running') && (
         <>
           {error && <Banner tone="bad" icon={<XCircle className="w-4 h-4" />}><b>The backtest didn't run.</b> {error}</Banner>}
-          <StrategyLab key={labRevision} reviewedRules={reviewedLabRules} allEntries={p.allEntries} symbols={labSymbols}
+          <StrategyLab key={labRevision} reusesSavedResult={!!reusableLab} reviewedRules={reviewedLabRules} allEntries={p.allEntries} symbols={labSymbols}
             onViewResults={labResults?()=>setShowLabResults(true):undefined}
             onBooks={chooseLabBooks} onTrades={chooseLabTrades}
             onSetup={(updates,symbols,base)=>{const next=mergeLabSetup(draftsByPlaybook,selectedPlaybookIds,updates);setDraftsByPlaybook(next);setLabSymbols(symbols);setDraft(next[draft.playbookId??'']??next[selectedPlaybookIds[0]]??base);setComparisonResults(null);}}
@@ -425,7 +496,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       )}
 
       {labResults&&showLabResults&&<LabResultsDialog onWhatIf={openRunWhatIf} runs={labResults.runs} saved={labResults.saved} playbooks={playbooks} onClose={()=>setShowLabResults(false)}
-        onSave={()=>{const ids=new Set(labResults.runs.map(r=>r.id));const next=[...labResults.runs,...loadRuns().filter(r=>!ids.has(r.id))].slice(0,30);const saved=saveRuns(next);setRuns(next);setLabResults({...labResults,saved});}}
+        onSave={()=>{const ids=new Set(labResults.runs.map(r=>r.id));const next=retainRuns([...labResults.runs,...loadRuns().filter(r=>!ids.has(r.id))]);const saved=saveRuns(next);setRuns(next);setLabResults({...labResults,saved});}}
         onViewSavedRuns={()=>{setShowLabResults(false);setWhatIfRuns(loadWhatIfs());setView('runs');}}/>}
       {inspectedSavedRun&&<LabResultsDialog onWhatIf={openRunWhatIf} runs={[inspectedSavedRun]} saved playbooks={playbooks} closeLabel="Back to saved runs" onClose={()=>setInspectedSavedRun(null)}/>}
 
@@ -474,10 +545,13 @@ export const BacktestPage: React.FC<Props> = (p) => {
           onDelete={(id) => { const next = runs.filter((r) => r.id !== id); setRuns(next); saveRuns(next); onToast('Run deleted'); }} />
       )}
 
-      <Modal open={gate} onClose={() => setGate(false)} title="Monthly test runs used">
+      {dashboardReview&&<LabEntryRulesDialog key={dashboardReview.book.id} book={dashboardReview.book} settings={dashboardReview.job.settings[0]} suggested onClose={()=>setDashboardReview(null)} onApply={entry=>{const review=dashboardReview;setDashboardReview(null);beginRun({...review.job,settings:[{...review.job.settings[0],rules:{...review.job.settings[0].rules,entry}}]});}}/>}
+      <Modal open={gate} onClose={() => {setGate(false);pendingRun.current=undefined;}} title="Monthly test runs used">
         <Sparkles className="w-7 h-7 text-[#5338ec] mb-3" aria-hidden />
         <h3 className="text-lg font-bold text-[#0b1c30]">You've used this month's {limit} test runs</h3>
         <p className="text-sm text-[#474556] mt-1.5">Your plan includes {limit} automated backtests a month. This {selectedPlaybookIds.length > 1 ? 'comparison' : 'playbook test'} counts as one run.{BACKTEST_TRAINING_ENABLED?' You can also practise for free.':''}</p>
+        <p className="mt-2 text-xs text-slate-500">The extra run stays available if the test fails, is cancelled, has no trades, or cannot be saved. Opening a saved result is free.</p>
+        {purchaseError&&<p role="alert" className="mt-3 text-xs text-rose-600">{purchaseError}</p>}
         <div className="mt-5 space-y-2">
           <button type="button" className={`${btnPrimary} w-full h-11`} disabled={sydeCredits < EXTRA_RUN_CREDITS} onClick={buyRun}>
           <Coins className="w-4 h-4" /> Spend {EXTRA_RUN_CREDITS} Syde Credits for this {selectedPlaybookIds.length > 1 ? 'comparison' : 'run'}

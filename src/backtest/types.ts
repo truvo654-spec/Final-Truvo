@@ -13,6 +13,8 @@ export const ASSET_CLASSES: AssetClass[] = ['Stocks', 'Futures', 'Forex', 'Crypt
 
 /** Column-oriented price history (typed arrays keep two years of 5-minute bars small and fast). */
 export interface Series {
+  /** Completed bars before the requested range; indicators only, never trades. */
+  warmup?: Omit<Series, 'warmup'>;
   symbol: string;
   tf: Timeframe;
   length: number;

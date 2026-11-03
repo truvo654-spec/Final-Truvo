@@ -20,6 +20,7 @@ import {btnPrimary, btnSecondary, inputCls, Modal} from './ui';
 
 type SetupProps=React.ComponentProps<typeof BacktestSetup>;
 interface Props {
+  reusesSavedResult?:boolean;
   setup:SetupProps; allEntries:JournalEntry[];
   reviewedRules:Record<string,string>;
   symbols:string[];
@@ -30,7 +31,7 @@ interface Props {
   onViewResults?:()=>void;
 }
 
-export function StrategyLab({setup:s,allEntries,reviewedRules,symbols,onSetup,onBooks,onTrades,onPractice,onEntryRules,onViewResults}:Props){
+export function StrategyLab({reusesSavedResult=false,setup:s,allEntries,reviewedRules,symbols,onSetup,onBooks,onTrades,onPractice,onEntryRules,onViewResults}:Props){
 
   const [step,setStep]=useState<'choose'|'setup'>('choose');
   const headerRef=useRef<HTMLElement>(null);
@@ -133,7 +134,7 @@ export function StrategyLab({setup:s,allEntries,reviewedRules,symbols,onSetup,on
         {outside&&<div className="mt-3 rounded-xl bg-amber-50 p-3 text-xs"><p>Sample prices cover {DATA_START} to {DATA_END}. Your benchmark has not been changed.</p><button className="mt-2 font-semibold text-[#5338ec]" onClick={()=>patch({from:DATA_START,to:DATA_END})}>Use available sample period</button></div>}
         {!!problems.length&&<ul role="alert" className="mt-3 space-y-1 text-xs text-amber-700">{[...new Set(problems)].map(p=><li key={p}>{p}</li>)}</ul>}
       </>:<p className="mt-4 text-sm text-slate-600">Practice one playbook or one selected trade with the existing candle-by-candle player. Supported settings load automatically; written rules stay visible as your guide.{!practiceReady?' Choose one playbook or exactly one journal trade above.':''}</p>}
-      <div className="mt-5 flex flex-wrap items-center gap-4"><button type="button" className={`${btnPrimary} min-h-11 px-6`} disabled={mode==='auto'?!validSetup:!practiceReady||pendingTrades} onClick={run}><Play size={16}/>{mode==='auto'?(missing.length?`Review rules to run · ${missing.length}`:`Run test${jobs.length>1?' · '+jobs.length+' results':''}`):'Start practice'}</button>{onViewResults&&<button type="button" className={btnSecondary} onClick={onViewResults}>View latest results</button>}<p className="max-w-md text-[11px] text-slate-500">{mode==='auto'?(missing.length?'Review the suggested entry rules first. Your saved playbooks stay unchanged.':s.runHint):'Practice is free. Complete a session to review what you learned.'}</p></div>
+      <div className="mt-5 flex flex-wrap items-center gap-4"><button type="button" className={`${btnPrimary} min-h-11 px-6`} disabled={mode==='auto'?!validSetup:!practiceReady||pendingTrades} onClick={run}><Play size={16}/>{mode==='auto'?(missing.length?`Review rules to run · ${missing.length}`:reusesSavedResult?'View saved result':`Run test${jobs.length>1?' · '+jobs.length+' results':''}`):'Start practice'}</button>{onViewResults&&<button type="button" className={btnSecondary} onClick={onViewResults}>View latest results</button>}<p className="max-w-md text-[11px] text-slate-500">{mode==='auto'?(missing.length?'Review the suggested entry rules first. Your saved playbooks stay unchanged.':s.runHint):'Practice is free. Complete a session to review what you learned.'}</p></div>
       <p className="mt-3 text-[11px] text-slate-500">Generated sample prices. Simulated fills and results are separate from your recorded trades.</p>
     </section>:null}
 

@@ -1790,11 +1790,16 @@ export default function App() {
             }}
             sydeCredits={user.sydeCredits}
             onSpendCredits={(amount, reason) => {
-              if (user.sydeCredits < amount) {
+              const latest=currentUser.current;
+              if (!Number.isFinite(amount)||amount<=0||latest.sydeCredits < amount) {
                 showToast('Not enough Syde Credits for that.');
                 return false;
               }
-              setUser((prev) => ({ ...prev, sydeCredits: prev.sydeCredits - amount }));
+              const updated={...latest,sydeCredits:latest.sydeCredits-amount};
+              try{localStorage.setItem('marketsyde_user_profile',JSON.stringify(updated));}
+              catch{showToast('Unable to save the credit purchase. No credits were spent.');return false;}
+              currentUser.current=updated;
+              setUser(updated);
               showToast(`🪙 -${amount} Credits: ${reason}`);
               return true;
             }}

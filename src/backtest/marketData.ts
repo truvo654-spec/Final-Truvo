@@ -115,7 +115,7 @@ export function seriesFromBars(symbol: string, tf: Timeframe, bars: { t: number;
   return s;
 }
 
-const lowerBound = (arr: Float64Array, x: number) => {
+export const lowerBound = (arr: Float64Array, x: number) => {
   let lo = 0, hi = arr.length;
   while (lo < hi) { const mid = (lo + hi) >> 1; if (arr[mid] < x) lo = mid + 1; else hi = mid; }
   return lo;

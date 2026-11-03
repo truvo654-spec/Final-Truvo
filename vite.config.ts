@@ -6,6 +6,8 @@ import {defineConfig} from 'vite';
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
+    // Exported HTML artifacts are outputs, not application entry points.
+    optimizeDeps: { entries: ['index.html'] },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
