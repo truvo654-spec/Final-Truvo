@@ -1,3 +1,12 @@
+## 2.70.23 - Clear profit factor empty states
+
+- Show a dash with No losses yet in the Overview profit factor card when eligible gains have no losing denominator. Explain the current-scope ratio in its tooltip while retaining shared calculations.
+- Suppress KPI comparison chips when either period has a non-finite value.
+
+## 2.70.22 - Import beside journal tabs
+
+- Move Import / link back beside the main journal tabs on Overview and Trade Log. Keep the date range and Filters controls in their existing row.
+
 ## 2.70.21 - Buy/sell source badges
 
 - Replace plain chart dots/text with Buy/Sell/Exit callout badges identifying History, Backtest, Practice, Condition or Scenario sources.

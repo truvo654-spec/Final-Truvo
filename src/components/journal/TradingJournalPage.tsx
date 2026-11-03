@@ -230,7 +230,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
   /** A chip saying how a figure moved, or nothing when there is no honest comparison. */
   const delta = (now: number | null, before: number | null | undefined, kind: 'count' | 'percent' | 'value') => {
-    if (now === null || before === null || before === undefined) return null;
+    if (now === null || before === null || before === undefined || !Number.isFinite(now) || !Number.isFinite(before)) return null;
     const diff = now - before;
     if (Math.abs(diff) < 0.0001) return null;
     const up = diff > 0;
@@ -448,18 +448,18 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
       <div className="mb-6 flex flex-wrap items-end justify-center gap-x-3 gap-y-2">
         <div className="min-w-0"><FolderTabs tabs={tabs} activeTab={tab} onChange={setTab} /></div>
-      </div>
-      {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
-      <div className="mb-4 flex justify-end items-center gap-2">
         {(tab === 'overview' || tab === 'entries') && (
           <button
             type="button"
             onClick={() => setWizardOpen(true)}
-            className="h-9 shrink-0 rounded-xl bg-[#5338ec] px-4 text-sm font-semibold text-white transition hover:bg-[#4326d8]"
+            className="mb-1 h-9 shrink-0 rounded-xl bg-[#5338ec] px-4 text-sm font-semibold text-white transition hover:bg-[#4326d8]"
           >
             Import / link
           </button>
         )}
+      </div>
+      {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
+      <div className="mb-4 flex justify-end items-center gap-2">
         <JournalDateRange iconOnly from={rangeFrom} to={rangeTo} label={rangeLabel} today={JOURNAL_TODAY} entries={calEntries} onApply={(range, all) => { setCustomRange(range); setRangeMode(all ? 'all' : 'custom'); setCalMonth(range.to.slice(0,7)); setSelectedDay(null); setDayReviewOpen(false); }}/>
         <button
           type="button"
@@ -528,10 +528,11 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
               <p className="text-xl font-bold flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-emerald-500" /> {kpi.winRate == null ? '—' : `${kpi.winRate}%`}</p>
               {delta(kpi.winRate, prevKpi?.winRate, 'percent')}
             </div>
-            <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
-              <p className="text-[11px] font-semibold text-[#474556] mb-1">Profit factor<JournalHelp label="Profit factor" /></p>
-              <p className="text-xl font-bold font-mono">{kpi.profitFactor === null ? '—' : kpi.profitFactor === Infinity ? '∞' : kpi.profitFactor.toFixed(2)}</p>
-              {delta(kpi.profitFactor === Infinity ? null : kpi.profitFactor, prevKpi?.profitFactor, 'value')}
+            <div aria-label="Overview profit factor" className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
+              <p className="text-[11px] font-semibold text-[#474556] mb-1">Profit factor<JournalHelp label="Profit factor" text="Total gains divided by total losses from eligible closed trades in the current filters, using the selected gross or net basis. With gains but no losses, there is no finite ratio: the card shows a dash and No losses yet. Open trades and unknown results are excluded." /></p>
+              <p className="text-xl font-bold font-mono">{kpi.profitFactor !== null && Number.isFinite(kpi.profitFactor) ? kpi.profitFactor.toFixed(2) : '—'}</p>
+              <p className="mt-1 text-[10px] text-slate-500">{kpi.profitFactor === Infinity ? 'No losses yet' : kpi.profitFactor === null ? (kpi.realizedCount ? 'No gains or losses' : 'No eligible results') : 'Gains ÷ losses'}</p>
+              {delta(kpi.profitFactor, prevKpi?.profitFactor, 'value')}
             </div>
             <div className="bg-white border border-[#e2e8f0] rounded-2xl p-4">
               <p className="text-[11px] font-semibold text-[#474556] mb-1">Average R<JournalHelp label="Average R" /></p>
