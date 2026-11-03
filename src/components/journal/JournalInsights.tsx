@@ -360,7 +360,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
 
   const buckets = useMemo(() => {
     const m = new Map<string, { key: string; label: string; order: number; list: JournalEntry[] }>();
-    if (view === 'days') [1, 2, 3, 4, 5].forEach((d) => m.set(`w${d}`, { key: `w${d}`, label: DAY_NAMES[d], order: d - 1, list: [] }));
+    if (view === 'days') [1, 2, 3, 4, 5, 6, 0].forEach((d) => m.set(`w${d}`, { key: `w${d}`, label: DAY_NAMES[d], order: (d + 6) % 7, list: [] }));
     cur.forEach((e) => { const b = bucketOf(e); if (!m.has(b.key)) m.set(b.key, { ...b, list: [] }); m.get(b.key)!.list.push(e); });
     return Array.from(m.values()).sort((a, b) => a.order - b.order).map((b) => ({ ...b, s: stats(b.list) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -463,7 +463,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
       </div>
       {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
       <div className="mb-4 flex justify-end items-center gap-2">
-        <JournalDateRange iconOnly from={rangeFrom} to={rangeTo} label={rangeLabel} today={JOURNAL_TODAY} entries={calEntries} onApply={(range, all) => { setCustomRange(range); setRangeMode(all ? 'all' : 'custom'); setCalMonth(range.to.slice(0,7)); setSelectedDay(null); setDayReviewOpen(false); }}/>
+        {tab!=='backtest'&&<JournalDateRange iconOnly from={rangeFrom} to={rangeTo} label={rangeLabel} today={JOURNAL_TODAY} entries={calEntries} onApply={(range, all) => { setCustomRange(range); setRangeMode(all ? 'all' : 'custom'); setCalMonth(range.to.slice(0,7)); setSelectedDay(null); setDayReviewOpen(false); }}/>}
         <button
           type="button"
           onClick={() => setFiltersOpen((o) => !o)}

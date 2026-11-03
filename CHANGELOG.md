@@ -1,3 +1,9 @@
+## 2.72.18 - Simplify dashboard filters
+
+- Add selectable result chips and a single calendar range control to Trade Arena.
+- Show timezone choices with their city names and current UTC offsets.
+- Include Sunday in the Day of week distribution chart.
+
 ## 2.72.17 - Improve execution list
 
 - Add recorded position duration to Strategy Book execution rows.
