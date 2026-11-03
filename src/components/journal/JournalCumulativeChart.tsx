@@ -16,6 +16,7 @@ interface Props {
   unit?: 'usd' | 'pts';
   off: string[]; // brokers currently unticked
   onDay?: (date: string) => void;
+  calendar?: React.ReactNode;
 }
 
 interface Series { key: string; name: string; color: string; pts: { date: string; day: number; n: number; cum: number }[] }
@@ -40,13 +41,13 @@ function niceTicks(min: number, max: number, count = 4): number[] {
   return ticks;
 }
 
-export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, title, rangeLabel, brokers, unit = 'usd', off, onDay }) => {
+export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, title, rangeLabel, brokers, unit = 'usd', off, onDay, calendar }) => {
   const money=useMoney();
   const pts = unit === 'pts';
   const usdFull = (n: number) => (pts ? `${n < 0 ? '-' : n > 0 ? '+' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })} pts` : money(n));
   const usdAxis = (n: number) => (pts ? `${n < 0 ? '-' : ''}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : money(n,0));
   const [active, setActive] = useState<number | null>(null);
-  const [table, setTable] = useState(false);
+  const [view, setView] = useState<'calendar'|'chart'|'table'>(calendar?'calendar':'chart');
   const svgRef = useRef<SVGSVGElement>(null);
 
   const on = useMemo(() => brokers.filter((b) => !off.includes(b.id)), [brokers, off]);
@@ -134,21 +135,21 @@ export const JournalCumulativeChart: React.FC<Props> = ({ entries, valueOf, titl
               <p className="text-[10px] text-[#94a3b8]">{peak !== null ? `Peak ${usdFull(peak)}` : ''}</p>
             </div>
           )}
-          <div className="flex rounded-lg border border-slate-200 overflow-hidden" role="group" aria-label="Chart view">
-            {([false, true] as const).map((t) => (
-              <button key={String(t)} type="button" aria-pressed={table === t} onClick={() => setTable(t)}
-                title={t ? 'Show every chart row with date, broker, entry count, daily result and cumulative result' : 'Show the cumulative chart; hover or focus a point for exact details'}
-                className={`px-2.5 py-1 text-[11px] font-semibold ${table === t ? 'bg-[#0b1c30] text-white' : 'bg-white text-[#474556]'}`}>{t ? 'Table' : 'Chart'}</button>
-            ))}
+          <div className="flex rounded-lg border border-slate-200 overflow-hidden" role="group" aria-label="Cumulative P&amp;L view">
+            {calendar&&<button type="button" aria-pressed={view==='calendar'} onClick={()=>setView('calendar')} title="Show the monthly journal calendar" className={`px-2.5 py-1 text-[11px] font-semibold ${view==='calendar'?'bg-[#0b1c30] text-white':'bg-white text-[#474556]'}`}>Calendar</button>}
+            <button type="button" aria-pressed={view==='chart'} onClick={()=>setView('chart')} title="Show cumulative results by day" className={`px-2.5 py-1 text-[11px] font-semibold ${view==='chart'?'bg-[#0b1c30] text-white':'bg-white text-[#474556]'}`}>Chart</button>
+            <button type="button" aria-pressed={view==='table'} onClick={()=>setView('table')} title="Show every chart row with date, broker, entry count, daily result and cumulative result" className={`px-2.5 py-1 text-[11px] font-semibold ${view==='table'?'bg-[#0b1c30] text-white':'bg-white text-[#474556]'}`}>Table</button>
           </div>
         </div>
       </div>
 
-      {!geo || series.length === 0 || on.length === 0 ? (
+      {view==='calendar'&&calendar ? (
+        <div aria-label="Cumulative P&amp;L calendar view" className="mx-auto w-full max-w-[600px]">{calendar}</div>
+      ) : !geo || series.length === 0 || on.length === 0 ? (
         <div className="h-40 flex items-center justify-center text-sm text-[#474556] border border-dashed border-slate-200 rounded-xl">
           {on.length === 0 && brokers.length > 0 ? 'No broker selected. Choose at least one broker in the Broker filter.' : 'No entries in this range. Pick a wider range or reset the filters.'}
         </div>
-      ) : table ? (
+      ) : view==='table' ? (
         <div className="max-h-64 overflow-y-auto border border-slate-100 rounded-xl">
           <table className="w-full text-xs">
             <thead className="bg-slate-50 text-[#474556] sticky top-0">

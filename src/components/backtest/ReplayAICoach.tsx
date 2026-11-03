@@ -10,6 +10,6 @@ export function ReplayAICoach({entries,symbol,cutoff=Infinity,excludeId='',playb
   const [goal,setGoal]=useState<RecommendationGoal>('net');
   const advice=useMemo(()=>replayJournalAdvice(entries,symbol,goal,cutoff,excludeId,playbook,breakeven),[entries,symbol,goal,cutoff,excludeId,playbook,breakeven]);
   return <MarketSydeRecommender recommendation={advice.recommendation} baseline={advice.baseline} baselineName="prior closed USD journal trades for this instrument" goal={goal} onGoal={setGoal} money={money}
-    evidence={`${advice.history.length} eligible trades${playbook?' for the selected playbook':''}. The selected replay trade is excluded. ${Number.isFinite(cutoff)?'Only trades closed before the replay starts are included. ':''}First 70% of entry days select; remaining days validate. Price-dependent results are reconstructed estimates. Suggestions do not inspect unrevealed replay candles or demonstrate demo/live performance.`}
+    evidence={`${advice.history.length} eligible trades${playbook?' for the selected strategy book':''}. The selected replay trade is excluded. ${Number.isFinite(cutoff)?'Only trades closed before the replay starts are included. ':''}First 70% of entry days select; remaining days validate. Price-dependent results are reconstructed estimates. Suggestions do not inspect unrevealed replay candles or demonstrate demo/live performance.`}
     action={action} onUse={onUse?(id)=>{const row=advice.rows.find(r=>r.id===id);if(row)onUse(row.rule);}:undefined}/>;
 }

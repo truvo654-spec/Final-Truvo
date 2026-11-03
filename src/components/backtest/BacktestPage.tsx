@@ -310,7 +310,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const jobError=(job:DashboardRunJob,message:string)=>{if(job.dashboard)setDashboardError(message);else setError(message);};
   const validJob=(job:DashboardRunJob)=>{
     const problems=job.settings.flatMap(validateSettings);
-    if(!job.settings.length||problems.length){jobError(job,problems.map(p=>p.message).join(' ')||'Choose a playbook and an instrument before running.');return false;}return true;
+    if(!job.settings.length||problems.length){jobError(job,problems.map(p=>p.message).join(' ')||'Choose a strategy book and an instrument before running.');return false;}return true;
   };
   const beginRun = (request?:DashboardRunJob) => {
     if(inFlight.current||purchasing.current)return;
@@ -439,7 +439,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
   const curPb = cur ? pb(cur.settings.playbookId) : null;
   const reusableLab=useMemo(()=>reusableRuns(labJobs(selectedPlaybookIds.flatMap(id=>draftsByPlaybook[id]?[draftsByPlaybook[id]]:[]),labSymbols),runs,benchmarkEntries.map(e=>e.id)),[selectedPlaybookIds,draftsByPlaybook,labSymbols,runs,benchmarkEntries]);
   const setupRunHint = reusableLab ? 'Saved result ready · opening it uses no test runs or credits.' : left > 0
-    ? selectedPlaybookIds.length * labSymbols.length > 1 ? `Uses 1 test run for this ${selectedPlaybookIds.length * labSymbols.length}-result comparison. Usually takes a few seconds per playbook.` : `Uses 1 of your ${left} remaining test run${left === 1 ? '' : 's'} this month. Usually takes a few seconds.`
+    ? selectedPlaybookIds.length * labSymbols.length > 1 ? `Uses 1 test run for this ${selectedPlaybookIds.length * labSymbols.length}-result comparison. Usually takes a few seconds per strategy book.` : `Uses 1 of your ${left} remaining test run${left === 1 ? '' : 's'} this month. Usually takes a few seconds.`
     : `You've used this month's test runs. Run this ${selectedPlaybookIds.length > 1 ? 'comparison' : 'test'} for ${EXTRA_RUN_CREDITS} Syde Credits.`;
 
   return (
@@ -485,8 +485,8 @@ export const BacktestPage: React.FC<Props> = (p) => {
       {view === 'running' && (
         <Modal open onClose={()=>abort.current?.abort()} title="Running test" width="max-w-xl"><section className="bg-white p-3 text-center" aria-live="polite" aria-busy="true">
           <Loader2 className="w-8 h-8 text-[#5338ec] mx-auto animate-spin motion-reduce:animate-none" aria-hidden />
-          <h3 className="text-base font-bold text-[#0b1c30] mt-3">{runStatus && runStatus.total > 1 ? `Running ${runStatus.index} of ${runStatus.total}: ${runStatus.name}` : `Testing ${runStatus?.name ?? 'your playbook'} on ${draft.symbol}`}</h3>
-          <p className="text-xs text-slate-500 mt-1">{draft.from} to {draft.to}, one bar at a time. Each playbook keeps its own rules, timeframe and session{progress > 0.8 ? '; now checking small rule changes for the verdict.' : '.'}</p>
+          <h3 className="text-base font-bold text-[#0b1c30] mt-3">{runStatus && runStatus.total > 1 ? `Running ${runStatus.index} of ${runStatus.total}: ${runStatus.name}` : `Testing ${runStatus?.name ?? 'your strategy book'} on ${draft.symbol}`}</h3>
+          <p className="text-xs text-slate-500 mt-1">{draft.from} to {draft.to}, one bar at a time. Each strategy book keeps its own rules, timeframe and session{progress > 0.8 ? '; now checking small rule changes for the verdict.' : '.'}</p>
           <div className="h-2 rounded-full bg-slate-100 mt-5 overflow-hidden" role="progressbar" aria-label="Backtest progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
             <div className="h-full bg-[#5338ec] rounded-full transition-[width] duration-200" style={{ width: `${Math.round(progress * 100)}%` }} />
           </div>
@@ -512,7 +512,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
           onAddToPlan={(text) => {
             if (!curPb) return;
             const s = cur.settings;
-            setPlaybooks((prev) => prev.map((x) => (x.id === curPb.id ? { ...x, scenarios: [{ id: `sc_${Date.now()}`, symbol: s.symbol, bias: s.rules.direction === 'short' ? 'short' : 'long', hypothesis: text, trigger: s.rules.entry[0] ? describeCondition(s.rules.entry[0]) : 'Playbook entry rules', validUntil: addDays(JOURNAL_TODAY, 1), status: 'watching', createdAt: JOURNAL_TODAY }, ...(x.scenarios || [])] } : x)));
+            setPlaybooks((prev) => prev.map((x) => (x.id === curPb.id ? { ...x, scenarios: [{ id: `sc_${Date.now()}`, symbol: s.symbol, bias: s.rules.direction === 'short' ? 'short' : 'long', hypothesis: text, trigger: s.rules.entry[0] ? describeCondition(s.rules.entry[0]) : 'Strategy Book entry rules', validUntil: addDays(JOURNAL_TODAY, 1), status: 'watching', createdAt: JOURNAL_TODAY }, ...(x.scenarios || [])] } : x)));
             onToast(`Added to tomorrow's plan in ${curPb.name}`);
           }}
           onToast={onToast} /></>
@@ -549,7 +549,7 @@ export const BacktestPage: React.FC<Props> = (p) => {
       <Modal open={gate} onClose={() => {setGate(false);pendingRun.current=undefined;}} title="Monthly test runs used">
         <Sparkles className="w-7 h-7 text-[#5338ec] mb-3" aria-hidden />
         <h3 className="text-lg font-bold text-[#0b1c30]">You've used this month's {limit} test runs</h3>
-        <p className="text-sm text-[#474556] mt-1.5">Your plan includes {limit} automated backtests a month. This {selectedPlaybookIds.length > 1 ? 'comparison' : 'playbook test'} counts as one run.{BACKTEST_TRAINING_ENABLED?' You can also practise for free.':''}</p>
+        <p className="text-sm text-[#474556] mt-1.5">Your plan includes {limit} automated backtests a month. This {selectedPlaybookIds.length > 1 ? 'comparison' : 'strategy book test'} counts as one run.{BACKTEST_TRAINING_ENABLED?' You can also practise for free.':''}</p>
         <p className="mt-2 text-xs text-slate-500">The extra run stays available if the test fails, is cancelled, has no trades, or cannot be saved. Opening a saved result is free.</p>
         {purchaseError&&<p role="alert" className="mt-3 text-xs text-rose-600">{purchaseError}</p>}
         <div className="mt-5 space-y-2">

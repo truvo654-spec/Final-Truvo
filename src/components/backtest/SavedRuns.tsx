@@ -139,7 +139,7 @@ export const SavedRuns: React.FC<Props> = ({ runs, playbooks, tz, onOpen, onDupl
             <thead>
               <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
                 <th className="py-2 pr-2 w-8"><span className="sr-only">Select</span></th>
-                {['Name', 'Mode', 'Playbook', 'Symbol', 'Range', 'Trades', 'Net', 'PF', 'Max DD', 'Last run', ''].map((h) => <th key={h} className={`py-2 px-2 font-bold ${['Trades', 'Net', 'PF', 'Max DD'].includes(h) ? 'text-right' : 'text-left'}`}>{h}</th>)}
+                {['Name', 'Mode', 'Strategy Book', 'Symbol', 'Range', 'Trades', 'Net', 'PF', 'Max DD', 'Last run', ''].map((h) => <th key={h} className={`py-2 px-2 font-bold ${['Trades', 'Net', 'PF', 'Max DD'].includes(h) ? 'text-right' : 'text-left'}`}>{h}</th>)}
               </tr>
             </thead>
             <tbody>

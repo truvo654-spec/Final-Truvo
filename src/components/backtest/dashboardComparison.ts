@@ -6,7 +6,7 @@ export type ComparisonDimension='playbook'|'market'|'instrument'|'result';
 export type ComparisonOrigin='playbook-test'|'journal-test'|'journal'|'practice';
 export type ComparisonMetric='winRate'|'pf'|'payoff'|'avgR'|'net'|'expectancy'|'drawdown'|'trades';
 export type ComparisonSize='trades'|'net'|'drawdown'|'r';
-export const ORIGIN_LABELS:Record<ComparisonOrigin,string>={'playbook-test':'Playbook test','journal-test':'Test from journal','journal':'Recorded journal','practice':'Practice'};
+export const ORIGIN_LABELS:Record<ComparisonOrigin,string>={'playbook-test':'Strategy Book test','journal-test':'Test from journal','journal':'Recorded journal','practice':'Practice'};
 export const METRIC_LABELS:Record<ComparisonMetric,string>={winRate:'Win rate',pf:'Profit factor',payoff:'Avg win / loss',avgR:'Average R',net:'Net result',expectancy:'Expectancy',drawdown:'Max drawdown',trades:'Trade count'};
 export interface ComparisonBubble {id:string;name:string;source:DashboardSource;rows:DashboardRow[];origin:ComparisonOrigin;playbook:string;market:string;instrument:string;stats:ReturnType<typeof dashboardStats>}
 export const comparisonOrigin=(source:DashboardSource):ComparisonOrigin=>source.kind==='Journal'?'journal':source.kind==='Practice'?'practice':source.run?.sourceTradeIds?.length?'journal-test':'playbook-test';

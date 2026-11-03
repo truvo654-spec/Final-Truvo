@@ -21,9 +21,9 @@ export const PlaybookBacktestPanel: React.FC<{ playbook: JournalPlaybook; entrie
         <FlaskConical className="w-5 h-5 text-[#5338ec]" aria-hidden />
         <div className="flex-1 min-w-[12rem]">
           <p className="text-sm font-bold text-[#0b1c30]">Backtest vs live<JournalHelp label="Backtest vs live" /></p>
-          <p className="text-xs text-[#474556]">Test this playbook on past prices to see what to expect, then track your live trades against it.</p>
+          <p className="text-xs text-[#474556]">Test this strategy book on past prices to see what to expect, then track your live trades against it.</p>
         </div>
-        <button type="button" onClick={onBacktest} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Backtest this playbook</button>
+        <button type="button" onClick={onBacktest} className="h-9 px-4 rounded-lg bg-[#5338ec] hover:bg-[#4326d8] text-xs font-semibold text-white">Backtest this strategy book</button>
       </div>
     );
   }
@@ -54,7 +54,7 @@ export const PlaybookBacktestPanel: React.FC<{ playbook: JournalPlaybook; entrie
             <LineChart label="Live cumulative R against the backtest's expected range" area={false} height={170} xFmt={(x) => `Trade ${Math.round(x)}`} yFmt={(y) => rr(y, 0)}
               band={{ color: '#5338ec', points: band, label: 'Expected range' }}
               series={[{ name: 'Your live trades (cumulative R)', color: '#0b1c30', points: [{ x: 0, y: 0 }, ...live.cumR.map((y, i) => ({ x: i + 1, y }))] }]} />
-          ) : <p className="text-xs text-slate-500">No live trades with this playbook yet.</p>}
+          ) : <p className="text-xs text-slate-500">No live trades with this strategy book yet.</p>}
         </div>
       </div>
     </div>
@@ -69,11 +69,11 @@ export const StrategyHealthCard: React.FC<{ playbooks: JournalPlaybook[]; entrie
   return (
     <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">
       <h4 className="text-sm font-bold mb-1 flex items-center gap-1.5"><HeartPulse className="w-4 h-4 text-[#5338ec]" /> Strategy health<JournalHelp label="Strategy health" /></h4>
-      <p className="text-[11px] text-slate-500 mb-3">Live results vs each playbook's backtest, biggest gap first.</p>
+      <p className="text-[11px] text-slate-500 mb-3">Live results vs each strategy book's backtest, biggest gap first.</p>
       {rows.length === 0 ? (
         <>
-          <p className="text-xs text-[#474556]">No playbook has a saved backtest yet. Test one to see if your live trading matches it.</p>
-          <button type="button" onClick={onOpen} className="mt-2 text-xs font-semibold text-[#5338ec] hover:underline">Test a playbook</button>
+          <p className="text-xs text-[#474556]">No strategy book has a saved backtest yet. Test one to see if your live trading matches it.</p>
+          <button type="button" onClick={onOpen} className="mt-2 text-xs font-semibold text-[#5338ec] hover:underline">Test a strategy book</button>
         </>
       ) : (
         <ul className="space-y-2.5">

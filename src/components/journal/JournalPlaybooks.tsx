@@ -7,7 +7,7 @@ import { useMoney, formatMoney } from './JournalCurrency';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
 import React, { useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
-import { JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
+import { Broker, JournalChecklistItem, JournalEntry, PortfolioAssetClass } from '../../types';
 import { JournalPlaybook, PlaybookGrade, PlaybookScenario, PlaybookStatus, ReviewDecision, ScenarioStatus, PLAYBOOK_STATUS_LABELS } from '../../data/journalPlaybooks';
 import { PlaybookInstruments } from './PlaybookInstruments';
 import { PlaybookEditorFields } from './PlaybookEditorFields';
@@ -134,6 +134,10 @@ interface Props {
   onBacktest?: (playbookId: string, symbol?: string) => void;
   reviewOpen?: boolean;
   onWhatIf?: (playbookId: string) => void;
+  brokers?: Broker[];
+  onConnectBroker?: (broker: Broker) => void;
+  onBrowseBrokers?: () => void;
+  onStartTrade?: () => void;
 }
 
 const blank = (): JournalPlaybook => ({
@@ -141,7 +145,7 @@ const blank = (): JournalPlaybook => ({
   thesis: '', rules: [{ id: 'r1', title: '', detail: '' }], entryTrigger: '', stopRule: '', targetRule: '', tags: [], createdAt: JOURNAL_TODAY,
 });
 
-export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, comparisonEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, reviewOpen = false, onWhatIf }) => {
+export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries = entries, comparisonEntries = entries, playbooks, setPlaybooks, onOpenEntry, onShowTrades, onToast, houseRules, globalRules, houseChecklist, recordings, onSetRecording, expected = {}, onBacktest, reviewOpen = false, onWhatIf, brokers = [], onConnectBroker, onBrowseBrokers, onStartTrade }) => {
   const money = useMoney();
 
   const [market, setMarket] = useState<'all' | PortfolioAssetClass>('all');
@@ -201,9 +205,9 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
   const startEdit = () => { if (sel) { setEditing(JSON.parse(JSON.stringify(sel))); setConfirmDelete(false); } };
   const persistPlaybook = (draft: JournalPlaybook, newPlaybook: boolean, statusOverride?: PlaybookStatus): string | null => {
     const name = draft.name.trim();
-    if (!name) return 'Give the playbook a name';
-    if (playbooks.some((p) => p.id !== draft.id && p.name.trim().toLowerCase() === name.toLowerCase())) return 'A playbook with that name already exists';
-    if (draft.directions && !draft.directions.length) { onToast('Select Long or Short for this playbook.'); return; }
+    if (!name) return 'Give the strategy book a name';
+    if (playbooks.some((p) => p.id !== draft.id && p.name.trim().toLowerCase() === name.toLowerCase())) return 'A strategy book with that name already exists';
+    if (draft.directions && !draft.directions.length) { onToast('Select Long or Short for this strategy book.'); return; }
     if (draft.technicalEntryConditions) {
       const error = validatePlaybookConditions(draft.technicalEntryConditions);
       if (error) return error;
@@ -214,7 +218,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     });
     if (outsideMarket) return `${outsideMarket} is outside the selected market types. Edit instruments or update Markets before saving.`;
     const tradingRules = draft.tradingRules ?? createPlaybookTradingRules(globalRules, draft);
-    if (!isPlaybookTradingRules(tradingRules)) return 'Review the playbook trading rules and correct any invalid values.';
+    if (!isPlaybookTradingRules(tradingRules)) return 'Review the strategy book trading rules and correct any invalid values.';
     const clean: JournalPlaybook = {
       ...draft,
       name,
@@ -255,8 +259,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
     const plan = tipStats.n ? Math.round((tipStats.followed / tipStats.n) * 100) : 0;
     return (
       <div role="tooltip" className="fixed z-50 w-[320px] max-w-[calc(100vw-16px)] max-h-[calc(100vh-16px)] overflow-y-auto rounded-xl bg-[#0b1c30] text-white shadow-2xl p-3 text-[11px] pointer-events-none" style={{ left: gradeTip.x, top: gradeTip.y }}>
-        <p className="font-bold text-xs">Grade {tipPb.grade} <span className="font-normal text-slate-300">· set by you in Edit playbook</span></p>
-        <p className="text-slate-300 mt-1">Grades rank how proven a setup is. A playbook earns the highest grade whose every line it meets:</p>
+        <p className="font-bold text-xs">Grade {tipPb.grade} <span className="font-normal text-slate-300">· set by you in Edit strategy book</span></p>
+        <p className="text-slate-300 mt-1">Grades rank how proven a setup is. A strategy book earns the highest grade whose every line it meets:</p>
         <ul className="mt-1.5 space-y-0.5 font-mono">
           {GRADE_RULES.map((x) => (
             <li key={x.g} className={`flex gap-2 ${x.g === sg.grade ? 'text-emerald-300 font-bold' : ''}`}><span className="w-5 shrink-0">{x.g}</span><span>{x.text}</span></li>
@@ -270,7 +274,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
           <div><dt className="inline font-bold">Trades<JournalHelp label="Trades" /></dt><dd className="inline text-slate-300">: sample size. Under 10–20 trades the numbers are mostly noise.</dd></div>
         </dl>
         <div className="mt-2 pt-2 border-t border-white/15">
-          <p className="text-slate-300">This playbook: PF {fmtPf(tipStats.pf)} · avg {tipStats.avgR === null ? '—' : `${tipStats.avgR >= 0 ? '+' : ''}${tipStats.avgR.toFixed(2)}R`} · recorded on plan {plan}% · {tipStats.n} trades</p>
+          <p className="text-slate-300">This strategy book: PF {fmtPf(tipStats.pf)} · avg {tipStats.avgR === null ? '—' : `${tipStats.avgR >= 0 ? '+' : ''}${tipStats.avgR.toFixed(2)}R`} · recorded on plan {plan}% · {tipStats.n} trades</p>
           <p className="mt-0.5 font-bold">Data suggests: {sg.grade}{sg.grade !== tipPb.grade ? ` (you set ${tipPb.grade})` : ' (matches)'}</p>
           {sg.next && <p className="text-slate-300">{sg.next}</p>}
         </div>
@@ -302,18 +306,18 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
           return error;
         }}
       />}
-      {replayId&&(()=>{const trade=allJournalEntries.find(e=>e.id===replayId)??entries.find(e=>e.id===replayId);return trade?<JournalReplayAvailability entry={trade} entries={allJournalEntries} playbooks={playbooks} returnLabel="Return to playbook" recording={recordings[trade.id]} onAttachRecording={blob=>onSetRecording(trade.id,blob)} onRemoveRecording={()=>onSetRecording(trade.id,null)} onClose={()=>setReplayId(null)}/>:null;})()}
+      {replayId&&(()=>{const trade=allJournalEntries.find(e=>e.id===replayId)??entries.find(e=>e.id===replayId);return trade?<JournalReplayAvailability entry={trade} entries={allJournalEntries} playbooks={playbooks} returnLabel="Return to strategy book" recording={recordings[trade.id]} onAttachRecording={blob=>onSetRecording(trade.id,blob)} onRemoveRecording={()=>onSetRecording(trade.id,null)} onClose={()=>setReplayId(null)}/>:null;})()}
       {historyOpen && sel && <PlaybookHistoryDialog key={sel.id} name={sel.name} entries={history} onTrade={onOpenEntry} onReplay={setReplayId} onClose={()=>setHistoryOpen(false)} suspended={reviewOpen || !!replayId} />}
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] font-bold tracking-wider uppercase text-[#5338ec]">Strategy playbooks</p>
+          <p className="text-[11px] font-bold tracking-wider uppercase text-[#5338ec]">Strategy strategy books</p>
           <h2 className="text-2xl font-bold text-[#0b1c30]">Your setups, rules and edge<JournalHelp label="Your setups, rules and edge" /></h2>
-          <p className="text-sm text-[#474556]">Each playbook's stats come from the journal entries tagged with it.</p>
+          <p className="text-sm text-[#474556]">Each strategy book's stats come from the journal entries tagged with it.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter setups, symbols, scenarios..." aria-label="Filter playbooks" className="h-9 w-60 border border-slate-200 rounded-lg px-3 text-xs bg-white" />
-          <button type="button" onClick={startNew} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]"><Sparkles className="h-3.5 w-3.5" /> Create new playbook</button>
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter setups, symbols, scenarios..." aria-label="Filter strategy books" className="h-9 w-60 border border-slate-200 rounded-lg px-3 text-xs bg-white" />
+          <button type="button" onClick={startNew} className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]"><Sparkles className="h-3.5 w-3.5" /> Create new strategy book</button>
         </div>
       </div>
 
@@ -337,8 +341,8 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         {/* Inventory (compact) */}
         <div className="bg-white border border-[#e2e8f0] rounded-2xl lg:sticky lg:top-24">
           <div className="border-b border-slate-100 p-3">
-            <div className="mb-3 flex items-center justify-between gap-2"><h3 className="text-xs font-bold text-slate-700">Playbooks <span className="ml-1 font-normal text-slate-400">{list.length}</span></h3><JournalHelp label="Playbook status filters" text="Filter the library by Active, Draft, Testing or Archived. Drafts are unfinished setups; Testing is for setups under evaluation. Counts follow the selected market and search. Saving a changed status opens its matching filter." /></div>
-            <div role="group" aria-label="Playbook status" className="flex flex-wrap gap-1.5">{(['all','active','draft','testing','archived'] as const).map(st => <button key={st} type="button" aria-pressed={status === st} onClick={() => setStatus(st)} className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${status === st ? 'border-[#CFC5FF] bg-[#F1EDFF] text-[#5338ec]' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>{st === 'all' ? 'All' : STATUS_LABEL[st]} <span className="ml-1 opacity-60">{statusCount(st)}</span></button>)}</div>
+            <div className="mb-3 flex items-center justify-between gap-2"><h3 className="text-xs font-bold text-slate-700">Strategy Books <span className="ml-1 font-normal text-slate-400">{list.length}</span></h3><JournalHelp label="Strategy Book status filters" text="Filter the library by Active, Draft, Testing or Archived. Drafts are unfinished setups; Testing is for setups under evaluation. Counts follow the selected market and search. Saving a changed status opens its matching filter." /></div>
+            <div role="group" aria-label="Strategy Book status" className="flex flex-wrap gap-1.5">{(['all','active','draft','testing','archived'] as const).map(st => <button key={st} type="button" aria-pressed={status === st} onClick={() => setStatus(st)} className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${status === st ? 'border-[#CFC5FF] bg-[#F1EDFF] text-[#5338ec]' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>{st === 'all' ? 'All' : STATUS_LABEL[st]} <span className="ml-1 opacity-60">{statusCount(st)}</span></button>)}</div>
           </div>
           <ul className="max-h-[70vh] overflow-y-auto divide-y divide-slate-100">
             {list.map((p) => {
@@ -366,7 +370,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                 </li>
               );
             })}
-            {list.length === 0 && <li className="px-3 py-6 text-center text-xs text-slate-500">{status === 'draft' ? 'No drafts match this view.' : 'No playbooks match.'}{status === 'draft' && <button type="button" onClick={startNew} className="mx-auto mt-3 block rounded-lg bg-[#5338ec] px-3 py-2 font-semibold text-white">Create draft</button>}</li>}
+            {list.length === 0 && <li className="px-3 py-6 text-center text-xs text-slate-500">{status === 'draft' ? 'No drafts match this view.' : 'No strategy books match.'}{status === 'draft' && <button type="button" onClick={startNew} className="mx-auto mt-3 block rounded-lg bg-[#5338ec] px-3 py-2 font-semibold text-white">Create draft</button>}</li>}
           </ul>
         </div>
 
@@ -374,7 +378,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
         <div className="min-w-0">
           {form}
           {sel && s ? (
-            <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-5" aria-label={`${sel.name} playbook`}>
+            <section className="bg-white border border-[#e2e8f0] rounded-2xl p-5 space-y-5" aria-label={`${sel.name} strategy book`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
@@ -383,7 +387,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                     <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono text-slate-500">ID: #{sel.id}</span>
                     <span className="px-1.5 py-0.5 rounded bg-[#EEF0FE] text-[10px] font-bold text-[#5338ec]">{STATUS_LABEL[sel.status]}</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-[#0b1c30]">{sel.name}<JournalHelp label="Playbook" /></h3>
+                  <h3 className="text-2xl font-bold text-[#0b1c30]">{sel.name}<JournalHelp label="Strategy Book" /></h3>
                   <div className="flex flex-wrap gap-x-6 gap-y-1 mt-1 text-xs text-[#474556]">
                     <span>Session: <b className="text-[#0b1c30]">{windowText(sel)}</b></span>
                     <span>Min reward:risk: <b className="text-[#0b1c30]">1:{sel.benchmarkRR}</b></span>
@@ -392,10 +396,10 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                 <div className="flex flex-wrap gap-2">
 
                   <button type="button" className={btn} onClick={()=>setHistoryOpen(true)}>View results</button>
-                  {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className="h-9 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]" title="Test these rules on past prices">Backtest this playbook</button>}
+                  {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className="h-9 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]" title="Test these rules on past prices">Backtest this strategy book</button>}
                   {onWhatIf&&<button type="button" onClick={()=>onWhatIf(sel.id)} className={btn}>Try a What-if</button>}
 
-                  <button type="button" onClick={startEdit} className={btn}>Edit playbook</button>
+                  <button type="button" onClick={startEdit} className={btn}>Edit strategy book</button>
                 </div>
               </div>
 
@@ -406,13 +410,25 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                 </div>
                 <DirectionFilter label="Trade direction" value={sides} onChange={setSides} />
                 <p className="mb-3 text-[11px] text-slate-500">Applies to analytics, comparison, charts and executions.</p>
-                {showAnalytics && <PlaybookAnalytics playbook={sel} playbooks={playbooks} entries={sideEntries} onShowTrades={onShowTrades} />}
+                {showAnalytics && <PlaybookAnalytics
+                  playbook={sel}
+                  playbooks={playbooks}
+                  entries={sideEntries}
+                  onShowTrades={onShowTrades}
+                  hasConnectedBroker={brokers.some(broker => broker.connected)}
+                  onConnectBroker={() => {
+                    const broker = brokers.find(item => !item.connected) ?? brokers[0];
+                    if (broker) onConnectBroker?.(broker);
+                    else onBrowseBrokers?.();
+                  }}
+                  onStartTrade={onStartTrade}
+                />}
               </div>
 
               <PlaybookExecutionWorkspace directions={sides} key={sel.id} playbook={sel} entries={entries} allEntries={allJournalEntries} comparisonEntries={comparisonEntries} globalRules={globalRules} onOpenEntry={onOpenEntry} onShowTrades={onShowTrades} onReplay={setReplayId} onTest={onBacktest ? symbol => onBacktest(sel.id, symbol) : undefined} />
             </section>
           ) : (
-            <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-10 text-center text-sm text-slate-500">Select a playbook, or create one.</div>
+            <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-10 text-center text-sm text-slate-500">Select a strategy book, or create one.</div>
           )}
         </div>
       </div>
@@ -420,7 +436,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
       {/* House rules (global checklist + risk limits) */}
       <div>
         <h3 className="text-sm font-bold text-[#0b1c30] mb-1">House rules<JournalHelp label="House rules" /></h3>
-        <p className="text-xs text-[#474556] mb-3">Apply to every playbook: the pre-trade checklist in each new entry. Trading limits are customized in each playbook.</p>
+        <p className="text-xs text-[#474556] mb-3">Apply to every strategy book: the pre-trade checklist in each new entry. Trading limits are customized in each strategy book.</p>
         {houseRules}
       </div>
     </div>

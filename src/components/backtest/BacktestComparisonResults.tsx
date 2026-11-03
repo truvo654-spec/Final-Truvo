@@ -109,9 +109,9 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
   return (
     <div className="space-y-5">
       <MarketSydeRecommender recommendation={recommendation} baseline={recommendationBaseline} baselineName={rows[0]?.playbook?.name ?? shared.name} goal={recommendationGoal} onGoal={setRecommendationGoal} money={value=>money(value,shared.risk.currency,2)}
-        evidence="Compared among these completed playbook tests on generated demo prices. Selection is in-sample; no independent candidate holdout has been run." action="Inspect AI candidate" onUse={id=>{const item=items.find((item,i)=>scenarioId(item,i)===id);if(item)onViewResult(item);}} />
+        evidence="Compared among these completed strategy book tests on generated demo prices. Selection is in-sample; no independent candidate holdout has been run." action="Inspect AI candidate" onUse={id=>{const item=items.find((item,i)=>scenarioId(item,i)===id);if(item)onViewResult(item);}} />
       {benchmarkEntries.length > 0 && <JournalTradeBenchmark entries={benchmarkEntries} />}
-      <Card title="Scenario comparison" sub="Daily generated candles show the selected instrument; colored lines show each playbook's cumulative net P&L. Hover for candle prices and scenario results."
+      <Card title="Scenario comparison" sub="Daily generated candles show the selected instrument; colored lines show each strategy book's cumulative net P&L. Hover for candle prices and scenario results."
         right={
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Market instrument</span>
@@ -215,14 +215,14 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
           <p className="grid h-40 place-items-center text-xs text-slate-500">No daily price candles are available for this market and date range.</p>
         )}
       </Card>
-      <Card title="Playbook comparison" sub="Each playbook used the same market, dates, balance, risk and costs; its own rules, timeframe and session were preserved."
+      <Card title="Strategy Book comparison" sub="Each strategy book used the same market, dates, balance, risk and costs; its own rules, timeframe and session were preserved."
         right={<button type="button" className={btnSecondary} onClick={onEditSetup}>Edit comparison setup</button>}>
         <p className="mb-3 text-[11px] text-slate-500">Historical simulations are comparisons, not forecasts. Open a full report for robustness checks and the simulated trade log.</p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1050px] text-xs tabular-nums">
             <thead>
               <tr className="border-b border-slate-200 text-left text-[10px] uppercase tracking-wider text-slate-500">
-                <th className="py-2 pr-3">Playbook<JournalHelp label="Playbook" /></th>
+                <th className="py-2 pr-3">Strategy Book<JournalHelp label="Strategy Book" /></th>
                 <th className="px-3 py-2">Timeframe / session</th>
                 <th className="px-3 py-2 text-right">Net P&amp;L / ROI</th>
                 <th className="px-3 py-2 text-right">Win rate<JournalHelp label="Win rate" /></th>
@@ -256,7 +256,7 @@ export const BacktestComparisonResults: React.FC<Props> = ({ items, playbooks, e
                   <td className="py-3 pl-3">
                     <div className="flex flex-col items-start gap-1.5">
                       <button type="button" className="font-semibold text-[#5338ec] hover:underline" onClick={() => onViewResult(item)}>Full report</button>
-                      {matchingEntries.length > 0 && <button type="button" className="font-semibold text-[#5338ec] hover:underline" onClick={() => onOpenTrades(matchingEntries.map((e) => e.id), `${playbook?.name ?? 'Playbook'} journal`)}>Trade Log ({matchingEntries.length})</button>}
+                      {matchingEntries.length > 0 && <button type="button" className="font-semibold text-[#5338ec] hover:underline" onClick={() => onOpenTrades(matchingEntries.map((e) => e.id), `${playbook?.name ?? 'Strategy Book'} journal`)}>Trade Log ({matchingEntries.length})</button>}
                     </div>
                   </td>
                 </tr>

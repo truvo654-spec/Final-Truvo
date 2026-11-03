@@ -28,7 +28,7 @@ export const INGEST_FIELDS: { key: IngestField; label: string; type: string; ali
   { key: 'initialRisk', label: 'Initial monetary risk (1R)', type: 'Currency', aliases: ['initialrisk', 'monetaryrisk', 'riskamount', 'riskusd'] },
   { key: 'stop', label: 'Original stop price', type: 'Decimal', aliases: ['stopprice', 'stoploss', 'sl'] },
   { key: 'target', label: 'Original target price', type: 'Decimal', aliases: ['takeprofit', 'targetprice', 'tp'] },
-  { key: 'strategy', label: 'Playbook / strategy', type: 'Text', aliases: ['strategy', 'playbook', 'setupname'] },
+  { key: 'strategy', label: 'Strategy Book / strategy', type: 'Text', aliases: ['strategy', 'playbook', 'setupname'] },
   { key: 'tags', label: 'Tags (separate with |)', type: 'Text', aliases: ['tags', 'tradetags'] },
   { key: 'mistakes', label: 'Mistakes (separate with |)', type: 'Text', aliases: ['mistakes', 'mistaketags'] },
   { key: 'notes', label: 'Journal notes', type: 'Text', aliases: ['setupnotes', 'journalnotes', 'notes', 'log'] },

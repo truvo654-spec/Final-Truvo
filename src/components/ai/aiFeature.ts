@@ -229,7 +229,7 @@ export function strategyRead(): AiSectionData {
   const untested = tagged.filter((t) => t.n === 0);
 
   if (!traded.length) {
-    return { eyebrow: 'Backtesting', headline: 'Nothing to test against yet', overview: '', empty: { text: 'Tag a few journal entries to a playbook and I can compare what you backtested with what you actually traded.' } };
+    return { eyebrow: 'Backtesting', headline: 'Nothing to test against yet', overview: '', empty: { text: 'Tag a few journal entries to a strategy book and I can compare what you backtested with what you actually traded.' } };
   }
   const best = traded[0];
   const worst = traded[traded.length - 1];
@@ -239,9 +239,9 @@ export function strategyRead(): AiSectionData {
     eyebrow: 'Backtesting',
     reading: `Reading ${plural(traded.length, 'playbook')}…`,
     headline: `Test ${worst.pnl < 0 ? worst.p.name : best.p.name} next, and be honest about the assumptions`,
-    overview: `${traded.length === 1 ? '1 playbook has' : `${traded.length} playbooks have`} live trades behind ${traded.length === 1 ? 'it' : 'them'}${untested.length ? ` and ${untested.length === 1 ? '1 other has' : `${untested.length} others have`} none` : ''}. ${best.p.name} is your strongest at ${money(best.pnl)}${worst.pnl < 0 ? `, while ${worst.p.name} has cost ${money(worst.pnl)} and is the one worth putting through a backtest before you trade it again` : ''}.`,
+    overview: `${traded.length === 1 ? '1 strategy book has' : `${traded.length} strategy books have`} live trades behind ${traded.length === 1 ? 'it' : 'them'}${untested.length ? ` and ${untested.length === 1 ? '1 other has' : `${untested.length} others have`} none` : ''}. ${best.p.name} is your strongest at ${money(best.pnl)}${worst.pnl < 0 ? `, while ${worst.p.name} has cost ${money(worst.pnl)} and is the one worth putting through a backtest before you trade it again` : ''}.`,
     chips: [
-      { label: 'Playbooks', value: String(tagged.length) },
+      { label: 'Strategy Books', value: String(tagged.length) },
       { label: 'With live trades', value: String(traded.length) },
       { label: 'Best net', value: money(best.pnl), tone: 'lime' },
       ...(worst.pnl < 0 ? [{ label: 'Weakest net', value: money(worst.pnl), tone: 'pink' as const }] : []),
@@ -272,7 +272,7 @@ export function strategyRead(): AiSectionData {
         ],
       },
     ],
-    footnote: 'Built from your playbooks and the journal entries tagged to them. A backtest is a hypothesis, not a forecast.',
+    footnote: 'Built from your strategy books and the journal entries tagged to them. A backtest is a hypothesis, not a forecast.',
   };
 }
 
@@ -769,7 +769,7 @@ export function dashboardRead(user: { firstName?: string; rankTitle: string; cur
       {
         accent: ACCENT.violet,
         title: 'One thing to do',
-        items: [{ title: s.closed ? 'Journal this week' : 'Pick one setup', text: s.closed ? `You closed ${plural(s.closed, 'trade')} this week. Write up the worst one while you still remember why you took it.` : 'No trades this week. Pick one setup from your playbook and wait for it rather than hunting.' }],
+        items: [{ title: s.closed ? 'Journal this week' : 'Pick one setup', text: s.closed ? `You closed ${plural(s.closed, 'trade')} this week. Write up the worst one while you still remember why you took it.` : 'No trades this week. Pick one setup from your strategy book and wait for it rather than hunting.' }],
       },
     ],
     footnote: 'Built from your trades, the calendar, today’s news and your level. Not financial advice.',
@@ -1019,7 +1019,7 @@ export function backtestChecklist() {
   const untested = tagged.filter((t) => t.n === 0);
   const first = worst && worst.pnl < 0 ? worst.p : (traded[0]?.p ?? DEFAULT_PLAYBOOKS[0]);
   return {
-    headline: first ? `Put ${first.name} through a run next` : 'Tag a playbook and I will tell you what to test',
+    headline: first ? `Put ${first.name} through a run next` : 'Tag a strategy book and I will tell you what to test',
     steps: [
       { title: 'Widen the window first', text: 'Under about 100 trades most of what you see is luck. Test a longer period before you tune anything.' },
       { title: 'Put your real costs in', text: 'Spread, commission and slippage turn a thin edge into no edge. Use your broker’s numbers, not the defaults.' },

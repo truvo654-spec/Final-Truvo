@@ -149,10 +149,10 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
     <div className={`max-w-5xl mx-auto space-y-4 ${embedded ? '' : 'pb-28'}`}>
       {!embedded && <section aria-label="MarketSyde AI test guidance" className="rounded-2xl border border-[#5338ec]/25 bg-[#F5F2FF] p-4">
         <p className="flex items-center gap-2 text-sm font-bold text-[#5338ec]"><Sparkles size={16} aria-hidden />MarketSyde AI · compare before you commit</p>
-        <p className="text-xs text-slate-600 mt-2">Test a playbook to evaluate small rule changes, or select several playbooks to compare their results on the same market and dates. The recommender will highlight a qualifying candidate, explain its trade-offs, and open an editable setup for your next test.</p>
+        <p className="text-xs text-slate-600 mt-2">Test a strategy book to evaluate small rule changes, or select several strategy books to compare their results on the same market and dates. The recommender will highlight a qualifying candidate, explain its trade-offs, and open an editable setup for your next test.</p>
       </section>}
       {/* STEP 1 */}
-      <Step n={1} title="Market, dates, risk and costs" sub="Choose your instrument and date range, then set account risk and costs. Each playbook keeps its own timeframe.">
+      <Step n={1} title="Market, dates, risk and costs" sub="Choose your instrument and date range, then set account risk and costs. Each strategy book keeps its own timeframe.">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Field label="Market type">
             <Segmented label="Asset class" value={spec ? marketGroupOf(spec) : 'Forex'} onChange={chooseClass} options={ASSET_CLASSES.map((c) => ({ id: c, label: c }))} />
@@ -177,7 +177,7 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
             </div>
           </Field>
           {selectedSetups.length > 1 ? (
-            <Field label="Playbook timeframes" hint="Each strategy keeps the timeframe transferred from its playbook.">
+            <Field label="Strategy Book timeframes" hint="Each strategy keeps the timeframe transferred from its strategy book.">
               <div className="flex flex-wrap gap-1.5">{selectedSetups.map(({ book, settings }) => <Pill key={book.id}>{book.name} · {settings.timeframe}</Pill>)}</div>
             </Field>
           ) : (
@@ -188,9 +188,9 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
             </Field>
           )}
         </div>
-        <Fold id="bt-filters" title="When to trade" open={!!open.filters} onToggle={() => toggle('filters')} summary={`${selectedSetups.length > 1 ? 'Playbook-specific sessions' : sessionText} · ${dayText} · news days ${s.news === 'include' ? 'included' : s.news === 'skip' ? 'skipped' : 'only'}`}>
+        <Fold id="bt-filters" title="When to trade" open={!!open.filters} onToggle={() => toggle('filters')} summary={`${selectedSetups.length > 1 ? 'Strategy Book-specific sessions' : sessionText} · ${dayText} · news days ${s.news === 'include' ? 'included' : s.news === 'skip' ? 'skipped' : 'only'}`}>
           {selectedSetups.length > 1 ? (
-            <p className="text-[11px] text-slate-500">Each playbook keeps its own session window: {selectedSetups.map(({ book, settings }) => `${book.name} — ${sessionTextFor(settings)}`).join(' · ')}. Weekdays and news filters below are shared.</p>
+            <p className="text-[11px] text-slate-500">Each strategy book keeps its own session window: {selectedSetups.map(({ book, settings }) => `${book.name} — ${sessionTextFor(settings)}`).join(' · ')}. Weekdays and news filters below are shared.</p>
           ) : (
             <Field label="Session" hint="Only open trades inside this window. Hours are in UTC; your local time is shown next to them.">
               <div className="flex flex-wrap items-center gap-2">
@@ -312,16 +312,16 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
       </Step>
 
       {/* STEP 2 */}
-      {!embedded && <Step n={2} title="What to test" sub="Select one or more playbooks. Compare them under the same market and account conditions." right={<span className="text-[11px] text-slate-500 tabular-nums">{selectedSetups.length} selected</span>}>
+      {!embedded && <Step n={2} title="What to test" sub="Select one or more strategy books. Compare them under the same market and account conditions." right={<span className="text-[11px] text-slate-500 tabular-nums">{selectedSetups.length} selected</span>}>
         {selectedSetups.length > 0 && (
           <div className="flex flex-wrap items-center gap-4 bg-[#FBFAFF] border border-[#5338ec]/20 rounded-2xl px-5 py-4">
             <Sparkles className="w-5 h-5 text-[#5338ec] shrink-0" aria-hidden />
             <div className="flex-1 min-w-[14rem]">
-              <p className="text-sm font-bold text-[#0b1c30]">{selectedSetups.length === 1 ? <>Filled in from your <span className="text-[#5338ec]">{pb?.name}</span> playbook</> : `Comparing ${selectedSetups.length} playbooks`}</p>
-              <p className="text-xs text-[#474556]">The market, dates, balance, risk and costs are shared. Each playbook keeps its own rules, timeframe and session.</p>
+              <p className="text-sm font-bold text-[#0b1c30]">{selectedSetups.length === 1 ? <>Filled in from your <span className="text-[#5338ec]">{pb?.name}</span> strategy book</> : `Comparing ${selectedSetups.length} strategy books`}</p>
+              <p className="text-xs text-[#474556]">The market, dates, balance, risk and costs are shared. Each strategy book keeps its own rules, timeframe and session.</p>
             </div>
             {selectedSetups.length === 1 && live && live.m.trades > 0 && (
-              <div className="text-xs text-[#474556]" title="How this playbook has done in your real journal trades">
+              <div className="text-xs text-[#474556]" title="How this strategy book has done in your real journal trades">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Your journal on {s.symbol}</p>
                 <p className="tabular-nums"><b className="text-[#0b1c30]">{pct(live.m.winRate, 0)}</b> win rate · <b className="text-[#0b1c30]">{rr(live.m.avgR)}</b> avg · {live.m.trades} trades</p>
               </div>
@@ -329,9 +329,9 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
           </div>
         )}
 
-        <Field label="Playbooks" hint="Each playbook contributes its hypothesis, executable rules, timeframe and session. Shared settings are configured below.">
+        <Field label="Strategy Books" hint="Each strategy book contributes its hypothesis, executable rules, timeframe and session. Shared settings are configured below.">
           {choosable.length ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2" role="group" aria-label="Playbooks to test">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2" role="group" aria-label="Strategy Books to test">
               {choosable.map((option) => {
                 const checked = selectedPlaybookIds.includes(option.id);
                 return (
@@ -346,7 +346,7 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
               })}
             </div>
           ) : (
-            <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No active or testing playbooks are available. Create or reactivate one in Playbook to build a test hypothesis.</p>
+            <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">No active or testing strategy books are available. Create or reactivate one in Strategy Book to build a test hypothesis.</p>
           )}
         </Field>
 
@@ -363,9 +363,9 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h4 className="text-sm font-bold text-[#0b1c30]">{book.name} <span className="font-normal text-slate-500">· {settings.timeframe} · {sessionTextFor(settings)}</span></h4>
-                      <p className="mt-1 text-[10px] text-slate-500">Its timeframe and session stay separate from the other selected playbooks.</p>
+                      <p className="mt-1 text-[10px] text-slate-500">Its timeframe and session stay separate from the other selected strategy books.</p>
                     </div>
-                    <button type="button" disabled={!matching.length} onClick={() => onOpenTrades(matching.map((e) => e.id), `${book.name} playbook journal`)} className={`${btnSecondary} disabled:cursor-not-allowed`}>
+                    <button type="button" disabled={!matching.length} onClick={() => onOpenTrades(matching.map((e) => e.id), `${book.name} strategy book journal`)} className={`${btnSecondary} disabled:cursor-not-allowed`}>
                       {matching.length ? `View ${matching.length} journal entr${matching.length === 1 ? 'y' : 'ies'}` : 'No matching journal entries'}
                     </button>
                   </div>
@@ -380,16 +380,16 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
                         <div className="flex items-start gap-2.5">
                           <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#5338ec]" aria-hidden />
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-[#0b1c30]">Playbook hypothesis</p>
-                            <p className="mt-1 text-sm leading-relaxed text-[#474556]">{book.thesis || book.entryTrigger || 'No written hypothesis is saved in this playbook yet.'}</p>
+                            <p className="text-xs font-bold text-[#0b1c30]">Strategy Book hypothesis</p>
+                            <p className="mt-1 text-sm leading-relaxed text-[#474556]">{book.thesis || book.entryTrigger || 'No written hypothesis is saved in this strategy book yet.'}</p>
                           </div>
                         </div>
                         <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
                           {book.technicalEntryConditions
-                            ? 'The simulation entry conditions below come from this playbook’s customized technical conditions.'
+                            ? 'The simulation entry conditions below come from this strategy book’s customized technical conditions.'
                             : book.technicalRecipeId
-                            ? 'The simulation rules below are transferred from this playbook’s saved technical recipe.'
-                            : 'No technical recipe is saved. The simulation uses a starter rule set matched to the playbook name and style; discretionary notes are shown for context but are not simulated.'}
+                            ? 'The simulation rules below are transferred from this strategy book’s saved technical recipe.'
+                            : 'No technical recipe is saved. The simulation uses a starter rule set matched to the strategy book name and style; discretionary notes are shown for context but are not simulated.'}
                         </p>
                       </div>
 
@@ -409,7 +409,7 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
                       </div>
 
                       <details className="rounded-xl border border-slate-200 px-3.5 py-2.5">
-                        <summary className="cursor-pointer text-xs font-semibold text-[#474556]">View written playbook rules and execution notes</summary>
+                        <summary className="cursor-pointer text-xs font-semibold text-[#474556]">View written strategy book rules and execution notes</summary>
                         <div className="mt-3 space-y-3 text-xs leading-relaxed text-[#474556]">
                           {book.entryTrigger && <p><b>Entry trigger:</b> {book.entryTrigger}</p>}
                           {book.stopRule && <p><b>Stop / invalidation:</b> {book.stopRule}</p>}
@@ -428,7 +428,7 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
                           <div><dt className="text-slate-500">Average R<JournalHelp label="Average R" /></dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{rr(journal.m.avgR)}</dd></div>
                           <div><dt className="text-slate-500">Profit factor<JournalHelp label="Profit factor" /></dt><dd className="mt-0.5 font-bold text-[#0b1c30]">{journal.m.pf === null ? '—' : Number.isFinite(journal.m.pf) ? journal.m.pf.toFixed(2) : '∞'}</dd></div>
                         </dl>
-                      ) : <p className="mt-2 text-xs text-slate-500">No eligible closed journal trades for {settings.symbol} in this playbook yet.</p>}
+                      ) : <p className="mt-2 text-xs text-slate-500">No eligible closed journal trades for {settings.symbol} in this strategy book yet.</p>}
                     </aside>
                   </div>
                 </section>
@@ -437,7 +437,7 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
           </div>
         ) : (
           <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
-            {choosable.length ? 'Select at least one playbook to build the test hypothesis from its saved data.' : 'Create or reactivate a playbook to build a test hypothesis.'}
+            {choosable.length ? 'Select at least one strategy book to build the test hypothesis from its saved data.' : 'Create or reactivate a strategy book to build a test hypothesis.'}
           </div>
         )}
       </Step>}
@@ -447,10 +447,10 @@ export const BacktestSetup: React.FC<Props> = ({ embedded = false, settings: s, 
         <div className="max-w-[1360px] mx-auto px-4 sm:px-8 md:px-14 py-3 flex flex-wrap items-center gap-3">
           <div className="flex-1 min-w-[14rem]">
             <p className="text-xs font-semibold text-[#0b1c30] truncate">{selectedSetups.length > 1
-              ? `${s.symbol} · ${selectedSetups.length} playbooks · ${s.from} → ${s.to}`
+              ? `${s.symbol} · ${selectedSetups.length} strategy books · ${s.from} → ${s.to}`
               : `${s.symbol} · ${s.timeframe} · ${s.from} → ${s.to} · ${s.rules.entry.length ? describeCondition(s.rules.entry[0]) : 'no entry rule'}${s.rules.entry.length > 1 ? ` +${s.rules.entry.length - 1}` : ''}`}</p>
             {problems.length || !selectedSetups.length ? (
-              <p className="text-[11px] text-rose-600 flex items-center gap-1" role="alert"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{problems[0]?.message ?? 'Select at least one active playbook to create a test hypothesis.'}</p>
+              <p className="text-[11px] text-rose-600 flex items-center gap-1" role="alert"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{problems[0]?.message ?? 'Select at least one active strategy book to create a test hypothesis.'}</p>
             ) : (
               <p className="text-[11px] text-slate-500">{runHint}</p>
             )}

@@ -4,6 +4,8 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { JournalOverviewAnalytics } from '../overview/JournalOverviewAnalytics';
 import { JournalAccountBalance } from '../JournalAccountBalance';
+import { JournalCumulativeChart } from '../JournalCumulativeChart';
+import { JournalCalendar } from '../JournalCalendar';
 import type { JournalEntry } from '../../../types';
 import { metrics } from '../journalMath';
 import { aggregateOverview, formatOverviewValue, scatterPoints } from '../overview/overviewAnalytics';
@@ -115,6 +117,7 @@ test('Account balance follows trading costs in the automatic widget grid without
     brokers: [{ id: 'hfm', name: 'HFM', connected: true }],
     currency: 'USD', range: { from: '2026-10-01', to: '2026-10-31' },
   });
+
   const html = renderToStaticMarkup(createElement(JournalOverviewAnalytics, { entries: [trade()], currency: 'USD', basis: 'net', onDay: () => {}, onTrade: () => {}, accountBalance }));
   assert.equal((html.match(/<article /g) || []).length, 8);
   assert.equal((html.match(/aria-label="Overview account balance"/g) || []).length, 1);
@@ -123,6 +126,19 @@ test('Account balance follows trading costs in the automatic widget grid without
   assert.match(html, /viewBox="0 0 500 220"/);
   assert.match(html, /w-full h-40/);
   assert.match(html, /Balance details/);
+});
+test('Overview cumulative card starts with the linked calendar, with chart and table as alternate views',()=>{
+const calendar=createElement(JournalCalendar,{month:'2026-10',onMonthChange:()=>{},entries:[trade()],valueOf:(entry:JournalEntry)=>entry.pnl??0,label:'net',brokerName:()=>'',brokerColor:()=> '#5338ec',today:'2026-10-03',selected:null,onSelect:()=>{}});
+const props={entries:[trade()],valueOf:(entry:JournalEntry)=>entry.pnl??0,title:'net P&L',rangeLabel:'October 2026',brokers:[],off:[],onDay:()=>{},calendar};
+const html=renderToStaticMarkup(createElement(JournalCumulativeChart,props));
+assert.match(html,/aria-label="Cumulative P&amp;L view"/);
+assert.match(html,/>Calendar<\/button>/);
+assert.match(html,/aria-pressed="true"[^>]*>Calendar<\/button>/);
+assert.match(html,/aria-label="Journal calendar, October 2026"/);
+assert.match(html,/w-full aspect-square min-h-14 rounded-lg p-2/);
+assert.doesNotMatch(html,/aria-label="Cumulative net P&amp;L from/);
+assert.match(html,/aria-pressed="false"[^>]*>Chart<\/button>/);
+assert.match(html,/aria-pressed="false"[^>]*>Table<\/button>/);
 });
 test('Flat and empty chart rendering has no invalid SVG coordinates or invented results',()=>{
   for(const entries of [[],[trade({pnl:0,entryTime:'2026-10-01T01:00Z',exitTime:'2026-10-01T02:00Z'})]]){

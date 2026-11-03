@@ -122,7 +122,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
     : 0;
   const chartFrom = Math.max(0, chartTo - PRICE_CHART_WINDOW);
 
-  const subject = playbook ? `your ${playbook.name} playbook` : 'these rules';
+  const subject = playbook ? `your ${playbook.name} strategy book` : 'these rules';
   const period = months(r.rangeStart, r.rangeEnd);
   const summary = m.trades
     ? `Over ${period} of ${s.symbol} ${s.timeframe} bars, ${subject} ${m.netPnl >= 0 ? 'made' : 'lost'} ${money(Math.abs(m.netPnl), cur, 0, false)} (${pct(m.netPct, 1, true)}) from ${m.trades} trades. It won ${pct(m.winRate, 0)} of them, averaged ${rr(m.avgR)} per trade, and its deepest drop from a high was ${pct(m.maxDDPct)}.`
@@ -170,7 +170,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
         <div className="min-w-0">
           <h2 className="text-xl font-bold text-[#0b1c30]">{name}</h2>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
-            {playbook && <Pill tone="accent">Playbook: {playbook.name}</Pill>}
+            {playbook && <Pill tone="accent">Strategy Book: {playbook.name}</Pill>}
             <Pill>{s.symbol}{spec ? ` · ${spec.name}` : ''}</Pill>
             <Pill>{s.timeframe} bars</Pill>
             <Pill>{s.from} → {s.to}</Pill>
@@ -191,11 +191,11 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
                   [<Copy className="w-3.5 h-3.5" />, 'Copy summary to share', copy, false],
                   [<Mail className="w-3.5 h-3.5" />, 'Email the summary', () => { window.location.href = `mailto:?subject=${encodeURIComponent(name)}&body=${encodeURIComponent(shareText)}`; }, false],
                   [<Download className="w-3.5 h-3.5" />, 'Export trades (CSV)', exportCsv, !r.trades.length],
-                  [<Target className="w-3.5 h-3.5" />, "Save as playbook's expected stats", onSetExpected, !playbook || !m.trades],
-                  [<NotebookPen className="w-3.5 h-3.5" />, 'Send notes to the playbook', () => onSendNotes(`${summary} Verdict: ${v.label}. ${v.reasons.join(' ')}`, v.tone === 'warn' ? 'adjust' : v.tone === 'bad' ? 'pause' : 'keep'), !playbook],
+                  [<Target className="w-3.5 h-3.5" />, "Save as strategy book's expected stats", onSetExpected, !playbook || !m.trades],
+                  [<NotebookPen className="w-3.5 h-3.5" />, 'Send notes to the strategy book', () => onSendNotes(`${summary} Verdict: ${v.label}. ${v.reasons.join(' ')}`, v.tone === 'warn' ? 'adjust' : v.tone === 'bad' ? 'pause' : 'keep'), !playbook],
                   [<CalendarPlus className="w-3.5 h-3.5" />, "Add to tomorrow's plan", () => onAddToPlan(`Backtest (${name}): ${v.label}, ${rr(m.avgR)} per trade over ${m.trades} trades.`), !playbook],
                 ] as [React.ReactNode, string, () => void, boolean][]).map(([icon, label, fn, dis]) => (
-                  <button key={label} type="button" role="menuitem" disabled={dis} title={dis ? (playbook ? 'Needs trades' : 'Link a playbook in step 1 first') : undefined} onClick={() => { setMore(false); fn(); }}
+                  <button key={label} type="button" role="menuitem" disabled={dis} title={dis ? (playbook ? 'Needs trades' : 'Link a strategy book in step 1 first') : undefined} onClick={() => { setMore(false); fn(); }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs font-semibold text-[#0b1c30] hover:bg-slate-50 disabled:text-slate-300 disabled:hover:bg-transparent">{icon}{label}</button>
                 ))}
               </div>
@@ -207,7 +207,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
 
       {benchmarkEntries.length > 0 && <JournalTradeBenchmark entries={benchmarkEntries} />}
 
-      <MarketSydeRecommender recommendation={recommendation} baseline={m} baselineName="this playbook's current rules" goal={recommendationGoal} onGoal={setRecommendationGoal} money={value=>money(value,cur,2)}
+      <MarketSydeRecommender recommendation={recommendation} baseline={m} baselineName="this strategy book's current rules" goal={recommendationGoal} onGoal={setRecommendationGoal} money={value=>money(value,cur,2)}
         evidence={output.suggestions.some(sg=>!sg.metrics) ? 'Re-run older saved reports to include candidate net and drawdown evidence. Existing suggestion buttons remain available below.' : 'Ranked among up to three qualifying changes to target, stop, session, news, direction or breakeven on generated demo prices. In-sample selection; the current report’s robustness checks do not validate a changed setup.'} action="Set up AI candidate test" onUse={id=>{const sg=output.suggestions.find(sg=>sg.id===id);if(sg)onApplySuggestion(sg);}} />
 
       {/* Warnings */}
@@ -292,7 +292,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
 
           {/* Compare with live */}
           {showLive && playbook && live && (
-            <Card title={`Backtest vs your live ${playbook.name} trades`} sub="Live numbers come from your journal entries tagged with this playbook.">
+            <Card title={`Backtest vs your live ${playbook.name} trades`} sub="Live numbers come from your journal entries tagged with this strategy book.">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs tabular-nums">
                   <thead><tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200"><th className="text-left py-2">Measure</th><th className="text-right py-2">This backtest</th><th className="text-right py-2">Your journal</th><th className="text-right py-2">Gap</th></tr></thead>
@@ -306,7 +306,7 @@ export const BacktestResults: React.FC<Props> = ({ settings: s, output, name, sa
               </div>
               <p className="text-xs text-[#474556] mt-3">{live.trades < 5 ? 'Too few live trades to compare yet.' : live.avgR >= m.avgR ? 'Your live trading is doing at least as well as the backtest.' : `Live trades average ${rr(live.avgR - m.avgR)} less than the backtest. Check the trades that broke the plan.`}{hl && hl.health !== 'untested' && <> Against the saved expected stats: <b>{HEALTH_LABEL[hl.health]}</b>.</>}</p>
               {matchingEntries.length > 0 && (
-                <button type="button" className={`${btnSecondary} mt-3`} onClick={() => onOpenTrades(matchingEntries.map((e) => e.id), `${playbook.name} playbook journal`)}>
+                <button type="button" className={`${btnSecondary} mt-3`} onClick={() => onOpenTrades(matchingEntries.map((e) => e.id), `${playbook.name} strategy book journal`)}>
                   Open {matchingEntries.length} matching Trade Log entr{matchingEntries.length === 1 ? 'y' : 'ies'}
                 </button>
               )}

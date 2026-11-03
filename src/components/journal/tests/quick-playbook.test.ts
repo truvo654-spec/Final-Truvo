@@ -104,9 +104,9 @@ test('Recommendation cards expose creation actions while setup controls remain i
   assert.match(html, /aria-modal="true"/);
   assert.match(html, /Search strategy recommendations/);
   assert.match(html, /Create your own/);
-  assert.match(html, /Create playbook/);
+  assert.match(html, /Create strategy book/);
   assert.match(html, /role="region" aria-label="Strategy recommendations" tabindex="0"/);
-  assert.equal((html.match(/Create playbook from /g) || []).length, recommendations.length);
+  assert.equal((html.match(/Create strategy book from /g) || []).length, recommendations.length);
   assert.doesNotMatch(html, /Use this draft|Strategy name|Instrument symbols|Customize details/);
 
   const setup = renderToStaticMarkup(createElement(PlaybookSetupDialog, {
@@ -118,6 +118,8 @@ test('Recommendation cards expose creation actions while setup controls remain i
     onBack: () => {},
     onCreate: () => null,
   }));
+  assert.match(setup, /id="quick-playbook-setup"/);
+  assert.match(setup, /form="quick-playbook-setup"/);
   assert.match(setup, /aria-modal="true"/);
   assert.match(setup, /Strategy name/);
   assert.match(setup, /AI suggestions/);
@@ -125,11 +127,11 @@ test('Recommendation cards expose creation actions while setup controls remain i
   assert.match(setup, /Choose instruments/);
   assert.match(setup, /aria-label="Tags \(comma separated\)"/);
   assert.doesNotMatch(setup, /Edit instruments|Instrument symbols/);
-  assert.equal((setup.match(/aria-label="Playbook instruments"/g) ?? []).length, 1);
+  assert.equal((setup.match(/aria-label="Strategy Book instruments"/g) ?? []).length, 1);
   assert.match(setup, /Strategy markets/);
   assert.match(setup, /Customize details/);
   assert.doesNotMatch(setup, /Defined stop loss before entry|<legend[^>]*>Pre-trade checklist/);
-  assert.match(setup, /Create playbook/);
+  assert.match(setup, /Create strategy book/);
   assert.match(setup, /Back to recommendations/);
 });
 
@@ -148,7 +150,7 @@ test('Detailed editor exposes the existing setup fields and prefilled recommenda
   }
   assert.ok(html.includes(draft.rules[0].title));
   assert.match(html, /Execution rules/);
-  assert.match(html, /Playbook instruments/);
+  assert.match(html, /Strategy Book instruments/);
   assert.match(html, /AI suggestions/);
   assert.doesNotMatch(html, /<details/);
 });
@@ -243,7 +245,7 @@ test('shared rule edits propagate defaults while preserving playbook opt-outs', 
   assert.deepEqual(updated.customRules[2], { id: 'local-reminder', rule: 'Only in this strategy', enabled: true });
   const html = renderToStaticMarkup(createElement(SharedTradingRules, { rules: globalRules, storageFailed: false, onSave: () => true }));
   assert.match(html, /aria-label="Edit shared trading rules"/);
-  assert.match(html, /update every existing playbook/i);
+  assert.match(html, /update every existing strategy book/i);
   assert.match(html, /Avoid trading during major news\./);
   assert.doesNotMatch(html, /Remove shared rule/);
 });

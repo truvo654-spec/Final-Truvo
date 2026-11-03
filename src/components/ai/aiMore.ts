@@ -42,10 +42,10 @@ export function playbooks(ctx: AiContext, focus: PlaybookFocus = 'all'): AiReply
   const mem = { surface: 'playbook' as const };
 
   if (!ctx.allowJournal) {
-    return { msg: { id: mid(), role: 'ai', surface: 'playbook', heading: 'Your journal is switched off', paragraphs: ['Playbook results come from your journal entries. Turn “Use my trading journal” on in the panel and ask again.'], followUps: ['Give me today’s briefing'] }, mem };
+    return { msg: { id: mid(), role: 'ai', surface: 'playbook', heading: 'Your journal is switched off', paragraphs: ['Strategy Book results come from your journal entries. Turn “Use my trading journal” on in the panel and ask again.'], followUps: ['Give me today’s briefing'] }, mem };
   }
   if (!traded.length) {
-    return { msg: { id: mid(), role: 'ai', surface: 'playbook', heading: 'No playbook results yet', paragraphs: [`You have ${plural(rows.length, 'playbook')} written up but no journal entries tagged to them yet. Tag a few trades and I can compare them.`], items: [{ title: 'Open the Playbook tab', tab: 'trading-journal' }], followUps: ['Any habits I should watch?', 'How are my trades doing?'] }, mem };
+    return { msg: { id: mid(), role: 'ai', surface: 'playbook', heading: 'No strategy book results yet', paragraphs: [`You have ${plural(rows.length, 'playbook')} written up but no journal entries tagged to them yet. Tag a few trades and I can compare them.`], items: [{ title: 'Open the Strategy Book tab', tab: 'trading-journal' }], followUps: ['Any habits I should watch?', 'How are my trades doing?'] }, mem };
   }
 
   const best = traded[0];
@@ -59,39 +59,39 @@ export function playbooks(ctx: AiContext, focus: PlaybookFocus = 'all'): AiReply
     const weak = [...graded].sort((a, b) => a.hit - b.hit)[0];
     paragraphs.push(
       graded.length
-        ? `Across your tagged trades, ${graded.filter((g) => g.hit >= 0.5).length} of ${graded.length} playbooks hit their own reward:risk benchmark at least half the time.`
-        : 'Not enough tagged trades yet to check your playbooks against their benchmarks.',
+        ? `Across your tagged trades, ${graded.filter((g) => g.hit >= 0.5).length} of ${graded.length} strategy books hit their own reward:risk benchmark at least half the time.`
+        : 'Not enough tagged trades yet to check your strategy books against their benchmarks.',
     );
     if (weak) paragraphs.push(`Weakest on its own benchmark: ${weak.name} — only ${pct(weak.hit * 100)} of its trades reached ${weak.benchmark}R or better.`);
   } else {
-    paragraphs.push(`Best playbook: ${best.name} (${money(best.pnl)} over ${plural(best.n, 'trade')}, ${pct((best.wins / best.n) * 100)} wins).${traded.length > 1 && worst.pnl < 0 ? ` Weakest: ${worst.name} (${money(worst.pnl)} over ${plural(worst.n, 'trade')}).` : ''}`);
+    paragraphs.push(`Best strategy book: ${best.name} (${money(best.pnl)} over ${plural(best.n, 'trade')}, ${pct((best.wins / best.n) * 100)} wins).${traded.length > 1 && worst.pnl < 0 ? ` Weakest: ${worst.name} (${money(worst.pnl)} over ${plural(worst.n, 'trade')}).` : ''}`);
     const noTrades = rows.filter((r) => r.n === 0);
     if (noTrades.length) paragraphs.push(`${plural(noTrades.length, 'playbook')} has no tagged trades yet: ${noTrades.map((r) => r.name).join(', ')}.`);
   }
-  paragraphs.push('Playbook results only count trades you tagged to them, so tag consistently or the comparison drifts.');
+  paragraphs.push('Strategy Book results only count trades you tagged to them, so tag consistently or the comparison drifts.');
 
   const stats: AiStat[] = focus === 'all' ? [
-    { label: 'Playbooks', value: String(rows.length) },
+    { label: 'Strategy Books', value: String(rows.length) },
     { label: 'With trades', value: String(traded.length) },
     { label: 'Best net', value: money(best.pnl), tone: tone(best.pnl) },
     { label: 'Average R (best)', value: avgR(best) == null ? 'n/a' : `${avgR(best)!.toFixed(2)}R` },
   ] : undefined;
 
-  const bars: AiBars[] = [{ title: 'Net result by playbook', rows: traded.map((r) => ({ label: `${r.name} (${r.n})`, value: r.pnl, display: money(r.pnl) })) }];
+  const bars: AiBars[] = [{ title: 'Net result by strategy book', rows: traded.map((r) => ({ label: `${r.name} (${r.n})`, value: r.pnl, display: money(r.pnl) })) }];
 
   return {
     msg: {
       id: mid(), role: 'ai', surface: 'playbook',
-      heading: focus === 'best' ? 'Your strongest playbook' : focus === 'worst' ? 'Your weakest playbook' : focus === 'rules' ? 'Playbooks against their own rules' : 'How your playbooks compare',
+      heading: focus === 'best' ? 'Your strongest strategy book' : focus === 'worst' ? 'Your weakest strategy book' : focus === 'rules' ? 'Strategy Books against their own rules' : 'How your strategy books compare',
       paragraphs,
       stats,
       bars,
       items: [
-        ...pick.map((r) => ({ title: r.name, sub: `${r.grade} · ${r.status} · ${plural(r.n, 'trade')} · ${money(r.pnl)}${avgR(r) == null ? '' : ` · ${avgR(r)!.toFixed(2)}R avg`}`, badge: 'Playbook', tab: 'trading-journal' })),
-        { title: 'Open the Trading Journal', sub: 'Playbook tab, backtest and trade log', tab: 'trading-journal' },
+        ...pick.map((r) => ({ title: r.name, sub: `${r.grade} · ${r.status} · ${plural(r.n, 'trade')} · ${money(r.pnl)}${avgR(r) == null ? '' : ` · ${avgR(r)!.toFixed(2)}R avg`}`, badge: 'Strategy Book', tab: 'trading-journal' })),
+        { title: 'Open the Trading Journal', sub: 'Strategy Book tab, backtest and trade log', tab: 'trading-journal' },
       ],
-      sources: ['Your playbooks', 'Your trading journal'],
-      followUps: ['Which playbook is weakest?', 'Do my playbooks follow their rules?', 'How are my trades doing?', 'Any habits I should watch?'],
+      sources: ['Your strategy books', 'Your trading journal'],
+      followUps: ['Which strategy book is weakest?', 'Do my strategy books follow their rules?', 'How are my trades doing?', 'Any habits I should watch?'],
     },
     mem,
   };

@@ -469,7 +469,7 @@ export const JournalInsights: React.FC<Props> = ({ entries, brokers, onDrill, on
     </div>
   );
 
-  const DIMS: [Dim, string][] = [['broker', 'Broker'], ['playbook', 'Playbook'], ['symbol', 'Symbol'], ['tag', 'Tag'], ['session', 'Session'], ['duration', 'Duration'], ['size', 'Position size'], ['r', 'R-multiple']];
+  const DIMS: [Dim, string][] = [['broker', 'Broker'], ['playbook', 'Strategy Book'], ['symbol', 'Symbol'], ['tag', 'Tag'], ['session', 'Session'], ['duration', 'Duration'], ['size', 'Position size'], ['r', 'R-multiple']];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5 items-start">

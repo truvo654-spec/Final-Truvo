@@ -2,7 +2,7 @@ import { InfoTooltip } from '../common/InfoTooltip';
 import { netOf, eligible, resultOf, realizedR, timestampMs, metrics } from './journalMath';
 import React, { useMemo, useState } from 'react';
 import { JournalEntry } from '../../types';
-import { JournalPlaybook, ScenarioStatus } from '../../data/journalPlaybooks';
+import { JournalPlaybook } from '../../data/journalPlaybooks';
 
 // Playbook analytics: win rate, profit factor, avg win/loss and target hit rate as a rolling
 // line (trade by trade), a comparison across playbooks, an R-outcome distribution against the
@@ -13,7 +13,7 @@ const METRICS: { id: Metric; label: string; help: string; ref: number; refLabel:
   { id: 'winRate', label: 'Win rate', help: 'Winners divided by eligible closed trades, including breakeven.', ref: 50, refLabel: '50%' },
   { id: 'pf', label: 'Profit factor', help: 'Positive net results divided by absolute negative net results. Chart values are capped at 5.', ref: 1, refLabel: 'break-even 1.0' },
   { id: 'payoff', label: 'Avg win / loss', help: 'Average winning trade ÷ average losing trade (in $).', ref: 1, refLabel: '1:1' },
-  { id: 'target', label: 'Target hit', help: "Share of trades that reached the playbook's minimum reward:risk (e.g. ≥ 2R).", ref: 50, refLabel: '50%' },
+  { id: 'target', label: 'Target hit', help: "Share of trades that reached the strategy book's minimum reward:risk (e.g. ≥ 2R).", ref: 50, refLabel: '50%' },
 ];
 const WINDOW = 10;
 
@@ -51,9 +51,12 @@ interface Props {
   playbooks: JournalPlaybook[];
   entries: JournalEntry[]; // all entries (for comparison)
   onShowTrades: (ids: string[], label: string) => void;
+  hasConnectedBroker: boolean;
+  onConnectBroker?: () => void;
+  onStartTrade?: () => void;
 }
 
-export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entries, onShowTrades }) => {
+export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entries, onShowTrades, hasConnectedBroker, onConnectBroker, onStartTrade }) => {
   const [metric, setMetric] = useState<Metric>('winRate');
   const [hover, setHover] = useState<number | null>(null);
   const def = METRICS.find((m) => m.id === metric)!;
@@ -95,16 +98,6 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
   }, [trades]);
   const bMax = Math.max(1, ...buckets.map((b) => b.n));
 
-  // scenario management
-  const sc = playbook.scenarios || [];
-  const count = (st: ScenarioStatus) => sc.filter((x) => x.status === st).length;
-  const resolved = count('triggered') + count('closed') + count('invalidated');
-  const triggerRate = resolved ? ((count('triggered') + count('closed')) / resolved) * 100 : null;
-  const rrs = sc.map((x) => (x.entry !== undefined && x.stop !== undefined && x.target !== undefined && x.entry !== x.stop ? Math.abs(x.target - x.entry) / Math.abs(x.entry - x.stop) : null)).filter((x): x is number => x !== null);
-  const fromSc = trades.filter((e) => e.scenarioId);
-  const notSc = trades.filter((e) => !e.scenarioId);
-  const avgNet = (l: JournalEntry[]) => (l.length ? l.reduce((a, e) => a + netOf(e), 0) / l.length : null);
-
   // chart geometry
   const W = 700, H = 150, M = { t: 12, r: 12, b: 22, l: 44 };
   const vals = series.filter((v): v is number => v !== null);
@@ -127,14 +120,29 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
   const usd = (v: number) => `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
   const calc = (t: string) => <span className="block mt-1.5 pt-1.5 border-t border-white/15 font-mono text-emerald-300">{t}</span>;
   const explain: Record<Metric, React.ReactNode> = {
-    winRate: (<>Wins ÷ all eligible closed trades, including breakeven. Open trades and unknown net results are excluded. Read it together with Avg win/loss.{calc(`This playbook: ${wN} wins ÷ ${trades.length} eligible = ${fmt('winRate', metricOf(trades, 'winRate', target))}`)}</>),
-    pf: (<>Positive net results ÷ absolute negative net results, after costs. Chart display is capped at 5.0+; no losses with positive results is unbounded, not an exact factor of 5.{calc(`This playbook: ${usd(gW)} won ÷ ${usd(gL)} lost = ${fmt('pf', metricOf(trades, 'pf', target))}`)}</>),
-    payoff: (<>Average winning trade ÷ average losing trade, in dollars. 2:1 means a typical win is twice a typical loss. The win rate needed to break even is 1 ÷ (1 + ratio).{calc(payoffV === null ? 'This playbook: needs at least one win and one loss.' : `This playbook: avg win ${usd(gW / nWin)} ÷ avg loss ${usd(gL / nLoss)} = ${payoffV.toFixed(2)}:1 → break-even win rate ${(100 / (1 + payoffV)).toFixed(0)}%`)}</>),
-    target: (<>Share of trades whose result reached this playbook's minimum reward:risk ({target}R), measured in R (multiples of the planned risk). Low values mean exits before target or targets set too far.{calc(`This playbook: ${hitN} of ${withR.length} trades reached ≥ ${target}R = ${fmt('target', metricOf(trades, 'target', target))}`)}</>),
+    winRate: (<>Wins ÷ all eligible closed trades, including breakeven. Open trades and unknown net results are excluded. Read it together with Avg win/loss.{calc(`This strategy book: ${wN} wins ÷ ${trades.length} eligible = ${fmt('winRate', metricOf(trades, 'winRate', target))}`)}</>),
+    pf: (<>Positive net results ÷ absolute negative net results, after costs. Chart display is capped at 5.0+; no losses with positive results is unbounded, not an exact factor of 5.{calc(`This strategy book: ${usd(gW)} won ÷ ${usd(gL)} lost = ${fmt('pf', metricOf(trades, 'pf', target))}`)}</>),
+    payoff: (<>Average winning trade ÷ average losing trade, in dollars. 2:1 means a typical win is twice a typical loss. The win rate needed to break even is 1 ÷ (1 + ratio).{calc(payoffV === null ? 'This strategy book: needs at least one win and one loss.' : `This strategy book: avg win ${usd(gW / nWin)} ÷ avg loss ${usd(gL / nLoss)} = ${payoffV.toFixed(2)}:1 → break-even win rate ${(100 / (1 + payoffV)).toFixed(0)}%`)}</>),
+    target: (<>Share of trades whose result reached this strategy book's minimum reward:risk ({target}R), measured in R (multiples of the planned risk). Low values mean exits before target or targets set too far.{calc(`This strategy book: ${hitN} of ${withR.length} trades reached ≥ ${target}R = ${fmt('target', metricOf(trades, 'target', target))}`)}</>),
   };
 
   return (
     <div className="space-y-4">
+      {trades.length === 0 && ((hasConnectedBroker && onStartTrade) || (!hasConnectedBroker && onConnectBroker)) && (
+        <div role="status" className="flex flex-col items-start justify-between gap-3 rounded-xl border border-[#d6d0ff] bg-[#F8F7FF] p-4 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-semibold text-[#0b1c30]">No completed journal data for this strategy book yet</p>
+            <p className="mt-1 text-xs text-slate-600">
+              {hasConnectedBroker
+                ? 'Your broker is connected. Open the Signal Terminal to choose a market and start trading.'
+                : 'Connect a broker to choose a market and start trading with this strategy book.'}
+            </p>
+          </div>
+          {hasConnectedBroker
+            ? <button type="button" onClick={onStartTrade} className="shrink-0 rounded-lg bg-[#5338ec] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4326d8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5338ec]">Start a trade</button>
+            : <button type="button" onClick={onConnectBroker} className="shrink-0 rounded-lg bg-[#5338ec] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4326d8] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5338ec]">Connect a broker</button>}
+        </div>
+      )}
       {/* Metric selector */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2" role="tablist" aria-label="Metric">
         {METRICS.map((m) => {
@@ -158,7 +166,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
           <p className="text-[11px] text-slate-500">Overall <b className="text-[#0b1c30] font-mono">{fmt(metric, overall)}</b> · dashed line = {def.refLabel}</p>
         </div>
         {trades.length < 2 ? (
-          <p className="text-sm text-slate-500 py-8 text-center">Needs at least 2 trades with this playbook.</p>
+          <p className="text-sm text-slate-500 py-8 text-center">Needs at least 2 trades with this strategy book.</p>
         ) : (
           <div className="relative">
             <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto mt-1 focus:outline-[#5338ec]" tabIndex={0} role="img" aria-label={`${def.label} over ${trades.length} trades, now ${fmt(metric, series[series.length - 1])}. Use arrow keys for details.`} onFocus={()=>setHover(0)} onBlur={()=>setHover(null)} onKeyDown={e=>{if(e.key==='Escape')setHover(null);if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();setHover(h=>Math.min(trades.length-1,Math.max(0,(h ?? 0)+(e.key==='ArrowRight'?1:-1))));}}} onMouseLeave={() => setHover(null)}
@@ -195,7 +203,7 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Compare playbooks */}
         <div className="rounded-xl border border-slate-200 p-3">
-          <p className={lbl}>{def.label} by playbook<Info title="By playbook">The same metric for every playbook that has trades. The number in brackets is the trade count; the thin vertical marker is the reference ({def.refLabel}). Results from fewer than 10 trades are not reliable yet.</Info></p>
+          <p className={lbl}>{def.label} by strategy book<Info title="By strategy book">The same metric for every strategy book that has trades. The number in brackets is the trade count; the thin vertical marker is the reference ({def.refLabel}). Results from fewer than 10 trades are not reliable yet.</Info></p>
           <ul className="mt-2 space-y-1.5">
             {compare.map(({ p, v, n }) => {
               const max = Math.max(def.ref, ...compare.map((c) => c.v ?? 0)) || 1;
@@ -230,24 +238,6 @@ export const PlaybookAnalytics: React.FC<Props> = ({ playbook, playbooks, entrie
           </div>
           <p className="text-[10px] text-slate-500 mt-1">Dark green bars reached the {target}R target; light green were winners that exited early.</p>
         </div>
-      </div>
-
-      {/* Scenario management */}
-      <div className="rounded-xl border border-slate-200 p-3">
-        <p className={lbl}>Scenario management<Info title="Scenario management">Watching: idea written, waiting. Triggered: the setup happened and you traded it. Invalidated: the idea failed before entry. Closed: finished. Trigger rate = (triggered + closed) ÷ all resolved scenarios. Avg planned R:R comes from each scenario's entry, stop and target. Trades from scenarios are journal entries logged with "Check and trade".</Info></p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
-          {(['watching', 'triggered', 'invalidated', 'closed'] as const).map((st) => (
-            <div key={st} className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-[10px] font-semibold text-slate-500 capitalize">{st}</p><p className="text-base font-bold font-mono text-[#0b1c30]">{count(st)}</p></div>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2 text-[11px]">
-          <p className="text-[#474556]">Trigger rate: <b className="font-mono text-[#0b1c30]">{triggerRate === null ? '—' : `${triggerRate.toFixed(0)}%`}</b> <span className="text-slate-400">(triggered or closed ÷ all resolved)</span></p>
-          <p className="text-[#474556]">Avg planned R:R: <b className="font-mono text-[#0b1c30]">{rrs.length ? `1:${(rrs.reduce((a, b) => a + b, 0) / rrs.length).toFixed(2)}` : '—'}</b></p>
-          <p className="text-[#474556]">Trades from scenarios: <b className="font-mono text-[#0b1c30]">{fromSc.length}</b>
-            {fromSc.length > 0 && <> · avg <b className="font-mono">{avgNet(fromSc)!.toFixed(2)}</b> vs others <b className="font-mono">{avgNet(notSc)?.toFixed(2) ?? '—'}</b> <button type="button" onClick={() => onShowTrades(fromSc.map((e) => e.id), `${playbook.name} scenario trades`)} className="text-[#5338ec] hover:underline">view</button></>}
-          </p>
-        </div>
-        {fromSc.length === 0 && <p className="text-[10px] text-slate-400 mt-1">Trades logged with "Check and trade" from a scenario are linked here, so you can see whether planned ideas beat spontaneous ones.</p>}
       </div>
     </div>
   );

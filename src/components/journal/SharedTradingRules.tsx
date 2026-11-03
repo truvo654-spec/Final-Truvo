@@ -101,7 +101,7 @@ export const SharedTradingRules: React.FC<Props> = ({ rules, storageFailed, onSa
     <header className="mb-4 flex items-start justify-between gap-3">
       <div>
         <h4 className="flex items-center gap-1.5 text-sm font-bold"><ShieldCheck className="h-4 w-4 text-[#5338ec]" /> Trading rules<JournalHelp label="Trading rules" /></h4>
-        <p className="mt-1 text-xs text-[#474556]">Shared rules update every existing playbook and are used as defaults for new ones. Turn a rule off for an individual strategy in its setup.</p>
+        <p className="mt-1 text-xs text-[#474556]">Shared rules update every existing strategy book and are used as defaults for new ones. Turn a rule off for an individual strategy in its setup.</p>
       </div>
       {editing
         ? <div className="flex shrink-0 gap-3">

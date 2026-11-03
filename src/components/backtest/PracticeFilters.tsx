@@ -173,8 +173,8 @@ export const PracticeFilters: React.FC<Props> = ({ source, value: f, onChange, e
             <Segmented size="sm" label="Result" value={f.result} onChange={(r) => onChange({ ...f, result: r })} options={[{ id: 'losses', label: 'Losses' }, { id: 'wins', label: 'Wins' }, { id: 'all', label: 'All' }]} />
           </Field>
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Playbook">
-              <select aria-label="Playbook" value={f.playbook} onChange={(e) => onChange({ ...f, playbook: e.target.value })} className={`${inputBase} w-full h-8 text-xs`}>
+            <Field label="Strategy Book">
+              <select aria-label="Strategy Book" value={f.playbook} onChange={(e) => onChange({ ...f, playbook: e.target.value })} className={`${inputBase} w-full h-8 text-xs`}>
                 <option value="">All</option>{playbooks.map((p) => <option key={p}>{p}</option>)}
               </select>
             </Field>

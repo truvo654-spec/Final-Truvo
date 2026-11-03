@@ -33,7 +33,7 @@ const COLS: ColDef[] = [
   { key: 'points', label: 'Points', align: 'right', sortable: true, defaultOn: false },
   { key: 'fees', label: 'Comm. & Fees', align: 'right', sortable: true, defaultOn: false },
   { key: 'tags', label: 'Execution Tags', defaultOn: true },
-  { key: 'playbook', label: 'Playbook', sortable: true, defaultOn: false },
+  { key: 'playbook', label: 'Strategy Book', sortable: true, defaultOn: false },
   { key: 'outcome', label: 'Outcome', sortable: true, defaultOn: false },
 ];
 
@@ -302,7 +302,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
 
   const exportCsv = () => {
     const list = sel.length ? selEntries : sorted;
-    const head = ['Date', 'Instrument', 'Side', 'Size', 'Entry', 'Exit', 'Gross P&L', 'Commissions', 'Net P&L', 'Realized R', 'Trading status', 'Broker', 'Cashback (est. USD)', 'Points (est.)', 'Playbook', 'Tags', 'Journal ID', 'Account ID', 'Account currency', 'Review state', 'Net eligible'];
+    const head = ['Date', 'Instrument', 'Side', 'Size', 'Entry', 'Exit', 'Gross P&L', 'Commissions', 'Net P&L', 'Realized R', 'Trading status', 'Broker', 'Cashback (est. USD)', 'Points (est.)', 'Strategy Book', 'Tags', 'Journal ID', 'Account ID', 'Account currency', 'Review state', 'Net eligible'];
     const esc = (v: string | number) => `"${(typeof v==='string' && /^[=+@\-]/.test(v)?`'${v}`:String(v)).replace(/"/g, '""')}"`;
     const lines = list.map((e) => [e.entryTime || e.date, e.symbol, e.direction === 'BUY' ? 'LONG' : 'SHORT', e.size, e.entryPrice, e.exitPrice ?? '', e.pnlKnown===false?'':e.pnl, e.commission ?? '', eligible(e)?netOf(e):'', realizedR(e) ?? '', TRADING_STATUS_LABEL[tradingStatusOf(e)], brokerName(e.brokerId), entryCashback(e, brokerMap), entryPoints(e), e.strategy, e.tags.join('|'),e.id,e.accountId || 'legacy-demo',currencyOf(e),reviewStateOf(e),eligible(e)?'yes':'no'].map(esc).join(','));
     const blob = new Blob([[head.map(esc).join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
@@ -488,7 +488,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <input disabled={!!preset} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter symbols, tags, playbooks, brokers..." aria-label="Filter trades" className="flex-1 min-w-[220px] max-w-md h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs text-[#0b1c30] placeholder:text-slate-400" />
+        <input disabled={!!preset} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter symbols, tags, strategy books, brokers..." aria-label="Filter trades" className="flex-1 min-w-[220px] max-w-md h-9 bg-white border border-slate-200 rounded-lg px-3 text-xs text-[#0b1c30] placeholder:text-slate-400" />
         <JournalHelp label="Trade filters" />
         <button type="button" disabled={!!preset} aria-pressed={needsReview} onClick={() => { setNeedsReview(v => !v); setPage(1); }} className={btn}>Needs Review ({entries.filter(e => reviewStateOf(e) !== 'complete').length})</button>
         <label className="flex items-center gap-2 h-9 rounded-lg bg-white border border-slate-200 px-3 text-[10px] font-bold tracking-wide text-slate-500">
@@ -498,7 +498,7 @@ export const JournalTradeLog: React.FC<Props> = ({ entries, brokers, onChange, o
             <option value="day">Day</option><option value="week">Week</option><option value="tradingStatus">Trading status</option>
             <option value="instrument" className="text-black">Instrument</option>
             <option value="broker" className="text-black">Broker</option>
-            <option value="playbook" className="text-black">Playbook</option>
+            <option value="playbook" className="text-black">Strategy Book</option>
             <option value="side" className="text-black">Side</option>
             <option value="outcome" className="text-black">Outcome</option>
           </select>

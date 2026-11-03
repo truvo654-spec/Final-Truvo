@@ -56,7 +56,7 @@ export function JournalDayReview({ date, entries, currency, from, to, note, onNo
     'Status / review': 'Trading lifecycle and whether the journal review is complete. These are separate states.',
     'Net P&L': 'Gross reported P&L minus known costs. Open, planned, or incomplete results remain unknown.',
     'Net ROI (%)': 'Return on investment: net P&L divided by recorded account equity at entry, multiplied by 100.',
-    Strategy: 'Recorded strategy name and whether it is linked to a saved playbook.',
+    Strategy: 'Recorded strategy name and whether it is linked to a saved strategy book.',
     'Realized R': 'Net result divided by initial monetary risk when available; otherwise the preserved reported R value.',
     Broker: 'Broker recorded for the trade. No broker valuation or currency conversion is inferred.',
     Replay: 'Opens a simulated replay using demo prices, not historical market prices.',
@@ -107,7 +107,7 @@ export function JournalDayReview({ date, entries, currency, from, to, note, onNo
                       <td className="p-2 font-mono" title={roiDescription(e, roi)}>
                         <span className="inline-flex items-center gap-1">{roi === null ? 'Unknown' : `${roi > 0 ? '+' : ''}${roi.toFixed(2)}%`}<HoverHint label="ROI" description={roiDescription(e, roi)}/></span>
                       </td>
-                      <td className="p-2">{e.strategy?.trim() || 'Not recorded'}<span className="block text-[10px] text-slate-500">{playbookNames.includes(e.strategy) ? 'Playbook' : e.strategy?.trim() ? 'Recorded strategy · not linked' : 'No strategy provided'}</span></td>
+                      <td className="p-2">{e.strategy?.trim() || 'Not recorded'}<span className="block text-[10px] text-slate-500">{playbookNames.includes(e.strategy) ? 'Strategy Book' : e.strategy?.trim() ? 'Recorded strategy · not linked' : 'No strategy provided'}</span></td>
                       <td className="p-2">{realizedR(e) === null ? 'Unknown' : `${realizedR(e)!.toFixed(2)}R`}</td>
                       <td className="p-2">{brokerName(e.brokerId || UNASSIGNED)}</td>
                       <td className="p-2 sticky right-16 bg-white">
@@ -127,7 +127,7 @@ export function JournalDayReview({ date, entries, currency, from, to, note, onNo
           <section title="Evidence completeness for this day. It describes recorded information and review activity; it is not an automatic trading score." className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="text-sm font-bold inline-flex items-center gap-1">Daily progress<JournalHelp label="Daily progress" /> <HoverHint label="daily progress" description="Evidence completeness for this day. It describes recorded information and review activity; it is not an automatic trading score."/></h3><p className="text-[11px] text-slate-500 mt-1 mb-4">Recorded evidence, not an automatic compliance grade</p>{[
             ['Daily reflection', note.trim() ? 'Recorded' : 'Not answered'],
             ['Trade reviews', entries.length ? `${reviews} / ${entries.length} complete` : 'No trades'],
-            ['Linked playbook', entries.length ? `${linked} / ${entries.length} linked` : 'No trades'],
+            ['Linked strategy book', entries.length ? `${linked} / ${entries.length} linked` : 'No trades'],
             ['Initial stop history', entries.length ? `${stops} / ${entries.length} recorded` : 'No trades'],
           ].map(([label,value]) => <div key={label} className="flex justify-between gap-3 text-xs py-2 border-b border-slate-100"><span>{label}</span><span className="font-semibold text-right">{value}</span></div>)}<p className="text-[10px] text-slate-500 mt-3">{currentStops} current stop(s). A current stop does not prove a stop was set at entry. {entries.filter(e => incompleteFields(e).length > 0).length} trade(s) have incomplete information.</p></section>
           <div title="Discipline combines plan adherence, checklist completion and mistake-free evidence using the weights shown. Unknown evidence is excluded, not treated as a failure."><DisciplineCard entries={entries} checklistLength={checklistLength}/></div>

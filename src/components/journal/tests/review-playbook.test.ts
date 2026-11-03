@@ -11,9 +11,9 @@ const archived={...DEFAULT_PLAYBOOKS[1],id:'archived',name:'Archived setup',stat
 const html=(record=entry,books=[active,archived])=>renderToStaticMarkup(createElement(JournalReviewDrawer,{entry:record,cohort:[record.id],playbooks:books,onSelect:()=>{},onClose:()=>{},onSave:()=>{},onDelete:()=>{},onReplay:()=>{}}));
 test('Review offers saved playbooks only and preserves unavailable legacy assignment',()=>{
  const output=html();
- assert.match(output,/aria-label="Trade playbook"/);assert.match(output,/<option value="My saved setup">My saved setup<\/option>/);
- assert.match(output,/Original strategy \(not in saved playbooks\)/);assert.doesNotMatch(output,/<option[^>]*value="Archived setup"/);
- assert.doesNotMatch(output,/<input[^>]*aria-label="Trade playbook"/);
+ assert.match(output,/aria-label="Trade strategy book"/);assert.match(output,/<option value="My saved setup">My saved setup<\/option>/);
+ assert.match(output,/Original strategy \(not in saved strategy books\)/);assert.doesNotMatch(output,/<option[^>]*value="Archived setup"/);
+ assert.doesNotMatch(output,/<input[^>]*aria-label="Trade strategy book"/);
  const historical=html({...entry,strategy:archived.name});assert.match(historical,/Archived setup \(Archived\)/);
 });
 test('Switching setup preserves trade execution facts and resets evidence from the old playbook',()=>{
@@ -23,5 +23,5 @@ test('Switching setup preserves trade execution facts and resets evidence from t
  const output=html(changed as typeof entry);assert.match(output,/Defined range/);assert.doesNotMatch(output,/Old setup rule/);
 });
 test('No saved playbooks does not create a free-text strategy or silently assign a default',()=>{
- const output=html(entry,[]);assert.match(output,/Create a playbook in the Playbook tab/);assert.match(output,/<select aria-label="Trade playbook"[^>]*disabled/);
+ const output=html(entry,[]);assert.match(output,/Create a strategy book in the Strategy Book tab/);assert.match(output,/<select aria-label="Trade strategy book"[^>]*disabled/);
 });

@@ -1592,7 +1592,7 @@ export const Header: React.FC<HeaderProps> = ({
                             }}
                             className="text-slate-600 hover:text-[#5945F1] hover:underline flex items-center gap-1.5 text-left transition-colors cursor-pointer"
                           >
-                            <span className="text-slate-400">•</span> Playbook &amp; Weekly Review
+                            <span className="text-slate-400">•</span> Strategy Book &amp; Weekly Review
                           </button>
                         </li>
                       </ul>

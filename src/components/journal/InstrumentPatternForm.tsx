@@ -35,7 +35,7 @@ export const InstrumentPatternForm: React.FC<{
     onApply({...draft,id:draft.id || `pattern-${crypto.randomUUID()}`,name:draft.name.trim(),patternType:draft.patternType!.trim()});
   }} className="rounded-xl border border-[#DED5FF] bg-[#FAF8FF] p-4">
     <h3 className="text-sm font-bold">{initial.id ? 'Edit setup pattern' : 'Build your setup pattern'}</h3>
-    <p className="mt-1 text-xs leading-relaxed text-slate-500">Define your own pattern type and technical rules. Parameters follow the tools you choose. Apply the pattern, then confirm to save it with your playbook.</p>
+    <p className="mt-1 text-xs leading-relaxed text-slate-500">Define your own pattern type and technical rules. Parameters follow the tools you choose. Apply the pattern, then confirm to save it with your strategy book.</p>
     <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
       <label className="text-xs font-semibold">Pattern name<input autoFocus required maxLength={60} value={draft.name} onChange={e=>update('name',e.target.value)} placeholder="e.g. My London setup" className={field}/></label>
       <label className="text-xs font-semibold">Pattern type<input required maxLength={80} value={draft.patternType || ''} onChange={e=>update('patternType',e.target.value)} placeholder="Enter any type, e.g. RSI divergence" className={field}/><span className="mt-1 block text-[10px] font-normal text-slate-500">Your own category. The rules below define what gets matched.</span></label>

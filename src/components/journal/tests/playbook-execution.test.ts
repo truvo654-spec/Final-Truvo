@@ -26,7 +26,7 @@ test('Unknown adherence is excluded from assessed denominator; unrelated playboo
 });
 test('Edit shares creation dialog, keeps basic area lean and uses Save changes',()=>{
  const html=renderToStaticMarkup(createElement(PlaybookSetupDialog,{mode:'edit',draft:book,entries:[],globalRules,houseChecklist:DEFAULT_CHECKLIST,onChange:()=>{},onBack:()=>{},onCreate:()=>null}));
- assert.match(html,/Edit playbook/);assert.match(html,/Save changes/);assert.match(html,/Customize details/);assert.doesNotMatch(html,/Create playbook<|Pre-trade checklist/);
+ assert.match(html,/Edit strategy book/);assert.match(html,/Save changes/);assert.match(html,/Customize details/);assert.doesNotMatch(html,/Create strategy book<|Pre-trade checklist/);
  const detail=renderToStaticMarkup(createElement(PlaybookEditorFields,{editing:book,setEditing:()=>{},entries:[],globalRules,isNew:false,grouped:true,houseChecklist:DEFAULT_CHECKLIST}));
  assert.ok(detail.indexOf('Pre-trade checklist') < detail.indexOf('Thesis and execution rules'));assert.match(detail,/<summary[^>]*>Pre-trade checklist/);
 });

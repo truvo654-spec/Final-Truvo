@@ -407,9 +407,9 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
     <div className="space-y-5">
       <div className="md:hidden"><Banner tone="info" icon={<Monitor className="w-4 h-4" />}>Replay works best on a larger screen. Everything still works here; the chart scrolls sideways.</Banner></div>
       <ReplaySetupTransfer entries={entries} playbooks={playbooks} initialId={initialPlaybookId ? `playbook:${initialPlaybookId}` : ''} onSelect={transferSetup} disabled={!!pos||!!pending||(!finished&&trades.length>0)||autoReview}/>
-      {guidedPlaybook&&<section className="rounded-2xl border border-[#5338ec]/25 bg-[#FBFAFF] p-4 space-y-3" aria-label={`${guidedPlaybook.name} playbook practice guide`}>
+      {guidedPlaybook&&<section className="rounded-2xl border border-[#5338ec]/25 bg-[#FBFAFF] p-4 space-y-3" aria-label={`${guidedPlaybook.name} strategy book practice guide`}>
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-[#5338ec]">Playbook practice guide</p><h3 className="mt-0.5 text-sm font-bold text-[#0b1c30]">{guidedPlaybook.name}</h3><p className="mt-1 text-xs text-slate-600">{guidedPlaybook.thesis}</p></div>
+          <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-[#5338ec]">Strategy Book practice guide</p><h3 className="mt-0.5 text-sm font-bold text-[#0b1c30]">{guidedPlaybook.name}</h3><p className="mt-1 text-xs text-slate-600">{guidedPlaybook.thesis}</p></div>
           <Pill tone="accent">{guidedPlaybook.status}</Pill>
         </div>
         {guidedScenario&&<div className="rounded-xl border border-[#5338ec]/15 bg-white p-3 text-xs"><p className="font-semibold text-[#0b1c30]">Scenario · {guidedScenario.symbol} · {guidedScenario.bias}</p><p className="mt-1 text-slate-600">{guidedScenario.hypothesis}</p><p className="mt-1 text-slate-500"><b>Trigger:</b> {guidedScenario.trigger}</p>{related?.prices&&<p className="mt-1 text-slate-500">Reference levels: entry {priceFmt(related.prices.entry,symbolSpec(guidedScenario.symbol)?.priceDp??dp)} · stop {priceFmt(related.prices.stop,symbolSpec(guidedScenario.symbol)?.priceDp??dp)} · target {priceFmt(related.prices.target,symbolSpec(guidedScenario.symbol)?.priceDp??dp)}</p>}</div>}

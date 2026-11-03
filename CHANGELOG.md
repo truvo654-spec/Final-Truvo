@@ -1,3 +1,32 @@
+## 2.72.8 - Strategy Book empty-state actions
+
+- Add a Strategy Book analytics call to action when no completed trades are available: connect a broker, or open the Signal Terminal when an account is already connected.
+
+## 2.72.7 - Rename Playbook labels to Strategy Book
+
+- Update user-facing Journal, Backtest, AI and help text from Playbook to Strategy Book terminology.
+- Preserve internal playbook identifiers and saved data formats.
+
+## 2.72.6 - Remove Playbook scenario management panel
+
+- Remove the Scenario management summary from Playbook analytics without changing scenario records or setup flows.
+
+## 2.72.5 - Remove Overview AI Coach card
+
+- Remove the Personalized AI Coach card from the Overview sidebar.
+
+## 2.72.4 - Remove AI Coach journal tab
+
+- Remove the AI Coach tab from journal navigation while retaining the Overview entry point.
+
+## 2.72.3 - Expand calendar in cumulative card
+
+- Expand calendar day cells to fill the cumulative P&L card while keeping them square, and bound the calendar width.
+
+## 2.72.2 - Calendar-first cumulative P&L card
+
+- Move the monthly journal calendar into the cumulative P&L card and make it the default view, with Chart and Table as alternatives.
+
 ## 2.72.1 - Newest saved test by default
 
 - Open Dashboard on the most recently saved or rerun test and list saved tests newest first. Clear filters belonging to a previous result while preserving privacy and timezone preferences. Explicit result and journal links keep their intended selection.

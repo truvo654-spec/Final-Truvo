@@ -176,7 +176,7 @@ export function analyzeEntry(entry: JournalEntry, all: JournalEntry[], checklist
     ({
       title: 'Repeat this one',
       why: 'The process on this trade was sound, so the goal is to make it routine.',
-      steps: ['Add this setup to your Playbook with the same checklist.', 'Size the next one the same way: 1% risk or less.', `Take it again only when all ${total || 'your'} checks pass.`],
+      steps: ['Add this setup to your Strategy Book with the same checklist.', 'Size the next one the same way: 1% risk or less.', `Take it again only when all ${total || 'your'} checks pass.`],
     } as FocusPlan);
 
   const chips: EntryChip[] = [

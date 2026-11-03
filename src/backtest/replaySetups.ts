@@ -32,12 +32,12 @@ export function relatedReplaySetups(playbooks:JournalPlaybook[],entries:JournalE
   const options:RelatedReplaySetup[]=[];
   for(const book of playbooks.filter(p=>p.status!=='archived')){
     const settings=defaultSettings({playbook:book});
-    const base:RelatedReplaySetup={id:`playbook:${book.id}`,name:`Playbook · ${book.name}`,playbookId:book.id,
+    const base:RelatedReplaySetup={id:`playbook:${book.id}`,name:`Strategy Book · ${book.name}`,playbookId:book.id,
       symbols:supportedSymbols(book.symbols?.length?book.symbols:entries.filter(e=>e.strategy===book.name).map(e=>e.symbol)),timeframe:settings.timeframe,
       targetR:book.benchmarkRR,stopAtr:settings.rules.exits.stop.type==='atr'?settings.rules.exits.stop.mult:undefined,
       riskPercent:book.riskPerTrade,session:book.window?{start:book.window.start,end:book.window.end}:undefined,maxTrades:book.maxTradesPerDay,
       breakevenR:settings.rules.exits.breakevenAtR??undefined,
-      notes:['Playbook values are copied to an editable replay draft. Written entry rules and partial/trailing exits remain reference context.']};
+      notes:['Strategy Book values are copied to an editable replay draft. Written entry rules and partial/trailing exits remain reference context.']};
     options.push(base);
     for(const scenario of book.scenarios||[]){
       const valid=[scenario.entry,scenario.stop,scenario.target].every(v=>Number.isFinite(v)&&v!>0)&&

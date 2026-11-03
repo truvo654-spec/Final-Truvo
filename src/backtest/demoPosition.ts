@@ -75,18 +75,18 @@ export function positionChecks({book,entry,feed,plan,snapshot,scenario,scenarioK
   const riskPct=p?p.initialRisk/p.equityAtEntry*100:plan?.riskPercent;
   const rr=p && p.target!==null ? Math.abs(p.target-p.entry)/Math.abs(p.entry-p.initialStop):plan?.rr;
   const rows:SetupCheck[]=[
-    check('Recorded strategy',entry&&book ? entry.strategy===book.name:null,entry?`${entry.strategy||'Not recorded'} → ${book?.name||'No playbook'}`:'No recorded trade selected.'),
-    check('Playbook instrument',book ? book.symbols?.length ? book.symbols.some(s=>resolveSymbol(s)===spec.symbol) : book.markets?.length ? book.markets.includes(marketGroupOf(spec) as PortfolioAssetClass):null : null,book?.symbols?.length?`Allowed: ${book.symbols.join(', ')}. Selected: ${spec.symbol}.`:'Uses the selected playbook market list when no symbol list is recorded.'),
-    check('Playbook timeframe',book ? feed.tf===demoTimeframe(book):null,`Executable template: ${book?demoTimeframe(book):'Unknown'}; demo: ${feed.tf}.`),
+    check('Recorded strategy',entry&&book ? entry.strategy===book.name:null,entry?`${entry.strategy||'Not recorded'} → ${book?.name||'No strategy book'}`:'No recorded trade selected.'),
+    check('Strategy Book instrument',book ? book.symbols?.length ? book.symbols.some(s=>resolveSymbol(s)===spec.symbol) : book.markets?.length ? book.markets.includes(marketGroupOf(spec) as PortfolioAssetClass):null : null,book?.symbols?.length?`Allowed: ${book.symbols.join(', ')}. Selected: ${spec.symbol}.`:'Uses the selected strategy book market list when no symbol list is recorded.'),
+    check('Strategy Book timeframe',book ? feed.tf===demoTimeframe(book):null,`Executable template: ${book?demoTimeframe(book):'Unknown'}; demo: ${feed.tf}.`),
     book?.tradingRules?.enabled.maxRisk === false
-      ? { label: 'Risk per trade', state: 'Not applicable', detail: 'This limit is not selected for this playbook.' }
-      : check('Risk per trade',Number.isFinite(book?.riskPerTrade)&&book!.riskPerTrade!>0&&Number.isFinite(riskPct) ? riskPct!<=book!.riskPerTrade!+1e-8:null,`Initial stop risk ${riskPct===undefined?'Unknown':riskPct.toFixed(2)+'%'}; current playbook limit ${book?.riskPerTrade??'Unknown'}%. Fees are separate.`),
+      ? { label: 'Risk per trade', state: 'Not applicable', detail: 'This limit is not selected for this strategy book.' }
+      : check('Risk per trade',Number.isFinite(book?.riskPerTrade)&&book!.riskPerTrade!>0&&Number.isFinite(riskPct) ? riskPct!<=book!.riskPerTrade!+1e-8:null,`Initial stop risk ${riskPct===undefined?'Unknown':riskPct.toFixed(2)+'%'}; current strategy book limit ${book?.riskPerTrade??'Unknown'}%. Fees are separate.`),
     check('Minimum quantity',p||plan?(p?.size??plan!.quantity)>=spec.minSize:null,`Minimum ${spec.minSize} ${spec.sizeUnit}; size rounds to increments of ${spec.sizeStep}.`),
-    check('Planned reward / risk',Number.isFinite(book?.benchmarkRR)&&book!.benchmarkRR>0&&Number.isFinite(rr) ? rr!+1e-8>=book!.benchmarkRR:null,`Planned ${rr===undefined?'Unknown':rr.toFixed(2)+'R'}; playbook minimum ${book?.benchmarkRR??'Unknown'}R.`),
+    check('Planned reward / risk',Number.isFinite(book?.benchmarkRR)&&book!.benchmarkRR>0&&Number.isFinite(rr) ? rr!+1e-8>=book!.benchmarkRR:null,`Planned ${rr===undefined?'Unknown':rr.toFixed(2)+'R'}; strategy book minimum ${book?.benchmarkRR??'Unknown'}R.`),
   ];
   const t=p?.entryTime??(snapshot?.processed?feed.bars[snapshot.processed-1]?.t:NaN);
   if(book?.window) {const hour=new Date(t).getUTCHours()+new Date(t).getUTCMinutes()/60;const w=book.window;rows.push(check('Session timing',Number.isFinite(hour)? w.start<w.end?hour>=w.start&&hour<w.end:hour>=w.start||hour<w.end:null,`${w.label} · ${w.start}–${w.end} UTC; ${p?'demo fill time':'current demo bar'}.`));}
-  else rows.push({label:'Session timing',state:book?'Not applicable':'Unknown',detail:book?'Playbook allows any session.':'No playbook selected.'});
+  else rows.push({label:'Session timing',state:book?'Not applicable':'Unknown',detail:book?'Strategy Book allows any session.':'No strategy book selected.'});
   if(scenarioKey) {
     rows.push(check('Scenario price levels',plan?true:null,plan?'Entry, stop and target are numeric and correctly ordered.':'Complete a valid, instrument-matched setup before levels can be evaluated.'));
     rows.push(check('Scenario direction',entry && (scenario||plan)?(scenario?.bias??(plan!.direction==='BUY'?'long':'short'))===(entry.direction==='BUY'?'long':'short'):null,'Compares scenario bias with the recorded trade; simulation follows the scenario bias.'));
@@ -95,6 +95,6 @@ export function positionChecks({book,entry,feed,plan,snapshot,scenario,scenarioK
     rows.push(check('Scenario validity',valid ? scenario!.createdAt<=asOf&&asOf<=scenario!.validUntil&&!['closed','invalidated'].includes(scenario!.status):null,scenario?`${scenario.status}; ${scenario.createdAt} → ${scenario.validUntil}; checked on ${asOf} (${entry?'recorded trade date':'today, UTC'}), not the synthetic candle date.`:'Demo-only draft has no recorded validity dates.'));
     rows.push(check('Written scenario trigger',null,'Numeric demo uses a close crossing entry, then next-bar market fill. Written trigger conditions are not automatically verified.'));
   } else rows.push({label:'Scenario link',state:'Not applicable',detail:'No scenario selected; monitoring the strategy template hypothesis.'});
-  rows.push(check('Written playbook rules',null,'Discretionary rules need review evidence. These setup checks use the current playbook, not historical rule versions; they are not a compliance grade.'));
+  rows.push(check('Written strategy book rules',null,'Discretionary rules need review evidence. These setup checks use the current strategy book, not historical rule versions; they are not a compliance grade.'));
   return rows;
 }

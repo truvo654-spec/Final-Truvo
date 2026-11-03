@@ -33,7 +33,7 @@ export const JournalTradeBenchmark: React.FC<Props> = ({ entries, onClear }) => 
         <div>
           <h3 className="text-sm font-bold text-[#0b1c30]">Imported actual-trade benchmark · {entries.length} selected<JournalHelp label="Trade history setup" /></h3>
           <p className="mt-1 text-xs text-[#474556]">
-            Imported trades are the actual-results benchmark, not inferred rules. Backtest uses the selected playbook hypothesis and executable recipe (or a labeled starter set); choose other playbooks below to compare setups.
+            Imported trades are the actual-results benchmark, not inferred rules. Backtest uses the selected strategy book hypothesis and executable recipe (or a labeled starter set); choose other strategy books below to compare setups.
           </p>
         </div>
         {onClear && <button type="button" className={btnSecondary} onClick={onClear}>Remove benchmark</button>}

@@ -24,7 +24,7 @@ const SURFACES: { id: Surface; title: string; desc: string; icon: React.ElementT
   { id: 'market', title: 'Market summaries', desc: 'Today, week ahead, an asset class or one instrument.', icon: Newspaper },
   { id: 'insights', title: 'Trading insights', desc: 'What your trades say, by strategy, pair and session.', icon: LineChart },
   { id: 'behavior', title: 'Behavioral observation', desc: 'Mood, plan and mistakes, before they cost you.', icon: HeartPulse },
-  { id: 'playbook', title: 'Playbook review', desc: 'Which of your setups actually pays, and which does not.', icon: BookMarked },
+  { id: 'playbook', title: 'Strategy Book review', desc: 'Which of your setups actually pays, and which does not.', icon: BookMarked },
   { id: 'portfolio', title: 'Portfolio review', desc: 'Accounts, equity, drawdown and your goals.', icon: Wallet },
   { id: 'strategy', title: 'Backtest guide', desc: 'What to test next, and how to read the result.', icon: FlaskConical },
   { id: 'tools', title: 'Advisors & alerts', desc: 'Expert advisors worth a look, and alert hygiene.', icon: Bot },

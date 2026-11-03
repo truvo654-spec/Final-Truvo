@@ -19,9 +19,9 @@ export function playbookConditionPattern(playbook: JournalPlaybook): InstrumentP
     return { ...operand(side.ind.type), period: side.ind.period ?? 14, session: side.ind.session ?? 'asia' };
   };
   return {
-    id: PLAYBOOK_CONDITIONS_PATTERN, name: 'Playbook entry conditions', pattern: 'custom',
+    id: PLAYBOOK_CONDITIONS_PATTERN, name: 'Strategy Book entry conditions', pattern: 'custom',
     direction: 'either', lookbackBars: 240, minFit: 100, minVolumeRatio: 0, minBreakoutAtr: 0,
-    patternType: 'Playbook entry conditions', matchMode: 'all',
+    patternType: 'Strategy Book entry conditions', matchMode: 'all',
     technicalRules: conditions.map(condition => ({
       id: condition.id, left: convert(condition.left), right: convert(condition.right),
       operator: condition.op === 'gt' ? 'above' : condition.op === 'lt' ? 'below' : condition.op,

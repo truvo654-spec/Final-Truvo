@@ -37,7 +37,7 @@ test('new dashboard tests reuse the chosen Lab copy or saved playbook without mu
  const custom={...book,instrumentTimeframe:'1h' as const,directions:['short' as const],benchmarkRR:3};
  const fromBook=dashboardQuickRun({bookId:book.id},[custom],[],rules,{},defaultSettings()).settings;
  assert.equal(fromBook.timeframe,'1h');assert.equal(fromBook.rules.direction,'short');assert.equal(fromBook.rules.exits.targetR,3);
- assert.throws(()=>dashboardQuickRun({bookId:book.id},[{...book,status:'archived'}],[],rules,{},draft),/Choose a playbook/);
+ assert.throws(()=>dashboardQuickRun({bookId:book.id},[{...book,status:'archived'}],[],rules,{},draft),/Choose a strategy book/);
 });
 
 test('a real demo run supplies dashboard rows, metrics and chart, and clears an old empty filter scope',async()=>{

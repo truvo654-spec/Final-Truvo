@@ -20,7 +20,7 @@ import { JournalEntryDetail } from './JournalEntryDetail';
 import { JournalCalendar } from './JournalCalendar';
 import { JournalTradeLog } from './JournalTradeLog';
 import { JournalInsights } from './JournalInsights';
-import { JournalAICoach, CoachOverviewCard } from './JournalAICoach';
+import { JournalAICoach } from './JournalAICoach';
 import { createCoachDraft, type CoachScenario } from './aiCoach';
 import { JournalPlaybooks } from './JournalPlaybooks';
 import { DEFAULT_PLAYBOOKS, JournalPlaybook } from '../../data/journalPlaybooks';
@@ -54,6 +54,8 @@ interface TradingJournalPageProps {
   onShowToast: (msg: string) => void;
   brokers?: Broker[];
   onConnectBroker?: (broker: Broker) => void;
+  onBrowseBrokers?: () => void;
+  onStartTrade?: () => void;
   sydeCredits?: number;
   onSpendCredits?: (amount: number, reason: string) => boolean;
   onRewardPoints?: (points: number, reason: string) => void;
@@ -76,7 +78,7 @@ function isoDaysAgo(n: number): string {
 }
 
 const FILTER_HELP: Record<string, string> = {
-  Playbook: 'Include or exclude journal entries by their recorded playbook or strategy.',
+  Playbook: 'Include or exclude journal entries by their recorded strategy book or strategy.',
   'Market type': 'Include or exclude entries by asset class, such as Forex, Crypto or Indices.',
   'Net outcome': 'Include or exclude entries by realized outcome. Open and unknown results remain separate from closed results.',
   'Trading status': 'Include or exclude entries by lifecycle: planned, open or closed.',
@@ -93,6 +95,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
   onShowToast,
   brokers,
   onConnectBroker,
+  onBrowseBrokers,
+  onStartTrade,
   sydeCredits = 0,
   onSpendCredits,
   onRewardPoints,
@@ -288,7 +292,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
         className={`h-9 text-xs font-semibold border rounded-lg pl-3 pr-10 bg-white hover:bg-slate-50 ${off.length ? 'border-[#5338ec] text-[#5338ec]' : 'border-slate-200 text-[#0b1c30]'}`}
       >
         {title} ({opts.length - off.length}/{opts.length})
-      </button><span className="absolute right-1 top-1.5"><JournalHelp label={title} text={`${FILTER_HELP[title]} ${title === 'Playbook' ? 'The selected count shows included categories, not the number of trades.' : getJournalHelp(title) || ''}`} /></span>
+      </button><span className="absolute right-1 top-1.5"><JournalHelp label={title} text={`${FILTER_HELP[title]} ${title === 'Strategy Book' ? 'The selected count shows included categories, not the number of trades.' : getJournalHelp(title) || ''}`} /></span>
       {openMenu === id && (
         <div className="absolute z-20 mt-2 w-56 rounded-xl bg-white border border-slate-200 shadow-xl p-2 max-h-72 overflow-y-auto">
           {opts.map((o) => (
@@ -348,9 +352,8 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
     { id: 'overview', label: 'Overview', help: getJournalHelp('Overview') },
     { id: 'entries', label: 'Trade Log', help: getJournalHelp('Trade Log') },
     { id: 'insights', label: 'Insights', help: getJournalHelp('Insights') },
-    { id: 'playbook', label: 'Playbook', help: getJournalHelp('Playbook') },
+    { id: 'playbook', label: 'Strategy Book', help: getJournalHelp('Strategy Book') },
     { id: 'backtest', label: 'Backtest', help: getJournalHelp('Backtest') },
-    { id: 'review', label: 'AI Coach', help: getJournalHelp('AI Coach') },
   ];
 
   const sorted = useMemo(() => [...entries].sort((a, b) => b.date.localeCompare(a.date)), [entries]);
@@ -442,7 +445,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           <JournalHelp label="Trading Journal" />
         </h1>
         <p className="mx-auto mt-2 max-w-2xl text-sm text-[#474556]">
-          Log trades, track setup rules, and review execution in one place. Spot recurring patterns fast to refine your playbook.
+          Log trades, track setup rules, and review execution in one place. Spot recurring patterns fast to refine your strategy book.
         </p>
       </div>
 
@@ -495,7 +498,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           {/* Toolbar */}
           <div className="flex flex-wrap items-start gap-2" role="toolbar" aria-label="Journal scope">
 
-            {filterMenu('strategy', 'Playbook', JOURNAL_STRATEGIES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.strategy === v).length })), strategyOff, setStrategyOff)}
+            {filterMenu('strategy', 'Strategy Book', JOURNAL_STRATEGIES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.strategy === v).length })), strategyOff, setStrategyOff)}
             {filterMenu('asset', 'Market type', JOURNAL_MARKET_TYPES.map((v) => ({ id: v, label: v, n: entries.filter((e) => e.assetClass === v).length })), assetOff, setAssetOff)}
             {filterMenu('outcome', 'Net outcome', (['win', 'loss', 'breakeven', 'open'] as const).map((v) => ({ id: v, label: v === 'win' ? 'Wins' : v === 'loss' ? 'Losses' : v === 'breakeven' ? 'Breakeven' : 'Not realized / unknown', n: entries.filter((e) => resultOf(e) === v).length })), outcomeOff, setOutcomeOff)}
             {filterMenu('tradingStatus', 'Trading status', (['planned', 'open', 'closed'] as const).map((v) => ({ id: v, label: v[0].toUpperCase() + v.slice(1), n: entries.filter((e) => tradingStatusOf(e) === v).length })), tradingStatusOff, setTradingStatusOff)}
@@ -565,7 +568,30 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
 
 
-          <JournalCumulativeChart entries={scoped} valueOf={valueOf} title={cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`} unit={cbMode === 'points' ? 'pts' : 'usd'} rangeLabel={rangeLabel} brokers={chartBrokers} off={brokerOff} onDay={openDay}/>
+          <JournalCumulativeChart
+            entries={scoped}
+            valueOf={valueOf}
+            title={cbMode === 'points' ? 'MarketSyde Points' : `${valueLabel} P&L`}
+            unit={cbMode === 'points' ? 'pts' : 'usd'}
+            rangeLabel={rangeLabel}
+            brokers={chartBrokers}
+            off={brokerOff}
+            onDay={openDay}
+            calendar={<JournalCalendar
+              month={calMonth}
+              onMonthChange={(ym) => { setCalMonth(ym); setSelectedDay(null); }}
+              entries={scoped}
+              valueOf={valueOf}
+              eligibleForValue={e=>cbMode==='points'?tradingStatusOf(e)==='closed':eligible(e,pnlMode)}
+              label={cbMode === 'points' ? 'points' : valueLabel}
+              unit={cbMode === 'points' ? 'pts' : 'usd'}
+              brokerName={brokerName}
+              brokerColor={colorOf}
+              today={JOURNAL_TODAY}
+              selected={selectedDay}
+              onSelect={date => date ? openDay(date) : setSelectedDay(null)}
+            />}
+          />
               <section className="bg-white border border-slate-200 rounded-2xl p-4 space-y-2" aria-label="Review queue">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-bold">Review your trades<JournalHelp label="Review queue" /></h3>
@@ -611,7 +637,7 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
                   <summary className="cursor-pointer font-semibold text-[#5338ec] hover:underline">Show more information</summary>
                   <div className="mt-2 rounded-xl border border-[#e2dcff] bg-[#f7f5ff] p-3 text-[#474556] space-y-1.5">
                     <p><strong>What is pending:</strong> entries whose review state is not Complete, including entries reopened after completion.</p>
-                    <p><strong>What is included:</strong> only trades matching the current date range, currency, account, playbook, market, outcome, trading-status and broker filters.</p>
+                    <p><strong>What is included:</strong> only trades matching the current date range, currency, account, strategy book, market, outcome, trading-status and broker filters.</p>
                     <p><strong>What it means:</strong> pending indicates missing journal evidence such as costs, lessons, emotions, plan adherence or review answers. It does not change the trade result or mark the trade as a loss.</p>
                     <p><strong>Next step:</strong> select an entry above to open its Review form and save a draft or complete the missing information.</p>
                   </div>
@@ -709,22 +735,6 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
             </div>
 
             <aside className="space-y-5">
-              <CoachOverviewCard entries={scoped} playbooks={playbooks} currency={currency} today={coachToday} onOpen={() => { setTab('review'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}/>
-              <JournalCalendar
-                month={calMonth}
-                onMonthChange={(ym) => { setCalMonth(ym); setSelectedDay(null); }}
-                entries={scoped}
-                valueOf={valueOf}
-                eligibleForValue={e=>cbMode==='points'?tradingStatusOf(e)==='closed':eligible(e,pnlMode)}
-                label={cbMode === 'points' ? 'points' : valueLabel}
-                unit={cbMode === 'points' ? 'pts' : 'usd'}
-                brokerName={brokerName}
-                brokerColor={colorOf}
-                today={JOURNAL_TODAY}
-                selected={selectedDay}
-                onSelect={date => date ? openDay(date) : setSelectedDay(null)}
-              />
-
               <TiltMonitor entries={scoped} playbooks={playbooks} defaults={ruleDefaults} />
               <DisciplineCard entries={scoped} checklistLength={checklist.length} />
               <RulesMonitor entries={scoped} playbooks={playbooks} defaults={ruleDefaults} onEdit={() => setTab('playbook')} />
@@ -830,6 +840,10 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
           onBacktest={(id, symbol) => goBacktest({ view: 'setup', playbookId: id, symbol })}
           reviewOpen={!!selected}
           onWhatIf={id => goBacktest({ view: 'whatif', playbookId: id })}
+          brokers={brokers}
+          onConnectBroker={onConnectBroker}
+          onBrowseBrokers={onBrowseBrokers}
+          onStartTrade={onStartTrade}
           houseRules={(
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-white border border-[#e2e8f0] rounded-2xl p-5">

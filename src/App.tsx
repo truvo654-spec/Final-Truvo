@@ -663,7 +663,7 @@ export default function App() {
     DEFAULT_PLAYBOOKS.slice(0, 20).forEach((pb) => out.push({
       id: `pb-${pb.id}`,
       label: pb.name,
-      sub: 'Journal playbook',
+      sub: 'Journal strategy book',
       group: 'Journal',
       icon: NotebookIcon,
       keywords: ['playbook', 'strategy', 'journal', 'rules'],
@@ -1788,6 +1788,8 @@ export default function App() {
               setSelectedBrokerForConnect(broker);
               setIsConnectModalOpen(true);
             }}
+            onBrowseBrokers={() => setActiveTab('brokers')}
+            onStartTrade={() => setActiveTab('signals')}
             sydeCredits={user.sydeCredits}
             onSpendCredits={(amount, reason) => {
               const latest=currentUser.current;

@@ -42,8 +42,8 @@ export function strategyAnswer(): AiReply {
       ...toMessage(d, 'strategy', [
         { title: 'Open the Backtest tab', sub: 'In the Trading Journal', tab: 'trading-journal' },
         { title: 'Open the Strategy Builder', sub: 'Build and test a rule set', tab: 'strategy-builder' },
-      ], ['Your playbooks', 'Your journal']),
-      followUps: ['How do my playbooks compare?', 'What should I backtest first?', 'Any habits I should watch?'],
+      ], ['Your strategy books', 'Your journal']),
+      followUps: ['How do my strategy books compare?', 'What should I backtest first?', 'Any habits I should watch?'],
     },
     mem: { surface: 'strategy' },
   };

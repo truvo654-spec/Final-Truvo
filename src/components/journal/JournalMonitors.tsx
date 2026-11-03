@@ -145,7 +145,7 @@ export const RulesMonitor: React.FC<{ entries: JournalEntry[]; playbooks: Journa
       <div className="flex items-start justify-between mb-3">
         <div>
           <h4 className="text-sm font-bold">Personal rules<JournalHelp label="Personal rules" /></h4>
-          <p className="text-[11px] text-[#94a3b8]">Checked against entries for each playbook</p>
+          <p className="text-[11px] text-[#94a3b8]">Checked against entries for each strategy book</p>
         </div>
         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${total ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'}`}>
           {total ? `${total} breach${total === 1 ? '' : 'es'}` : groups.length ? 'No known breaches · incomplete' : 'No active rules'}
@@ -180,7 +180,7 @@ export const RulesMonitor: React.FC<{ entries: JournalEntry[]; playbooks: Journa
           </li>;
         })}
       </ul>}
-      <button onClick={onEdit} className="mt-3 text-xs font-semibold text-[#5338ec] hover:underline">Manage rules by playbook</button>
+      <button onClick={onEdit} className="mt-3 text-xs font-semibold text-[#5338ec] hover:underline">Manage rules by strategy book</button>
     </div>
   );
 };

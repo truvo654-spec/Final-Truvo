@@ -18,9 +18,9 @@ export const SURFACE_PROMPTS: Record<Surface, string[]> = {
   market: ['Give me today’s briefing', 'Week ahead', 'Gold outlook', 'Crypto summary', 'Market sentiment by asset class'],
   insights: ['How are my trades doing?', 'Which strategy works best for me?', 'Which session do I trade best?', 'What are my open positions doing?', 'Show my last 90 days'],
   behavior: ['Any habits I should watch?', 'What do I do after a loss?', 'How does my mood affect results?', 'Which mistakes cost me most?', 'Does the checklist help me?'],
-  playbook: ['How do my playbooks compare?', 'Which playbook is weakest?', 'Do my playbooks follow their rules?', 'How are my trades doing?'],
+  playbook: ['How do my strategy books compare?', 'Which strategy book is weakest?', 'Do my strategy books follow their rules?', 'How are my trades doing?'],
   portfolio: ['How are my accounts doing?', 'What is my drawdown?', 'Am I close to my goals?', 'What is my exposure right now?'],
-  strategy: ['What should I backtest first?', 'How do my playbooks compare?', 'How do I read a backtest?'],
+  strategy: ['What should I backtest first?', 'How do my strategy books compare?', 'How do I read a backtest?'],
   tools: ['Which expert advisor is safest?', 'How many alerts can I set?', 'Are expert advisors worth it?'],
   community: ['What is the community talking about?', 'What should I read?', 'What is the top article?'],
   rewards: ['How much cashback have I earned?', 'How close am I to the next level?', 'What missions are open?', 'What offers are live?', 'Where am I on the leaderboard?'],
@@ -42,10 +42,10 @@ const helpMsg = (ctx: AiContext, heading = 'Here is what I can do'): AiMessage =
   id: mid(), role: 'ai',
   heading,
   paragraphs: [
-    `I can match you with brokers and compare them, explain any trading term at your level (${ctx.level}), quiz you, work out position size and margin, brief you on the market or one instrument, read your trades and accounts, compare your playbooks, say what to backtest, notice habits in your journal, weigh up expert advisors and alerts, tell you what the community is talking about, track your cashback, points, missions and offers, and suggest what to do next.`,
+    `I can match you with brokers and compare them, explain any trading term at your level (${ctx.level}), quiz you, work out position size and margin, brief you on the market or one instrument, read your trades and accounts, compare your strategy books, say what to backtest, notice habits in your journal, weigh up expert advisors and alerts, tell you what the community is talking about, track your cashback, points, missions and offers, and suggest what to do next.`,
     'Tap a suggestion or write it your own way. I remember what we were just talking about, so “and gold?” or “last 7 days” works.',
   ],
-  followUps: ['Which broker suits me?', 'What is leverage?', 'Gold outlook', 'How are my trades doing?', 'How do my playbooks compare?', 'How much cashback have I earned?', 'What should I do next?'],
+  followUps: ['Which broker suits me?', 'What is leverage?', 'Gold outlook', 'How are my trades doing?', 'How do my strategy books compare?', 'How much cashback have I earned?', 'What should I do next?'],
 });
 
 export function runSurface(s: Surface, ctx: AiContext): AiReply {

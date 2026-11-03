@@ -92,7 +92,7 @@ export const PlaybookEditorFields: React.FC<Props> = ({ editing, setEditing, ent
           </>
         )}
       </div>
-      <p className="text-xs font-semibold text-slate-600">Playbook-specific settings</p>
+      <p className="text-xs font-semibold text-slate-600">Strategy Book-specific settings</p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <label className="block"><span className={lbl}>Min reward:risk (1:x)<JournalHelp label="Min reward:risk (1:x)" /></span>
           <input aria-label="Min reward:risk (1:x)" type="number" min={0.5} step={0.1} className={`${input} mt-1`} value={editing.benchmarkRR} onChange={(e) => setEditing({ ...editing, benchmarkRR: Number(e.target.value) })} />
@@ -128,7 +128,7 @@ export const PlaybookEditorFields: React.FC<Props> = ({ editing, setEditing, ent
         </div>
       </div>
       <label className="block"><span className={lbl}>Strategy notes (optional)</span>
-        <textarea aria-label="Strategy notes" rows={3} className={`${input} mt-1`} value={editing.strategyNotes ?? ''} onChange={(e) => setEditing({ ...editing, strategyNotes: e.target.value })} placeholder="Add context or reminders for this playbook." />
+        <textarea aria-label="Strategy notes" rows={3} className={`${input} mt-1`} value={editing.strategyNotes ?? ''} onChange={(e) => setEditing({ ...editing, strategyNotes: e.target.value })} placeholder="Add context or reminders for this strategy book." />
         <span className="mt-1 block text-[11px] text-slate-500">Notes are for reference and do not create an automatic trading rule.</span>
       </label>
     </FieldGroup>

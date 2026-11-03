@@ -571,7 +571,7 @@ function dockRead({ tab, user, signals, brokers, go }: AiDockContext): Spotlight
       }), visual: <AiChecklist bare {...alertsChecklist(DEMO_ALERTS, user.tierLevel >= 3 ? 999 : user.tierLevel === 2 ? 25 : 5)} /> };
     case 'expert-advisors':
       return { ...toSpotlight(advisorsRead(undefined, user.tierLevel), 'Read the advisor listings', [
-        { label: 'Open the backtest', sub: 'Test a playbook before you trade it again.', onClick: () => go('trading-journal') },
+        { label: 'Open the backtest', sub: 'Test a strategy book before you trade it again.', onClick: () => go('trading-journal') },
         { label: 'What their drawdown looks like', sub: 'The deepest fall each advisor has taken, not just the return.', onClick: () => go('expert-advisors'), cta: { label: 'Open the journal', run: () => go('trading-journal') } },
         to('strategy-builder', 'Build your own', 'Turn a rule set into something you can test.'),
       ]), visual: (() => { const n = advisorsCompare(); return n ? <AiCompare bare {...n} /> : null; })() };
@@ -587,14 +587,14 @@ function dockRead({ tab, user, signals, brokers, go }: AiDockContext): Spotlight
         'Average R': 'Average result measured in multiples of what you risked.',
       });
     case 'strategy-builder':
-      return { ...toSpotlight(strategyRead(), 'Read your playbooks and their live trades', [
-        { label: 'Open the journal', sub: 'Your entries, playbooks and reviews.', onClick: () => go('trading-journal') },
-        { label: 'Which playbook earns', sub: 'The strongest rule set by money, and the one giving it back.', onClick: () => go('strategy-builder'), cta: { label: 'Open the journal', run: () => go('trading-journal') } },
+      return { ...toSpotlight(strategyRead(), 'Read your strategy books and their live trades', [
+        { label: 'Open the journal', sub: 'Your entries, strategy books and reviews.', onClick: () => go('trading-journal') },
+        { label: 'Which strategy book earns', sub: 'The strongest rule set by money, and the one giving it back.', onClick: () => go('strategy-builder'), cta: { label: 'Open the journal', run: () => go('trading-journal') } },
         to('expert-advisors', 'See expert advisors', 'Ready-made rule sets, with their drawdown shown.'),
       ], {
         Playbooks: 'Rule sets you have written up.',
         'With live trades': 'How many have real trades tagged to them.',
-        'Best net': 'The strongest playbook by money.',
+        'Best net': 'The strongest strategy book by money.',
         'Weakest net': 'The one giving money back.',
       }), visual: <AiChecklist bare {...backtestChecklist()} /> };
     case 'points-credits':

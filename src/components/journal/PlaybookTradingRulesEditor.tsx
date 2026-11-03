@@ -103,7 +103,7 @@ export const PlaybookTradingRulesEditor: React.FC<Props> = ({ rules, onChange })
 
   return <section aria-label="Trading rules for this strategy" className="rounded-xl border border-slate-200 bg-white p-3">
     <h4 className="text-sm font-bold text-[#0b1c30]">Trading rules for this strategy</h4>
-    <p className="mt-1 text-[11px] leading-relaxed text-slate-600">Choose which rules apply to this playbook. These choices do not change your other playbooks. Built-in checks need supporting journal evidence; added rules are reminders only.</p>
+    <p className="mt-1 text-[11px] leading-relaxed text-slate-600">Choose which rules apply to this strategy book. These choices do not change your other strategy books. Built-in checks need supporting journal evidence; added rules are reminders only.</p>
     <div role="list" aria-label="Strategy trading rules" className="mt-3 space-y-3">
       {limits.map(([key, label, unit]) => <div role="listitem" key={key} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-100 p-2.5">
         <label className="flex min-w-0 flex-1 items-center gap-2 text-xs font-semibold text-[#0b1c30]">

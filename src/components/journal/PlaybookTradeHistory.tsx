@@ -25,7 +25,7 @@ export function PlaybookTradeHistory({ entries, onTrade, onReplay, onViewAll }: 
   const [page, setPage] = useState(1);
   const pages = Math.max(1, Math.ceil(filtered.length / 10)), current = Math.min(page, pages);
   const cell = 'px-3 py-3 text-left whitespace-nowrap';
-  return <section aria-label="Playbook trade history" className="min-w-0 rounded-xl border border-slate-200 bg-white p-4">
+  return <section aria-label="Strategy Book trade history" className="min-w-0 rounded-xl border border-slate-200 bg-white p-4">
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div><h4 className="text-sm font-bold">Trade history ({filtered.length})</h4><p className="mt-1 text-xs text-slate-500">Recorded trades · current journal filters</p></div>
       {onViewAll && <button type="button" onClick={onViewAll} className="text-xs font-semibold text-[#5338ec]">View all trades</button>}

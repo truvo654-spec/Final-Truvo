@@ -78,7 +78,7 @@ test('Checks mark oversized risk, expired scenarios and unsupported symbols as m
   assert.equal(rows.find(c=>c.label==='Risk per trade')!.state,'Mismatch');
   assert.equal(rows.find(c=>c.label==='Scenario validity')!.state,'Mismatch');
   assert.equal(rows.find(c=>c.label==='Written scenario trigger')!.state,'Unknown');
-  assert.equal(rows.find(c=>c.label==='Written playbook rules')!.state,'Unknown');
+  assert.equal(rows.find(c=>c.label==='Written strategy book rules')!.state,'Unknown');
   const missing=positionChecks({book:{...pb,riskPerTrade:undefined},feed,plan:null,snapshot:null,scenario:null,scenarioKey:'custom',asOf:'2026-10-09'});
   assert.equal(missing.find(c=>c.label==='Risk per trade')!.state,'Unknown');assert.equal(missing.find(c=>c.label==='Scenario price levels')!.state,'Unknown');
   const unknownDate=positionChecks({book:pb,feed,plan,snapshot:null,scenario:{...sc,validUntil:'2026-02-30'},scenarioKey:'x',asOf:'2026-10-09'});

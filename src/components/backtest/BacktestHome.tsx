@@ -29,7 +29,7 @@ interface Props {
 }
 
 const MODES = [
-  { key: 'test', title: 'Compare playbooks on past prices', text: 'Choose one or more playbooks to test on the same market and dates. Each keeps its own rules, timeframe and session.', cta: 'Start a backtest', time: 'One run per comparison' },
+  { key: 'test', title: 'Compare strategy books on past prices', text: 'Choose one or more strategy books to test on the same market and dates. Each keeps its own rules, timeframe and session.', cta: 'Start a backtest', time: 'One run per comparison' },
   { key: 'whatif', title: 'What if I followed one rule?', text: 'Change one rule on your real journal trades, like "stop after 2 losses a day", and see what it would have changed.', cta: 'Try a what-if', time: 'Instant · free' },
   { key: 'replay', title: 'Practice on past charts', text: 'Trade bar by bar with the future hidden. Replay your own losing trades blind and earn Points.', cta: 'Start practising', time: 'Free · earns Points' },
 ] as const;
@@ -63,13 +63,13 @@ export const BacktestHome: React.FC<Props> = ({ playbooks, entries, expected, ru
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-5">
-        <Card title="Your playbooks: tested vs live" sub="Live numbers come from your journal. Tested numbers come from the backtest you saved for that playbook.">
+        <Card title="Your strategy books: tested vs live" sub="Live numbers come from your journal. Tested numbers come from the backtest you saved for that strategy book.">
           <div className="overflow-x-auto -mx-5 px-5">
             <table className="w-full text-xs tabular-nums">
               <thead>
                 <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
-                  <th className="text-left py-2 pr-2">Playbook<JournalHelp label="Playbook" /></th>
-                  <th className="text-right py-2 px-2" title="Win rate and average R of your real trades with this playbook">Live<JournalHelp label="Live" /></th>
+                  <th className="text-left py-2 pr-2">Strategy Book<JournalHelp label="Strategy Book" /></th>
+                  <th className="text-right py-2 px-2" title="Win rate and average R of your real trades with this strategy book">Live<JournalHelp label="Live" /></th>
                   <th className="text-right py-2 px-2" title="Win rate and average R from the saved backtest">Tested<JournalHelp label="Tested" /></th>
                   <th className="text-left py-2 px-2" title="On track: live results are inside the range the backtest predicts. Underperforming: below it.">Status<JournalHelp label="Strategy health" /></th>
                   <th className="py-2 pl-2" />

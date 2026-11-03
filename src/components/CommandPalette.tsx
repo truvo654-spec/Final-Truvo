@@ -416,7 +416,7 @@ export function navigationItems(go: (tab: string) => void): PaletteItem[] {
     page('signals', 'Trading Signals', 'Open calls and their confidence', LineChart, ['signal', 'call', 'setup', 'สัญญาณ']),
     page('instrument-analysis', 'Instrument Analysis', 'Table, heatmap, scatter and correlation', BarChart3, ['chart', 'heatmap', 'scatter', 'correlation', 'กราฟ', 'วิเคราะห์']),
     page('economic-calendar', 'Economic Calendar', 'What is due and what it can move', CalendarDays, ['calendar', 'events', 'release', 'ปฏิทิน', 'ข่าวเศรษฐกิจ']),
-    page('trading-journal', 'Trading Journal', 'Entries, playbooks, backtest and AI coach', NotebookPen, ['journal', 'diary', 'log', 'backtest', 'บันทึก']),
+    page('trading-journal', 'Trading Journal', 'Entries, strategy books, backtest and AI coach', NotebookPen, ['journal', 'diary', 'log', 'backtest', 'บันทึก']),
     page('portfolio-tracker', 'Portfolio Tracker', 'Equity, drawdown and goals', Wallet, ['portfolio', 'equity', 'positions', 'พอร์ต']),
     page('alerts', 'Price Alerts', 'Levels worth being told about', Bell, ['alert', 'notification', 'แจ้งเตือน']),
     page('brokers', 'Broker List', 'Spreads, cashback and regulation', Briefcase, ['broker', 'spread', 'cashback', 'โบรกเกอร์']),
