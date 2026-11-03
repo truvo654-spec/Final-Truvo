@@ -396,7 +396,6 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                 <div className="flex flex-wrap gap-2">
 
                   <button type="button" className={btn} onClick={()=>setHistoryOpen(true)}>View results</button>
-                  {onBacktest && <button type="button" onClick={() => onBacktest(sel.id)} className="h-9 rounded-lg bg-[#5338ec] px-4 text-xs font-semibold text-white hover:bg-[#4326d8]" title="Test these rules on past prices">Backtest this strategy book</button>}
                   <button type="button" onClick={startEdit} className={btn}>Edit strategy book</button>
                 </div>
               </div>
@@ -423,7 +422,7 @@ export const JournalPlaybooks: React.FC<Props> = ({ entries, allJournalEntries =
                 />}
               </div>
 
-              <PlaybookExecutionWorkspace directions={sides} key={sel.id} playbook={sel} entries={entries} allEntries={allJournalEntries} comparisonEntries={comparisonEntries} globalRules={globalRules} onOpenEntry={onOpenEntry} onShowTrades={onShowTrades} onReplay={setReplayId} onTest={onBacktest ? symbol => onBacktest(sel.id, symbol) : undefined} />
+              <PlaybookExecutionWorkspace directions={sides} key={sel.id} playbook={sel} entries={entries} allEntries={allJournalEntries} comparisonEntries={comparisonEntries} globalRules={globalRules} onOpenEntry={onOpenEntry} onReplay={setReplayId} onTest={onBacktest ? symbol => onBacktest(sel.id, symbol) : undefined} />
             </section>
           ) : (
             <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-10 text-center text-sm text-slate-500">Select a strategy book, or create one.</div>

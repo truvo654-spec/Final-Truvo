@@ -1,3 +1,16 @@
+## 2.72.17 - Improve execution list
+
+- Add recorded position duration to Strategy Book execution rows.
+- Remove the extra Open filtered trade log action from the executions popup.
+
+## 2.72.16 - Restore result notes
+
+- Restore the Add note action in the closed-trade results popup, saved per result selection.
+
+## 2.72.15 - Simplify Strategy Book header actions
+
+- Remove the Backtest this strategy book action from the Strategy Book header.
+
 ## 2.72.14 - Streamlined execution review
 
 - Move Strategy Book executions into a popup launched from the price chart.
