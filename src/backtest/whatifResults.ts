@@ -5,6 +5,16 @@ import type {WhatIfStudyRow} from './savedWhatIf';
 
 export interface WhatIfResultGroup {id:string;label:string;market:string;from:string;to:string;tradeIds:string[]}
 export interface WhatIfBreakdown extends WhatIfResultGroup {output:WhatIfOutput}
+export function whatIfDrawdownCurve(output:WhatIfOutput,entries:WhatIfEntry[],actual=false):{x:number;y:number}[]{
+ const dates=new Map(entries.map(e=>[e.id,e.date]));
+ const daily=new Map<string,number>();
+ for(const trade of output.trades){
+  const date=dates.get(trade.id)??new Date(trade.entryTime).toISOString().slice(0,10);
+  daily.set(date,(daily.get(date)??0)+(actual?trade.actualNet:trade.newNet));
+ }
+ let equity=0,peak=0;
+ return [...daily].sort(([a],[b])=>a.localeCompare(b)).map(([date,net])=>{equity+=net;peak=Math.max(peak,equity);return {x:Date.parse(date+'T00:00:00Z'),y:equity-peak};});
+}
 const group=(id:string,label:string,market:string,entries:WhatIfEntry[]):WhatIfResultGroup=>{
  const dates=entries.map(e=>e.date).sort();
  return {id,label,market,from:dates[0]??'',to:dates.at(-1)??'',tradeIds:entries.map(e=>e.id)};

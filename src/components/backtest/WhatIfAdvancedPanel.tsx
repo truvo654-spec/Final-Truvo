@@ -268,7 +268,7 @@ export const WhatIfAdvancedPanel: React.FC<Props> = ({ priceData,initialTechnica
             })}
           </div>
         </CollapsibleCard>
-        <WhatIfTechnicalSetup initial={initialTechnicalSetup} applied={kind==='technical'?technicalRule:undefined} onUse={next=>{if(kind!=='technical')previousKind.current=kind;selectRule(next);}} onClear={()=>chooseKind(previousKind.current)}/>
+        <WhatIfTechnicalSetup initial={initialTechnicalSetup} applied={kind==='technical'?technicalRule:undefined} onUse={next=>{if(kind!=='technical')previousKind.current=kind;selectRule(next);}}/>
         {visibleEntries.length>0&&<ScenarioOutcomeComparison user={out} ai={aiOut} aiName={aiName} userName={describeWhatIf(rule)}/>}
         </div>
 

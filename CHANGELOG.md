@@ -1,3 +1,91 @@
+## 2.70.21 - Buy/sell source badges
+
+- Replace plain chart dots/text with Buy/Sell/Exit callout badges identifying History, Backtest, Practice, Condition or Scenario sources.
+- Share the badge style across Playbook candles, recorded fills, What-if results and replay charts while retaining scenario colors and trade actions.
+- Avoid crowded labels without dropping trade dots; reveal labels on hover/focus and keep badges inside the price pane.
+
+## 2.70.20 - Advanced suggestion chart highlights
+
+- Highlight the selected AI suggestion in the advanced candle chart with matching cumulative P&L and recorded entry/exit markers.
+- Keep the original benchmark visible and distinguish skipped trades without inventing scenario fill or stop-loss prices.
+
+## 2.70.19 - Linked scenario markers and drawdown
+
+- Match selected-scenario trade dots and price-chart P&L to its scenario color; label entry, exit, direction and skipped trades.
+- Add scenario drawdown curves and the original benchmark, using UTC entry-day results to match drawdown metrics.
+
+## 2.70.18 - Breakeven and stop scenario selection
+
+- Add multi-select presets and custom Add breakeven / Add stop controls, using the same scenario comparison flow as targets.
+
+## 2.70.17 - Multi-select target scenarios
+
+- Check multiple target-R values and add custom targets to compare exactly those scenarios on the same trades.
+- Show selected-target result cards and distinct chart lines alongside the original benchmark.
+- Update What-if headings and help text to explain multi-scenario comparisons.
+
+## 2.70.16 - Complete technical condition comparisons
+
+- Compare every configured condition separately alongside the full AND setup, with actual rule descriptions instead of shared indicator labels.
+- Chart every technical scenario in a distinct color and retain a dashed original test/journal benchmark before filtering.
+
+## 2.70.15 - Technical comparison visuals
+
+- Keep condition comparisons available for multi-condition technical filters and color the selected scenario line by its net-P&L effect.
+
+## 2.70.14 - Separate comparison apply and finish actions
+
+- Keep the Technical tools editor open after Apply & compare; close it only after Finish comparing conditions.
+
+## 2.70.13 - Close editor after finishing comparison
+
+- Close the Technical tools window after Finish comparing conditions applies the setup.
+
+## 2.70.12 - Simplify technical filter summary
+
+- Remove the preset selector and duplicate label/timeframe text; show the active conditions and timeframe with Technical tools.
+
+## 2.70.11 - Show active technical conditions
+
+- Display the active technical conditions beneath the filter controls, reflecting edits from Technical tools.
+
+## 2.70.10 - Remove scenario fallback action
+
+- Remove "Use scenario parameter" from the Technical tools editor.
+
+## 2.70.9 - Technical condition button wording
+
+- Rename the Technical tools action to "Finish comparing conditions."
+
+## 2.70.8 - Keep technical tools editor open after apply
+
+- Keep the Technical tools editor open after applying a two-tool comparison so the applied result remains visible.
+
+## 2.70.7 - Technical tools control placement
+
+- Place the Technical tools editor button beside the selected technical filter controls.
+
+## 2.70.6 - Condition-level tool comparison
+
+- Move Compare two tools into each technical condition and scope edits to that condition.
+
+## 2.70.5 - Chart trade date sorting
+
+- Sort chart trades by entry date for journal and backtest sources, and clarify the eight-trade display limit.
+
+## 2.70.4 - Execution date sorting
+
+- Sort journal and simulated executions by entry date, newest or oldest first.
+
+## 2.70.3 - Playbook section visibility
+
+- Make comparison filters, price and trades, and executions expandable by their headings, all open by default.
+- Reopen executions automatically when drilling into instrument performance.
+
+## 2.70.2 � Toolbar layout adjustments
+
+- Move Import / link into the filters row beside the date range and Filters controls.
+- Remove the isolated-workspace notice from the journal header.
 ## 2.70.1 — Back and next in playbook rule review
 
 - Keep the selected review order available while moving Back or Apply & next across multiple playbooks. Retain each playbook’s edits when revisiting it.

@@ -479,7 +479,7 @@ export const ReplayPanel: React.FC<Props> = ({ entries, sessions, tz, initialEnt
                 </div>
                 <div className="flex-1 min-w-0 overflow-x-auto">
                   <div className="min-w-[520px] relative">
-                    <CandleChart bars={bars} from={from} to={cursor} dp={dp} height={340} label="Replay chart" lines={lines} markers={markers} drawings={drawings} onPick={drawMode ? (p) => { setDrawings((d) => [...d, p]); setDrawMode(false); } : undefined} />
+                    <CandleChart bars={bars} from={from} to={cursor} dp={dp} height={340} label="Replay chart" markerSource="Practice" lines={lines} markers={markers} drawings={drawings} onPick={drawMode ? (p) => { setDrawings((d) => [...d, p]); setDrawMode(false); } : undefined} />
                   </div>
                 </div>
               </div>

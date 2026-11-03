@@ -2,6 +2,7 @@ import {LinkedPerformancePanes,LINKED_PANE_HEIGHT,candleTimePosition,candlePosit
 // Lightweight SVG charts for the Backtesting screens: equity / drawdown lines, bar breakdowns and candles.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Bar } from '../../backtest/types';
+import {TradeMarkerBadge,tradeMarkerText,tradeBadgeLanes} from './TradeMarkerBadge';
 
 const GRID = '#E2E8F0';
 const AXIS = '#64748b';
@@ -184,7 +185,7 @@ export const BarBreakdown: React.FC<{ buckets: { label: string; value: number; n
 };
 
 export interface PriceLine { price: number; color: string; label: string; dashed?: boolean }
-export interface Marker { index: number; price: number; kind: 'buy' | 'sell' | 'exit'; color?: string; label?: string; id?: string; showLabel?: boolean; time?: number; timeLabel?: string }
+export interface Marker { index: number; price: number; kind: 'buy' | 'sell' | 'exit'; source?: string; color?: string; label?: string; id?: string; showLabel?: boolean; time?: number; timeLabel?: string }
 
 export const CandleChart: React.FC<{
   bars: Bar[];
@@ -199,6 +200,7 @@ export const CandleChart: React.FC<{
   drawings?: number[];
   onPick?: (price: number) => void;
   label: string;
+  markerSource?:string;
   hidePriceAxis?: boolean;
   showTimeAxis?: boolean;
   responsive?: boolean;
@@ -208,12 +210,13 @@ export const CandleChart: React.FC<{
   interactive?: boolean;
   tooltipDetail?: (time: number) => React.ReactNode;
   pnl?: { series: LineSeries[]; detail: (time: number) => React.ReactNode; currency?: string };
-}> = ({ bars, from, to, height = 320, dp, lines = [], markers = [], onMarkerClick, drawings = [], onPick, label, hidePriceAxis, showTimeAxis = false, responsive = false, linkedPanels = [], timelineEnd, pnl, interactive = Boolean(pnl), tooltipDetail }) => {
+}> = ({ bars, from, to, height = 320, dp, lines = [], markers = [], onMarkerClick, drawings = [], onPick, label, markerSource='Backtest', hidePriceAxis, showTimeAxis = false, responsive = false, linkedPanels = [], timelineEnd, pnl, interactive = Boolean(pnl), tooltipDetail }) => {
   const [responsiveWidth,setResponsiveWidth]=useState(760);
   const W = responsive ? responsiveWidth : 760, H = height, M = { t: pnl ? 30 : 10, r: hidePriceAxis ? 8 : pnl ? 72 : 64, b: pnl || showTimeAxis ? 28 : 10, l: pnl ? 76 : 8 };
   const vis = bars.slice(Math.max(0, from), Math.max(from, to));
   const ref = useRef<SVGSVGElement>(null);
   const [hoverTime, setHoverTime] = useState<number|null>(null);
+  const [activeMarker,setActiveMarker]=useState<number|null>(null);
   useEffect(()=>{
     const node=ref.current?.parentElement;
     if(!responsive||!node)return;
@@ -222,11 +225,11 @@ export const CandleChart: React.FC<{
     if(typeof ResizeObserver==='undefined')return;
     const observer=new ResizeObserver(update);observer.observe(node);return()=>observer.disconnect();
   },[responsive,vis.length>0]);
-  useEffect(()=>setHoverTime(null),[bars,from,to,timelineEnd]);
+  useEffect(()=>{setHoverTime(null);setActiveMarker(null);},[bars,from,to,timelineEnd]);
   if (!vis.length) return <div className="h-40 grid place-items-center text-xs text-slate-500">No bars to show.</div>;
   let lo = Math.min(...vis.map((b) => b.l)), hi = Math.max(...vis.map((b) => b.h));
   lines.forEach((l) => { if (Number.isFinite(l.price)) { lo = Math.min(lo, l.price); hi = Math.max(hi, l.price); } });
-  const visibleMarkers=markers.filter(m=>m.index>=from&&m.index<to&&Number.isFinite(m.price));
+  const visibleMarkers=markers.filter(m=>Number.isInteger(m.index)&&m.index>=Math.max(0,from)&&m.index<Math.min(to,bars.length)&&Number.isFinite(m.price));
   for(const marker of visibleMarkers){lo=Math.min(lo,marker.price);hi=Math.max(hi,marker.price);}
   const pad = (hi - lo) * 0.06 || hi * 0.001; lo -= pad; hi += pad;
   const sy = (p: number) => M.t + (1 - (p - lo) / (hi - lo)) * (H - M.t - M.b);
@@ -251,6 +254,7 @@ export const CandleChart: React.FC<{
   const pnlCurrency = pnl?.currency ?? 'USD';
   const money = (v:number) => new Intl.NumberFormat('en-US',{style:'currency',currency:pnlCurrency,maximumFractionDigits:2,notation:Math.abs(v)>=10000?'compact':'standard'}).format(v);
   const hovered = hoverTime===null?undefined:linkedPanels.length?bars[Math.max(from,Math.min(to-1,candleIndexAt(bars,hoverTime)))]:vis.find(b=>b.t===hoverTime);
+  const badges=tradeBadgeLanes(visibleMarkers.map(m=>({x:linkedPanels.length&&m.time!==undefined?timeX(m.time):sx(m.index),y:sy(m.price),kind:m.kind,source:m.source??markerSource})),{left:M.l,right:W-M.r,top:M.t,bottom:H-M.b});
   return (
     <div className="relative">
     <svg ref={ref} viewBox={`0 0 ${W} ${svgHeight}`} className={`w-full h-auto select-none ${onPick || interactive ? 'cursor-crosshair' : ''}`} role={onMarkerClick?"group":"img"} aria-label={label} onClick={click}
@@ -288,10 +292,11 @@ export const CandleChart: React.FC<{
           <text x={W - M.r + 6} y={sy(l.price) + 3} fontSize="9" fill="#fff" fontWeight={700}>{l.label}</text>
         </g>
       ))}
-      {markers.filter((m) => m.index >= from && m.index < to).map((m, k) => (
-        <g key={`m${k}`} role={onMarkerClick?'button':undefined} tabIndex={onMarkerClick?0:undefined} aria-label={onMarkerClick?`${m.label||m.kind} at ${m.price.toFixed(dp)} · ${m.timeLabel??(new Date(m.time??bars[m.index].t).toISOString().slice(0,16)+' UTC')}`:undefined} className={onMarkerClick?'cursor-pointer focus:outline-none focus:stroke-slate-950':undefined} onFocus={onMarkerClick?()=>setHoverTime(m.time??bars[m.index].t):undefined} onClick={onMarkerClick?event=>{event.stopPropagation();setHoverTime(m.time??bars[m.index].t);onMarkerClick(m);}:undefined} onKeyDown={onMarkerClick?event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();onMarkerClick(m);}}:undefined}>
+      {visibleMarkers.map((m,k)=>({m,k})).sort((a,b)=>Number(a.k===activeMarker)-Number(b.k===activeMarker)).map(({m,k}) => (
+        <g key={`m${k}`} role={onMarkerClick?'button':undefined} tabIndex={0} aria-label={`${tradeMarkerText(m.kind,m.source??markerSource)} · ${m.label||m.kind} at ${m.price.toFixed(dp)} · ${m.timeLabel??(new Date(m.time??bars[m.index].t).toISOString().slice(0,16)+' UTC')}`} className="cursor-pointer focus:outline-none focus:stroke-slate-950" onMouseEnter={()=>setActiveMarker(k)} onMouseLeave={()=>setActiveMarker(null)} onFocus={()=>{setActiveMarker(k);setHoverTime(m.time??bars[m.index].t);}} onBlur={()=>setActiveMarker(null)} onClick={onMarkerClick?event=>{event.stopPropagation();setHoverTime(m.time??bars[m.index].t);onMarkerClick(m);}:undefined} onKeyDown={onMarkerClick?event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();onMarkerClick(m);}}:undefined}>
           <circle cx={linkedPanels.length&&m.time!==undefined?timeX(m.time):sx(m.index)} cy={sy(m.price)} r={5} fill={m.color || (m.kind === 'buy' ? UP : m.kind === 'sell' ? DOWN : '#0b1c30')} stroke="#fff" strokeWidth={1.5} />
-          {m.showLabel!==false&&<text x={linkedPanels.length&&m.time!==undefined?timeX(m.time):sx(m.index)} y={sy(m.price) + (m.kind === 'sell' ? -9 : 15)} textAnchor="middle" fontSize="9" fontWeight={700} fill={m.color || (m.kind === 'buy' ? UP : m.kind === 'sell' ? DOWN : '#0b1c30')}>{m.label || (m.kind === 'buy' ? 'BUY' : m.kind === 'sell' ? 'SELL' : 'EXIT')}</text>}
+          <title>{tradeMarkerText(m.kind,m.source??markerSource)} · {m.label||m.kind} · {m.price.toFixed(dp)}</title>
+          {(badges[k]!==null||activeMarker===k||m.showLabel===true)&&<TradeMarkerBadge x={linkedPanels.length&&m.time!==undefined?timeX(m.time):sx(m.index)} y={sy(m.price)} kind={m.kind} source={m.source??markerSource} color={m.color||(m.kind==='buy'?UP:m.kind==='sell'?DOWN:'#0b1c30')} left={M.l} right={W-M.r} top={M.t} bottom={H-M.b} lane={badges[k]??0}/>}
         </g>
       ))}
       {!hidePriceAxis && (
@@ -305,6 +310,7 @@ export const CandleChart: React.FC<{
     </svg>
     {hovered&&interactive&&<div role="status" className="pointer-events-none absolute top-6 left-2 right-2 sm:right-auto rounded-lg bg-[#0b1c30] text-white text-[11px] p-3 shadow-lg"><p>{new Date(hoverTime??hovered.t).toISOString().slice(0,16).replace('T',' ')} UTC</p><p>O {hovered.o.toFixed(dp)} · H {hovered.h.toFixed(dp)} · L {hovered.l.toFixed(dp)} · C {hovered.c.toFixed(dp)}</p><p>Volume {hovered.v.toLocaleString()}</p>{tooltipDetail?.(hoverTime??hovered.t)}{pnl?.detail(hovered.t)}</div>}
     {pnl&&<div className="flex flex-wrap gap-4 text-[11px] mt-2"><span>Candles · price</span>{overlays.map(s=><span key={s.id ?? s.name} className="flex items-center gap-1"><span className="w-4 border-t-2" style={{borderColor:s.color,borderStyle:s.dashed?'dashed':'solid'}}/>{s.name} · net P&amp;L</span>)}<span className="text-slate-500">Independent scales · hover or focus chart and use ← / →</span></div>}
+    {visibleMarkers.length>0&&<p className="mt-2 text-[11px] text-slate-500">BUY / SELL = entry direction; EXIT = recorded or simulated close. The badge names the source. Zoom, hover or focus a dot to read crowded labels.</p>}
     </div>
   );
 };

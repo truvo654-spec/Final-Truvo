@@ -4,6 +4,7 @@ import {LinkedPerformancePanes,LINKED_PANE_HEIGHT,linkedValueAt,type LinkedPanel
 import type {ExecutionPoint} from './playbookComparison';
 import {executionPrice} from './playbookComparison';
 import {recordedFillAnchors,recordedTimeTicks,type PriceChartInterval} from './executionPriceStudy';
+import {TradeMarkerBadge,tradeMarkerText,tradeBadgeLanes} from '../backtest/TradeMarkerBadge';
 const dateTime=(at:number)=>new Date(at).toISOString().slice(0,16).replace('T',' ')+' UTC';
 
 /** A navigable timeline of actual fills, never synthetic market candles. */
@@ -13,6 +14,7 @@ export const RecordedExecutionChart:React.FC<{
 }> = ({points,selected,from,to,symbol,timeframe,onSelect,panels,lines}) => {
   const container=useRef<HTMLDivElement>(null),svgRef=useRef<SVGSVGElement>(null);
   const [width,setWidth]=useState(760),[hoverTime,setHoverTime]=useState<number|null>(null);
+  const [activeFill,setActiveFill]=useState<string|null>(null);
   useEffect(()=>setHoverTime(null),[from,to,symbol,timeframe]);
   useEffect(()=>{
     const node=container.current;if(!node)return;
@@ -27,6 +29,9 @@ export const RecordedExecutionChart:React.FC<{
   const lo=scalePrices.length?Math.min(...scalePrices):0,hi=scalePrices.length?Math.max(...scalePrices):1,pad=(hi-lo)*0.1||Math.max(1,Math.abs(hi)*0.01);
   const left=8,right=64,plotWidth=width-left-right,height=260+panels.length*LINKED_PANE_HEIGHT+16;
   const x=(time:number)=>left+(time-from)/Math.max(1,to-from)*plotWidth,y=(price:number)=>232-(price-lo+pad)/(hi-lo+2*pad)*220;
+  const fills=records.flatMap(({point,anchors})=>anchors.map(anchor=>({key:point.id+':'+anchor.kind,x:x(anchor.time),y:y(anchor.price),kind:anchor.kind==='exit'?'exit' as const:point.journal?.direction==='BUY'?'buy' as const:'sell' as const,source:'History'})));
+  const lanes=tradeBadgeLanes(fills,{left,right:width-right,top:10,bottom:232});
+  const badgeLanes=new Map(fills.map((fill,index)=>[fill.key,lanes[index]]));
   const times=[...new Set([from,to-1,...records.flatMap(record=>record.anchors.map(a=>a.time)),...panels.flatMap(panel=>panel.points.map(p=>p.at))])].filter(t=>t>=from&&t<to).sort((a,b)=>a-b);
   const choose=(point:ExecutionPoint)=>{setHoverTime(Math.max(from,Math.min(to-1,point.entryAt)));onSelect(point);};
   return <div ref={container} className="relative mt-3">
@@ -39,9 +44,9 @@ export const RecordedExecutionChart:React.FC<{
       {lines.map(line=><g key={line.label}><line x1={left} x2={width-right} y1={y(line.price)} y2={y(line.price)} stroke={line.color} strokeDasharray={line.dashed?'5 4':undefined}/><rect x={width-right+2} y={y(line.price)-8} width={right-4} height="16" rx="3" fill={line.color}/><text x={width-right+6} y={y(line.price)+3} fontSize="9" fill="white" fontWeight="700">{line.label}</text></g>)}
       {records.map(({point,anchors})=><g key={point.id}>
         {anchors.length===2&&<line x1={x(anchors[0].time)} x2={x(anchors[1].time)} y1={y(anchors[0].price)} y2={y(anchors[1].price)} stroke={point.net<0?'#e11d48':'#059669'} strokeWidth={selected===point.id?2:1.2} strokeDasharray="4 3"/>}
-        {anchors.map(anchor=><g key={anchor.kind} role="button" tabIndex={0} aria-label={`Select journal trade ${point.id} ${anchor.kind}`} className="cursor-pointer focus:outline-none focus:stroke-slate-950" onFocus={()=>setHoverTime(anchor.time)} onClick={()=>choose(point)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();choose(point);}}}>
+        {anchors.map(anchor=><g key={anchor.kind} role="button" tabIndex={0} aria-label={`Select journal trade ${point.id} ${anchor.kind} · ${tradeMarkerText(anchor.kind==='exit'?'exit':point.journal?.direction==='BUY'?'buy':'sell','History')}`} className="cursor-pointer focus:outline-none focus:stroke-slate-950" onMouseEnter={()=>setActiveFill(point.id+':'+anchor.kind)} onMouseLeave={()=>setActiveFill(null)} onFocus={()=>{setActiveFill(point.id+':'+anchor.kind);setHoverTime(anchor.time);}} onBlur={()=>setActiveFill(null)} onClick={()=>choose(point)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();choose(point);}}}>
           <circle cx={x(anchor.time)} cy={y(anchor.price)} r={selected===point.id?6:5} fill={anchor.kind==='exit'?'#5338ec':point.journal?.direction==='BUY'?'#059669':'#e11d48'} stroke="white" strokeWidth="1.5"/>
-          {selected===point.id&&<text x={x(anchor.time)} y={y(anchor.price)-10} textAnchor="middle" fontSize="10" fill="#0b1c30">{anchor.kind}</text>}
+          {(badgeLanes.get(point.id+':'+anchor.kind)!=null||selected===point.id||activeFill===point.id+':'+anchor.kind)&&<TradeMarkerBadge x={x(anchor.time)} y={y(anchor.price)} kind={anchor.kind==='exit'?'exit':point.journal?.direction==='BUY'?'buy':'sell'} source="History" color={anchor.kind==='exit'?'#5338ec':point.journal?.direction==='BUY'?'#059669':'#e11d48'} left={left} right={width-right} top={10} bottom={232} lane={badgeLanes.get(point.id+':'+anchor.kind)??0}/>}
           <title>{`${anchor.kind} · ${executionPrice(anchor.price,symbol)} · ${anchor.dayOnly?new Date(anchor.time).toISOString().slice(0,10)+' (day only)':dateTime(anchor.time)}`}</title>
         </g>)}
       </g>)}

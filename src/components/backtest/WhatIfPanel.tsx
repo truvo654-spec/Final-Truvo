@@ -3,14 +3,14 @@ import {ArrowRight,Check} from 'lucide-react';
 import type {JournalEntry} from '../../types';
 import type {JournalPlaybook} from '../../data/journalPlaybooks';
 import type {JournalRules} from '../../backtest/rules';
-import {ind,price,val} from '../../backtest/rules';
+import {describeCondition} from '../../backtest/rules';
 import type {TechnicalWhatIfRule} from '../../backtest/whatifTechnical';
 import type {BacktestRun,WhatIfRun} from '../../backtest/store';
 import {loadWhatIfs,saveWhatIfs} from '../../backtest/store';
 import {makeSavedWhatIf,savedWhatIfKey,whatIfSaveKey} from '../../backtest/savedWhatIf';
 import {compareParameters} from '../../backtest/whatifOptimizer';
 import {describeWhatIf,ESTIMATED_RULES,runWhatIf,type WhatIfRule,type WhatIfTrade} from '../../backtest/whatif';
-import {quickWhatIfDefaults,quickWhatIfSource,filterWhatIfEntries,whatIfMarket,WHAT_IF_MARKETS,quickWhatIfAlternatives} from '../../backtest/whatifQuick';
+import {quickWhatIfDefaults,quickWhatIfSource,filterWhatIfEntries,whatIfMarket,WHAT_IF_MARKETS,quickWhatIfAlternatives,numericScenarioRules,type NumericScenarioKind} from '../../backtest/whatifQuick';
 import {JournalCurrency,formatMoney} from '../journal/JournalCurrency';
 import {WhatIfResults} from './WhatIfResults';
 import {JournalDateRange} from '../journal/JournalDateRange';
@@ -20,7 +20,7 @@ import {WhatIfResultPicker} from './WhatIfResultPicker';
 import {DashboardResultPopup} from './DashboardResultPopup';
 import {dashboardSources,initialDashboardScope,type DashboardRow} from './dashboardData';
 import {WhatIfAdvancedPanel} from './WhatIfAdvancedPanel';
-import {WhatIfTechnicalSetup,technicalSetupFromBook} from './WhatIfTechnicalSetup';
+import {DEFAULT_TECHNICAL_SETUP,WhatIfTechnicalSetup,technicalSetupFromBook} from './WhatIfTechnicalSetup';
 import {playbookConditions} from '../../backtest/playbookConditions';
 import {Card,Field,Modal,Pill,btnPrimary,btnSecondary,inputCls,Segmented} from './ui';
 
@@ -30,16 +30,15 @@ interface Props{
  onOpenTrades:(ids:string[],label:string)=>void;onAddRule:(kind:'rule'|'checklist',label:string,patch?:Partial<JournalRules>)=>void;
  onSaveScenario?:(run:WhatIfRun)=>boolean;onViewSaved?:()=>void;
 }
+function ScenarioValuePicker({kind,values,presets,custom,onCustom,onToggle}:{kind:NumericScenarioKind;values:number[];presets:number[];custom:number;onCustom:(value:number)=>void;onToggle:(value:number)=>void}){
+ const label=kind==='target'?'Target':kind==='breakeven'?'Breakeven':'Stop';
+ return <><span className="text-sm">{kind==='target'?'Take profit at':kind==='breakeven'?'Move stop to breakeven at':'Stop at'}</span><div role="group" aria-label={`${label} presets`} className="inline-flex flex-wrap gap-1 rounded-lg border border-[#CCC6FB] bg-white p-0.5">{[...new Set([...presets,...values])].sort((a,b)=>a-b).map(n=><button key={n} type="button" aria-pressed={values.includes(n)} onClick={()=>onToggle(n)} className={`h-8 rounded-md px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5338ec] ${values.includes(n)?'bg-[#5338ec] text-white':'text-[#474556] hover:bg-slate-50'}`}>{n}R</button>)}</div><label className="text-xs">Custom R<input aria-label={`Custom ${kind} R`} type="number" min="0.01" max={kind==='stop'?1:undefined} step="0.01" className={inputCls+' max-w-24'} value={Number.isFinite(custom)?custom:''} onChange={e=>onCustom(e.target.valueAsNumber)}/></label><button type="button" className={btnSecondary} disabled={!Number.isFinite(custom)||custom<=0||(kind==='stop'&&custom>1)||values.includes(custom)} onClick={()=>onToggle(custom)}>{kind==='target'?'Add target':kind==='breakeven'?'Add breakeven':'Add stop'}</button><p role="status" className="basis-full text-xs text-slate-500">{values.length?`${values.length} scenario${values.length===1?'':'s'} selected. Each is tested separately on the same trades.`:'Select at least one scenario.'}{kind==='stop'?' Compared with the original 1R stop. A tighter stop may stop out more trades.':''}</p></>;
+}
 const choices:{kind:WhatIfRule['kind'];title:string;hint:string}[]=[
  {kind:'target',title:'Change my target',hint:'Take profit at a different R multiple.'},
  {kind:'breakeven',title:'Move stop to breakeven',hint:'Protect the trade once it reaches a set R.'},
  {kind:'stop',title:'Tighten my stop',hint:'Risk a smaller part of 1R on each trade.'},
  {kind:'technical',title:'Add a technical filter',hint:'Keep only trades that pass an indicator check.'},
-];
-const TECH_PRESETS:TechnicalWhatIfRule[]=[
- {kind:'technical',label:'RSI 14 above 50',timeframe:'15m',conditions:[{id:'wi-rsi',left:ind('RSI',14),op:'gt',right:val(50)}]},
- {kind:'technical',label:'Price above EMA 50',timeframe:'15m',conditions:[{id:'wi-ema',left:price('close'),op:'gt',right:ind('EMA',50)}]},
- {kind:'technical',label:'ADX 14 above 25',timeframe:'15m',conditions:[{id:'wi-adx',left:ind('ADX',14),op:'gt',right:val(25)}]},
 ];
 const emptyFilters={from:'',to:'',symbol:'',side:'',market:'',tradeIds:null as string[]|null};
 type SourceKind='log'|'book'|'run';
@@ -62,8 +61,8 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
  const activeBooks=playbooks.filter(b=>b.status!=='archived');
  const defaults=quickWhatIfDefaults(source.book,source.run,journalRules);
  const [params,setParams]=useState({...defaults,tags:[] as string[]});
+ const [scenarioValues,setScenarioValues]=useState<Record<NumericScenarioKind,number[]>>({target:[defaults.target],breakeven:[defaults.be],stop:[defaults.stop]});
  const [kind,setKind]=useState<WhatIfRule['kind']>('target');
- const [techId,setTechId]=useState('setup');
  const [technicalEditor,setTechnicalEditor]=useState(false);
  const [dialog,setDialog]=useState<'source'|'result'|'trades'|null>(null);
  const [returnToResult,setReturnToResult]=useState(false);
@@ -86,16 +85,18 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
   setComparisonRule(null);setSelectedAlternative(null);setResultGroupId('all');setAdvancedVisited(false);setKind(current=>choices.some(c=>c.kind===current)?current:'target');
   const counts=new Map<string,number>();source.entries.forEach(e=>e.mistakes.forEach(t=>counts.set(t,(counts.get(t)??0)+1)));
   setParams({...quickWhatIfDefaults(source.book,source.run,journalRules),tags:[...counts].sort((a,b)=>b[1]-a[1]).slice(0,2).map(([tag])=>tag)});
+  const loaded=quickWhatIfDefaults(source.book,source.run,journalRules);
+  setScenarioValues({target:[loaded.target],breakeven:[loaded.be],stop:[loaded.stop]});
  },[scope.key,source.book,source.run,journalRules]);
  const playbookTech:TechnicalWhatIfRule|undefined=(()=>{const t=source.run?{kind:'technical' as const,label:source.run.name,timeframe:source.run.settings.timeframe,conditions:source.run.settings.rules.entry}:source.book&&playbookConditions(source.book).length?technicalSetupFromBook(source.book):undefined;return t&&t.conditions.length?t:undefined;})();
- const techOptions=[...(playbookTech?[{id:'setup',rule:playbookTech}]:[]),...TECH_PRESETS.map((r,i)=>({id:'preset'+i,rule:{...r,timeframe:source.run?.settings.timeframe??(source.book?technicalSetupFromBook(source.book).timeframe:r.timeframe)}}))];
- const techRule=(techOptions.find(o=>o.id===techId)??techOptions[0]).rule;
+ const techRule=playbookTech??{...DEFAULT_TECHNICAL_SETUP,timeframe:source.run?.settings.timeframe??(source.book?technicalSetupFromBook(source.book).timeframe:DEFAULT_TECHNICAL_SETUP.timeframe)};
  const rule:WhatIfRule=kind==='technical'?techRule:kind==='lossesPerDay'?{kind,n:params.n}:kind==='hours'?{kind,start:params.start,end:params.end}:kind==='mistakes'?{kind,tags:params.tags}:kind==='target'?{kind,r:params.target}:kind==='breakeven'?{kind,r:params.be}:kind==='stop'?{kind,mult:params.stop}:{kind:'dailyLoss',usd:params.usd};
  const comparisonChoice=comparisonRule??rule;
  const changeSetupParams=(next:React.SetStateAction<typeof params>)=>{setComparisonRule(null);setParams(next);};
- const acceptComparisonRule=(next:WhatIfRule)=>{setComparisonRule(next);setSelectedAlternative(null);setKind(next.kind);if(next.kind!=='technical')setParams(p=>({...p,...(next.kind==='target'?{target:next.r}:next.kind==='breakeven'?{be:next.r}:next.kind==='stop'?{stop:next.mult}:next.kind==='dailyLoss'?{usd:next.usd}:next.kind==='lossesPerDay'?{n:next.n}:next.kind==='hours'?{start:next.start,end:next.end}:{tags:next.tags})}));};
+ const acceptComparisonRule=(next:WhatIfRule)=>{setComparisonRule(next);setSelectedAlternative(null);setKind(next.kind);if(next.kind==='target'||next.kind==='breakeven'||next.kind==='stop')setScenarioValues(current=>({...current,[next.kind]:[next.kind==='stop'?next.mult:next.r]}));if(next.kind!=='technical')setParams(p=>({...p,...(next.kind==='target'?{target:next.r}:next.kind==='breakeven'?{be:next.r}:next.kind==='stop'?{stop:next.mult}:next.kind==='dailyLoss'?{usd:next.usd}:next.kind==='lossesPerDay'?{n:next.n}:next.kind==='hours'?{start:next.start,end:next.end}:{tags:next.tags})}));};
+ const toggleScenario=(scenario:NumericScenarioKind,value:number)=>{setComparisonRule(null);setSelectedAlternative(null);setScenarioValues(current=>({...current,[scenario]:current[scenario].includes(value)?current[scenario].filter(r=>r!==value):[...current[scenario],value]}));};
  const priceData=useMemo(()=>prepareWhatIfDemoData(picked,playbooks,source.run,comparisonChoice.kind==='technical'?comparisonChoice:undefined),[picked,playbooks,source.run,comparisonChoice.kind==='technical'?JSON.stringify(comparisonChoice):'']);
- const rows=useMemo(()=>compareParameters(picked,quickWhatIfAlternatives(comparisonChoice),priceData),[picked,JSON.stringify(comparisonChoice),priceData]);
+ const rows=useMemo(()=>compareParameters(picked,(comparisonChoice.kind==='target'||comparisonChoice.kind==='breakeven'||comparisonChoice.kind==='stop')&&scenarioValues[comparisonChoice.kind].length?numericScenarioRules(comparisonChoice.kind,scenarioValues[comparisonChoice.kind]):quickWhatIfAlternatives(comparisonChoice),priceData),[picked,JSON.stringify(comparisonChoice),JSON.stringify(scenarioValues),priceData]);
  const dateEntries=useMemo(()=>filterWhatIfEntries(source.entries,{...scope,from:'',to:''}),[source.entries,scope]);
  const dateBounds=whatIfDateBounds(dateEntries);
  const dateLabel=scope.from||scope.to?(scope.from||dateBounds.from)+' → '+(scope.to||dateBounds.to):'All selected data';
@@ -106,7 +107,7 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
  const row=rows.find(r=>r.id===selectedAlternative)??rows[0];
  const visibleRow=visibleRows.find(r=>r.id===row.id)??visibleRows[0];
  const out=visibleRow.output;
- const valid=kind==='technical'?(comparisonChoice.kind==='technical'&&comparisonChoice.conditions.length>0):kind==='mistakes'?params.tags.length>0:kind==='hours'?Number.isFinite(params.start)&&Number.isFinite(params.end)&&params.start!==params.end:kind==='lossesPerDay'?Number.isInteger(params.n)&&params.n>0:kind==='target'?Number.isFinite(params.target)&&params.target>0:kind==='breakeven'?Number.isFinite(params.be)&&params.be>0:kind==='stop'?params.stop>0&&params.stop<=1:Number.isFinite(params.usd)&&params.usd>0;
+ const valid=kind==='technical'?(comparisonChoice.kind==='technical'&&comparisonChoice.conditions.length>0):kind==='mistakes'?params.tags.length>0:kind==='hours'?Number.isFinite(params.start)&&Number.isFinite(params.end)&&params.start!==params.end:kind==='lossesPerDay'?Number.isInteger(params.n)&&params.n>0:(kind==='target'||kind==='breakeven'||kind==='stop')?scenarioValues[kind].length>0&&scenarioValues[kind].every(r=>Number.isFinite(r)&&r>0&&(kind!=='stop'||r<=1)):Number.isFinite(params.usd)&&params.usd>0;
  const tags=[...new Set(picked.flatMap(e=>[...e.mistakes,...e.tags]))].sort();
  const currency=source.currency;
  const money=(n:number)=>Number.isFinite(n)?formatMoney(n,currency,2):'—';
@@ -134,7 +135,7 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
  const reviewTrade=(trade:WhatIfTrade)=>{const detail=reviewSource?.rows.find(r=>source.run?trade.id==='whatif:'+source.run.id+':'+r.trade?.id:r.journal?.id===trade.id);if(detail)setTradeDetail({row:detail,trade});};
  const initialTechnicalSetup=playbookTech;
  return <JournalCurrency.Provider value={currency as React.ContextType<typeof JournalCurrency>}><div className="space-y-5 min-w-0">
-  <Card title="What if I changed one thing?" sub="Use your saved trades. Try one change. See the difference." right={dateControl}>
+  <Card title="Compare What-if scenarios" sub="Use the same trades to compare different setups side by side." right={dateControl}>
    <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Choose What-if source">{([{id:'log',label:'Trade Log'},{id:'book',label:'Playbook'},{id:'run',label:'Saved tests'}] as const).map(s=><button type="button" key={s.id} className={btnSecondary+(sourceKind(scope.key)===s.id?' border-[#5338ec] bg-[#F6F3FF] text-[#5338ec]':'')} aria-pressed={sourceKind(scope.key)===s.id} disabled={s.id==='book'?!activeBooks.length:s.id==='run'?!runs.length:false} onClick={()=>chooseSource(s.id)}>{s.label}</button>)}</div>
    <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[#F8F7FF] p-4">
     <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-semibold text-sm">{source.label}</p><Pill tone={source.run?'info':'neutral'}>{source.run?'Sample simulation':'Journal'}</Pill></div><p className="mt-1 text-xs text-slate-500">{picked.length} closed trade{picked.length===1?"":"s"} · {dates.length?`${dates[0]} → ${dates.at(-1)}`:'No matching dates'} · {currency} · {scope.market||'All markets'}</p>{source.run&&<p className="mt-1 text-xs text-slate-500">{source.run.timeframe} · Saved test settings loaded</p>}</div>
@@ -144,22 +145,20 @@ export const WhatIfPanel:React.FC<Props>=({entries,allEntries,initialPlaybookId=
    {source.excluded>0&&<p className="mt-2 text-xs text-slate-500">{source.excluded} records excluded: open, unknown net result, or another currency.</p>}
    {source.book?.directions?.length===1&&<p className="mt-2 text-xs text-slate-500">{source.book.name} · {source.book.directions[0]} trades</p>}
   </Card>
-  <Card title="Choose one change" right={<button type="button" className={btnSecondary} onClick={()=>setTechnicalEditor(true)}>Technical tools</button>}>
+  <Card title="Choose a rule to compare">
    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" role="group" aria-label="What to change">{choices.map(c=><button key={c.kind} type="button" aria-pressed={kind===c.kind} onClick={()=>{setKind(c.kind);setComparisonRule(null);}} className={`rounded-xl border p-4 text-left transition-colors ${kind===c.kind?'border-[#5338ec] bg-[#F6F3FF]':'border-[#CCC6FB] hover:bg-slate-50'}`}><span className="flex items-start justify-between gap-2 text-sm font-semibold">{c.title}{kind===c.kind&&<Check size={16} className="shrink-0 text-[#5338ec]"/>}</span><span className="mt-2 block text-xs text-slate-500">{c.hint}</span>{c.kind==='target'&&<span className="mt-2 inline-block text-[10px] font-semibold text-amber-700">Estimated</span>}</button>)}</div>
    <div className="mt-5 flex flex-wrap items-center gap-3 rounded-xl bg-slate-50 p-4">
     {!choices.some(c=>c.kind===kind)&&comparisonRule&&<p className="text-sm font-semibold">{describeWhatIf(comparisonRule)}</p>}
     {kind==='lossesPerDay'&&<><span className="text-sm">Stop after</span><Segmented label="Daily loss count" value={String(params.n)} onChange={v=>changeSetupParams(p=>({...p,n:Number(v)}))} options={[...new Set([1,2,3,params.n])].map(n=>({id:String(n),label:String(n)}))}/><span className="text-sm">losses in a day</span><span className="text-xs text-slate-500">From your trading rules</span></>}
     {kind==='hours'&&<><span className="text-sm font-semibold">Trading session · UTC</span><label className="text-xs">From<select aria-label="Session start UTC" className={inputCls} value={params.start} onChange={e=>changeSetupParams(p=>({...p,start:Number(e.target.value)}))}>{Array.from({length:24},(_,h)=><option key={h} value={h}>{String(h).padStart(2,'0')}:00</option>)}</select></label><label className="text-xs">To<select aria-label="Session end UTC" className={inputCls} value={params.end} onChange={e=>changeSetupParams(p=>({...p,end:Number(e.target.value)}))}>{Array.from({length:24},(_,i)=>i+1).map(h=><option key={h} value={h}>{h===24?'24:00':String(h).padStart(2,'0')+':00'}</option>)}</select></label><span className="text-xs text-slate-500">{source.book||source.run?'Loaded from your setup':'Suggested session · editable'}</span></>}
     {kind==='mistakes'&&(tags.length?<div className="flex flex-wrap gap-2">{tags.map(t=><button key={t} className={btnSecondary} aria-pressed={params.tags.includes(t)} onClick={()=>changeSetupParams(p=>({...p,tags:p.tags.includes(t)?p.tags.filter(x=>x!==t):[...p.tags,t]}))}>{params.tags.includes(t)&&<Check size={14}/>} {t}</button>)}</div>:<p className="text-sm text-slate-500">These trades have no mistake tags. Choose another change.</p>)}
-    {kind==='target'&&<><span className="text-sm">Take profit at</span><Segmented label="Target presets" value={String(params.target)} onChange={v=>changeSetupParams(p=>({...p,target:Number(v)}))} options={[...new Set([1,1.5,2,3,defaults.target])].sort((a,b)=>a-b).map(n=>({id:String(n),label:n+'R'}))}/><label className="text-xs">Custom R<input aria-label="Custom target R" type="number" min="0.1" step="0.1" className={inputCls+' max-w-24'} value={params.target} onChange={e=>changeSetupParams(p=>({...p,target:Number(e.target.value)}))}/></label></>}
-    {kind==='breakeven'&&<><span className="text-sm">Move stop to breakeven at</span><Segmented label="Breakeven presets" value={String(params.be)} onChange={v=>changeSetupParams(p=>({...p,be:Number(v)}))} options={[...new Set([0.5,1,1.5,2,defaults.be])].sort((a,b)=>a-b).map(n=>({id:String(n),label:n+'R'}))}/><label className="text-xs">Custom R<input aria-label="Custom breakeven R" type="number" min="0.1" step="0.1" className={inputCls+' max-w-24'} value={params.be} onChange={e=>changeSetupParams(p=>({...p,be:Number(e.target.value)}))}/></label></>}
-    {kind==='stop'&&<><span className="text-sm">Stop at</span><Segmented label="Stop presets" value={String(params.stop)} onChange={v=>changeSetupParams(p=>({...p,stop:Number(v)}))} options={[0.5,0.75,0.9].map(n=>({id:String(n),label:n+'R'}))}/><span className="text-sm">instead of 1R</span><span className="text-xs text-slate-500">A tighter stop risks less but may stop out more trades</span></>}
-    {kind==='technical'&&<><span className="text-sm">Only take trades where</span><select aria-label="Technical filter" className={inputCls+' max-w-xs'} value={comparisonRule?.kind==='technical'?'custom':techOptions.some(o=>o.id===techId)?techId:techOptions[0].id} onChange={e=>{setComparisonRule(null);setTechId(e.target.value);}}>{comparisonRule?.kind==='technical'&&<option value="custom">Custom · {comparisonRule.label}</option>}{techOptions.map(o=><option key={o.id} value={o.id}>{o.id==='setup'?'Your setup · '+o.rule.label:o.rule.label}</option>)}</select><span className="text-xs text-slate-500">{comparisonChoice.kind==='technical'?comparisonChoice.timeframe:techRule.timeframe} demo candles</span></>}
+    {(kind==='target'||kind==='breakeven'||kind==='stop')&&<ScenarioValuePicker kind={kind} values={scenarioValues[kind]} presets={kind==='target'?[1,1.5,2,3,defaults.target]:kind==='breakeven'?[0.5,1,1.5,2,defaults.be]:[0.5,0.75,0.9,defaults.stop]} custom={kind==='target'?params.target:kind==='breakeven'?params.be:params.stop} onCustom={value=>changeSetupParams(p=>({...p,[kind==='breakeven'?'be':kind]:value}))} onToggle={value=>toggleScenario(kind,value)}/>}
+    {kind==='technical'&&<><button type="button" className={btnSecondary} onClick={()=>setTechnicalEditor(true)}>Technical tools</button>{comparisonChoice.kind==='technical'&&<div aria-label="Selected technical conditions" className="basis-full rounded-lg border border-slate-200 bg-white px-3 py-2"><p className="text-[11px] font-semibold text-slate-500">Active conditions · {comparisonChoice.timeframe}</p><ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-700">{comparisonChoice.conditions.map((condition,index)=><li key={condition.id}>{index>0&&<span className="mr-1 text-slate-400">AND </span>}{describeCondition(condition)}</li>)}</ul></div>}</>}
    </div>
    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-slate-500">{kind==='technical'?'Technical conditions use generated demo candles.':estimate?'Estimated using reconstructed price paths.':'Compare the same trades with one rule changed.'}</p><button className={btnPrimary} disabled={!picked.length||!valid} onClick={()=>{setComparisonRule(structuredClone(comparisonChoice));setSelectedAlternative(null);setResultGroupId('all');setAdvancedOpen(false);setAdvancedVisited(false);setDialog('result');}}>See results<ArrowRight size={16}/></button></div>
    {!picked.length&&<p role="status" className="mt-3 text-sm text-slate-500">{dateEntries.length>0&&(scope.from||scope.to)?<>No selected trades in this date range. <button className="font-semibold text-[#5338ec]" onClick={()=>setScope(current=>applyWhatIfDateRange(current,dateBounds,true))}>Reset date range</button></>:<>No eligible trades in this selection. <button className="font-semibold text-[#5338ec]" onClick={changeSource}>Choose your data</button></>}</p>}
   </Card>
-  <Modal open={technicalEditor} onClose={()=>setTechnicalEditor(false)} title="Technical tools" width="max-w-4xl"><div className="max-h-[75vh] overflow-y-auto pr-2"><WhatIfTechnicalSetup key={scope.key} initial={comparisonChoice.kind==='technical'?comparisonChoice:playbookTech??techRule} applied={comparisonChoice.kind==='technical'?comparisonChoice:undefined} onUse={next=>{acceptComparisonRule(next);setTechnicalEditor(false);}} onClear={()=>{setComparisonRule(null);setKind('target');setTechnicalEditor(false);}} /></div></Modal>
+  <Modal open={technicalEditor} onClose={()=>setTechnicalEditor(false)} title="Technical tools" width="max-w-4xl"><div className="max-h-[75vh] overflow-y-auto pr-2"><WhatIfTechnicalSetup key={scope.key} initial={comparisonChoice.kind==='technical'?comparisonChoice:playbookTech??techRule} applied={comparisonChoice.kind==='technical'?comparisonChoice:undefined} onUse={acceptComparisonRule} onFinish={next=>{acceptComparisonRule(next);setTechnicalEditor(false);}}/></div></Modal>
   <Modal open={dialog!==null} onClose={()=>setDialog(null)} title={dialog==='source'?'Choose your data':dialog==='trades'?'Trades in this comparison':'What-if results'} width={dialog==='source'?'max-w-2xl':'max-w-6xl'}>
    <div ref={popupScroll} className="max-h-[80vh] overflow-y-auto pr-2">
    {dialog==='source'&&<>

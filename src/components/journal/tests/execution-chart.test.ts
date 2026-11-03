@@ -49,3 +49,13 @@ test('Saved market scope drives table, charts and backtest selection together',(
  assert.match(html,/Run backtest/);assert.doesNotMatch(html,/Generate simulated results/);assert.match(html,/Inspect EUR\/USD journal trades/);assert.doesNotMatch(html,/Inspect NAS100 journal trades/);
  }finally{if(prior)Object.defineProperty(globalThis,'localStorage',prior);else Reflect.deleteProperty(globalThis,'localStorage');}
 });
+test('Playbook comparison disclosures are open by default',()=>{
+const prior=Object.getOwnPropertyDescriptor(globalThis,'localStorage');
+Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:()=>null}});
+try{
+ const html=renderToStaticMarkup(createElement(PlaybookExecutionWorkspace,{playbook:DEFAULT_PLAYBOOKS[0],entries:[],allEntries:[],onOpenEntry:()=>{},onShowTrades:()=>{},onReplay:()=>{}}));
+ for(const label of ['Comparison filters','Price and trade chart','Playbook executions']){
+  assert.match(html,new RegExp(`<details[^>]*aria-label="${label}"[^>]*\\bopen=""`));
+ }
+}finally{if(prior)Object.defineProperty(globalThis,'localStorage',prior);else Reflect.deleteProperty(globalThis,'localStorage');}
+});

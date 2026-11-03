@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { TradeListFilters } from '../TradeListFilters';
-import { EMPTY_TRADE_FILTER, filterTradeList, journalTradeRecord, tradeRecordMarket } from '../tradeListFiltering';
+import { EMPTY_TRADE_FILTER, filterTradeList, journalTradeRecord, sortTradesByEntry, tradeRecordMarket } from '../tradeListFiltering';
 import { JOURNAL_ENTRIES } from '../../../data/journalData';
 import { metrics } from '../journalMath';
 
@@ -35,4 +35,16 @@ test('empty lists still offer every requested market and an optional instrument 
   const html = renderToStaticMarkup(React.createElement(TradeListFilters, { value: EMPTY_TRADE_FILTER, onChange: () => {}, records: [], count: 0 }));
   for (const text of ['Forex', 'Crypto', 'Commodities', 'Indices', 'Stocks', 'Search trades', 'Instrument filter', 'All instruments']) assert.ok(html.includes(text), text);
   assert.ok(!html.includes('Futures'));
+});
+
+test('execution entry sorting works in both directions without mutating journal or simulated rows', () => {
+  const journal = [{id:'later',entryTime:'2026-10-02T10:00:00Z',date:'2026-10-02'}, {id:'earlier',entryTime:'',date:'2026-10-01'}];
+  const simulated = [{id:'later',entryAt:Date.parse('2026-10-02T10:00:00Z')}, {id:'earlier',entryAt:Date.parse('2026-10-01T10:00:00Z')}];
+  for (const direction of ['asc', 'desc'] as const) {
+    const expected = direction === 'asc' ? ['earlier', 'later'] : ['later', 'earlier'];
+    assert.deepEqual(sortTradesByEntry(journal, row=>row.entryTime||row.date, direction).map(row=>row.id), expected);
+    assert.deepEqual(sortTradesByEntry(simulated, row=>new Date(row.entryAt).toISOString(), direction).map(row=>row.id), expected);
+  }
+  assert.equal(journal[0].id, 'later');
+  assert.equal(simulated[0].id, 'later');
 });

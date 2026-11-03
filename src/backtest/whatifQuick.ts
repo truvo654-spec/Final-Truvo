@@ -6,6 +6,7 @@ import {symbolSpec} from './marketData';
 import {USD_PER} from './config';
 import type {WhatIfEntry,WhatIfRule} from './whatif';
 import {currencyOf,eligible} from '../components/journal/journalMath';
+import {parameterRules} from './whatifOptimizer';
 
 export const WHAT_IF_MARKETS=['Forex','Indices','Commodity','Crypto','Stocks'];
 export interface WhatIfFilters {from:string;to:string;symbol:string;side:string;market:string;tradeIds:string[]|null}
@@ -16,8 +17,14 @@ export function filterWhatIfEntries(entries:WhatIfEntry[],filters:WhatIfFilters)
  return entries.filter(e=>(!filters.from||e.date>=filters.from)&&(!filters.to||e.date<=filters.to)&&(!filters.market||whatIfMarket(e)===filters.market)&&(!filters.symbol||e.symbol===filters.symbol)&&(!filters.side||e.direction===filters.side)&&(filters.tradeIds===null||filters.tradeIds.includes(e.id)));
 }
 
+export type NumericScenarioKind='target'|'breakeven'|'stop';
+export function numericScenarioRules(kind:NumericScenarioKind,values:readonly number[]):WhatIfRule[]{
+ return [...new Set(values)].map(value=>kind==='stop'?{kind,mult:value}:{kind,r:value});
+}
+
 /** Keep the user's exact choice first; explore only a few values of that same rule. */
 export function quickWhatIfAlternatives(rule:WhatIfRule):WhatIfRule[]{
+ if(rule.kind==='technical')return parameterRules(rule,0,0,0).map(r=>structuredClone(r));
  let alternatives:WhatIfRule[]=[];
  switch(rule.kind){
   case 'lossesPerDay':alternatives=[1,2,3].map(n=>({kind:rule.kind,n}));break;
@@ -27,7 +34,6 @@ export function quickWhatIfAlternatives(rule:WhatIfRule):WhatIfRule[]{
    alternatives=[duration-2,duration-1,duration+1].filter(h=>h>0&&h<=24).map(h=>({kind:rule.kind,start:rule.start,end:rule.start+h===24?24:(rule.start+h)%24}));break;
   }
   case 'mistakes':alternatives=rule.tags.slice(0,3).map(tag=>({kind:rule.kind,tags:[tag]}));break;
-  case 'technical':alternatives=rule.conditions.slice(0,3).map((condition,i)=>({...rule,label:rule.label+' · condition '+(i+1),conditions:[condition]}));break;
   case 'dailyLoss':alternatives=[0.5,0.75,1.25].map(scale=>({kind:rule.kind,usd:Math.max(1,Math.round(rule.usd*scale*100)/100)}));break;
   case 'stop':alternatives=[0.5,0.75,0.9].map(mult=>({kind:rule.kind,mult}));break;
  }

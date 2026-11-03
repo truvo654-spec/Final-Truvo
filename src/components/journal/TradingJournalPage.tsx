@@ -448,19 +448,18 @@ export const TradingJournalPage: React.FC<TradingJournalPageProps> = ({
 
       <div className="mb-6 flex flex-wrap items-end justify-center gap-x-3 gap-y-2">
         <div className="min-w-0"><FolderTabs tabs={tabs} activeTab={tab} onChange={setTab} /></div>
+      </div>
+      {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
+      <div className="mb-4 flex justify-end items-center gap-2">
         {(tab === 'overview' || tab === 'entries') && (
           <button
             type="button"
             onClick={() => setWizardOpen(true)}
-            className="mb-1 shrink-0 rounded-xl bg-[#5338ec] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#4326d8]"
+            className="h-9 shrink-0 rounded-xl bg-[#5338ec] px-4 text-sm font-semibold text-white transition hover:bg-[#4326d8]"
           >
             Import / link
           </button>
         )}
-      </div>
-      {journalSandbox && <p role="status" className="text-xs text-purple-700 mb-3">Isolated journal test workspace — separate from your journal records.</p>}
-      {storageFailed && <p role="alert" className="text-xs text-rose-700">Local storage unavailable or unreadable. Changes may not survive reload; unreadable stored data has not been overwritten.</p>}
-      <div className="mb-4 flex justify-end items-center gap-2">
         <JournalDateRange iconOnly from={rangeFrom} to={rangeTo} label={rangeLabel} today={JOURNAL_TODAY} entries={calEntries} onApply={(range, all) => { setCustomRange(range); setRangeMode(all ? 'all' : 'custom'); setCalMonth(range.to.slice(0,7)); setSelectedDay(null); setDayReviewOpen(false); }}/>
         <button
           type="button"

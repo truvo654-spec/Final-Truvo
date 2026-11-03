@@ -15,8 +15,8 @@ import {SaveScenarioButton} from './SaveScenarioButton';
 import {ChartTimeframeSelect} from './ChartTimeframeSelect';
 import {executionPriceBars,selectedPriceInterval,priceWindowEnd,shiftPriceInterval,clampTimeWindow,resizeTimeWindow,shiftTimeWindow,recordedTimeTicks,type PriceChartInterval,type TimeWindow} from '../journal/executionPriceStudy';
 import {curveAt} from '../journal/executionChartData';
-import type {LinkedPanel} from './linkedPerformance';
-import {whatIfPerformance,windowWhatIfSeries} from './whatIfChart';
+import {linkedValueAt,type LinkedPanel} from './linkedPerformance';
+import {whatIfPerformance,windowWhatIfSeries,whatIfRecordedMarkers} from './whatIfChart';
 
 const COLORS = ['#5338ec', '#059669', '#0284c7', '#d97706', '#db2777', '#7c3aed'];
 export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:boolean; entries: JournalEntry[]; selectedSymbols:string[]; instrumentOptions:string[]; onInstrument:(symbol:string)=>void; rule: WhatIfRule; model:WhatIfStudyModel; onSelect: (rule: WhatIfRule) => void; onSave:(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>void; isSaved:(row:WhatIfStudyRow,source:WhatIfSnapshot['source'])=>boolean }> = ({ benchmarkLabel, fixedScope=false, entries, selectedSymbols,instrumentOptions,onInstrument,rule, model, onSelect,onSave,isSaved }) => {
@@ -63,9 +63,20 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
   const performanceRow=performanceChoices.find(row=>row.id===performanceKey)??comparison.rows[0];
   const performance=whatIfPerformance(performanceRow?.output.trades??[],performanceKey==='actual');
   const performanceName=performanceKey==='actual'?'Original':performanceKey==='setup'?'Your setup':describeWhatIf(performanceRow.rule);
+  const highlightColor=focusId===performanceRow?.id?'#5338ec':performanceKey==='actual'?'#94a3b8':'#0284c7';
+  const markerSource=performanceKey==='actual'?'History':performanceKey==='setup'?'Your setup':`Scenario ${Math.max(0,comparison.rows.findIndex(row=>row.id===performanceRow?.id))+1}`;
+  const highlightedTrades=useMemo(()=>performanceKey==='actual'?actualTrades.map(trade=>({...trade,status:'same' as const,newNet:trade.actualNet,newR:trade.actualR})):performanceRow?.output.trades??[],[performanceKey,actualTrades,performanceRow]);
+  const markers=useMemo(()=>whatIfRecordedMarkers(highlightedTrades,entries,bars,instrument,tf,performanceName,highlightColor,markerSource),[highlightedTrades,entries,bars,instrument,tf,performanceName,highlightColor,markerSource]);
+  const highlightedCurve=[...origin,...performance.nodes.map(n=>({x:n.at,y:n.cumulative}))];
+  const highlightSeries=[{name:'Original benchmark',color:'#94a3b8',dashed:true,points:actualCurve},{name:performanceName,color:highlightColor,points:highlightedCurve}];
+  const candleHighlightSeries=highlightSeries.map(line=>{const points=line.points.map(point=>({at:point.x,value:point.y}));return {...line,points:bars.map(bar=>({x:bar.t,y:linkedValueAt(points,bar.t)}))};});
+  const tradeAt=(id:string)=>highlightedTrades.find(trade=>id===trade.id+':entry'||id===trade.id+':exit');
+  const [selectedMarker,setSelectedMarker]=useState<string|null>(null);
+  const selectedTrade=selectedMarker?tradeAt(selectedMarker):undefined;
+  useEffect(()=>setSelectedMarker(null),[performanceKey,instrument]);
   const compact=(value:number)=>new Intl.NumberFormat('en-US',{notation:'compact',maximumFractionDigits:1}).format(Math.abs(value)<1e-9?0:value);
   const panels:LinkedPanel[]=[
-    {id:'pnl',label:'Cumulative closed P&L',color:'#5338ec',points:performance.nodes.map(n=>({at:n.at,value:n.cumulative})),format:money,axisFormat:compact},
+    {id:'pnl',label:'Cumulative closed P&L',color:highlightColor,points:performance.nodes.map(n=>({at:n.at,value:n.cumulative})),format:money,axisFormat:compact},
     {id:'drawdown',label:'Drawdown from peak',color:'#e11d48',points:performance.nodes.map(n=>({at:n.at,value:n.drawdown})),format:v=>money(-v),axisFormat:v=>compact(-v),underwater:true},
   ];
   const fallbackRange:[number,number]=[interval==='auto'?0:Math.max(0,bars.length-200),bars.length];
@@ -110,12 +121,14 @@ export const WhatIfComparison: React.FC<{ benchmarkLabel?:string; fixedScope?:bo
         <button type="button" className={btnSecondary} onClick={fullPeriod}>Full period</button>
       </div></div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500"><span>{performanceName} · Selected result · {currency}{candleView?` · ${to-from} of ${bars.length.toLocaleString()} candles`:''}</span><div className="flex gap-1"><button type="button" className={btnSecondary} aria-label="Earlier What-if period" disabled={candleView?from<=0:equityRange[0]<=scopeStart} onClick={()=>browse(-1)}>←</button><button type="button" className={btnSecondary} aria-label="Later What-if period" disabled={candleView?to>=bars.length:equityRange[1]>=scopeEnd} onClick={()=>browse(1)}>→</button></div></div>
-      {candleView ? <><CandleChart label={`${instrument} demo candles with linked What-if performance`} bars={bars} from={from} to={to} height={260} dp={symbolSpec(instrument)?.priceDp ?? 2} responsive showTimeAxis interactive timelineEnd={windowEnd} linkedPanels={panels} tooltipDetail={hoverDetail}/>
+      {candleView ? <><CandleChart label={`${instrument} demo candles with linked What-if performance`} bars={bars} from={from} to={to} height={260} dp={symbolSpec(instrument)?.priceDp ?? 2} responsive showTimeAxis interactive timelineEnd={windowEnd} linkedPanels={panels} tooltipDetail={hoverDetail} markers={markers} onMarkerClick={marker=>setSelectedMarker(marker.id??null)} pnl={{series:candleHighlightSeries,detail:at=>{const node=curveAt(performance.nodes,at);return <p>{performanceName}: {money(node?.cumulative??0)}</p>;}}}/>
         <label className="block text-[11px] text-slate-500 mt-3">Chart timeline<JournalHelp label="Chart timeline" /><input type="range" aria-label="What-if candle timeline" min={to-from} max={bars.length} value={to} onChange={e=>{const end=Number(e.target.value);setChartWindow([end-(to-from),end]);}} className="w-full accent-[#5338ec]" /></label></> : <>
         <p role="status" className="text-xs text-slate-500 mb-3">No demo candles for this instrument and date range. Showing full-history equity.</p>
-        <LineChart label="Actual and What-if full-history equity" height={260} area={false} yFmt={money} xFmt={x=>new Date(x).toISOString().slice(5,tf.endsWith('m')||tf.endsWith('h')?16:10).replace('T',' ')} series={windowWhatIfSeries(portfolioSeries,equityRange[0],equityRange[1]-1)} timeline={[equityRange[0],equityRange[1]-1]} timeTicks={recordedTimeTicks(equityRange[0],equityRange[1],tf)} linkedPanels={panels} tooltipDetail={hoverDetail}/>
+        <LineChart label="Actual and What-if full-history equity" height={260} area={false} yFmt={money} xFmt={x=>new Date(x).toISOString().slice(5,tf.endsWith('m')||tf.endsWith('h')?16:10).replace('T',' ')} series={windowWhatIfSeries(focusId?highlightSeries:portfolioSeries,equityRange[0],equityRange[1]-1)} timeline={[equityRange[0],equityRange[1]-1]} timeTicks={recordedTimeTicks(equityRange[0],equityRange[1],tf)} linkedPanels={panels} tooltipDetail={hoverDetail}/>
       </>}
       <p className="mt-2 text-[11px] text-slate-500">One timeline · hover any pane or use ← / → · zoom and browse together.</p>
+      <p className="mt-2 text-[11px] text-slate-500"><span aria-hidden className="mr-1 inline-block h-2 w-2 rounded-full" style={{background:highlightColor}}/>The highlighted line and recorded entry/exit dots follow {performanceName}. Grey dots represent trades skipped by this scenario; the dashed line is the original benchmark. Recorded fills are not estimated scenario exit or stop-loss prices.</p>
+      {selectedTrade&&<div aria-label="Selected scenario trade" className="mt-3 rounded-lg border border-[#5338ec]/30 bg-[#F6F3FF] p-3 text-xs"><p className="font-semibold">{performanceName} · {selectedTrade.symbol} · {selectedTrade.direction==='BUY'?'Long':'Short'}</p><p className="mt-1">Original {money(selectedTrade.actualNet)} · Scenario {money(selectedTrade.newNet)} · {selectedTrade.status}</p>{selectedTrade.note&&<p className="mt-1 text-slate-500">{selectedTrade.note}</p>}</div>}
       <div className="mt-3 grid grid-cols-3 gap-2" aria-label="What-if chart summary">{[['Closed trades',String(performance.count)],['Net P&L',money(performance.net)],['Max drawdown',money(-performance.maxDD)]].map(([label,value])=><div key={label} className="rounded-lg bg-slate-50 p-3"><p className="text-[10px] text-slate-500">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div>)}</div>
       <p className="text-[11px] text-slate-500 mt-3">{performanceName} · Full selected period. Drawdown uses exact close times in {currency}; no account balance is assumed. Chart timeframe changes the view only. Demo candles are illustrative and do not drive What-if calculations.</p>
     </CollapsibleCard></div>

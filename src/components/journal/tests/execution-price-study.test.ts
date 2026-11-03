@@ -31,6 +31,15 @@ test('Recorded-fill mode shows no generated candles or fake historical price pat
  const html=renderToStaticMarkup(createElement(ExecutionPriceChart,{rows:compared.rows,history:[entry],instrument:'UNAVAILABLE',source:'journal',from:'2026-08-01',to:'2026-09-01',balance:100000,currency:'USD',format:String,onInstrument:()=>{},onSource:()=>{},onPoint:()=>{}}));
  assert.match(html,/Recorded fills only/);assert.match(html,/Demo candles are unavailable for this instrument or date range/);assert.match(html,/time not recorded/);assert.doesNotMatch(html,/sample market price chart with backtest entries/);
 });
+test('Chart trade list defaults to newest entries and explains its eight-trade limit',()=>{
+ const book={...DEFAULT_PLAYBOOKS[0],symbols:['UNAVAILABLE']};
+ const entries=Array.from({length:10},(_,i)=>({...JOURNAL_ENTRIES[0],id:`sort-${i}`,strategy:book.name,symbol:'UNAVAILABLE',date:`2026-08-${String(i+1).padStart(2,'0')}`,entryTime:undefined,exitTime:undefined,exitPrice:null,tradingStatus:'open' as const}));
+ const compared=comparePlaybook(book,entries,[],{from:'2026-08-01',to:'2026-09-01',symbols:book.symbols,currency:'USD',balance:100000});
+ const html=renderToStaticMarkup(createElement(ExecutionPriceChart,{rows:compared.rows,history:entries,instrument:'UNAVAILABLE',source:'journal',from:'2026-08-01',to:'2026-09-01',balance:100000,currency:'USD',format:String,onInstrument:()=>{},onSource:()=>{},onPoint:()=>{}}));
+ assert.match(html,/Sort chart trades by entry date/);assert.match(html,/Showing 8 of 10 in this period/);
+ assert.ok(html.indexOf('Show chart trade sort-9')<html.indexOf('Show chart trade sort-8'));
+ assert.doesNotMatch(html,/Show chart trade sort-0/);
+});
 test('Existing candle renderer exposes selectable trade markers and a real time axis',()=>{
  const html=renderToStaticMarkup(createElement(CandleChart,{bars:[{t:Date.parse('2026-08-03T10:00:00Z'),o:10,h:12,l:9,c:11,v:100}],from:0,to:1,dp:2,label:'Test price',showTimeAxis:true,markers:[{index:0,price:10,kind:'buy',label:'Buy entry',id:'t1',showLabel:false}],onMarkerClick:()=>{}}));
  assert.match(html,/role="button"/);assert.match(html,/Buy entry at 10.00/);assert.match(html,/08-03 10:00 UTC/);assert.doesNotMatch(html,/NaN/);

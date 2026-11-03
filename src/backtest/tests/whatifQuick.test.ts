@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {quickWhatIfSource,quickWhatIfDefaults,whatIfRunEntries,filterWhatIfEntries,whatIfMarket,WHAT_IF_MARKETS,quickWhatIfAlternatives} from '../whatifQuick';
+import {quickWhatIfSource,quickWhatIfDefaults,whatIfRunEntries,filterWhatIfEntries,whatIfMarket,WHAT_IF_MARKETS,quickWhatIfAlternatives,numericScenarioRules} from '../whatifQuick';
 import {compareParameters} from '../whatifOptimizer';
 import {makeSavedWhatIf} from '../savedWhatIf';
 import {WhatIfResults} from '../../components/backtest/WhatIfResults';
@@ -50,8 +50,28 @@ test('saved test adapter preserves net costs, currency, direction and independen
 test('basic page starts with loaded evidence and common changes, leaving optimization for a popup',()=>{
  const html=renderToStaticMarkup(React.createElement(WhatIfPanel,{entries:[trade],allEntries:[trade],playbooks:[book],journalRules:rules,tz:'UTC',onToast:()=>{},onOpenTrades:()=>{},onAddRule:()=>{}}));
  assert.match(html,/1 closed trade/);assert.match(html,/See results/);
+ assert.match(html,/Compare What-if scenarios/);assert.match(html,/Choose a rule to compare/);
+ assert.match(html,/aria-label="Target presets"/);assert.doesNotMatch(html,/aria-label="Target presets"[^>]+role="radiogroup"/);
  assert.doesNotMatch(html,/Explore alternatives/);
  assert.doesNotMatch(html,/Parameter optimization|MarketSyde AI recommender|wi-benchmark|NaN/);
+});
+
+test('checked target scenarios retain exactly selected values and separate benchmark ledgers',()=>{
+ const values=[1,1.5,3,2.17,3],before=JSON.stringify(values);
+ const chosen=numericScenarioRules('target',values);
+ assert.deepEqual(chosen.map(r=>r.kind==='target'?r.r:null),[1,1.5,3,2.17]);
+ assert.equal(JSON.stringify(values),before);
+ const rows=compareParameters([trade],chosen);
+ for(const row of rows)assert.equal(row.output.actual.netPnl,rows[0].output.actual.netPnl);
+ const html=renderToStaticMarkup(React.createElement(WhatIfResults,{rows,selected:rows[2],onSelect:()=>{},currency:'USD',summary:'Journal',simulation:false,saved:false,onSave:()=>{},onTrades:()=>{},onClose:()=>{}}));
+ assert.match(html,/Compare selected targets/);
+ for(const value of [1,1.5,3,2.17])assert.ok(html.includes(`Take profit at ${value}R`));
+ assert.match(html,/Original · before scenario changes/);
+ const chart=html.split('aria-label="Original and selected What-if cumulative net P&amp;L"')[1].split('</svg>')[0];
+ assert.equal(new Set([...chart.matchAll(/<path[^>]+stroke="([^"]+)"/g)].map(match=>match[1])).size,5);
+ assert.deepEqual(numericScenarioRules('target',[]),[]);
+ assert.deepEqual(numericScenarioRules('breakeven',[0.5,1,2]),[{kind:'breakeven',r:0.5},{kind:'breakeven',r:1},{kind:'breakeven',r:2}]);
+ assert.deepEqual(numericScenarioRules('stop',[0.5,0.75,0.9]),[{kind:'stop',mult:0.5},{kind:'stop',mult:0.75},{kind:'stop',mult:0.9}]);
 });
 test('alternatives keep the exact chosen value first and only vary the same rule',()=>{
  const rules:WhatIfRule[]=[{kind:'lossesPerDay',n:2},{kind:'target',r:2.17},{kind:'hours',start:22,end:3},{kind:'mistakes',tags:['Chased','Late']},{kind:'stop',mult:0.62},{kind:'breakeven',r:1.3},{kind:'dailyLoss',usd:325}];
@@ -80,6 +100,7 @@ test('switching and saving an alternative preserves its exact rule, evidence and
  const html=renderToStaticMarkup(React.createElement(WhatIfResults,{rows,selected:alternative,onSelect:()=>{},currency:'USD',summary:'Selected Trade Log · 2 trades · Forex',simulation:false,saved:false,onSave:()=>{},onTrades:()=>{},onClose:()=>{},onAdvanced:()=>{}}));
  assert.match(html,/Viewing an alternative/);assert.match(html,/Your choice/);assert.match(html,/Same trades, same rule/);assert.match(html,/Small sample/);assert.match(html,/Save comparison/);
  assert.match(html,/Advanced analysis/);
+ assert.match(html,/stroke="#e11d48"/);
  assert.doesNotMatch(html,/Best|Recommendation goal|Rule to change|What-if data source/);
 });
 test('market filtering covers every supported market and keeps exact checked trades',()=>{
@@ -101,5 +122,5 @@ test('Playbook handoff loads any-time sessions and the saved target without muta
  assert.deepEqual([loaded.start,loaded.end,loaded.target],[0,24,3.5]);
  assert.equal(JSON.stringify(anyTime),before);
  const html=renderToStaticMarkup(React.createElement(WhatIfPanel,{initialPlaybookId:anyTime.id,entries:[],allEntries:[trade],playbooks:[anyTime],journalRules:rules,tz:'UTC',onToast:()=>{},onOpenTrades:()=>{},onAddRule:()=>{}}));
- assert.match(html,/Setup loaded/);assert.match(html,/Any time/);assert.match(html,/Target 3.5R/);assert.match(html,/Technical tools/);
+ assert.match(html,/Setup loaded/);assert.match(html,/Any time/);assert.match(html,/Target 3.5R/);assert.doesNotMatch(html,/Technical tools/);
 });

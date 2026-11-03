@@ -27,6 +27,16 @@ test('technical checks use only completed candles and mirror short rules',()=>{
  assert.equal(technicalTradeChecks([entry('cross',10)],crossed,()=>data).get('cross')?.match,true);
 });
 
+test('the full technical setup requires every condition while condition-only scenarios remain independent',()=>{
+ const first=cond(price(),'gt',val(50)),second=cond(price(),'lt',val(100)),third=cond(price(),'gt',val(70));
+ const full={...rule,conditions:[first,second,third]},data=series([60,60,60]);
+ const trades=[entry('all',10)];
+ assert.equal(technicalTradeChecks(trades,full,()=>data).get('all')?.match,false);
+ assert.equal(technicalTradeChecks(trades,{...full,conditions:[first]},()=>data).get('all')?.match,true);
+ assert.equal(technicalTradeChecks(trades,{...full,conditions:[second]},()=>data).get('all')?.match,true);
+ assert.equal(technicalTradeChecks(trades,{...full,conditions:[third]},()=>data).get('all')?.match,false);
+});
+
 test('missing times, unsupported coverage, stale signals and indicator warmup remain unknown',()=>{
  const data=series([40,60,10,80]),unknowns=[{...entry('missing',10),entryTime:undefined},entry('outside',999),{...entry('symbol',10),symbol:'UNAVAILABLE'}];
  assert.ok([...technicalTradeChecks(unknowns,rule,()=>data).values()].every(c=>c.match===null));
@@ -59,8 +69,11 @@ test('saved Playbook transfer and condition comparisons preserve source rules an
 
 
 test('technical tools exposes Playbook indicator controls directly without a source chooser',()=>{
- const html=renderToStaticMarkup(createElement(WhatIfTechnicalSetup,{onUse:()=>{},onClear:()=>{}}));
+ const html=renderToStaticMarkup(createElement(WhatIfTechnicalSetup,{onUse:()=>{}}));
  for(const label of ['Condition 1 indicator','Condition 1 period','Condition 1 comparison','Condition 1 number','Technical timeframe'])assert.ok(html.includes('aria-label="'+label+'"'),label);
- for(const label of ['Add condition','Compare conditions','Compare two tools','Hide Technical tools','Money Flow Index','Bollinger upper band'])assert.ok(html.includes(label),label);
+ for(const label of ['Add condition','Finish comparing conditions','Hide Technical tools','Money Flow Index','Bollinger upper band'])assert.ok(html.includes(label),label);
+ assert.match(html,/Condition 1<\/h4><div class="flex items-center gap-3"><button[^>]*>Compare two tools<\/button>/);
+ assert.doesNotMatch(html,/<div class="mt-3 flex flex-wrap gap-3 text-xs font-semibold text-\[#5338ec\]"><button[^>]*>Compare two tools/);
+ assert.doesNotMatch(html,/Use scenario parameter/);
  assert.doesNotMatch(html,/My playbooks|Quick setups|no saved conditions|Restore default conditions|Choose an indicator, comparison/);
 });

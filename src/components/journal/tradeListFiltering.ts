@@ -5,6 +5,10 @@ export const TRADE_MARKETS = [['Forex', 'Forex'], ['Crypto', 'Crypto'], ['Commod
 export interface TradeListFilter { search: string; market: string; symbol: string }
 export const EMPTY_TRADE_FILTER: TradeListFilter = { search: '', market: 'all', symbol: 'all' };
 export interface TradeFilterRecord { symbol: string; market?: string; text?: string }
+export type TradeSortDirection = 'asc' | 'desc';
+export function sortTradesByEntry<T>(rows: readonly T[], entryKey: (row: T) => string, direction: TradeSortDirection): T[] {
+  return [...rows].sort((a, b) => direction === 'asc' ? entryKey(a).localeCompare(entryKey(b)) : entryKey(b).localeCompare(entryKey(a)));
+}
 const key = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
 export function tradeRecordMarket(record: TradeFilterRecord): string {
   const raw = record.market?.trim().toLowerCase();
