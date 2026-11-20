@@ -1,4 +1,5 @@
 import type { Broker, MarketSignal, UserProfile } from '../../types';
+import { AI_POLICY, addBasicUse, basicUsedToday, grantDayPass as grantPass, hasDayPass as dayPassActive } from './aiEntitlement';
 
 /**
  * How much of the AI Companion each level gets, and what a day of the rest
@@ -11,7 +12,7 @@ import type { Broker, MarketSignal, UserProfile } from '../../types';
  */
 
 export interface AiAllowance {
-  /** Asks included each day at this level. Infinity above the top tier. */
+  /** Basic asks included each day at this level. Infinity at the top tier, 0 when locked. */
   perDay: number;
   /** The level that lifts the limit for good. */
   freeAtLevel: number;
@@ -21,55 +22,39 @@ export interface AiAllowance {
 
 const BASE_DAY_PRICE = 60;
 
+/**
+ * Basic allowance per level. The numbers live in `AI_POLICY` (aiEntitlement.ts)
+ * so every AI screen reads the same table: LV1 0 (locked), LV2 10, LV3 20, LV4 unlimited.
+ */
 export function aiAllowance(tierLevel: number): AiAllowance {
-  const perDay = tierLevel >= 4 ? Number.POSITIVE_INFINITY : tierLevel >= 3 ? 40 : tierLevel >= 2 ? 15 : 5;
+  const lv = Math.min(4, Math.max(1, tierLevel || 1));
+  const perDay = AI_POLICY.basicPerDay[lv];
   const discount = tierLevel >= 4 ? 0 : tierLevel === 3 ? 0.5 : tierLevel === 2 ? 0.8 : 1;
   return { perDay, freeAtLevel: 4, dayPrice: Math.round(BASE_DAY_PRICE * discount) };
 }
 
-/** Today, as a key that changes at midnight in the person's own timezone. */
-function today() {
-  return new Date().toLocaleDateString('en-CA');
-}
-
-const USED_KEY = 'marketsyde_ai_used';
-const PASS_KEY = 'marketsyde_ai_day_pass';
-
-/** How many asks have been spent today. */
+/** How many Basic asks have been completed today (the day turns at 00:00 UTC). */
 export function asksUsedToday(): number {
-  try {
-    const raw = window.localStorage.getItem(USED_KEY);
-    if (!raw) return 0;
-    const parsed = JSON.parse(raw) as { date: string; count: number };
-    return parsed.date === today() ? parsed.count : 0;
-  } catch {
-    return 0;
-  }
+  return basicUsedToday();
 }
 
+/** Counts one completed Basic ask. */
 export function recordAsk() {
-  try {
-    window.localStorage.setItem(USED_KEY, JSON.stringify({ date: today(), count: asksUsedToday() + 1 }));
-  } catch { /* storage can be blocked */ }
+  addBasicUse();
 }
 
 /** Whether a day without the limit has been bought and is still running. */
 export function hasDayPass(): boolean {
-  try {
-    return window.localStorage.getItem(PASS_KEY) === today();
-  } catch {
-    return false;
-  }
+  return dayPassActive();
 }
 
 export function grantDayPass() {
-  try {
-    window.localStorage.setItem(PASS_KEY, today());
-  } catch { /* storage can be blocked */ }
+  grantPass();
 }
 
-/** What is left today: null means there is no limit to speak of. */
+/** What is left today: null means there is no limit to speak of; Level 1 has 0. */
 export function asksLeft(tierLevel: number): number | null {
+  if (tierLevel < AI_POLICY.basicMinLevel) return 0;
   const { perDay } = aiAllowance(tierLevel);
   if (!Number.isFinite(perDay) || hasDayPass()) return null;
   return Math.max(0, perDay - asksUsedToday());

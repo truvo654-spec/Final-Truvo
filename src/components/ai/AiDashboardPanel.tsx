@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { hashQuery, track } from '../../data/analytics';
-import { aiAllowance, asksLeft, asksUsedToday, recordAsk } from './aiAllowance';
+import {
+  aiEntitlement, aiQa, aiStatus, advancedSampleAnswer, commitAi, loadAiMode, loadAiSession, releaseAi,
+  reserveAi, saveAiMode, saveAiSession, setAiQa, AI_USAGE_EVENT, type AiMode,
+} from './aiEntitlement';
+import { AiAnswerDetails, AiLockedSummary, AiModeBar, type AiAnswerMeta, type AiNotice } from './AiModeBar';
 import { answerFromPage } from './aiAnswer';
 import { Activity, BarChart3, BookOpenCheck, CalendarDays, Check, ChevronDown, ChevronRight, Compass, Info, LayoutGrid, Lightbulb, MessageCircle, Paperclip, Plus, RefreshCw, Search, Send, Shield, Sparkles, Square, Sun, X } from 'lucide-react';
 import { SpotlightData } from './AiSpotlightPanel';
@@ -29,6 +33,25 @@ function spark(seed: string): string {
 
 const TREND: Record<string, string> = { good: '#aeea00', bad: '#ff4fa3', neutral: '#8b7bf7' };
 
+/** One line of the Chat tab. */
+interface ChatMessage {
+  id: number;
+  from: 'you' | 'ai';
+  text: string;
+  /** Where this answer could take the person, if they want to go. */
+  go?: { label: string; run: () => void; asked?: string };
+  /** What it looked at before answering, and how long that took. */
+  thought?: { seconds: number; steps: string[] };
+  /** What it found, when the question was worked rather than answered. */
+  rows?: { title: string; meta: string; action?: { label: string; run: () => void }; node?: React.ReactNode }[];
+  /** Mode, source and time of an answer, shown under it. */
+  meta?: AiAnswerMeta;
+  /** A request that did not go through. */
+  err?: boolean;
+  /** What to send again if the person presses Retry. */
+  retry?: { text: string; go?: { label: string; run: () => void; asked?: string } };
+}
+
 export const AiDashboardPanel: React.FC<{
   data: SpotlightData;
   greeting: string;
@@ -38,8 +61,46 @@ export const AiDashboardPanel: React.FC<{
   onClose: () => void;
   storageKey?: string;
   className?: string;
-}> = ({ data, greeting, tierLevel = 1, tierName = 'your level', onClose, storageKey, className = '' }) => {
-  const [tab, setTab] = useState(data.tabs[0]?.id ?? 'summary');
+  /** Opens the membership page from a lock or limit message. */
+  onViewMembership?: () => void;
+  /** The page the answers are about, shown in each answer's details. */
+  sourceLabel?: string;
+}> = ({ data, greeting, tierLevel = 1, tierName = 'your level', onClose, storageKey, className = '', onViewMembership, sourceLabel }) => {
+  /** What this tab session already said and typed, so a reload or page change keeps it. */
+  const saved = useMemo(() => loadAiSession<{ tab?: string; draft?: string; msgs?: ChatMessage[] }>('dock') ?? {}, []);
+  const [tab, setTab] = useState(() => (saved.tab && data.tabs.some((t) => t.id === saved.tab) ? saved.tab : data.tabs[0]?.id ?? 'summary'));
+
+  /** Basic or Advanced. Picking a mode is free; only sending is gated. */
+  const [mode, setModeState] = useState<AiMode>(() => loadAiMode());
+  const [notice, setNotice] = useState<AiNotice | null>(null);
+  const setMode = (m: AiMode) => { setModeState(m); saveAiMode(m); setNotice(null); };
+
+  // Usage is shared with other tabs and views, so re-read it when it changes.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setTick((n) => n + 1);
+    window.addEventListener('storage', bump);
+    window.addEventListener(AI_USAGE_EVENT, bump);
+    const t = window.setInterval(bump, 30000);
+    return () => {
+      window.removeEventListener('storage', bump);
+      window.removeEventListener(AI_USAGE_EVENT, bump);
+      window.clearInterval(t);
+    };
+  }, []);
+  const basic = aiStatus(tierLevel, 'basic');
+  const advanced = aiStatus(tierLevel, 'advanced');
+  const allowed = aiEntitlement(tierLevel, mode);
+
+  /** The level right now, read when an answer finishes in case it changed meanwhile. */
+  const levelNow = useRef(tierLevel);
+  levelNow.current = tierLevel;
+  /** Guards against a double click or repeated Enter starting two requests. */
+  const sending = useRef(false);
+  /** The request in flight and the prompt it holds, so Stop can give it back. */
+  const inFlight = useRef<object | null>(null);
+  const held = useRef<string | null>(null);
+  const clockRef = useRef<number | undefined>(undefined);
   const [run, setRun] = useState(0);
   const [busy, setBusy] = useState(false);
   const [openStat, setOpenStat] = useState<string | null>(null);
@@ -53,17 +114,7 @@ export const AiDashboardPanel: React.FC<{
   const active = useMemo(() => data.tabs.find((t) => t.id === tab) ?? data.tabs[0], [data.tabs, tab]);
   const first = active?.id === data.tabs[0]?.id;
   /** The conversation on the Chat tab, for as long as the panel is open. */
-  const [chat, setChat] = useState<{
-    id: number;
-    from: 'you' | 'ai';
-    text: string;
-    /** Where this answer could take the person, if they want to go. */
-    go?: { label: string; run: () => void; asked?: string };
-    /** What it looked at before answering, and how long that took. */
-    thought?: { seconds: number; steps: string[] };
-    /** What it found, when the question was worked rather than answered. */
-    rows?: { title: string; meta: string; action?: { label: string; run: () => void }; node?: React.ReactNode }[];
-  }[]>([]);
+  const [chat, setChat] = useState<ChatMessage[]>(() => (Array.isArray(saved.msgs) ? saved.msgs : []));
   /** What it is doing right now, while the answer is still coming. */
   const [thinking, setThinking] = useState<{ steps: string[]; done: number; seconds: number } | null>(null);
   /** Which answers have their working opened. */
@@ -91,10 +142,6 @@ export const AiDashboardPanel: React.FC<{
       document.removeEventListener('keydown', onKey);
     };
   }, [plusOpen]);
-  /** What the person's level allows today, and what they have used. */
-  const [asked, setAsked] = useState(() => asksUsedToday());
-  const allowance = aiAllowance(tierLevel);
-  const left = useMemo(() => asksLeft(tierLevel), [tierLevel, asked]);
   const stream = useRef<number | undefined>(undefined);
 
   useEffect(() => () => window.clearTimeout(stream.current), []);
@@ -107,9 +154,17 @@ export const AiDashboardPanel: React.FC<{
     window.clearTimeout(stream.current);
     setStreaming(null);
     setThinking(null);
+    if (inFlight.current) {
+      // Cancelled before it finished: nothing is counted.
+      inFlight.current = null;
+      window.clearInterval(clockRef.current);
+      releaseAi(held.current);
+      held.current = null;
+      sending.current = false;
+    }
   };
 
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState(() => (typeof saved.draft === 'string' ? saved.draft : ''));
   /** A file the person attached, with its text if we could read it. */
   const [file, setFile] = useState<{ name: string; size: number; text?: string } | null>(null);
   const filePicker = useRef<HTMLInputElement>(null);
@@ -207,57 +262,126 @@ export const AiDashboardPanel: React.FC<{
     return null;
   }, [data.suggestions, data.onResults]);
 
-  const say = (text: string, go?: { label: string; run: () => void; asked?: string }) => {
+  /**
+   * Ask one question.
+   *
+   * Ordinary navigation ("Open the calendar") just navigates and costs
+   * nothing. Anything else is checked against the level and today's allowance,
+   * holds one prompt while it runs, and is counted only when the answer
+   * completes: a failure, a cancel or an automatic retry costs nothing.
+   */
+  const say = (text: string, go?: { label: string; run: () => void; asked?: string }, opts?: { retry?: boolean }) => {
     const t = text.trim();
-    if (!t || thinking) return;
-    if (left !== null && left <= 0) {
-      track('ai_limit_hit', { member_level: tierLevel, asks_used: asked, page: data.pretext });
-      setChat((c) => [...c, {
-        id: Date.now(),
-        from: 'ai',
-        text: `That is today\u2019s ${allowance.perDay} questions at ${tierName}. The count resets at midnight, or open the AI Companion to lift it for the day with credits.`,
-      }]);
-      setDraft('');
+    if (!t || thinking || sending.current) return;
+    if (go && !opts?.retry && /^(open|see|go to|view|browse)\b/i.test(t)) {
+      setNotice(null);
+      go.run();
       return;
     }
-    track('ai_question_asked', { question_hashed: hashQuery(t), asks_left: left, page: data.pretext });
-    recordAsk();
-    setAsked(asksUsedToday());
+    const m = mode;
+    const ok = aiEntitlement(levelNow.current, m);
+    if (!ok.ok) {
+      if (ok.code === 'exhausted' || ok.code === 'advanced-exhausted') {
+        track('ai_limit_hit', { member_level: tierLevel, asks_used: m === 'advanced' ? advanced.used : basic.used, page: data.pretext });
+      }
+      setNotice({ code: ok.code!, text: ok.msg, cta: go });
+      return;
+    }
+    const hold = reserveAi(levelNow.current, m);
+    if (!hold) {
+      // Another tab took the last prompt a moment ago.
+      const again = aiEntitlement(levelNow.current, m);
+      setNotice(again.ok
+        ? { code: m === 'advanced' ? 'advanced-exhausted' : 'exhausted', text: m === 'advanced' ? 'No Advanced prompts left today.' : 'No Basic prompts left today.' }
+        : { code: again.code!, text: again.msg, cta: go });
+      return;
+    }
+    track('ai_question_asked', {
+      question_hashed: hashQuery(t),
+      asks_left: m === 'advanced' ? advanced.remaining : basic.remaining,
+      page: data.pretext,
+    });
+    sending.current = true;
+    held.current = hold;
+    setNotice(null);
+    const run = {};
+    inFlight.current = run;
     window.clearTimeout(stream.current);
     setStreaming(null);
 
     // What it actually consults, named plainly, so the wait says something
     // true rather than filling time.
-    const steps = [
-      'Reading what is on this page',
-      file ? `Opening ${file.name}` : 'Checking the figures on this page',
-      'Putting the answer together',
-    ];
+    const steps = m === 'advanced'
+      ? ['Reading what is on this page', 'Gathering the sample sources', 'Putting the answer together']
+      : ['Reading what is on this page', file ? `Opening ${file.name}` : 'Checking the figures on this page', 'Putting the answer together'];
 
-    setChat((c) => [...c, { id: Date.now(), from: 'you', text: t }]);
+    if (!opts?.retry) setChat((c) => [...c, { id: Date.now(), from: 'you', text: t }]);
     setDraft('');
     setThinking({ steps, done: 0, seconds: 0 });
     const clock = window.setInterval(
-      () => setThinking((t) => (t ? { ...t, seconds: t.seconds + 1 } : t)),
+      () => setThinking((th) => (th ? { ...th, seconds: th.seconds + 1 } : th)),
       1000,
     );
+    clockRef.current = clock;
 
     const started = Date.now();
+    // QA only: drop the first attempt once and retry it automatically.
+    let autoRetries = aiQa().flaky ? 1 : 0;
+    const finish = () => {
+      window.clearInterval(clock);
+      if (inFlight.current === run) inFlight.current = null;
+      sending.current = false;
+      held.current = null;
+      setThinking(null);
+    };
     const tick = (i: number) => {
       window.setTimeout(() => {
+        if (inFlight.current !== run) return;
         if (i < steps.length) {
-          setThinking((t) => (t ? { ...t, done: i + 1 } : t));
+          setThinking((th) => (th ? { ...th, done: i + 1 } : th));
           tick(i + 1);
           return;
         }
-        const reply = readFile(t) ?? data.onAsk?.(t) ?? answerFromPage(data, t);
+        if (autoRetries > 0) {
+          autoRetries -= 1;
+          setThinking((th) => (th ? { ...th, done: 0 } : th));
+          tick(0);
+          return;
+        }
+        if (aiQa().failNext) {
+          setAiQa({ failNext: false });
+          releaseAi(hold);
+          finish();
+          setChat((c) => [...c, {
+            id: Date.now() + 1,
+            from: 'ai',
+            err: true,
+            text: 'That request did not go through. Nothing was counted, and your question is back in the message box.',
+            retry: { text: t, go },
+          }]);
+          setDraft((d) => d || t);
+          return;
+        }
+        // The level may have dropped while it was thinking: withhold the answer.
+        const still = aiEntitlement(levelNow.current, m, { ignoreQuota: true });
+        if (!still.ok) {
+          releaseAi(hold);
+          finish();
+          setNotice({ code: still.code!, text: `${still.msg} The answer in progress was withheld and nothing was counted.` });
+          setDraft((d) => d || t);
+          return;
+        }
+        const reply = m === 'advanced'
+          ? advancedSampleAnswer(data, t, sourceLabel)
+          : readFile(t) ?? data.onAsk?.(t) ?? answerFromPage(data, t);
         const id = Date.now() + 1;
-        window.clearInterval(clock);
-        setThinking(null);
+        commitAi(hold);
+        finish();
         setChat((c) => [...c, {
           id,
           from: 'ai',
           text: '',
+          meta: { mode: m, src: sourceLabel || data.pretext, at: new Date().toISOString() },
           go: go ? { ...go, asked: go.asked ?? t } : undefined,
           thought: { seconds: Math.max(1, Math.round((Date.now() - started) / 1000)), steps },
         }]);
@@ -270,7 +394,7 @@ export const AiDashboardPanel: React.FC<{
         const feed = () => {
           at += 2;
           const upTo = words.slice(0, at).join('');
-          setChat((c) => c.map((m) => (m.id === id ? { ...m, text: upTo } : m)));
+          setChat((c) => c.map((msg) => (msg.id === id ? { ...msg, text: upTo } : msg)));
           if (at < words.length) {
             stream.current = window.setTimeout(feed, 28);
           } else {
@@ -282,6 +406,40 @@ export const AiDashboardPanel: React.FC<{
     };
     tick(0);
   };
+
+  /** "Analyze again" is a fresh Summary analysis: one Basic prompt when it finishes. */
+  const analyzeAgain = () => {
+    if (sending.current || busy) return;
+    const ok = aiEntitlement(levelNow.current, 'basic');
+    if (!ok.ok) {
+      setNotice({ code: ok.code!, text: ok.code === 'basic-locked' ? 'Fresh AI summaries unlock at Level 2.' : ok.msg });
+      return;
+    }
+    const hold = reserveAi(levelNow.current, 'basic');
+    if (!hold) { setNotice({ code: 'exhausted', text: 'No Basic prompts left today.' }); return; }
+    sending.current = true;
+    setRun((r) => r + 1);
+    window.setTimeout(() => {
+      if (aiEntitlement(levelNow.current, 'basic', { ignoreQuota: true }).ok) commitAi(hold);
+      else {
+        releaseAi(hold);
+        setNotice({ code: 'basic-locked', text: 'Your level changed, so the fresh summary was withheld and nothing was counted.' });
+      }
+      sending.current = false;
+    }, 700);
+  };
+
+  // Keep the conversation and draft for this tab session (functions are dropped).
+  useEffect(() => {
+    saveAiSession('dock', {
+      tab,
+      draft,
+      msgs: chat.map((msg) => ({
+        id: msg.id, from: msg.from, text: msg.text, thought: msg.thought, meta: msg.meta, err: msg.err,
+        retry: msg.retry ? { text: msg.retry.text } : undefined,
+      })),
+    });
+  }, [tab, draft, chat]);
 
   const pill = 'rounded-lg px-3 py-1.5 text-[14px] transition-colors';
 
@@ -320,7 +478,7 @@ export const AiDashboardPanel: React.FC<{
         </nav>
 
         <div className="flex shrink-0 items-center gap-1.5">
-          <button type="button" aria-label="Analyze again" onClick={() => setRun((r) => r + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/30 text-white transition hover:bg-white/15 active:scale-95">
+          <button type="button" aria-label="Analyze again" title={basic.locked ? 'Fresh AI summaries unlock at Level 2' : 'Analyze again (uses 1 Basic prompt when it finishes)'} onClick={analyzeAgain} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/30 text-white transition hover:bg-white/15 active:scale-95">
             <RefreshCw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} />
           </button>
           <button type="button" aria-label="Close the MarketSyde AI panel" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/30 text-white transition hover:bg-white/15 active:scale-95">
@@ -328,6 +486,16 @@ export const AiDashboardPanel: React.FC<{
           </button>
         </div>
       </div>
+
+      <AiModeBar
+        mode={mode}
+        setMode={setMode}
+        level={tierLevel}
+        stat={basic}
+        notice={notice}
+        onDismiss={() => setNotice(null)}
+        onMember={onViewMembership}
+      />
 
       <div key={`${active?.id}-${run}`} className={`min-h-0 flex-1 overflow-y-auto px-5 ${active?.id === 'chat' ? 'flex flex-col pb-0 pt-4' : 'py-4'}`}>
         {busy && (
@@ -338,7 +506,9 @@ export const AiDashboardPanel: React.FC<{
             </div>
           </div>
         )}
-        {first ? (
+        {first && basic.locked ? (
+          <AiLockedSummary level={tierLevel} tierName={tierName} onMember={onViewMembership} />
+        ) : first ? (
           <>
             <div className="flex flex-col-reverse gap-4">
               <div className="min-w-0 flex-1">
@@ -456,6 +626,20 @@ export const AiDashboardPanel: React.FC<{
                           <span className="ml-1 inline-block h-3.5 w-1 translate-y-0.5 animate-pulse rounded-full bg-[#5945F1]" aria-hidden />
                         )}
                       </span>
+                      {m.meta && streaming !== m.id && <AiAnswerDetails meta={m.meta} />}
+                      {m.retry && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const again = m.retry!;
+                            setChat((c) => c.map((x) => (x.id === m.id ? { ...x, retry: undefined } : x)));
+                            say(again.text, again.go, { retry: true });
+                          }}
+                          className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#5945F1] px-3 py-1.5 text-[12.5px] font-bold text-white transition-colors hover:bg-[#4a38d6]"
+                        >
+                          Retry
+                        </button>
+                      )}
                       {m.rows && m.rows.length > 0 && (
                         <span className={m.rows.some((r) => r.node)
                           ? 'mt-2 -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 no-scrollbar'
@@ -702,7 +886,7 @@ export const AiDashboardPanel: React.FC<{
             <button
               type="button"
               onClick={() => say(draft)}
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || !allowed.ok}
               aria-label="Send"
               className="absolute right-2 top-2.5 flex h-8 w-8 items-center justify-center rounded-lg text-[#94a3b8] transition-colors hover:text-[#5945F1] disabled:opacity-40"
             >
@@ -806,6 +990,24 @@ export const AiDashboardPanel: React.FC<{
 
             <span className="flex-1" />
 
+            {/* What is left today in the selected mode. */}
+            <span
+              aria-live="polite"
+              data-msai-remaining
+              title={mode === 'advanced'
+                ? (advanced.locked ? undefined : advanced.resetLabel)
+                : (basic.locked || basic.unlimited || basic.dayPass ? undefined : basic.resetLabel)}
+              className="mr-1 whitespace-nowrap text-[12px] font-semibold"
+              style={{ color: (mode === 'advanced' ? !advanced.locked && advanced.remaining === 0 : !basic.locked && basic.remaining === 0) ? '#b45309' : '#64748b' }}
+            >
+              {mode === 'advanced'
+                ? advanced.locked ? 'Advanced locked' : advanced.unlimited ? 'Advanced \u00b7 unlimited' : `${advanced.remaining} of ${advanced.limit} Advanced left`
+                : basic.locked ? 'Locked at Level 1'
+                  : basic.dayPass ? 'Day pass \u00b7 unlimited today'
+                    : basic.unlimited ? 'Unlimited \u00b7 fair use'
+                      : `${basic.remaining} of ${basic.limit} left today`}
+            </span>
+
             <button
               type="button"
               onClick={() => { setChat([]); setFile(null); }}
@@ -820,7 +1022,7 @@ export const AiDashboardPanel: React.FC<{
             <button
               type="button"
               onClick={() => (chatBusy ? stop() : say(draft))}
-              disabled={!chatBusy && !draft.trim()}
+              disabled={!chatBusy && (!draft.trim() || !allowed.ok)}
               aria-label={chatBusy ? 'Stop' : 'Send'}
               className="flex h-8 items-center gap-1.5 rounded-lg bg-[#5945F1] pl-3 pr-2.5 text-[12.5px] font-bold text-white transition hover:bg-[#4a38d6] disabled:bg-[#cdc7f5] disabled:text-white/80"
             >

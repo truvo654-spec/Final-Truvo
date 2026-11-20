@@ -18,6 +18,7 @@ import { UserProfile, MarketSignal, Broker } from '../../types';
 import { SpotlightData } from './AiSpotlightPanel';
 import { AiDashboardPanel } from './AiDashboardPanel';
 import { AiIntro } from './AiIntro';
+import { getRouteMeta } from '../../router';
 import {
   advisorsRead, alertsRead, calendarRead, communityRead, dashboardRead, educationRead,
   journalRead, leaderboardRead, newsRead, pointsRead, portfolioRead, promotionsRead, signalsRead,
@@ -743,6 +744,8 @@ export const AiDock: React.FC<AiDockContext> = (ctx) => {
         tierName={ctx.user.rankTitle}
         storageKey={ctx.tab}
         onClose={() => shut(true)}
+        onViewMembership={() => ctx.go('member-plan')}
+        sourceLabel={(getRouteMeta(ctx.tab).breadcrumbs ?? []).join(' \u203a ') || undefined}
         className="h-[min(800px,calc(100vh-7.5rem))]"
       />
     </div>
