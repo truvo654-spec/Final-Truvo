@@ -2,6 +2,34 @@
 
 Last updated 9 Oct 2026, at v2.0.1 on `main`.
 
+## MarketSyde AI allowance (v2.35.0, 20 Nov 2026)
+
+`src/components/ai/aiEntitlement.ts` is the only place the AI allowance is
+decided. The panel, Analyze again, the openers and the composer all go through
+`aiEntitlement()`, `reserveAi()`, `commitAi()` and `releaseAi()`.
+
+| Level | Basic a day | Advanced a day |
+| --- | --- | --- |
+| LV1 Rookie | locked | locked |
+| LV2 Climber | 10 | locked ("Advanced AI unlocks at Level 3") |
+| LV3 Player | 20 | 10 |
+| LV4 Boss | unlimited, fair use | 10 (not decided yet) |
+
+- Reserve when a request starts, commit when the answer completes, release on
+  failure or cancel. Only commits count.
+- The day turns at 00:00 UTC. `aiResetLabel()` shows it in local time.
+- The level is `user.tierLevel` from the profile. Do not add a separate AI level.
+- **This is a browser simulation.** Usage sits in localStorage
+  (`marketsyde_ai_used`, `marketsyde_ai_adv_used`). The server must own the
+  counters, the reservation, the reset and the level check, and must refuse a
+  request the client should never have sent. Client checks are not
+  authorization.
+- QA switches (test only): `localStorage['marketsyde.ai.qa']` accepts
+  `failNext`, `flaky` and `dayOffset`.
+- Still to do: the AI Companion page counts at send rather than on success and
+  has no Advanced mode; the credits day pass still lifts the Basic cap at
+  LV2–3, which needs a product decision.
+
 ## What landed
 
 The rewards system now follows the Final Beta workbook **v2.9** (20 Oct 2026).

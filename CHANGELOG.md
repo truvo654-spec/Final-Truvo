@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.35.0] - 2026-11-20
+### Added
+- Basic and Advanced modes in the MarketSyde AI panel, with the allowance read from the member's own level in the profile: Level 1 is locked, Level 2 gets 10 Basic prompts a day, Level 3 gets 20 Basic and 10 Advanced, Level 4 gets unlimited Basic under fair use and 10 Advanced. Advanced unlocks at Level 3 and has its own counter, so it never uses Basic prompts.
+- Both allowances are shown under the panel header, and what is left in the selected mode sits next to Send ("9 of 10 left today").
+- Each answer carries its sources, account scope, date range, time and what it cost, behind "sources & scope".
+### Changed
+- A prompt is counted only when the answer completes. A failed, cancelled or automatically retried request costs nothing, repeated Enter or a double click cannot send twice, and two tabs share one counter so they cannot overspend the last prompt.
+- The day now turns at 00:00 UTC for everyone, shown in the member's own time ("Resets at 07:00 Bangkok time"), with nothing rolling over. Changing level keeps today's used count: 8 used at Level 2 leaves 12 at Level 3, and dropping below what was used leaves 0, never a negative number.
+- When a member is locked or out of prompts, the draft and the conversation stay, Send is disabled and the panel says why, with View membership. Level 1 sees a locked card on Summary instead of a fresh personalised summary, and Analyze again counts as one Basic prompt.
+- If the level drops while an answer is being written, that answer is withheld and nothing is counted.
+- Ordinary navigation openers ("Open the calendar") just navigate and cost nothing.
+- The conversation and draft are kept for the browser tab session, so a reload or a page change does not lose them.
+### Note
+- The rules live in one place, src/components/ai/aiEntitlement.ts, and the older helpers in aiAllowance.ts read from it. Usage is simulated in the browser for this prototype; production must enforce the same rules on the server.
+- Level 4 Advanced is set to 10 a day until it is decided, rather than silently unlimited.
+- The AI Companion page reads the new limits but still counts when a question is sent rather than when it is answered, and has no Advanced mode yet.
+
 ## [1.53.0] - 2026-10-09
 ### Added
 - The newer Trading Journal work from orangeecat's branch: help text on the journal's own tabs, playbooks you can configure per instrument with pattern matching behind them, the unified replay comparisons, the personalised AI Coach candle comparisons, and the What-if lab's saved scenario snapshots.
