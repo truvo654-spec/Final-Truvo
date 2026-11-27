@@ -1,0 +1,57 @@
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch(); const out = []; const ok = (n, c, x) => out.push((c ? 'PASS ' : 'FAIL ') + n + (x !== undefined ? ' · ' + x : ''));
+  for (const vp of [{ w: 1280, h: 900, tag: 'D' }, { w: 390, h: 820, tag: 'M' }]) {
+    const ctx = await b.newContext({ viewport: { width: vp.w, height: vp.h } });
+    const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+    await page.goto('file://' + require('path').resolve(__dirname, '../harness.html') + '');
+    const ev = (f, a) => page.evaluate(f, a), has = s => ev(s => !!T.root.querySelector(s), s), txt = s => ev(s => { const e = T.root.querySelector(s); return e ? e.textContent.replace(/\s+/g,' ').trim() : null; }, s);
+    const P = vp.tag + ' ';
+    await ev(() => { T.S.tab = 'monitor'; T.S.mon.view = 'tiles'; T.H7.pview(null, 'positions'); T.root.scrollTop = 0; });
+    ok(P+'default Charts', (await ev(() => T.S.pvtView || T.S.mon.view)) === 'charts');
+    ok(P+'bar inside pv card', await has('[data-section="pv"] [data-pvt-bar]'));
+    ok(P+'bar labels', (await txt('[data-pvt-bar] .seg')).replace(/ /g,'') === 'ChartsTilesHoldingsMatrixMapExposureMarginriskStop-lossDrawdown', await txt('[data-pvt-bar] .seg'));
+    ok(P+'Charts on, Tiles off', await ev(() => T.root.querySelector('[data-pvt="charts"]').classList.contains('on') && !T.root.querySelector('[data-v="tiles"]').classList.contains('on') && T.root.querySelector('[data-pvt="charts"]').getAttribute('aria-selected')==='true'));
+    ok(P+'charts in card', await has('[data-section="pv"] .pvcharts'));
+    ok(P+'export control kept', await has('[data-pvt-bar] [data-a="mexport"]'));
+    ok(P+'alerts apart with count', (await txt('[data-pvt-bar] .pvt-al')) === 'Alerts 2' && !(await has('[data-pvt-bar] .seg [data-v="alerts"]')));
+    ok(P+'no margin card outside', !(await has('#mb-root > * [data-section="margin-risk"]:not([data-pvt-body] *)')) );
+    ok(P+'nothing below card', !(await has('[data-section="stop-status"]')) && !(await has('[data-section="drawdown"]')));
+    await page.screenshot({ path: P.trim()+'1.png' });
+    await ev(() => T.root.querySelector('[data-pvt-bar]').scrollIntoView());
+    await page.click('[data-pvt-bar] [data-v="holdings"]');
+    ok(P+'native Holdings', (await ev(() => T.S.mon.view)) === 'holdings' && await has('[data-section="pv"] [data-pvt-body] [data-section="mon-holdings"]') && !(await has('[data-section="pv"] .pvcharts')));
+    ok(P+'Charts off when Holdings', !(await ev(() => T.root.querySelector('[data-pvt="charts"]').classList.contains('on'))));
+    await page.click('[data-pvt="margin"]');
+    ok(P+'Margin risk in card', await has('[data-section="pv"] [data-pvt-body] [data-section="margin-risk"]') && await ev(() => T.root.querySelector('[data-pvt="margin"]').classList.contains('on')));
+    ok(P+'margin card flattened', await ev(() => getComputedStyle(T.root.querySelector('[data-pvt-body]>[data-section="margin-risk"]')).borderTopWidth) === '0px');
+    await ev(() => T.root.querySelector('[data-pvt-body]').scrollIntoView());
+    await page.screenshot({ path: P.trim()+'2.png' });
+    await page.click('[data-mr-row="ic"]');
+    ok(P+'margin row opens panel', /2 positions/.test(await txt('[data-pp-sub]') || ''));
+    await ev(() => T.H7.pclose());
+    await page.click('[data-pvt="drawdown"]');
+    ok(P+'Drawdown in card', await has('[data-section="pv"] [data-pvt-body] [data-section="drawdown"]') && await ev(() => T.root.querySelector('[data-pvt="drawdown"]').classList.contains('on')));
+    await ev(() => T.root.querySelector('[data-pvt-body]').scrollIntoView()); await page.screenshot({ path: P.trim()+'3.png' });
+    const svg = await ev(() => { const s = T.root.querySelector('[data-pvt-body] svg'); return s ? s.getBoundingClientRect().width : 0; });
+    ok(P+'drawdown chart drawn', svg > 200, svg);
+    await page.click('[data-pvt-bar] .pvt-al');
+    ok(P+'alerts button keeps native action', (await ev(() => T.S.mon.view)) === 'alerts');
+    await ev(() => T.H7.pvt(null, 'charts'));
+    ok(P+'back to charts', await has('[data-section="pv"] .pvcharts'));
+    await page.click('[data-pvt="stoploss"]');
+    ok(P+'Stop-loss in card', await has('[data-section="pv"] [data-pvt-body] [data-section="stop-status"]'));
+    await ev(() => T.root.querySelector('[data-pvt-body]').scrollIntoView()); await page.screenshot({ path: P.trim()+'4.png' });
+    await ev(() => T.root.querySelector('[data-a="mslf"]').click());
+    const top = await ev(() => T.root.querySelector('[data-pvt-bar]').getBoundingClientRect().top - T.root.getBoundingClientRect().top);
+    ok(P+'stop seg -> holdings w/ chip, bar visible', (await ev(() => T.S.mon.view)) === 'holdings' && await has('[data-hold-slf]') && top >= 0 && top < 700, top);
+    // status view
+    await ev(() => { T.H7.mslfclr(); T.H7.pvt(null,'stoploss'); T.H7.pview(null,'status'); });
+    ok(P+'status keeps tab', (await ev(() => T.S.pvtView || T.S.mon.view)) === 'stoploss' && await has('[data-section="pvs"] [data-pvt-bar]'));
+    await ev(() => T.H7.pview(null,'positions'));
+    ok(P+'back to positions keeps tab', (await ev(() => T.S.pvtView || T.S.mon.view)) === 'stoploss');
+    ok(P+'no errors', errs.length === 0, errs.join(' | '));
+    await ctx.close();
+  }
+  console.log(out.join('\n')); await b.close();
+})();

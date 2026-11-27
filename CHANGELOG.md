@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.35.0] - 2026-11-27
+### Added
+- `multi-broker-additions/`: the Multi-Broker Dashboard update blocks v23 and v25–v34 from the claude.ai prototype artifact. They cover:
+  - Open positions card with tabs (Charts, Tiles, Holdings, Matrix, Map, Exposure, Margin risk, Stop-loss, Drawdown)
+  - Portfolio status view with the same visuals and date-range data
+  - Long / Short charts
+  - Data consistency fixes
+  - Generated closed-trade history
+- Includes a stand-in test setup and tests. See `multi-broker-additions/README.md` for how the blocks attach to `multi-broker-v22b.js`.
+### Note
+- The full prototype artifact (11 MB `index.html` plus scripts) is not in this commit; only the blocks Claude wrote are.
+
 ## [1.53.0] - 2026-10-09
 ### Added
 - The newer Trading Journal work from orangeecat's branch: help text on the journal's own tabs, playbooks you can configure per instrument with pattern matching behind them, the unified replay comparisons, the personalised AI Coach candle comparisons, and the What-if lab's saved scenario snapshots.
